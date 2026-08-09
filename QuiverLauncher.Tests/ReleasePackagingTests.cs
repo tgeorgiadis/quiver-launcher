@@ -63,8 +63,8 @@ public class ReleasePackagingTests
         workflow.Should().Contain("environment: signing");
         workflow.Should().Contain("## Downloads");
         workflow.Should().Contain("QuiverLauncher-win-Portable.zip");
-        workflow.Should().Contain("QuiverLauncher-${VERSION}-linux-x64.AppImage");
-        workflow.Should().Contain("QuiverLauncher-${VERSION}-linux-arm64.AppImage");
+        workflow.Should().Contain("QuiverLauncher-linux-x64.AppImage");
+        workflow.Should().Contain("QuiverLauncher-linux-arm64.AppImage");
         workflow.Should().Contain("-name '*.AppImage'");
         workflow.Should().Contain("releases.*.json");
         // Publish bare AppImages; do not wrap in tar.gz or strip executable bit via CI chmod.
