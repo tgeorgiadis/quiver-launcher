@@ -3,7 +3,7 @@ using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 
-namespace Quiver
+namespace QuiverLauncher
 {
     public class BooleanToStretchConverter : IValueConverter
     {

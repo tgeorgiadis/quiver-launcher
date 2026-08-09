@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public sealed class AnnouncementPayload
 {

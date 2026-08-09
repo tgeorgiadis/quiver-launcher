@@ -1,4 +1,4 @@
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 /// <summary>Helpers for normalizing and comparing an app's mods catalog config.</summary>
 public static class GameModsConfig

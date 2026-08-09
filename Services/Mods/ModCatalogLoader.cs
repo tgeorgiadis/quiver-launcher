@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 /// <summary>Loads packages across an app's configured mod sources.</summary>
 public sealed class ModCatalogLoader

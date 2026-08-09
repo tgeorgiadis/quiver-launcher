@@ -1,6 +1,6 @@
-using Quiver.Services.Mods;
+using QuiverLauncher.Services.Mods;
 
-namespace Quiver.Services.Mods.Providers.GameBanana;
+namespace QuiverLauncher.Services.Mods.Providers.GameBanana;
 
 public sealed class GameBananaModProvider : IModProvider
 {
@@ -163,7 +163,7 @@ public sealed class GameBananaModProvider : IModProvider
 
         if (!LooksLikeSupportedArchiveUrl(version.DownloadUrl))
             throw new InvalidOperationException(
-                "This GameBanana file does not look like a zip or 7z archive. Quiver only installs zip/7z mods.");
+                "This GameBanana file does not look like a zip or 7z archive. Quiver Launcher only installs zip/7z mods.");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, version.DownloadUrl);
         using var response = await _httpClient
@@ -178,7 +178,7 @@ public sealed class GameBananaModProvider : IModProvider
             !LooksLikeSupportedArchiveContentType(contentType))
         {
             throw new InvalidOperationException(
-                "This GameBanana download is not a zip or 7z archive. Quiver only installs zip/7z mods.");
+                "This GameBanana download is not a zip or 7z archive. Quiver Launcher only installs zip/7z mods.");
         }
 
         var total = response.Content.Headers.ContentLength ?? version.FileSize;
@@ -199,7 +199,7 @@ public sealed class GameBananaModProvider : IModProvider
                 if (!IsZipOrSevenZipHeader(header))
                 {
                     throw new InvalidOperationException(
-                        "Downloaded file is not a zip or 7z archive. Quiver only installs zip/7z mods.");
+                        "Downloaded file is not a zip or 7z archive. Quiver Launcher only installs zip/7z mods.");
                 }
             }
 

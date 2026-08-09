@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public class FileSettingsStore : ISettingsStore
 {
@@ -13,7 +13,7 @@ public class FileSettingsStore : ISettingsStore
 
     public FileSettingsStore(string? settingsPath = null)
     {
-        _settingsPath = settingsPath ?? QuiverPaths.SettingsJsonPath;
+        _settingsPath = settingsPath ?? QuiverLauncherPaths.SettingsJsonPath;
         _current = ReadFromDisk();
     }
 
@@ -68,7 +68,7 @@ public class FileSettingsStore : ISettingsStore
         }
 
         throw new IOException(
-            $"Could not save settings to '{_settingsPath}'. Close any other running Quiver instances and try again.",
+            $"Could not save settings to '{_settingsPath}'. Close any other running Quiver Launcher instances and try again.",
             lastError);
     }
 

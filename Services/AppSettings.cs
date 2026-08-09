@@ -2,10 +2,10 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Quiver.Core.Models;
-using Quiver.Services;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Services;
 
-namespace Quiver
+namespace QuiverLauncher
 {
     public enum AppListScope
     {

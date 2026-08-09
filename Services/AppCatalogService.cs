@@ -1,14 +1,14 @@
-using Quiver.Core.Services;
-using Quiver.Models;
-using Quiver.Services.Mods;
+using QuiverLauncher.Core.Services;
+using QuiverLauncher.Models;
+using QuiverLauncher.Services.Mods;
 using System.Net.Http;
-using AppSettings = Quiver.AppSettings;
-using AppCatalogSource = Quiver.AppCatalogSource;
+using AppSettings = QuiverLauncher.AppSettings;
+using AppCatalogSource = QuiverLauncher.AppCatalogSource;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Quiver.Services
+namespace QuiverLauncher.Services
 {
     public class AppCatalogService
     {
@@ -25,7 +25,7 @@ namespace Quiver.Services
         {
             _gameManager = gameManager;
             _locationReader = locationReader ?? CatalogLocationReader.Default;
-            var baseDir = dataDirectory ?? QuiverPaths.UserDataRoot;
+            var baseDir = dataDirectory ?? QuiverLauncherPaths.UserDataRoot;
             _appsConfigPath = Path.Combine(baseDir, "apps.json");
             _legacyGamesConfigPath = Path.Combine(baseDir, "games.json");
             _catalogSourcesCacheFolder = Path.Combine(baseDir, "Cache", "CatalogSources");
@@ -323,7 +323,7 @@ namespace Quiver.Services
             settings.EnsureInitialized();
             CommunityCatalogBootstrap.MigrateLegacyDefaultSource(settings);
 
-            cacheFolder ??= Path.Combine(QuiverPaths.CacheDirectory, "CatalogSources");
+            cacheFolder ??= Path.Combine(QuiverLauncherPaths.CacheDirectory, "CatalogSources");
             Directory.CreateDirectory(cacheFolder);
 
             var changed = false;
@@ -607,7 +607,7 @@ namespace Quiver.Services
             if (IsRemoteLocation(location) || Path.IsPathRooted(location))
                 return location;
 
-            return Path.Combine(QuiverPaths.UserDataRoot, location);
+            return Path.Combine(QuiverLauncherPaths.UserDataRoot, location);
         }
 
         private string GetSourceCachePath(string sourceId) =>

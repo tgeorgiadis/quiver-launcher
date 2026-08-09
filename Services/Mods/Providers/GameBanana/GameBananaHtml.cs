@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Quiver.Services.Mods.Providers.GameBanana;
+namespace QuiverLauncher.Services.Mods.Providers.GameBanana;
 
 /// <summary>Light HTML → markdown/plain conversion for GameBanana descriptions.</summary>
 internal static partial class GameBananaHtml

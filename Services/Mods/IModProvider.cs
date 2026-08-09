@@ -1,4 +1,4 @@
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 public interface IModProvider
 {

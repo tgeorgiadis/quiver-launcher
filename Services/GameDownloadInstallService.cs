@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
-using Quiver.Core.Models;
-using Quiver.Core.Services;
-using Quiver.Models;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Core.Services;
+using QuiverLauncher.Models;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class GameDownloadInstallService
 {

@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia.Media;
 
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 public enum ModInstallStatus
 {

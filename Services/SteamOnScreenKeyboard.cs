@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Opens Steam's on-screen keyboard on Steam Deck / Gamescope.

@@ -1,6 +1,6 @@
-using Quiver.Models;
+using QuiverLauncher.Models;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public enum LinuxWindowsRunnerKind
 {

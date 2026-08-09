@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Quiver.Core.Models;
-using Quiver.Core.Services;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Core.Services;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public sealed class LauncherUpdateCheckInfo
 {
@@ -25,7 +25,7 @@ public readonly struct ReleaseFetchResult
 
 public sealed class LauncherUpdateService
 {
-    private static readonly QuiverProfile Profile = QuiverProfile.Instance;
+    private static readonly QuiverLauncherProfile Profile = QuiverLauncherProfile.Instance;
 
     public static readonly TimeSpan DefaultUpdateCheckInterval = TimeSpan.FromMinutes(5);
 

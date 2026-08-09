@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using Quiver.Models;
+using QuiverLauncher.Models;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public sealed class WindowsRunnerCommandSpec
 {

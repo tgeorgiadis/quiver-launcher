@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Quiver.Models;
+using QuiverLauncher.Models;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class AppFilesToAddService
 {

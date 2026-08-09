@@ -3,7 +3,7 @@ using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia;
 
-namespace Quiver
+namespace QuiverLauncher
 {
     public class ThicknessConverter : IValueConverter
     {

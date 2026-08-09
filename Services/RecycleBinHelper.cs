@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Moves files/directories to the OS Recycle Bin / Trash instead of permanent deletion.

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Input;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public sealed class KeyboardBinding : IEquatable<KeyboardBinding>
 {

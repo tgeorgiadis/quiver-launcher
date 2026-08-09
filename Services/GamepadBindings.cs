@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using SDL2;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public enum GamepadAction
 {

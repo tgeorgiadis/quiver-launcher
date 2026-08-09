@@ -6,15 +6,15 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Quiver.Models;
-using Quiver.Services;
-using Quiver.Services.Mods;
-using Quiver.Services.Mods.Providers.GameBanana;
-using Quiver.Services.Mods.Providers.Thunderstore;
+using QuiverLauncher.Models;
+using QuiverLauncher.Services;
+using QuiverLauncher.Services.Mods;
+using QuiverLauncher.Services.Mods.Providers.GameBanana;
+using QuiverLauncher.Services.Mods.Providers.Thunderstore;
 using System.Diagnostics;
 using System.IO;
 
-namespace Quiver;
+namespace QuiverLauncher;
 
 public partial class MainWindow
 {

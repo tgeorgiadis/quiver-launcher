@@ -5,7 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public sealed class GamepadModalDialogNavigation
 {
@@ -572,7 +572,7 @@ public sealed class GamepadModalDialogNavigation
         "install",
         "download anyway",
         "open settings",
-        "update quiver",
+        "update quiver launcher",
         "update apps",
         "save",
         "save & download",

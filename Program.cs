@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.Platform;
-using Quiver.Services;
+using QuiverLauncher.Services;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Text;
 using Velopack;
 using Velopack.Locators;
 
-namespace Quiver
+namespace QuiverLauncher
 {
     class Program
     {
@@ -25,9 +25,14 @@ namespace Quiver
         public static int Main(string[] args)
         {
             // Must be first: Velopack install/update hooks exit inside Run().
-            VelopackApp.Build().Run();
+            // Linux/macOS share packages by packId (/var/tmp or Library/Caches); disable
+            // startup auto-apply so a second AppImage/.app is not silently updated.
+            var velopack = VelopackApp.Build();
+            if (!OperatingSystem.IsWindows())
+                velopack.SetAutoApplyOnStartup(false);
+            velopack.Run();
 
-            QuiverPaths.VelopackRootAppDirProvider = () =>
+            QuiverLauncherPaths.VelopackRootAppDirProvider = () =>
             {
                 try
                 {
@@ -40,9 +45,9 @@ namespace Quiver
             };
 
             // Linux/macOS: library beside AppImage / .app when that folder is writable.
-            QuiverPaths.VelopackPackageDirectoryProvider = ResolveVelopackPackageDirectory;
+            QuiverLauncherPaths.VelopackPackageDirectoryProvider = ResolveVelopackPackageDirectory;
 
-            QuiverPaths.EnsureUserDataRootExists();
+            QuiverLauncherPaths.EnsureUserDataRootExists();
 
             if (args.Length > 0 && args[0].StartsWith("-"))
             {
@@ -105,8 +110,8 @@ namespace Quiver
 
             try
             {
-                QuiverPaths.EnsureUserDataRootExists();
-                File.AppendAllText(QuiverPaths.CrashLogPath, message.ToString() + Environment.NewLine);
+                QuiverLauncherPaths.EnsureUserDataRootExists();
+                File.AppendAllText(QuiverLauncherPaths.CrashLogPath, message.ToString() + Environment.NewLine);
             }
             catch
             {
@@ -144,7 +149,7 @@ namespace Quiver
 
                 if (OperatingSystem.IsMacOS())
                 {
-                    return QuiverPaths.ResolveMacOsPackageDirectory(
+                    return QuiverLauncherPaths.ResolveMacOsPackageDirectory(
                         locator.RootAppDir,
                         locator.AppContentDir,
                         AppDomain.CurrentDomain.BaseDirectory);

@@ -1,6 +1,6 @@
-using Quiver.Services;
+using QuiverLauncher.Services;
 
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 public static class ModVersionComparer
 {

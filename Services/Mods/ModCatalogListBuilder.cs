@@ -1,4 +1,4 @@
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 /// <summary>How unmatched installed sidecar records are included in the list.</summary>
 public enum ModOrphanInstallMode

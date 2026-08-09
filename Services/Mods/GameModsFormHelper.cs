@@ -1,7 +1,7 @@
 using System.Text;
-using Quiver.Services.Mods.Providers.GameBanana;
+using QuiverLauncher.Services.Mods.Providers.GameBanana;
 
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 /// <summary>Parse/format helpers for the entry-form mods fields.</summary>
 public static class GameModsFormHelper

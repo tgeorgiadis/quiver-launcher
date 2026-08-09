@@ -1,47 +1,41 @@
-# Quiver
+# Quiver Launcher
 
 [![.NET 9](https://img.shields.io/badge/.NET-9-512BD4)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/github/license/tgeorgiadis/quiver)](https://github.com/tgeorgiadis/quiver/blob/main/LICENSE)
 
-> **About** — Quiver is a fork of [GithubLauncher](https://github.com/SirDiabo/GithubLauncher), extended with the features I wanted: **tag filters**, **library management with App Catalog**, and **UI improvements**. It was rebranded to **Quiver** to avoid using the GitHub trademark.
+> **About** - **Quiver Launcher** is a fork of [GithubLauncher](https://github.com/SirDiabo/GithubLauncher), extended with the features I wanted: **tag filters**, **library management with App Catalog**, **mod management support**, **UI improvements** and more. It was rebranded from GithubLauncher to avoid using the GitHub trademark.
 
-![Quiver Screenshot](Assets/LauncherScreenshot.png)
+![Quiver Launcher Screenshot](Assets/LauncherScreenshot.png)
 
-A modern launcher for downloading, installing, and running apps from GitHub and GitLab releases — with a personal library, community catalog subscriptions, and flexible filtering.
+A modern launcher for downloading, installing, and running apps from GitHub and GitLab releases. With a personal library, community catalog subscriptions, and flexible filtering.
 
 ## Features
 
-- **Tag filters** — Organize and filter your library with custom tags
-- **App Catalog** — Subscribe to community app lists, review changes, and build your library from `apps.json`
-- **GitHub & GitLab releases** — Install and update apps from GitHub or gitlab.com release assets
-- **Automated updates** — Download and install the latest releases automatically
-- **Version management** — Automatic version checking and in-app update checks
-- **UI improvements** — Refined layout, catalog review workflow, and top-bar controls
+- **Tag filters** - Organize and filter your library with custom tags
+- **App Catalog** - Subscribe to community app lists, review changes, and build your library from `apps.json`
+- **GitHub & GitLab releases** - Install and update apps from GitHub or gitlab.com release assets
+- **Mod Management Support** - Browse, install and update mods from Thunderstore and GameBanana
+- **Automated updates** - Download and install the latest releases automatically
+- **Version management** - Automatic version checking and in-app update checks
+- **UI improvements** - Refined layout, catalog review workflow, and top-bar controls
 
 ## Getting Started
 
-### Prerequisites
-
-- Internet connection for updates and downloads
-- Official builds are **self-contained** (no separate .NET install required). Local development still needs the .NET 9 SDK.
-
 ### Installation
 
-Quiver uses [Velopack](https://docs.velopack.io/) for packaging and self-updates. Prerelease Quiver updates are opt-in via Settings → Advanced → **Include prerelease Quiver updates** (development only); installs whose version already contains `-` (e.g. `3.0.0-rc.1`) follow GitHub prereleases automatically.
+**Note if you are upgrading from 2.4.x or older:** the in-app update cannot migrate Quiver Launcher 2.4.x onto version 3.0 or higher. Download a fresh 3.x version of Quiver Launcher and copy your library over. See [MIGRATING.md](MIGRATING.md).
 
-**Upgrading from 2.4.x or older:** in-app update cannot migrate a flat 2.4.x install onto Velopack 3.0. Download a fresh portable and copy your library — see [MIGRATING.md](MIGRATING.md).
+**Windows**
 
-**Windows (portable-first — recommended)**
+1. Download `QuiverLauncher-win-Portable.zip` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
+2. Extract it
+3. Run `QuiverLauncher.exe` from the extracted folder
 
-1. Download `Quiver-win-Portable.zip` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
-2. Extract it anywhere (USB drive, folder, etc.)
-3. Run `Quiver.exe` from the extracted folder
-
-Your library stays in that same folder (`apps.json`, `settings.json`, `Apps/`, `Cache/` next to `current/`), so you can move the whole directory.
+Your library stays in that same folder (`apps.json`, `settings.json`, `Apps/`, `Cache/` next to `current/`), so you can move the whole directory wherever you want.
 
 ```
-Quiver/
-├── Quiver.exe          # launcher stub
+QuiverLauncher/
+├── QuiverLauncher.exe          # launcher stub
 ├── current/            # app binaries (replaced on update)
 ├── apps.json
 ├── settings.json
@@ -49,27 +43,27 @@ Quiver/
 └── Cache/
 ```
 
+To verify a signed `QuiverLauncher.exe`: right-click → Properties → Digital Signatures, or `Get-AuthenticodeSignature .\QuiverLauncher.exe` in PowerShell.
+
 **Linux**
 
-1. Download `Quiver-linux-x64.tar.gz` or `Quiver-linux-arm64.tar.gz` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
-2. Extract it (creates a `Quiver-linux-…` folder — keep the AppImage there so library files stay with it):
+1. Download `QuiverLauncher-*-linux-x64.AppImage` or `QuiverLauncher-*-linux-arm64.AppImage` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
+2. Put the AppImage in its own folder (it creates library files beside itself), mark it executable, then run it:
    ```bash
-   tar -xzf Quiver-linux-x64.tar.gz
-   cd Quiver-linux-x64
-   ```
-3. Make the AppImage executable, then run it:
-   ```bash
-   chmod +x Quiver*.AppImage
-   ./Quiver*.AppImage
+   mkdir -p ~/QuiverLauncher
+   mv QuiverLauncher*.AppImage ~/QuiverLauncher/
+   cd ~/QuiverLauncher
+   chmod +x QuiverLauncher*.AppImage
+   ./QuiverLauncher*.AppImage
    ```
    Or right-click → Properties → Permissions → **Allow executing file as a program**.  
-   (Copies from Windows/NTFS/shared folders often lose the executable bit; `chmod +x` is expected in that case.)
+   GitHub downloads do not keep the executable bit; you need to set it locally after download.
 
-Library data (`apps.json`, `settings.json`, `Apps/`, `Cache/`) is stored **beside the AppImage** so you can move that folder together. If the AppImage’s directory is not writable (e.g. `/usr/local/bin`), Quiver falls back to `~/.local/share/Quiver/` (or `$XDG_DATA_HOME/Quiver`).
+Library data (`apps.json`, `settings.json`, `Apps/`, `Cache/`) is stored **beside the AppImage** so you can move that folder together. If the AppImage’s directory is not writable (e.g. `/usr/local/bin`), Quiver Launcher falls back to `~/.local/share/QuiverLauncher/` (or `$XDG_DATA_HOME/QuiverLauncher`).
 
 ```
-Quiver-linux-x64/
-├── Quiver-x.y.z-linux-x64.AppImage
+MyFolder/
+├── QuiverLauncher-x.y.z-linux-x64.AppImage
 ├── apps.json
 ├── settings.json
 ├── Apps/
@@ -78,71 +72,30 @@ Quiver-linux-x64/
 
 **macOS**
 
-1. Download the Velopack macOS package from Releases
-2. Keep `Quiver.app` in a writable folder (not only `/Applications` if you want portable data)
+Currently macOS support is a work in progress.
 
-Library data lives **beside** `Quiver.app` in that folder. If the parent directory is not writable, Quiver falls back to `~/Library/Application Support/Quiver/`.
+1. Download the macOS package from [Releases](https://github.com/tgeorgiadis/quiver/releases)
+2. Keep `QuiverLauncher.app` in a writable folder (not only `/Applications` if you want portable data)
+
+Library data lives **beside** `QuiverLauncher.app` in that folder. If the parent directory is not writable, Quiver Launcher falls back to `~/Library/Application Support/QuiverLauncher/`.
 
 ```
 MyFolder/
-├── Quiver.app
+├── QuiverLauncher.app
 ├── apps.json
 ├── settings.json
 ├── Apps/
 └── Cache/
 ```
 
-When Azure Artifact Signing is enabled, Windows packages are Authenticode-signed via the GitHub Environment **`signing`** (OIDC subject `repo:…/quiver:environment:signing`, so tag builds can sign the same way as `main`). To verify a signed `Quiver.exe`: right-click → Properties → Digital Signatures, or `Get-AuthenticodeSignature .\Quiver.exe` in PowerShell.
-
-## Usage
+## Basic Usage
 
 1. Launch the application
-2. The launcher will automatically check for updates on startup
-3. Browse your app library through the interface
-4. Select an app and click "Download/Launch" to use it
+2. On first launch, browse the Quiver Community App Catalog lists (internet required) and use **Review** or **View** to add apps to your library. You can also add apps later with **+ Add New Entry**. Your library is stored in local [`apps.json`](apps.json)
+3. Browse your app library in the Library view
+4. Click the Download/Launch button on the app/game you want to use
 
-## Local Development
-
-When building and running from source, Quiver is **not** a Velopack install, so self-update checks no-op (and Debug builds always skip automatic checks). Set `Quiver_SKIP_UPDATES=1` (or `true`) to skip automatic checks in Release local runs as well.
-
-```powershell
-# Debug — no env var needed
-dotnet run --project Quiver.csproj -c Debug
-
-# Release local testing
-$env:Quiver_SKIP_UPDATES = "1"
-dotnet run --project Quiver.csproj -c Release
-```
-
-User data for unpackaged Windows debug builds still lives beside the build output. Unpackaged macOS/Linux runs (no Velopack AppImage/`.app`) use the OS app-support fallbacks (`~/Library/Application Support/Quiver/` or `~/.local/share/Quiver/`).
-
-### Automated tests
-
-Fast local run (excludes the slow publish integration test; finishes in seconds):
-
-```powershell
-dotnet test Quiver.sln -c Release --filter "Category!=Slow" --logger "console;verbosity=normal"
-```
-
-Full suite including publish integration test (matches CI; the publish test can take several minutes):
-
-```powershell
-dotnet test Quiver.sln -c Release
-```
-
-Run only the slow publish packaging test:
-
-```powershell
-dotnet test Quiver.sln -c Release --filter "Category=Slow"
-```
-
-Test categories include catalog merge and sync, settings store round-trip, launcher version helpers, Windows runner command building, download asset selection, game status checks, ViewModel sorting/catalog helpers, GameManager hide/filter behavior, and Avalonia headless smoke tests.
-
-Collect coverage locally with:
-
-```powershell
-dotnet test Quiver.sln -c Release --filter "Category!=Slow" --collect:"XPlat Code Coverage"
-```
+Catalog lists refresh on startup and via **Refresh All Sources**. New lists in the [community catalog repo](https://github.com/tgeorgiadis/quiver-community-app-catalog) appear automatically.
 
 ## Configuration
 
@@ -153,14 +106,6 @@ To avoid hitting API rate limits, you can provide personal access tokens in **Se
 - **GitLab (optional):** Create a personal access token with `read_api` at [GitLab personal access tokens](https://gitlab.com/-/user_settings/personal_access_tokens). Paste it into **GitLab API Token**. Public gitlab.com releases work without a token.
 
 Do not share your tokens.
-
-### apps.json and App Catalog
-
-Fresh installs ship with an **empty** local [`apps.json`](apps.json). That file is your personal library — add apps from **App Catalog → Review** or with **+ Add New Entry**.
-
-On first launch, Quiver shows a short welcome dialog, then opens **App Catalog**. An internet connection is required the first time to fetch the community catalog index and list contents from GitHub. Browse the available lists, then use **Review** or **View** on a source to add apps to your library.
-
-Community catalog lists are loaded from the remote index on startup and **Refresh All Sources**. New lists added to the [community catalog repo](https://github.com/tgeorgiadis/quiver-community-app-catalog) appear automatically without a Quiver app update. After a successful fetch, list contents are cached locally for offline review.
 
 ### Mods (Thunderstore & GameBanana)
 
@@ -173,7 +118,7 @@ Optional `mods.layout`:
 | *(omitted)* / `flat` | Extract archive paths as-is into the mods folder (default; typical for Thunderstore `.nrm` packs). |
 | `folderPerMod` | If the archive has payload files at its root, wrap everything in a folder named from the download filename (e.g. `Music-FRLG.zip` → `mods/Music-FRLG/`). Archives that already use a top-level folder are left unchanged. |
 
-Use `folderPerMod` for apps that expect each mod in its own subfolder (e.g. Pokemon Gen 1 Recomp). Enable it in the catalog JSON or with **Install each mod into its own folder** when editing an entry.
+Use `folderPerMod` for apps that expect each mod in its own subfolder. Enable it in the catalog JSON or with **Install each mod into its own folder** when editing an entry.
 
 **Source URL formats** (one per line in Mod Sources):
 
@@ -186,39 +131,15 @@ GameBanana URLs are detected automatically (no `gamebanana|` prefix required). O
 
 **Browse & search**
 
-- **Thunderstore** uses the cyberstorm listing API (paged browse + `q=` search), preferring the community **Mods** section when available. Install/update resolves version and download URL via the experimental package API.
-- **GameBanana** browses via Index pages and searches via Subfeed (`_sName`), keeping `_sModelName == Mod` only.
 - Both sources support infinite scroll / load-more (mouse or gamepad). Multi-source search merges pages from each provider.
 - Content-rated / NSFW mods are **hidden by default**. Use the **Include NSFW** chip to show them (persisted in settings).
 - GameBanana mods with multiple download files show a file picker on Install/Update. **Zip** and **7z** archives are supported.
 
-### Announcement banner
-
-Quiver can show a dismissible sky-blue banner under the top bar with release notes or other notices. The text is loaded from a remote JSON file on startup — edit and push that file to announce something **without shipping a Quiver release**.
-
-Remote URL:
-
-`https://raw.githubusercontent.com/tgeorgiadis/quiver/main/announcement.json`
-
-Repo file: [`announcement.json`](announcement.json)
-
-```json
-{
-  "id": "2026-07-28-mods",
-  "enabled": true,
-  "message": "Your announcement text here."
-}
-```
-
-- Change **`message`** to update the copy.
-- Change **`id`** when you want the banner to appear again for users who already dismissed the previous notice (dismiss is forever **per id**).
-- Set **`enabled`: false** to hide the banner for everyone without waiting for dismissals.
-
-Remote index URL (the only catalog URL built into Quiver):
+Remote index URL (the only catalog URL built into Quiver Launcher):
 
 `https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/index.json`
 
-List files live under `community-app-catalog/` in the [community catalog repo](https://github.com/tgeorgiadis/quiver-community-app-catalog). Quiver discovers them from the index at runtime. Each list file carries its own metadata (`name`, `description`, `version`) plus an `apps` array.
+List files live under `community-app-catalog/` in the [community catalog repo](https://github.com/tgeorgiadis/quiver-community-app-catalog). Quiver Launcher discovers them from the index at runtime. Each list file carries its own metadata (`name`, `description`, `version`) plus an `apps` array.
 
 #### Community catalog index (v2)
 
@@ -256,7 +177,7 @@ Each list file defines the list metadata and its apps:
 }
 ```
 
-Quiver reads `name`, `description`, and `version` from the list file when a source is fetched or refreshed.
+Quiver Launcher reads `name`, `description`, and `version` from the list file when a source is fetched or refreshed.
 
 Use **App Catalog** anytime to review community entries and add the ones you want to your library. Installed app files on disk are never deleted automatically when you remove catalog entries or sources.
 
@@ -264,7 +185,7 @@ Use **App Catalog** anytime to review community entries and add the ones you wan
 
 You can add more catalogs in **App Catalog → Add Source** (remote raw GitHub URL or local file path). Each source is reviewed separately; your local `apps.json` takes priority when the same repository appears in multiple places.
 
-When a subscribed list changes remotely, Quiver detects the diff on startup or when you click **Refresh All Sources**, then shows **Review changes** with per-app actions (Add, Replace, Merge, Ignore, Hide). Use **Not in library** to browse catalog apps you haven't added yet (including ignored ones). When every review item is synced or resolved, the catalog version is marked reviewed automatically. Use **Skip & mark reviewed** only to dismiss remaining items without syncing them.
+When a subscribed list changes remotely, Quiver Launcher detects the diff on startup or when you click **Refresh All Sources**, then shows **Review changes** with per-app actions (Add, Replace, Merge, Ignore, Hide). Use **Not in library** to browse catalog apps you haven't added yet (including ignored ones). When every review item is synced or resolved, the catalog version is marked reviewed automatically. Use **Skip & mark reviewed** only to dismiss remaining items without syncing them.
 
 See the [Quiver Community App Catalog](https://github.com/tgeorgiadis/quiver-community-app-catalog) repo for sample list format and the canonical community catalog.
 
@@ -274,7 +195,7 @@ Each app entry requires the following properties:
 
 - **`name`** - The display name of the app as it appears in the launcher
 - **`repository`** - The repository path in the format `username/repository` (GitHub) or `namespace/project` (GitLab). On **Edit App Entry**, repository and repository source can be changed to retarget releases (e.g. move an app to GitLab); the install folder is unchanged unless **Folder Name** is edited.
-- **`repositorySource`** *(optional)* - `github` (default when omitted) or `gitlab`. Older Quiver versions ignore this field and treat entries as GitHub-only.
+- **`repositorySource`** *(optional)* - `github` (default when omitted) or `gitlab`. Older Quiver Launcher versions ignore this field and treat entries as GitHub-only.
 - **`folderName`** - The folder name where the app will be downloaded and installed
 - **`appIconUrl`** - URL of the app's icon image. If null, a default icon will be used.
 
@@ -297,9 +218,9 @@ Each app entry requires the following properties:
         },
         {
             "name": "GitLab Example App",
-            "repository": "bighead.0/ladxhd_updated",
+            "repository": "namespace/example-project",
             "repositorySource": "gitlab",
-            "folderName": "LADXHD",
+            "folderName": "GitLabExampleApp",
             "appIconUrl": null
         }
     ]
@@ -311,3 +232,48 @@ Each app entry requires the following properties:
 If you encounter any issues or have questions:
 - [Open an issue](https://github.com/tgeorgiadis/quiver/issues)
 - Check existing issues for solutions
+- Join the [Discord server](https://discord.gg/5XRThpWHGk)
+
+
+## For Developers: Local Development
+
+When building and running from source, Quiver Launcher is not a packaged release install, so self-update checks no-op (and Debug builds always skip automatic checks). Set `QuiverLauncher_SKIP_UPDATES=1` (or `true`) to skip automatic checks in Release local runs as well.
+
+```powershell
+# Debug: no env var needed
+dotnet run --project QuiverLauncher.csproj -c Debug
+
+# Release local testing
+$env:QuiverLauncher_SKIP_UPDATES = "1"
+dotnet run --project QuiverLauncher.csproj -c Release
+```
+
+User data for unpackaged Windows debug builds still lives beside the build output. Unpackaged macOS/Linux runs (no AppImage / `.app` package) use the OS app-support fallbacks (`~/Library/Application Support/QuiverLauncher/` or `~/.local/share/QuiverLauncher/`).
+
+### Automated tests
+
+Fast local run (excludes the slow publish integration test; finishes in seconds):
+
+```powershell
+dotnet test QuiverLauncher.sln -c Release --filter "Category!=Slow" --logger "console;verbosity=normal"
+```
+
+Full suite including publish integration test (matches CI; the publish test can take several minutes):
+
+```powershell
+dotnet test QuiverLauncher.sln -c Release
+```
+
+Run only the slow publish packaging test:
+
+```powershell
+dotnet test QuiverLauncher.sln -c Release --filter "Category=Slow"
+```
+
+Test categories include catalog merge and sync, settings store round-trip, launcher version helpers, Windows runner command building, download asset selection, game status checks, ViewModel sorting/catalog helpers, GameManager hide/filter behavior, and Avalonia headless smoke tests.
+
+Collect coverage locally with:
+
+```powershell
+dotnet test QuiverLauncher.sln -c Release --filter "Category!=Slow" --collect:"XPlat Code Coverage"
+```

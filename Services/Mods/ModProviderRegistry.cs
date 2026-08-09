@@ -1,7 +1,7 @@
-using Quiver.Services.Mods.Providers.GameBanana;
-using Quiver.Services.Mods.Providers.Thunderstore;
+using QuiverLauncher.Services.Mods.Providers.GameBanana;
+using QuiverLauncher.Services.Mods.Providers.Thunderstore;
 
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 public sealed class ModProviderRegistry
 {

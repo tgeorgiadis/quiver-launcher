@@ -4,7 +4,7 @@ using Velopack.Exceptions;
 using Velopack.Locators;
 using Velopack.Sources;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Quiver self-updates via Velopack + GitHub Releases.
@@ -83,7 +83,7 @@ public sealed class VelopackUpdateService
 #if DEBUG
         return true;
 #else
-        var skip = Environment.GetEnvironmentVariable("Quiver_SKIP_UPDATES");
+        var skip = Environment.GetEnvironmentVariable("QuiverLauncher_SKIP_UPDATES");
         return string.Equals(skip, "1", StringComparison.OrdinalIgnoreCase)
             || string.Equals(skip, "true", StringComparison.OrdinalIgnoreCase);
 #endif

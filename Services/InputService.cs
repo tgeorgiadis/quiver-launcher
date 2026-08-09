@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Quiver.Services
+namespace QuiverLauncher.Services
 {
     public class InputService : IDisposable
     {

@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Layout;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Layout/focus helpers for Edit Tags so Steam Deck Gaming Mode OSK

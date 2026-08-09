@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AssemblyName>QuiverLauncher.Core</AssemblyName>
+		<RootNamespace>QuiverLauncher.Core</RootNamespace>
+		<PublishSingleFile>false</PublishSingleFile>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="SharpCompress" Version="0.50.1" />
+	</ItemGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="QuiverLauncher.Tests" />
+	</ItemGroup>
+</Project>

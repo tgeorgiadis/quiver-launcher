@@ -1,4 +1,4 @@
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 /// <summary>Options for paged listing / remote search requests.</summary>
 public sealed class ModListOptions

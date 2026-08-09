@@ -1,12 +1,19 @@
-# Quiver v3.0.0-rc.1 (prerelease)
+# Quiver Launcher v3.0.0-rc.2 (prerelease)
 
-Major packaging release: Quiver now ships with [Velopack](https://docs.velopack.io/) for self-update across Windows / Linux / macOS. Marked as a GitHub **pre-release** for testing. Not promoted to `/releases/latest`.
+Major packaging release: Quiver Launcher now ships with [Velopack](https://docs.velopack.io/) for self-update across Windows / Linux / macOS. Marked as a GitHub **pre-release** for testing. Not promoted to `/releases/latest`.
+
+## Changes since rc.1
+
+- Rebranded to **Quiver Launcher** (`QuiverLauncher` pack id and binaries)
+- Linux ships bare `.AppImage` downloads (no `.tar.gz` wrapper); mark executable after download
+- Library app menus stay inside the window on far-right cards
+- Linux/macOS startup no longer auto-applies shared Velopack updates across separate installs
 
 ## Breaking: upgrading from 2.4.x
 
 In-app update from **2.4.2 or older** cannot install Velopack 3.0. Download a fresh portable from this release and copy your library over manually.
 
-**See [MIGRATING.md](https://github.com/tgeorgiadis/quiver/blob/v3.0.0-rc.1/MIGRATING.md)** for what to copy (`apps.json`, `settings.json`, `Apps/`) and per-OS folder layouts.
+**See [MIGRATING.md](https://github.com/tgeorgiadis/quiver/blob/v3.0.0-rc.2/MIGRATING.md)** for what to copy (`apps.json`, `settings.json`, `Apps/`) and per-OS folder layouts.
 
 ## Why Velopack?
 
@@ -16,16 +23,16 @@ In-app update from **2.4.2 or older** cannot install Velopack 3.0. Download a fr
 
 ## Distribution
 
-- **Windows (primary):** `Quiver-win-Portable.zip`. Extract anywhere. Self-updating. Library data stays in the folder root (sibling of `current/`).
-- **Linux:** `Quiver-linux-*.tar.gz` (x64 / ARM64) containing the AppImage in a folder. Extract, then run the AppImage. Library beside the AppImage when that folder is writable. Otherwise `~/.local/share/Quiver/`.
-- **macOS:** `Quiver-osx-*-Portable.zip` (x64 / ARM64). Library beside `Quiver.app` when that folder is writable. Otherwise `~/Library/Application Support/Quiver/`.
+- **Windows (primary):** `QuiverLauncher-win-Portable.zip`. Extract anywhere. Self-updating. Library data stays in the folder root (sibling of `current/`).
+- **Linux:** `QuiverLauncher-*-linux-*.AppImage` (x64 / ARM64). Put it in its own folder (library files are created beside it), mark executable (`chmod +x` or file Properties), then run. Otherwise `~/.local/share/QuiverLauncher/` if that folder is not writable.
+- **macOS:** `QuiverLauncher-osx-*-Portable.zip` (x64 / ARM64). Library beside `QuiverLauncher.app` when that folder is writable. Otherwise `~/Library/Application Support/QuiverLauncher/`.
 
-Also includes Velopack feed files (`releases.*.json`, `.nupkg`) required for in-app updates. Setup installers are omitted (portable-first). Bare Linux AppImages are not published — use the `.tar.gz`.
+Also includes Velopack feed files (`releases.*.json`, `.nupkg`) required for in-app updates. Setup installers are omitted (portable-first).
 
 ## Updates (3.0 and later)
 
-- Self-update via Velopack and GitHub Releases (no separate `Quiver.Updater.exe` or apply scripts)
-- Prerelease Quiver updates: opt-in in Settings → Advanced (**Include prerelease Quiver updates**). RC builds (version with `-`) already follow prereleases automatically.
+- Self-update via Velopack and GitHub Releases (no separate updater helper exe or apply scripts)
+- Prerelease Quiver Launcher updates: opt-in in Settings → Advanced (**Include prerelease Quiver Launcher updates**). RC builds (version with `-`) already follow prereleases automatically.
 - User data is never stored inside the replaced app content (`current/`, AppImage mount, or `.app` bundle)
 
 ## App releases from GitLab
@@ -40,6 +47,6 @@ Also includes Velopack feed files (`releases.*.json`, `.nupkg`) required for in-
 When Azure Artifact Signing is enabled, CI signs Windows packages during `vpk pack` using the GitHub Environment **`signing`** (OIDC subject `repo:…/quiver:environment:signing`).
 
 ```powershell
-Get-AuthenticodeSignature .\Quiver.exe
+Get-AuthenticodeSignature .\QuiverLauncher.exe
 # Expect Status = Valid when signed builds are published
 ```

@@ -1,4 +1,4 @@
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Detects Steam Deck / SteamOS Gaming Mode (Gamescope) sessions.

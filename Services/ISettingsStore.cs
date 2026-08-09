@@ -1,4 +1,4 @@
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public interface ISettingsStore
 {

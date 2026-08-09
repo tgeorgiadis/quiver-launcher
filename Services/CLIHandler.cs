@@ -1,7 +1,7 @@
-using Quiver.Core.Models;
-using Quiver.Core.Services;
-using Quiver.Models;
-using Quiver.Services;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Core.Services;
+using QuiverLauncher.Models;
+using QuiverLauncher.Services;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -11,7 +11,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace Quiver
+namespace QuiverLauncher
 {
     public class CLIHandler
     {
@@ -20,7 +20,7 @@ namespace Quiver
         private const ConsoleColor ColorWarning = ConsoleColor.Yellow;
         private const ConsoleColor ColorError = ConsoleColor.Red;
         private const ConsoleColor ColorMuted = ConsoleColor.DarkGray;
-        private static readonly QuiverProfile Profile = QuiverProfile.Instance;
+        private static readonly QuiverLauncherProfile Profile = QuiverLauncherProfile.Instance;
         private static readonly string Repository = Profile.Repository;
         private GameManager? _gameManager;
         private string _currentVersion = "Unknown";
@@ -230,7 +230,7 @@ namespace Quiver
 
         private void ShowHelp()
         {
-            Console.WriteLine("Usage: Quiver [command] [game name]");
+            Console.WriteLine("Usage: QuiverLauncher [command] [game name]");
             Console.WriteLine();
             WriteColor("Commands:", ColorTitle);
             Console.WriteLine();
@@ -244,10 +244,10 @@ namespace Quiver
             Console.WriteLine();
             WriteColor("Examples:", ColorMuted);
             Console.WriteLine();
-            Console.WriteLine("  Quiver --list");
-            Console.WriteLine("  Quiver --download Banjo64");
-            Console.WriteLine("  Quiver --run Banjo64");
-            Console.WriteLine("  Quiver -r \"Mario Kart 64\"");
+            Console.WriteLine("  QuiverLauncher --list");
+            Console.WriteLine("  QuiverLauncher --download Banjo64");
+            Console.WriteLine("  QuiverLauncher --run Banjo64");
+            Console.WriteLine("  QuiverLauncher -r \"Mario Kart 64\"");
             Console.WriteLine();
         }
 
@@ -420,7 +420,7 @@ namespace Quiver
                             // If running the CLI version, try to find the GUI version
                             if (exePath.Contains("CLI", StringComparison.OrdinalIgnoreCase))
                             {
-                                var possibleGuiExe = Path.Combine(exeDir, "Quiver.exe");
+                                var possibleGuiExe = Path.Combine(exeDir, "QuiverLauncher.exe");
                                 if (File.Exists(possibleGuiExe))
                                 {
                                     guiExe = possibleGuiExe;
@@ -761,7 +761,7 @@ namespace Quiver
         {
             try
             {
-                WriteColor("→ Checking for Quiver updates (Velopack)...", ColorMuted);
+                WriteColor("→ Checking for Quiver Launcher updates (Velopack)...", ColorMuted);
                 Console.WriteLine();
 
                 var settings = AppSettings.Load();

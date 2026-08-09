@@ -1,8 +1,8 @@
 using System.Collections.ObjectModel;
-using Quiver.Models;
-using Quiver.Services;
+using QuiverLauncher.Models;
+using QuiverLauncher.Services;
 
-namespace Quiver.ViewModels;
+namespace QuiverLauncher.ViewModels;
 
 public class GameGridViewModel
 {

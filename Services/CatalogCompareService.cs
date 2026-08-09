@@ -1,9 +1,9 @@
 using System.ComponentModel;
-using Quiver.Core.Services;
-using Quiver.Models;
-using Quiver.Services.Mods;
+using QuiverLauncher.Core.Services;
+using QuiverLauncher.Models;
+using QuiverLauncher.Services.Mods;
 
-namespace Quiver.Services
+namespace QuiverLauncher.Services
 {
     public enum CatalogSyncStatus
     {

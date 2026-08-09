@@ -9,12 +9,12 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Quiver.Core.Models;
-using Quiver.Core.Services;
-using Quiver.Models;
-using Quiver.Services;
-using Quiver.Services.Mods;
-using Quiver.ViewModels;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Core.Services;
+using QuiverLauncher.Models;
+using QuiverLauncher.Services;
+using QuiverLauncher.Services.Mods;
+using QuiverLauncher.ViewModels;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -27,7 +27,7 @@ using Avalonia.Platform;
 using NAudio.Wave;
 #endif
 
-namespace Quiver
+namespace QuiverLauncher
 {
     public enum MainViewMode
     {
@@ -150,7 +150,7 @@ namespace Quiver
             get
             {
                 if (IsCheckingUpdates)
-                    return "Checking Quiver and apps…";
+                    return "Checking Quiver Launcher and apps…";
 
                 var lastChecked = GetLastCheckedText();
                 if (PendingUpdatesCount > 0)
@@ -159,21 +159,21 @@ namespace Quiver
                         ? "1 update available"
                         : $"{PendingUpdatesCount} updates available";
                     return string.IsNullOrEmpty(lastChecked)
-                        ? $"Check for Quiver and app updates · {updateLabel}"
-                        : $"Check for Quiver and app updates · {updateLabel} · {lastChecked}";
+                        ? $"Check for Quiver Launcher and app updates · {updateLabel}"
+                        : $"Check for Quiver Launcher and app updates · {updateLabel} · {lastChecked}";
                 }
 
                 if (!string.IsNullOrEmpty(_lastLauncherCheckNote))
                 {
                     return string.IsNullOrEmpty(lastChecked)
-                        ? $"Check for Quiver and app updates · {_lastLauncherCheckNote}"
-                        : $"Check for Quiver and app updates · {_lastLauncherCheckNote} · {lastChecked}";
+                        ? $"Check for Quiver Launcher and app updates · {_lastLauncherCheckNote}"
+                        : $"Check for Quiver Launcher and app updates · {_lastLauncherCheckNote} · {lastChecked}";
                 }
 
                 if (!string.IsNullOrEmpty(lastChecked))
-                    return $"Check for Quiver and app updates · Up to date · {lastChecked}";
+                    return $"Check for Quiver Launcher and app updates · Up to date · {lastChecked}";
 
-                return "Check for Quiver and app updates";
+                return "Check for Quiver Launcher and app updates";
             }
         }
 
@@ -1889,7 +1889,7 @@ namespace Quiver
             PreserveLibraryGamepadFocusWhileOpeningMenu();
 
             contextMenu.PlacementTarget = anchor;
-            contextMenu.Placement = PlacementMode.Bottom;
+            contextMenu.Placement = PlacementMode.BottomEdgeAlignedRight;
             AttachOptionsMenuClosedHandler(contextMenu, anchor);
             contextMenu.Open(anchor);
         }
@@ -1944,18 +1944,7 @@ namespace Quiver
                 return;
             }
 
-            contextMenu.PlacementTarget = placementTarget;
-            contextMenu.Placement = PlacementMode.Bottom;
-            if (double.IsNaN(contextMenu.MaxHeight) || contextMenu.MaxHeight <= 0)
-            {
-                var availableHeight = Bounds.Height > 0 ? Bounds.Height - 120 : 560;
-                contextMenu.MaxHeight = Math.Max(240, availableHeight);
-            }
-
-            AttachOptionsMenuClosedHandler(contextMenu, placementTarget);
-            GamepadContextMenuNavigation.Attach(contextMenu);
-            PreserveLibraryGamepadFocusWhileOpeningMenu();
-            contextMenu.Open(placementTarget);
+            OpenContextMenu(placementTarget, contextMenu);
             e.Handled = true;
         }
 
@@ -2480,14 +2469,7 @@ namespace Quiver
         {
             var button = sender as Button;
             if (button?.ContextMenu != null)
-            {
-                button.ContextMenu.PlacementTarget = button;
-                button.ContextMenu.Placement = PlacementMode.Bottom;
-                AttachOptionsMenuClosedHandler(button.ContextMenu, button);
-                GamepadContextMenuNavigation.Attach(button.ContextMenu);
-                PreserveLibraryGamepadFocusWhileOpeningMenu();
-                button.ContextMenu.Open();
-            }
+                OpenContextMenu(button, button.ContextMenu);
         }
 
         private async void ContinueButton_Click(object sender, RoutedEventArgs e)
@@ -3453,7 +3435,7 @@ namespace Quiver
 
                 var updateQuiverButton = new Button
                 {
-                    Content = "Update Quiver",
+                    Content = "Update Quiver Launcher",
                     MinWidth = 110,
                     Margin = new Thickness(0, 0, 8, 0),
                 };
@@ -4262,7 +4244,7 @@ namespace Quiver
                 var autoUpdated = await ApplyAutoUpdatesAsync(showFailureSummary: promptForReview && IsVisible);
                 RefreshUpdateCheckStatus(DateTime.Now);
 
-                _lastLauncherCheckNote = launcherResult.CheckSucceeded ? null : "Could not check Quiver";
+                _lastLauncherCheckNote = launcherResult.CheckSucceeded ? null : "Could not check Quiver Launcher";
                 NotifyUpdateCheckUiProperties();
 
                 if (!promptForReview || !IsVisible)
@@ -4711,7 +4693,7 @@ namespace Quiver
 
             var result = await ShowMessageBoxAsync(
                 $"Are you sure you want to delete {game.Name}?\n\n" +
-                "Quiver will attempt to move game files to your system's Recycle Bin / Trash so you can restore them if needed. " +
+                "Quiver Launcher will attempt to move game files to your system's Recycle Bin / Trash so you can restore them if needed. " +
                 "Portable installs may include save data in the same folder.",
                 "Confirm Deletion",
                 isQuestion: true,
@@ -11259,18 +11241,9 @@ namespace Quiver
             else if (focused is Button button)
             {
                 if (button.ContextMenu != null)
-                {
-                    button.ContextMenu.PlacementTarget = button;
-                    button.ContextMenu.Placement = PlacementMode.Bottom;
-                    AttachOptionsMenuClosedHandler(button.ContextMenu, button);
-                    GamepadContextMenuNavigation.Attach(button.ContextMenu);
-                    PreserveLibraryGamepadFocusWhileOpeningMenu();
-                    button.ContextMenu.Open();
-                }
+                    OpenContextMenu(button, button.ContextMenu);
                 else
-                {
                     button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                }
             }
             else if (focused is CheckBox checkBox)
             {
@@ -11959,7 +11932,7 @@ namespace Quiver
                             {
                                 Source = new Avalonia.Media.Imaging.Bitmap(
                                     Avalonia.Platform.AssetLoader.Open(
-                                        new Uri($"avares://Quiver/Assets/{iconPath}")))
+                                        new Uri($"avares://QuiverLauncher/Assets/{iconPath}")))
                             }
                         };
                         titlePanel.Children.Add(iconRect);
@@ -12230,7 +12203,7 @@ namespace Quiver
                     return "No changelog available for this release.";
 
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("User-Agent", "Quiver");
+                client.DefaultRequestHeaders.Add("User-Agent", "QuiverLauncher");
 
                 if (RepositorySourceHelper.IsGitLab(game.RepositorySource))
                 {
@@ -12357,7 +12330,7 @@ namespace Quiver
                     return;
                 }
 
-                await Quiver.Services.ShortcutHelper.CreateGameShortcutAsync(
+                await QuiverLauncher.Services.ShortcutHelper.CreateGameShortcutAsync(
                     game,
                     launcherPath,
                     _gameManager.CacheFolder);
@@ -12389,9 +12362,9 @@ namespace Quiver
                     return;
                 }
 
-                string resultMessage = Quiver.Services.ShortcutHelper.IsSteamRunning()
-                    ? Quiver.Services.ShortcutHelper.QueueGameAddToSteam(game, launcherPath)
-                    : Quiver.Services.ShortcutHelper.AddGameToSteam(
+                string resultMessage = QuiverLauncher.Services.ShortcutHelper.IsSteamRunning()
+                    ? QuiverLauncher.Services.ShortcutHelper.QueueGameAddToSteam(game, launcherPath)
+                    : QuiverLauncher.Services.ShortcutHelper.AddGameToSteam(
                         game,
                         launcherPath,
                         _gameManager.CacheFolder);

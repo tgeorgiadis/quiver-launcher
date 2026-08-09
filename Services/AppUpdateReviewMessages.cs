@@ -1,13 +1,13 @@
-using Quiver.Models;
+using QuiverLauncher.Models;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class AppUpdateReviewMessages
 {
     public static string FormatQuiverOnlyUpdateMessage(string? launcherVersion)
     {
         var version = FormatLauncherVersion(launcherVersion);
-        return $"Quiver update {version} is available.\n\nUpdate Quiver now?";
+        return $"Quiver Launcher update {version} is available.\n\nUpdate Quiver Launcher now?";
     }
 
     public static string FormatCombinedUpdatesMessage(
@@ -25,7 +25,7 @@ public static class AppUpdateReviewMessages
 
         var appLines = ordered.Select(FormatGameUpdateLine);
         return
-            $"Quiver update {version} is available.\n\n" +
+            $"Quiver Launcher update {version} is available.\n\n" +
             appHeader + "\n\n" +
             string.Join('\n', appLines) +
             "\n\nWhat would you like to update?";

@@ -1,6 +1,6 @@
-# Migrating to Quiver 3.0
+# Migrating to Quiver Launcher 3.0
 
-Quiver 3.0 uses [Velopack](https://docs.velopack.io/) for packaging and self-updates. If you are on **2.4.2 or older**, the in-app updater cannot update you to 3.0. You will have to download the 3.0 version from [GitHub Quiver releases](https://github.com/tgeorgiadis/quiver/releases). Apologies for the inconvenience, but I hope it will be worth it in the long run.
+Quiver Launcher 3.0 uses [Velopack](https://docs.velopack.io/) for packaging and self-updates. If you are on **2.4.2 or older**, the in-app updater cannot update you to 3.0. You will have to download the 3.0 version from [GitHub Quiver Launcher releases](https://github.com/tgeorgiadis/quiver/releases). Apologies for the inconvenience, but I hope it will be worth it in the long run.
 
 ## Why this change?
 
@@ -12,10 +12,10 @@ Previously Quiver updated itself by downloading a zip and then running a small h
 
 ## How to migrate
 
-1. Download Quiver 3.0 for your OS from [Releases](https://github.com/tgeorgiadis/quiver/releases) into a **new** folder.
-2. Quit the old Quiver if it is running.
+1. Download Quiver Launcher 3.0 (or whatever the latest version is) for your OS from [Releases](https://github.com/tgeorgiadis/quiver/releases) into a **new** folder.
+2. Quit the old Quiver / Quiver Launcher if it is running.
 3. Copy `apps.json`, `settings.json`, and `Apps/` from your current folder into the new one (see your OS below). `Cache/` is optional to copy over.
-4. Run the new Quiver and confirm your library looks right, then delete the old install.
+4. Run the new Quiver Launcher and confirm your library looks right, then delete the old install.
 
 ### Windows
 
@@ -33,8 +33,8 @@ Quiver/
 **New (3.0)** — paste into the outer folder (not into `current/`):
 
 ```
-Quiver/
-├── Quiver.exe
+QuiverLauncher/
+├── QuiverLauncher.exe
 ├── current/           # app binaries — do not put library here
 ├── apps.json          ← paste
 ├── settings.json      ← paste
@@ -55,11 +55,11 @@ MyFolder/
 └── Cache/             ← optional
 ```
 
-**New (3.0)** — extract `Quiver-linux-*.tar.gz`, then paste beside the AppImage (or into `~/.local/share/Quiver/` if that folder is not writable):
+**New (3.0)** — put the AppImage in its own folder (it creates files beside itself), mark it executable, then paste beside it (or into `~/.local/share/QuiverLauncher/` if that folder is not writable):
 
 ```
-Quiver-linux-x64/
-├── Quiver-x.y.z-linux-x64.AppImage
+MyFolder/
+├── QuiverLauncher-x.y.z-linux-x64.AppImage
 ├── apps.json          ← paste
 ├── settings.json      ← paste
 ├── Apps/              ← paste
@@ -79,11 +79,11 @@ MyFolder/
 └── Cache/             ← optional
 ```
 
-**New (3.0)** — paste beside `Quiver.app` (or into `~/Library/Application Support/Quiver/` if the parent folder is not writable):
+**New (3.0)** — paste beside `QuiverLauncher.app` (or into `~/Library/Application Support/QuiverLauncher/` if the parent folder is not writable):
 
 ```
 MyFolder/
-├── Quiver.app
+├── QuiverLauncher.app
 ├── apps.json          ← paste
 ├── settings.json      ← paste
 ├── Apps/              ← paste
@@ -92,4 +92,4 @@ MyFolder/
 
 ## After migrating
 
-You'll be able to update from within Quiver again
+You'll be able to update from within Quiver Launcher again

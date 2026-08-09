@@ -1,17 +1,17 @@
-using Quiver.Core.Models;
-using Quiver.Core.Services;
-using Quiver.Models;
-using Quiver.Services.Mods;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Core.Services;
+using QuiverLauncher.Models;
+using QuiverLauncher.Services.Mods;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
 
-namespace Quiver.Services
+namespace QuiverLauncher.Services
 {
     public class GameManager : INotifyPropertyChanged, IDisposable
     {
-        private static readonly QuiverProfile Profile = QuiverProfile.Instance;
+        private static readonly QuiverLauncherProfile Profile = QuiverLauncherProfile.Instance;
         private readonly ISettingsStore _settingsStore;
         public AppSettings _settings = new();
         private readonly HttpClient _httpClient;
@@ -74,13 +74,13 @@ namespace Quiver.Services
                 _settings = new AppSettings();
             }
 
-            QuiverPaths.EnsureUserDataRootExists();
+            QuiverLauncherPaths.EnsureUserDataRootExists();
 
             _appsFolder = !string.IsNullOrEmpty(_settings?.AppsPath)
                 ? _settings.AppsPath
-                : QuiverPaths.DefaultAppsDirectory;
+                : QuiverLauncherPaths.DefaultAppsDirectory;
 
-            _cacheFolder = QuiverPaths.CacheDirectory;
+            _cacheFolder = QuiverLauncherPaths.CacheDirectory;
 
             try
             {
@@ -283,7 +283,7 @@ namespace Quiver.Services
                 }
                 else
                 {
-                    targetPath = QuiverPaths.DefaultAppsDirectory;
+                    targetPath = QuiverLauncherPaths.DefaultAppsDirectory;
                     Directory.CreateDirectory(targetPath);
                 }
 
@@ -299,7 +299,7 @@ namespace Quiver.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error updating apps folder: {ex.Message}");
-                _appsFolder = QuiverPaths.DefaultAppsDirectory;
+                _appsFolder = QuiverLauncherPaths.DefaultAppsDirectory;
                 Directory.CreateDirectory(_appsFolder);
                 throw;
             }

@@ -7,10 +7,10 @@ using Avalonia.Threading;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Quiver.Services;
+using QuiverLauncher.Services;
 using Velopack;
 
-namespace Quiver;
+namespace QuiverLauncher;
 
 public partial class App
 {
@@ -139,7 +139,7 @@ public partial class App
     {
         if (!isManualCheck && VelopackUpdateService.ShouldSkipAutomaticSelfUpdate())
         {
-            Trace.WriteLine("Skipping launcher self-update check (DEBUG build or Quiver_SKIP_UPDATES is set).");
+            Trace.WriteLine("Skipping launcher self-update check (DEBUG build or QuiverLauncher_SKIP_UPDATES is set).");
             return;
         }
 
@@ -230,7 +230,7 @@ public partial class App
             bool accepted = await ShowMessageBoxWithChoiceAsync(
                 message,
                 "Update Available",
-                confirmText: "Update Quiver",
+                confirmText: "Update Quiver Launcher",
                 dismissText: "Not now");
 
             if (!accepted)
@@ -273,7 +273,7 @@ public partial class App
         catch (Exception ex)
         {
             await Dispatcher.UIThread.InvokeAsync(() => progressWindow?.Close());
-            await ShowMessageBoxAsync($"Failed to update Quiver: {ex.Message}", "Update Error");
+            await ShowMessageBoxAsync($"Failed to update Quiver Launcher: {ex.Message}", "Update Error");
         }
     }
 

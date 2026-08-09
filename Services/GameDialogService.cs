@@ -8,9 +8,9 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Quiver;
+using QuiverLauncher;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class GameDialogService
 {

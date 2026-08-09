@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Quiver.Services.Mods.Providers.GameBanana;
+namespace QuiverLauncher.Services.Mods.Providers.GameBanana;
 
 public static partial class GameBananaSourceParser
 {

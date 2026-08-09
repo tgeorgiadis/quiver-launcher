@@ -4,10 +4,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Quiver.Core.Models;
-using Quiver.Core.Services;
-using Quiver.Services;
-using Quiver.Services.Mods;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Core.Services;
+using QuiverLauncher.Services;
+using QuiverLauncher.Services.Mods;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -18,7 +18,7 @@ using System.Text;
 using System.Text.Json;
 using System.Linq;
 
-namespace Quiver.Models
+namespace QuiverLauncher.Models
 {
 
     public class GameInfo : INotifyPropertyChanged, IDisposable
@@ -470,12 +470,12 @@ namespace Quiver.Models
             {
                 var imagePath = Status switch
                 {
-                    GameStatus.NotInstalled => "avares://Quiver/Assets/Icons/button_download.png",
-                    GameStatus.Installed => "avares://Quiver/Assets/Icons/button_launch.png",
-                    GameStatus.UpdateAvailable => "avares://Quiver/Assets/Icons/button_update.png",
-                    GameStatus.Downloading => "avares://Quiver/Assets/Icons/button_loading.png",
-                    GameStatus.Installing => "avares://Quiver/Assets/Icons/button_loading.png",
-                    _ => "avares://Quiver/Assets/Icons/button_loading.png"
+                    GameStatus.NotInstalled => "avares://QuiverLauncher/Assets/Icons/button_download.png",
+                    GameStatus.Installed => "avares://QuiverLauncher/Assets/Icons/button_launch.png",
+                    GameStatus.UpdateAvailable => "avares://QuiverLauncher/Assets/Icons/button_update.png",
+                    GameStatus.Downloading => "avares://QuiverLauncher/Assets/Icons/button_loading.png",
+                    GameStatus.Installing => "avares://QuiverLauncher/Assets/Icons/button_loading.png",
+                    _ => "avares://QuiverLauncher/Assets/Icons/button_loading.png"
                 };
 
                 // Only create new bitmap if image path changed
@@ -1342,7 +1342,7 @@ namespace Quiver.Models
                 // Exclude false positives
                 if (!HasAnyOf(assetNameLower, "linux", "macos", "darwin", ".deb", ".rpm", ".appimage", ".dmg"))
                 {
-                    return "avares://Quiver/Assets/Icons/platform_win.png";
+                    return "avares://QuiverLauncher/Assets/Icons/platform_win.png";
                 }
             }
 
@@ -1353,7 +1353,7 @@ namespace Quiver.Models
                 // Exclude false positives
                 if (!HasAnyOf(assetNameLower, "linux", "windows", "win32", "win64", ".exe"))
                 {
-                    return "avares://Quiver/Assets/Icons/platform_mac.png";
+                    return "avares://QuiverLauncher/Assets/Icons/platform_mac.png";
                 }
             }
 
@@ -1363,7 +1363,7 @@ namespace Quiver.Models
                 // Exclude false positives
                 if (!HasAnyOf(assetNameLower, "windows", "win32", "win64", "macos", "osx", "darwin", ".exe", ".dmg"))
                 {
-                    return "avares://Quiver/Assets/Icons/platform_lin.png";
+                    return "avares://QuiverLauncher/Assets/Icons/platform_lin.png";
                 }
             }
 

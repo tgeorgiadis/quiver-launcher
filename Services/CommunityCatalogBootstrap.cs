@@ -1,7 +1,7 @@
 using System.Net.Http;
-using Quiver;
+using QuiverLauncher;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public sealed class CommunityCatalogBootstrap
 {

@@ -1,4 +1,4 @@
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 /// <summary>
 /// Downloads mod archives to a temp file so large packages are not buffered in a MemoryStream

@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace Quiver
+namespace QuiverLauncher
 {
     public class DoubleScaleConverter : IValueConverter
     {

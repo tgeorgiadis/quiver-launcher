@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Quiver.Services.Mods.Providers.Thunderstore;
+namespace QuiverLauncher.Services.Mods.Providers.Thunderstore;
 
 public static partial class ThunderstoreCommunityParser
 {

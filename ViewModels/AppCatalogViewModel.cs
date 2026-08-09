@@ -1,6 +1,6 @@
-using Quiver.Services;
+using QuiverLauncher.Services;
 
-namespace Quiver.ViewModels;
+namespace QuiverLauncher.ViewModels;
 
 public class AppCatalogViewModel
 {

@@ -1,7 +1,7 @@
-using Quiver.Models;
-using AppCatalogSource = Quiver.AppCatalogSource;
+using QuiverLauncher.Models;
+using AppCatalogSource = QuiverLauncher.AppCatalogSource;
 
-namespace Quiver.Services
+namespace QuiverLauncher.Services
 {
     public class CatalogDiff
     {

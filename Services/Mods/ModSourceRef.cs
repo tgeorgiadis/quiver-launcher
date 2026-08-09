@@ -1,4 +1,4 @@
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 /// <summary>Parsed, provider-normalized reference to a remote mod catalog.</summary>
 public sealed class ModSourceRef

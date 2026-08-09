@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class LauncherVersionService
 {

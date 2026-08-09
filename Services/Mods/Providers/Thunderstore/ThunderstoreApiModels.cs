@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Quiver.Services.Mods.Providers.Thunderstore;
+namespace QuiverLauncher.Services.Mods.Providers.Thunderstore;
 
 public sealed class ThunderstorePackageDto
 {

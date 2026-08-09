@@ -1,4 +1,4 @@
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class SettingsStoreProvider
 {
@@ -6,7 +6,7 @@ public static class SettingsStoreProvider
 
     public static ISettingsStore Default
     {
-        get => _default ??= new FileSettingsStore(QuiverPaths.SettingsJsonPath);
+        get => _default ??= new FileSettingsStore(QuiverLauncherPaths.SettingsJsonPath);
         set => _default = value;
     }
 }

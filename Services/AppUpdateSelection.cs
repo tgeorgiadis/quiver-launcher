@@ -1,7 +1,7 @@
-using Quiver.Core.Models;
-using Quiver.Models;
+using QuiverLauncher.Core.Models;
+using QuiverLauncher.Models;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class AppUpdateSelection
 {

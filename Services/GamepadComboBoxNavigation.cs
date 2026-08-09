@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public sealed class GamepadComboBoxNavigation
 {

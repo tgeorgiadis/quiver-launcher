@@ -1,4 +1,4 @@
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 /// <summary>
 /// SDL hints that must be applied before <c>SDL_Init</c> on Steam Deck.

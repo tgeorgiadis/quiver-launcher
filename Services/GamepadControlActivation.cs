@@ -3,7 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 internal static class GamepadControlActivation
 {

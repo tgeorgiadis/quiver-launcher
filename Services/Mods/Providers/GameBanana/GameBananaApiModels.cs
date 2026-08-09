@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Quiver.Services.Mods.Providers.GameBanana;
+namespace QuiverLauncher.Services.Mods.Providers.GameBanana;
 
 internal static class GameBananaJson
 {

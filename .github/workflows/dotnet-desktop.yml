@@ -13,7 +13,7 @@ permissions:
 
 env:
   VELOPACK_VERSION: "1.2.0"
-  PACK_ID: Quiver
+  PACK_ID: QuiverLauncher
   REPO_URL: https://github.com/${{ github.repository }}
 
 jobs:
@@ -32,10 +32,10 @@ jobs:
         dotnet-version: 9.0.x
 
     - name: Restore dependencies
-      run: dotnet restore Quiver.sln
+      run: dotnet restore QuiverLauncher.sln
 
     - name: Test with coverage
-      run: dotnet test Quiver.sln -c Release --no-restore --logger "console;verbosity=normal" --blame-hang-timeout 5m --collect:"XPlat Code Coverage" --results-directory "${{ runner.temp }}/coverage"
+      run: dotnet test QuiverLauncher.sln -c Release --no-restore --logger "console;verbosity=normal" --blame-hang-timeout 5m --collect:"XPlat Code Coverage" --results-directory "${{ runner.temp }}/coverage"
 
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
@@ -72,13 +72,13 @@ jobs:
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' Quiver.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "Pack version: $VERSION"
 
     - name: Publish Windows x64
       run: |
-        dotnet publish Quiver.csproj -c Release -r win-x64 --self-contained true -p:PublishTrimmed=false -o publish/win-x64
+        dotnet publish QuiverLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishTrimmed=false -o publish/win-x64
         Remove-Item publish/win-x64/apps.json -ErrorAction SilentlyContinue
 
     - name: Install vpk
@@ -115,7 +115,7 @@ jobs:
           --packId ${{ env.PACK_ID }} `
           --packVersion ${{ steps.ver.outputs.version }} `
           --packDir publish/win-x64 `
-          --mainExe Quiver.exe `
+          --mainExe QuiverLauncher.exe `
           --icon icon.ico `
           --runtime win-x64 `
           --channel win `
@@ -136,7 +136,7 @@ jobs:
           --packId ${{ env.PACK_ID }} `
           --packVersion ${{ steps.ver.outputs.version }} `
           --packDir publish/win-x64 `
-          --mainExe Quiver.exe `
+          --mainExe QuiverLauncher.exe `
           --icon icon.ico `
           --runtime win-x64 `
           --channel win `
@@ -175,12 +175,12 @@ jobs:
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' Quiver.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
     - name: Publish ${{ matrix.rid }}
       run: |
-        dotnet publish Quiver.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
+        dotnet publish QuiverLauncher.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         # Do not bake user-data leftovers into the AppImage.
         rm -f publish/${{ matrix.rid }}/apps.json \
               publish/${{ matrix.rid }}/settings.json \
@@ -198,23 +198,11 @@ jobs:
           --packId ${{ env.PACK_ID }} \
           --packVersion ${{ steps.ver.outputs.version }} \
           --packDir publish/${{ matrix.rid }} \
-          --mainExe Quiver \
+          --mainExe QuiverLauncher \
           --icon Assets/quiver-icon.png \
           --runtime ${{ matrix.rid }} \
           --channel ${{ matrix.rid }} \
           --outputDir releases/${{ matrix.rid }}
-        chmod +x releases/${{ matrix.rid }}/*.AppImage
-
-    - name: Package AppImage as tar.gz
-      run: |
-        set -euo pipefail
-        RID="${{ matrix.rid }}"
-        APPIMAGE=$(ls releases/"$RID"/*.AppImage | head -n1)
-        STAGE="staging/$RID/Quiver-$RID"
-        mkdir -p "$STAGE"
-        cp "$APPIMAGE" "$STAGE/"
-        chmod +x "$STAGE"/*.AppImage
-        tar -czf "releases/$RID/Quiver-$RID.tar.gz" -C "staging/$RID" "Quiver-$RID"
 
     - name: Upload Linux Velopack artifacts
       uses: actions/upload-artifact@v4
@@ -248,12 +236,12 @@ jobs:
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' Quiver.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
     - name: Publish ${{ matrix.rid }}
       run: |
-        dotnet publish Quiver.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
+        dotnet publish QuiverLauncher.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         rm -f publish/${{ matrix.rid }}/apps.json
 
     - name: Install vpk
@@ -263,16 +251,16 @@ jobs:
       run: |
         set -euo pipefail
         SRC="Assets/quiver-icon.png"
-        ICONSET="Quiver.iconset"
-        rm -rf "$ICONSET" Quiver.icns
+        ICONSET="QuiverLauncher.iconset"
+        rm -rf "$ICONSET" QuiverLauncher.icns
         mkdir "$ICONSET"
         for size in 16 32 128 256 512; do
           sips -z "$size" "$size" "$SRC" --out "$ICONSET/icon_${size}x${size}.png" >/dev/null
           double=$((size * 2))
           sips -z "$double" "$double" "$SRC" --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
         done
-        iconutil -c icns "$ICONSET" -o Quiver.icns
-        test -f Quiver.icns
+        iconutil -c icns "$ICONSET" -o QuiverLauncher.icns
+        test -f QuiverLauncher.icns
 
     # Apple Developer ID + notarization can be wired later via
     # --signAppIdentity / --signInstallIdentity / --notaryProfile / --keychain.
@@ -282,8 +270,8 @@ jobs:
           --packId ${{ env.PACK_ID }} \
           --packVersion ${{ steps.ver.outputs.version }} \
           --packDir publish/${{ matrix.rid }} \
-          --mainExe Quiver \
-          --icon Quiver.icns \
+          --mainExe QuiverLauncher \
+          --icon QuiverLauncher.icns \
           --runtime ${{ matrix.rid }} \
           --channel ${{ matrix.rid }} \
           --noInst true \
@@ -315,7 +303,7 @@ jobs:
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' Quiver.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         if [[ "$VERSION" == *-* ]]; then
           echo "prerelease=true" >> "$GITHUB_OUTPUT"
@@ -344,15 +332,13 @@ jobs:
         find release-assets -type f -name 'RELEASES' -delete
         # Drop Setup installers if any slipped through (portable-first).
         find release-assets -type f \( -name '*-Setup.exe' -o -name '*-Setup.pkg' -o -name 'assets.*.json' \) -delete
-        # Linux users get the AppImage via Quiver-linux-*.tar.gz; updates use .nupkg + releases.*.json.
-        find release-assets -type f -name '*.AppImage' -delete
 
         mapfile -t FILES < <(
           find release-assets -type f \( \
             -name '*.nupkg' -o \
             -name 'releases.*.json' -o \
             -name '*Portable.zip' -o \
-            -name '*.tar.gz' \
+            -name '*.AppImage' \
           \) | sort
         )
         if [[ ${#FILES[@]} -eq 0 ]]; then
@@ -365,20 +351,18 @@ jobs:
         {
           echo "## Downloads"
           echo ""
-          echo "Install these (portable-first). Other assets on this release are Velopack update feed files."
-          echo ""
-          echo "- **Windows:** [${BASE}/Quiver-win-Portable.zip](${BASE}/Quiver-win-Portable.zip)"
-          echo "- **Linux x64:** [${BASE}/Quiver-linux-x64.tar.gz](${BASE}/Quiver-linux-x64.tar.gz) (extract, then run the AppImage inside)"
-          echo "- **Linux ARM64:** [${BASE}/Quiver-linux-arm64.tar.gz](${BASE}/Quiver-linux-arm64.tar.gz) (extract, then run the AppImage inside)"
-          echo "- **macOS x64:** [${BASE}/Quiver-osx-x64-Portable.zip](${BASE}/Quiver-osx-x64-Portable.zip)"
-          echo "- **macOS ARM64:** [${BASE}/Quiver-osx-arm64-Portable.zip](${BASE}/Quiver-osx-arm64-Portable.zip)"
+          echo "- **Windows:** [${BASE}/QuiverLauncher-win-Portable.zip](${BASE}/QuiverLauncher-win-Portable.zip)"
+          echo "- **Linux x64:** [${BASE}/QuiverLauncher-${VERSION}-linux-x64.AppImage](${BASE}/QuiverLauncher-${VERSION}-linux-x64.AppImage)"
+          echo "- **Linux ARM64:** [${BASE}/QuiverLauncher-${VERSION}-linux-arm64.AppImage](${BASE}/QuiverLauncher-${VERSION}-linux-arm64.AppImage)"
+          echo "- **macOS x64:** [${BASE}/QuiverLauncher-osx-x64-Portable.zip](${BASE}/QuiverLauncher-osx-x64-Portable.zip)"
+          echo "- **macOS ARM64:** [${BASE}/QuiverLauncher-osx-arm64-Portable.zip](${BASE}/QuiverLauncher-osx-arm64-Portable.zip)"
           echo ""
           echo "---"
           echo ""
           if [[ -f RELEASE_NOTES.md ]]; then
             cat RELEASE_NOTES.md
           else
-            echo "Quiver v${VERSION}"
+            echo "Quiver Launcher v${VERSION}"
           fi
         } > "$NOTES_BODY"
 
@@ -393,7 +377,7 @@ jobs:
         fi
 
         gh release create "$TAG" \
-          --title "Quiver v${VERSION}" \
+          --title "Quiver Launcher v${VERSION}" \
           --notes-file "$NOTES_BODY" \
           --target "$GITHUB_SHA" \
           "${PRE_ARGS[@]}" \

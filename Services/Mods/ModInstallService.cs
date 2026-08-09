@@ -1,8 +1,8 @@
-using Quiver.Services.Mods.Providers.Thunderstore;
+using QuiverLauncher.Services.Mods.Providers.Thunderstore;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 
-namespace Quiver.Services.Mods;
+namespace QuiverLauncher.Services.Mods;
 
 public sealed class ModInstallService
 {

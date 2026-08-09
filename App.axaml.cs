@@ -13,9 +13,9 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Quiver.Services;
+using QuiverLauncher.Services;
 
-namespace Quiver;
+namespace QuiverLauncher;
 
 public partial class App : Application, INotifyPropertyChanged
 {
@@ -118,7 +118,7 @@ public partial class App : Application, INotifyPropertyChanged
         if (_trayIcon != null)
             return;
 
-        _trayOpenItem = new NativeMenuItem("Open Quiver");
+        _trayOpenItem = new NativeMenuItem("Open Quiver Launcher");
         _trayOpenItem.Click += (_, _) => RestoreMainWindowFromTray();
 
         _trayCheckUpdatesItem = new NativeMenuItem("Check for updates");
@@ -136,7 +136,7 @@ public partial class App : Application, INotifyPropertyChanged
         _trayIcon = new TrayIcon
         {
             Icon = CreateTrayWindowIcon(),
-            ToolTipText = "Quiver",
+            ToolTipText = "Quiver Launcher",
             IsVisible = false,
             Menu = menu,
         };
@@ -152,7 +152,7 @@ public partial class App : Application, INotifyPropertyChanged
         if (File.Exists(icoPath))
             return new WindowIcon(icoPath);
 
-        using var stream = AssetLoader.Open(new Uri("avares://Quiver/Assets/app.png"));
+        using var stream = AssetLoader.Open(new Uri("avares://QuiverLauncher/Assets/app.png"));
         return new WindowIcon(stream);
     }
 
@@ -172,19 +172,19 @@ public partial class App : Application, INotifyPropertyChanged
 
         if (isChecking)
         {
-            _trayIcon.ToolTipText = "Quiver · Checking for updates…";
+            _trayIcon.ToolTipText = "Quiver Launcher · Checking for updates…";
             return;
         }
 
         if (pendingUpdatesCount <= 0)
         {
-            _trayIcon.ToolTipText = "Quiver";
+            _trayIcon.ToolTipText = "Quiver Launcher";
             return;
         }
 
         _trayIcon.ToolTipText = pendingUpdatesCount == 1
-            ? "Quiver · 1 app needs review"
-            : $"Quiver · {pendingUpdatesCount} apps need review";
+            ? "Quiver Launcher · 1 app needs review"
+            : $"Quiver Launcher · {pendingUpdatesCount} apps need review";
     }
 
     private void RestoreMainWindowFromTray()
@@ -227,7 +227,7 @@ public partial class App : Application, INotifyPropertyChanged
     {
         try
         {
-            var imagesCache = Path.Combine(QuiverPaths.CacheDirectory, "Images");
+            var imagesCache = Path.Combine(QuiverLauncherPaths.CacheDirectory, "Images");
             Directory.CreateDirectory(imagesCache);
 
             var previous = ImageLoader.AsyncImageLoader;

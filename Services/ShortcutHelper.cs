@@ -1,4 +1,4 @@
-using Quiver.Models;
+using QuiverLauncher.Models;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -10,11 +10,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Quiver.Services
+namespace QuiverLauncher.Services
 {
     public static class ShortcutHelper
     {
-        private static readonly string LauncherSteamTag = QuiverProfile.Instance.SteamTag;
+        private static readonly string LauncherSteamTag = QuiverLauncherProfile.Instance.SteamTag;
 
         public static async Task CreateGameShortcutAsync(GameInfo game, string launcherPath, string? cacheDirectory)
         {
@@ -278,7 +278,7 @@ namespace Quiver.Services
                 $Shortcut.TargetPath = '{launcherPath}'
                 $Shortcut.Arguments = '--run {gameName}'
                 $Shortcut.WorkingDirectory = '{Path.GetDirectoryName(launcherPath)}'
-                $Shortcut.Description = 'Launch {gameName} via Quiver'
+                $Shortcut.Description = 'Launch {gameName} via Quiver Launcher'
                 {(iconPath != null ? $"$Shortcut.IconLocation = '{iconPath},0'" : "")}
                 $Shortcut.Save()
                 ";
@@ -311,7 +311,7 @@ namespace Quiver.Services
                 Icon={iconPath ?? ""}
                 Terminal=false
                 Categories=Game;
-                Comment=Launch {safeGameName} via Quiver
+                Comment=Launch {safeGameName} via Quiver Launcher
                 ";
 
             File.WriteAllText(desktopFilePath, desktopFileContent);

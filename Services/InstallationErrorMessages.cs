@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 public static class InstallationErrorMessages
 {

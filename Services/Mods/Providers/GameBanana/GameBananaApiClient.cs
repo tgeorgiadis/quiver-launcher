@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Quiver.Services.Mods.Providers.GameBanana;
+namespace QuiverLauncher.Services.Mods.Providers.GameBanana;
 
 internal sealed class GameBananaApiClient
 {

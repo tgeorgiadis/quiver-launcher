@@ -1,6 +1,6 @@
-using Quiver.Services.Mods;
+using QuiverLauncher.Services.Mods;
 
-namespace Quiver.Services.Mods.Providers.Thunderstore;
+namespace QuiverLauncher.Services.Mods.Providers.Thunderstore;
 
 public sealed class ThunderstoreModProvider : IModProvider
 {

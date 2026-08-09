@@ -1,11 +1,11 @@
-<Window x:Class="Quiver.MainWindow"
+<Window x:Class="QuiverLauncher.MainWindow"
 		xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:local="clr-namespace:Quiver"
-		xmlns:services="clr-namespace:Quiver.Services"
-		xmlns:mods="clr-namespace:Quiver.Services.Mods"
+		xmlns:local="clr-namespace:QuiverLauncher"
+		xmlns:services="clr-namespace:QuiverLauncher.Services"
+		xmlns:mods="clr-namespace:QuiverLauncher.Services.Mods"
 		xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
-        Title="Quiver"
+        Title="Quiver Launcher"
 		Width="1280" Height="720"
 		MinWidth="750" MinHeight="490"
         Background="{Binding WindowBackground}"
@@ -2056,17 +2056,25 @@
 							HorizontalAlignment="Center"
 							VerticalAlignment="Center"
 							Spacing="6">
-					<Image Source="avares://Quiver/Assets/app.png"
+					<Image Source="avares://QuiverLauncher/Assets/app.png"
 						   Width="45.75"
 						   Height="95.25"
 						   VerticalAlignment="Center"/>
-					<TextBlock Text="QUIVER"
-							   FontSize="18"
-							   FontWeight="Bold"
-							   Foreground="{DynamicResource ThemeText}"
-							   VerticalAlignment="Center"
-							   Margin="20,0,0,0"
-							   LetterSpacing="2"/>
+					<StackPanel Orientation="Vertical"
+								VerticalAlignment="Center"
+								Margin="20,0,0,0"
+								Spacing="2">
+						<TextBlock Text="QUIVER"
+								   FontSize="18"
+								   FontWeight="Bold"
+								   Foreground="{DynamicResource ThemeText}"
+								   LetterSpacing="2"/>
+						<TextBlock Text="LAUNCHER"
+								   FontSize="11"
+								   FontWeight="SemiBold"
+								   Foreground="{DynamicResource ThemeTextSecondary}"
+								   LetterSpacing="2.5"/>
+					</StackPanel>
 				</StackPanel>
 
 				<!-- Navigation Buttons -->
@@ -2087,7 +2095,7 @@
 											Orientation="Horizontal"
 											VerticalAlignment="Center">
 									<Image Width="32" Height="32" 
-										   Source="avares://Quiver/Assets/Continue.png"
+										   Source="avares://QuiverLauncher/Assets/Continue.png"
 										   Margin="0,0,12,0"/>
 									<TextBlock Text="Continue" 
 											  VerticalAlignment="Center"/>
@@ -2117,7 +2125,7 @@
 								Click="LibraryNavButton_Click">
 							<StackPanel Orientation="Horizontal">
 								<Image Width="32" Height="32"
-									   Source="avares://Quiver/Assets/DefaultGame.png"
+									   Source="avares://QuiverLauncher/Assets/DefaultGame.png"
 									   Margin="0,0,12,0"/>
 								<TextBlock Text="Library" VerticalAlignment="Center"/>
 							</StackPanel>
@@ -2133,7 +2141,7 @@
 								Click="AppCatalogNavButton_Click">
 							<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
 								<Image Width="32" Height="32"
-									   Source="avares://Quiver/Assets/AppCatalog.png"
+									   Source="avares://QuiverLauncher/Assets/AppCatalog.png"
 									   Margin="0,0,2,0"/>
 								<TextBlock Text="App Catalog" VerticalAlignment="Center"/>
 								<Border Background="{DynamicResource ThemeLighter}"
@@ -2304,7 +2312,7 @@
 								ToolTip.Tip="GitHub"
 								Click="GithubButton_Click">
 							<Image Width="32" Height="32"
-								   Source="avares://Quiver/Assets/Github.png"/>
+								   Source="avares://QuiverLauncher/Assets/Github.png"/>
 						</Button>
 						<Button x:Name="DiscordFooterButton"
 								Classes="iconbutton"
@@ -2313,7 +2321,7 @@
 								ToolTip.Tip="Discord"
 								Click="DiscordButton_Click">
 							<Image Width="32" Height="32"
-								   Source="avares://Quiver/Assets/Discord.png"/>
+								   Source="avares://QuiverLauncher/Assets/Discord.png"/>
 						</Button>
 					</StackPanel>
 				</StackPanel>
@@ -2429,7 +2437,7 @@
 										   Height="28"
 										   HorizontalAlignment="Center"
 										   VerticalAlignment="Center"
-										   Source="avares://Quiver/Assets/CheckForUpdates.png"
+										   Source="avares://QuiverLauncher/Assets/CheckForUpdates.png"
 										   Opacity="{Binding CheckForUpdatesIconOpacity}"/>
 									<Border Width="28"
 											Height="2"
@@ -2487,7 +2495,7 @@
 									ToolTip.Tip="Settings"
 									Click="SettingsButton_Click">
 								<Image Width="28" Height="28"
-									   Source="avares://Quiver/Assets/Settings.png"/>
+									   Source="avares://QuiverLauncher/Assets/Settings.png"/>
 							</Button>
 
 							<!-- Minimize Button -->
@@ -2499,7 +2507,7 @@
 									Click="MinimizeButton_Click">
 								<Image Width="28"
 									   Height="28"
-									   Source="avares://Quiver/Assets/Icons/button_minimize.png"/>
+									   Source="avares://QuiverLauncher/Assets/Icons/button_minimize.png"/>
 							</Button>
 
 							<!-- Fullscreen Button -->
@@ -2511,7 +2519,7 @@
 									Click="ToggleFullscreen_Click">
 								<Image Width="28"
 									   Height="28"
-									   Source="avares://Quiver/Assets/Icons/button_fullscreen.png"/>
+									   Source="avares://QuiverLauncher/Assets/Icons/button_fullscreen.png"/>
 							</Button>
 
 							<!-- Close Button -->
@@ -2523,7 +2531,7 @@
 									Click="CloseLauncher_Click">
 								<Image Width="28"
 									   Height="28"
-									   Source="avares://Quiver/Assets/Icons/button_close.png"/>
+									   Source="avares://QuiverLauncher/Assets/Icons/button_close.png"/>
 							</Button>
 						</StackPanel>
 					</Grid>
@@ -2569,8 +2577,8 @@
 
 				<!-- Main App List -->
 				<Grid x:Name="LibraryViewContainer">
-					<ScrollViewer x:Name="LibraryContentPanel" VerticalScrollBarVisibility="Auto" Margin="30,20,30,30">
-						<Grid>
+					<ScrollViewer x:Name="LibraryContentPanel" VerticalScrollBarVisibility="Auto" Margin="30,20,6,30">
+						<Grid Margin="0,0,30,0">
 							<ItemsControl ItemsSource="{Binding Games}" x:Name="ListViewControl"
 										  IsVisible="{Binding ElementName=UseGridViewCheckBox, Path=!IsChecked}">
 								<ItemsControl.ItemTemplate>
@@ -2640,7 +2648,7 @@
 					<!-- App updates review (in-window, replaces modal) -->
 					<Grid x:Name="AppUpdatesReviewPanel"
 						  IsVisible="False"
-						  Margin="30,20,30,30"
+						  Margin="30,20,6,30"
 						  RowDefinitions="Auto,Auto,*">
 						<TextBlock x:Name="AppUpdatesReviewHeaderText"
 								   Grid.Row="0"
@@ -2648,8 +2656,8 @@
 								   FontWeight="SemiBold"
 								   Foreground="{DynamicResource ThemeText}"
 								   TextWrapping="Wrap"
-								   Margin="0,0,0,12"/>
-						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+								   Margin="0,0,30,12"/>
+						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,30,12">
 							<Button x:Name="AppUpdatesUpdateAllButton"
 									Classes="options"
 									Content="Update All"
@@ -2667,7 +2675,7 @@
 									Click="AppUpdatesBackToLibrary_Click"/>
 						</StackPanel>
 						<ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-							<StackPanel>
+							<StackPanel Margin="0,0,30,0">
 								<TextBlock x:Name="AppUpdatesReviewEmptyText"
 										   Text="No app updates pending."
 										   FontSize="12"
@@ -2687,7 +2695,7 @@
 					<!-- Mods browser (in-window overlay on Library) -->
 					<Grid x:Name="ModsPanel"
 						  IsVisible="False"
-						  Margin="30,20,30,30"
+						  Margin="30,20,6,30"
 						  RowDefinitions="Auto,Auto,Auto,Auto,*">
 						<TextBlock x:Name="ModsHeaderText"
 								   Grid.Row="0"
@@ -2695,8 +2703,8 @@
 								   FontWeight="SemiBold"
 								   Foreground="{DynamicResource ThemeText}"
 								   TextWrapping="Wrap"
-								   Margin="0,0,0,8"/>
-						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+								   Margin="0,0,30,8"/>
+						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,30,8">
 							<Button x:Name="ModsRefreshButton"
 									Classes="options"
 									Content="Refresh"
@@ -2723,7 +2731,7 @@
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   Margin="8,0,0,0"/>
 						</StackPanel>
-						<StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+						<StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,30,8">
 							<Button x:Name="ModsTabBrowseButton"
 									Classes="catalog-filter selected"
 									Content="Browse"
@@ -2767,12 +2775,12 @@
 						<WrapPanel x:Name="ModsSourceFilterPanel"
 								   Grid.Row="3"
 								   Orientation="Horizontal"
-								   Margin="0,0,0,8"/>
+								   Margin="0,0,30,8"/>
 						<ScrollViewer x:Name="ModsListScrollViewer"
 									  Grid.Row="4"
 									  VerticalScrollBarVisibility="Auto"
 									  ScrollChanged="ModsListScrollViewer_ScrollChanged">
-							<StackPanel>
+							<StackPanel Margin="0,0,30,0">
 								<TextBlock x:Name="ModsEmptyText"
 										   Text="No mods found."
 										   FontSize="12"
@@ -2796,10 +2804,10 @@
 				</Grid>
 
 				<!-- App Catalog Content -->
-				<Grid x:Name="CatalogContentPanel" IsVisible="False" Margin="30,20,30,30">
+				<Grid x:Name="CatalogContentPanel" IsVisible="False" Margin="30,20,6,30">
 					<!-- Sources list -->
 					<ScrollViewer x:Name="CatalogSourcesPanel" VerticalScrollBarVisibility="Auto">
-						<StackPanel Spacing="12">
+						<StackPanel Spacing="12" Margin="0,0,30,0">
 							<TextBlock Text="External catalog sources reference remote app lists. Your local apps.json is your library."
 									   FontSize="12"
 									   Foreground="{DynamicResource ThemeTextSecondary}"
@@ -2841,13 +2849,13 @@
 								Grid.Row="0"
 								Classes="catalog-review-version-banner"
 								IsVisible="False"
-								Margin="0,0,0,8">
+								Margin="0,0,30,8">
 							<TextBlock x:Name="CatalogReviewVersionText"
 									   FontSize="15"
 									   Foreground="{DynamicResource ThemeText}"
 									   TextWrapping="Wrap"/>
 						</Border>
-						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,30,8">
 							<Button x:Name="CatalogSyncAddAllButton" Classes="options" Content="Add all new"
 									Click="CatalogSyncAddAll_Click" FontSize="11"/>
 							<Button x:Name="CatalogSyncReplaceAllButton" Classes="options" Content="Replace all changed"
@@ -2855,7 +2863,7 @@
 							<Button x:Name="CatalogSyncAcknowledgeButton" Classes="options" Content="Skip &amp; mark reviewed"
 									Click="CatalogSyncAcknowledge_Click" FontSize="11" IsVisible="False"/>
 						</StackPanel>
-						<StackPanel Grid.Row="2" Spacing="8" Margin="0,0,0,8">
+						<StackPanel Grid.Row="2" Spacing="8" Margin="0,0,30,8">
 							<WrapPanel Orientation="Horizontal">
 								<Button x:Name="CatalogFilterAllButton" Classes="catalog-filter selected" Content="All"
 										Tag="All" Click="CatalogReviewFilter_Click" Margin="0,0,6,6"/>
@@ -2882,7 +2890,7 @@
 									   Opacity="0.85"/>
 						</StackPanel>
 						<ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
-							<StackPanel>
+							<StackPanel Margin="0,0,30,0">
 								<StackPanel x:Name="CatalogSyncNeedsReviewEmptyPanel"
 											Spacing="12"
 											Margin="0,8,0,0"
@@ -2969,7 +2977,7 @@
 											Click="CloseSettingsPanel_Click">
 										<Image Width="28"
 											   Height="28"
-											   Source="avares://Quiver/Assets/Icons/button_close.png"/>
+											   Source="avares://QuiverLauncher/Assets/Icons/button_close.png"/>
 									</Button>
 								</Grid>
 							</Border>
@@ -3017,7 +3025,7 @@
 													  FontSize="13" FontWeight="SemiBold"
 													  Checked="CloseToTrayCheckBox_Checked"
 													  Unchecked="CloseToTrayCheckBox_Unchecked"/>
-											<TextBlock Text="Keep Quiver running in the notification area when the window is closed"
+											<TextBlock Text="Keep Quiver Launcher running in the notification area when the window is closed"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -3031,7 +3039,7 @@
 													  FontSize="13" FontWeight="SemiBold"
 													  Checked="BackgroundUpdateCheckCheckBox_Checked"
 													  Unchecked="BackgroundUpdateCheckCheckBox_Unchecked"/>
-											<TextBlock Text="Scan for updates on a schedule while Quiver is running (including in the tray)"
+											<TextBlock Text="Scan for updates on a schedule while Quiver Launcher is running (including in the tray)"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -3463,22 +3471,22 @@
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_Landscape_Click"
 														ToolTip.Tip="Landscape">
-													<Image Width="52" Height="52" Source="avares://Quiver/Assets/Icons/preset_landscape.png"/>
+													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_landscape.png"/>
 												</Button>
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_Square_Click"
 														ToolTip.Tip="Square">
-													<Image Width="52" Height="52" Source="avares://Quiver/Assets/Icons/preset_square.png"/>
+													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_square.png"/>
 												</Button>
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_Portrait_Click"
 														ToolTip.Tip="Portrait">
-													<Image Width="52" Height="52" Source="avares://Quiver/Assets/Icons/preset_portrait.png"/>
+													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_portrait.png"/>
 												</Button>
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_List_Click"
 														ToolTip.Tip="List">
-													<Image Width="52" Height="52" Source="avares://Quiver/Assets/Icons/preset_list.png"/>
+													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_list.png"/>
 												</Button>
 											</StackPanel>
 										</StackPanel>
@@ -3755,7 +3763,7 @@
 
 										<StackPanel Spacing="2">
 											<CheckBox x:Name="AllowPrereleaseLauncherUpdatesCheckBox"
-													  Content="Include prerelease Quiver updates"
+													  Content="Include prerelease Quiver Launcher updates"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  Checked="AllowPrereleaseLauncherUpdatesCheckBox_Checked"
@@ -3893,8 +3901,8 @@
 						Background="{DynamicResource ThemeBase}"
 						IsVisible="False"
 						ZIndex="100">
-					<ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40">
-						<StackPanel Spacing="20" MinWidth="640" MaxWidth="960" HorizontalAlignment="Center">
+					<ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,40,6,40">
+						<StackPanel Spacing="20" MinWidth="640" MaxWidth="960" HorizontalAlignment="Center" Margin="0,0,40,0">
 							<Border Background="{DynamicResource ThemeDarker}"
 									BorderBrush="{DynamicResource ThemeBorder}"
 									BorderThickness="1"

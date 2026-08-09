@@ -1,7 +1,7 @@
-using Quiver.Core.Services;
-using AppSettings = Quiver.AppSettings;
+using QuiverLauncher.Core.Services;
+using AppSettings = QuiverLauncher.AppSettings;
 
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Remaps settings and cache when an app's repository identity changes on edit.

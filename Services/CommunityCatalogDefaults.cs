@@ -1,6 +1,6 @@
-namespace Quiver.Services;
+namespace QuiverLauncher.Services;
 
-using Quiver;
+using QuiverLauncher;
 
 public static class CommunityCatalogDefaults
 {
@@ -10,19 +10,19 @@ public static class CommunityCatalogDefaults
         "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/quiver-community-apps-catalog.json";
 
     /// <summary>
-    /// Remote registry of community catalog lists. Quiver fetches this on startup and refresh
+    /// Remote registry of community catalog lists. Quiver Launcher fetches this on startup and refresh
     /// to discover list sources and their remoteLocation URLs.
     /// </summary>
     public const string RemoteIndexUrl =
         "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/index.json";
 
-    public const string FirstRunWelcomeTitle = "Welcome to Quiver";
+    public const string FirstRunWelcomeTitle = "Welcome to Quiver Launcher";
 
     public const string FirstRunWelcomeMessage =
         """
-        Welcome to Quiver!
+        Welcome to Quiver Launcher!
 
-        Quiver is an app manager for downloading releases from GitHub repositories.
+        Quiver Launcher is an app manager for downloading releases from GitHub repositories.
 
         To get started, browse the community app catalog lists and choose which apps to add to your library. An internet connection is required the first time to load the catalog lists. Once added, you can download apps from your library.
 

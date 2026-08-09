@@ -1,6 +1,6 @@
-using Quiver;
+using QuiverLauncher;
 
-namespace Quiver.Services
+namespace QuiverLauncher.Services
 {
     public static class TagDisplayFilterReorder
     {
