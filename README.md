@@ -47,7 +47,7 @@ To verify a signed `QuiverLauncher.exe`: right-click → Properties → Digital 
 
 **Linux**
 
-1. Download `QuiverLauncher-*-linux-x64.AppImage` or `QuiverLauncher-*-linux-arm64.AppImage` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
+1. Download `QuiverLauncher-linux-x64.AppImage` or `QuiverLauncher-linux-arm64.AppImage` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
 2. Put the AppImage in its own folder (it creates library files beside itself), mark it executable, then run it:
    ```bash
    mkdir -p ~/QuiverLauncher
@@ -63,7 +63,7 @@ Library data (`apps.json`, `settings.json`, `Apps/`, `Cache/`) is stored **besid
 
 ```
 MyFolder/
-├── QuiverLauncher-x.y.z-linux-x64.AppImage
+├── QuiverLauncher-linux-x64.AppImage
 ├── apps.json
 ├── settings.json
 ├── Apps/

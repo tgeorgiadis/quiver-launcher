@@ -59,7 +59,7 @@ MyFolder/
 
 ```
 MyFolder/
-├── QuiverLauncher-x.y.z-linux-x64.AppImage
+├── QuiverLauncher-linux-x64.AppImage
 ├── apps.json          ← paste
 ├── settings.json      ← paste
 ├── Apps/              ← paste

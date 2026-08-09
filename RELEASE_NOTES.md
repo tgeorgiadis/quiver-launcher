@@ -24,7 +24,7 @@ In-app update from **2.4.2 or older** cannot install Velopack 3.0. Download a fr
 ## Distribution
 
 - **Windows (primary):** `QuiverLauncher-win-Portable.zip`. Extract anywhere. Self-updating. Library data stays in the folder root (sibling of `current/`).
-- **Linux:** `QuiverLauncher-*-linux-*.AppImage` (x64 / ARM64). Put it in its own folder (library files are created beside it), mark executable (`chmod +x` or file Properties), then run. Otherwise `~/.local/share/QuiverLauncher/` if that folder is not writable.
+- **Linux:** `QuiverLauncher-linux-*.AppImage` (x64 / ARM64). Put it in its own folder (library files are created beside it), mark executable (`chmod +x` or file Properties), then run. Otherwise `~/.local/share/QuiverLauncher/` if that folder is not writable.
 - **macOS:** `QuiverLauncher-osx-*-Portable.zip` (x64 / ARM64). Library beside `QuiverLauncher.app` when that folder is writable. Otherwise `~/Library/Application Support/QuiverLauncher/`.
 
 Also includes Velopack feed files (`releases.*.json`, `.nupkg`) required for in-app updates. Setup installers are omitted (portable-first).
