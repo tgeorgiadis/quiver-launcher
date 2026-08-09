@@ -65,6 +65,7 @@ public class ReleasePackagingTests
         workflow.Should().Contain("QuiverLauncher-win-Portable.zip");
         workflow.Should().Contain("QuiverLauncher-linux-x64.AppImage");
         workflow.Should().Contain("QuiverLauncher-linux-arm64.AppImage");
+        workflow.Should().Contain("macOS:** work in progress while I get the signing sorted");
         workflow.Should().Contain("-name '*.AppImage'");
         workflow.Should().Contain("releases.*.json");
         // Publish bare AppImages; do not wrap in tar.gz or strip executable bit via CI chmod.
@@ -73,6 +74,9 @@ public class ReleasePackagingTests
         workflow.Should().NotContain("find release-assets -type f -name '*.AppImage' -delete");
         workflow.Should().NotContain("QuiverLauncher-linux-x64.tar.gz");
         workflow.Should().NotContain("QuiverLauncher-linux-arm64.tar.gz");
+        // Do not advertise unsigned macOS downloads in release notes.
+        workflow.Should().NotContain("QuiverLauncher-osx-x64-Portable.zip");
+        workflow.Should().NotContain("QuiverLauncher-osx-arm64-Portable.zip");
     }
 
     [Fact]

@@ -8,7 +8,7 @@ namespace QuiverLauncher.Services
 
         public override string DisplayName => "Quiver Launcher";
         public override string ApplicationId => "QuiverLauncher";
-        public override string Repository => "tgeorgiadis/quiver";
+        public override string Repository => "tgeorgiadis/quiver-launcher";
         public override string ExecutableName => "QuiverLauncher";
         public override string DefaultInstallFolderName => "Apps";
         public override string UserAgent => "QuiverLauncher/1.0";

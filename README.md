@@ -1,7 +1,7 @@
 # Quiver Launcher
 
 [![.NET 9](https://img.shields.io/badge/.NET-9-512BD4)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/github/license/tgeorgiadis/quiver)](https://github.com/tgeorgiadis/quiver/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/tgeorgiadis/quiver-launcher)](https://github.com/tgeorgiadis/quiver-launcher/blob/main/LICENSE)
 
 > **About** - **Quiver Launcher** is a fork of [GithubLauncher](https://github.com/SirDiabo/GithubLauncher), extended with the features I wanted: **tag filters**, **library management with App Catalog**, **mod management support**, **UI improvements** and more. It was rebranded from GithubLauncher to avoid using the GitHub trademark.
 
@@ -27,7 +27,7 @@ A modern launcher for downloading, installing, and running apps from GitHub and 
 
 **Windows**
 
-1. Download `QuiverLauncher-win-Portable.zip` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
+1. Download `QuiverLauncher-win-Portable.zip` from [Releases](https://github.com/tgeorgiadis/quiver-launcher/releases)
 2. Extract it
 3. Run `QuiverLauncher.exe` from the extracted folder
 
@@ -47,7 +47,7 @@ To verify a signed `QuiverLauncher.exe`: right-click → Properties → Digital 
 
 **Linux**
 
-1. Download `QuiverLauncher-linux-x64.AppImage` or `QuiverLauncher-linux-arm64.AppImage` from [Releases](https://github.com/tgeorgiadis/quiver/releases)
+1. Download `QuiverLauncher-linux-x64.AppImage` or `QuiverLauncher-linux-arm64.AppImage` from [Releases](https://github.com/tgeorgiadis/quiver-launcher/releases)
 2. Put the AppImage in its own folder (it creates library files beside itself), mark it executable, then run it:
    ```bash
    mkdir -p ~/QuiverLauncher
@@ -74,7 +74,7 @@ MyFolder/
 
 Currently macOS support is a work in progress.
 
-1. Download the macOS package from [Releases](https://github.com/tgeorgiadis/quiver/releases)
+1. Download the macOS package from [Releases](https://github.com/tgeorgiadis/quiver-launcher/releases)
 2. Keep `QuiverLauncher.app` in a writable folder (not only `/Applications` if you want portable data)
 
 Library data lives **beside** `QuiverLauncher.app` in that folder. If the parent directory is not writable, Quiver Launcher falls back to `~/Library/Application Support/QuiverLauncher/`.
@@ -230,7 +230,7 @@ Each app entry requires the following properties:
 ## Support
 
 If you encounter any issues or have questions:
-- [Open an issue](https://github.com/tgeorgiadis/quiver/issues)
+- [Open an issue](https://github.com/tgeorgiadis/quiver-launcher/issues)
 - Check existing issues for solutions
 - Join the [Discord server](https://discord.gg/5XRThpWHGk)
 

@@ -47,7 +47,7 @@ jobs:
   pack-windows:
     needs: test
     runs-on: windows-latest
-    # Stable OIDC subject for tags and branches: repo:…/quiver:environment:signing
+    # Stable OIDC subject for tags and branches: repo:…/quiver-launcher:environment:signing
     environment: signing
     permissions:
       contents: read
@@ -354,8 +354,7 @@ jobs:
           echo "- **Windows:** [${BASE}/QuiverLauncher-win-Portable.zip](${BASE}/QuiverLauncher-win-Portable.zip)"
           echo "- **Linux x64:** [${BASE}/QuiverLauncher-linux-x64.AppImage](${BASE}/QuiverLauncher-linux-x64.AppImage)"
           echo "- **Linux ARM64:** [${BASE}/QuiverLauncher-linux-arm64.AppImage](${BASE}/QuiverLauncher-linux-arm64.AppImage)"
-          echo "- **macOS x64:** [${BASE}/QuiverLauncher-osx-x64-Portable.zip](${BASE}/QuiverLauncher-osx-x64-Portable.zip)"
-          echo "- **macOS ARM64:** [${BASE}/QuiverLauncher-osx-arm64-Portable.zip](${BASE}/QuiverLauncher-osx-arm64-Portable.zip)"
+          echo "- **macOS:** work in progress while I get the signing sorted"
           echo ""
           echo "---"
           echo ""

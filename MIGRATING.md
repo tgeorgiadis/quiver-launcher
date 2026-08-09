@@ -1,6 +1,6 @@
 # Migrating to Quiver Launcher 3.0
 
-Quiver Launcher 3.0 uses [Velopack](https://docs.velopack.io/) for packaging and self-updates. If you are on **2.4.2 or older**, the in-app updater cannot update you to 3.0. You will have to download the 3.0 version from [GitHub Quiver Launcher releases](https://github.com/tgeorgiadis/quiver/releases). Apologies for the inconvenience, but I hope it will be worth it in the long run.
+Quiver Launcher 3.0 uses [Velopack](https://docs.velopack.io/) for packaging and self-updates. If you are on **2.4.2 or older**, the in-app updater cannot update you to 3.0. You will have to download the 3.0 version from [GitHub Quiver Launcher releases](https://github.com/tgeorgiadis/quiver-launcher/releases). Apologies for the inconvenience, but I hope it will be worth it in the long run.
 
 ## Why this change?
 
@@ -12,7 +12,7 @@ Previously Quiver updated itself by downloading a zip and then running a small h
 
 ## How to migrate
 
-1. Download Quiver Launcher 3.0 (or whatever the latest version is) for your OS from [Releases](https://github.com/tgeorgiadis/quiver/releases) into a **new** folder.
+1. Download Quiver Launcher 3.0 (or whatever the latest version is) for your OS from [Releases](https://github.com/tgeorgiadis/quiver-launcher/releases) into a **new** folder.
 2. Quit the old Quiver / Quiver Launcher if it is running.
 3. Copy `apps.json`, `settings.json`, and `Apps/` from your current folder into the new one (see your OS below). `Cache/` is optional to copy over.
 4. Run the new Quiver Launcher and confirm your library looks right, then delete the old install.

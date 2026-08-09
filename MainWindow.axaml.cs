@@ -4364,7 +4364,7 @@ namespace QuiverLauncher
         {
             try
             {
-                string url = "https://github.com/tgeorgiadis/quiver/";
+                string url = "https://github.com/tgeorgiadis/quiver-launcher/";
                 OpenUrl(url);
             }
             catch (Exception ex)
