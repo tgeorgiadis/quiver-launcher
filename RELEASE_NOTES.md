@@ -1,6 +1,11 @@
-# Quiver Launcher v3.0.0-rc.2 (prerelease)
+# Quiver Launcher v3.0.0-rc.3 (prerelease)
 
 Major packaging release: Quiver Launcher now ships with [Velopack](https://docs.velopack.io/) for self-update across Windows / Linux / macOS. Marked as a GitHub **pre-release** for testing. Not promoted to `/releases/latest`.
+
+## Changes since rc.2
+
+- Minor settings copy tweak for prerelease updates
+- Packaging / release pipeline smoke test
 
 ## Changes since rc.1
 
@@ -13,7 +18,7 @@ Major packaging release: Quiver Launcher now ships with [Velopack](https://docs.
 
 In-app update from **2.4.2 or older** cannot install Velopack 3.0. Download a fresh portable from this release and copy your library over manually.
 
-**See [MIGRATING.md](https://github.com/tgeorgiadis/quiver/blob/v3.0.0-rc.2/MIGRATING.md)** for what to copy (`apps.json`, `settings.json`, `Apps/`) and per-OS folder layouts.
+**See [MIGRATING.md](https://github.com/tgeorgiadis/quiver/blob/v3.0.0-rc.3/MIGRATING.md)** for what to copy (`apps.json`, `settings.json`, `Apps/`) and per-OS folder layouts.
 
 ## Why Velopack?
 

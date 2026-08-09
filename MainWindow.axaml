@@ -3768,7 +3768,7 @@
 													  FontSize="13" FontWeight="SemiBold"
 													  Checked="AllowPrereleaseLauncherUpdatesCheckBox_Checked"
 													  Unchecked="AllowPrereleaseLauncherUpdatesCheckBox_Unchecked"/>
-											<TextBlock Text="For development — allow updates from GitHub prereleases. Not for normal users; use at your own risk."
+											<TextBlock Text="For development, to allow updates from Quiver Launcher GitHub prereleases. Not for normal users. Use at your own risk."
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
