@@ -110,6 +110,70 @@ public class CommunityCatalogBootstrapTests
     }
 
     [Fact]
+    public async Task SyncCommunitySourcesFromIndexAsync_removes_community_source_missing_from_index()
+    {
+        var settings = new AppSettings();
+        settings.EnsureInitialized();
+        settings.AppCatalogSources.Add(new AppCatalogSource
+        {
+            Id = "b4e8c2a1-3f5d-4e9b-8c7a-1d2e3f4a5b6c",
+            Name = "N64 Recomps",
+            Location = N64RemoteUrl,
+            IsCommunityManaged = true,
+        });
+        settings.AppCatalogSources.Add(new AppCatalogSource
+        {
+            Id = "retired-list-id",
+            Name = "N64 Decomps",
+            Location = "https://example.com/n64-decomps.json",
+            IsCommunityManaged = true,
+            Enabled = true,
+        });
+        var userSource = new AppCatalogSource
+        {
+            Id = "user-list-id",
+            Name = "My Custom List",
+            Location = "https://example.com/custom.json",
+            IsCommunityManaged = false,
+        };
+        settings.AppCatalogSources.Add(userSource);
+
+        var reader = new FakeCatalogLocationReader(new Dictionary<string, string>
+        {
+            [CommunityCatalogDefaults.RemoteIndexUrl] = SampleRemoteIndex(),
+        });
+        var bootstrap = new CommunityCatalogBootstrap(reader);
+
+        await bootstrap.SyncCommunitySourcesFromIndexAsync(new HttpClient(), settings);
+
+        settings.AppCatalogSources.Should().Contain(s => s.Id == "b4e8c2a1-3f5d-4e9b-8c7a-1d2e3f4a5b6c");
+        settings.AppCatalogSources.Should().Contain(s => s.Id == "e7f1a5d4-6b8f-7a2e-0f0d-4a5b6c7d8e9f");
+        settings.AppCatalogSources.Should().NotContain(s => s.Id == "retired-list-id");
+        settings.AppCatalogSources.Should().Contain(userSource);
+    }
+
+    [Fact]
+    public async Task SyncCommunitySourcesFromIndexAsync_does_not_remove_sources_when_index_fails()
+    {
+        var settings = new AppSettings();
+        settings.EnsureInitialized();
+        settings.AppCatalogSources.Add(new AppCatalogSource
+        {
+            Id = "retired-list-id",
+            Name = "N64 Decomps",
+            Location = "https://example.com/n64-decomps.json",
+            IsCommunityManaged = true,
+        });
+
+        var bootstrap = new CommunityCatalogBootstrap(new FakeCatalogLocationReader([]));
+
+        var result = await bootstrap.SyncCommunitySourcesFromIndexAsync(new HttpClient(), settings);
+
+        result.IndexLoaded.Should().BeFalse();
+        settings.AppCatalogSources.Should().ContainSingle(s => s.Id == "retired-list-id");
+    }
+
+    [Fact]
     public async Task SyncCommunitySourcesFromIndexAsync_does_not_modify_user_sources()
     {
         var settings = new AppSettings();

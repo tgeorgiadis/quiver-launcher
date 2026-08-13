@@ -48,8 +48,6 @@ public sealed class CommunityCatalogBootstrap
             };
         }
 
-        CommunityCatalogListIdRemap.RemapLegacySourceIds(settings, index);
-
         var addedNames = new List<string>();
         var updatedCount = 0;
 
@@ -77,6 +75,8 @@ public sealed class CommunityCatalogBootstrap
                 updatedCount++;
         }
 
+        RemoveUnpublishedCommunitySources(settings, index);
+
         foreach (var source in settings.AppCatalogSources.Where(s => s.IsCommunityManaged))
             MigrateBundledCommunitySourceLocation(source);
 
@@ -88,6 +88,27 @@ public sealed class CommunityCatalogBootstrap
             UpdatedSourceCount = updatedCount,
             AddedSourceNames = addedNames,
         };
+    }
+
+    private static void RemoveUnpublishedCommunitySources(
+        AppSettings settings,
+        CommunityCatalogIndex index)
+    {
+        var indexIds = index.Lists
+            .Where(static entry => !string.IsNullOrWhiteSpace(entry.Id))
+            .Select(static entry => entry.Id.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var source in settings.AppCatalogSources.ToList())
+        {
+            if (!source.IsCommunityManaged)
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(source.Id) && indexIds.Contains(source.Id.Trim()))
+                continue;
+
+            settings.AppCatalogSources.Remove(source);
+        }
     }
 
     public static void MigrateLegacyDefaultSource(AppSettings settings)

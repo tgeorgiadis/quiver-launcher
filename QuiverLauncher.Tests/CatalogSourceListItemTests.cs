@@ -500,6 +500,32 @@ public class CatalogSourceListItemTests
         CatalogSourceListItem.FromSource(new AppCatalogSource()).MetaStripVisible.Should().BeTrue();
     }
 
+    [Fact]
+    public void GetStatusWarningText_formats_404_as_list_not_found()
+    {
+        var warning = CatalogSourceListItem.GetStatusWarningText(new AppCatalogSource
+        {
+            LastError = "Response status code does not indicate success: 404 (Not Found).",
+        });
+
+        warning.Should().NotBeNull();
+        warning!.Value.Text.Should().Be("List not found");
+        warning.Value.IsError.Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetStatusWarningText_formats_cached_404_as_kept_last_copy()
+    {
+        var warning = CatalogSourceListItem.GetStatusWarningText(new AppCatalogSource
+        {
+            LastError = "Response status code does not indicate success: 404 (Not Found). (using cached copy)",
+        });
+
+        warning.Should().NotBeNull();
+        warning!.Value.Text.Should().Be("List not found (kept last copy)");
+        warning.Value.IsError.Should().BeTrue();
+    }
+
 }
 
 

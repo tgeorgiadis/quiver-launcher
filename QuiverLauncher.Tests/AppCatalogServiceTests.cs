@@ -1,6 +1,8 @@
 using FluentAssertions;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
+using System.Net;
+using System.Net.Http;
 using System.Text.Json;
 
 namespace QuiverLauncher.Tests;
@@ -374,6 +376,82 @@ public class AppCatalogServiceTests
         source.FeaturedTags.Should().Equal("recomp", "decomp");
         source.PreferredTagFilters.Should().Equal("translation", "texture-pack");
         source.HiddenTagFilters.Should().Equal("n64", "nintendo");
+    }
+
+    [Fact]
+    public async Task FetchSourceAsync_404_keeps_source_and_sets_friendly_error()
+    {
+        const string listUrl = "https://example.com/missing.json";
+        var reader = new NotFoundCatalogLocationReader();
+        var (service, tempDir) = TestFixtures.CreateIsolatedCatalogService(locationReader: reader);
+        var settings = new AppSettings();
+        settings.EnsureInitialized();
+        var source = new AppCatalogSource
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Missing List",
+            Location = listUrl,
+            Enabled = true,
+            IsCommunityManaged = true,
+        };
+        settings.AppCatalogSources.Add(source);
+
+        try
+        {
+            var fetched = await service.FetchSourceAsync(new HttpClient(), source);
+
+            fetched.Should().BeFalse();
+            settings.AppCatalogSources.Should().ContainSingle();
+            source.Enabled.Should().BeTrue();
+            source.LastError.Should().Be("List not found");
+        }
+        finally
+        {
+            TestFixtures.CleanupDirectory(tempDir);
+        }
+    }
+
+    [Fact]
+    public async Task FetchSourceAsync_404_keeps_cache_and_sets_friendly_error()
+    {
+        var sourceId = Guid.NewGuid().ToString();
+        const string listUrl = "https://example.com/missing.json";
+        var reader = new NotFoundCatalogLocationReader();
+        var (service, tempDir) = TestFixtures.CreateIsolatedCatalogService(locationReader: reader);
+
+        try
+        {
+            var cachePath = Path.Combine(service.CatalogSourcesCacheFolder, $"{sourceId}.json");
+            await File.WriteAllTextAsync(cachePath, """{"version":"1.0.0","apps":[]}""");
+
+            var source = new AppCatalogSource
+            {
+                Id = sourceId,
+                Name = "Cached List",
+                Location = listUrl,
+                Enabled = true,
+            };
+
+            var fetched = await service.FetchSourceAsync(new HttpClient(), source);
+
+            fetched.Should().BeTrue();
+            source.Enabled.Should().BeTrue();
+            source.LastError.Should().Be("List not found (kept last copy)");
+            source.CachedListVersion.Should().Be("1.0.0");
+        }
+        finally
+        {
+            TestFixtures.CleanupDirectory(tempDir);
+        }
+    }
+
+    private sealed class NotFoundCatalogLocationReader : ICatalogLocationReader
+    {
+        public Task<string> ReadAsync(HttpClient httpClient, string location, CancellationToken cancellationToken = default) =>
+            throw new HttpRequestException(
+                "Response status code does not indicate success: 404 (Not Found).",
+                inner: null,
+                statusCode: HttpStatusCode.NotFound);
     }
 
     private sealed class FakeCatalogLocationReader(Dictionary<string, string> responses) : ICatalogLocationReader

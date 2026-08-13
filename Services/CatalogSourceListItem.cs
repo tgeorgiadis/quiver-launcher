@@ -171,7 +171,7 @@ namespace QuiverLauncher.Services
                 return new StatusWarning("Update available", IsError: false);
 
             if (!string.IsNullOrEmpty(source.LastError))
-                return new StatusWarning(source.LastError, IsError: true);
+                return new StatusWarning(AppCatalogService.FormatCatalogFetchError(source.LastError), IsError: true);
 
             return null;
         }

@@ -1,6 +1,7 @@
 using QuiverLauncher.Core.Services;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services.Mods;
+using System.Net;
 using System.Net.Http;
 using AppSettings = QuiverLauncher.AppSettings;
 using AppCatalogSource = QuiverLauncher.AppCatalogSource;
@@ -187,13 +188,54 @@ namespace QuiverLauncher.Services
 
             if (File.Exists(cachePath))
             {
-                source.LastError = $"{lastError?.Message} (using cached copy)";
+                source.LastError = FormatCatalogFetchError(lastError, usingCache: true);
                 await ApplyCachedVersionMetadataAsync(source).ConfigureAwait(false);
                 return true;
             }
 
-            source.LastError = lastError?.Message ?? "Failed to fetch catalog source.";
+            source.LastError = FormatCatalogFetchError(lastError, usingCache: false);
             return false;
+        }
+
+        public static string FormatCatalogFetchError(Exception? error, bool usingCache)
+        {
+            if (LooksLikeNotFound(error))
+                return usingCache ? "List not found (kept last copy)" : "List not found";
+
+            var message = string.IsNullOrWhiteSpace(error?.Message)
+                ? "Failed to fetch catalog source."
+                : error.Message;
+            return usingCache ? $"{message} (using cached copy)" : message;
+        }
+
+        public static string FormatCatalogFetchError(string? lastError)
+        {
+            if (string.IsNullOrEmpty(lastError))
+                return lastError ?? "";
+
+            if (!LooksLikeNotFoundMessage(lastError))
+                return lastError;
+
+            var usingCache = lastError.Contains("using cached copy", StringComparison.OrdinalIgnoreCase)
+                || lastError.Contains("kept last copy", StringComparison.OrdinalIgnoreCase);
+            return usingCache ? "List not found (kept last copy)" : "List not found";
+        }
+
+        private static bool LooksLikeNotFound(Exception? error)
+        {
+            if (error is HttpRequestException http && http.StatusCode == HttpStatusCode.NotFound)
+                return true;
+
+            return LooksLikeNotFoundMessage(error?.Message);
+        }
+
+        private static bool LooksLikeNotFoundMessage(string? message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return false;
+
+            return message.Contains("404", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Not Found", StringComparison.OrdinalIgnoreCase);
         }
 
         public static IReadOnlyList<string> GetFetchLocationCandidates(AppCatalogSource source)
