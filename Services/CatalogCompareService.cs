@@ -82,7 +82,6 @@ namespace QuiverLauncher.Services
         [
             "name",
             "project",
-            "installPath",
             "appIconUrl",
             "preferredVersion",
             "tags",
@@ -91,13 +90,17 @@ namespace QuiverLauncher.Services
             "repositorySource",
         ];
 
+        public static Dictionary<string, GameInfo> IndexByIdentityKey(IEnumerable<GameInfo> apps) =>
+            apps
+                .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
+                .GroupBy(a => a.IdentityKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
         public static IReadOnlyList<CatalogSyncRowItem> BuildCompareRows(
             List<GameInfo> localApps,
             List<GameInfo> externalApps)
         {
-            var localByKey = localApps
-                .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
-                .ToDictionary(a => a.IdentityKey, a => a, StringComparer.OrdinalIgnoreCase);
+            var localByKey = IndexByIdentityKey(localApps);
 
             var rows = new List<CatalogSyncRowItem>();
             var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -175,9 +178,7 @@ namespace QuiverLauncher.Services
                 changed.Add("name");
             if (!string.Equals(local.Project ?? "", external.Project ?? "", StringComparison.OrdinalIgnoreCase))
                 changed.Add("project");
-            // folderName is not an actionable sync field (preserved on accept for install stability).
-            if (!string.Equals(local.InstallPath ?? "", external.InstallPath ?? "", StringComparison.OrdinalIgnoreCase))
-                changed.Add("installPath");
+            // folderName and installPath are not actionable sync fields (preserved on accept).
             if (!string.Equals(local.GameIconUrl ?? "", external.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase))
                 changed.Add("appIconUrl");
             if (!string.Equals(local.PreferredVersion ?? "", external.PreferredVersion ?? "", StringComparison.OrdinalIgnoreCase))
@@ -228,8 +229,8 @@ namespace QuiverLauncher.Services
 
         /// <summary>
         /// Replaces catalog fields from external. Preserves local <see cref="GameInfo.FolderName"/>
-        /// so accepting catalog updates does not retarget installed folders (conservative policy).
-        /// Also preserves <see cref="GameInfo.CustomDisplayName"/>.
+        /// and <see cref="GameInfo.InstallPath"/> so accepting catalog updates does not retarget
+        /// installed folders (conservative policy). Also preserves <see cref="GameInfo.CustomDisplayName"/>.
         /// </summary>
         public static GameInfo ReplaceFromExternal(GameInfo local, GameInfo external) =>
             new()
@@ -242,7 +243,7 @@ namespace QuiverLauncher.Services
                     ? null
                     : RepositorySourceHelper.Normalize(external.RepositorySource),
                 FolderName = !string.IsNullOrWhiteSpace(local.FolderName) ? local.FolderName : external.FolderName,
-                InstallPath = external.InstallPath,
+                InstallPath = !string.IsNullOrWhiteSpace(local.InstallPath) ? local.InstallPath : external.InstallPath,
                 GameIconUrl = external.GameIconUrl,
                 PreferredVersion = external.PreferredVersion,
                 SkippedUpdateVersion = external.SkippedUpdateVersion,
@@ -286,9 +287,9 @@ namespace QuiverLauncher.Services
                 RepositorySource = RepositorySourceHelper.IsGitHub(external.RepositorySource)
                     ? null
                     : RepositorySourceHelper.Normalize(external.RepositorySource),
-                // Keep installed folder mapping stable across catalog renames.
+                // Keep installed folder mapping and custom install path stable across catalog updates.
                 FolderName = !string.IsNullOrWhiteSpace(local.FolderName) ? local.FolderName : external.FolderName,
-                InstallPath = external.InstallPath,
+                InstallPath = !string.IsNullOrWhiteSpace(local.InstallPath) ? local.InstallPath : external.InstallPath,
                 GameIconUrl = external.GameIconUrl,
                 PreferredVersion = external.PreferredVersion,
                 SkippedUpdateVersion = local.SkippedUpdateVersion,

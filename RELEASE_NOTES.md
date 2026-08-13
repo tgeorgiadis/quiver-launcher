@@ -1,3 +1,6 @@
-# Quiver Launcher 3.1.1
+# Quiver Launcher 3.1.2
 
-Hotfix: community catalog lists that have been removed from the community index are now cleared from App Catalog.
+Hotfix:
+
+- Catalog Add, Replace, Merge, and Delete from Library no longer crash when two library apps share the same repository
+- A custom install path is no longer treated as a catalog update, and Replace/Merge keep that path

@@ -3796,15 +3796,13 @@ namespace QuiverLauncher
         private async Task ApplyCatalogSyncLocalAppsAsync(List<GameInfo> localApps)
         {
             var previousApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
-            var previousByRepo = previousApps
-                .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
-                .ToDictionary(a => a.Repository!, a => a, StringComparer.OrdinalIgnoreCase);
+            var previousByIdentity = CatalogCompareService.IndexByIdentityKey(previousApps);
 
             await _gameManager.CatalogService.SaveLocalAppsAsync(localApps);
 
             foreach (var app in localApps.Where(a => !string.IsNullOrWhiteSpace(a.Repository)))
             {
-                previousByRepo.TryGetValue(app.Repository!, out var previous);
+                previousByIdentity.TryGetValue(app.IdentityKey, out var previous);
                 AppFilesToAddService.SyncForGame(
                     app,
                     _gameManager.GamesFolder,

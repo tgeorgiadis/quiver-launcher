@@ -647,15 +647,15 @@ namespace QuiverLauncher.Services
         }
 
         /// <summary>
-        /// Catalog sync equivalence. <see cref="GameInfo.FolderName"/> is intentionally excluded so
-        /// community folder renames do not keep installed apps in a permanent "changed" state
-        /// (folder mapping is preserved on accept; users rename folders manually).
+        /// Catalog sync equivalence. <see cref="GameInfo.FolderName"/> and
+        /// <see cref="GameInfo.InstallPath"/> are intentionally excluded so community folder
+        /// renames or a missing catalog install path do not keep installed apps in a permanent
+        /// "changed" state (folder mapping is preserved on accept).
         /// </summary>
         public static bool AreCatalogFieldsEquivalent(GameInfo a, GameInfo b) =>
             string.Equals(a.EffectiveRepositorySource, b.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.Project ?? "", b.Project ?? "", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(a.InstallPath ?? "", b.InstallPath ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.GameIconUrl ?? "", b.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.PreferredVersion ?? "", b.PreferredVersion ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(TagHelper.FormatTagsForDisplay(a.Tags), TagHelper.FormatTagsForDisplay(b.Tags), StringComparison.OrdinalIgnoreCase) &&

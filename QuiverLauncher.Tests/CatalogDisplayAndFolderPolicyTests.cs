@@ -104,6 +104,90 @@ public class CatalogDisplayAndFolderPolicyTests
     }
 
     [Fact]
+    public void AreCatalogFieldsEquivalent_ignores_installPath_differences()
+    {
+        var local = new GameInfo
+        {
+            Name = "Game",
+            Project = "Project",
+            FolderName = "Game-Folder",
+            InstallPath = @"D:\Custom\Game",
+            Repository = "owner/game",
+            Tags = ["recomp"],
+        };
+        var external = new GameInfo
+        {
+            Name = "Game",
+            Project = "Project",
+            FolderName = "Game-Folder",
+            InstallPath = null,
+            Repository = "owner/game",
+            Tags = ["recomp"],
+        };
+
+        AppCatalogService.AreCatalogFieldsEquivalent(local, external).Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetChangedFields_does_not_include_installPath()
+    {
+        var local = new GameInfo
+        {
+            Name = "Game",
+            Project = "Project",
+            InstallPath = @"D:\Custom\Game",
+            Repository = "owner/game",
+        };
+        var external = new GameInfo
+        {
+            Name = "Game",
+            Project = "Project",
+            InstallPath = null,
+            Repository = "owner/game",
+        };
+
+        CatalogCompareService.GetChangedFields(local, external).Should().NotContain("installPath");
+    }
+
+    [Fact]
+    public void ReplaceFromExternal_preserves_local_install_path()
+    {
+        var local = new GameInfo
+        {
+            Name = "Old",
+            Repository = "owner/game",
+            InstallPath = @"D:\Custom\Game",
+        };
+        var external = new GameInfo
+        {
+            Name = "New",
+            Repository = "owner/game",
+            InstallPath = null,
+        };
+
+        CatalogCompareService.ReplaceFromExternal(local, external).InstallPath.Should().Be(@"D:\Custom\Game");
+    }
+
+    [Fact]
+    public void MergeExternalIntoLocal_preserves_local_install_path()
+    {
+        var local = new GameInfo
+        {
+            Name = "Old",
+            Repository = "owner/game",
+            InstallPath = @"D:\Custom\Game",
+        };
+        var external = new GameInfo
+        {
+            Name = "New",
+            Repository = "owner/game",
+            InstallPath = null,
+        };
+
+        CatalogCompareService.MergeExternalIntoLocal(local, external).InstallPath.Should().Be(@"D:\Custom\Game");
+    }
+
+    [Fact]
     public void ApplyUserAppDisplayNames_applies_settings_override()
     {
         var app = new GameInfo

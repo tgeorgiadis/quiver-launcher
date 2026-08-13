@@ -767,6 +767,72 @@ public class CatalogCompareServiceTests
     }
 
     [Fact]
+    public void IndexByIdentityKey_keeps_same_repo_on_different_sources()
+    {
+        var github = new GameInfo
+        {
+            Repository = "sonicdcer/DNZHRecomp",
+            RepositorySource = "github",
+            Name = "GitHub copy",
+        };
+        var gitlab = new GameInfo
+        {
+            Repository = "sonicdcer/DNZHRecomp",
+            RepositorySource = "gitlab",
+            Name = "GitLab copy",
+        };
+
+        var indexed = CatalogCompareService.IndexByIdentityKey([github, gitlab]);
+
+        indexed.Should().HaveCount(2);
+        indexed[github.IdentityKey].Name.Should().Be("GitHub copy");
+        indexed[gitlab.IdentityKey].Name.Should().Be("GitLab copy");
+    }
+
+    [Fact]
+    public void IndexByIdentityKey_keeps_first_when_identity_is_duplicated()
+    {
+        var first = new GameInfo
+        {
+            Repository = "sonicdcer/DNZHRecomp",
+            RepositorySource = "github",
+            Name = "First",
+        };
+        var second = new GameInfo
+        {
+            Repository = "sonicdcer/DNZHRecomp",
+            RepositorySource = "github",
+            Name = "Second",
+        };
+
+        var indexed = CatalogCompareService.IndexByIdentityKey([first, second]);
+
+        indexed.Should().ContainSingle();
+        indexed[first.IdentityKey].Name.Should().Be("First");
+    }
+
+    [Fact]
+    public void BuildCompareRows_does_not_throw_when_local_has_duplicate_identity()
+    {
+        var local = new List<GameInfo>
+        {
+            CreateApp("owner/shared", "First"),
+            CreateApp("owner/shared", "Second"),
+        };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/shared", "Catalog"),
+        };
+
+        var act = () => CatalogCompareService.BuildCompareRows(local, external);
+
+        act.Should().NotThrow();
+        var rows = act();
+        rows.Should().ContainSingle(r => r.Repository == "owner/shared");
+        rows[0].Local!.Name.Should().Be("First");
+    }
+
+    [Fact]
     public void SortRows_groups_by_status_then_name()
     {
         var rows = new List<CatalogSyncRowItem>
