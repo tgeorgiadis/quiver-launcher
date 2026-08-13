@@ -1,28 +1,44 @@
-# Quiver Launcher 3.0
+# Quiver Launcher 3.1.0
 
 ## Upgrading from an older Quiver?
 
-If you are on **2.4.2 or older**, the old in-app updater cannot take you to 3.0. Download a fresh copy from this release and move your library over.
+If you are on **2.4.2 or older**, the old in-app updater cannot take you to 3.x. Download a fresh copy from this release and move your library over.
 
-**See the [migration guide](https://github.com/tgeorgiadis/quiver-launcher/blob/v3.0.0/MIGRATING.md)** for what to copy and where it goes on Windows, Linux, and macOS.
+**See the [migration guide](https://github.com/tgeorgiadis/quiver-launcher/blob/main/MIGRATING.md)** for what to copy and where it goes on Windows, Linux, and macOS.
+
+If you are already on **3.0**, the in-app updater can take you to 3.1.0.
 
 ## What's new
 
-### Apps from GitLab
-You can add apps hosted on GitLab, not just GitHub. When you add or edit an app, choose **GitLab** as the repository source.
+### New settings
 
-### New name: Quiver Launcher
-The app is now called **Quiver Launcher** (previously just Quiver). Same project, clearer name.
+These are in Settings and were not in 3.0.0:
 
-### Better updates, and signed Windows builds
-The old in-app updater has been replaced with a more standard update system that is a better foundation going forward.
+- **Prompt when catalog updates are available** — popup when catalog sources have changes to review (off by default; you can still open App Catalog anytime)
+- **Prompt when library apps have updates** — popup for pending app updates (off by default; Quiver Launcher self-update prompts still appear)
+- **Show catalog update badges on library cards** — small badge when catalog metadata for an app has changes to review
+- **Library name style** — name only, name + project below, name (project) in the title, or project only. Custom display names always win when set
+- **Library card tags** — featured / common tags, all tags, or hidden
+- **Tag lines on library cards** — how many wrapped lines of tags each card can show
 
-On Windows, builds are now digitally signed. That should mean fewer false virus warnings than before.
+### Mods: multiple download files
 
-**Please note for Windows users:** you may still see a SmartScreen warning ("Windows protected your PC") when you first download or run Quiver Launcher. That is normal for a newly signed app. It should become less common over time as the signing certificate builds reputation. If you see it, use **More info → Run anyway** after you have confirmed you downloaded Quiver Launcher from this official GitHub release.
+Mod pages that offer more than one file (especially GameBanana) no longer treat the page as a single install.
 
-## Quick install notes
+- Choose which files to install; each file is tracked on its own
+- Add or remove extra files later without uninstalling the others
+- Version checks are per file, so an update on one download is not missed or applied to the wrong file
 
-- **Windows:** extract the zip anywhere and run it.
-- **Linux:** put the AppImage in its own folder, mark it executable, then run it.
-- **macOS:** stay tuned. Still a work in progress while I get the certificate / app signing set up.
+### App Catalog review
+
+- **Search this list** — match name, project, repository, folder, display name, or tags (including tags that are not shown as chips)
+- **Tag chips** — click to include or exclude. Catalog lists can declare `preferredTagFilters` (shown first, by frequency) and `hiddenTagFilters` (never shown as chips)
+- Jump from a library catalog-update badge to that list’s review
+- Catalog `folderName` changes do not retarget an existing install. Your current folder and files stay put; new Adds use the catalog folder name
+
+### Also in this release
+
+- Custom display names on apps; alphabetical library sort uses the name you see
+- Quieter update prompts so you can review catalog and app updates when you want
+- Gamepad and keyboard: highlight the catalog search box, then press Select to type
+- Catalog list cards show the pending count only on **Review (n)**

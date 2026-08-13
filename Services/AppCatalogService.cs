@@ -70,9 +70,29 @@ namespace QuiverLauncher.Services
             }
 
             foreach (var app in localApps)
+            {
                 ApplyUserAppTags(app, settings);
+                ApplyUserAppDisplayNames(app, settings);
+                app.LibraryNameStyle = settings.LibraryNameStyle;
+                app.ShowLibraryUpdateBadges = settings.ShowLibraryAppUpdateBadges;
+                app.LibraryCardTagMaxLines = settings.LibraryCardTagMaxLines;
+            }
 
+            RefreshLibraryCardTags(localApps, settings);
             return localApps;
+        }
+
+        public static void RefreshLibraryCardTags(IEnumerable<GameInfo> apps, AppSettings settings)
+        {
+            settings.EnsureInitialized();
+            var appList = apps as IList<GameInfo> ?? apps.ToList();
+            var featuredOrCommon = TagChipHelper.RankTagsByFrequency(
+                appList.Select(a => a.Tags),
+                featuredTags: null,
+                pinnedTags: settings.PinnedFilterTags);
+
+            foreach (var app in appList)
+                app.RefreshLibraryCardTags(settings.LibraryTagDisplayMode, featuredOrCommon);
         }
 
         public async Task RefreshAllSourcesAsync(HttpClient httpClient, AppSettings settings)
@@ -255,6 +275,78 @@ namespace QuiverLauncher.Services
             source.UpdateAvailable = source.PendingReviewCount > 0;
         }
 
+        /// <summary>
+        /// Sets <see cref="GameInfo.HasPendingCatalogChanges"/> for library apps that have
+        /// actionable catalog field changes (not new-in-catalog-only rows).
+        /// </summary>
+        public async Task ApplyPendingCatalogChangeFlagsAsync(
+            IEnumerable<GameInfo> libraryGames,
+            AppSettings settings)
+        {
+            settings.EnsureInitialized();
+            var games = libraryGames as IList<GameInfo> ?? libraryGames.ToList();
+            foreach (var game in games)
+                game.HasPendingCatalogChanges = false;
+
+            var byIdentity = games
+                .Where(g => !string.IsNullOrWhiteSpace(g.Repository))
+                .GroupBy(g => g.IdentityKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+            if (byIdentity.Count == 0)
+                return;
+
+            var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
+            foreach (var source in settings.AppCatalogSources.Where(s => s.Enabled))
+            {
+                var externalApps = await LoadCachedAppsAsync(source.Id).ConfigureAwait(false);
+                var rows = CatalogCompareService.BuildCompareRows(localApps, externalApps);
+                foreach (var row in rows)
+                {
+                    if (row.Status != CatalogSyncStatus.Changed)
+                        continue;
+                    if (!CatalogCompareService.IsActionableRow(row, source))
+                        continue;
+                    if (string.IsNullOrWhiteSpace(row.IdentityKey))
+                        continue;
+                    if (!byIdentity.TryGetValue(row.IdentityKey, out var matches))
+                        continue;
+
+                    foreach (var game in matches)
+                        game.HasPendingCatalogChanges = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// First enabled catalog source that has an actionable Changed row for this library app.
+        /// </summary>
+        public async Task<string?> FindPendingCatalogSourceIdAsync(GameInfo game, AppSettings settings)
+        {
+            ArgumentNullException.ThrowIfNull(game);
+            ArgumentNullException.ThrowIfNull(settings);
+            settings.EnsureInitialized();
+
+            if (string.IsNullOrWhiteSpace(game.Repository))
+                return null;
+
+            var identityKey = game.IdentityKey;
+            var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
+            foreach (var source in settings.AppCatalogSources.Where(s => s.Enabled))
+            {
+                var externalApps = await LoadCachedAppsAsync(source.Id).ConfigureAwait(false);
+                var rows = CatalogCompareService.BuildCompareRows(localApps, externalApps);
+                var match = rows.FirstOrDefault(row =>
+                    row.Status == CatalogSyncStatus.Changed &&
+                    CatalogCompareService.IsActionableRow(row, source) &&
+                    string.Equals(row.IdentityKey, identityKey, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                    return source.Id;
+            }
+
+            return null;
+        }
+
         public async Task IgnoreRepositoryInMatchingSourcesAsync(AppSettings settings, string repository)
         {
             if (string.IsNullOrWhiteSpace(repository))
@@ -407,6 +499,27 @@ namespace QuiverLauncher.Services
                 app.Tags = TagHelper.NormalizeTags(app.Tags);
         }
 
+        public static void ApplyUserAppDisplayNames(GameInfo app, AppSettings settings)
+        {
+            settings.EnsureInitialized();
+            app.LibraryNameStyle = settings.LibraryNameStyle;
+            app.ShowLibraryUpdateBadges = settings.ShowLibraryAppUpdateBadges;
+            app.LibraryCardTagMaxLines = settings.LibraryCardTagMaxLines;
+
+            if (string.IsNullOrWhiteSpace(app.Repository))
+                return;
+
+            // Local apps.json CustomDisplayName wins; settings overlay applies when not set on the app.
+            if (!string.IsNullOrWhiteSpace(app.CustomDisplayName))
+                return;
+
+            if (settings.UserAppDisplayNames.TryGetValue(app.Repository, out var custom) &&
+                !string.IsNullOrWhiteSpace(custom))
+            {
+                app.CustomDisplayName = custom.Trim();
+            }
+        }
+
         public async Task PromoteAppsToLocalAsync(IEnumerable<GameInfo> apps, bool autoUpdateNewlyAdded = false)
         {
             var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
@@ -447,6 +560,7 @@ namespace QuiverLauncher.Services
                     a.IdentityKey,
                     a.Repository!.Trim(),
                     a.Name ?? "",
+                    a.Project ?? "",
                     a.FolderName ?? "",
                     a.InstallPath ?? "",
                     a.GameIconUrl ?? "",
@@ -490,10 +604,15 @@ namespace QuiverLauncher.Services
             return diff;
         }
 
+        /// <summary>
+        /// Catalog sync equivalence. <see cref="GameInfo.FolderName"/> is intentionally excluded so
+        /// community folder renames do not keep installed apps in a permanent "changed" state
+        /// (folder mapping is preserved on accept; users rename folders manually).
+        /// </summary>
         public static bool AreCatalogFieldsEquivalent(GameInfo a, GameInfo b) =>
             string.Equals(a.EffectiveRepositorySource, b.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(a.FolderName, b.FolderName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(a.Project ?? "", b.Project ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.InstallPath ?? "", b.InstallPath ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.GameIconUrl ?? "", b.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.PreferredVersion ?? "", b.PreferredVersion ?? "", StringComparison.OrdinalIgnoreCase) &&
@@ -543,6 +662,32 @@ namespace QuiverLauncher.Services
             {
                 source.Description = descriptionElement.GetString()?.Trim() ?? "";
             }
+
+            source.FeaturedTags = ParseTagArrayProperty(root, "featuredTags");
+            source.PreferredTagFilters = ParseTagArrayProperty(root, "preferredTagFilters");
+            source.HiddenTagFilters = ParseTagArrayProperty(root, "hiddenTagFilters");
+        }
+
+        private static List<string> ParseTagArrayProperty(JsonElement root, string propertyName)
+        {
+            if (!root.TryGetProperty(propertyName, out var tagsElement) ||
+                tagsElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var tags = new List<string>();
+            foreach (var tagElement in tagsElement.EnumerateArray())
+            {
+                if (tagElement.ValueKind == JsonValueKind.String)
+                {
+                    var tag = tagElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(tag))
+                        tags.Add(tag);
+                }
+            }
+
+            return TagHelper.NormalizeTags(tags);
         }
 
         private static string ResolveListVersion(JsonElement root, out List<GameInfo> apps)
@@ -690,6 +835,12 @@ namespace QuiverLauncher.Services
                     var app = new GameInfo
                     {
                         Name = (appElement.TryGetProperty("name", out var nameElement) ? nameElement.GetString() : null) ?? string.Empty,
+                        Project = appElement.TryGetProperty("project", out var projectElement)
+                            ? projectElement.GetString()
+                            : null,
+                        CustomDisplayName = appElement.TryGetProperty("customDisplayName", out var customNameElement)
+                            ? customNameElement.GetString()
+                            : null,
                         Repository = (appElement.TryGetProperty("repository", out var repoElement) ? repoElement.GetString() : null) ?? string.Empty,
                         RepositorySource = RepositorySourceHelper.IsGitHub(normalizedRepositorySource)
                             ? null
@@ -722,6 +873,11 @@ namespace QuiverLauncher.Services
                         IsCustom = true,
                         GameManager = gameManager,
                     };
+
+                    if (string.IsNullOrWhiteSpace(app.Project))
+                        app.Project = null;
+                    if (string.IsNullOrWhiteSpace(app.CustomDisplayName))
+                        app.CustomDisplayName = null;
 
                     apps.Add(app);
                 }
@@ -881,6 +1037,12 @@ namespace QuiverLauncher.Services
                 ["preferredVersion"] = app.PreferredVersion,
                 ["skippedUpdateVersion"] = app.SkippedUpdateVersion,
             };
+
+            if (!string.IsNullOrWhiteSpace(app.Project))
+                payload["project"] = app.Project.Trim();
+
+            if (!string.IsNullOrWhiteSpace(app.CustomDisplayName))
+                payload["customDisplayName"] = app.CustomDisplayName.Trim();
 
             var effectiveSource = RepositorySourceHelper.Normalize(app.RepositorySource);
             if (!RepositorySourceHelper.IsGitHub(effectiveSource))

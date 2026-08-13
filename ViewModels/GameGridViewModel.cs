@@ -13,9 +13,16 @@ public class GameGridViewModel
         bool ignoreArticlesWhenSorting = true)
     {
         var list = games.Where(g => g != null).Cast<GameInfo>().ToList();
-        string NameKey(GameInfo g) => ignoreArticlesWhenSorting
-            ? NameSortHelper.GetAlphabeticalSortKey(g.Name)
-            : (g.Name ?? string.Empty);
+        // Custom title when set; otherwise catalog name (not composed DisplayName) so style toggles stay stable.
+        string NameKey(GameInfo g)
+        {
+            var sortName = !string.IsNullOrWhiteSpace(g.CustomDisplayName)
+                ? g.CustomDisplayName.Trim()
+                : (g.Name ?? string.Empty);
+            return ignoreArticlesWhenSorting
+                ? NameSortHelper.GetAlphabeticalSortKey(sortName)
+                : sortName;
+        }
 
         return sortMode switch
         {

@@ -36,6 +36,20 @@ public class AppIdentityMigrationTests
     }
 
     [Fact]
+    public void MigrateUserAppDisplayNames_moves_custom_name_to_new_repository()
+    {
+        var settings = new AppSettings();
+        settings.EnsureInitialized();
+        settings.UserAppDisplayNames["owner/old"] = "My Custom Name";
+
+        AppIdentityMigration.MigrateUserAppDisplayNames(settings, "owner/old", "owner/new")
+            .Should().BeTrue();
+
+        settings.UserAppDisplayNames.Should().NotContainKey("owner/old");
+        settings.UserAppDisplayNames["owner/new"].Should().Be("My Custom Name");
+    }
+
+    [Fact]
     public void MigrateUserAppTags_does_not_overwrite_existing_destination()
     {
         var settings = new AppSettings();

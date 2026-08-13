@@ -46,6 +46,18 @@
 								Margin="{Binding ElementName=IconMarginSlider, Path=Value, Converter={StaticResource ThicknessConverter}}"
 								Stretch="{Binding Path=IsChecked, ElementName=IconFillCheckBox, Converter={StaticResource BooleanToStretchConverter}}" />
 						</Border>
+						<Button Classes="library-update-badge"
+								IsVisible="{Binding ShowUpdateBadge}"
+								ToolTip.Tip="Catalog update available — click to review"
+								HorizontalAlignment="Left"
+								VerticalAlignment="Bottom"
+								Margin="16,0,0,12"
+								ZIndex="10"
+								Cursor="Hand"
+								CommandParameter="{Binding}"
+								Click="ReviewCatalogChanges_Click">
+							<TextBlock Text="↑"/>
+						</Button>
 					</Panel>
 					<Grid Margin="24">
 						<Grid.ColumnDefinitions>
@@ -54,10 +66,40 @@
 						</Grid.ColumnDefinitions>
 
 						<StackPanel Grid.Column="0" Margin="{Binding ElementName=TextMarginSlider, Path=Value, Converter={StaticResource ThicknessConverter}}" VerticalAlignment="Center">
-							<TextBlock Text="{Binding Name}"
+							<TextBlock Text="{Binding DisplayName}"
 									   FontSize="22"
 									   FontWeight="Bold"
 									   Foreground="{DynamicResource ThemeText}"/>
+							<TextBlock Text="{Binding ProjectSubtitle}"
+									   FontSize="12"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   IsVisible="{Binding HasProjectSubtitle}"
+									   Margin="0,4,0,0"
+									   TextWrapping="Wrap"/>
+							<Border IsVisible="{Binding HasLibraryCardTags}"
+									MaxHeight="{Binding LibraryCardTagsMaxHeight}"
+									ClipToBounds="True"
+									Margin="0,6,0,0">
+								<ItemsControl ItemsSource="{Binding LibraryCardTags}">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<WrapPanel Orientation="Horizontal"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<Border Background="{DynamicResource ThemeLighter}"
+													CornerRadius="3"
+													Padding="5,1"
+													Margin="0,0,4,3">
+												<TextBlock Text="{Binding}"
+														   FontSize="9"
+														   Foreground="{DynamicResource ThemeTextSecondary}"/>
+											</Border>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</Border>
 							
 							<TextBlock Text="{Binding StatusText}"
 									   FontSize="13"
@@ -129,6 +171,10 @@
 												  Click="UpdateNowMenu_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanUpdate}"/>
+										<MenuItem Header="Review Catalog Changes"
+												  Click="ReviewCatalogChanges_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding ShowUpdateBadge}"/>
 										<MenuItem Header="Auto Update"
 												  ToggleType="CheckBox"
 												  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
@@ -182,6 +228,9 @@
 													  CommandParameter="{Binding}"/>
 											<MenuItem Header="Edit Tags"
 													  Click="EditTagsMenu_Click"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Custom Display Name"
+													  Click="EditCustomDisplayNameMenu_Click"
 													  CommandParameter="{Binding}"/>
 											<MenuItem Header="Remove from List"
 													  Click="RemoveGameEntry_Click"
@@ -263,6 +312,18 @@
 								Height="{Binding ElementName=IconSizeSlider, Path=Value}"
 								Stretch="{Binding Path=IsChecked, ElementName=IconFillCheckBox, Converter={StaticResource BooleanToStretchConverter}}" />
 							</Border>
+							<Button Classes="library-update-badge"
+									IsVisible="{Binding ShowUpdateBadge}"
+									ToolTip.Tip="Catalog update available — click to review"
+									HorizontalAlignment="Right"
+									VerticalAlignment="Bottom"
+									Margin="0,0,4,4"
+									ZIndex="10"
+									Cursor="Hand"
+									CommandParameter="{Binding}"
+									Click="ReviewCatalogChanges_Click">
+								<TextBlock Text="↑"/>
+							</Button>
 						</Panel>
 						
 						<!-- Options Button - Top Right -->
@@ -295,6 +356,10 @@
 											  Click="UpdateNowMenu_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanUpdate}"/>
+									<MenuItem Header="Review Catalog Changes"
+											  Click="ReviewCatalogChanges_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding ShowUpdateBadge}"/>
 									<MenuItem Header="Auto Update"
 											  ToggleType="CheckBox"
 											  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
@@ -348,6 +413,9 @@
 												  CommandParameter="{Binding}"/>
 										<MenuItem Header="Edit Tags"
 												  Click="EditTagsMenu_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Custom Display Name"
+												  Click="EditCustomDisplayNameMenu_Click"
 												  CommandParameter="{Binding}"/>
 										<MenuItem Header="Remove from List"
 												  Click="RemoveGameEntry_Click"
@@ -421,15 +489,46 @@
 						</Grid.ColumnDefinitions>
 
 						<!-- App name (full width) -->
-						<TextBlock Grid.Row="0"
-								   Grid.ColumnSpan="2"
-								   Text="{Binding Name}"
-								   FontSize="14"
-								   FontWeight="Bold"
-								   Foreground="{DynamicResource ThemeText}"
-								   TextAlignment="Left"
-								   TextWrapping="Wrap"
-								   Margin="0,0,0,4"/>
+						<StackPanel Grid.Row="0"
+									Grid.ColumnSpan="2"
+									Margin="0,0,0,4">
+							<TextBlock Text="{Binding DisplayName}"
+									   FontSize="14"
+									   FontWeight="Bold"
+									   Foreground="{DynamicResource ThemeText}"
+									   TextAlignment="Left"
+									   TextWrapping="Wrap"/>
+							<TextBlock Text="{Binding ProjectSubtitle}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   IsVisible="{Binding HasProjectSubtitle}"
+									   Margin="0,2,0,0"
+									   TextWrapping="Wrap"/>
+							<Border IsVisible="{Binding HasLibraryCardTags}"
+									MaxHeight="{Binding LibraryCardTagsMaxHeight}"
+									ClipToBounds="True"
+									Margin="0,4,0,0">
+								<ItemsControl ItemsSource="{Binding LibraryCardTags}">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<WrapPanel Orientation="Horizontal"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<Border Background="{DynamicResource ThemeLighter}"
+													CornerRadius="3"
+													Padding="5,1"
+													Margin="0,0,4,3">
+												<TextBlock Text="{Binding}"
+														   FontSize="9"
+														   Foreground="{DynamicResource ThemeTextSecondary}"/>
+											</Border>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</Border>
+						</StackPanel>
 
 						<!-- Download/Launch Button -->
 						<Button Grid.Row="1"
@@ -510,6 +609,18 @@
 								Height="{Binding ElementName=IconSizeSlider, Path=Value}"
 								Stretch="{Binding Path=IsChecked, ElementName=IconFillCheckBox, Converter={StaticResource BooleanToStretchConverter}}" />
 						</Border>
+						<Button Classes="library-update-badge"
+								IsVisible="{Binding ShowUpdateBadge}"
+								ToolTip.Tip="Catalog update available — click to review"
+								HorizontalAlignment="Right"
+								VerticalAlignment="Bottom"
+								Margin="0,0,4,4"
+								ZIndex="10"
+								Cursor="Hand"
+								CommandParameter="{Binding}"
+								Click="ReviewCatalogChanges_Click">
+							<TextBlock Text="↑"/>
+						</Button>
 					</Panel>
 
 					<!-- Options Button - Top Right -->
@@ -542,6 +653,10 @@
 										  Click="UpdateNowMenu_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanUpdate}"/>
+								<MenuItem Header="Review Catalog Changes"
+										  Click="ReviewCatalogChanges_Click"
+										  CommandParameter="{Binding}"
+										  IsVisible="{Binding ShowUpdateBadge}"/>
 								<MenuItem Header="Auto Update"
 										  ToggleType="CheckBox"
 										  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
@@ -596,6 +711,9 @@
 									<MenuItem Header="Edit Tags"
 											  Click="EditTagsMenu_Click"
 											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Custom Display Name"
+											  Click="EditCustomDisplayNameMenu_Click"
+											  CommandParameter="{Binding}"/>
 									<MenuItem Header="Remove from List"
 											  Click="RemoveGameEntry_Click"
 											  CommandParameter="{Binding}"
@@ -646,14 +764,45 @@
 							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 
-						<TextBlock Grid.Row="0"
-								   Grid.ColumnSpan="2"
-								   Text="{Binding Name}"
-								   FontSize="14"
-								   FontWeight="Bold"
-								   Foreground="{DynamicResource ThemeText}"
-								   TextWrapping="Wrap"
-								   Margin="0,0,0,4"/>
+						<StackPanel Grid.Row="0"
+									Grid.ColumnSpan="2"
+									Margin="0,0,0,4">
+							<TextBlock Text="{Binding DisplayName}"
+									   FontSize="14"
+									   FontWeight="Bold"
+									   Foreground="{DynamicResource ThemeText}"
+									   TextWrapping="Wrap"/>
+							<TextBlock Text="{Binding ProjectSubtitle}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   IsVisible="{Binding HasProjectSubtitle}"
+									   Margin="0,2,0,0"
+									   TextWrapping="Wrap"/>
+							<Border IsVisible="{Binding HasLibraryCardTags}"
+									MaxHeight="{Binding LibraryCardTagsMaxHeight}"
+									ClipToBounds="True"
+									Margin="0,4,0,0">
+								<ItemsControl ItemsSource="{Binding LibraryCardTags}">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<WrapPanel Orientation="Horizontal"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<Border Background="{DynamicResource ThemeLighter}"
+													CornerRadius="3"
+													Padding="5,1"
+													Margin="0,0,4,3">
+												<TextBlock Text="{Binding}"
+														   FontSize="9"
+														   Foreground="{DynamicResource ThemeTextSecondary}"/>
+											</Border>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</Border>
+						</StackPanel>
 
 						<Button Grid.Row="1"
 								Grid.Column="0"
@@ -807,7 +956,7 @@
 							<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}" Width="44" Height="44" Stretch="Uniform"/>
 						</Border>
 						<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-							<TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+							<TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
 									   Foreground="{DynamicResource ThemeText}"
 									   TextTrimming="CharacterEllipsis"/>
 							<TextBlock FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}">
@@ -950,7 +1099,7 @@
 						<WrapPanel Grid.Row="2"
 								   Orientation="Horizontal"
 								   Margin="8,0,8,8">
-							<Button Classes="options" Content="Install" FontSize="10" Padding="6,2" Margin="0,0,4,4"
+							<Button Classes="options" Content="{Binding InstallButtonLabel}" FontSize="10" Padding="6,2" Margin="0,0,4,4"
 									IsVisible="{Binding CanInstall}"
 									CommandParameter="{Binding}"
 									Click="ModRowInstall_Click"/>
@@ -1063,12 +1212,6 @@
 								   Foreground="{DynamicResource ThemeText}"
 								   TextTrimming="CharacterEllipsis" MaxLines="1" VerticalAlignment="Center"
 								   ToolTip.Tip="{Binding TitleToolTip}"/>
-						<Border Grid.Column="1" Background="{DynamicResource ThemeLighter}" CornerRadius="10"
-								MinWidth="26" Height="26" Padding="6,0" VerticalAlignment="Center"
-								IsVisible="{Binding PendingReviewBadgeVisible}">
-							<TextBlock Text="{Binding PendingReviewCount}" FontSize="13" FontWeight="Bold"
-									   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-						</Border>
 						<Border Grid.Column="1" Classes="catalog-all-reviewed-chip" VerticalAlignment="Center"
 								IsVisible="{Binding AllReviewedVisible}" ToolTip.Tip="All reviewed">
 							<TextBlock Text="✓ Reviewed" Classes="catalog-all-reviewed"/>
@@ -1825,6 +1968,94 @@
 		<Setter Property="Background" Value="#15803d"/>
 		<Setter Property="BorderBrush" Value="#15803d"/>
 		<Setter Property="Foreground" Value="#18181b"/>
+	</Style>
+
+	<!-- Library card update badge (corner overlay on app icons).
+	     Solid dark green so it reads on charcoal cards; custom template so Fluent
+	     pointerover chrome does not replace the fill with a grey wash. -->
+	<Style Selector="Border.library-update-badge">
+		<Setter Property="Background" Value="#166534"/>
+		<Setter Property="BorderBrush" Value="#86EFAC"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="8"/>
+		<Setter Property="Padding" Value="5,2"/>
+		<Setter Property="MinWidth" Value="18"/>
+		<Setter Property="MinHeight" Value="18"/>
+	</Style>
+
+	<Style Selector="Border.library-update-badge TextBlock">
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge">
+		<Setter Property="Background" Value="#166534"/>
+		<Setter Property="BorderBrush" Value="#86EFAC"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="8"/>
+		<Setter Property="Padding" Value="5,2"/>
+		<Setter Property="MinWidth" Value="18"/>
+		<Setter Property="MinHeight" Value="18"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.library-update-badge TextBlock">
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pointerover">
+		<Setter Property="Background" Value="#15803D"/>
+		<Setter Property="BorderBrush" Value="#BBF7D0"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pressed">
+		<Setter Property="Background" Value="#14532D"/>
+		<Setter Property="BorderBrush" Value="#86EFAC"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
 	</Style>
 
 	<!-- Orange gamepad rings require Window.gamepad-chrome (controller connected). -->
@@ -2879,7 +3110,40 @@
 										Tag="UpToDate" Click="CatalogReviewFilter_Click" Margin="0,0,6,6"/>
 								<Button x:Name="CatalogFilterHiddenButton" Classes="catalog-filter" Content="Hidden"
 										Tag="Hidden" Click="CatalogReviewFilter_Click" Margin="0,0,6,6"/>
+								<TextBox x:Name="CatalogSearchTextBox"
+										 Watermark="Search this list"
+										 Width="220"
+										 FontSize="12"
+										 VerticalAlignment="Center"
+										 Margin="6,0,6,6"
+										 TextChanged="CatalogSearch_TextChanged"/>
 							</WrapPanel>
+							<StackPanel Spacing="4"
+										IsVisible="{Binding HasCatalogTagChips}">
+								<TextBlock Text="Tags (click to cycle: off → include → exclude)"
+										   FontSize="10"
+										   Foreground="{DynamicResource ThemeTextSecondary}"
+										   Opacity="0.85"/>
+								<ItemsControl x:Name="CatalogTagChipsItemsControl"
+											  ItemsSource="{Binding CatalogTagChips}">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<WrapPanel Orientation="Horizontal"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<Button Classes="catalog-filter"
+													Content="{Binding StateLabel}"
+													Tag="{Binding Tag}"
+													Click="CatalogTagChip_Click"
+													Margin="0,0,6,6"
+													Classes.selected="{Binding IsInclude}"
+													ToolTip.Tip="Neutral → include → exclude"/>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</StackPanel>
 							<TextBlock Text="New = not in library yet and still needs review. Not in library = all catalog entries you haven't added (including ignored). Ignore skips changes for this catalog version. Hide removes apps from review until unhidden in Hidden."
 									   FontSize="10"
 									   Foreground="{DynamicResource ThemeTextSecondary}"
@@ -3033,6 +3297,37 @@
 										</StackPanel>
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
+											<CheckBox x:Name="IgnoreArticlesWhenSortingCheckBox"
+													  Content="Ignore The/A/An when sorting by name"
+													  Foreground="{DynamicResource ThemeText}"
+													  FontSize="13" FontWeight="SemiBold"
+													  Checked="IgnoreArticlesWhenSortingCheckBox_Checked"
+													  Unchecked="IgnoreArticlesWhenSortingCheckBox_Unchecked"/>
+											<TextBlock Text="Alphabetical sorts skip leading The, A, and An (e.g. The Legend of Zelda under L)"
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   Margin="20,0,0,0"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
+										<!-- Divider -->
+										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
+
+										<StackPanel Spacing="2" Margin="0,0,0,0">
+											<CheckBox x:Name="AutoUpdateNewlyAddedAppsCheckBox"
+													  Content="Enable Auto Update for newly added apps"
+													  Foreground="{DynamicResource ThemeText}"
+													  FontSize="13" FontWeight="SemiBold"
+													  Checked="AutoUpdateNewlyAddedAppsCheckBox_Checked"
+													  Unchecked="AutoUpdateNewlyAddedAppsCheckBox_Unchecked"/>
+											<TextBlock Text="New apps from the catalog or Add Entry start with Auto Update enabled"
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   Margin="20,0,0,0"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
+										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="BackgroundUpdateCheckCheckBox"
 													  Content="Check for app updates in the background"
 													  Foreground="{DynamicResource ThemeText}"
@@ -3065,13 +3360,13 @@
 										</StackPanel>
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
-											<CheckBox x:Name="AutoUpdateNewlyAddedAppsCheckBox"
-													  Content="Enable Auto Update for newly added apps"
+											<CheckBox x:Name="PromptCatalogUpdatesCheckBox"
+													  Content="Prompt when catalog updates are available"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
-													  Checked="AutoUpdateNewlyAddedAppsCheckBox_Checked"
-													  Unchecked="AutoUpdateNewlyAddedAppsCheckBox_Unchecked"/>
-											<TextBlock Text="New apps from the catalog or Add Entry start with Auto Update enabled"
+													  Checked="PromptCatalogUpdatesCheckBox_Checked"
+													  Unchecked="PromptCatalogUpdatesCheckBox_Unchecked"/>
+											<TextBlock Text="Show a popup when catalog sources have changes to review (off by default; open App Catalog anytime)"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -3079,13 +3374,13 @@
 										</StackPanel>
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
-											<CheckBox x:Name="IgnoreArticlesWhenSortingCheckBox"
-													  Content="Ignore The/A/An when sorting by name"
+											<CheckBox x:Name="PromptAppUpdateReviewsCheckBox"
+													  Content="Prompt when library apps have updates"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
-													  Checked="IgnoreArticlesWhenSortingCheckBox_Checked"
-													  Unchecked="IgnoreArticlesWhenSortingCheckBox_Unchecked"/>
-											<TextBlock Text="Alphabetical sorts skip leading The, A, and An (e.g. The Legend of Zelda under L)"
+													  Checked="PromptAppUpdateReviewsCheckBox_Checked"
+													  Unchecked="PromptAppUpdateReviewsCheckBox_Unchecked"/>
+											<TextBlock Text="Show a popup for pending app updates (Quiver Launcher self-update prompts still appear)"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -3489,6 +3784,105 @@
 													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_list.png"/>
 												</Button>
 											</StackPanel>
+										</StackPanel>
+
+										<!-- Divider -->
+										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
+
+										<!-- Card Content -->
+										<TextBlock Text="CARD CONTENT"
+												   FontSize="10" FontWeight="Bold"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   LetterSpacing="1"
+												   Margin="0,0,0,4"/>
+
+										<StackPanel Spacing="2" Margin="0,0,0,0">
+											<TextBlock Text="Library name style"
+													   FontSize="13"
+													   FontWeight="SemiBold"
+													   Foreground="{DynamicResource ThemeText}"/>
+											<ComboBox x:Name="LibraryNameStyleComboBox"
+													  Foreground="{DynamicResource ThemeText}"
+													  Background="{DynamicResource ThemeBase}"
+													  BorderBrush="{DynamicResource ThemeBorder}"
+													  BorderThickness="1"
+													  CornerRadius="4"
+													  Padding="8"
+													  Margin="0,4,0,0"
+													  SelectionChanged="LibraryNameStyleComboBox_SelectionChanged">
+												<ComboBoxItem Content="Name only" Tag="NameOnly"/>
+												<ComboBoxItem Content="Name + project below" Tag="NameAndProject"/>
+												<ComboBoxItem Content="Name (project) in title" Tag="NameAndProjectInTitle"/>
+												<ComboBoxItem Content="Project only" Tag="ProjectOnly"/>
+											</ComboBox>
+											<TextBlock Text="How names and projects appear in the Library. “Below” shows the project name under the title. Custom display names always win when set."
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
+										<StackPanel Spacing="2" Margin="0,8,0,0">
+											<TextBlock Text="Library card tags"
+													   FontSize="13"
+													   FontWeight="SemiBold"
+													   Foreground="{DynamicResource ThemeText}"/>
+											<ComboBox x:Name="LibraryTagDisplayModeComboBox"
+													  Foreground="{DynamicResource ThemeText}"
+													  Background="{DynamicResource ThemeBase}"
+													  BorderBrush="{DynamicResource ThemeBorder}"
+													  BorderThickness="1"
+													  CornerRadius="4"
+													  Padding="8"
+													  Margin="0,4,0,0"
+													  SelectionChanged="LibraryTagDisplayModeComboBox_SelectionChanged">
+												<ComboBoxItem Content="Featured / common tags" Tag="Featured"/>
+												<ComboBoxItem Content="All tags" Tag="All"/>
+												<ComboBoxItem Content="Hidden" Tag="Hidden"/>
+											</ComboBox>
+											<TextBlock Text="Tags shown on Library cards. Filters still work when tags are hidden."
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
+										<StackPanel Spacing="2" Margin="0,8,0,0">
+											<TextBlock Text="Tag lines on library cards"
+													   FontSize="13"
+													   FontWeight="SemiBold"
+													   Foreground="{DynamicResource ThemeText}"/>
+											<ComboBox x:Name="LibraryCardTagMaxLinesComboBox"
+													  Foreground="{DynamicResource ThemeText}"
+													  Background="{DynamicResource ThemeBase}"
+													  BorderBrush="{DynamicResource ThemeBorder}"
+													  BorderThickness="1"
+													  CornerRadius="4"
+													  Padding="8"
+													  Margin="0,4,0,0"
+													  SelectionChanged="LibraryCardTagMaxLinesComboBox_SelectionChanged">
+												<ComboBoxItem Content="1 line" Tag="1"/>
+												<ComboBoxItem Content="2 lines" Tag="2"/>
+												<ComboBoxItem Content="3 lines" Tag="3"/>
+												<ComboBoxItem Content="4 lines" Tag="4"/>
+												<ComboBoxItem Content="No limit" Tag="0"/>
+											</ComboBox>
+											<TextBlock Text="How many wrapped lines of tags each library card can show before clipping"
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
+										<StackPanel Spacing="2" Margin="0,8,0,0">
+											<CheckBox x:Name="ShowLibraryAppUpdateBadgesCheckBox"
+													  Content="Show catalog update badges on library cards"
+													  Foreground="{DynamicResource ThemeText}"
+													  FontSize="13" FontWeight="SemiBold"
+													  Checked="ShowLibraryAppUpdateBadgesCheckBox_Checked"
+													  Unchecked="ShowLibraryAppUpdateBadgesCheckBox_Unchecked"/>
+											<TextBlock Text="Small badge when catalog metadata for an app has changes to review (app version updates use the orange update button)"
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   Margin="20,0,0,0"
+													   TextWrapping="Wrap"/>
 										</StackPanel>
 
 										<!-- Divider -->
@@ -3932,6 +4326,8 @@
 											<RowDefinition Height="Auto"/>
 											<RowDefinition Height="Auto"/>
 											<RowDefinition Height="Auto"/>
+											<RowDefinition Height="Auto"/>
+											<RowDefinition Height="Auto"/>
 										</Grid.RowDefinitions>
 
 										<TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
@@ -3946,8 +4342,32 @@
 												 Margin="8,0,0,8"
 												 TextChanged="GameNameTextBox_TextChanged"/>
 
-										<TextBlock Grid.Row="1" Grid.Column="0" Text="Repository Source:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<ComboBox Grid.Row="1" Grid.Column="1"
+										<TextBlock Grid.Row="1" Grid.Column="0" Text="Project:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="1" Grid.Column="1"
+												 x:Name="NewGameProjectTextBox"
+												 Watermark="Team / project / author (optional)"
+												 Foreground="{DynamicResource ThemeText}"
+												 Background="{DynamicResource ThemeBase}"
+												 BorderBrush="{DynamicResource ThemeBorder}"
+												 BorderThickness="1"
+												 CornerRadius="4"
+												 Padding="8"
+												 Margin="8,0,0,8"/>
+
+										<TextBlock Grid.Row="2" Grid.Column="0" Text="Custom Name:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="2" Grid.Column="1"
+												 x:Name="NewGameCustomDisplayNameTextBox"
+												 Watermark="Overrides library name style when set"
+												 Foreground="{DynamicResource ThemeText}"
+												 Background="{DynamicResource ThemeBase}"
+												 BorderBrush="{DynamicResource ThemeBorder}"
+												 BorderThickness="1"
+												 CornerRadius="4"
+												 Padding="8"
+												 Margin="8,0,0,8"/>
+
+										<TextBlock Grid.Row="3" Grid.Column="0" Text="Repository Source:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<ComboBox Grid.Row="3" Grid.Column="1"
 												  x:Name="NewGameRepositorySourceComboBox"
 												  Foreground="{DynamicResource ThemeText}"
 												  Background="{DynamicResource ThemeBase}"
@@ -3962,8 +4382,8 @@
 											<ComboBoxItem Content="GitLab" Tag="gitlab"/>
 										</ComboBox>
 
-										<TextBlock Grid.Row="2" Grid.Column="0" Text="Repository:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="2" Grid.Column="1"
+										<TextBlock Grid.Row="4" Grid.Column="0" Text="Repository:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="4" Grid.Column="1"
 												 x:Name="NewGameRepoTextBox"
 												 Foreground="{DynamicResource ThemeText}"
 												 Background="{DynamicResource ThemeBase}"
@@ -3974,8 +4394,8 @@
 												 Margin="8,0,0,8"
 												 TextChanged="GameRepoTextBox_TextChanged"/>
 
-										<TextBlock Grid.Row="3" Grid.Column="0" Text="Folder Name:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="3" Grid.Column="1"
+										<TextBlock Grid.Row="5" Grid.Column="0" Text="Folder Name:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="5" Grid.Column="1"
 												 x:Name="NewGameFolderTextBox"
 												 Foreground="{DynamicResource ThemeText}"
 												 Background="{DynamicResource ThemeBase}"
@@ -3986,8 +4406,8 @@
 												 Margin="8,0,0,8"
 												 TextChanged="GameFolderTextBox_TextChanged"/>
 
-										<TextBlock Grid.Row="4" Grid.Column="0" Text="Tags:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="4" Grid.Column="1"
+										<TextBlock Grid.Row="6" Grid.Column="0" Text="Tags:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="6" Grid.Column="1"
 												 x:Name="NewGameTagsTextBox"
 												 Watermark="e.g. n64, recomp"
 												 Foreground="{DynamicResource ThemeText}"
@@ -4001,8 +4421,8 @@
 												 TextWrapping="Wrap"
 												 MinHeight="56"/>
 
-										<TextBlock Grid.Row="5" Grid.Column="0" Text="Icon URL:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="5" Grid.Column="1"
+										<TextBlock Grid.Row="7" Grid.Column="0" Text="Icon URL:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="7" Grid.Column="1"
 												 x:Name="NewGameIconTextBox"
 												 Foreground="{DynamicResource ThemeText}"
 												 Background="{DynamicResource ThemeBase}"
@@ -4013,8 +4433,8 @@
 												 Margin="8,0,0,8"
 												 TextChanged="GameIconTextBox_TextChanged"/>
 
-										<TextBlock Grid.Row="6" Grid.Column="0" Text="Files To Add:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="6" Grid.Column="1"
+										<TextBlock Grid.Row="8" Grid.Column="0" Text="Files To Add:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="8" Grid.Column="1"
 												 x:Name="NewGameFilesToAddTextBox"
 												 Watermark="e.g. portable.txt"
 												 Foreground="{DynamicResource ThemeText}"
@@ -4025,8 +4445,8 @@
 												 Padding="8"
 												 Margin="8,0,0,8"/>
 
-										<TextBlock Grid.Row="7" Grid.Column="0" Text="Mods Path:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="7" Grid.Column="1"
+										<TextBlock Grid.Row="9" Grid.Column="0" Text="Mods Path:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="9" Grid.Column="1"
 												 x:Name="NewGameModsPathTextBox"
 												 Watermark="e.g. mods"
 												 Foreground="{DynamicResource ThemeText}"
@@ -4037,16 +4457,16 @@
 												 Padding="8"
 												 Margin="8,0,0,8"/>
 
-										<TextBlock Grid.Row="8" Grid.Column="0" Text="Mod Layout:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<CheckBox Grid.Row="8" Grid.Column="1"
+										<TextBlock Grid.Row="10" Grid.Column="0" Text="Mod Layout:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<CheckBox Grid.Row="10" Grid.Column="1"
 												  x:Name="NewGameModsFolderPerModCheckBox"
 												  Content="Install each mod into its own folder"
 												  Foreground="{DynamicResource ThemeText}"
 												  Margin="8,0,0,8"
 												  VerticalAlignment="Center"/>
 
-										<TextBlock Grid.Row="9" Grid.Column="0" Text="Mod Sources:" VerticalAlignment="Top" Margin="0,10,0,0" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="9" Grid.Column="1"
+										<TextBlock Grid.Row="11" Grid.Column="0" Text="Mod Sources:" VerticalAlignment="Top" Margin="0,10,0,0" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="11" Grid.Column="1"
 												 x:Name="NewGameModsSourcesTextBox"
 												 Watermark="Thunderstore URL/slug or GameBanana mods/games/{id} (one per line)"
 												 Foreground="{DynamicResource ThemeText}"
@@ -4211,7 +4631,8 @@
 							HorizontalAlignment="Center"
 							VerticalAlignment="Center">
 						<StackPanel Spacing="12">
-							<TextBlock Text="Edit Tags"
+							<TextBlock x:Name="TagEditTitleText"
+									   Text="Edit Tags"
 									   FontSize="18"
 									   FontWeight="Bold"
 									   Foreground="{DynamicResource ThemeText}"/>

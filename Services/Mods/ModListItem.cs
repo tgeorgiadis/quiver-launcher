@@ -16,6 +16,9 @@ public sealed class ModListItem : INotifyPropertyChanged
     private bool _isGamepadFocused;
     private ModInstallStatus _status = ModInstallStatus.NotInstalled;
     private string? _installedVersion;
+    private int _installedFileCount;
+    private IReadOnlyList<InstalledModRecord> _installedRecords = [];
+    private IReadOnlyList<ModDownloadFile>? _knownDownloadFiles;
     private bool _isBusy;
     private double _downloadProgress;
     private bool _hasDownloadProgress;
@@ -103,6 +106,7 @@ public sealed class ModListItem : INotifyPropertyChanged
             OnPropertyChanged(nameof(CanUpdate));
             OnPropertyChanged(nameof(CanUninstall));
             OnPropertyChanged(nameof(VersionLine));
+            OnPropertyChanged(nameof(InstallButtonLabel));
         }
     }
 
@@ -204,6 +208,13 @@ public sealed class ModListItem : INotifyPropertyChanged
             if (Status == ModInstallStatus.NotInstalled)
                 return $"v{LatestVersion}";
 
+            if (_installedFileCount > 1)
+            {
+                return Status == ModInstallStatus.UpdateAvailable
+                    ? $"{_installedFileCount} files · update"
+                    : $"{_installedFileCount} files";
+            }
+
             var installed = InstalledVersion ?? "?";
             if (Status == ModInstallStatus.Installed ||
                 string.Equals(installed, LatestVersion, StringComparison.OrdinalIgnoreCase))
@@ -213,23 +224,85 @@ public sealed class ModListItem : INotifyPropertyChanged
         }
     }
 
-    public bool CanInstall => !IsBusy && Status == ModInstallStatus.NotInstalled;
-    public bool CanUpdate => !IsBusy && Status == ModInstallStatus.UpdateAvailable;
-    public bool CanUninstall => !IsBusy && Status is ModInstallStatus.Installed or ModInstallStatus.UpdateAvailable;
+    public IReadOnlyList<ModDownloadFile> EffectiveDownloadFiles =>
+        _knownDownloadFiles ?? Package.DownloadFiles;
 
-    public void ApplyInstalled(InstalledModRecord? record)
+    /// <summary>
+    /// GameBanana pages can list several downloads; keep Install visible after the first file
+    /// only while at least one catalog file is still missing.
+    /// </summary>
+    public bool AllowsAdditionalFiles
     {
-        if (record == null)
+        get
         {
-            InstalledVersion = null;
-            Status = ModInstallStatus.NotInstalled;
+            if (!string.Equals(Package.ProviderId, ModProviderIds.GameBanana, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var files = EffectiveDownloadFiles;
+            if (files.Count == 0)
+                return true;
+
+            return ModDownloadFileSelection.GetUninstalledFiles(files, _installedRecords).Count > 0;
+        }
+    }
+
+    public bool CanInstall =>
+        !IsBusy &&
+        (Status == ModInstallStatus.NotInstalled || AllowsAdditionalFiles);
+
+    public void SetKnownDownloadFiles(IReadOnlyList<ModDownloadFile> files)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+        _knownDownloadFiles = files;
+        if (_installedRecords.Count > 0)
+        {
+            // Recompute Installed vs UpdateAvailable now that per-file versions exist.
+            ApplyInstalled(_installedRecords);
             return;
         }
 
-        InstalledVersion = record.Version;
-        Status = ModVersionComparer.IsUpdateAvailable(record.Version, Package.LatestVersion?.Version)
+        OnPropertyChanged(nameof(CanInstall));
+        OnPropertyChanged(nameof(AllowsAdditionalFiles));
+        OnPropertyChanged(nameof(InstallButtonLabel));
+    }
+
+    public string InstallButtonLabel =>
+        Status == ModInstallStatus.NotInstalled ? "Install" : "Add files";
+
+    public bool CanUpdate => !IsBusy && Status == ModInstallStatus.UpdateAvailable;
+    public bool CanUninstall => !IsBusy && Status is ModInstallStatus.Installed or ModInstallStatus.UpdateAvailable;
+
+    public void ApplyInstalled(InstalledModRecord? record) =>
+        ApplyInstalled(record == null ? [] : [record]);
+
+    public void ApplyInstalled(IReadOnlyList<InstalledModRecord> records)
+    {
+        ArgumentNullException.ThrowIfNull(records);
+
+        if (records.Count == 0)
+        {
+            _installedFileCount = 0;
+            _installedRecords = [];
+            InstalledVersion = null;
+            Status = ModInstallStatus.NotInstalled;
+            OnPropertyChanged(nameof(CanInstall));
+            OnPropertyChanged(nameof(AllowsAdditionalFiles));
+            OnPropertyChanged(nameof(VersionLine));
+            return;
+        }
+
+        _installedFileCount = records.Count;
+        _installedRecords = records;
+        InstalledVersion = records.Count == 1
+            ? records[0].Version
+            : $"{records.Count} files";
+        var files = EffectiveDownloadFiles;
+        Status = records.Any(r => ModDownloadFileSelection.IsRecordUpdateAvailable(r, Package, files))
             ? ModInstallStatus.UpdateAvailable
             : ModInstallStatus.Installed;
+        OnPropertyChanged(nameof(CanInstall));
+        OnPropertyChanged(nameof(AllowsAdditionalFiles));
+        OnPropertyChanged(nameof(VersionLine));
     }
 
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>

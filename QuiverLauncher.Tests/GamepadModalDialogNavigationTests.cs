@@ -280,6 +280,100 @@ public class GamepadModalDialogNavigationTests
     }
 
     [AvaloniaFact]
+    public void CollectDialogFocusableControls_includes_disabled_install_button()
+    {
+        var install = new Button { Content = "Install", IsEnabled = false, Focusable = true };
+        var cancel = new Button { Content = "Cancel", Focusable = true };
+        var window = new Window
+        {
+            Content = new StackPanel
+            {
+                Children =
+                {
+                    new ListBox { Focusable = true, Items = { "One", "Two" } },
+                    install,
+                    cancel,
+                },
+            },
+        };
+
+        try
+        {
+            window.Show();
+            var controls = GamepadModalDialogNavigation.CollectDialogFocusableControls(window);
+            controls.Should().Contain(install);
+            controls.Should().Contain(cancel);
+        }
+        finally
+        {
+            if (window.IsVisible)
+                window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void TryHandleNavigation_clears_listbox_selection_when_moving_to_buttons()
+    {
+        var listBox = new ListBox
+        {
+            Focusable = true,
+            Items = { "One", "Two" },
+            SelectedIndex = 1,
+        };
+        var install = new Button { Content = "Install", IsEnabled = false, Focusable = true, MinWidth = 100 };
+        var cancel = new Button { Content = "Cancel", Focusable = true, MinWidth = 100 };
+        var dialog = new Window
+        {
+            Width = 480,
+            Height = 360,
+            Content = new StackPanel
+            {
+                Spacing = 12,
+                Children = { listBox, install, cancel },
+            },
+        };
+
+        var nav = GamepadModalDialogNavigation.Instance;
+        try
+        {
+            GamepadFocusChrome.SetActive(true, dialog);
+            dialog.Show();
+            GamepadModalDialogNavigation.Attach(dialog);
+            nav.RefreshDialogButtons();
+
+            // Establish list focus via nav (Refresh posts focus asynchronously).
+            nav.TryHandleNavigation(NavigationDirection.Up).Should().BeTrue();
+            listBox.Classes.Contains("gamepad-focused").Should().BeTrue();
+
+            // Park on the last row, then leave the list for the button row.
+            listBox.SelectedIndex = 1;
+            nav.TryHandleNavigation(NavigationDirection.Down).Should().BeTrue();
+
+            listBox.SelectedIndex.Should().Be(-1);
+            listBox.Classes.Contains("gamepad-focused").Should().BeFalse();
+            install.Classes.Contains("gamepad-focused").Should().BeTrue();
+
+            // Disabled Install must not dismiss the dialog on Confirm.
+            nav.TryHandleConfirm().Should().BeTrue();
+            dialog.IsVisible.Should().BeTrue();
+            install.Classes.Contains("gamepad-focused").Should().BeTrue();
+
+            nav.TryHandleNavigation(NavigationDirection.Up).Should().BeTrue();
+
+            listBox.Classes.Contains("gamepad-focused").Should().BeTrue();
+            listBox.SelectedIndex.Should().Be(1);
+            install.Classes.Contains("gamepad-focused").Should().BeFalse();
+        }
+        finally
+        {
+            nav.UnregisterModalDialog(dialog);
+            GamepadFocusChrome.SetActive(false);
+            if (dialog.IsVisible)
+                dialog.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void CollectDialogFocusableControls_includes_textbox_and_buttons()
     {
         var root = new StackPanel

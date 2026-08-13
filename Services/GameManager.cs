@@ -249,6 +249,9 @@ namespace QuiverLauncher.Services
                 }));
             }
 
+            await _catalogService.ApplyPendingCatalogChangeFlagsAsync(_catalogApps, _settings)
+                .ConfigureAwait(false);
+
             await RebuildVisibleGamesAsync(_settings);
 
             await LoadCustomAndCachedIconsAsync();

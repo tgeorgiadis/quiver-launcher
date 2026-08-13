@@ -70,6 +70,7 @@ public static class CatalogSyncFieldDiffBuilder
     private static readonly Dictionary<string, string> FieldLabels = new(StringComparer.OrdinalIgnoreCase)
     {
         ["name"] = "Name",
+        ["project"] = "Project",
         ["folderName"] = "Folder",
         ["installPath"] = "Install path",
         ["appIconUrl"] = "Icon",
@@ -117,6 +118,16 @@ public static class CatalogSyncFieldDiffBuilder
                 FieldLabel = "Folder",
                 Kind = CatalogSyncFieldDiffKind.ExternalPreview,
                 ExternalValue = external.FolderName,
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(external.Project))
+        {
+            diffs.Add(new CatalogSyncFieldDiffItem
+            {
+                FieldLabel = "Project",
+                Kind = CatalogSyncFieldDiffKind.ExternalPreview,
+                ExternalValue = external.Project,
             });
         }
 
@@ -227,6 +238,7 @@ public static class CatalogSyncFieldDiffBuilder
         field switch
         {
             "name" => app.Name ?? "",
+            "project" => app.Project ?? "",
             "folderName" => app.FolderName ?? "",
             "installPath" => app.InstallPath ?? "",
             "appIconUrl" => app.GameIconUrl ?? "",

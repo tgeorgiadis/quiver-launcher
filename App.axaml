@@ -77,6 +77,16 @@
 			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 
+		<!-- Disabled dialog buttons (e.g. Install with nothing checked) must still show the ring. -->
+		<Style Selector="Window.gamepad-chrome Button.gamepad-focused:disabled">
+			<Setter Property="Opacity" Value="1"/>
+		</Style>
+		<Style Selector="Window.gamepad-chrome Button.gamepad-focused:disabled /template/ Border">
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+		</Style>
+
 		<Style Selector="Window.gamepad-chrome TextBox.gamepad-focused /template/ Border#PART_BorderElement">
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 			<Setter Property="BorderThickness" Value="2"/>

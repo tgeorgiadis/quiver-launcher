@@ -81,7 +81,7 @@ namespace QuiverLauncher.Services
         private static readonly string[] CompareFields =
         [
             "name",
-            "folderName",
+            "project",
             "installPath",
             "appIconUrl",
             "preferredVersion",
@@ -150,7 +150,14 @@ namespace QuiverLauncher.Services
                 Repository = repo,
                 IdentityKey = (external ?? local)?.IdentityKey
                     ?? RepositorySourceHelper.GetIdentityKey(null, repo),
-                DisplayName = external?.Name ?? local?.Name ?? repo,
+                // Catalog review keeps project in the title so ports of the same game stay distinct in a dense list.
+                DisplayName = AppDisplayName.Resolve(
+                    external?.Name ?? local?.Name,
+                    external?.Project ?? local?.Project,
+                    customDisplayName: null,
+                    LibraryNameStyle.NameAndProjectInTitle) is { Length: > 0 } composed
+                    ? composed
+                    : repo,
                 Local = local,
                 External = external,
                 ChangedFields = changedFields,
@@ -166,8 +173,9 @@ namespace QuiverLauncher.Services
                 changed.Add("repositorySource");
             if (!string.Equals(local.Name, external.Name, StringComparison.OrdinalIgnoreCase))
                 changed.Add("name");
-            if (!string.Equals(local.FolderName, external.FolderName, StringComparison.OrdinalIgnoreCase))
-                changed.Add("folderName");
+            if (!string.Equals(local.Project ?? "", external.Project ?? "", StringComparison.OrdinalIgnoreCase))
+                changed.Add("project");
+            // folderName is not an actionable sync field (preserved on accept for install stability).
             if (!string.Equals(local.InstallPath ?? "", external.InstallPath ?? "", StringComparison.OrdinalIgnoreCase))
                 changed.Add("installPath");
             if (!string.Equals(local.GameIconUrl ?? "", external.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase))
@@ -193,6 +201,7 @@ namespace QuiverLauncher.Services
             new()
             {
                 Name = external.Name,
+                Project = string.IsNullOrWhiteSpace(external.Project) ? null : external.Project.Trim(),
                 Repository = external.Repository,
                 RepositorySource = RepositorySourceHelper.IsGitHub(external.RepositorySource)
                     ? null
@@ -217,15 +226,22 @@ namespace QuiverLauncher.Services
                 CatalogSourceId = null,
             };
 
+        /// <summary>
+        /// Replaces catalog fields from external. Preserves local <see cref="GameInfo.FolderName"/>
+        /// so accepting catalog updates does not retarget installed folders (conservative policy).
+        /// Also preserves <see cref="GameInfo.CustomDisplayName"/>.
+        /// </summary>
         public static GameInfo ReplaceFromExternal(GameInfo local, GameInfo external) =>
             new()
             {
                 Name = external.Name,
+                Project = string.IsNullOrWhiteSpace(external.Project) ? null : external.Project.Trim(),
+                CustomDisplayName = local.CustomDisplayName,
                 Repository = external.Repository,
                 RepositorySource = RepositorySourceHelper.IsGitHub(external.RepositorySource)
                     ? null
                     : RepositorySourceHelper.Normalize(external.RepositorySource),
-                FolderName = external.FolderName,
+                FolderName = !string.IsNullOrWhiteSpace(local.FolderName) ? local.FolderName : external.FolderName,
                 InstallPath = external.InstallPath,
                 GameIconUrl = external.GameIconUrl,
                 PreferredVersion = external.PreferredVersion,
@@ -264,11 +280,14 @@ namespace QuiverLauncher.Services
             return new GameInfo
             {
                 Name = external.Name,
+                Project = string.IsNullOrWhiteSpace(external.Project) ? null : external.Project.Trim(),
+                CustomDisplayName = local.CustomDisplayName,
                 Repository = external.Repository,
                 RepositorySource = RepositorySourceHelper.IsGitHub(external.RepositorySource)
                     ? null
                     : RepositorySourceHelper.Normalize(external.RepositorySource),
-                FolderName = external.FolderName,
+                // Keep installed folder mapping stable across catalog renames.
+                FolderName = !string.IsNullOrWhiteSpace(local.FolderName) ? local.FolderName : external.FolderName,
                 InstallPath = external.InstallPath,
                 GameIconUrl = external.GameIconUrl,
                 PreferredVersion = external.PreferredVersion,

@@ -49,6 +49,20 @@ public class GameGridViewModelTests
     }
 
     [Fact]
+    public void SortGames_name_mode_uses_custom_display_name()
+    {
+        var games = new[]
+        {
+            new GameInfo { Name = "Zelda", CustomDisplayName = "Alpha" },
+            new GameInfo { Name = "Banjo" },
+            new GameInfo { Name = "Mario", CustomDisplayName = "The Custom Mario" },
+        };
+
+        var sorted = new GameGridViewModel().SortGames(games, "Name", "/apps", ignoreArticlesWhenSorting: true);
+        sorted.Select(g => g.DisplayName).Should().Equal("Alpha", "Banjo", "The Custom Mario");
+    }
+
+    [Fact]
     public void GetLastPlayedTime_reads_timestamp_file()
     {
         var tempRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

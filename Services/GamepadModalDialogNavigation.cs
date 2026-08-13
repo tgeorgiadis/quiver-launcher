@@ -16,6 +16,8 @@ public sealed class GamepadModalDialogNavigation
     private readonly HashSet<Window> _keyboardAttachedDialogs = [];
     private List<Control> _dialogControls = [];
     private int _focusedControlIndex;
+    /// <summary>Last ListBox row cursor while focus is on dialog buttons (selection cleared for chrome).</summary>
+    private int _listBoxCursorIndex = -1;
     private InputService? _inputService;
     private readonly EventHandler<PointerEventArgs> _dialogControlPointerEntered;
     private readonly EventHandler<KeyEventArgs> _dialogKeyDownHandler;
@@ -130,6 +132,7 @@ public sealed class GamepadModalDialogNavigation
         DetachDialogControlHoverHandlers(_dialogControls);
         _dialogControls = CollectDialogFocusableControls(activeDialog);
         AttachDialogControlHoverHandlers(_dialogControls);
+        _listBoxCursorIndex = -1;
         _focusedControlIndex = GetDefaultFocusIndex(_dialogControls);
 
         // With chrome active (gamepad or keyboard nav): paint default focus.
@@ -157,6 +160,7 @@ public sealed class GamepadModalDialogNavigation
             ClearGamepadFocusClasses(_dialogControls);
             _dialogControls = [];
             _focusedControlIndex = 0;
+            _listBoxCursorIndex = -1;
             return;
         }
 
@@ -410,12 +414,31 @@ public sealed class GamepadModalDialogNavigation
             listBox.SelectedIndex = index - 1;
         }
 
+        _listBoxCursorIndex = listBox.SelectedIndex;
+
         if (listBox.SelectedItem is Control selectedControl)
             listBox.ScrollIntoView(selectedControl);
         else if (listBox.SelectedItem != null)
             listBox.ScrollIntoView(listBox.SelectedItem);
 
         FocusCurrentControl();
+        return true;
+    }
+
+    private static bool TryToggleListBoxCheckBox(ListBox listBox)
+    {
+        CheckBox? checkBox = listBox.SelectedItem switch
+        {
+            ListBoxItem { Content: CheckBox contentCheck } => contentCheck,
+            CheckBox direct => direct,
+            ListBoxItem item => item.GetVisualDescendants().OfType<CheckBox>().FirstOrDefault(),
+            _ => null,
+        };
+
+        if (checkBox == null)
+            return false;
+
+        checkBox.IsChecked = checkBox.IsChecked != true;
         return true;
     }
 
@@ -456,12 +479,17 @@ public sealed class GamepadModalDialogNavigation
             return true;
         }
 
-        // Confirm on a file list installs the current selection via the Install button.
-        if (control is ListBox)
+        // Confirm on a file list: toggle a checkbox row when present, otherwise
+        // activate the dialog's Install/affirmative button.
+        if (control is ListBox listBox)
         {
+            if (TryToggleListBoxCheckBox(listBox))
+                return true;
+
             var install = FindAffirmativeButton(_dialogControls) ??
                           _dialogControls.OfType<Button>().FirstOrDefault(b =>
-                              string.Equals(GetButtonLabel(b), "Install", StringComparison.OrdinalIgnoreCase));
+                              string.Equals(GetButtonLabel(b), "Install", StringComparison.OrdinalIgnoreCase) ||
+                              b.IsDefault);
             if (install == null)
                 return false;
 
@@ -531,6 +559,11 @@ public sealed class GamepadModalDialogNavigation
 
     private static void ActivateAndCloseDialogButton(Window dialog, Button button)
     {
+        // Disabled affirmatives (e.g. Install with nothing checked) stay focusable for
+        // navigation chrome but must not activate or dismiss the dialog.
+        if (!button.IsEnabled || !button.IsVisible)
+            return;
+
         GamepadControlActivation.ActivateButton(button);
         if (dialog.IsVisible)
             dialog.Close();
@@ -570,6 +603,7 @@ public sealed class GamepadModalDialogNavigation
         "yes",
         "add",
         "install",
+        "uninstall",
         "download anyway",
         "open settings",
         "update quiver launcher",
@@ -612,8 +646,10 @@ public sealed class GamepadModalDialogNavigation
             .OfType<Control>()
             .Where(control =>
                 control.IsVisible &&
-                control.IsEnabled &&
                 control.Focusable &&
+                // Keep action buttons navigable when disabled (e.g. Install with no selection)
+                // so gamepad/keyboard chrome can still show which control is focused.
+                ((control is Button) || control.IsEnabled) &&
                 (control is Button or TextBox or ListBox or ComboBox) &&
                 !IsNestedInsideNavigableHost(control))
             .OrderBy(control => GetApproximateCenter(control)?.Y ?? 0)
@@ -785,6 +821,8 @@ public sealed class GamepadModalDialogNavigation
         if (control == null)
             return;
 
+        SyncListBoxRowHighlight(control);
+
         if (control is StyledElement styled)
             GamepadFocusChrome.SetFocused(styled, true);
 
@@ -792,6 +830,42 @@ public sealed class GamepadModalDialogNavigation
         // With chrome active, also move keyboard focus for buttons.
         if (GamepadFocusChrome.IsActive)
             GamepadControlActivation.ApplyGamepadHighlightFocus(control);
+    }
+
+    /// <summary>
+    /// ListBox selection is the row cursor while the list is focused. Clear it when moving to
+    /// Install/Cancel so the blue :selected fill does not look like focus stayed on the list.
+    /// </summary>
+    private void SyncListBoxRowHighlight(Control focusedControl)
+    {
+        foreach (var control in _dialogControls)
+        {
+            if (control is not ListBox listBox)
+                continue;
+
+            if (ReferenceEquals(focusedControl, listBox))
+            {
+                if (listBox.ItemCount <= 0)
+                    continue;
+
+                if (listBox.SelectedIndex < 0)
+                {
+                    var restore = _listBoxCursorIndex;
+                    if (restore < 0 || restore >= listBox.ItemCount)
+                        restore = 0;
+                    listBox.SelectedIndex = restore;
+                }
+
+                _listBoxCursorIndex = listBox.SelectedIndex;
+                continue;
+            }
+
+            if (listBox.SelectedIndex >= 0)
+                _listBoxCursorIndex = listBox.SelectedIndex;
+
+            listBox.SelectedIndex = -1;
+            listBox.SelectedItems?.Clear();
+        }
     }
 
     private void AttachDialogControlHoverHandlers(IReadOnlyList<Control> controls)

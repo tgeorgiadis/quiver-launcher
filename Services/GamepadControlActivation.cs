@@ -36,10 +36,11 @@ internal static class GamepadControlActivation
     /// </summary>
     public static void ApplyGamepadHighlightFocus(Control control)
     {
-        if (control is TextBox)
+        if (control is TextBox || !control.IsEnabled)
         {
             // Drop keyboard focus from the previous control (often a Button). Leaving a Button
             // focused makes its :focus ring look like navigation never moved.
+            // Disabled controls cannot take keyboard focus — rely on gamepad-focused chrome.
             TopLevel.GetTopLevel(control)?.FocusManager?.ClearFocus();
             return;
         }

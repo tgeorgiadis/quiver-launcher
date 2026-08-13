@@ -35,7 +35,138 @@ namespace QuiverLauncher.Models
         private GitHubRelease? _cachedRelease;
         public GameManager? GameManager { get; set; }
 
-        public string? Name { get; set; }
+        private string? _name;
+        private string? _project;
+        private string? _customDisplayName;
+        private LibraryNameStyle _libraryNameStyle = LibraryNameStyle.NameAndProject;
+        private bool _showLibraryUpdateBadges = true;
+        private bool _hasPendingCatalogChanges;
+        private int _libraryCardTagMaxLines = TagChipHelper.DefaultLibraryCardTagMaxLines;
+        private List<string> _libraryCardTags = [];
+
+        public string? Name
+        {
+            get => _name;
+            set
+            {
+                if (_name == value)
+                    return;
+                _name = value;
+                OnPropertyChanged();
+                NotifyDisplayNamePropertiesChanged();
+            }
+        }
+
+        /// <summary>Project, team, or author attribution (optional).</summary>
+        public string? Project
+        {
+            get => _project;
+            set
+            {
+                if (_project == value)
+                    return;
+                _project = value;
+                OnPropertyChanged();
+                NotifyDisplayNamePropertiesChanged();
+            }
+        }
+
+        /// <summary>User override for library display name. Wins over name/project composition.</summary>
+        public string? CustomDisplayName
+        {
+            get => _customDisplayName;
+            set
+            {
+                if (_customDisplayName == value)
+                    return;
+                _customDisplayName = value;
+                OnPropertyChanged();
+                NotifyDisplayNamePropertiesChanged();
+            }
+        }
+
+        /// <summary>Style used when composing <see cref="DisplayName"/> (mirrors settings).</summary>
+        public LibraryNameStyle LibraryNameStyle
+        {
+            get => _libraryNameStyle;
+            set
+            {
+                if (_libraryNameStyle == value)
+                    return;
+                _libraryNameStyle = value;
+                OnPropertyChanged();
+                NotifyDisplayNamePropertiesChanged();
+            }
+        }
+
+        /// <summary>Mirrors <see cref="AppSettings.ShowLibraryAppUpdateBadges"/> for card bindings.</summary>
+        public bool ShowLibraryUpdateBadges
+        {
+            get => _showLibraryUpdateBadges;
+            set
+            {
+                if (_showLibraryUpdateBadges == value)
+                    return;
+                _showLibraryUpdateBadges = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowUpdateBadge));
+            }
+        }
+
+        /// <summary>True when this library app has actionable catalog metadata changes to review.</summary>
+        public bool HasPendingCatalogChanges
+        {
+            get => _hasPendingCatalogChanges;
+            set
+            {
+                if (_hasPendingCatalogChanges == value)
+                    return;
+                _hasPendingCatalogChanges = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowUpdateBadge));
+            }
+        }
+
+        /// <summary>True when catalog changes are pending and library catalog badges are enabled.</summary>
+        public bool ShowUpdateBadge =>
+            HasPendingCatalogChanges && ShowLibraryUpdateBadges;
+
+        /// <summary>Mirrors <see cref="AppSettings.LibraryCardTagMaxLines"/> for card bindings.</summary>
+        public int LibraryCardTagMaxLines
+        {
+            get => _libraryCardTagMaxLines;
+            set
+            {
+                var normalized = TagChipHelper.NormalizeLibraryCardTagMaxLines(value);
+                if (_libraryCardTagMaxLines == normalized)
+                    return;
+                _libraryCardTagMaxLines = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LibraryCardTagsMaxHeight));
+            }
+        }
+
+        /// <summary>Clip height for wrapped library card tags (infinity when unlimited).</summary>
+        public double LibraryCardTagsMaxHeight =>
+            TagChipHelper.GetLibraryCardTagsMaxHeight(LibraryCardTagMaxLines);
+
+        /// <summary>Composed library label from custom name or name/project style.</summary>
+        public string DisplayName =>
+            AppDisplayName.Resolve(Name, Project, CustomDisplayName, LibraryNameStyle);
+
+        /// <summary>Secondary project name line when style is NameAndProject.</summary>
+        public string ProjectSubtitle =>
+            AppDisplayName.ResolveProjectSubtitle(Name, Project, CustomDisplayName, LibraryNameStyle);
+
+        public bool HasProjectSubtitle => ProjectSubtitle.Length > 0;
+
+        private void NotifyDisplayNamePropertiesChanged()
+        {
+            OnPropertyChanged(nameof(DisplayName));
+            OnPropertyChanged(nameof(ProjectSubtitle));
+            OnPropertyChanged(nameof(HasProjectSubtitle));
+        }
+
         public string? Repository { get; set; }
 
         /// <summary>
@@ -58,6 +189,28 @@ namespace QuiverLauncher.Models
         public bool IsCustom { get; set; }
         public string? CatalogSourceId { get; set; }
         public List<string> Tags { get; set; } = [];
+
+        /// <summary>Tags shown on library cards for the current display mode.</summary>
+        public IReadOnlyList<string> LibraryCardTags
+        {
+            get => _libraryCardTags;
+            private set
+            {
+                _libraryCardTags = value is List<string> list ? list : value.ToList();
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasLibraryCardTags));
+            }
+        }
+
+        public bool HasLibraryCardTags => LibraryCardTags.Count > 0;
+
+        public void RefreshLibraryCardTags(
+            LibraryTagDisplayMode mode,
+            IEnumerable<string>? featuredOrCommonTags)
+        {
+            LibraryCardTags = TagChipHelper.SelectTagsForCardDisplay(Tags, mode, featuredOrCommonTags);
+        }
+
         public List<string> FilesToAdd { get; set; } = [];
         public string? ModsPath { get; set; }
         public List<GameModSource> ModsSources { get; set; } = [];

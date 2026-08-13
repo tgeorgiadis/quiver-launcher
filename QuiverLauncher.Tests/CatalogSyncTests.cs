@@ -345,4 +345,200 @@ public class CatalogSyncTests
             TestFixtures.CleanupDirectory(tempDir);
         }
     }
+
+    [Fact]
+    public async Task ApplyPendingCatalogChangeFlagsAsync_marks_changed_library_apps_only()
+    {
+        var sourceId = Guid.NewGuid().ToString();
+        var (service, tempDir) = TestFixtures.CreateIsolatedCatalogService();
+
+        try
+        {
+            var cachePath = Path.Combine(service.CatalogSourcesCacheFolder, $"{sourceId}.json");
+            await File.WriteAllTextAsync(cachePath, """
+                {
+                  "version": "2.0.0",
+                  "apps": [
+                    { "name": "Changed App", "repository": "owner/changed", "folderName": "Changed", "tags": ["n64"] },
+                    { "name": "New App", "repository": "owner/new", "folderName": "New" }
+                  ]
+                }
+                """);
+
+            await service.SaveLocalAppsAsync([
+                new GameInfo
+                {
+                    Name = "Old Name",
+                    Repository = "owner/changed",
+                    FolderName = "Changed",
+                    Tags = [],
+                },
+                new GameInfo
+                {
+                    Name = "Unchanged",
+                    Repository = "owner/same",
+                    FolderName = "Same",
+                },
+            ]);
+
+            var settings = new AppSettings
+            {
+                AppCatalogSources =
+                [
+                    new AppCatalogSource
+                    {
+                        Id = sourceId,
+                        Name = "Test",
+                        Enabled = true,
+                        CachedListVersion = "2.0.0",
+                        AcknowledgedListVersion = "1.0.0",
+                    },
+                ],
+            };
+
+            var libraryGames = new[]
+            {
+                new GameInfo { Name = "Old Name", Repository = "owner/changed", FolderName = "Changed" },
+                new GameInfo { Name = "Unchanged", Repository = "owner/same", FolderName = "Same" },
+            };
+
+            await service.ApplyPendingCatalogChangeFlagsAsync(libraryGames, settings);
+
+            libraryGames[0].HasPendingCatalogChanges.Should().BeTrue();
+            libraryGames[1].HasPendingCatalogChanges.Should().BeFalse();
+        }
+        finally
+        {
+            TestFixtures.CleanupDirectory(tempDir);
+        }
+    }
+
+    [Fact]
+    public async Task ApplyPendingCatalogChangeFlagsAsync_restores_flags_on_reloaded_game_instances()
+    {
+        var sourceId = Guid.NewGuid().ToString();
+        var (service, tempDir) = TestFixtures.CreateIsolatedCatalogService();
+
+        try
+        {
+            var cachePath = Path.Combine(service.CatalogSourcesCacheFolder, $"{sourceId}.json");
+            await File.WriteAllTextAsync(cachePath, """
+                {
+                  "version": "2.0.0",
+                  "apps": [
+                    { "name": "Changed App", "repository": "owner/changed", "folderName": "Changed", "tags": ["n64"] }
+                  ]
+                }
+                """);
+
+            await service.SaveLocalAppsAsync([
+                new GameInfo
+                {
+                    Name = "Old Name",
+                    Repository = "owner/changed",
+                    FolderName = "Changed",
+                    Tags = [],
+                },
+            ]);
+
+            var settings = new AppSettings
+            {
+                AppCatalogSources =
+                [
+                    new AppCatalogSource
+                    {
+                        Id = sourceId,
+                        Name = "Test",
+                        Enabled = true,
+                        CachedListVersion = "2.0.0",
+                        AcknowledgedListVersion = "1.0.0",
+                    },
+                ],
+            };
+
+            var firstLoad = new[]
+            {
+                new GameInfo { Name = "Old Name", Repository = "owner/changed", FolderName = "Changed" },
+            };
+            await service.ApplyPendingCatalogChangeFlagsAsync(firstLoad, settings);
+            firstLoad[0].HasPendingCatalogChanges.Should().BeTrue();
+
+            // LoadGamesAsync builds new GameInfo instances; flags must be reapplied.
+            var reloaded = new[]
+            {
+                new GameInfo { Name = "Old Name", Repository = "owner/changed", FolderName = "Changed" },
+            };
+            reloaded[0].HasPendingCatalogChanges.Should().BeFalse();
+
+            await service.ApplyPendingCatalogChangeFlagsAsync(reloaded, settings);
+            reloaded[0].HasPendingCatalogChanges.Should().BeTrue();
+        }
+        finally
+        {
+            TestFixtures.CleanupDirectory(tempDir);
+        }
+    }
+
+    [Fact]
+    public async Task FindPendingCatalogSourceIdAsync_returns_source_for_changed_app()
+    {
+        var sourceId = Guid.NewGuid().ToString();
+        var (service, tempDir) = TestFixtures.CreateIsolatedCatalogService();
+
+        try
+        {
+            var cachePath = Path.Combine(service.CatalogSourcesCacheFolder, $"{sourceId}.json");
+            await File.WriteAllTextAsync(cachePath, """
+                {
+                  "version": "2.0.0",
+                  "apps": [
+                    { "name": "Changed App", "repository": "owner/changed", "folderName": "Changed", "tags": ["n64"] }
+                  ]
+                }
+                """);
+
+            await service.SaveLocalAppsAsync([
+                new GameInfo
+                {
+                    Name = "Old Name",
+                    Repository = "owner/changed",
+                    FolderName = "Changed",
+                    Tags = [],
+                },
+                new GameInfo
+                {
+                    Name = "Unchanged",
+                    Repository = "owner/same",
+                    FolderName = "Same",
+                },
+            ]);
+
+            var settings = new AppSettings
+            {
+                AppCatalogSources =
+                [
+                    new AppCatalogSource
+                    {
+                        Id = sourceId,
+                        Name = "Test",
+                        Enabled = true,
+                        CachedListVersion = "2.0.0",
+                        AcknowledgedListVersion = "1.0.0",
+                    },
+                ],
+            };
+
+            var changed = new GameInfo { Name = "Old Name", Repository = "owner/changed", FolderName = "Changed" };
+            var unchanged = new GameInfo { Name = "Unchanged", Repository = "owner/same", FolderName = "Same" };
+            var missingRepo = new GameInfo { Name = "No Repo" };
+
+            (await service.FindPendingCatalogSourceIdAsync(changed, settings)).Should().Be(sourceId);
+            (await service.FindPendingCatalogSourceIdAsync(unchanged, settings)).Should().BeNull();
+            (await service.FindPendingCatalogSourceIdAsync(missingRepo, settings)).Should().BeNull();
+        }
+        finally
+        {
+            TestFixtures.CleanupDirectory(tempDir);
+        }
+    }
 }

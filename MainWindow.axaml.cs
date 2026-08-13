@@ -52,6 +52,8 @@ namespace QuiverLauncher
         public ObservableCollection<TagDisplayFilterListItem> TagDisplayFilters { get; } = new();
         public ObservableCollection<CatalogSourceListItem> CatalogSources { get; } = new();
         public ObservableCollection<CatalogSyncRowItem> CatalogSyncRows { get; } = new();
+        public ObservableCollection<TagChipListItem> CatalogTagChips => _catalogSyncViewModel.TagChips;
+        public bool HasCatalogTagChips => CatalogTagChips.Count > 0;
         public ObservableCollection<GameInfo> AppUpdateReviewRows { get; } = new();
         public ObservableCollection<ModListItem> ModListRows { get; } = new();
 
@@ -2693,6 +2695,15 @@ namespace QuiverLauncher
                 if (BackgroundUpdateCheckCheckBox != null)
                     BackgroundUpdateCheckCheckBox.IsChecked = _settings.BackgroundUpdateCheckEnabled;
 
+                if (PromptCatalogUpdatesCheckBox != null)
+                    PromptCatalogUpdatesCheckBox.IsChecked = _settings.PromptCatalogUpdates;
+
+                if (PromptAppUpdateReviewsCheckBox != null)
+                    PromptAppUpdateReviewsCheckBox.IsChecked = _settings.PromptAppUpdateReviews;
+
+                if (ShowLibraryAppUpdateBadgesCheckBox != null)
+                    ShowLibraryAppUpdateBadgesCheckBox.IsChecked = _settings.ShowLibraryAppUpdateBadges;
+
                 if (AllowPrereleaseLauncherUpdatesCheckBox != null)
                     AllowPrereleaseLauncherUpdatesCheckBox.IsChecked = _settings.AllowPrereleaseLauncherUpdates;
 
@@ -2716,6 +2727,10 @@ namespace QuiverLauncher
 
                 if (IgnoreArticlesWhenSortingCheckBox != null)
                     IgnoreArticlesWhenSortingCheckBox.IsChecked = _settings.IgnoreArticlesWhenSorting;
+
+                SelectLibraryNameStyleComboBox(_settings.LibraryNameStyle);
+                SelectLibraryTagDisplayModeComboBox(_settings.LibraryTagDisplayMode);
+                SelectLibraryCardTagMaxLinesComboBox(_settings.LibraryCardTagMaxLines);
 
                 RefreshConnectedGamepadsList();
                 RefreshGamepadBindingsPanel();
@@ -3088,6 +3103,22 @@ namespace QuiverLauncher
             ("Hidden", CatalogReviewFilter.Hidden),
         ];
 
+        private void CatalogTagChip_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not Button { Tag: string tag })
+                return;
+
+            _catalogSyncViewModel.CycleTagChip(tag);
+            ApplyCatalogSyncFilter();
+        }
+
+        private void CatalogSearch_TextChanged(object? sender, TextChangedEventArgs e)
+        {
+            _catalogSyncViewModel.SearchText = CatalogSearchTextBox?.Text ?? "";
+            if (_activeCatalogSyncSource != null)
+                ApplyCatalogSyncFilter();
+        }
+
         private void CatalogReviewFilter_Click(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button { Tag: string tag })
@@ -3149,6 +3180,17 @@ namespace QuiverLauncher
                 await _gameManager.CatalogService.RefreshUpdateAvailableAsync(source);
 
             RefreshCatalogSourcesList();
+            await ApplyLibraryCatalogPendingBadgesAsync();
+        }
+
+        private async Task ApplyLibraryCatalogPendingBadgesAsync()
+        {
+            if (_gameManager?.Games == null || _settings == null)
+                return;
+
+            await _gameManager.CatalogService.ApplyPendingCatalogChangeFlagsAsync(
+                _gameManager.Games,
+                _settings);
         }
 
         private async void AddCatalogSource_Click(object? sender, RoutedEventArgs e)
@@ -3235,6 +3277,7 @@ namespace QuiverLauncher
 
             await _gameManager.LoadGamesAsync();
             ApplySorting();
+            await ApplyLibraryCatalogPendingBadgesAsync();
         }
 
         private async void RefreshCatalogSources_Click(object? sender, RoutedEventArgs e)
@@ -3256,8 +3299,10 @@ namespace QuiverLauncher
                 _settings = AppSettings.Load();
                 _settings.EnsureInitialized();
                 await RefreshCatalogSourcesListAsync();
+                await ApplyLibraryCatalogPendingBadgesAsync();
 
-                await TryPromptCatalogReviewAsync();
+                if (UpdatePromptPolicy.ShouldPromptCatalogUpdates(_settings))
+                    await TryPromptCatalogReviewAsync();
             }
             catch (Exception ex)
             {
@@ -3267,6 +3312,9 @@ namespace QuiverLauncher
 
         private async Task<bool> TryPromptCatalogReviewAsync()
         {
+            if (!UpdatePromptPolicy.ShouldPromptCatalogUpdates(_settings))
+                return false;
+
             if (!_settings.AppCatalogSources.Any(s => s.Enabled && s.UpdateAvailable))
                 return false;
 
@@ -3296,6 +3344,9 @@ namespace QuiverLauncher
                 return;
             }
 
+            if (!UpdatePromptPolicy.ShouldPromptCatalogUpdates(_settings))
+                return;
+
             await TryPromptCatalogReviewAsync();
         }
 
@@ -3315,6 +3366,9 @@ namespace QuiverLauncher
 
         private async Task<bool> TryPromptAppUpdatesReviewAsync()
         {
+            if (!UpdatePromptPolicy.ShouldPromptAppUpdateReviews(_settings))
+                return false;
+
             // After auto-updates run, anything still pending needs review (including auto apps
             // that could not resolve a platform asset).
             var pendingGames = GetPendingAppUpdates();
@@ -3563,6 +3617,50 @@ namespace QuiverLauncher
             return "All";
         }
 
+        private async void ReviewCatalogChanges_Click(object? sender, RoutedEventArgs e)
+        {
+            var game = (sender as MenuItem)?.CommandParameter as GameInfo
+                       ?? (sender as Button)?.CommandParameter as GameInfo
+                       ?? (sender as Control)?.DataContext as GameInfo;
+            if (game == null)
+                return;
+
+            await OpenCatalogReviewForLibraryAppAsync(game);
+        }
+
+        private async Task OpenCatalogReviewForLibraryAppAsync(GameInfo game)
+        {
+            if (_settings == null || _gameManager == null)
+                return;
+
+            var sourceId = await _gameManager.CatalogService.FindPendingCatalogSourceIdAsync(game, _settings);
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                await ShowMessageBoxAsync(
+                    "Could not find this app in a catalog source with pending changes.",
+                    "Catalog Review");
+                return;
+            }
+
+            await OpenCatalogReviewAsync(sourceId, CatalogReviewFilter.NeedsReview);
+
+            var index = -1;
+            for (var i = 0; i < CatalogSyncRows.Count; i++)
+            {
+                var row = CatalogSyncRows[i];
+                if (string.Equals(row.IdentityKey, game.IdentityKey, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrWhiteSpace(game.Repository) &&
+                     string.Equals(row.Repository, game.Repository, StringComparison.OrdinalIgnoreCase)))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index >= 0)
+                ApplyCatalogReviewRowSelection(index);
+        }
+
         private async void ReviewCatalogSource_Click(object? sender, RoutedEventArgs e)
         {
             if (sender is not Button { Tag: string sourceId })
@@ -3598,7 +3696,10 @@ namespace QuiverLauncher
             _catalogSyncViewModel.ReviewFilter = filter;
             _catalogSyncViewModel.SortBy = _currentCatalogReviewSortBy;
             _catalogSyncViewModel.IgnoreArticlesWhenSorting = _settings.IgnoreArticlesWhenSorting;
-            _catalogSyncViewModel.Refresh(source, localApps, externalApps);
+            _catalogSyncViewModel.SearchText = "";
+            if (CatalogSearchTextBox != null)
+                CatalogSearchTextBox.Text = "";
+            _catalogSyncViewModel.Refresh(source, localApps, externalApps, _settings);
 
             RefreshCatalogReviewFilterButtons(GetCatalogReviewFilterTag(filter));
             ApplyCatalogSyncFilter();
@@ -3620,6 +3721,8 @@ namespace QuiverLauncher
                 row.ShowUnhideButton = isHiddenFilter;
                 CatalogSyncRows.Add(row);
             }
+
+            OnPropertyChanged(nameof(HasCatalogTagChips));
 
             if (this.FindControl<TextBlock>("CatalogReviewVersionText") is TextBlock versionText)
             {
@@ -3647,6 +3750,7 @@ namespace QuiverLauncher
                 needsReviewEmptyPanel.IsVisible = _catalogSyncViewModel.ShowNeedsReviewCompleteState;
 
             UpdateCatalogReviewFilterChipLabels();
+            UpdateCatalogSyncBulkButtons();
 
             if (_settings.EnableGamepadInput &&
                 _mainViewMode == MainViewMode.AppCatalog &&
@@ -3666,11 +3770,20 @@ namespace QuiverLauncher
 
         private void UpdateCatalogSyncBulkButtons()
         {
+            var addCount = _catalogSyncViewModel.FilteredBulkAddCount;
+            var replaceCount = _catalogSyncViewModel.FilteredBulkReplaceCount;
+
             if (this.FindControl<Button>("CatalogSyncAddAllButton") is Button addAllButton)
-                addAllButton.IsEnabled = _catalogSyncViewModel.ExternalOnlyCount > 0;
+            {
+                addAllButton.Content = $"Add all new ({addCount})";
+                addAllButton.IsEnabled = addCount > 0;
+            }
 
             if (this.FindControl<Button>("CatalogSyncReplaceAllButton") is Button replaceAllButton)
-                replaceAllButton.IsEnabled = _catalogSyncViewModel.ChangedCount > 0;
+            {
+                replaceAllButton.Content = $"Replace all changed ({replaceCount})";
+                replaceAllButton.IsEnabled = replaceCount > 0;
+            }
 
             if (this.FindControl<Button>("CatalogSyncAcknowledgeButton") is Button skipReviewButton)
                 skipReviewButton.IsVisible = _catalogSyncViewModel.ShowSkipReviewButton;
@@ -3679,12 +3792,6 @@ namespace QuiverLauncher
         private CatalogSyncRowItem? FindCatalogSyncRow(string repository) =>
             _catalogSyncViewModel.AllRows.FirstOrDefault(r =>
                 r.Repository.Equals(repository, StringComparison.OrdinalIgnoreCase));
-
-        private IReadOnlyList<CatalogSyncRowItem> GetActionableCatalogSyncRows() =>
-            _catalogSyncViewModel.AllRows
-                .Where(r => _activeCatalogSyncSource != null &&
-                            CatalogCompareService.IsActionableRow(r, _activeCatalogSyncSource))
-                .ToList();
 
         private async Task ApplyCatalogSyncLocalAppsAsync(List<GameInfo> localApps)
         {
@@ -3714,6 +3821,7 @@ namespace QuiverLauncher
                 RefreshCatalogSourcesList();
             }
 
+            await ApplyLibraryCatalogPendingBadgesAsync();
             await RefreshActiveCatalogSyncRowsAsync(localApps);
         }
 
@@ -3724,7 +3832,7 @@ namespace QuiverLauncher
 
             localApps ??= await _gameManager.CatalogService.LoadLocalAppsAsync();
             var externalApps = await _gameManager.CatalogService.LoadCachedAppsAsync(_activeCatalogSyncSource.Id);
-            _catalogSyncViewModel.Refresh(_activeCatalogSyncSource, localApps, externalApps);
+            _catalogSyncViewModel.Refresh(_activeCatalogSyncSource, localApps, externalApps, _settings);
             ApplyCatalogSyncFilter();
             UpdateCatalogSyncBulkButtons();
         }
@@ -3737,23 +3845,32 @@ namespace QuiverLauncher
             await _gameManager.CatalogService.RefreshUpdateAvailableAsync(_activeCatalogSyncSource);
             OnSettingChanged();
             RefreshCatalogSourcesList();
+            await ApplyLibraryCatalogPendingBadgesAsync();
             await RefreshActiveCatalogSyncRowsAsync();
         }
 
         private async void CatalogSyncAddAll_Click(object? sender, RoutedEventArgs e)
         {
+            var rows = _catalogSyncViewModel.GetFilteredBulkAddRows();
+            if (rows.Count == 0)
+                return;
+
             var localApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
             var updated = CatalogCompareService.ApplyAddAllExternalOnly(
                 localApps,
-                GetActionableCatalogSyncRows(),
+                rows,
                 _settings.AutoUpdateNewlyAddedApps);
             await ApplyCatalogSyncLocalAppsAsync(updated);
         }
 
         private async void CatalogSyncReplaceAll_Click(object? sender, RoutedEventArgs e)
         {
+            var rows = _catalogSyncViewModel.GetFilteredBulkReplaceRows();
+            if (rows.Count == 0)
+                return;
+
             var localApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
-            var updated = CatalogCompareService.ApplyReplaceAllChanged(localApps, GetActionableCatalogSyncRows());
+            var updated = CatalogCompareService.ApplyReplaceAllChanged(localApps, rows);
             await ApplyCatalogSyncLocalAppsAsync(updated);
         }
 
@@ -4253,12 +4370,14 @@ namespace QuiverLauncher
                 var pendingApps = GetPendingAppUpdates();
                 var launcherApp = _app;
                 var launcherPending = launcherResult.LauncherUpdatePending && launcherApp != null;
+                var promptApps = UpdatePromptPolicy.ShouldPromptAppUpdateReviews(_settings);
+                var reviewableApps = promptApps ? pendingApps : new List<GameInfo>();
 
-                if (launcherPending && launcherApp != null && pendingApps.Count > 0)
+                if (launcherPending && launcherApp != null && reviewableApps.Count > 0)
                 {
                     var choice = await PromptCombinedUpdatesAsync(
                         launcherResult.AvailableLauncherVersion,
-                        pendingApps);
+                        reviewableApps);
 
                     if (choice == CombinedUpdateChoice.UpdateQuiver)
                         await launcherApp.ApplyPendingLauncherUpdateAsync();
@@ -4269,7 +4388,7 @@ namespace QuiverLauncher
                 {
                     await launcherApp.PromptForPendingLauncherUpdateAsync();
                 }
-                else if (pendingApps.Count > 0)
+                else if (reviewableApps.Count > 0)
                 {
                     await TryPromptAppUpdatesReviewAsync();
                 }
@@ -6253,6 +6372,63 @@ namespace QuiverLauncher
             ApplyTrayAndBackgroundUpdateSettings();
         }
 
+        private void PromptCatalogUpdatesCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressSettingsUiEvents || _settings == null)
+                return;
+
+            _settings.PromptCatalogUpdates = true;
+            OnSettingChanged();
+        }
+
+        private void PromptCatalogUpdatesCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressSettingsUiEvents || _settings == null)
+                return;
+
+            _settings.PromptCatalogUpdates = false;
+            OnSettingChanged();
+        }
+
+        private void PromptAppUpdateReviewsCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressSettingsUiEvents || _settings == null)
+                return;
+
+            _settings.PromptAppUpdateReviews = true;
+            OnSettingChanged();
+        }
+
+        private void PromptAppUpdateReviewsCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressSettingsUiEvents || _settings == null)
+                return;
+
+            _settings.PromptAppUpdateReviews = false;
+            OnSettingChanged();
+        }
+
+        private async void ShowLibraryAppUpdateBadgesCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressSettingsUiEvents || _settings == null)
+                return;
+
+            _settings.ShowLibraryAppUpdateBadges = true;
+            OnSettingChanged();
+            ApplyLibraryDisplaySettingsToGames();
+            await ApplyLibraryCatalogPendingBadgesAsync();
+        }
+
+        private void ShowLibraryAppUpdateBadgesCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressSettingsUiEvents || _settings == null)
+                return;
+
+            _settings.ShowLibraryAppUpdateBadges = false;
+            OnSettingChanged();
+            ApplyLibraryDisplaySettingsToGames();
+        }
+
         private void AllowPrereleaseLauncherUpdatesCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             if (_suppressSettingsUiEvents || _settings == null)
@@ -6313,6 +6489,153 @@ namespace QuiverLauncher
                 _catalogSyncViewModel.IgnoreArticlesWhenSorting = enabled;
                 ApplyCatalogSyncFilter();
             }
+        }
+
+        private void LibraryNameStyleComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            if (_settings == null || LibraryNameStyleComboBox?.SelectedItem is not ComboBoxItem item)
+                return;
+
+            var style = (item.Tag as string) switch
+            {
+                "NameOnly" => LibraryNameStyle.NameOnly,
+                "ProjectOnly" => LibraryNameStyle.ProjectOnly,
+                "NameAndProjectInTitle" => LibraryNameStyle.NameAndProjectInTitle,
+                _ => LibraryNameStyle.NameAndProject,
+            };
+
+            if (_settings.LibraryNameStyle == style)
+                return;
+
+            _settings.LibraryNameStyle = style;
+            OnSettingChanged();
+            ApplyLibraryDisplaySettingsToGames();
+            ApplySorting();
+        }
+
+        private void LibraryTagDisplayModeComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            if (_settings == null || LibraryTagDisplayModeComboBox?.SelectedItem is not ComboBoxItem item)
+                return;
+
+            var mode = (item.Tag as string) switch
+            {
+                "All" => LibraryTagDisplayMode.All,
+                "Hidden" => LibraryTagDisplayMode.Hidden,
+                _ => LibraryTagDisplayMode.Featured,
+            };
+
+            if (_settings.LibraryTagDisplayMode == mode)
+                return;
+
+            _settings.LibraryTagDisplayMode = mode;
+            OnSettingChanged();
+            ApplyLibraryDisplaySettingsToGames();
+        }
+
+        private void LibraryCardTagMaxLinesComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressSettingsUiEvents || _settings == null ||
+                LibraryCardTagMaxLinesComboBox?.SelectedItem is not ComboBoxItem item ||
+                item.Tag is not string tag ||
+                !int.TryParse(tag, out var maxLines))
+            {
+                return;
+            }
+
+            maxLines = TagChipHelper.NormalizeLibraryCardTagMaxLines(maxLines);
+            if (_settings.LibraryCardTagMaxLines == maxLines)
+                return;
+
+            _settings.LibraryCardTagMaxLines = maxLines;
+            OnSettingChanged();
+            ApplyLibraryDisplaySettingsToGames();
+        }
+
+        private void SelectLibraryCardTagMaxLinesComboBox(int maxLines)
+        {
+            if (LibraryCardTagMaxLinesComboBox == null)
+                return;
+
+            var tag = TagChipHelper.NormalizeLibraryCardTagMaxLines(maxLines).ToString();
+            foreach (var entry in LibraryCardTagMaxLinesComboBox.Items)
+            {
+                if (entry is ComboBoxItem item && item.Tag as string == tag)
+                {
+                    LibraryCardTagMaxLinesComboBox.SelectedItem = item;
+                    return;
+                }
+            }
+
+            foreach (var entry in LibraryCardTagMaxLinesComboBox.Items)
+            {
+                if (entry is ComboBoxItem item &&
+                    item.Tag as string == TagChipHelper.DefaultLibraryCardTagMaxLines.ToString())
+                {
+                    LibraryCardTagMaxLinesComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private void SelectLibraryNameStyleComboBox(LibraryNameStyle style)
+        {
+            if (LibraryNameStyleComboBox == null)
+                return;
+
+            var tag = style switch
+            {
+                LibraryNameStyle.NameOnly => "NameOnly",
+                LibraryNameStyle.ProjectOnly => "ProjectOnly",
+                LibraryNameStyle.NameAndProjectInTitle => "NameAndProjectInTitle",
+                _ => "NameAndProject",
+            };
+
+            foreach (var entry in LibraryNameStyleComboBox.Items)
+            {
+                if (entry is ComboBoxItem item && item.Tag as string == tag)
+                {
+                    LibraryNameStyleComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private void SelectLibraryTagDisplayModeComboBox(LibraryTagDisplayMode mode)
+        {
+            if (LibraryTagDisplayModeComboBox == null)
+                return;
+
+            var tag = mode switch
+            {
+                LibraryTagDisplayMode.All => "All",
+                LibraryTagDisplayMode.Hidden => "Hidden",
+                _ => "Featured",
+            };
+
+            foreach (var entry in LibraryTagDisplayModeComboBox.Items)
+            {
+                if (entry is ComboBoxItem item && item.Tag as string == tag)
+                {
+                    LibraryTagDisplayModeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private void ApplyLibraryDisplaySettingsToGames()
+        {
+            if (_settings == null || _gameManager?.Games == null)
+                return;
+
+            foreach (var game in _gameManager.Games)
+            {
+                game.LibraryNameStyle = _settings.LibraryNameStyle;
+                game.ShowLibraryUpdateBadges = _settings.ShowLibraryAppUpdateBadges;
+                game.LibraryCardTagMaxLines = _settings.LibraryCardTagMaxLines;
+            }
+
+            AppCatalogService.RefreshLibraryCardTags(_gameManager.Games, _settings);
         }
 
         private void GitHubTokenTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -6771,6 +7094,10 @@ namespace QuiverLauncher
             NewGameIconTextBox.Text = game.GameIconUrl ?? "";
             if (NewGameTagsTextBox != null)
                 NewGameTagsTextBox.Text = TagHelper.FormatTagsForDisplay(game.Tags);
+            if (NewGameProjectTextBox != null)
+                NewGameProjectTextBox.Text = game.Project ?? "";
+            if (NewGameCustomDisplayNameTextBox != null)
+                NewGameCustomDisplayNameTextBox.Text = game.CustomDisplayName ?? "";
             if (NewGameFilesToAddTextBox != null)
                 NewGameFilesToAddTextBox.Text = AppFilesToAddService.FormatForDisplay(game.FilesToAdd);
             if (NewGameModsPathTextBox != null)
@@ -6864,6 +7191,12 @@ namespace QuiverLauncher
 
                 var folderName = NewGameFolderTextBox?.Text?.Trim();
                 var iconUrl = NewGameIconTextBox?.Text?.Trim();
+                var project = NewGameProjectTextBox?.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(project))
+                    project = null;
+                var customDisplayName = NewGameCustomDisplayNameTextBox?.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(customDisplayName))
+                    customDisplayName = null;
                 var tags = TagHelper.ParseCommaSeparatedTags(NewGameTagsTextBox?.Text);
                 var filesToAdd = AppFilesToAddService.ParseCommaSeparated(NewGameFilesToAddTextBox?.Text);
                 var modsPath = GameModsConfig.NormalizePath(NewGameModsPathTextBox?.Text);
@@ -6895,12 +7228,7 @@ namespace QuiverLauncher
                         return;
                     }
 
-                    if (name != _editingGameName && games.Any(g => g.Name == name))
-                    {
-                        _ = ShowMessageBoxAsync("An app with this name already exists.", "Duplicate Name");
-                        return;
-                    }
-
+                    // Name may be shared across ports (distinguished by project / repository).
                     var oldRepository = appToUpdate.Repository;
                     var oldRepositorySource = appToUpdate.RepositorySource;
                     var oldIdentityKey = appToUpdate.IdentityKey;
@@ -6912,6 +7240,17 @@ namespace QuiverLauncher
                         _ = ShowMessageBoxAsync(
                             "Another app already uses this repository and repository source.",
                             "Duplicate Repository");
+                        return;
+                    }
+
+                    if (!string.Equals(appToUpdate.FolderName, folderName, StringComparison.OrdinalIgnoreCase) &&
+                        games.Any(g =>
+                            !ReferenceEquals(g, appToUpdate) &&
+                            string.Equals(g.FolderName, folderName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        _ = ShowMessageBoxAsync(
+                            "Another app already uses this folder name.",
+                            "Duplicate Folder");
                         return;
                     }
 
@@ -6935,6 +7274,8 @@ namespace QuiverLauncher
 
                     var previousFilesToAdd = AppFilesToAddService.Normalize(appToUpdate.FilesToAdd);
                     appToUpdate.Name = name;
+                    appToUpdate.Project = project;
+                    appToUpdate.CustomDisplayName = customDisplayName;
                     appToUpdate.Repository = repository;
                     appToUpdate.RepositorySource = RepositorySourceHelper.IsGitHub(repositorySource)
                         ? null
@@ -6947,12 +7288,19 @@ namespace QuiverLauncher
                     appToUpdate.ModsSources = modsSources;
                     appToUpdate.ModsLayout = modsLayout;
 
+                    if (!string.IsNullOrWhiteSpace(appToUpdate.Repository))
+                        _settings.UserAppDisplayNames.Remove(appToUpdate.Repository);
+
                     if (AppIdentityMigration.MigrateIdentity(
                             _settings,
                             oldRepositorySource,
                             oldRepository,
                             appToUpdate.RepositorySource,
                             appToUpdate.Repository))
+                    {
+                        OnSettingChanged();
+                    }
+                    else
                     {
                         OnSettingChanged();
                     }
@@ -6963,18 +7311,30 @@ namespace QuiverLauncher
                 }
                 else
                 {
+                    // Name may be shared across ports; uniqueness is repository identity + install folder.
                     if (games.Any(g =>
-                            g.Name == name ||
-                            string.Equals(g.IdentityKey, identityKey, StringComparison.OrdinalIgnoreCase) ||
-                            g.FolderName == folderName))
+                            string.Equals(g.IdentityKey, identityKey, StringComparison.OrdinalIgnoreCase)))
                     {
-                        _ = ShowMessageBoxAsync("An app with this name, repository, or folder name already exists", "Duplicate App");
+                        _ = ShowMessageBoxAsync(
+                            "An app with this repository already exists.",
+                            "Duplicate Repository");
+                        return;
+                    }
+
+                    if (games.Any(g =>
+                            string.Equals(g.FolderName, folderName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        _ = ShowMessageBoxAsync(
+                            "An app with this folder name already exists.",
+                            "Duplicate Folder");
                         return;
                     }
 
                     var newApp = new GameInfo
                     {
                         Name = name,
+                        Project = project,
+                        CustomDisplayName = customDisplayName,
                         Repository = repository,
                         RepositorySource = RepositorySourceHelper.IsGitHub(repositorySource)
                             ? null
@@ -7016,20 +7376,50 @@ namespace QuiverLauncher
             ShowEntryFormOverlay(forCreate: false, gameToEdit: game);
         }
 
+        private enum TagEditOverlayMode
+        {
+            Tags,
+            CustomDisplayName,
+        }
+
+        private TagEditOverlayMode _tagEditOverlayMode = TagEditOverlayMode.Tags;
+
         private void EditTagsMenu_Click(object sender, RoutedEventArgs e)
         {
             var game = (sender as MenuItem)?.CommandParameter as GameInfo;
             if (game == null)
                 return;
 
-            ShowTagEditOverlay(game);
+            ShowTagEditOverlay(game, TagEditOverlayMode.Tags);
         }
 
-        private void ShowTagEditOverlay(GameInfo game)
+        private void EditCustomDisplayNameMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var game = (sender as MenuItem)?.CommandParameter as GameInfo;
+            if (game == null)
+                return;
+
+            ShowTagEditOverlay(game, TagEditOverlayMode.CustomDisplayName);
+        }
+
+        private void ShowTagEditOverlay(GameInfo game, TagEditOverlayMode mode = TagEditOverlayMode.Tags)
         {
             _editingTagsGame = game;
-            TagEditAppNameText.Text = game.Name ?? "Unknown app";
-            TagEditTextBox.Text = TagHelper.FormatTagsForDisplay(game.Tags);
+            _tagEditOverlayMode = mode;
+            TagEditAppNameText.Text = game.DisplayName;
+            if (TagEditTitleText != null)
+            {
+                TagEditTitleText.Text = mode == TagEditOverlayMode.CustomDisplayName
+                    ? "Custom Display Name"
+                    : "Edit Tags";
+            }
+
+            TagEditTextBox.Watermark = mode == TagEditOverlayMode.CustomDisplayName
+                ? "Leave blank to use library name style"
+                : "Tags (comma-separated)";
+            TagEditTextBox.Text = mode == TagEditOverlayMode.CustomDisplayName
+                ? (game.CustomDisplayName ?? "")
+                : TagHelper.FormatTagsForDisplay(game.Tags);
 
             var gamingMode = SteamDeckEnvironment.IsGamingMode();
             TagEditOverlayLayout.ApplyDialogPlacement(TagEditDialogPanel, gamingMode);
@@ -7085,15 +7475,26 @@ namespace QuiverLauncher
 
             try
             {
-                var tags = TagHelper.ParseCommaSeparatedTags(TagEditTextBox?.Text);
-                await SaveTagsForGameAsync(_editingTagsGame, tags);
+                if (_tagEditOverlayMode == TagEditOverlayMode.CustomDisplayName)
+                {
+                    var customName = TagEditTextBox?.Text?.Trim();
+                    if (string.IsNullOrWhiteSpace(customName))
+                        customName = null;
+                    await SaveCustomDisplayNameForGameAsync(_editingTagsGame, customName);
+                }
+                else
+                {
+                    var tags = TagHelper.ParseCommaSeparatedTags(TagEditTextBox?.Text);
+                    await SaveTagsForGameAsync(_editingTagsGame, tags);
+                }
+
                 CloseTagEditOverlay();
                 await _gameManager.LoadGamesAsync();
                 ApplySorting();
             }
             catch (Exception ex)
             {
-                _ = ShowMessageBoxAsync($"Failed to save tags: {ex.Message}", "Error");
+                _ = ShowMessageBoxAsync($"Failed to save: {ex.Message}", "Error");
             }
         }
 
@@ -7125,6 +7526,36 @@ namespace QuiverLauncher
             OnSettingChanged();
         }
 
+        private async Task SaveCustomDisplayNameForGameAsync(GameInfo game, string? customDisplayName)
+        {
+            game.CustomDisplayName = customDisplayName;
+
+            if (game.IsInLocalAppsJson && !string.IsNullOrWhiteSpace(game.Repository))
+            {
+                var games = await LoadGamesFromJsonAsync();
+                var appToUpdate = games.FirstOrDefault(g =>
+                    !string.IsNullOrWhiteSpace(g.Repository) &&
+                    g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+
+                if (appToUpdate != null)
+                {
+                    appToUpdate.CustomDisplayName = customDisplayName;
+                    await SaveGamesToJsonAsync(games);
+                }
+
+                _settings.UserAppDisplayNames.Remove(game.Repository);
+            }
+            else if (!string.IsNullOrWhiteSpace(game.Repository))
+            {
+                if (customDisplayName == null)
+                    _settings.UserAppDisplayNames.Remove(game.Repository);
+                else
+                    _settings.UserAppDisplayNames[game.Repository] = customDisplayName;
+            }
+
+            OnSettingChanged();
+        }
+
         private void CancelForm_Click(object? sender, RoutedEventArgs e)
         {
             CloseEntryFormOverlay();
@@ -7142,6 +7573,8 @@ namespace QuiverLauncher
             if (NewGameFolderTextBox != null) NewGameFolderTextBox.Text = "";
             if (NewGameIconTextBox != null) NewGameIconTextBox.Text = "";
             if (NewGameTagsTextBox != null) NewGameTagsTextBox.Text = "";
+            if (NewGameProjectTextBox != null) NewGameProjectTextBox.Text = "";
+            if (NewGameCustomDisplayNameTextBox != null) NewGameCustomDisplayNameTextBox.Text = "";
             if (NewGameFilesToAddTextBox != null) NewGameFilesToAddTextBox.Text = "";
             if (NewGameModsPathTextBox != null) NewGameModsPathTextBox.Text = "";
             if (NewGameModsFolderPerModCheckBox != null) NewGameModsFolderPerModCheckBox.IsChecked = false;
@@ -7864,6 +8297,8 @@ namespace QuiverLauncher
             }
 
             Add(NewGameNameTextBox);
+            Add(NewGameProjectTextBox);
+            Add(NewGameCustomDisplayNameTextBox);
             Add(NewGameRepositorySourceComboBox);
             Add(NewGameRepoTextBox);
             Add(NewGameFolderTextBox);
@@ -8649,7 +9084,8 @@ namespace QuiverLauncher
                             : _gamepadNavigation.CatalogReviewRowActionIndex));
                     return true;
                 case GamepadNavigationZone.CatalogReviewFilters:
-                    ApplyCatalogReviewFilterSelection(transition.SelectedIndex ?? 0);
+                    ApplyCatalogReviewFilterSelection(
+                        transition.SelectedIndex ?? GetCatalogReviewFilterIndexFromList());
                     return true;
                 case GamepadNavigationZone.CatalogReviewList:
                     if (CatalogSyncRows.Count == 0)
@@ -8661,8 +9097,7 @@ namespace QuiverLauncher
                             return true;
                         }
 
-                        ApplyCatalogReviewFilterSelection(0);
-                        return true;
+                        return NavigateToCatalogReviewFiltersFromList() || true;
                     }
 
                     ApplyCatalogReviewRowSelection(transition.SelectedIndex ?? 0);
@@ -8978,12 +9413,9 @@ namespace QuiverLauncher
             var controls = CollectCatalogReviewEmptyActionControls();
             if (controls.Count == 0)
             {
-                // Nothing to focus in the body — Up returns to the filter strip.
+                // Nothing to focus in the body — Up returns to the filter strip (tags if present).
                 if (direction == Services.NavigationDirection.Up)
-                {
-                    ApplyCatalogReviewFilterSelection(0);
-                    return true;
-                }
+                    return NavigateToCatalogReviewFiltersFromList() || true;
 
                 if (direction == Services.NavigationDirection.Left)
                     return TryApplyGamepadZoneTransition(
@@ -8995,10 +9427,7 @@ namespace QuiverLauncher
             var currentIndex = _gamepadNavigation.CatalogReviewSelectedIndex;
 
             if (direction == Services.NavigationDirection.Up)
-            {
-                ApplyCatalogReviewFilterSelection(0);
-                return true;
-            }
+                return NavigateToCatalogReviewFiltersFromList() || true;
 
             if (direction == Services.NavigationDirection.Left && currentIndex <= 0)
             {
@@ -9062,26 +9491,30 @@ namespace QuiverLauncher
 
         private bool HandleCatalogReviewFiltersGamepadNavigation(Services.NavigationDirection direction)
         {
-            var filterChips = CollectCatalogReviewFilterChipControls();
-            var bulkActions = CollectCatalogReviewBulkActionControls();
+            var ranges = GetCatalogReviewFilterRanges();
             var controls = CollectCatalogReviewFilterControls();
-            if (controls.Count == 0)
+            if (controls.Count == 0 || ranges.Total <= 0)
                 return false;
 
-            var filterCount = filterChips.Count;
             var currentIndex = _gamepadNavigation.ClampIndex(
                 _gamepadNavigation.CatalogReviewFilterIndex,
                 controls.Count);
-            var onBulkRow = filterCount > 0
-                ? currentIndex >= filterCount
-                : bulkActions.Count > 0;
+            var row = ranges.ResolveRow(currentIndex);
+            var localIndex = ranges.LocalIndex(currentIndex);
 
             if (direction == Services.NavigationDirection.Up)
             {
-                // Filters sit below bulk actions — Up from a filter chip focuses the bulk row.
-                if (!onBulkRow && bulkActions.Count > 0)
+                if (row == CatalogReviewFilterGamepadLayout.Row.Tags && ranges.HasStatus)
                 {
-                    ApplyCatalogReviewFilterSelection(filterCount);
+                    ApplyCatalogReviewFilterSelection(ranges.StatusStart);
+                    return true;
+                }
+
+                if ((row == CatalogReviewFilterGamepadLayout.Row.Tags ||
+                     row == CatalogReviewFilterGamepadLayout.Row.Status) &&
+                    ranges.HasBulk)
+                {
+                    ApplyCatalogReviewFilterSelection(ranges.BulkStart);
                     return true;
                 }
 
@@ -9091,10 +9524,21 @@ namespace QuiverLauncher
 
             if (direction == Services.NavigationDirection.Down)
             {
-                // Bulk actions sit above filters — Down from the bulk row focuses the filter chips.
-                if (onBulkRow && filterCount > 0)
+                if (row == CatalogReviewFilterGamepadLayout.Row.Bulk && ranges.HasStatus)
                 {
-                    ApplyCatalogReviewFilterSelection(0);
+                    ApplyCatalogReviewFilterSelection(ranges.StatusStart);
+                    return true;
+                }
+
+                if (row == CatalogReviewFilterGamepadLayout.Row.Bulk && ranges.HasTags)
+                {
+                    ApplyCatalogReviewFilterSelection(ranges.TagStart);
+                    return true;
+                }
+
+                if (row == CatalogReviewFilterGamepadLayout.Row.Status && ranges.HasTags)
+                {
+                    ApplyCatalogReviewFilterSelection(ranges.TagStart);
                     return true;
                 }
 
@@ -9114,32 +9558,42 @@ namespace QuiverLauncher
                     new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewList, 0));
             }
 
-            // Left/Right stay within the current row (filters or bulk actions).
             if (direction is not (Services.NavigationDirection.Left or Services.NavigationDirection.Right))
                 return true;
 
-            if (onBulkRow)
-            {
-                var localIndex = Math.Max(0, currentIndex - filterCount);
-                if (direction == Services.NavigationDirection.Left && localIndex <= 0)
-                {
-                    return TryApplyGamepadZoneTransition(
-                        new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null));
-                }
-
-                var nextLocal = _gamepadNavigation.MoveHorizontalIndex(localIndex, direction, bulkActions.Count);
-                ApplyCatalogReviewFilterSelection(filterCount + nextLocal);
+            var rowCount = ranges.RowCount(row);
+            if (rowCount <= 0)
                 return true;
-            }
 
-            if (direction == Services.NavigationDirection.Left && currentIndex <= 0)
+            if (CatalogReviewFilterGamepadLayout.ShouldLeaveToSidebarOnLeft(localIndex, direction))
             {
                 return TryApplyGamepadZoneTransition(
                     new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null));
             }
 
-            var nextIndex = _gamepadNavigation.MoveHorizontalIndex(currentIndex, direction, filterCount);
-            ApplyCatalogReviewFilterSelection(nextIndex);
+            int nextLocal;
+            if (row == CatalogReviewFilterGamepadLayout.Row.Tags)
+            {
+                // Tag chips clamp at ends (no wrap) so Right stops on the last tag.
+                nextLocal = CatalogReviewFilterGamepadLayout.MoveHorizontalClamped(
+                    localIndex, direction, rowCount);
+            }
+            else
+            {
+                nextLocal = _gamepadNavigation.MoveHorizontalIndex(localIndex, direction, rowCount);
+            }
+
+            ApplyCatalogReviewFilterSelection(ranges.AbsoluteIndex(row, nextLocal));
+            return true;
+        }
+
+        private bool NavigateToCatalogReviewFiltersFromList()
+        {
+            var index = GetCatalogReviewFilterIndexFromList();
+            if (index < 0)
+                return false;
+
+            ApplyCatalogReviewFilterSelection(index);
             return true;
         }
 
@@ -9732,6 +10186,24 @@ namespace QuiverLauncher
             Add(CatalogFilterChangedButton);
             Add(CatalogFilterUpToDateButton);
             Add(CatalogFilterHiddenButton);
+            Add(CatalogSearchTextBox);
+            return controls;
+        }
+
+        private List<Control> CollectCatalogReviewTagChipControls()
+        {
+            var controls = new List<Control>();
+
+            var itemsControl = this.FindControl<ItemsControl>("CatalogTagChipsItemsControl");
+            if (itemsControl == null || !itemsControl.IsVisible)
+                return controls;
+
+            foreach (var button in itemsControl.GetVisualDescendants().OfType<Button>())
+            {
+                if (button.IsVisible && button.IsEnabled)
+                    controls.Add(button);
+            }
+
             return controls;
         }
 
@@ -9751,14 +10223,23 @@ namespace QuiverLauncher
             return controls;
         }
 
+        private CatalogReviewFilterGamepadLayout.Ranges GetCatalogReviewFilterRanges() =>
+            CatalogReviewFilterGamepadLayout.FromCounts(
+                CollectCatalogReviewFilterChipControls().Count,
+                CollectCatalogReviewTagChipControls().Count,
+                CollectCatalogReviewBulkActionControls().Count);
+
         private List<Control> CollectCatalogReviewFilterControls()
         {
-            // Filter chips first so initial focus / Left-Right within the filter row
-            // lands on filters; bulk actions follow as the row above (reached via Up).
+            // Status chips, then tag chips (row below status), then bulk actions (row above status).
             var controls = CollectCatalogReviewFilterChipControls();
+            controls.AddRange(CollectCatalogReviewTagChipControls());
             controls.AddRange(CollectCatalogReviewBulkActionControls());
             return controls;
         }
+
+        private int GetCatalogReviewFilterIndexFromList() =>
+            GetCatalogReviewFilterRanges().PreferredIndexFromList;
 
         private List<Control> CollectCatalogReviewEmptyActionControls()
         {
@@ -10204,7 +10685,7 @@ namespace QuiverLauncher
             if (controls[index] is StyledElement styled)
                 styled.Classes.Set("gamepad-focused", true);
 
-            controls[index].Focus();
+            GamepadControlActivation.ApplyGamepadHighlightFocus(controls[index]);
             Dispatcher.UIThread.Post(() => controls[index].BringIntoView(), DispatcherPriority.Loaded);
         }
 
@@ -10879,6 +11360,8 @@ namespace QuiverLauncher
 
             if (controls[index] is Button button)
                 GamepadControlActivation.ActivateButton(button);
+            else if (controls[index] is TextBox textBox)
+                GamepadControlActivation.ActivateTextBox(textBox);
         }
 
         private void ActivateReviewRowSelection()

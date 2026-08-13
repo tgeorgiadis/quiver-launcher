@@ -114,9 +114,9 @@ public class CommunityCatalogDefaultsTests
 
             var source = settings.AppCatalogSources.Single();
             service.HasSourceCache(source.Id).Should().BeTrue();
-            source.CachedListVersion.Should().Be("1.0.4");
+            source.CachedListVersion.Should().Be("1.0.5");
             source.Name.Should().Be("N64 Recomps");
-            source.Description.Should().Be("N64 recompilation ports");
+            source.Description.Should().Contain("N64 recompilation ports");
             await service.RefreshUpdateAvailableAsync(source);
             source.PendingReviewCount.Should().BeGreaterThan(0);
         }

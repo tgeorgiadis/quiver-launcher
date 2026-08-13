@@ -12,7 +12,7 @@ public class CatalogLocationReaderTests
         var reader = new CatalogLocationReader();
         var json = await reader.ReadAsync(new HttpClient(), TestFixtures.CommunityIndexPath);
 
-        json.Should().Contain("N64-Recomps");
+        json.Should().Contain("Nintendo-64");
     }
 
     [Fact]

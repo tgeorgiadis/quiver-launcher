@@ -38,6 +38,24 @@ public static class ModCatalogListBuilder
                string.Equals(record.Name, package.Name, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// True when <paramref name="record"/> is this package's install of <paramref name="downloadFileId"/>.
+    /// A null/empty file id matches legacy records that have no <see cref="InstalledModRecord.DownloadFileId"/>.
+    /// </summary>
+    public static bool RecordMatchesPackageFile(
+        InstalledModRecord record,
+        ModPackage package,
+        string? downloadFileId)
+    {
+        if (!RecordMatchesPackage(record, package))
+            return false;
+
+        if (string.IsNullOrWhiteSpace(downloadFileId))
+            return string.IsNullOrWhiteSpace(record.DownloadFileId);
+
+        return string.Equals(record.DownloadFileId, downloadFileId, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>True when two catalog packages refer to the same mod (Id, FullName, or Owner+Name).</summary>
     public static bool PackagesMatch(ModPackage left, ModPackage right)
     {
@@ -99,6 +117,25 @@ public static class ModCatalogListBuilder
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(package);
         return doc.Mods.FirstOrDefault(m => RecordMatchesPackage(m, package));
+    }
+
+    public static InstalledModRecord? FindMatchingRecord(
+        InstalledModsDocument doc,
+        ModPackage package,
+        string? downloadFileId)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        ArgumentNullException.ThrowIfNull(package);
+        return doc.Mods.FirstOrDefault(m => RecordMatchesPackageFile(m, package, downloadFileId));
+    }
+
+    public static IReadOnlyList<InstalledModRecord> FindMatchingRecords(
+        InstalledModsDocument doc,
+        ModPackage package)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+        ArgumentNullException.ThrowIfNull(package);
+        return doc.Mods.Where(m => RecordMatchesPackage(m, package)).ToList();
     }
 
     public static string PackageIdKey(string providerId, string id) =>
@@ -254,8 +291,8 @@ public static class ModCatalogListBuilder
             foreach (var key in keys)
                 seenCatalogKeys.Add(key);
 
-            var record = FindMatchingRecord(installedDoc, package);
-            if (record != null)
+            var records = FindMatchingRecords(installedDoc, package);
+            foreach (var record in records)
             {
                 matchedRecords.Add(record);
                 if (!string.IsNullOrWhiteSpace(package.Id) &&
@@ -274,7 +311,7 @@ public static class ModCatalogListBuilder
             }
 
             var item = new ModListItem { Package = package };
-            item.ApplyInstalled(record);
+            item.ApplyInstalled(records);
             items.Add(item);
         }
 

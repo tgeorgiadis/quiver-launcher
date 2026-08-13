@@ -315,8 +315,9 @@ public class AppCatalogServiceTests
 
             fetched.Should().BeTrue();
             source.Name.Should().Be("N64 Recomps");
-            source.Description.Should().Be("N64 recompilation ports");
-            source.CachedListVersion.Should().Be("1.0.4");
+            source.Description.Should().Contain("N64 recompilation ports");
+            source.CachedListVersion.Should().Be("1.0.5");
+            source.FeaturedTags.Should().Contain("recomp");
         }
         finally
         {
@@ -352,6 +353,27 @@ public class AppCatalogServiceTests
         AppCatalogService.ApplyListMetadata(source, document.RootElement);
 
         source.Name.Should().Be("Official List");
+    }
+
+    [Fact]
+    public void ApplyListMetadata_reads_preferred_and_hidden_tag_filters()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "name": "N64",
+              "featuredTags": ["recomp", "decomp"],
+              "preferredTagFilters": ["translation", "texture-pack"],
+              "hiddenTagFilters": ["n64", "nintendo"],
+              "apps": []
+            }
+            """);
+        var source = new AppCatalogSource();
+
+        AppCatalogService.ApplyListMetadata(source, document.RootElement);
+
+        source.FeaturedTags.Should().Equal("recomp", "decomp");
+        source.PreferredTagFilters.Should().Equal("translation", "texture-pack");
+        source.HiddenTagFilters.Should().Equal("n64", "nintendo");
     }
 
     private sealed class FakeCatalogLocationReader(Dictionary<string, string> responses) : ICatalogLocationReader

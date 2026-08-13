@@ -20,6 +20,23 @@ namespace QuiverLauncher
         All,
     }
 
+    public enum LibraryNameStyle
+    {
+        NameOnly = 0,
+        /// <summary>Title is name; project shown on a separate line under the title.</summary>
+        NameAndProject = 1,
+        ProjectOnly = 2,
+        /// <summary>Title is "Name (Project)".</summary>
+        NameAndProjectInTitle = 3,
+    }
+
+    public enum LibraryTagDisplayMode
+    {
+        Featured = 0,
+        All = 1,
+        Hidden = 2,
+    }
+
     public class TagDisplayFilter
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
@@ -44,6 +61,22 @@ namespace QuiverLauncher
         public string? CachedListVersion { get; set; }
         public string? AcknowledgedListVersion { get; set; }
         public bool UpdateAvailable { get; set; }
+
+        /// <summary>
+        /// Optional curated quick-filter tags declared by the catalog list JSON (<c>featuredTags</c>).
+        /// Used as the review-chip pin list when <see cref="PreferredTagFilters"/> is empty.
+        /// </summary>
+        public List<string> FeaturedTags { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Optional review-chip tags that should appear first for this list (<c>preferredTagFilters</c>).
+        /// </summary>
+        public List<string> PreferredTagFilters { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Optional tags that must never appear as review-filter chips for this list (<c>hiddenTagFilters</c>).
+        /// </summary>
+        public List<string> HiddenTagFilters { get; set; } = new List<string>();
 
         [JsonIgnore]
         public int PendingReviewCount { get; set; }
@@ -92,11 +125,25 @@ namespace QuiverLauncher
         public bool ModsIncludeNsfw { get; set; }
         public List<string> DismissedAnnouncementIds { get; set; } = new List<string>();
         public bool IgnoreArticlesWhenSorting { get; set; } = true;
+        public LibraryNameStyle LibraryNameStyle { get; set; } = LibraryNameStyle.NameAndProject;
+        public LibraryTagDisplayMode LibraryTagDisplayMode { get; set; } = LibraryTagDisplayMode.Featured;
+        /// <summary>
+        /// Max wrapped lines of tags on each library card. 0 = no limit.
+        /// </summary>
+        public int LibraryCardTagMaxLines { get; set; } = TagChipHelper.DefaultLibraryCardTagMaxLines;
+        /// <summary>User-pinned tags preferred for quick-filter chips when present in the current set.</summary>
+        public List<string> PinnedFilterTags { get; set; } = new List<string>();
         public bool StartFullscreen { get; set; } = false;
         public bool CloseAfterLaunch {  get; set; } = false;
         public bool CloseToTray { get; set; }
         public bool BackgroundUpdateCheckEnabled { get; set; }
         public int BackgroundUpdateCheckIntervalMinutes { get; set; } = BackgroundUpdateCheckIntervals.DefaultMinutes;
+        /// <summary>When true, show modal prompts when catalog sources have reviewable updates.</summary>
+        public bool PromptCatalogUpdates { get; set; }
+        /// <summary>When true, show modal prompts for pending library app updates.</summary>
+        public bool PromptAppUpdateReviews { get; set; }
+        /// <summary>When true, show a small update badge on library cards with available updates.</summary>
+        public bool ShowLibraryAppUpdateBadges { get; set; } = true;
         /// <summary>
         /// When true, Velopack also considers GitHub prereleases for Quiver self-updates.
         /// Intended for development; default is off. RC installs (version contains '-') still follow prereleases.
@@ -119,6 +166,8 @@ namespace QuiverLauncher
         public string? ActiveTagDisplayFilterId { get; set; }
         public AppListScope ListScope { get; set; } = AppListScope.AllApps;
         public Dictionary<string, List<string>> UserAppTags { get; set; } = new Dictionary<string, List<string>>();
+        /// <summary>Repository → custom library display name override (when app is not in local apps.json).</summary>
+        public Dictionary<string, string> UserAppDisplayNames { get; set; } = new Dictionary<string, string>();
 
         public void EnsureInitialized()
         {
@@ -126,7 +175,9 @@ namespace QuiverLauncher
             HiddenApps ??= new List<string>();
             ManuallyHiddenApps ??= new List<string>();
             TagDisplayFilters ??= new List<TagDisplayFilter>();
+            PinnedFilterTags ??= new List<string>();
             UserAppTags ??= new Dictionary<string, List<string>>();
+            UserAppDisplayNames ??= new Dictionary<string, string>();
             DismissedAnnouncementIds ??= new List<string>();
             GamepadBindings ??= GamepadBindingDefaults.Create();
             GamepadBindingDefaults.EnsureComplete(GamepadBindings);
@@ -137,6 +188,9 @@ namespace QuiverLauncher
             {
                 source.IgnoredChangesAtVersion ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 source.HiddenFromReviewRepositories ??= new List<string>();
+                source.FeaturedTags ??= new List<string>();
+                source.PreferredTagFilters ??= new List<string>();
+                source.HiddenTagFilters ??= new List<string>();
             }
 
             if (HiddenApps.Count > 0)
@@ -153,6 +207,7 @@ namespace QuiverLauncher
 
             BackgroundUpdateCheckIntervalMinutes =
                 BackgroundUpdateCheckIntervals.Normalize(BackgroundUpdateCheckIntervalMinutes);
+            LibraryCardTagMaxLines = TagChipHelper.NormalizeLibraryCardTagMaxLines(LibraryCardTagMaxLines);
         }
 
         public static AppSettings Load() => SettingsStoreProvider.Default.Load();

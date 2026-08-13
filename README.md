@@ -193,28 +193,43 @@ See the [Quiver Community App Catalog](https://github.com/tgeorgiadis/quiver-com
 
 Each app entry requires the following properties:
 
-- **`name`** - The display name of the app as it appears in the launcher
+- **`name`** - Canonical app/title (for ports, usually the game name). Library display can compose this with `project` via Settings → Library name style
+- **`project`** *(optional)* - Project, team, or author attribution shown when library name style includes project
+- **`customDisplayName`** *(optional)* - Per-app library label override; always wins over name/project composition
 - **`repository`** - The repository path in the format `username/repository` (GitHub) or `namespace/project` (GitLab). On **Edit App Entry**, repository and repository source can be changed to retarget releases (e.g. move an app to GitLab); the install folder is unchanged unless **Folder Name** is edited.
 - **`repositorySource`** *(optional)* - `github` (default when omitted) or `gitlab`. Older Quiver Launcher versions ignore this field and treat entries as GitHub-only.
-- **`folderName`** - The folder name where the app will be downloaded and installed
+- **`folderName`** - The folder name where the app will be downloaded and installed (prefer `Title-Project`, without type suffixes like `-Recomp`)
+- **`tags`** *(optional)* - Freeform tags (classification such as `recomp` / `decomp` lives here, not in the title)
 - **`appIconUrl`** - URL of the app's icon image. If null, a default icon will be used.
+
+Catalog **list** JSON may also include review-chip hints (only shown when present on apps):
+
+- **`preferredTagFilters`** — chips that appear first when reviewing that list, ordered by how often they appear on apps
+- **`hiddenTagFilters`** — chips that never appear in that list's review filters (also omitted from frequency counts)
+- **`featuredTags`** — fallback pin list when `preferredTagFilters` is omitted or empty
 
 #### Example Configuration
 
 ```json
 {
+    "name": "Nintendo 64",
+    "preferredTagFilters": ["recomp", "decomp", "recreation", "ai"],
+    "hiddenTagFilters": ["n64", "nintendo"],
+    "featuredTags": ["recomp", "decomp", "recreation", "ai"],
     "apps": [
+        {
+            "name": "Majora's Mask",
+            "project": "2 Ship 2 Harkinian",
+            "repository": "HarbourMasters/2ship2harkinian",
+            "folderName": "MajorasMask-2Ship2Harkinian",
+            "tags": ["n64", "decomp", "harbour-masters"],
+            "appIconUrl": null
+        },
         {
             "name": "Example App",
             "repository": "username/example-app-repo",
             "folderName": "ExampleApp",
             "appIconUrl": null
-        },
-        {
-            "name": "Another App",
-            "repository": "anotheruser/another-app-repo",
-            "folderName": "AnotherApp",
-            "appIconUrl": "link/to/an/image.png"
         },
         {
             "name": "GitLab Example App",

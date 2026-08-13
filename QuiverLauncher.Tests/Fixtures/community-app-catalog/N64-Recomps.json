@@ -1,12 +1,14 @@
 {
   "name": "N64 Recomps",
-  "description": "N64 recompilation ports",
-  "version": "1.0.4",
+  "description": "N64 recompilation ports (legacy list id; prefer Nintendo-64.json)",
+  "version": "1.0.5",
+  "featuredTags": ["recomp", "ai"],
   "apps": [
     {
-      "name": "Banjo-Kazooie (Recomp)",
+      "name": "Banjo-Kazooie",
+      "project": "BanjoRecomp",
       "repository": "BanjoRecomp/BanjoRecomp",
-      "folderName": "BanjoKazooie-Recomp",
+      "folderName": "BanjoKazooie-BanjoRecomp",
       "installPath": null,
       "appIconUrl": "https://raw.githubusercontent.com/BanjoRecomp/BanjoRecomp/refs/heads/main/icons/app.png",
       "preferredVersion": null,
@@ -175,9 +177,10 @@
       ]
     },
     {
-      "name": "The Legend of Zelda: Majora's Mask and Ocarina of Time (Recomp)",
+      "name": "Ocarina of Time & Majora's Mask",
+      "project": "Zelda64Recomp",
       "repository": "Zelda64Recomp/Zelda64Recomp",
-      "folderName": "TheLegendOfZeldaMajorasMaskAndOcarinaofTime-Recomp",
+      "folderName": "OcarinaOfTimeMajorasMask-Zelda64Recomp",
       "installPath": null,
       "appIconUrl": "https://raw.githubusercontent.com/Zelda64Recomp/Zelda64Recomp/refs/heads/dev/icons/512.png",
       "preferredVersion": null,

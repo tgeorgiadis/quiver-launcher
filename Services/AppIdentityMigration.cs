@@ -45,6 +45,7 @@ public static class AppIdentityMigration
         if (!string.Equals(oldRepo, newRepo, StringComparison.OrdinalIgnoreCase))
         {
             settingsChanged |= MigrateUserAppTags(settings, oldRepo, newRepo);
+            settingsChanged |= MigrateUserAppDisplayNames(settings, oldRepo, newRepo);
             settingsChanged |= MigrateCatalogSourceMaps(settings, oldRepo, newRepo);
         }
 
@@ -63,6 +64,21 @@ public static class AppIdentityMigration
 
         if (!settings.UserAppTags.ContainsKey(newRepository))
             settings.UserAppTags[newRepository] = tags;
+
+        return true;
+    }
+
+    internal static bool MigrateUserAppDisplayNames(AppSettings settings, string oldRepository, string newRepository)
+    {
+        settings.UserAppDisplayNames ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (!settings.UserAppDisplayNames.TryGetValue(oldRepository, out var displayName))
+            return false;
+
+        settings.UserAppDisplayNames.Remove(oldRepository);
+
+        if (!settings.UserAppDisplayNames.ContainsKey(newRepository))
+            settings.UserAppDisplayNames[newRepository] = displayName;
 
         return true;
     }

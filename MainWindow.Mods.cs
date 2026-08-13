@@ -380,21 +380,21 @@ public partial class MainWindow
     {
         if (GetModListItem(sender) is not { } item)
             return;
-        await InstallModAsync(item);
+        await InstallModAsync(item, updateInstalledFilesOnly: false);
     }
 
     private async void ModRowUpdate_Click(object? sender, RoutedEventArgs e)
     {
         if (GetModListItem(sender) is not { } item)
             return;
-        await InstallModAsync(item);
+        await InstallModAsync(item, updateInstalledFilesOnly: true);
     }
 
-    private void ModRowUninstall_Click(object? sender, RoutedEventArgs e)
+    private async void ModRowUninstall_Click(object? sender, RoutedEventArgs e)
     {
         if (GetModListItem(sender) is not { } item)
             return;
-        UninstallMod(item);
+        await UninstallModAsync(item);
     }
 
     private void ModRowOpenPage_Click(object? sender, RoutedEventArgs e)
@@ -754,8 +754,10 @@ public partial class MainWindow
         RememberModsCatalogPackages(_modsCatalog);
     }
 
-    private static InstalledModRecord? FindInstalledRecord(InstalledModsDocument doc, ModPackage package) =>
-        ModCatalogListBuilder.FindMatchingRecord(doc, package);
+    private static IReadOnlyList<InstalledModRecord> FindInstalledRecords(
+        InstalledModsDocument doc,
+        ModPackage package) =>
+        ModCatalogListBuilder.FindMatchingRecords(doc, package);
 
     private void ApplyModsFiltersToUi()
     {
@@ -833,12 +835,12 @@ public partial class MainWindow
         var installedDoc = string.IsNullOrWhiteSpace(installRoot) || !Directory.Exists(installRoot)
             ? new InstalledModsDocument()
             : ModInstaller.LoadInstalled(installRoot);
-        var record = FindInstalledRecord(installedDoc, package);
+        var records = FindInstalledRecords(installedDoc, package);
 
         foreach (var existing in _modsAllItems)
         {
             if (ModCatalogListBuilder.PackagesMatch(existing.Package, package))
-                existing.ApplyInstalled(record);
+                existing.ApplyInstalled(records);
         }
     }
 
@@ -913,7 +915,7 @@ public partial class MainWindow
             ModsStatusText.Text = text;
     }
 
-    private async Task InstallModAsync(ModListItem item)
+    private async Task InstallModAsync(ModListItem item, bool updateInstalledFilesOnly = false)
     {
         if (_modsGame == null)
             return;
@@ -936,13 +938,13 @@ public partial class MainWindow
         }
 
         item.IsBusy = true;
-        var isUpdate = item.Status == ModInstallStatus.UpdateAvailable;
+        var isUpdate = updateInstalledFilesOnly;
         var actionLabel = isUpdate ? "Updating" : "Installing";
         SetModsStatus($"{actionLabel} {item.DisplayName}…");
         try
         {
             var package = item.Package;
-            ModDownloadFile? selectedFile = null;
+            IReadOnlyList<ModDownloadFile>? selectedFiles = null;
 
             if (provider is GameBananaModProvider gameBanana)
             {
@@ -952,18 +954,45 @@ public partial class MainWindow
                 if (package.DownloadFiles.Count == 0)
                     throw new InvalidOperationException("This mod has no downloadable files.");
 
-                if (package.DownloadFiles.Count == 1)
+                var installedRecords = FindInstalledRecords(ModInstaller.LoadInstalled(installRoot), package);
+
+                if (updateInstalledFilesOnly)
                 {
-                    selectedFile = package.DownloadFiles[0];
+                    selectedFiles = ModDownloadFileSelection.ResolveFilesToUpdate(package, installedRecords);
+                    if (selectedFiles.Count == 0)
+                    {
+                        SetModsStatus("Nothing to update");
+                        return;
+                    }
                 }
                 else
                 {
-                    var preferredId = FindInstalledDownloadFileId(installRoot, package);
-                    selectedFile = await ShowModDownloadFilePickerAsync(package, preferredId).ConfigureAwait(true);
-                    if (selectedFile == null)
+                    var remaining = ModDownloadFileSelection.GetUninstalledFiles(
+                        package.DownloadFiles,
+                        installedRecords);
+                    if (remaining.Count == 0)
                     {
-                        SetModsStatus("Install cancelled");
+                        SetModsStatus("All files already installed");
                         return;
+                    }
+
+                    if (package.DownloadFiles.Count == 1)
+                    {
+                        selectedFiles = remaining;
+                    }
+                    else
+                    {
+                        selectedFiles = await ShowModDownloadFilePickerAsync(
+                            $"Choose files — {package.Name}",
+                            "This mod has multiple download files. Select one or more to install:",
+                            "Install",
+                            remaining,
+                            preselectedFileIds: null).ConfigureAwait(true);
+                        if (selectedFiles.Count == 0)
+                        {
+                            SetModsStatus("Install cancelled");
+                            return;
+                        }
                     }
                 }
             }
@@ -977,13 +1006,13 @@ public partial class MainWindow
 
             var progress = new Progress<double>(p => item.DownloadProgress = p * 100.0);
 
-            await ModInstaller.InstallWithDependenciesAsync(
+            await ModInstaller.InstallSelectedFilesAsync(
                 installRoot,
                 modsPath,
                 package,
                 _modsCatalog,
                 provider,
-                selectedFile,
+                selectedFiles,
                 progress,
                 modsLayout: _modsGame.ModsLayout).ConfigureAwait(true);
 
@@ -1012,64 +1041,85 @@ public partial class MainWindow
 
             _modsCatalog[i] = package;
             RememberModsCatalogPackages([package]);
+            foreach (var item in _modsAllItems)
+            {
+                if (!ModCatalogListBuilder.PackagesMatch(item.Package, package))
+                    continue;
+                item.SetKnownDownloadFiles(package.DownloadFiles);
+            }
             return;
         }
 
         _modsCatalog.Add(package);
         RememberModsCatalogPackages([package]);
+        foreach (var item in _modsAllItems)
+        {
+            if (!ModCatalogListBuilder.PackagesMatch(item.Package, package))
+                continue;
+            item.SetKnownDownloadFiles(package.DownloadFiles);
+        }
     }
 
-    private string? FindInstalledDownloadFileId(string installRoot, ModPackage package)
-    {
-        var doc = ModInstaller.LoadInstalled(installRoot);
-        return FindInstalledRecord(doc, package)?.DownloadFileId;
-    }
-
-    private async Task<ModDownloadFile?> ShowModDownloadFilePickerAsync(
-        ModPackage package,
-        string? preferredFileId)
+    private async Task<IReadOnlyList<ModDownloadFile>> ShowModDownloadFilePickerAsync(
+        string title,
+        string prompt,
+        string confirmLabel,
+        IReadOnlyList<ModDownloadFile> files,
+        IReadOnlyCollection<string>? preselectedFileIds)
     {
         return await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             if (Avalonia.Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
                 desktop.MainWindow == null)
-                return null;
+                return (IReadOnlyList<ModDownloadFile>)[];
 
-            ModDownloadFile? chosen = null;
+            IReadOnlyList<ModDownloadFile> chosen = [];
             var listBox = new ListBox
             {
                 MinHeight = 200,
                 MaxHeight = 360,
                 Focusable = true,
+                SelectionMode = SelectionMode.Multiple,
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
             };
 
-            foreach (var file in package.DownloadFiles)
+            var checkBoxes = new List<CheckBox>();
+            foreach (var file in files)
             {
                 var sizeMb = file.FileSize > 0 ? $"{file.FileSize / (1024d * 1024d):0.##} MB" : "Unknown size";
                 var desc = string.IsNullOrWhiteSpace(file.Description) ? "" : $" — {file.Description}";
-                var item = new ListBoxItem
+                var isPreselected = preselectedFileIds != null &&
+                    preselectedFileIds.Contains(file.Id, StringComparer.OrdinalIgnoreCase);
+                var checkBox = new CheckBox
                 {
                     Content = new TextBlock
                     {
                         Text = $"{file.FileName} ({sizeMb}){desc}",
                         TextWrapping = TextWrapping.Wrap,
                     },
+                    IsChecked = isPreselected,
+                    Tag = file,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                };
+                checkBoxes.Add(checkBox);
+
+                var item = new ListBoxItem
+                {
+                    Content = checkBox,
                     Tag = file,
                     HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
                 };
                 listBox.Items.Add(item);
-                if (preferredFileId != null &&
-                    string.Equals(file.Id, preferredFileId, StringComparison.OrdinalIgnoreCase))
-                    listBox.SelectedItem = item;
+                if (isPreselected)
+                    listBox.SelectedItems?.Add(item);
             }
 
             if (listBox.SelectedItem == null && listBox.Items.Count > 0)
                 listBox.SelectedIndex = 0;
 
-            var installButton = new Button
+            var confirmButton = new Button
             {
-                Content = "Install",
+                Content = confirmLabel,
                 MinWidth = 100,
                 Margin = new Thickness(0, 0, 8, 0),
                 IsDefault = true,
@@ -1081,9 +1131,16 @@ public partial class MainWindow
                 IsCancel = true,
             };
 
+            void RefreshConfirmEnabled() =>
+                confirmButton.IsEnabled = checkBoxes.Any(c => c.IsChecked == true);
+
+            foreach (var checkBox in checkBoxes)
+                checkBox.IsCheckedChanged += (_, _) => RefreshConfirmEnabled();
+            RefreshConfirmEnabled();
+
             var dialog = new Window
             {
-                Title = $"Choose file — {package.Name}",
+                Title = title,
                 Width = 720,
                 MinWidth = 560,
                 Height = 460,
@@ -1097,7 +1154,7 @@ public partial class MainWindow
                     {
                         new TextBlock
                         {
-                            Text = "This mod has multiple download files. Choose one to install:",
+                            Text = prompt,
                             TextWrapping = TextWrapping.Wrap,
                         },
                         listBox,
@@ -1105,16 +1162,18 @@ public partial class MainWindow
                         {
                             Orientation = Orientation.Horizontal,
                             HorizontalAlignment = HorizontalAlignment.Center,
-                            Children = { installButton, cancelButton },
+                            Children = { confirmButton, cancelButton },
                         },
                     },
                 },
             };
 
-            installButton.Click += (_, _) =>
+            confirmButton.Click += (_, _) =>
             {
-                if (listBox.SelectedItem is ListBoxItem { Tag: ModDownloadFile file })
-                    chosen = file;
+                chosen = checkBoxes
+                    .Where(c => c.IsChecked == true && c.Tag is ModDownloadFile)
+                    .Select(c => (ModDownloadFile)c.Tag!)
+                    .ToList();
                 dialog.Close();
             };
             cancelButton.Click += (_, _) => dialog.Close();
@@ -1125,7 +1184,7 @@ public partial class MainWindow
         });
     }
 
-    private void UninstallMod(ModListItem item)
+    private async Task UninstallModAsync(ModListItem item)
     {
         if (_modsGame == null || !_modsGame.IsInstalled)
             return;
@@ -1135,11 +1194,56 @@ public partial class MainWindow
         if (string.IsNullOrWhiteSpace(installRoot) || modsPath.Length == 0)
             return;
 
+        var package = item.Package;
+        var installedRecords = FindInstalledRecords(ModInstaller.LoadInstalled(installRoot), package);
+        if (installedRecords.Count == 0)
+            return;
+
+        IReadOnlyList<InstalledModRecord> toRemove = installedRecords;
+        if (package.DownloadFiles.Count == 0 &&
+            _gameManager.ModProviderRegistry.TryGet(item.ProviderId, out var provider) &&
+            provider is GameBananaModProvider gameBanana)
+        {
+            package = await gameBanana.EnrichWithFilesAsync(package).ConfigureAwait(true);
+            ReplaceCatalogPackage(package);
+            installedRecords = FindInstalledRecords(ModInstaller.LoadInstalled(installRoot), package);
+            toRemove = installedRecords;
+        }
+
+        if (package.DownloadFiles.Count > 1)
+        {
+            var pickerFiles = ModDownloadFileSelection.ResolveInstalledFilesForPicker(package, installedRecords);
+            var selected = await ShowModDownloadFilePickerAsync(
+                $"Uninstall files — {package.Name}",
+                "This mod has multiple download files. Select one or more to uninstall:",
+                "Uninstall",
+                pickerFiles,
+                preselectedFileIds: null).ConfigureAwait(true);
+            if (selected.Count == 0)
+            {
+                SetModsStatus("Uninstall cancelled");
+                return;
+            }
+
+            var selectedIds = selected.Select(f => f.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            toRemove = installedRecords.Where(r =>
+                selectedIds.Contains(r.DownloadFileId ?? string.Empty) ||
+                selected.Any(f =>
+                    !string.IsNullOrWhiteSpace(r.DownloadFileName) &&
+                    string.Equals(f.FileName, r.DownloadFileName, StringComparison.OrdinalIgnoreCase))).ToList();
+            if (toRemove.Count == 0)
+            {
+                SetModsStatus("Uninstall cancelled");
+                return;
+            }
+        }
+
         item.IsBusy = true;
         try
         {
-            var package = item.Package;
-            ModInstaller.Uninstall(installRoot, modsPath, item.ProviderId, item.PackageId);
+            foreach (var record in toRemove)
+                ModInstaller.UninstallMatchingFile(installRoot, modsPath, package, record.DownloadFileId);
+
             ApplyInstalledStateToMatchingItems(package);
             ApplyModsFiltersToUi();
             _ = RefreshModUpdateFlagsForGameAsync(_modsGame);
@@ -1160,7 +1264,7 @@ public partial class MainWindow
     {
         var toUpdate = ModListRows.Where(r => r.CanUpdate).ToList();
         foreach (var item in toUpdate)
-            await InstallModAsync(item);
+            await InstallModAsync(item, updateInstalledFilesOnly: true);
     }
 
     private async Task RefreshModUpdateFlagsForGameAsync(GameInfo game)
@@ -1213,17 +1317,15 @@ public partial class MainWindow
                     LatestVersion = new ModPackageVersion { Version = record.Version, DownloadUrl = string.Empty },
                 };
 
-                if (_gameManager.ModProviderRegistry.TryGet(record.Provider, out var provider) &&
-                    provider is ThunderstoreModProvider thunderstore)
+                if (_gameManager.ModProviderRegistry.TryGet(record.Provider, out var provider))
                 {
-                    package = await thunderstore.EnrichForInstallAsync(package).ConfigureAwait(true);
+                    if (provider is ThunderstoreModProvider thunderstore)
+                        package = await thunderstore.EnrichForInstallAsync(package).ConfigureAwait(true);
+                    else if (provider is GameBananaModProvider gameBanana)
+                        package = await gameBanana.EnrichWithFilesAsync(package).ConfigureAwait(true);
                 }
 
-                if (package.LatestVersion == null ||
-                    string.IsNullOrWhiteSpace(package.LatestVersion.Version))
-                    continue;
-
-                if (ModVersionComparer.IsUpdateAvailable(record.Version, package.LatestVersion.Version))
+                if (ModDownloadFileSelection.IsRecordUpdateAvailable(record, package))
                 {
                     hasUpdates = true;
                     break;

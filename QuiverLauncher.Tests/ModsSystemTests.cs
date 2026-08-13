@@ -822,6 +822,195 @@ public class ModsSystemTests
         }
     }
 
+    [Fact]
+    public void ModCatalogListBuilder_RecordMatchesPackageFile_distinguishes_download_files()
+    {
+        var package = MakeMultiFileGbPackage();
+        var fileA = new InstalledModRecord
+        {
+            Provider = package.ProviderId,
+            Id = package.Id,
+            DownloadFileId = "10",
+        };
+        var fileB = new InstalledModRecord
+        {
+            Provider = package.ProviderId,
+            Id = package.Id,
+            DownloadFileId = "20",
+        };
+        var legacy = new InstalledModRecord
+        {
+            Provider = package.ProviderId,
+            Id = package.Id,
+        };
+
+        ModCatalogListBuilder.RecordMatchesPackage(fileA, package).Should().BeTrue();
+        ModCatalogListBuilder.RecordMatchesPackageFile(fileA, package, "10").Should().BeTrue();
+        ModCatalogListBuilder.RecordMatchesPackageFile(fileA, package, "20").Should().BeFalse();
+        ModCatalogListBuilder.RecordMatchesPackageFile(fileB, package, "20").Should().BeTrue();
+        ModCatalogListBuilder.RecordMatchesPackageFile(legacy, package, null).Should().BeTrue();
+        ModCatalogListBuilder.RecordMatchesPackageFile(legacy, package, "10").Should().BeFalse();
+        ModCatalogListBuilder.RecordMatchesPackageFile(fileA, package, null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ModDownloadFileSelection_preselects_installed_and_preferred_file_ids()
+    {
+        var records = new[]
+        {
+            new InstalledModRecord { DownloadFileId = "10" },
+            new InstalledModRecord { DownloadFileId = "20" },
+        };
+
+        var ids = ModDownloadFileSelection.GetPreselectedFileIds(records, "30");
+        ids.Should().BeEquivalentTo(["10", "20", "30"]);
+    }
+
+    [Fact]
+    public async Task ModInstallService_second_file_does_not_remove_first()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "quiver-mod-multi-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var package = MakeMultiFileGbPackage();
+            var provider = new FakeZipModProvider(ModProviderIds.GameBanana, new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                [package.DownloadFiles[0].DownloadUrl] = CreateMinimalModZip("scene.pak", "scene"),
+                [package.DownloadFiles[1].DownloadUrl] = CreateMinimalModZip("art.pak", "art"),
+            });
+            var installer = new ModInstallService(new ModProviderRegistry([provider]));
+
+            await installer.InstallSelectedFilesAsync(
+                root, "mods", package, [package], provider, [package.DownloadFiles[0]]);
+            await installer.InstallSelectedFilesAsync(
+                root, "mods", package, [package], provider, [package.DownloadFiles[1]]);
+
+            var installed = installer.LoadInstalled(root);
+            installed.Mods.Should().HaveCount(2);
+            installed.Mods.Select(m => m.DownloadFileId).Should().BeEquivalentTo(["10", "20"]);
+
+            var modsDir = installer.GetModsDirectory(root, "mods");
+            File.Exists(Path.Combine(modsDir, "scene.pak")).Should().BeTrue();
+            File.Exists(Path.Combine(modsDir, "art.pak")).Should().BeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ModInstallService_uninstall_one_file_leaves_the_other()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "quiver-mod-uninst-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var package = MakeMultiFileGbPackage();
+            var provider = new FakeZipModProvider(ModProviderIds.GameBanana, new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                [package.DownloadFiles[0].DownloadUrl] = CreateMinimalModZip("scene.pak", "scene"),
+                [package.DownloadFiles[1].DownloadUrl] = CreateMinimalModZip("art.pak", "art"),
+            });
+            var installer = new ModInstallService(new ModProviderRegistry([provider]));
+
+            await installer.InstallSelectedFilesAsync(
+                root, "mods", package, [package], provider, package.DownloadFiles);
+
+            installer.UninstallMatchingFile(root, "mods", package, "10").Should().BeTrue();
+
+            var installed = installer.LoadInstalled(root);
+            installed.Mods.Should().ContainSingle();
+            installed.Mods[0].DownloadFileId.Should().Be("20");
+
+            var modsDir = installer.GetModsDirectory(root, "mods");
+            File.Exists(Path.Combine(modsDir, "scene.pak")).Should().BeFalse();
+            File.Exists(Path.Combine(modsDir, "art.pak")).Should().BeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ModInstallService_InstallSelectedFilesAsync_two_files_produce_two_records()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "quiver-mod-two-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var package = MakeMultiFileGbPackage();
+            var provider = new FakeZipModProvider(ModProviderIds.GameBanana, new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                [package.DownloadFiles[0].DownloadUrl] = CreateMinimalModZip("scene.pak", "scene"),
+                [package.DownloadFiles[1].DownloadUrl] = CreateMinimalModZip("art.pak", "art"),
+            });
+            var installer = new ModInstallService(new ModProviderRegistry([provider]));
+
+            await installer.InstallSelectedFilesAsync(
+                root, "mods", package, [package], provider, package.DownloadFiles);
+
+            var installed = installer.LoadInstalled(root);
+            installed.Mods.Should().HaveCount(2);
+            installed.Mods.Select(m => m.DownloadFileId).Should().BeEquivalentTo(["10", "20"]);
+            installed.Mods.Select(m => m.Id).Distinct().Should().ContainSingle().Which.Should().Be(package.Id);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ModCatalogListBuilder_BuildItems_keeps_one_card_for_multiple_file_records()
+    {
+        var package = MakeMultiFileGbPackage();
+        var installed = new InstalledModsDocument
+        {
+            Mods =
+            [
+                new InstalledModRecord
+                {
+                    Provider = package.ProviderId,
+                    SourceKey = package.SourceKey,
+                    Id = package.Id,
+                    FullName = package.FullName,
+                    Owner = package.Owner,
+                    Name = package.Name,
+                    Version = "1.0",
+                    DownloadFileId = "10",
+                    DownloadFileName = "scene.zip",
+                },
+                new InstalledModRecord
+                {
+                    Provider = package.ProviderId,
+                    SourceKey = package.SourceKey,
+                    Id = package.Id,
+                    FullName = package.FullName,
+                    Owner = package.Owner,
+                    Name = package.Name,
+                    Version = "1.0",
+                    DownloadFileId = "20",
+                    DownloadFileName = "art.zip",
+                },
+            ],
+        };
+
+        var items = ModCatalogListBuilder.BuildItems([package], installed, out var migrated);
+        items.Should().ContainSingle();
+        items[0].Status.Should().Be(ModInstallStatus.Installed);
+        items[0].VersionLine.Should().Be("2 files");
+        migrated.Should().BeFalse();
+    }
+
     [Theory]
     [InlineData("1.0.0", "1.1.0", true)]
     [InlineData("1.1.1", "1.1.1", false)]
@@ -1437,10 +1626,223 @@ public class ModsSystemTests
         item.Status.Should().Be(ModInstallStatus.UpdateAvailable);
         item.CanUpdate.Should().BeTrue();
 
-        item.ApplyInstalled(null);
+        item.ApplyInstalled([]);
         item.Status.Should().Be(ModInstallStatus.NotInstalled);
         item.CanInstall.Should().BeTrue();
         item.InstalledVersion.Should().BeNull();
+    }
+
+    [Fact]
+    public void ModListItem_ApplyInstalled_multiple_files_update_when_any_file_is_behind()
+    {
+        var package = MakeMultiFileGbPackage();
+        var item = new ModListItem { Package = package };
+
+        item.ApplyInstalled(
+        [
+            new InstalledModRecord
+            {
+                Provider = package.ProviderId,
+                Id = package.Id,
+                Version = "1.0",
+                DownloadFileId = "10",
+            },
+            new InstalledModRecord
+            {
+                Provider = package.ProviderId,
+                Id = package.Id,
+                Version = "0.9",
+                DownloadFileId = "20",
+            },
+        ]);
+
+        item.Status.Should().Be(ModInstallStatus.UpdateAvailable);
+        item.CanUpdate.Should().BeTrue();
+        item.CanInstall.Should().BeFalse();
+        item.AllowsAdditionalFiles.Should().BeFalse();
+        item.VersionLine.Should().Be("2 files · update");
+    }
+
+    [Fact]
+    public void ModListItem_CanInstall_add_files_only_when_uninstalled_files_remain()
+    {
+        var package = MakeMultiFileGbPackage();
+        var item = new ModListItem { Package = package };
+
+        item.ApplyInstalled(
+        [
+            new InstalledModRecord
+            {
+                Provider = package.ProviderId,
+                Id = package.Id,
+                Version = "1.0",
+                DownloadFileId = "10",
+            },
+        ]);
+
+        item.CanInstall.Should().BeTrue();
+        item.InstallButtonLabel.Should().Be("Add files");
+        item.AllowsAdditionalFiles.Should().BeTrue();
+
+        item.ApplyInstalled(
+        [
+            new InstalledModRecord
+            {
+                Provider = package.ProviderId,
+                Id = package.Id,
+                Version = "1.0",
+                DownloadFileId = "10",
+            },
+            new InstalledModRecord
+            {
+                Provider = package.ProviderId,
+                Id = package.Id,
+                Version = "1.0",
+                DownloadFileId = "20",
+            },
+        ]);
+
+        item.CanInstall.Should().BeFalse();
+        item.AllowsAdditionalFiles.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ModDownloadFileSelection_GetUninstalledFiles_omits_installed_ids()
+    {
+        var package = MakeMultiFileGbPackage();
+        var remaining = ModDownloadFileSelection.GetUninstalledFiles(
+            package.DownloadFiles,
+            [
+                new InstalledModRecord { DownloadFileId = "10", DownloadFileName = "scene.zip" },
+            ]);
+
+        remaining.Should().ContainSingle();
+        remaining[0].Id.Should().Be("20");
+    }
+
+    [Fact]
+    public void ModDownloadFileSelection_per_file_current_file_not_update_when_page_version_higher()
+    {
+        // GameBanana 650008-style: page v2.0, fiercedeity still labeled v1.0.
+        var package = MakeGbPageVsFileVersionPackage();
+        var fierceDeity = new InstalledModRecord
+        {
+            Provider = package.ProviderId,
+            Id = package.Id,
+            Version = "1.0",
+            DownloadFileId = "30",
+            DownloadFileName = "fiercedeity.zip",
+        };
+
+        ModDownloadFileSelection.IsRecordUpdateAvailable(fierceDeity, package).Should().BeFalse();
+        ModDownloadFileSelection.ResolveLatestVersion(fierceDeity, package).Should().Be("1.0");
+    }
+
+    [Fact]
+    public void ModDownloadFileSelection_per_file_no_page_fallback_when_download_files_empty()
+    {
+        var detailed = MakeGbPageVsFileVersionPackage();
+        var package = new ModPackage
+        {
+            ProviderId = detailed.ProviderId,
+            SourceKey = detailed.SourceKey,
+            SourceDisplayLabel = detailed.SourceDisplayLabel,
+            Id = detailed.Id,
+            Owner = detailed.Owner,
+            Name = detailed.Name,
+            FullName = detailed.FullName,
+            DownloadFiles = [],
+            LatestVersion = detailed.LatestVersion,
+        };
+        var fierceDeity = new InstalledModRecord
+        {
+            Provider = package.ProviderId,
+            Id = package.Id,
+            Version = "1.0",
+            DownloadFileId = "30",
+            DownloadFileName = "fiercedeity.zip",
+        };
+
+        ModDownloadFileSelection.IsRecordUpdateAvailable(fierceDeity, package).Should().BeFalse();
+        ModDownloadFileSelection.ResolveLatestVersion(fierceDeity, package).Should().Be("1.0");
+    }
+
+    [Fact]
+    public void ModDownloadFileSelection_per_file_detects_true_update_for_behind_file()
+    {
+        var package = MakeGbPageVsFileVersionPackage();
+        var behind = new InstalledModRecord
+        {
+            Provider = package.ProviderId,
+            Id = package.Id,
+            Version = "1.0",
+            DownloadFileId = "10",
+            DownloadFileName = "standard.zip",
+        };
+
+        ModDownloadFileSelection.IsRecordUpdateAvailable(behind, package).Should().BeTrue();
+        ModDownloadFileSelection.ResolveLatestVersion(behind, package).Should().Be("2.0");
+    }
+
+    [Fact]
+    public void ModDownloadFileSelection_ResolveFilesToUpdate_only_returns_behind_files()
+    {
+        var package = MakeGbPageVsFileVersionPackage();
+        var records = new[]
+        {
+            new InstalledModRecord
+            {
+                Provider = package.ProviderId,
+                Id = package.Id,
+                Version = "1.0",
+                DownloadFileId = "10",
+            },
+            new InstalledModRecord
+            {
+                Provider = package.ProviderId,
+                Id = package.Id,
+                Version = "1.0",
+                DownloadFileId = "30",
+            },
+        };
+
+        var toUpdate = ModDownloadFileSelection.ResolveFilesToUpdate(package, records);
+        toUpdate.Should().ContainSingle();
+        toUpdate[0].Id.Should().Be("10");
+    }
+
+    [Fact]
+    public void ModListItem_SetKnownDownloadFiles_keeps_current_file_installed()
+    {
+        var detailed = MakeGbPageVsFileVersionPackage();
+        var indexPackage = new ModPackage
+        {
+            ProviderId = detailed.ProviderId,
+            SourceKey = detailed.SourceKey,
+            SourceDisplayLabel = detailed.SourceDisplayLabel,
+            Id = detailed.Id,
+            Owner = detailed.Owner,
+            Name = detailed.Name,
+            FullName = detailed.FullName,
+            DownloadFiles = [],
+            LatestVersion = detailed.LatestVersion,
+        };
+        var item = new ModListItem { Package = indexPackage };
+        item.ApplyInstalled(new InstalledModRecord
+        {
+            Provider = indexPackage.ProviderId,
+            Id = indexPackage.Id,
+            Version = "1.0",
+            DownloadFileId = "30",
+            DownloadFileName = "fiercedeity.zip",
+        });
+
+        // With empty files + file identity, no false Update from page v2.0.
+        item.Status.Should().Be(ModInstallStatus.Installed);
+
+        item.SetKnownDownloadFiles(detailed.DownloadFiles);
+        item.Status.Should().Be(ModInstallStatus.Installed);
+        item.CanUpdate.Should().BeFalse();
     }
 
     [Fact]
@@ -2195,6 +2597,165 @@ public class ModsSystemTests
             FullName = $"{owner}-{name}",
             LatestVersion = new ModPackageVersion { Version = "1.0.0", DownloadUrl = string.Empty },
         };
+
+    private static ModPackage MakeMultiFileGbPackage() =>
+        new()
+        {
+            ProviderId = ModProviderIds.GameBanana,
+            SourceKey = "20371",
+            SourceDisplayLabel = "GameBanana · 20371",
+            Id = "12345",
+            Owner = "Author",
+            Name = "ScenePack",
+            FullName = "Author-ScenePack",
+            DownloadFiles =
+            [
+                new ModDownloadFile
+                {
+                    Id = "10",
+                    FileName = "scene.zip",
+                    DownloadUrl = "https://example.com/a.zip",
+                    FileSize = 10,
+                    Version = "1.0",
+                    Description = "Scene pack",
+                },
+                new ModDownloadFile
+                {
+                    Id = "20",
+                    FileName = "art.zip",
+                    DownloadUrl = "https://example.com/b.zip",
+                    FileSize = 20,
+                    Version = "1.0",
+                    Description = "Art pack",
+                },
+            ],
+            LatestVersion = new ModPackageVersion
+            {
+                Version = "1.0",
+                DownloadUrl = "https://example.com/a.zip",
+                FileSize = 10,
+            },
+        };
+
+    /// <summary>Page v2.0 with mixed per-file versions (GameBanana mod 650008 shape).</summary>
+    private static ModPackage MakeGbPageVsFileVersionPackage() =>
+        new()
+        {
+            ProviderId = ModProviderIds.GameBanana,
+            SourceKey = "20371",
+            SourceDisplayLabel = "GameBanana · 20371",
+            Id = "650008",
+            Owner = "Author",
+            Name = "3DS Link",
+            FullName = "Author-3DSLink",
+            DownloadFiles =
+            [
+                new ModDownloadFile
+                {
+                    Id = "10",
+                    FileName = "standard.zip",
+                    DownloadUrl = "https://example.com/standard.zip",
+                    FileSize = 10,
+                    Version = "2.0",
+                    Description = "Standard",
+                },
+                new ModDownloadFile
+                {
+                    Id = "20",
+                    FileName = "tunic.zip",
+                    DownloadUrl = "https://example.com/tunic.zip",
+                    FileSize = 20,
+                    Version = "2.0",
+                    Description = "Tunic",
+                },
+                new ModDownloadFile
+                {
+                    Id = "30",
+                    FileName = "fiercedeity.zip",
+                    DownloadUrl = "https://example.com/fiercedeity.zip",
+                    FileSize = 30,
+                    Version = "1.0",
+                    Description = "Fierce Deity",
+                },
+            ],
+            LatestVersion = new ModPackageVersion
+            {
+                Version = "2.0",
+                DownloadUrl = "https://example.com/standard.zip",
+                FileSize = 10,
+            },
+        };
+
+    private sealed class FakeZipModProvider : IModProvider
+    {
+        private readonly Dictionary<string, byte[]> _zipsByUrl;
+
+        public FakeZipModProvider(string id, Dictionary<string, byte[]> zipsByUrl)
+        {
+            Id = id;
+            _zipsByUrl = zipsByUrl;
+        }
+
+        public string Id { get; }
+        public string DisplayName => Id;
+        public bool SupportsPagedListing => false;
+        public bool SupportsRemoteSearch => false;
+
+        public void ForceRefreshOnNextList() { }
+
+        public bool TryParseSource(string sourceUrl, out ModSourceRef source)
+        {
+            source = new ModSourceRef
+            {
+                ProviderId = Id,
+                SourceKey = sourceUrl,
+                DisplayLabel = DisplayName,
+                SourceUrl = sourceUrl,
+            };
+            return true;
+        }
+
+        public Task<IReadOnlyList<ModPackage>> ListPackagesAsync(
+            ModSourceRef source,
+            ModListOptions? options = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ModPackage>>([]);
+
+        public Task<ModPackagePage> ListPackagesPageAsync(
+            ModSourceRef source,
+            string? pageToken,
+            int pageSize,
+            ModListOptions? options = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ModPackagePage { Packages = [], NextPageToken = null });
+
+        public Task<ModPackagePage> SearchPackagesPageAsync(
+            ModSourceRef source,
+            string query,
+            string? pageToken,
+            int pageSize,
+            ModListOptions? options = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<Stream> DownloadAsync(
+            ModPackageVersion version,
+            IProgress<double>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_zipsByUrl.TryGetValue(version.DownloadUrl, out var bytes))
+                throw new InvalidOperationException($"No zip stub for '{version.DownloadUrl}'.");
+            return Task.FromResult<Stream>(new MemoryStream(bytes));
+        }
+
+        public IReadOnlySet<string> GetArchiveMetadataFileNames() => new HashSet<string>();
+
+        public Task<string?> GetReadmeAsync(ModPackage package, CancellationToken cancellationToken = default) =>
+            Task.FromResult<string?>(null);
+
+        public Task<string?> GetChangelogAsync(ModPackage package, CancellationToken cancellationToken = default) =>
+            Task.FromResult<string?>(null);
+    }
 
     private sealed class FakePagedBrowseProvider : IModProvider
     {

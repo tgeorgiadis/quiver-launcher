@@ -48,6 +48,8 @@ public sealed class CommunityCatalogBootstrap
             };
         }
 
+        CommunityCatalogListIdRemap.RemapLegacySourceIds(settings, index);
+
         var addedNames = new List<string>();
         var updatedCount = 0;
 

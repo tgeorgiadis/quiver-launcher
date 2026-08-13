@@ -229,7 +229,8 @@ public class CatalogCompareServiceTests
         var updated = CatalogCompareService.ApplyReplaceAllChanged(local, rows);
 
         updated.Single().Name.Should().Be("New Name");
-        updated.Single().FolderName.Should().Be("NewFolder");
+        // Folder mapping is preserved so installed apps are not retargeted by catalog renames.
+        updated.Single().FolderName.Should().Be("OldFolder");
     }
 
     [Fact]

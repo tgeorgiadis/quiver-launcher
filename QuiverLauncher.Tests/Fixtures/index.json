@@ -1,41 +1,40 @@
 {
-  "version": 2,
+  "version": 3,
   "lists": [
     {
-      "id": "b4e8c2a1-3f5d-4e9b-8c7a-1d2e3f4a5b6c",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/N64-Recomps.json"
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Nintendo 64",
+      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/Nintendo-64.json"
     },
     {
-      "id": "c5f9d3b2-4a6e-5f0c-9d8b-2e3f4a5b6c7d",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/N64-Decomps-HarbourMasters.json"
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "SNES",
+      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/SNES.json"
     },
     {
-      "id": "e7b1f5d4-6c8a-4e2b-9f0d-3a4b5c6d7e8f",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/N64-Decomps.json"
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "GBA",
+      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/GBA.json"
     },
     {
-      "id": "f8c2a6e5-7d9b-4f3c-a0e1-4b5c6d7e8f9a",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/SNES-Decomps.json"
+      "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+      "name": "GameCube",
+      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/GameCube.json"
     },
     {
-      "id": "a9d3b7f6-8e0c-4a4d-b1f2-5c6d7e8f9a0b",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/GBA-Decomps.json"
+      "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+      "name": "PlayStation",
+      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/PlayStation.json"
     },
     {
-      "id": "b0e4c8a7-9f1d-4b5e-c2a3-6d7e8f9a0b1c",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/GCN-Decomps.json"
+      "id": "f6a7b8c9-d0e1-2345-f012-456789012345",
+      "name": "Xbox 360",
+      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/Xbox-360.json"
     },
     {
-      "id": "c1f5d9b8-a0e2-4c6f-d3b4-7e8f9a0b1c2d",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/PSX-Decomps.json"
-    },
-    {
-      "id": "d2a6e0c9-b1f3-4d7a-e4c5-8f9a0b1c2d3e",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/X360-Recomps.json"
-    },
-    {
-      "id": "e3b7f1da-c2a4-4e8b-f5d6-9a0b1c2d3e4f",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/General-Game-Recreations.json"
+      "id": "a7b8c9d0-e1f2-3456-0123-567890123456",
+      "name": "Multiplatform",
+      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/Multiplatform.json"
     }
   ]
 }

@@ -1,0 +1,66 @@
+{
+  "name": "Nintendo 64",
+  "description": "N64 ports — recomps, decomps, and related projects",
+  "version": "2.0.0",
+  "featuredTags": ["recomp", "decomp", "recreation", "ai", "harbour-masters"],
+  "apps": [
+    {
+      "name": "Banjo-Kazooie",
+      "project": "BanjoRecomp",
+      "repository": "BanjoRecomp/BanjoRecomp",
+      "folderName": "BanjoKazooie-BanjoRecomp",
+      "installPath": null,
+      "appIconUrl": "https://raw.githubusercontent.com/BanjoRecomp/BanjoRecomp/refs/heads/main/icons/app.png",
+      "preferredVersion": null,
+      "tags": [
+        "n64",
+        "nintendo",
+        "nintendo 64",
+        "recomp",
+        "banjo"
+      ],
+      "filesToAdd": [
+        "portable.txt"
+      ]
+    },
+    {
+      "name": "Ocarina of Time & Majora's Mask",
+      "project": "Zelda64Recomp",
+      "repository": "Zelda64Recomp/Zelda64Recomp",
+      "folderName": "OcarinaOfTimeMajorasMask-Zelda64Recomp",
+      "installPath": null,
+      "appIconUrl": "https://raw.githubusercontent.com/Zelda64Recomp/Zelda64Recomp/refs/heads/dev/icons/512.png",
+      "preferredVersion": null,
+      "tags": [
+        "n64",
+        "nintendo",
+        "nintendo 64",
+        "recomp",
+        "zelda"
+      ],
+      "filesToAdd": [
+        "portable.txt"
+      ]
+    },
+    {
+      "name": "Majora's Mask",
+      "project": "2 Ship 2 Harkinian",
+      "repository": "HarbourMasters/2ship2harkinian",
+      "folderName": "MajorasMask-2Ship2Harkinian",
+      "installPath": null,
+      "appIconUrl": null,
+      "preferredVersion": null,
+      "tags": [
+        "n64",
+        "nintendo",
+        "nintendo 64",
+        "decomp",
+        "harbour-masters",
+        "zelda"
+      ],
+      "filesToAdd": [
+        "portable.txt"
+      ]
+    }
+  ]
+}

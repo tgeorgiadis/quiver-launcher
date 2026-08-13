@@ -213,7 +213,7 @@ public class CommunityCatalogBootstrapTests
             foreach (var source in settings.AppCatalogSources)
             {
                 service.HasSourceCache(source.Id).Should().BeTrue();
-                source.CachedListVersion.Should().Be("1.0.4");
+                source.CachedListVersion.Should().Be("1.0.5");
             }
 
             settings.AppCatalogSources.Single(s => s.Id == "b4e8c2a1-3f5d-4e9b-8c7a-1d2e3f4a5b6c")

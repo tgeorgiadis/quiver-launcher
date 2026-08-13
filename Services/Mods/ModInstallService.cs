@@ -43,8 +43,8 @@ public sealed class ModInstallService
         if (package.LatestVersion == null || string.IsNullOrWhiteSpace(package.LatestVersion.DownloadUrl))
             throw new InvalidOperationException($"Package '{package.FullName}' has no downloadable version.");
 
-        // Uninstall existing version first (Id or FullName/Owner+Name — covers UUID→Owner-Name).
-        UninstallMatching(installRoot, modsPath, package);
+        // Replace only this file's previous install; sibling files for the same package stay.
+        UninstallMatchingFile(installRoot, modsPath, package, selectedFile?.Id);
 
         await using var archiveStream = await provider
             .DownloadAsync(package.LatestVersion, progress, cancellationToken)
@@ -79,7 +79,8 @@ public sealed class ModInstallService
         };
 
         var document = _store.Load(installRoot);
-        document.Mods.RemoveAll(m => ModCatalogListBuilder.RecordMatchesPackage(m, package));
+        document.Mods.RemoveAll(m =>
+            ModCatalogListBuilder.RecordMatchesPackageFile(m, package, selectedFile?.Id));
         document.Mods.Add(record);
         _store.Save(installRoot, document);
 
@@ -112,6 +113,53 @@ public sealed class ModInstallService
             progress,
             cancellationToken,
             modsLayout).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Installs each selected download file as its own sidecar record.
+    /// Null or empty <paramref name="selectedFiles"/> keeps the single-file (Thunderstore) path.
+    /// </summary>
+    public async Task InstallSelectedFilesAsync(
+        string installRoot,
+        string modsPath,
+        ModPackage package,
+        IReadOnlyList<ModPackage> catalog,
+        IModProvider provider,
+        IReadOnlyList<ModDownloadFile>? selectedFiles,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default,
+        string? modsLayout = null)
+    {
+        if (selectedFiles == null || selectedFiles.Count == 0)
+        {
+            await InstallWithDependenciesAsync(
+                    installRoot,
+                    modsPath,
+                    package,
+                    catalog,
+                    provider,
+                    selectedFile: null,
+                    progress,
+                    cancellationToken,
+                    modsLayout)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        foreach (var file in selectedFiles)
+        {
+            await InstallWithDependenciesAsync(
+                    installRoot,
+                    modsPath,
+                    package,
+                    catalog,
+                    provider,
+                    file,
+                    progress,
+                    cancellationToken,
+                    modsLayout)
+                .ConfigureAwait(false);
+        }
     }
 
     private async Task InstallRecursiveAsync(
@@ -172,8 +220,11 @@ public sealed class ModInstallService
             document = _store.Load(installRoot);
         }
 
-        if (ModCatalogListBuilder.FindMatchingRecord(document, package) is { } existing &&
-            string.Equals(existing.Version, package.LatestVersion?.Version, StringComparison.OrdinalIgnoreCase))
+        var targetVersion = !string.IsNullOrWhiteSpace(selectedFile?.Version)
+            ? selectedFile.Version
+            : package.LatestVersion?.Version;
+        if (ModCatalogListBuilder.FindMatchingRecord(document, package, selectedFile?.Id) is { } existing &&
+            string.Equals(existing.Version, targetVersion, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -248,55 +299,75 @@ public sealed class ModInstallService
     public bool Uninstall(string installRoot, string modsPath, string providerId, string packageId)
     {
         var document = _store.Load(installRoot);
-        var record = _store.Find(document, providerId, packageId)
-                     ?? document.Mods.FirstOrDefault(m =>
-                         string.Equals(m.Provider, providerId, StringComparison.OrdinalIgnoreCase) &&
-                         (string.Equals(m.FullName, packageId, StringComparison.OrdinalIgnoreCase) ||
-                          string.Equals(m.Id, packageId, StringComparison.OrdinalIgnoreCase)));
-        if (record == null)
+        var records = document.Mods.Where(m =>
+            string.Equals(m.Provider, providerId, StringComparison.OrdinalIgnoreCase) &&
+            (string.Equals(m.Id, packageId, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(m.FullName, packageId, StringComparison.OrdinalIgnoreCase))).ToList();
+        if (records.Count == 0)
             return false;
 
-        return UninstallRecord(installRoot, modsPath, document, record);
+        return UninstallRecords(installRoot, modsPath, document, records);
     }
 
     public bool UninstallMatching(string installRoot, string modsPath, ModPackage package)
     {
         ArgumentNullException.ThrowIfNull(package);
         var document = _store.Load(installRoot);
-        var record = ModCatalogListBuilder.FindMatchingRecord(document, package);
+        var records = ModCatalogListBuilder.FindMatchingRecords(document, package);
+        if (records.Count == 0)
+            return false;
+
+        return UninstallRecords(installRoot, modsPath, document, records);
+    }
+
+    public bool UninstallMatchingFile(
+        string installRoot,
+        string modsPath,
+        ModPackage package,
+        string? downloadFileId)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        var document = _store.Load(installRoot);
+        var record = ModCatalogListBuilder.FindMatchingRecord(document, package, downloadFileId);
         if (record == null)
             return false;
 
-        return UninstallRecord(installRoot, modsPath, document, record);
+        return UninstallRecords(installRoot, modsPath, document, [record]);
     }
 
-    private bool UninstallRecord(
+    private bool UninstallRecords(
         string installRoot,
         string modsPath,
         InstalledModsDocument document,
-        InstalledModRecord record)
+        IReadOnlyList<InstalledModRecord> records)
     {
-        var modsDir = GetModsDirectory(installRoot, modsPath);
-        foreach (var relative in record.Files)
-        {
-            var fullPath = Path.GetFullPath(Path.Combine(modsDir, relative));
-            if (!fullPath.StartsWith(Path.GetFullPath(modsDir), StringComparison.OrdinalIgnoreCase))
-                continue;
+        if (records.Count == 0)
+            return false;
 
-            try
+        var modsDir = GetModsDirectory(installRoot, modsPath);
+        var modsRootFull = Path.GetFullPath(modsDir);
+        foreach (var record in records)
+        {
+            foreach (var relative in record.Files)
             {
-                if (File.Exists(fullPath))
-                    File.Delete(fullPath);
-            }
-            catch
-            {
-                // Best-effort cleanup.
+                var fullPath = Path.GetFullPath(Path.Combine(modsDir, relative));
+                if (!fullPath.StartsWith(modsRootFull, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                try
+                {
+                    if (File.Exists(fullPath))
+                        File.Delete(fullPath);
+                }
+                catch
+                {
+                    // Best-effort cleanup.
+                }
             }
         }
 
-        document.Mods.RemoveAll(m => ReferenceEquals(m, record) ||
-            (string.Equals(m.Provider, record.Provider, StringComparison.OrdinalIgnoreCase) &&
-             string.Equals(m.Id, record.Id, StringComparison.OrdinalIgnoreCase)));
+        foreach (var record in records)
+            document.Mods.RemoveAll(m => ReferenceEquals(m, record));
         _store.Save(installRoot, document);
         return true;
     }
