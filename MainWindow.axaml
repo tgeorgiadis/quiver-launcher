@@ -106,7 +106,8 @@
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   Margin="0,6,0,0"/>
 							
-							<StackPanel Orientation="Horizontal">
+							<StackPanel Orientation="Horizontal"
+										IsVisible="{Binding ShowReleaseVersionInfo}">
 								<TextBlock Text="Latest: "
 										   FontSize="12"
 										   Foreground="{DynamicResource ThemeTextSecondary}"/>
@@ -178,11 +179,12 @@
 										<MenuItem Header="Auto Update"
 												  ToggleType="CheckBox"
 												  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
+												  IsVisible="{Binding CanToggleAutoUpdate}"
 												  Click="AutoUpdateMenu_Click"
 												  CommandParameter="{Binding}"/>
 										<MenuItem Header="Open Folder"
 												  Click="OpenFolder_Click"
-												  IsVisible="{Binding IsInstalled}"
+												  IsVisible="{Binding CanOpenFolder}"
 												  CommandParameter="{Binding}"/>
 										<MenuItem Header="Versions"
 												  IsVisible="{Binding CanVersionOptions}">
@@ -222,7 +224,7 @@
 												  Click="OpenMods_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanOpenMods}"/>
-										<MenuItem Header="Catalog">
+										<MenuItem Header="Customize">
 											<MenuItem Header="Edit Entry"
 													  Click="EditGameEntry_Click"
 													  CommandParameter="{Binding}"/>
@@ -232,12 +234,6 @@
 											<MenuItem Header="Custom Display Name"
 													  Click="EditCustomDisplayNameMenu_Click"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Remove from List"
-													  Click="RemoveGameEntry_Click"
-													  CommandParameter="{Binding}"
-													  IsVisible="{Binding IsInLocalAppsJson}"/>
-										</MenuItem>
-										<MenuItem Header="Customize">
 											<MenuItem Header="Add Custom Image"
 													  Click="SetCustomIcon_Click"
 													  CommandParameter="{Binding}"/>
@@ -253,6 +249,10 @@
 													  Click="HideGame_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding IsManuallyHidden}"/>
+											<MenuItem Header="Remove from List"
+													  Click="RemoveGameEntry_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding IsInLocalAppsJson}"/>
 										</MenuItem>
 										<MenuItem Header="About"
 												  IsVisible="{Binding CanInfoOptions}">
@@ -363,11 +363,12 @@
 									<MenuItem Header="Auto Update"
 											  ToggleType="CheckBox"
 											  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
+											  IsVisible="{Binding CanToggleAutoUpdate}"
 											  Click="AutoUpdateMenu_Click"
 											  CommandParameter="{Binding}"/>
 									<MenuItem Header="Open Folder"
 											  Click="OpenFolder_Click"
-											  IsVisible="{Binding IsInstalled}"
+											  IsVisible="{Binding CanOpenFolder}"
 											  CommandParameter="{Binding}"/>
 									<MenuItem Header="Versions"
 											  IsVisible="{Binding CanVersionOptions}">
@@ -407,7 +408,7 @@
 											  Click="OpenMods_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanOpenMods}"/>
-									<MenuItem Header="Catalog">
+									<MenuItem Header="Customize">
 										<MenuItem Header="Edit Entry"
 												  Click="EditGameEntry_Click"
 												  CommandParameter="{Binding}"/>
@@ -417,12 +418,6 @@
 										<MenuItem Header="Custom Display Name"
 												  Click="EditCustomDisplayNameMenu_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Remove from List"
-												  Click="RemoveGameEntry_Click"
-												  CommandParameter="{Binding}"
-												  IsVisible="{Binding IsInLocalAppsJson}"/>
-									</MenuItem>
-									<MenuItem Header="Customize">
 										<MenuItem Header="Add Custom Image"
 												  Click="SetCustomIcon_Click"
 												  CommandParameter="{Binding}"/>
@@ -438,6 +433,10 @@
 												  Click="HideGame_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding IsManuallyHidden}"/>
+										<MenuItem Header="Remove from List"
+												  Click="RemoveGameEntry_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding IsInLocalAppsJson}"/>
 									</MenuItem>
 									<MenuItem Header="About"
 											  IsVisible="{Binding CanInfoOptions}">
@@ -556,7 +555,8 @@
 									   TextWrapping="Wrap"
 									   Margin="0,0,0,2"/>
 
-							<TextBlock FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap" TextAlignment="Left">
+							<TextBlock FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap" TextAlignment="Left"
+									   IsVisible="{Binding ShowReleaseVersionInfo}">
 								<Run Text="Latest: "/>
 								<Run Text="{Binding LatestVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
 							</TextBlock>
@@ -660,11 +660,12 @@
 								<MenuItem Header="Auto Update"
 										  ToggleType="CheckBox"
 										  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
+										  IsVisible="{Binding CanToggleAutoUpdate}"
 										  Click="AutoUpdateMenu_Click"
 										  CommandParameter="{Binding}"/>
 								<MenuItem Header="Open Folder"
 										  Click="OpenFolder_Click"
-										  IsVisible="{Binding IsInstalled}"
+										  IsVisible="{Binding CanOpenFolder}"
 										  CommandParameter="{Binding}"/>
 								<MenuItem Header="Versions"
 										  IsVisible="{Binding CanVersionOptions}">
@@ -704,7 +705,7 @@
 										  Click="OpenMods_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanOpenMods}"/>
-								<MenuItem Header="Catalog">
+								<MenuItem Header="Customize">
 									<MenuItem Header="Edit Entry"
 											  Click="EditGameEntry_Click"
 											  CommandParameter="{Binding}"/>
@@ -714,12 +715,6 @@
 									<MenuItem Header="Custom Display Name"
 											  Click="EditCustomDisplayNameMenu_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Remove from List"
-											  Click="RemoveGameEntry_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding IsInLocalAppsJson}"/>
-								</MenuItem>
-								<MenuItem Header="Customize">
 									<MenuItem Header="Add Custom Image"
 											  Click="SetCustomIcon_Click"
 											  CommandParameter="{Binding}"/>
@@ -735,6 +730,10 @@
 											  Click="HideGame_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding IsManuallyHidden}"/>
+									<MenuItem Header="Remove from List"
+											  Click="RemoveGameEntry_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding IsInLocalAppsJson}"/>
 								</MenuItem>
 								<MenuItem Header="About"
 										  IsVisible="{Binding CanInfoOptions}">
@@ -829,7 +828,8 @@
 
 							<TextBlock FontSize="10"
 									   Foreground="{DynamicResource ThemeTextSecondary}"
-									   TextWrapping="Wrap">
+									   TextWrapping="Wrap"
+									   IsVisible="{Binding ShowReleaseVersionInfo}">
 								<Run Text="Latest: "/>
 								<Run Text="{Binding LatestVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
 							</TextBlock>
@@ -1159,30 +1159,36 @@
 									<TextBlock Text="{Binding StatusShortLabel}" FontSize="9" Foreground="{DynamicResource ThemeTextSecondary}"/>
 								</Border>
 							</StackPanel>
-							<TextBlock Text="{Binding Repository}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"
+							<TextBlock Text="{Binding Subtitle}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"
 									   TextTrimming="CharacterEllipsis"/>
 						</StackPanel>
 						<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-							<Button Classes="options" Content="Add" Tag="{Binding Repository}" Click="CatalogSyncRowAdd_Click"
+							<Button Classes="options" Content="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
 									FontSize="10" Padding="6,2" IsVisible="{Binding CanAdd}"/>
-							<Button Classes="options" Content="Replace" Tag="{Binding Repository}" Click="CatalogSyncRowReplace_Click"
+							<Button Classes="options" Content="Replace" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
 									FontSize="10" Padding="6,2" IsVisible="{Binding CanReplace}"/>
-							<Button Classes="options" Content="Merge" Tag="{Binding Repository}" Click="CatalogSyncRowMerge_Click"
+							<Button Classes="options" Content="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
 									FontSize="10" Padding="6,2" IsVisible="{Binding CanMerge}"/>
-							<Button Classes="options" Content="Ignore" Tag="{Binding Repository}" Click="CatalogSyncRowIgnore_Click"
+							<Button Classes="options" Content="Ignore" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
 									FontSize="10" Padding="6,2" IsVisible="{Binding CanIgnore}"/>
-							<Button Classes="options" Content="Hide" Tag="{Binding Repository}" Click="CatalogSyncRowHide_Click"
+							<Button Classes="options" Content="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
 									FontSize="10" Padding="6,2" IsVisible="{Binding ShowHideButton}"/>
-							<Button Classes="options" Content="Unhide" Tag="{Binding Repository}" Click="CatalogSyncRowUnhide_Click"
+							<Button Classes="options" Content="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
 									FontSize="10" Padding="6,2" IsVisible="{Binding ShowUnhideButton}"/>
 							<Button Classes="options catalog-remove-from-library"
 									Content="Remove from Library"
-									Tag="{Binding Repository}"
+									Tag="{Binding IdentityKey}"
 									Click="CatalogSyncRowRemoveFromLibrary_Click"
 									FontSize="10" Padding="6,2"
 									IsVisible="{Binding CanRemoveFromLibrary}"/>
 						</StackPanel>
 					</Grid>
+					<TextBlock Text="{Binding AddBlockedReason}"
+							   IsVisible="{Binding HasAddBlockedReason}"
+							   FontSize="10"
+							   Foreground="{DynamicResource ThemeTextSecondary}"
+							   TextWrapping="Wrap"
+							   Margin="54,0,0,0"/>
 					<Border IsVisible="{Binding HasInlineDiff}"
 							BorderBrush="{DynamicResource ThemeBorder}"
 							BorderThickness="0,1,0,0"
@@ -2193,6 +2199,10 @@
 		<Setter Property="BorderThickness" Value="2"/>
 	</Style>
 
+	<Style Selector="TextBox#LibrarySearchTextBox /template/ TextBlock#PART_Watermark">
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
 	<!-- Theme-aware text styles -->
 	<Style Selector="TextBlock.theme-text">
 		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
@@ -2588,6 +2598,29 @@
 									VerticalAlignment="Center">
 
 							<StackPanel x:Name="LibraryTopBarPanel" Orientation="Horizontal">
+							<Grid Width="220" Margin="0,0,16,0" VerticalAlignment="Center">
+							<TextBox x:Name="LibrarySearchTextBox"
+									 Watermark="Search this list"
+									 MinHeight="32"
+									 FontSize="12"
+									 Padding="8,0,28,0"
+									 VerticalAlignment="Center"
+									 VerticalContentAlignment="Center"
+									 TextChanged="LibrarySearch_TextChanged"/>
+							<Button x:Name="LibrarySearchClearButton"
+									Classes="options"
+									Content="×"
+									FontSize="14"
+									Padding="6,0"
+									MinHeight="24"
+									MinWidth="24"
+									HorizontalAlignment="Right"
+									VerticalAlignment="Center"
+									Margin="0,0,4,0"
+									IsVisible="False"
+									ToolTip.Tip="Clear search"
+									Click="LibrarySearchClear_Click"/>
+							</Grid>
 							<Button x:Name="AddNewEntryButton"
 									Classes="options"
 									Content="+ Add New Entry"
@@ -2876,6 +2909,31 @@
 						</StackPanel>
 					</StackPanel>
 
+					<StackPanel x:Name="LibrarySearchNoMatchesPanel"
+								HorizontalAlignment="Center"
+								VerticalAlignment="Center"
+								Spacing="16"
+								MaxWidth="520"
+								Margin="30,20,30,30"
+								IsVisible="False">
+						<TextBlock Text="No apps match this search"
+								   FontSize="24"
+								   FontWeight="Bold"
+								   Foreground="{DynamicResource ThemeText}"
+								   HorizontalAlignment="Center"
+								   TextAlignment="Center"/>
+						<TextBlock Text="Try a different search, or clear it to show your library again."
+								   FontSize="14"
+								   Foreground="{DynamicResource ThemeTextSecondary}"
+								   TextWrapping="Wrap"
+								   TextAlignment="Center"/>
+						<Button Classes="options"
+								Content="Clear search"
+								FontSize="13"
+								HorizontalAlignment="Center"
+								Click="LibrarySearchClear_Click"/>
+					</StackPanel>
+
 					<!-- App updates review (in-window, replaces modal) -->
 					<Grid x:Name="AppUpdatesReviewPanel"
 						  IsVisible="False"
@@ -3148,7 +3206,7 @@
 									   FontSize="10"
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   Opacity="0.85"/>
-							<TextBlock Text="Tag colors on changed apps: green = catalog only · gray = both sides"
+							<TextBlock Text="Tag colors on changed apps: orange = library only (kept on Merge, removed on Replace) · green = catalog only · gray = both"
 									   FontSize="10"
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   Opacity="0.85"/>
@@ -3822,30 +3880,6 @@
 										</StackPanel>
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
-											<TextBlock Text="Library card tags"
-													   FontSize="13"
-													   FontWeight="SemiBold"
-													   Foreground="{DynamicResource ThemeText}"/>
-											<ComboBox x:Name="LibraryTagDisplayModeComboBox"
-													  Foreground="{DynamicResource ThemeText}"
-													  Background="{DynamicResource ThemeBase}"
-													  BorderBrush="{DynamicResource ThemeBorder}"
-													  BorderThickness="1"
-													  CornerRadius="4"
-													  Padding="8"
-													  Margin="0,4,0,0"
-													  SelectionChanged="LibraryTagDisplayModeComboBox_SelectionChanged">
-												<ComboBoxItem Content="Featured / common tags" Tag="Featured"/>
-												<ComboBoxItem Content="All tags" Tag="All"/>
-												<ComboBoxItem Content="Hidden" Tag="Hidden"/>
-											</ComboBox>
-											<TextBlock Text="Tags shown on Library cards. Filters still work when tags are hidden."
-													   FontSize="11"
-													   Foreground="{DynamicResource ThemeTextSecondary}"
-													   TextWrapping="Wrap"/>
-										</StackPanel>
-
-										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<TextBlock Text="Tag lines on library cards"
 													   FontSize="13"
 													   FontWeight="SemiBold"
@@ -3859,13 +3893,14 @@
 													  Padding="8"
 													  Margin="0,4,0,0"
 													  SelectionChanged="LibraryCardTagMaxLinesComboBox_SelectionChanged">
+												<ComboBoxItem Content="0 lines" Tag="0"/>
 												<ComboBoxItem Content="1 line" Tag="1"/>
 												<ComboBoxItem Content="2 lines" Tag="2"/>
 												<ComboBoxItem Content="3 lines" Tag="3"/>
 												<ComboBoxItem Content="4 lines" Tag="4"/>
-												<ComboBoxItem Content="No limit" Tag="0"/>
+												<ComboBoxItem Content="No limit" Tag="99"/>
 											</ComboBox>
-											<TextBlock Text="How many wrapped lines of tags each library card can show before clipping"
+											<TextBlock Text="How many wrapped lines of tags each library card can show. 0 hides tags on cards; filters still work."
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   TextWrapping="Wrap"/>
@@ -4328,6 +4363,7 @@
 											<RowDefinition Height="Auto"/>
 											<RowDefinition Height="Auto"/>
 											<RowDefinition Height="Auto"/>
+											<RowDefinition Height="Auto"/>
 										</Grid.RowDefinitions>
 
 										<TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
@@ -4366,8 +4402,18 @@
 												 Padding="8"
 												 Margin="8,0,0,8"/>
 
-										<TextBlock Grid.Row="3" Grid.Column="0" Text="Repository Source:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<ComboBox Grid.Row="3" Grid.Column="1"
+										<TextBlock Grid.Row="3" Grid.Column="0" Text="Management:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<CheckBox Grid.Row="3" Grid.Column="1"
+												  x:Name="NewGameManuallyManagedCheckBox"
+												  Content="Manually managed (no repository or updates)"
+												  Foreground="{DynamicResource ThemeText}"
+												  Margin="8,0,0,8"
+												  VerticalAlignment="Center"
+												  Checked="ManuallyManagedCheckBox_Changed"
+												  Unchecked="ManuallyManagedCheckBox_Changed"/>
+
+										<TextBlock Grid.Row="4" Grid.Column="0" x:Name="NewGameRepositorySourceLabel" Text="Repository Source:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<ComboBox Grid.Row="4" Grid.Column="1"
 												  x:Name="NewGameRepositorySourceComboBox"
 												  Foreground="{DynamicResource ThemeText}"
 												  Background="{DynamicResource ThemeBase}"
@@ -4382,8 +4428,8 @@
 											<ComboBoxItem Content="GitLab" Tag="gitlab"/>
 										</ComboBox>
 
-										<TextBlock Grid.Row="4" Grid.Column="0" Text="Repository:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="4" Grid.Column="1"
+										<TextBlock Grid.Row="5" Grid.Column="0" x:Name="NewGameRepositoryLabel" Text="Repository:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="5" Grid.Column="1"
 												 x:Name="NewGameRepoTextBox"
 												 Foreground="{DynamicResource ThemeText}"
 												 Background="{DynamicResource ThemeBase}"
@@ -4394,8 +4440,8 @@
 												 Margin="8,0,0,8"
 												 TextChanged="GameRepoTextBox_TextChanged"/>
 
-										<TextBlock Grid.Row="5" Grid.Column="0" Text="Folder Name:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="5" Grid.Column="1"
+										<TextBlock Grid.Row="6" Grid.Column="0" Text="Folder Name:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="6" Grid.Column="1"
 												 x:Name="NewGameFolderTextBox"
 												 Foreground="{DynamicResource ThemeText}"
 												 Background="{DynamicResource ThemeBase}"
@@ -4406,8 +4452,8 @@
 												 Margin="8,0,0,8"
 												 TextChanged="GameFolderTextBox_TextChanged"/>
 
-										<TextBlock Grid.Row="6" Grid.Column="0" Text="Tags:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="6" Grid.Column="1"
+										<TextBlock Grid.Row="7" Grid.Column="0" Text="Tags:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="7" Grid.Column="1"
 												 x:Name="NewGameTagsTextBox"
 												 Watermark="e.g. n64, recomp"
 												 Foreground="{DynamicResource ThemeText}"
@@ -4421,8 +4467,8 @@
 												 TextWrapping="Wrap"
 												 MinHeight="56"/>
 
-										<TextBlock Grid.Row="7" Grid.Column="0" Text="Icon URL:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="7" Grid.Column="1"
+										<TextBlock Grid.Row="8" Grid.Column="0" Text="Icon URL:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="8" Grid.Column="1"
 												 x:Name="NewGameIconTextBox"
 												 Foreground="{DynamicResource ThemeText}"
 												 Background="{DynamicResource ThemeBase}"
@@ -4433,8 +4479,8 @@
 												 Margin="8,0,0,8"
 												 TextChanged="GameIconTextBox_TextChanged"/>
 
-										<TextBlock Grid.Row="8" Grid.Column="0" Text="Files To Add:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="8" Grid.Column="1"
+										<TextBlock Grid.Row="9" Grid.Column="0" Text="Files To Add:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="9" Grid.Column="1"
 												 x:Name="NewGameFilesToAddTextBox"
 												 Watermark="e.g. portable.txt"
 												 Foreground="{DynamicResource ThemeText}"
@@ -4445,8 +4491,8 @@
 												 Padding="8"
 												 Margin="8,0,0,8"/>
 
-										<TextBlock Grid.Row="9" Grid.Column="0" Text="Mods Path:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="9" Grid.Column="1"
+										<TextBlock Grid.Row="10" Grid.Column="0" Text="Mods Path:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="10" Grid.Column="1"
 												 x:Name="NewGameModsPathTextBox"
 												 Watermark="e.g. mods"
 												 Foreground="{DynamicResource ThemeText}"
@@ -4457,16 +4503,16 @@
 												 Padding="8"
 												 Margin="8,0,0,8"/>
 
-										<TextBlock Grid.Row="10" Grid.Column="0" Text="Mod Layout:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<CheckBox Grid.Row="10" Grid.Column="1"
+										<TextBlock Grid.Row="11" Grid.Column="0" Text="Mod Layout:" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<CheckBox Grid.Row="11" Grid.Column="1"
 												  x:Name="NewGameModsFolderPerModCheckBox"
 												  Content="Install each mod into its own folder"
 												  Foreground="{DynamicResource ThemeText}"
 												  Margin="8,0,0,8"
 												  VerticalAlignment="Center"/>
 
-										<TextBlock Grid.Row="11" Grid.Column="0" Text="Mod Sources:" VerticalAlignment="Top" Margin="0,10,0,0" Foreground="{DynamicResource ThemeTextSecondary}"/>
-										<TextBox Grid.Row="11" Grid.Column="1"
+										<TextBlock Grid.Row="12" Grid.Column="0" Text="Mod Sources:" VerticalAlignment="Top" Margin="0,10,0,0" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										<TextBox Grid.Row="12" Grid.Column="1"
 												 x:Name="NewGameModsSourcesTextBox"
 												 Watermark="Thunderstore URL/slug or GameBanana mods/games/{id} (one per line)"
 												 Foreground="{DynamicResource ThemeText}"

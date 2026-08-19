@@ -479,6 +479,12 @@ public sealed class GamepadModalDialogNavigation
             return true;
         }
 
+        if (control is CheckBox checkBox)
+        {
+            GamepadControlActivation.ActivateCheckBox(checkBox);
+            return true;
+        }
+
         // Confirm on a file list: toggle a checkbox row when present, otherwise
         // activate the dialog's Install/affirmative button.
         if (control is ListBox listBox)
@@ -650,7 +656,7 @@ public sealed class GamepadModalDialogNavigation
                 // Keep action buttons navigable when disabled (e.g. Install with no selection)
                 // so gamepad/keyboard chrome can still show which control is focused.
                 ((control is Button) || control.IsEnabled) &&
-                (control is Button or TextBox or ListBox or ComboBox) &&
+                (control is Button or TextBox or ListBox or ComboBox or CheckBox) &&
                 !IsNestedInsideNavigableHost(control))
             .OrderBy(control => GetApproximateCenter(control)?.Y ?? 0)
             .ThenBy(control => GetApproximateCenter(control)?.X ?? 0)

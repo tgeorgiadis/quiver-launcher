@@ -98,6 +98,50 @@ public class CatalogReviewSearchTests
         CatalogReviewSearch.Matches(row, "decomp").Should().BeTrue();
     }
 
+    [Fact]
+    public void Matches_game_empty_query_matches_all()
+    {
+        var app = new GameInfo { Name = "Ocarina of Time", FolderName = "OoT" };
+
+        CatalogReviewSearch.Matches(app, null).Should().BeTrue();
+        CatalogReviewSearch.Matches(app, "").Should().BeTrue();
+        CatalogReviewSearch.Matches(app, "   ").Should().BeTrue();
+        CatalogReviewSearch.Matches((GameInfo?)null, "ocarina").Should().BeFalse();
+        CatalogReviewSearch.Matches((GameInfo?)null, "").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matches_game_name_tags_and_display_name()
+    {
+        var app = new GameInfo
+        {
+            Name = "Ocarina of Time",
+            Project = "Zelda64Recomp",
+            CustomDisplayName = "OoT Recomp",
+            FolderName = "OcarinaOfTime-Zelda64Recomp",
+            Repository = "Zelda64Recomp/Zelda64Recomp",
+            Tags = ["n64", "recomp", "zelda"],
+        };
+
+        CatalogReviewSearch.Matches(app, "ocarina").Should().BeTrue();
+        CatalogReviewSearch.Matches(app, "oot").Should().BeTrue();
+        CatalogReviewSearch.Matches(app, "recomp").Should().BeTrue();
+        CatalogReviewSearch.Matches(app, "mario").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matches_game_requires_every_token()
+    {
+        var app = new GameInfo
+        {
+            Name = "Ocarina of Time",
+            Tags = ["recomp", "n64"],
+        };
+
+        CatalogReviewSearch.Matches(app, "zelda recomp").Should().BeFalse();
+        CatalogReviewSearch.Matches(app, "ocarina recomp").Should().BeTrue();
+    }
+
     private static CatalogSyncRowItem CreateRow(
         string name,
         string repository = "owner/app",

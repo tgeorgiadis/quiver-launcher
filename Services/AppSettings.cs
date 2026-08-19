@@ -128,9 +128,13 @@ namespace QuiverLauncher
         public LibraryNameStyle LibraryNameStyle { get; set; } = LibraryNameStyle.NameAndProject;
         public LibraryTagDisplayMode LibraryTagDisplayMode { get; set; } = LibraryTagDisplayMode.Featured;
         /// <summary>
-        /// Max wrapped lines of tags on each library card. 0 = no limit.
+        /// Max wrapped lines of tags on each library card. 0 = hidden; 99 = no limit.
         /// </summary>
         public int LibraryCardTagMaxLines { get; set; } = TagChipHelper.DefaultLibraryCardTagMaxLines;
+        /// <summary>
+        /// True after 0 was remapped from “no limit” to “hidden” (and old unlimited 0 became 99).
+        /// </summary>
+        public bool LibraryCardTagZeroMeansHidden { get; set; }
         /// <summary>User-pinned tags preferred for quick-filter chips when present in the current set.</summary>
         public List<string> PinnedFilterTags { get; set; } = new List<string>();
         public bool StartFullscreen { get; set; } = false;
@@ -207,6 +211,17 @@ namespace QuiverLauncher
 
             BackgroundUpdateCheckIntervalMinutes =
                 BackgroundUpdateCheckIntervals.Normalize(BackgroundUpdateCheckIntervalMinutes);
+
+            if (!LibraryCardTagZeroMeansHidden)
+            {
+                if (LibraryTagDisplayMode == LibraryTagDisplayMode.Hidden)
+                    LibraryCardTagMaxLines = 0;
+                else if (LibraryCardTagMaxLines == 0)
+                    LibraryCardTagMaxLines = TagChipHelper.UnlimitedLibraryCardTagMaxLines;
+
+                LibraryCardTagZeroMeansHidden = true;
+            }
+
             LibraryCardTagMaxLines = TagChipHelper.NormalizeLibraryCardTagMaxLines(LibraryCardTagMaxLines);
         }
 

@@ -8,14 +8,16 @@ namespace QuiverLauncher.Services;
 /// </summary>
 public static class AppIdentityMigration
 {
-    public static bool HasIdentityChanged(
+        public static bool HasIdentityChanged(
         string? oldRepositorySource,
         string? oldRepository,
         string? newRepositorySource,
-        string? newRepository)
+        string? newRepository,
+        string? oldFolderName = null,
+        string? newFolderName = null)
     {
-        var oldKey = RepositorySourceHelper.GetIdentityKey(oldRepositorySource, oldRepository);
-        var newKey = RepositorySourceHelper.GetIdentityKey(newRepositorySource, newRepository);
+        var oldKey = RepositorySourceHelper.GetIdentityKey(oldRepositorySource, oldRepository, oldFolderName);
+        var newKey = RepositorySourceHelper.GetIdentityKey(newRepositorySource, newRepository, newFolderName);
         return !string.Equals(oldKey, newKey, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -28,28 +30,37 @@ public static class AppIdentityMigration
         string? oldRepositorySource,
         string? oldRepository,
         string? newRepositorySource,
-        string? newRepository)
+        string? newRepository,
+        string? oldFolderName = null,
+        string? newFolderName = null)
     {
-        if (string.IsNullOrWhiteSpace(oldRepository) || string.IsNullOrWhiteSpace(newRepository))
-            return false;
-
-        if (!HasIdentityChanged(oldRepositorySource, oldRepository, newRepositorySource, newRepository))
+        if (!HasIdentityChanged(
+                oldRepositorySource,
+                oldRepository,
+                newRepositorySource,
+                newRepository,
+                oldFolderName,
+                newFolderName))
             return false;
 
         settings.EnsureInitialized();
         var settingsChanged = false;
 
-        var oldRepo = oldRepository.Trim();
-        var newRepo = newRepository.Trim();
+        var oldRepo = oldRepository?.Trim() ?? string.Empty;
+        var newRepo = newRepository?.Trim() ?? string.Empty;
 
-        if (!string.Equals(oldRepo, newRepo, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(oldRepo) &&
+            !string.IsNullOrWhiteSpace(newRepo) &&
+            !string.Equals(oldRepo, newRepo, StringComparison.OrdinalIgnoreCase))
         {
             settingsChanged |= MigrateUserAppTags(settings, oldRepo, newRepo);
             settingsChanged |= MigrateUserAppDisplayNames(settings, oldRepo, newRepo);
             settingsChanged |= MigrateCatalogSourceMaps(settings, oldRepo, newRepo);
         }
 
-        GitHubApiCache.RemoveCache(oldRepositorySource, oldRepo);
+        if (!string.IsNullOrWhiteSpace(oldRepo))
+            GitHubApiCache.RemoveCache(oldRepositorySource, oldRepo);
+
         return settingsChanged;
     }
 

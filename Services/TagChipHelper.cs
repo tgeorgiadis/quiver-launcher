@@ -14,7 +14,8 @@ public static class TagChipHelper
 {
     public const int DefaultMaxChips = 12;
     public const int DefaultLibraryCardTagMaxLines = 2;
-    public const int MaxLibraryCardTagMaxLines = 8;
+    /// <summary>Stored value for “No limit” on library card tag lines. 0 means hidden.</summary>
+    public const int UnlimitedLibraryCardTagMaxLines = 99;
     /// <summary>
     /// WrapPanel row height for library card tag chips (FontSize 9 + vertical padding + bottom margin).
     /// Keep in sync with library card tag chip styling in MainWindow.axaml.
@@ -25,16 +26,20 @@ public static class TagChipHelper
     {
         if (maxLines < 0)
             return 0;
-        return maxLines > MaxLibraryCardTagMaxLines ? MaxLibraryCardTagMaxLines : maxLines;
+        return maxLines > UnlimitedLibraryCardTagMaxLines ? UnlimitedLibraryCardTagMaxLines : maxLines;
     }
 
     /// <summary>
-    /// MaxHeight for clipped library card tag strips. Returns <see cref="double.PositiveInfinity"/> when unlimited (0).
+    /// MaxHeight for clipped library card tag strips. 0 hides the strip; 99 is unlimited.
     /// </summary>
     public static double GetLibraryCardTagsMaxHeight(int maxLines)
     {
         var lines = NormalizeLibraryCardTagMaxLines(maxLines);
-        return lines <= 0 ? double.PositiveInfinity : lines * LibraryCardTagLineHeight;
+        if (lines <= 0)
+            return 0;
+        if (lines >= UnlimitedLibraryCardTagMaxLines)
+            return double.PositiveInfinity;
+        return lines * LibraryCardTagLineHeight;
     }
 
     public static List<string> RankTagsByFrequency(
@@ -119,25 +124,12 @@ public static class TagChipHelper
         return ordered;
     }
 
-    public static List<string> SelectTagsForCardDisplay(
-        IEnumerable<string>? appTags,
-        LibraryTagDisplayMode mode,
-        IEnumerable<string>? featuredOrCommonTags)
+    public static List<string> SelectTagsForCardDisplay(IEnumerable<string>? appTags, int maxLines)
     {
-        var tags = TagHelper.NormalizeTags(appTags);
-        if (tags.Count == 0 || mode == LibraryTagDisplayMode.Hidden)
+        if (NormalizeLibraryCardTagMaxLines(maxLines) == 0)
             return [];
 
-        if (mode == LibraryTagDisplayMode.All)
-            return tags;
-
-        var featured = TagHelper.NormalizeTags(featuredOrCommonTags);
-        if (featured.Count == 0)
-            return [];
-
-        return tags
-            .Where(tag => featured.Contains(tag, StringComparer.OrdinalIgnoreCase))
-            .ToList();
+        return TagHelper.NormalizeTags(appTags);
     }
 
     public static TagChipState CycleState(TagChipState current) =>

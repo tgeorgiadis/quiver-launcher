@@ -1,5 +1,6 @@
 using FluentAssertions;
 using QuiverLauncher;
+using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 
 namespace QuiverLauncher.Tests;
@@ -66,17 +67,14 @@ public class TagChipHelperTests
     }
 
     [Fact]
-    public void SelectTagsForCardDisplay_respects_modes()
+    public void SelectTagsForCardDisplay_returns_app_tags_unless_hidden()
     {
         var tags = new[] { "recomp", "n64", "zelda" };
-        var featured = new[] { "recomp", "decomp" };
 
-        TagChipHelper.SelectTagsForCardDisplay(tags, LibraryTagDisplayMode.Hidden, featured)
-            .Should().BeEmpty();
-        TagChipHelper.SelectTagsForCardDisplay(tags, LibraryTagDisplayMode.All, featured)
+        TagChipHelper.SelectTagsForCardDisplay(tags, 0).Should().BeEmpty();
+        TagChipHelper.SelectTagsForCardDisplay(tags, 2).Should().Equal("recomp", "n64", "zelda");
+        TagChipHelper.SelectTagsForCardDisplay(tags, TagChipHelper.UnlimitedLibraryCardTagMaxLines)
             .Should().Equal("recomp", "n64", "zelda");
-        TagChipHelper.SelectTagsForCardDisplay(tags, LibraryTagDisplayMode.Featured, featured)
-            .Should().Equal("recomp");
     }
 
     [Fact]
@@ -106,15 +104,113 @@ public class TagChipHelperTests
     {
         new AppSettings().LibraryCardTagMaxLines.Should().Be(2);
         TagChipHelper.NormalizeLibraryCardTagMaxLines(-1).Should().Be(0);
+        TagChipHelper.NormalizeLibraryCardTagMaxLines(8).Should().Be(8);
         TagChipHelper.NormalizeLibraryCardTagMaxLines(99)
-            .Should().Be(TagChipHelper.MaxLibraryCardTagMaxLines);
+            .Should().Be(TagChipHelper.UnlimitedLibraryCardTagMaxLines);
+        TagChipHelper.NormalizeLibraryCardTagMaxLines(100)
+            .Should().Be(TagChipHelper.UnlimitedLibraryCardTagMaxLines);
     }
 
     [Fact]
-    public void GetLibraryCardTagsMaxHeight_unlimited_when_zero()
+    public void GetLibraryCardTagsMaxHeight_zero_hides_and_ninety_nine_is_unlimited()
     {
-        TagChipHelper.GetLibraryCardTagsMaxHeight(0).Should().Be(double.PositiveInfinity);
+        TagChipHelper.GetLibraryCardTagsMaxHeight(0).Should().Be(0);
         TagChipHelper.GetLibraryCardTagsMaxHeight(2)
             .Should().Be(2 * TagChipHelper.LibraryCardTagLineHeight);
+        TagChipHelper.GetLibraryCardTagsMaxHeight(TagChipHelper.UnlimitedLibraryCardTagMaxLines)
+            .Should().Be(double.PositiveInfinity);
+    }
+
+    [Fact]
+    public void RefreshLibraryCardTags_keeps_all_app_tags_when_clipped_by_line_height()
+    {
+        var app = new GameInfo
+        {
+            Tags = ["recreation", "gb", "pokemon", "nintendo", "game boy"],
+            LibraryCardTagMaxLines = 2,
+        };
+
+        app.RefreshLibraryCardTags();
+
+        app.LibraryCardTags.Should().Equal("recreation", "gb", "pokemon", "nintendo", "game boy");
+        app.LibraryCardTagsMaxHeight.Should().Be(2 * TagChipHelper.LibraryCardTagLineHeight);
+    }
+
+    [Fact]
+    public void RefreshLibraryCardTags_clears_card_tags_when_max_lines_is_zero()
+    {
+        var app = new GameInfo
+        {
+            Tags = ["recreation", "gb", "pokemon", "nintendo", "game boy"],
+            LibraryCardTagMaxLines = 0,
+        };
+
+        app.RefreshLibraryCardTags();
+
+        app.LibraryCardTags.Should().BeEmpty();
+        app.HasLibraryCardTags.Should().BeFalse();
+        app.LibraryCardTagsMaxHeight.Should().Be(0);
+    }
+
+    [Fact]
+    public void AppCatalogService_RefreshLibraryCardTags_uses_each_apps_own_tags()
+    {
+        var pokemon = new GameInfo { Tags = ["recreation", "gb", "pokemon", "nintendo", "game boy"] };
+        var other = new GameInfo { Tags = ["nintendo", "n64"] };
+        var settings = new AppSettings { LibraryCardTagMaxLines = 2 };
+
+        AppCatalogService.RefreshLibraryCardTags([pokemon, other], settings);
+
+        pokemon.LibraryCardTags.Should().Equal("recreation", "gb", "pokemon", "nintendo", "game boy");
+        other.LibraryCardTags.Should().Equal("nintendo", "n64");
+    }
+
+    [Fact]
+    public void AppCatalogService_RefreshLibraryCardTags_hides_when_max_lines_is_zero()
+    {
+        var app = new GameInfo { Tags = ["recreation", "gb", "pokemon"] };
+        var settings = new AppSettings
+        {
+            LibraryCardTagMaxLines = 0,
+            LibraryCardTagZeroMeansHidden = true,
+        };
+
+        AppCatalogService.RefreshLibraryCardTags([app], settings);
+
+        app.LibraryCardTags.Should().BeEmpty();
+        app.LibraryCardTagMaxLines.Should().Be(0);
+    }
+
+    [Fact]
+    public void EnsureInitialized_migrates_hidden_mode_to_zero_lines()
+    {
+        var settings = new AppSettings
+        {
+            LibraryTagDisplayMode = LibraryTagDisplayMode.Hidden,
+            LibraryCardTagMaxLines = 2,
+        };
+
+        settings.EnsureInitialized();
+
+        settings.LibraryCardTagMaxLines.Should().Be(0);
+        settings.LibraryCardTagZeroMeansHidden.Should().BeTrue();
+
+        settings.EnsureInitialized();
+        settings.LibraryCardTagMaxLines.Should().Be(0);
+    }
+
+    [Fact]
+    public void EnsureInitialized_migrates_old_unlimited_zero_to_ninety_nine()
+    {
+        var settings = new AppSettings
+        {
+            LibraryTagDisplayMode = LibraryTagDisplayMode.Featured,
+            LibraryCardTagMaxLines = 0,
+        };
+
+        settings.EnsureInitialized();
+
+        settings.LibraryCardTagMaxLines.Should().Be(TagChipHelper.UnlimitedLibraryCardTagMaxLines);
+        settings.LibraryCardTagZeroMeansHidden.Should().BeTrue();
     }
 }

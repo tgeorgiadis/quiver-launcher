@@ -65,7 +65,10 @@ public static class GameDownloadInstallService
                         return;
                     }
 
-                    latestRelease = releaseResult.Releases.FirstOrDefault();
+                    latestRelease = GameInfo.SelectLatestRelease(
+                        releaseResult.Releases,
+                        game.PreferredVersion,
+                        game.InstalledVersion);
 
                     if (latestRelease == null)
                     {

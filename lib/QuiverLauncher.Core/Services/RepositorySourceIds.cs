@@ -4,5 +4,6 @@ namespace QuiverLauncher.Core.Services
     {
         public const string GitHub = "github";
         public const string GitLab = "gitlab";
+        public const string Manual = "manual";
     }
 }

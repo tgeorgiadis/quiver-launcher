@@ -21,6 +21,12 @@
       "repositorySource": "gitlab",
       "folderName": "ExampleAppGitLab",
       "appIconUrl": null
+    },
+    {
+      "name": "Manually Managed Example",
+      "folderName": "ManualExample",
+      "tags": ["manual"],
+      "appIconUrl": null
     }
   ]
 }

@@ -31,6 +31,23 @@ public static class GameStatusService
             var directoryExists = Directory.Exists(gamePath);
             var versionFileExists = File.Exists(versionFile);
 
+            if (game.IsManuallyManaged)
+            {
+                game.LatestVersion = null;
+                if (directoryExists && ManualAppFolderService.HasLaunchableFiles(game, gamesFolder))
+                {
+                    game.InstalledVersion = "";
+                    game.Status = GameStatus.Installed;
+                }
+                else
+                {
+                    game.Status = GameStatus.NotInstalled;
+                    game.InstalledVersion = "";
+                }
+
+                return;
+            }
+
             var isInstalled = false;
             if (directoryExists)
             {

@@ -261,6 +261,8 @@ namespace QuiverLauncher
             }
         }
         private System.Threading.CancellationTokenSource? _fadeTaskCts;
+        private System.Threading.CancellationTokenSource? _librarySearchDebounceCts;
+        private const int LibrarySearchDebounceMs = 250;
         private const int FADE_DURATION_MS = 500;
         #if WINDOWS
         private IWavePlayer? _waveOut;
@@ -551,7 +553,9 @@ namespace QuiverLauncher
 
             _gameManager.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName is nameof(GameManager.Games) or nameof(GameManager.IsLibraryEmpty))
+                if (e.PropertyName is nameof(GameManager.Games)
+                    or nameof(GameManager.IsLibraryEmpty)
+                    or nameof(GameManager.HasNoLibrarySearchMatches))
                     Dispatcher.UIThread.Post(UpdateGameCollectionUi);
             };
 
@@ -1646,6 +1650,12 @@ namespace QuiverLauncher
                 var launched = false;
                 try
                 {
+                    if (game.IsManuallyManaged && game.Status == GameStatus.NotInstalled)
+                    {
+                        OpenGameFolder(game);
+                        return;
+                    }
+
                     if (game.Status == GameStatus.UpdateAvailable)
                     {
                         ShowUpdateActionMenu(ResolveDownloadMenuAnchor(game, button) ?? button, game);
@@ -1961,13 +1971,18 @@ namespace QuiverLauncher
             {
                 game.IsLoading = true;
                 var releases = await game.FetchReleasesAsync(_gameManager.HttpClient);
-                var latestRelease = releases.FirstOrDefault();
+                var latestRelease = GameInfo.SelectLatestRelease(releases, game.PreferredVersion, game.InstalledVersion);
                 if (latestRelease == null)
                 {
                     if (allowAssetPicker)
                         await ShowMessageBoxAsync($"No downloadable releases were found for {game.Name}.", "No Releases");
                     return false;
                 }
+
+                game.ApplyCachedRelease(latestRelease.tag_name, latestRelease);
+                game.RefreshInstalledStatus();
+                if (ReleaseSelection.IsSameInstalledRelease(game.InstalledVersion, latestRelease.tag_name))
+                    return false;
 
                 var availableAssets = latestRelease.assets?
                     .Where(asset => !asset.name.Contains("flatpak", StringComparison.OrdinalIgnoreCase))
@@ -1983,7 +1998,7 @@ namespace QuiverLauncher
                 if (availableAssets.Count == 1)
                 {
                     await game.InstallReleaseAsync(_gameManager.HttpClient, _gameManager.GamesFolder, _settings, latestRelease, availableAssets[0]);
-                    await PersistGameVersionPreferencesAsync(game, null, latestRelease.tag_name);
+                    await PersistGameVersionPreferencesAsync(game, game.PreferredVersion, null);
                     ApplySorting();
                     UpdateContinueButtonState();
                     if (_isAppUpdatesReviewOpen)
@@ -2004,7 +2019,7 @@ namespace QuiverLauncher
                             _settings,
                             latestRelease,
                             preferredAsset);
-                        await PersistGameVersionPreferencesAsync(game, null, latestRelease.tag_name);
+                        await PersistGameVersionPreferencesAsync(game, game.PreferredVersion, null);
                         ApplySorting();
                         UpdateContinueButtonState();
                         if (_isAppUpdatesReviewOpen)
@@ -2016,7 +2031,7 @@ namespace QuiverLauncher
                 if (!allowAssetPicker)
                     return false;
 
-                await ShowReleaseDownloadSelectionMenuAsync(anchor, game, latestRelease, null, latestRelease.tag_name);
+                await ShowReleaseDownloadSelectionMenuAsync(anchor, game, latestRelease, game.PreferredVersion, null);
                 if (_isAppUpdatesReviewOpen)
                     CloseAppUpdatesReviewIfEmpty();
                 return false;
@@ -2729,7 +2744,6 @@ namespace QuiverLauncher
                     IgnoreArticlesWhenSortingCheckBox.IsChecked = _settings.IgnoreArticlesWhenSorting;
 
                 SelectLibraryNameStyleComboBox(_settings.LibraryNameStyle);
-                SelectLibraryTagDisplayModeComboBox(_settings.LibraryTagDisplayMode);
                 SelectLibraryCardTagMaxLinesComboBox(_settings.LibraryCardTagMaxLines);
 
                 RefreshConnectedGamepadsList();
@@ -3068,13 +3082,33 @@ namespace QuiverLauncher
         private void UpdateLibraryEmptyState()
         {
             var showLibrary = _mainViewMode == MainViewMode.Library && !_isAppUpdatesReviewOpen && !_isModsOverlayOpen;
-            var showEmptyState = showLibrary && IsLibraryEmpty;
+            var showEmptyLibrary = showLibrary && IsLibraryEmpty;
+            var showNoSearchMatches = showLibrary && _gameManager.HasNoLibrarySearchMatches;
 
             if (EmptyLibraryPanel != null)
-                EmptyLibraryPanel.IsVisible = showEmptyState;
+                EmptyLibraryPanel.IsVisible = showEmptyLibrary;
+
+            if (this.FindControl<StackPanel>("LibrarySearchNoMatchesPanel") is StackPanel noMatchesPanel)
+                noMatchesPanel.IsVisible = showNoSearchMatches;
 
             if (LibraryContentPanel != null)
-                LibraryContentPanel.IsVisible = showLibrary && !showEmptyState;
+                LibraryContentPanel.IsVisible = showLibrary && !showEmptyLibrary && !showNoSearchMatches;
+
+            UpdateLibrarySearchClearButton();
+        }
+
+        private void UpdateLibrarySearchClearButton()
+        {
+            if (this.FindControl<Button>("LibrarySearchClearButton") is Button clearButton)
+                clearButton.IsVisible = _gameManager.HasLibrarySearch;
+        }
+
+        private void LibrarySearchClear_Click(object? sender, RoutedEventArgs e)
+        {
+            if (LibrarySearchTextBox == null)
+                return;
+
+            LibrarySearchTextBox.Text = "";
         }
 
         private void EmptyLibraryAddApp_Click(object? sender, RoutedEventArgs e) =>
@@ -3717,7 +3751,7 @@ namespace QuiverLauncher
             {
                 row.ShowHideButton = !isHiddenFilter &&
                                      _activeCatalogSyncSource != null &&
-                                     !CatalogCompareService.IsHiddenFromReview(_activeCatalogSyncSource, row.Repository);
+                                     !CatalogCompareService.IsHiddenFromReview(_activeCatalogSyncSource, row.ReviewKey);
                 row.ShowUnhideButton = isHiddenFilter;
                 CatalogSyncRows.Add(row);
             }
@@ -3789,9 +3823,11 @@ namespace QuiverLauncher
                 skipReviewButton.IsVisible = _catalogSyncViewModel.ShowSkipReviewButton;
         }
 
-        private CatalogSyncRowItem? FindCatalogSyncRow(string repository) =>
+        private CatalogSyncRowItem? FindCatalogSyncRow(string key) =>
             _catalogSyncViewModel.AllRows.FirstOrDefault(r =>
-                r.Repository.Equals(repository, StringComparison.OrdinalIgnoreCase));
+                string.Equals(r.IdentityKey, key, StringComparison.OrdinalIgnoreCase) ||
+                r.ReviewKey.Equals(key, StringComparison.OrdinalIgnoreCase) ||
+                r.Repository.Equals(key, StringComparison.OrdinalIgnoreCase));
 
         private async Task ApplyCatalogSyncLocalAppsAsync(List<GameInfo> localApps)
         {
@@ -3800,13 +3836,19 @@ namespace QuiverLauncher
 
             await _gameManager.CatalogService.SaveLocalAppsAsync(localApps);
 
-            foreach (var app in localApps.Where(a => !string.IsNullOrWhiteSpace(a.Repository)))
+            foreach (var app in localApps)
             {
                 previousByIdentity.TryGetValue(app.IdentityKey, out var previous);
-                AppFilesToAddService.SyncForGame(
-                    app,
-                    _gameManager.GamesFolder,
-                    previous?.FilesToAdd);
+                if (previous == null && !string.IsNullOrWhiteSpace(app.FolderName))
+                {
+                    previous = previousApps.FirstOrDefault(p =>
+                        string.Equals(p.FolderName, app.FolderName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (app.IsManuallyManaged)
+                    ManualAppFolderService.EnsurePrepared(app, _gameManager.GamesFolder);
+                else
+                    AppFilesToAddService.SyncForGame(app, _gameManager.GamesFolder, previous?.FilesToAdd);
             }
 
             await _gameManager.LoadGamesAsync();
@@ -3850,15 +3892,26 @@ namespace QuiverLauncher
         private async void CatalogSyncAddAll_Click(object? sender, RoutedEventArgs e)
         {
             var rows = _catalogSyncViewModel.GetFilteredBulkAddRows();
-            if (rows.Count == 0)
+            var blocked = _catalogSyncViewModel.GetFilteredBlockedAddRows();
+            if (rows.Count == 0 && blocked.Count == 0)
                 return;
 
-            var localApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
-            var updated = CatalogCompareService.ApplyAddAllExternalOnly(
-                localApps,
-                rows,
-                _settings.AutoUpdateNewlyAddedApps);
-            await ApplyCatalogSyncLocalAppsAsync(updated);
+            if (rows.Count > 0)
+            {
+                var localApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
+                var updated = CatalogCompareService.ApplyAddAllExternalOnly(
+                    localApps,
+                    rows,
+                    _settings.AutoUpdateNewlyAddedApps);
+                await ApplyCatalogSyncLocalAppsAsync(updated);
+            }
+
+            if (blocked.Count > 0)
+            {
+                await ShowMessageBoxAsync(
+                    CatalogCompareService.FormatAddBlockedMessage(blocked),
+                    blocked.Count == 1 ? "Could not add app" : "Could not add some apps");
+            }
         }
 
         private async void CatalogSyncReplaceAll_Click(object? sender, RoutedEventArgs e)
@@ -3893,7 +3946,7 @@ namespace QuiverLauncher
             if (row == null || !row.CanIgnore)
                 return;
 
-            CatalogCompareService.IgnoreChangesForCurrentVersion(_activeCatalogSyncSource, repository);
+            CatalogCompareService.IgnoreChangesForCurrentVersion(_activeCatalogSyncSource, row.ReviewKey);
             await AfterCatalogSyncMutationAsync();
         }
 
@@ -3906,7 +3959,7 @@ namespace QuiverLauncher
             if (row == null)
                 return;
 
-            CatalogCompareService.HideFromReview(_activeCatalogSyncSource, repository);
+            CatalogCompareService.HideFromReview(_activeCatalogSyncSource, row.ReviewKey);
             await AfterCatalogSyncMutationAsync();
         }
 
@@ -3919,7 +3972,7 @@ namespace QuiverLauncher
             if (row == null)
                 return;
 
-            CatalogCompareService.UnhideFromReview(_activeCatalogSyncSource, repository);
+            CatalogCompareService.UnhideFromReview(_activeCatalogSyncSource, row.ReviewKey);
             await AfterCatalogSyncMutationAsync();
         }
 
@@ -3937,7 +3990,7 @@ namespace QuiverLauncher
                 localApps,
                 row,
                 _settings.AutoUpdateNewlyAddedApps);
-            CatalogCompareService.ClearIgnoredChange(_activeCatalogSyncSource!, row.Repository);
+            CatalogCompareService.ClearIgnoredChange(_activeCatalogSyncSource!, row.ReviewKey);
             await ApplyCatalogSyncLocalAppsAsync(updated);
         }
 
@@ -3952,7 +4005,7 @@ namespace QuiverLauncher
 
             var localApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
             var updated = CatalogCompareService.ApplyRowReplace(localApps, row);
-            CatalogCompareService.ClearIgnoredChange(_activeCatalogSyncSource!, row.Repository);
+            CatalogCompareService.ClearIgnoredChange(_activeCatalogSyncSource!, row.ReviewKey);
             await ApplyCatalogSyncLocalAppsAsync(updated);
         }
 
@@ -3967,7 +4020,7 @@ namespace QuiverLauncher
 
             var localApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
             var updated = CatalogCompareService.ApplyRowMerge(localApps, row);
-            CatalogCompareService.ClearIgnoredChange(_activeCatalogSyncSource!, row.Repository);
+            CatalogCompareService.ClearIgnoredChange(_activeCatalogSyncSource!, row.ReviewKey);
             await ApplyCatalogSyncLocalAppsAsync(updated);
         }
 
@@ -3990,7 +4043,7 @@ namespace QuiverLauncher
 
             var localApps = await _gameManager.CatalogService.LoadLocalAppsAsync();
             var updated = CatalogCompareService.ApplyRowRemove(localApps, row);
-            CatalogCompareService.IgnoreChangesForCurrentVersion(_activeCatalogSyncSource, row.Repository);
+            CatalogCompareService.IgnoreChangesForCurrentVersion(_activeCatalogSyncSource, row.ReviewKey);
             await ApplyCatalogSyncLocalAppsAsync(updated);
         }
 
@@ -4432,25 +4485,44 @@ namespace QuiverLauncher
             return $"checked {timeSince.Days} days ago";
         }
 
-        private void OpenFolder_Click(object sender, RoutedEventArgs e)
+        private void OpenFolder_Click(object? sender, RoutedEventArgs e)
         {
             var menuItem = sender as MenuItem;
             var game = menuItem?.CommandParameter as GameInfo;
-            if (game != null && !string.IsNullOrEmpty(game.FolderName))
-            {
-                try
-                {
-                    string folderPath = game.GetInstallPath(_gameManager.GamesFolder);
-                    OpenUrl(folderPath);
-                }
-                catch (Exception ex)
-                {
-                    _ = ShowMessageBoxAsync($"Failed to open folder: {ex.Message}", "Action Error");
-                }
-            }
+            if (game != null)
+                OpenGameFolder(game);
             else
+                _ = ShowMessageBoxAsync("Unable to identify the game folder.", "Action Error");
+        }
+
+        private void OpenGameFolder(GameInfo game)
+        {
+            if (string.IsNullOrEmpty(game.FolderName) && string.IsNullOrWhiteSpace(game.InstallPath))
             {
                 _ = ShowMessageBoxAsync("Unable to identify the game folder.", "Action Error");
+                return;
+            }
+
+            try
+            {
+                if (game.IsManuallyManaged)
+                    ManualAppFolderService.EnsurePrepared(game, _gameManager.GamesFolder);
+
+                var folderPath = game.GetInstallPath(_gameManager.GamesFolder);
+                if (string.IsNullOrWhiteSpace(folderPath))
+                {
+                    _ = ShowMessageBoxAsync("Unable to identify the game folder.", "Action Error");
+                    return;
+                }
+
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
+
+                OpenUrl(folderPath);
+            }
+            catch (Exception ex)
+            {
+                _ = ShowMessageBoxAsync($"Failed to open folder: {ex.Message}", "Action Error");
             }
         }
 
@@ -4519,9 +4591,7 @@ namespace QuiverLauncher
                 config.ApplyTo(game);
 
                 var allGames = await LoadGamesFromJsonAsync();
-                var matchingGame = allGames.FirstOrDefault(g =>
-                    !string.IsNullOrWhiteSpace(g.Repository) &&
-                    g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+                var matchingGame = FindMatchingSavedApp(allGames, game);
 
                 if (matchingGame != null)
                 {
@@ -5818,6 +5888,37 @@ namespace QuiverLauncher
             SteamOnScreenKeyboard.TryOpen();
         }
 
+        private void LibrarySearch_TextChanged(object? sender, TextChangedEventArgs e)
+        {
+            _ = DebouncedLibrarySearchAsync();
+        }
+
+        private async Task DebouncedLibrarySearchAsync()
+        {
+            _librarySearchDebounceCts?.Cancel();
+            var cts = new CancellationTokenSource();
+            _librarySearchDebounceCts = cts;
+            var query = LibrarySearchTextBox?.Text ?? "";
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(query))
+                    await Task.Delay(LibrarySearchDebounceMs, cts.Token).ConfigureAwait(true);
+
+                if (_gameManager == null || _settings == null || cts.IsCancellationRequested)
+                    return;
+
+                _gameManager.LibrarySearchText = query;
+                _gameManager.ApplyTagDisplayFilter(_settings);
+                ApplySorting();
+                UpdateLibraryEmptyState();
+            }
+            catch (OperationCanceledException)
+            {
+                // Newer keystroke replaced this search.
+            }
+        }
+
         private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count == 0) return;
@@ -6511,26 +6612,6 @@ namespace QuiverLauncher
             ApplySorting();
         }
 
-        private void LibraryTagDisplayModeComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-        {
-            if (_settings == null || LibraryTagDisplayModeComboBox?.SelectedItem is not ComboBoxItem item)
-                return;
-
-            var mode = (item.Tag as string) switch
-            {
-                "All" => LibraryTagDisplayMode.All,
-                "Hidden" => LibraryTagDisplayMode.Hidden,
-                _ => LibraryTagDisplayMode.Featured,
-            };
-
-            if (_settings.LibraryTagDisplayMode == mode)
-                return;
-
-            _settings.LibraryTagDisplayMode = mode;
-            OnSettingChanged();
-            ApplyLibraryDisplaySettingsToGames();
-        }
-
         private void LibraryCardTagMaxLinesComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (_suppressSettingsUiEvents || _settings == null ||
@@ -6594,28 +6675,6 @@ namespace QuiverLauncher
                 if (entry is ComboBoxItem item && item.Tag as string == tag)
                 {
                     LibraryNameStyleComboBox.SelectedItem = item;
-                    break;
-                }
-            }
-        }
-
-        private void SelectLibraryTagDisplayModeComboBox(LibraryTagDisplayMode mode)
-        {
-            if (LibraryTagDisplayModeComboBox == null)
-                return;
-
-            var tag = mode switch
-            {
-                LibraryTagDisplayMode.All => "All",
-                LibraryTagDisplayMode.Hidden => "Hidden",
-                _ => "Featured",
-            };
-
-            foreach (var entry in LibraryTagDisplayModeComboBox.Items)
-            {
-                if (entry is ComboBoxItem item && item.Tag as string == tag)
-                {
-                    LibraryTagDisplayModeComboBox.SelectedItem = item;
                     break;
                 }
             }
@@ -6976,14 +7035,16 @@ namespace QuiverLauncher
             await _gameManager.CatalogService.SaveLocalAppsAsync(imported);
         }
 
+        private static GameInfo? FindMatchingSavedApp(IEnumerable<GameInfo> apps, GameInfo game) =>
+            apps.FirstOrDefault(g =>
+                string.Equals(g.IdentityKey, game.IdentityKey, StringComparison.OrdinalIgnoreCase));
+
         private async Task PersistGameVersionPreferencesAsync(GameInfo game, string? preferredVersion, string? skippedUpdateVersion)
         {
             game.SetVersionPreferences(preferredVersion, skippedUpdateVersion);
 
             var allGames = await LoadGamesFromJsonAsync();
-            var matchingGame = allGames.FirstOrDefault(g =>
-                !string.IsNullOrWhiteSpace(g.Repository) &&
-                g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+            var matchingGame = FindMatchingSavedApp(allGames, game);
 
             if (matchingGame == null)
                 return;
@@ -6991,6 +7052,7 @@ namespace QuiverLauncher
             matchingGame.PreferredVersion = game.PreferredVersion;
             matchingGame.SkippedUpdateVersion = game.SkippedUpdateVersion;
             matchingGame.AutoUpdate = game.AutoUpdate;
+            matchingGame.DeferUpdateTracking = game.DeferUpdateTracking;
 
             await SaveGamesToJsonAsync(allGames);
         }
@@ -6998,9 +7060,7 @@ namespace QuiverLauncher
         private async Task PersistAutoUpdatePreferenceAsync(GameInfo game)
         {
             var allGames = await LoadGamesFromJsonAsync();
-            var matchingGame = allGames.FirstOrDefault(g =>
-                !string.IsNullOrWhiteSpace(g.Repository) &&
-                g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+            var matchingGame = FindMatchingSavedApp(allGames, game);
 
             if (matchingGame == null)
                 return;
@@ -7012,9 +7072,7 @@ namespace QuiverLauncher
         private async Task PersistGameInstallLocationAsync(GameInfo game)
         {
             var allGames = await LoadGamesFromJsonAsync();
-            var matchingGame = allGames.FirstOrDefault(g =>
-                !string.IsNullOrWhiteSpace(g.Repository) &&
-                g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+            var matchingGame = FindMatchingSavedApp(allGames, game);
 
             if (matchingGame == null)
                 return;
@@ -7085,7 +7143,10 @@ namespace QuiverLauncher
 
             FormTitleText.Text = "Edit App Entry";
             NewGameNameTextBox.Text = game.Name ?? "";
-            SetRepositorySourceSelection(game.EffectiveRepositorySource);
+            if (NewGameManuallyManagedCheckBox != null)
+                NewGameManuallyManagedCheckBox.IsChecked = game.IsManuallyManaged;
+            SetManuallyManagedFieldsVisible(game.IsManuallyManaged);
+            SetRepositorySourceSelection(game.IsManuallyManaged ? RepositorySourceIds.GitHub : game.EffectiveRepositorySource);
             NewGameRepoTextBox.Text = game.Repository ?? "";
             NewGameRepoTextBox.IsReadOnly = false;
             NewGameFolderTextBox.Text = game.FolderName ?? "";
@@ -7131,17 +7192,19 @@ namespace QuiverLauncher
             }
 
             var name = NewGameNameTextBox?.Text?.Trim();
-            var repository = NewGameRepoTextBox?.Text?.Trim();
+            var manuallyManaged = NewGameManuallyManagedCheckBox?.IsChecked == true;
+            var repository = manuallyManaged ? "" : NewGameRepoTextBox?.Text?.Trim();
             var folderName = NewGameFolderTextBox?.Text?.Trim();
 
             if (string.IsNullOrEmpty(name))
                 SetValidationStatus("Error: App name is required");
-            else if (string.IsNullOrEmpty(repository))
+            else if (!manuallyManaged && string.IsNullOrEmpty(repository))
                 SetValidationStatus("Error: Repository is required");
             else if (string.IsNullOrEmpty(folderName))
                 SetValidationStatus("Error: Folder name is required");
-            else if (!Uri.TryCreate(repository, UriKind.Absolute, out var repoUri) ||
-                     (repoUri.Scheme != Uri.UriSchemeHttp && repoUri.Scheme != Uri.UriSchemeHttps))
+            else if (!manuallyManaged &&
+                     (!Uri.TryCreate(repository, UriKind.Absolute, out var repoUri) ||
+                      (repoUri.Scheme != Uri.UriSchemeHttp && repoUri.Scheme != Uri.UriSchemeHttps)))
                 SetValidationStatus("Warning: Repository should be a valid URL");
             else if (!IsValidFolderName(folderName))
                 SetValidationStatus("Warning: Folder name contains invalid characters");
@@ -7178,13 +7241,25 @@ namespace QuiverLauncher
                 _entryFormShowValidation = true;
 
                 var name = NewGameNameTextBox?.Text?.Trim();
-                var repository = NewGameRepoTextBox?.Text?.Trim();
-                var repositorySource = GetSelectedRepositorySource(out var unsupportedSource);
-                if (unsupportedSource)
+                var manuallyManaged = NewGameManuallyManagedCheckBox?.IsChecked == true;
+                var unsupportedSource = false;
+                string? repository;
+                string? repositorySource;
+                if (manuallyManaged)
                 {
-                    _ = ShowMessageBoxAsync(
-                        $"Unsupported repository source; defaulting to GitHub.",
-                        "Repository Source");
+                    repository = "";
+                    repositorySource = null;
+                }
+                else
+                {
+                    repository = NewGameRepoTextBox?.Text?.Trim();
+                    repositorySource = GetSelectedRepositorySource(out unsupportedSource);
+                    if (unsupportedSource)
+                    {
+                        _ = ShowMessageBoxAsync(
+                            $"Unsupported repository source; defaulting to GitHub.",
+                            "Repository Source");
+                    }
                 }
 
                 var folderName = NewGameFolderTextBox?.Text?.Trim();
@@ -7202,12 +7277,17 @@ namespace QuiverLauncher
                 var modsLayout = NewGameModsFolderPerModCheckBox?.IsChecked == true
                     ? GameModsConfig.LayoutFolderPerMod
                     : null;
-                var identityKey = RepositorySourceHelper.GetIdentityKey(repositorySource, repository);
+                var identityKey = RepositorySourceHelper.GetIdentityKey(repositorySource, repository, folderName);
 
-                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(repository) || string.IsNullOrEmpty(folderName))
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(folderName) ||
+                    (!manuallyManaged && string.IsNullOrEmpty(repository)))
                 {
                     ValidateGameForm();
-                    _ = ShowMessageBoxAsync("Please fill in all required fields (Name, Repository, Folder Name)", "Validation Error");
+                    _ = ShowMessageBoxAsync(
+                        manuallyManaged
+                            ? "Please fill in all required fields (Name, Folder Name)"
+                            : "Please fill in all required fields (Name, Repository, Folder Name)",
+                        "Validation Error");
                     return;
                 }
 
@@ -7230,14 +7310,17 @@ namespace QuiverLauncher
                     var oldRepository = appToUpdate.Repository;
                     var oldRepositorySource = appToUpdate.RepositorySource;
                     var oldIdentityKey = appToUpdate.IdentityKey;
+                    var oldFolderName = appToUpdate.FolderName;
                     if (!string.Equals(oldIdentityKey, identityKey, StringComparison.OrdinalIgnoreCase) &&
                         games.Any(g =>
                             !ReferenceEquals(g, appToUpdate) &&
                             string.Equals(g.IdentityKey, identityKey, StringComparison.OrdinalIgnoreCase)))
                     {
                         _ = ShowMessageBoxAsync(
-                            "Another app already uses this repository and repository source.",
-                            "Duplicate Repository");
+                            manuallyManaged
+                                ? "Another app already uses this folder name."
+                                : "Another app already uses this repository and repository source.",
+                            manuallyManaged ? "Duplicate Folder" : "Duplicate Repository");
                         return;
                     }
 
@@ -7270,12 +7353,13 @@ namespace QuiverLauncher
                         }
                     }
 
+                    var wasManual = appToUpdate.IsManuallyManaged;
                     var previousFilesToAdd = AppFilesToAddService.Normalize(appToUpdate.FilesToAdd);
                     appToUpdate.Name = name;
                     appToUpdate.Project = project;
                     appToUpdate.CustomDisplayName = customDisplayName;
-                    appToUpdate.Repository = repository;
-                    appToUpdate.RepositorySource = RepositorySourceHelper.IsGitHub(repositorySource)
+                    appToUpdate.Repository = repository ?? "";
+                    appToUpdate.RepositorySource = manuallyManaged || RepositorySourceHelper.IsGitHub(repositorySource)
                         ? null
                         : repositorySource;
                     appToUpdate.FolderName = folderName;
@@ -7286,6 +7370,22 @@ namespace QuiverLauncher
                     appToUpdate.ModsSources = modsSources;
                     appToUpdate.ModsLayout = modsLayout;
 
+                    if (manuallyManaged)
+                    {
+                        appToUpdate.AutoUpdate = false;
+                        appToUpdate.PreferredVersion = null;
+                        appToUpdate.SkippedUpdateVersion = null;
+                        appToUpdate.DeferUpdateTracking = false;
+                        appToUpdate.LatestVersion = null;
+                    }
+                    else if (wasManual)
+                    {
+                        appToUpdate.AutoUpdate = false;
+                        appToUpdate.PreferredVersion = null;
+                        appToUpdate.SkippedUpdateVersion = null;
+                        appToUpdate.DeferUpdateTracking = true;
+                    }
+
                     if (!string.IsNullOrWhiteSpace(appToUpdate.Repository))
                         _settings.UserAppDisplayNames.Remove(appToUpdate.Repository);
 
@@ -7294,7 +7394,9 @@ namespace QuiverLauncher
                             oldRepositorySource,
                             oldRepository,
                             appToUpdate.RepositorySource,
-                            appToUpdate.Repository))
+                            appToUpdate.Repository,
+                            oldFolderName,
+                            appToUpdate.FolderName))
                     {
                         OnSettingChanged();
                     }
@@ -7304,7 +7406,10 @@ namespace QuiverLauncher
                     }
 
                     await SaveGamesToJsonAsync(games);
-                    AppFilesToAddService.SyncForGame(appToUpdate, _gameManager.GamesFolder, previousFilesToAdd);
+                    if (appToUpdate.IsManuallyManaged)
+                        ManualAppFolderService.EnsurePrepared(appToUpdate, _gameManager.GamesFolder);
+                    else
+                        AppFilesToAddService.SyncForGame(appToUpdate, _gameManager.GamesFolder, previousFilesToAdd);
                     _ = ShowMessageBoxAsync("App entry updated successfully", "App Updated");
                 }
                 else
@@ -7314,8 +7419,10 @@ namespace QuiverLauncher
                             string.Equals(g.IdentityKey, identityKey, StringComparison.OrdinalIgnoreCase)))
                     {
                         _ = ShowMessageBoxAsync(
-                            "An app with this repository already exists.",
-                            "Duplicate Repository");
+                            manuallyManaged
+                                ? "An app with this folder name already exists."
+                                : "An app with this repository already exists.",
+                            manuallyManaged ? "Duplicate Folder" : "Duplicate Repository");
                         return;
                     }
 
@@ -7333,8 +7440,8 @@ namespace QuiverLauncher
                         Name = name,
                         Project = project,
                         CustomDisplayName = customDisplayName,
-                        Repository = repository,
-                        RepositorySource = RepositorySourceHelper.IsGitHub(repositorySource)
+                        Repository = repository ?? "",
+                        RepositorySource = manuallyManaged || RepositorySourceHelper.IsGitHub(repositorySource)
                             ? null
                             : repositorySource,
                         FolderName = folderName,
@@ -7344,15 +7451,26 @@ namespace QuiverLauncher
                         ModsPath = modsPath.Length > 0 ? modsPath : null,
                         ModsSources = modsSources,
                         ModsLayout = modsLayout,
-                        AutoUpdate = _settings.AutoUpdateNewlyAddedApps,
+                        AutoUpdate = !manuallyManaged && _settings.AutoUpdateNewlyAddedApps,
                         IsCustom = true,
                         IsExperimental = false
                     };
                     games.Add(newApp);
 
                     await SaveGamesToJsonAsync(games);
-                    AppFilesToAddService.SyncForGame(newApp, _gameManager.GamesFolder);
-                    _ = ShowMessageBoxAsync("New app entry created successfully", "App Added");
+                    if (newApp.IsManuallyManaged)
+                    {
+                        ManualAppFolderService.EnsurePrepared(newApp, _gameManager.GamesFolder);
+                        OpenGameFolder(newApp);
+                        _ = ShowMessageBoxAsync(
+                            "Manually managed app added. Place the app files in the opened folder.",
+                            "App Added");
+                    }
+                    else
+                    {
+                        AppFilesToAddService.SyncForGame(newApp, _gameManager.GamesFolder);
+                        _ = ShowMessageBoxAsync("New app entry created successfully", "App Added");
+                    }
                 }
 
                 await _gameManager.LoadGamesAsync();
@@ -7500,12 +7618,10 @@ namespace QuiverLauncher
         {
             game.Tags = tags;
 
-            if (game.IsInLocalAppsJson && !string.IsNullOrWhiteSpace(game.Repository))
+            if (game.IsInLocalAppsJson)
             {
                 var games = await LoadGamesFromJsonAsync();
-                var appToUpdate = games.FirstOrDefault(g =>
-                    !string.IsNullOrWhiteSpace(g.Repository) &&
-                    g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+                var appToUpdate = FindMatchingSavedApp(games, game);
 
                 if (appToUpdate != null)
                 {
@@ -7528,12 +7644,10 @@ namespace QuiverLauncher
         {
             game.CustomDisplayName = customDisplayName;
 
-            if (game.IsInLocalAppsJson && !string.IsNullOrWhiteSpace(game.Repository))
+            if (game.IsInLocalAppsJson)
             {
                 var games = await LoadGamesFromJsonAsync();
-                var appToUpdate = games.FirstOrDefault(g =>
-                    !string.IsNullOrWhiteSpace(g.Repository) &&
-                    g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+                var appToUpdate = FindMatchingSavedApp(games, game);
 
                 if (appToUpdate != null)
                 {
@@ -7541,7 +7655,8 @@ namespace QuiverLauncher
                     await SaveGamesToJsonAsync(games);
                 }
 
-                _settings.UserAppDisplayNames.Remove(game.Repository);
+                if (!string.IsNullOrWhiteSpace(game.Repository))
+                    _settings.UserAppDisplayNames.Remove(game.Repository);
             }
             else if (!string.IsNullOrWhiteSpace(game.Repository))
             {
@@ -7561,6 +7676,9 @@ namespace QuiverLauncher
 
         private void ClearForm()
         {
+            if (NewGameManuallyManagedCheckBox != null)
+                NewGameManuallyManagedCheckBox.IsChecked = false;
+            SetManuallyManagedFieldsVisible(false);
             if (NewGameNameTextBox != null) NewGameNameTextBox.Text = "";
             SetRepositorySourceSelection(RepositorySourceIds.GitHub);
             if (NewGameRepoTextBox != null)
@@ -7587,6 +7705,25 @@ namespace QuiverLauncher
             _editingGameIdentityKey = null;
             _editingFolderName = null;
             _editingGame = null;
+        }
+
+        private void ManuallyManagedCheckBox_Changed(object? sender, RoutedEventArgs e)
+        {
+            SetManuallyManagedFieldsVisible(NewGameManuallyManagedCheckBox?.IsChecked == true);
+            ValidateGameForm();
+        }
+
+        private void SetManuallyManagedFieldsVisible(bool manuallyManaged)
+        {
+            var showRepo = !manuallyManaged;
+            if (NewGameRepositorySourceLabel != null)
+                NewGameRepositorySourceLabel.IsVisible = showRepo;
+            if (NewGameRepositorySourceComboBox != null)
+                NewGameRepositorySourceComboBox.IsVisible = showRepo;
+            if (NewGameRepositoryLabel != null)
+                NewGameRepositoryLabel.IsVisible = showRepo;
+            if (NewGameRepoTextBox != null)
+                NewGameRepoTextBox.IsVisible = showRepo;
         }
 
         private void SetRepositorySourceSelection(string? repositorySource)
@@ -7624,10 +7761,7 @@ namespace QuiverLauncher
         private async void RemoveGameEntry_Click(object sender, RoutedEventArgs e)
         {
             var game = (sender as MenuItem)?.CommandParameter as GameInfo;
-            if (game == null || string.IsNullOrEmpty(game.Repository) || string.IsNullOrEmpty(game.Name))
-                return;
-
-            if (!game.IsInLocalAppsJson)
+            if (game == null || string.IsNullOrEmpty(game.Name) || !game.IsInLocalAppsJson)
                 return;
 
             try
@@ -7641,9 +7775,7 @@ namespace QuiverLauncher
                     return;
 
                 var games = await LoadGamesFromJsonAsync();
-                var gameToRemove = games.FirstOrDefault(g =>
-                    !string.IsNullOrWhiteSpace(g.Repository) &&
-                    g.Repository.Equals(game.Repository, StringComparison.OrdinalIgnoreCase));
+                var gameToRemove = FindMatchingSavedApp(games, game);
 
                 if (gameToRemove == null)
                     return;
@@ -7653,9 +7785,12 @@ namespace QuiverLauncher
                 await _gameManager.LoadGamesAsync();
                 ApplySorting();
 
-                await _gameManager.CatalogService.IgnoreRepositoryInMatchingSourcesAsync(
-                    _settings,
-                    game.Repository);
+                if (!string.IsNullOrWhiteSpace(game.Repository))
+                {
+                    await _gameManager.CatalogService.IgnoreRepositoryInMatchingSourcesAsync(
+                        _settings,
+                        game.Repository);
+                }
                 OnSettingChanged();
                 RefreshCatalogSourcesList();
 
@@ -7996,16 +8131,24 @@ namespace QuiverLauncher
                 if (action == null)
                     return;
 
-                // While editing a TextBox, let typing through (including Backspace). Escape still
-                // dismisses focus / runs cancel even when Cancel is bound to another key.
+                // While editing a TextBox, let typing and caret keys through. Escape/Enter
+                // (and bound Cancel/Confirm) leave edit mode, matching dialog fields.
                 var editingText = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
                 if (editingText)
                 {
-                    if (e.Key == Key.Escape)
+                    if (e.Key == Key.Escape || action is GamepadAction.Cancel)
                     {
                         ActivateKeyboardNavChrome();
                         HandleCancelAction();
                         e.Handled = true;
+                        return;
+                    }
+
+                    if (e.Key == Key.Enter || action is GamepadAction.Confirm)
+                    {
+                        DismissTextInputFocus();
+                        e.Handled = true;
+                        return;
                     }
 
                     return;
@@ -8113,6 +8256,9 @@ namespace QuiverLauncher
 
             if (!_settings.EnableGamepadInput && !GamepadFocusChrome.KeyboardNavigationActive)
                 return false;
+
+            if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox)
+                return true;
 
             if (IsDisplayFilterOverlayOpen)
             {
@@ -8290,13 +8436,19 @@ namespace QuiverLauncher
 
             void Add(Control? control)
             {
-                if (control != null && control.IsVisible && control.IsEnabled && control.Focusable)
+                if (control == null || !control.IsVisible || !control.IsEnabled)
+                    return;
+
+                // CheckBoxes stay navigable even if a theme sets Focusable=false;
+                // bound Select toggles them via ActivateCheckBox, not native Space.
+                if (control.Focusable || control is CheckBox)
                     controls.Add(control);
             }
 
             Add(NewGameNameTextBox);
             Add(NewGameProjectTextBox);
             Add(NewGameCustomDisplayNameTextBox);
+            Add(NewGameManuallyManagedCheckBox);
             Add(NewGameRepositorySourceComboBox);
             Add(NewGameRepoTextBox);
             Add(NewGameFolderTextBox);
@@ -8334,15 +8486,29 @@ namespace QuiverLauncher
         private void ActivateEntryFormGamepadSelection()
         {
             var controls = CollectEntryFormFocusableControls();
-            var index = _gamepadNavigation.ClampIndex(_entryFormGamepadFocusIndex, controls.Count);
+            if (controls.Count == 0)
+                return;
+
+            var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+            var focusedIndex = GamepadControlActivation.IndexOfControlContainingFocus(controls, focused);
+            var index = focusedIndex >= 0
+                ? focusedIndex
+                : _gamepadNavigation.ClampIndex(_entryFormGamepadFocusIndex, controls.Count);
             if (index < 0 || index >= controls.Count)
                 return;
 
+            if (focusedIndex >= 0)
+                _entryFormGamepadFocusIndex = focusedIndex;
+
             var control = controls[index];
-            if (control is Button button)
-                GamepadControlActivation.ActivateButton(button);
+            if (control is CheckBox checkBox)
+                GamepadControlActivation.ActivateCheckBox(checkBox);
+            else if (control is ComboBox comboBox)
+                GamepadComboBoxNavigation.Open(comboBox);
             else if (control is TextBox textBox)
                 GamepadControlActivation.ActivateTextBox(textBox);
+            else if (control is Button button)
+                GamepadControlActivation.ActivateButton(button);
             else
                 control.Focus();
         }
@@ -8857,9 +9023,16 @@ namespace QuiverLauncher
         private void ActivateSettingsGamepadSelection()
         {
             var controls = CollectSettingsFocusableControls();
-            var index = _gamepadNavigation.ClampIndex(_settingsGamepadFocusIndex, controls.Count);
+            var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+            var focusedIndex = GamepadControlActivation.IndexOfControlContainingFocus(controls, focused);
+            var index = focusedIndex >= 0
+                ? focusedIndex
+                : _gamepadNavigation.ClampIndex(_settingsGamepadFocusIndex, controls.Count);
             if (index < 0 || index >= controls.Count)
                 return;
+
+            if (focusedIndex >= 0)
+                _settingsGamepadFocusIndex = focusedIndex;
 
             var control = controls[index];
             if (control is TabItem tabItem)
@@ -8881,7 +9054,7 @@ namespace QuiverLauncher
 
             if (control is CheckBox checkBox)
             {
-                checkBox.IsChecked = !checkBox.IsChecked;
+                GamepadControlActivation.ActivateCheckBox(checkBox);
                 // Layout-changing App Cards checkboxes rebuild the library underneath;
                 // re-assert settings focus so keyboard focus does not land on a game card.
                 ApplySettingsGamepadSelection(index);
@@ -10150,6 +10323,8 @@ namespace QuiverLauncher
 
             if (_mainViewMode == MainViewMode.Library && !_isAppUpdatesReviewOpen && !_isModsOverlayOpen)
             {
+                Add(LibrarySearchTextBox);
+                Add(LibrarySearchClearButton);
                 Add(AddNewEntryButton);
                 Add(SortByComboBox);
             }
@@ -10528,7 +10703,7 @@ namespace QuiverLauncher
             if (controls[index] is StyledElement styled)
                 styled.Classes.Set("gamepad-focused", true);
 
-            controls[index].Focus();
+            GamepadControlActivation.ApplyGamepadHighlightFocus(controls[index]);
         }
 
         private void ClearSidebarGamepadFocus()
@@ -10838,6 +11013,14 @@ namespace QuiverLauncher
 
             if (isSettingsPanelOpen || _mainViewMode != MainViewMode.Library)
                 return;
+
+            // Search/filter rebuilds Games; keep chrome focus on search/sidebar.
+            if (_gamepadNavigation.ActiveZone is GamepadNavigationZone.TopBar
+                or GamepadNavigationZone.Sidebar
+                or GamepadNavigationZone.AnnouncementBanner)
+            {
+                return;
+            }
 
             if (Games.Count == 0)
             {
@@ -11345,6 +11528,12 @@ namespace QuiverLauncher
                 return;
             }
 
+            if (control is TextBox textBox)
+            {
+                GamepadControlActivation.ActivateTextBox(textBox);
+                return;
+            }
+
             if (control is Button button)
                 GamepadControlActivation.ActivateButton(button);
         }
@@ -11448,7 +11637,7 @@ namespace QuiverLauncher
 
             if (controls[index] is CheckBox checkBox)
             {
-                checkBox.IsChecked = !checkBox.IsChecked;
+                GamepadControlActivation.ActivateCheckBox(checkBox);
                 return;
             }
 
@@ -11521,6 +11710,13 @@ namespace QuiverLauncher
 
         private void HandleConfirmActionCore()
         {
+            if (AllowChromeActions &&
+                TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox)
+            {
+                DismissTextInputFocus();
+                return;
+            }
+
             if (_isChangelogOpen &&
                 _gamepadNavigation.ActiveZone == GamepadNavigationZone.ChangelogOverlay)
             {
@@ -11719,20 +11915,20 @@ namespace QuiverLauncher
             {
                 menuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             }
+            else if (focused is CheckBox checkBox)
+            {
+                GamepadControlActivation.ActivateCheckBox(checkBox);
+            }
+            else if (focused is ToggleButton toggleButton)
+            {
+                toggleButton.IsChecked = toggleButton.IsChecked != true;
+            }
             else if (focused is Button button)
             {
                 if (button.ContextMenu != null)
                     OpenContextMenu(button, button.ContextMenu);
                 else
                     button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            }
-            else if (focused is CheckBox checkBox)
-            {
-                checkBox.IsChecked = !checkBox.IsChecked;
-            }
-            else if (focused is ToggleButton toggleButton)
-            {
-                toggleButton.IsChecked = !toggleButton.IsChecked;
             }
         }
 
@@ -11904,6 +12100,8 @@ namespace QuiverLauncher
             // Stop Launcher Music
             _fadeTaskCts?.Cancel();
             _fadeTaskCts?.Dispose();
+            _librarySearchDebounceCts?.Cancel();
+            _librarySearchDebounceCts?.Dispose();
             StopLauncherMusic();
 
             if (_inputService != null)
@@ -11940,6 +12138,7 @@ namespace QuiverLauncher
             // hang (shell-execute / orphaned waiters), which used to leave _launchedGameOwnsInput
             // true and swallow all gamepad/keyboard navigation while Cancel still worked.
             RestoreLauncherInputAfterForeground();
+            _ = RefreshManualAppStatusesAsync();
 
             #if WINDOWS
                         _ = FadeMusicAsync(MusicVolume, FADE_DURATION_MS);
@@ -11967,6 +12166,31 @@ namespace QuiverLauncher
                     _ = FadeMusicAsync(0f, FADE_DURATION_MS);
                 }
             #endif
+        }
+
+        private async Task RefreshManualAppStatusesAsync()
+        {
+            if (_gameManager?.Games == null)
+                return;
+
+            var manuals = _gameManager.Games.Where(g => g.IsManuallyManaged).ToList();
+            if (manuals.Count == 0)
+                return;
+
+            foreach (var game in manuals)
+            {
+                try
+                {
+                    await game.CheckStatusAsync(_gameManager.HttpClient, _gameManager.GamesFolder);
+                }
+                catch
+                {
+                    // Status refresh is best-effort after returning from the file explorer.
+                }
+            }
+
+            ApplySorting();
+            UpdateContinueButtonState();
         }
 
         private void SubscribeToGameEvents(GameInfo game)

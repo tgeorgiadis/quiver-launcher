@@ -12,6 +12,8 @@ A modern launcher for downloading, installing, and running apps from GitHub and 
 ## Features
 
 - **Tag filters** - Organize and filter your library with custom tags
+- **Library search** - Filter the current list by name, tags, repository, or folder
+- **Manually managed apps** - Add apps with no GitHub/GitLab repository; drop files into the app folder and open it from the library
 - **App Catalog** - Subscribe to community app lists, review changes, and build your library from `apps.json`
 - **GitHub & GitLab releases** - Install and update apps from GitHub or gitlab.com release assets
 - **Mod Management Support** - Browse, install and update mods from Thunderstore and GameBanana
@@ -91,7 +93,7 @@ MyFolder/
 ## Basic Usage
 
 1. Launch the application
-2. On first launch, browse the Quiver Community App Catalog lists (internet required) and use **Review** or **View** to add apps to your library. You can also add apps later with **+ Add New Entry**. Your library is stored in local [`apps.json`](apps.json)
+2. On first launch, browse the Quiver Community App Catalog lists (internet required) and use **Review** or **View** to add apps to your library. You can also add apps later with **+ Add New Entry**, including **manually managed** apps that have no GitHub/GitLab repository. Your library is stored in local [`apps.json`](apps.json)
 3. Browse your app library in the Library view
 4. Click the Download/Launch button on the app/game you want to use
 
@@ -187,6 +189,8 @@ You can add more catalogs in **App Catalog → Add Source** (remote raw GitHub U
 
 When a subscribed list changes remotely, Quiver Launcher detects the diff on startup or when you click **Refresh All Sources**, then shows **Review changes** with per-app actions (Add, Replace, Merge, Ignore, Hide). Use **Not in library** to browse catalog apps you haven't added yet (including ignored ones). When every review item is synced or resolved, the catalog version is marked reviewed automatically. Use **Skip & mark reviewed** only to dismiss remaining items without syncing them.
 
+**Merge** applies catalog metadata (name, icon, files, mods, and catalog tags) while keeping extra local tags and version pins (`preferredVersion`). **Replace** applies the same catalog fields but drops extra local tags. Neither overwrites `preferredVersion` unless the app is promoted, demoted, or retargeted to a different repository. Extra local tags and version pins do not keep an app in a "Changed" state.
+
 See the [Quiver Community App Catalog](https://github.com/tgeorgiadis/quiver-community-app-catalog) repo for sample list format and the canonical community catalog.
 
 #### App Entry Properties
@@ -196,9 +200,9 @@ Each app entry requires the following properties:
 - **`name`** - Canonical app/title (for ports, usually the game name). Library display can compose this with `project` via Settings → Library name style
 - **`project`** *(optional)* - Project, team, or author attribution shown when library name style includes project
 - **`customDisplayName`** *(optional)* - Per-app library label override; always wins over name/project composition
-- **`repository`** - The repository path in the format `username/repository` (GitHub) or `namespace/project` (GitLab). On **Edit App Entry**, repository and repository source can be changed to retarget releases (e.g. move an app to GitLab); the install folder is unchanged unless **Folder Name** is edited.
-- **`repositorySource`** *(optional)* - `github` (default when omitted) or `gitlab`. Older Quiver Launcher versions ignore this field and treat entries as GitHub-only.
-- **`folderName`** - The folder name where the app will be downloaded and installed (prefer `Title-Project`, without type suffixes like `-Recomp`)
+- **`repository`** *(required unless manually managed)* - The repository path in the format `username/repository` (GitHub) or `namespace/project` (GitLab). Omit this field for **manually managed** apps: Quiver creates `{Apps}/{folderName}` and you place the files yourself. There is no download or update management until a repository is added. On **Edit App Entry**, filling in a repository promotes the app to a managed install (existing files are kept; Auto Update stays off until you update). Clearing the repository demotes it back to manual.
+- **`repositorySource`** *(optional)* - `github` (default when omitted) or `gitlab`. Ignored for manually managed apps. Older Quiver Launcher versions ignore this field and treat entries as GitHub-only.
+- **`folderName`** - The folder name under Apps where the app is installed (prefer `Title-Project`, without type suffixes like `-Recomp`). For manually managed apps this folder is created immediately as the drop target.
 - **`tags`** *(optional)* - Freeform tags (classification such as `recomp` / `decomp` lives here, not in the title)
 - **`appIconUrl`** - URL of the app's icon image. If null, a default icon will be used.
 
@@ -236,6 +240,13 @@ Catalog **list** JSON may also include review-chip hints (only shown when presen
             "repository": "namespace/example-project",
             "repositorySource": "gitlab",
             "folderName": "GitLabExampleApp",
+            "appIconUrl": null
+        },
+        {
+            "name": "Manually Managed Example",
+            "project": "Itch drop",
+            "folderName": "ManualExample",
+            "tags": ["manual"],
             "appIconUrl": null
         }
     ]

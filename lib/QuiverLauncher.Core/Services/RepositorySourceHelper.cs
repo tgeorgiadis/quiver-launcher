@@ -31,13 +31,26 @@ namespace QuiverLauncher.Core.Services
         public static bool IsGitLab(string? repositorySource) =>
             string.Equals(Normalize(repositorySource), RepositorySourceIds.GitLab, StringComparison.OrdinalIgnoreCase);
 
+        public static bool IsManuallyManaged(string? repository) =>
+            string.IsNullOrWhiteSpace(repository);
+
+        public static string GetManualIdentityKey(string? folderName)
+        {
+            var folder = folderName?.Trim() ?? string.Empty;
+            return $"{RepositorySourceIds.Manual}:{folder}";
+        }
+
         /// <summary>
         /// Identity / cache key: "{source}:{repository}". Missing source is treated as GitHub.
+        /// Apps with no repository use <c>manual:{folderName}</c>.
         /// </summary>
-        public static string GetIdentityKey(string? repositorySource, string? repository)
+        public static string GetIdentityKey(string? repositorySource, string? repository, string? folderName = null)
         {
+            if (IsManuallyManaged(repository))
+                return GetManualIdentityKey(folderName);
+
             var source = Normalize(repositorySource);
-            var repo = repository?.Trim() ?? string.Empty;
+            var repo = repository!.Trim();
             return $"{source}:{repo}";
         }
 

@@ -36,6 +36,12 @@ namespace QuiverLauncher.Services
             return NormalizeTags(merged);
         }
 
+        /// <summary>
+        /// True when every catalog tag is present locally. Extra local tags are allowed.
+        /// </summary>
+        public static bool ContainsAllTags(IEnumerable<string>? localTags, IEnumerable<string>? catalogTags) =>
+            MatchesAllFilterTags(localTags, catalogTags);
+
         public static bool MatchesAnyFilterTags(IEnumerable<string>? appTags, IEnumerable<string>? filterTags)
         {
             var normalizedAppTags = NormalizeTags(appTags);

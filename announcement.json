@@ -1,5 +1,5 @@
 {
-  "id": "2026-08-13-310",
+  "id": "2026-08-19-320",
   "enabled": true,
-  "message": "3.1.0 catalog review search and tags, multi-file GameBanana mod support, and new library settings. Still on 2.4.2? Update to 3.x manually (click the GitHub icon bottom left)."
+  "message": "3.2.0: manually managed apps, library search, catalog review comparison fixes, and improved app release tracking logic. Still on 2.4.2? Update to 3.x manually (click the GitHub icon bottom left)."
 }

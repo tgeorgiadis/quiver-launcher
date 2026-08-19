@@ -1,5 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:services="clr-namespace:QuiverLauncher.Services"
              x:Class="QuiverLauncher.App"
              RequestedThemeVariant="Dark">
 
@@ -42,6 +43,7 @@
 			<Setter Property="CornerRadius" Value="4"/>
 			<Setter Property="BorderThickness" Value="2"/>
 			<Setter Property="BorderBrush" Value="Transparent"/>
+			<Setter Property="services:MenuSubmenuOverlap.Enable" Value="True"/>
 		</Style>
 
 		<Style Selector="MenuItem:selected">

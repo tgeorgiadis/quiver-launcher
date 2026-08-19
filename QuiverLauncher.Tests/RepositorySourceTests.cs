@@ -30,6 +30,10 @@ public class RepositorySourceTests
             .Should().Be("github:owner/app");
         RepositorySourceHelper.GetIdentityKey("gitlab", "group/project")
             .Should().Be("gitlab:group/project");
+        RepositorySourceHelper.GetIdentityKey(null, null, "MyFolder")
+            .Should().Be("manual:MyFolder");
+        RepositorySourceHelper.IsManuallyManaged(null).Should().BeTrue();
+        RepositorySourceHelper.IsManuallyManaged("owner/app").Should().BeFalse();
     }
 
     [Fact]

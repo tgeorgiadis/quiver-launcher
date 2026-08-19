@@ -87,13 +87,11 @@ namespace QuiverLauncher.Services
         {
             settings.EnsureInitialized();
             var appList = apps as IList<GameInfo> ?? apps.ToList();
-            var featuredOrCommon = TagChipHelper.RankTagsByFrequency(
-                appList.Select(a => a.Tags),
-                featuredTags: null,
-                pinnedTags: settings.PinnedFilterTags);
-
             foreach (var app in appList)
-                app.RefreshLibraryCardTags(settings.LibraryTagDisplayMode, featuredOrCommon);
+            {
+                app.LibraryCardTagMaxLines = settings.LibraryCardTagMaxLines;
+                app.RefreshLibraryCardTags();
+            }
         }
 
         public async Task RefreshAllSourcesAsync(HttpClient httpClient, AppSettings settings)
@@ -331,7 +329,6 @@ namespace QuiverLauncher.Services
                 game.HasPendingCatalogChanges = false;
 
             var byIdentity = games
-                .Where(g => !string.IsNullOrWhiteSpace(g.Repository))
                 .GroupBy(g => g.IdentityKey, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
 
@@ -369,7 +366,7 @@ namespace QuiverLauncher.Services
             ArgumentNullException.ThrowIfNull(settings);
             settings.EnsureInitialized();
 
-            if (string.IsNullOrWhiteSpace(game.Repository))
+            if (string.IsNullOrWhiteSpace(game.IdentityKey))
                 return null;
 
             var identityKey = game.IdentityKey;
@@ -514,14 +511,12 @@ namespace QuiverLauncher.Services
         {
             localApps ??= await LoadLocalAppsAsync().ConfigureAwait(false);
             var localKeys = new HashSet<string>(
-                localApps
-                    .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
-                    .Select(a => a.IdentityKey),
+                localApps.Select(a => a.IdentityKey),
                 StringComparer.OrdinalIgnoreCase);
 
             var externalApps = await LoadCachedAppsAsync(sourceId).ConfigureAwait(false);
             return externalApps
-                .Where(a => !string.IsNullOrWhiteSpace(a.Repository) && !localKeys.Contains(a.IdentityKey))
+                .Where(a => !string.IsNullOrWhiteSpace(a.IdentityKey) && !localKeys.Contains(a.IdentityKey))
                 .ToList();
         }
 
@@ -566,18 +561,25 @@ namespace QuiverLauncher.Services
         {
             var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
             var localKeys = new HashSet<string>(
+                localApps.Select(a => a.IdentityKey),
+                StringComparer.OrdinalIgnoreCase);
+            var localFolders = new HashSet<string>(
                 localApps
-                    .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
-                    .Select(a => a.IdentityKey),
+                    .Where(a => !string.IsNullOrWhiteSpace(a.FolderName))
+                    .Select(a => a.FolderName!),
                 StringComparer.OrdinalIgnoreCase);
 
             foreach (var app in apps)
             {
-                if (string.IsNullOrWhiteSpace(app.Repository) || localKeys.Contains(app.IdentityKey))
+                if (string.IsNullOrWhiteSpace(app.IdentityKey) || localKeys.Contains(app.IdentityKey))
+                    continue;
+                if (!string.IsNullOrWhiteSpace(app.FolderName) && localFolders.Contains(app.FolderName))
                     continue;
 
                 localApps.Add(CatalogCompareService.CloneForLocal(app, autoUpdateNewlyAdded));
                 localKeys.Add(app.IdentityKey);
+                if (!string.IsNullOrWhiteSpace(app.FolderName))
+                    localFolders.Add(app.FolderName);
             }
 
             await SaveLocalAppsAsync(localApps).ConfigureAwait(false);
@@ -597,10 +599,10 @@ namespace QuiverLauncher.Services
         public static string ComputeCatalogContentHash(IEnumerable<GameInfo> apps)
         {
             var entries = apps
-                .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
+                .Where(a => !string.IsNullOrWhiteSpace(a.IdentityKey))
                 .Select(a => string.Join("|",
                     a.IdentityKey,
-                    a.Repository!.Trim(),
+                    a.Repository?.Trim() ?? "",
                     a.Name ?? "",
                     a.Project ?? "",
                     a.FolderName ?? "",
@@ -647,17 +649,20 @@ namespace QuiverLauncher.Services
         }
 
         /// <summary>
-        /// Catalog sync equivalence. <see cref="GameInfo.FolderName"/> and
-        /// <see cref="GameInfo.InstallPath"/> are intentionally excluded so community folder
-        /// renames or a missing catalog install path do not keep installed apps in a permanent
-        /// "changed" state (folder mapping is preserved on accept).
+        /// Catalog-vs-catalog equivalence. <see cref="GameInfo.FolderName"/>,
+        /// <see cref="GameInfo.InstallPath"/>, and <see cref="GameInfo.PreferredVersion"/>
+        /// are excluded (folder mapping and version pins are local-owned). Tag sets must
+        /// match exactly so catalog authors adding or removing tags still count as a change.
+        /// Library review uses <see cref="CatalogCompareService.IsLibrarySyncedWithCatalog"/>
+        /// which allows extra local tags.
         /// </summary>
         public static bool AreCatalogFieldsEquivalent(GameInfo a, GameInfo b) =>
-            string.Equals(a.EffectiveRepositorySource, b.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(a.Repository ?? "", b.Repository ?? "", StringComparison.OrdinalIgnoreCase) &&
+            (a.IsManuallyManaged || b.IsManuallyManaged ||
+             string.Equals(a.EffectiveRepositorySource, b.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase)) &&
             string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.Project ?? "", b.Project ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(a.GameIconUrl ?? "", b.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(a.PreferredVersion ?? "", b.PreferredVersion ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(TagHelper.FormatTagsForDisplay(a.Tags), TagHelper.FormatTagsForDisplay(b.Tags), StringComparison.OrdinalIgnoreCase) &&
             AppFilesToAddService.AreEquivalent(a.FilesToAdd, b.FilesToAdd) &&
             GameModsConfig.AreEquivalent(
@@ -894,6 +899,8 @@ namespace QuiverLauncher.Services
                         SkippedUpdateVersion = appElement.TryGetProperty("skippedUpdateVersion", out var skippedUpdateVersionElement) ? skippedUpdateVersionElement.GetString() : null,
                         AutoUpdate = appElement.TryGetProperty("autoUpdate", out var autoUpdateElement) &&
                                      autoUpdateElement.ValueKind == JsonValueKind.True,
+                        DeferUpdateTracking = appElement.TryGetProperty("deferUpdateTracking", out var deferElement) &&
+                                              deferElement.ValueKind == JsonValueKind.True,
                         Tags = ParseTagsProperty(appElement),
                         FilesToAdd = ParseFilesToAddProperty(appElement),
                         ModsPath = ParseModsPathProperty(appElement),
@@ -920,6 +927,15 @@ namespace QuiverLauncher.Services
                         app.Project = null;
                     if (string.IsNullOrWhiteSpace(app.CustomDisplayName))
                         app.CustomDisplayName = null;
+                    if (app.IsManuallyManaged)
+                    {
+                        app.Repository = string.Empty;
+                        app.RepositorySource = null;
+                        app.AutoUpdate = false;
+                        app.PreferredVersion = null;
+                        app.SkippedUpdateVersion = null;
+                        app.DeferUpdateTracking = false;
+                    }
 
                     apps.Add(app);
                 }
@@ -1072,13 +1088,19 @@ namespace QuiverLauncher.Services
             var payload = new Dictionary<string, object?>
             {
                 ["name"] = app.Name,
-                ["repository"] = app.Repository,
                 ["folderName"] = app.FolderName,
                 ["installPath"] = app.InstallPath,
                 ["appIconUrl"] = app.GameIconUrl,
-                ["preferredVersion"] = app.PreferredVersion,
-                ["skippedUpdateVersion"] = app.SkippedUpdateVersion,
             };
+
+            if (!app.IsManuallyManaged && !string.IsNullOrWhiteSpace(app.Repository))
+                payload["repository"] = app.Repository;
+
+            if (!app.IsManuallyManaged)
+            {
+                payload["preferredVersion"] = app.PreferredVersion;
+                payload["skippedUpdateVersion"] = app.SkippedUpdateVersion;
+            }
 
             if (!string.IsNullOrWhiteSpace(app.Project))
                 payload["project"] = app.Project.Trim();
@@ -1086,12 +1108,18 @@ namespace QuiverLauncher.Services
             if (!string.IsNullOrWhiteSpace(app.CustomDisplayName))
                 payload["customDisplayName"] = app.CustomDisplayName.Trim();
 
-            var effectiveSource = RepositorySourceHelper.Normalize(app.RepositorySource);
-            if (!RepositorySourceHelper.IsGitHub(effectiveSource))
-                payload["repositorySource"] = effectiveSource;
+            if (!app.IsManuallyManaged)
+            {
+                var effectiveSource = RepositorySourceHelper.Normalize(app.RepositorySource);
+                if (!RepositorySourceHelper.IsGitHub(effectiveSource))
+                    payload["repositorySource"] = effectiveSource;
 
-            if (app.AutoUpdate)
-                payload["autoUpdate"] = true;
+                if (app.AutoUpdate)
+                    payload["autoUpdate"] = true;
+
+                if (app.DeferUpdateTracking)
+                    payload["deferUpdateTracking"] = true;
+            }
 
             if (!string.IsNullOrWhiteSpace(app.LinuxRunner) &&
                 !string.Equals(app.LinuxRunner, "auto", StringComparison.OrdinalIgnoreCase))

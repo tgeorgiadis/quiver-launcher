@@ -58,6 +58,36 @@ public class GamepadControlActivationTests
         clickCount.Should().Be(1);
     }
 
+    [AvaloniaFact]
+    public void ActivateCheckBox_toggles_checked_state()
+    {
+        var checkBox = new CheckBox
+        {
+            Content = "Manually managed",
+            IsEnabled = true,
+            IsVisible = true,
+            IsChecked = false,
+        };
+
+        GamepadControlActivation.ActivateCheckBox(checkBox);
+        checkBox.IsChecked.Should().BeTrue();
+
+        GamepadControlActivation.ActivateCheckBox(checkBox);
+        checkBox.IsChecked.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IndexOfControlContainingFocus_matches_host_or_descendant()
+    {
+        var checkBox = new CheckBox { Content = "Enabled" };
+        var textBox = new TextBox();
+        var controls = new List<Control> { textBox, checkBox };
+
+        GamepadControlActivation.IndexOfControlContainingFocus(controls, checkBox).Should().Be(1);
+        GamepadControlActivation.IndexOfControlContainingFocus(controls, textBox).Should().Be(0);
+        GamepadControlActivation.IndexOfControlContainingFocus(controls, new Button()).Should().Be(-1);
+    }
+
     [Fact]
     public void ShouldKeyboardFocusOnGamepadHighlight_false_for_textbox()
     {
@@ -152,7 +182,7 @@ public class GamepadControlActivationTests
         };
         var catalog = new MenuItem
         {
-            Header = "Catalog",
+            Header = "Customize",
             Items = { editTags },
         };
         var button = new Button { Content = "Options" };

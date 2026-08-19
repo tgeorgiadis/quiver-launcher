@@ -149,6 +149,30 @@ public class CatalogSyncViewModelTests
     }
 
     [Fact]
+    public void FilteredBulkAddCount_excludes_folder_collision_rows()
+    {
+        var local = new List<GameInfo>
+        {
+            CreateApp("owner/existing", "Existing App", "SharedFolder"),
+        };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/existing", "Existing App", "SharedFolder"),
+            CreateApp("owner/new", "New App", "SharedFolder"),
+            CreateApp("owner/other", "Other App", "OtherFolder"),
+        };
+
+        var source = new AppCatalogSource { CachedListVersion = "1.0.0" };
+        var viewModel = new CatalogSyncViewModel { ReviewFilter = CatalogReviewFilter.All };
+        viewModel.Refresh(source, local, external);
+
+        viewModel.ExternalOnlyCount.Should().Be(2);
+        viewModel.FilteredBulkAddCount.Should().Be(1);
+        viewModel.GetFilteredBulkAddRows().Select(r => r.Repository).Should().Equal("owner/other");
+        viewModel.GetFilteredBlockedAddRows().Select(r => r.Repository).Should().Equal("owner/new");
+    }
+
+    [Fact]
     public void FilteredBulkCounts_respect_tag_chip_include_filter()
     {
         var local = new List<GameInfo>

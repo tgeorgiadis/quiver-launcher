@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -14,6 +15,40 @@ internal static class GamepadControlActivation
 
         button.Focus();
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, RoutingStrategies.Bubble) { Source = button });
+    }
+
+    /// <summary>
+    /// Toggles a checkbox. Bound Select/Confirm is not Space, so Avalonia's native
+    /// Space handler never runs — call this from Confirm instead.
+    /// </summary>
+    public static void ActivateCheckBox(CheckBox checkBox)
+    {
+        if (!checkBox.IsEnabled || !checkBox.IsVisible)
+            return;
+
+        checkBox.IsChecked = checkBox.IsChecked != true;
+    }
+
+    /// <summary>
+    /// Index of the navigable host that is the focused element, or that contains it
+    /// (CheckBox template parts). -1 when focus is outside the list.
+    /// </summary>
+    public static int IndexOfControlContainingFocus(IReadOnlyList<Control> controls, object? focused)
+    {
+        if (focused is not Visual focusedVisual || controls.Count == 0)
+            return -1;
+
+        for (var i = 0; i < controls.Count; i++)
+        {
+            var control = controls[i];
+            if (ReferenceEquals(control, focused))
+                return i;
+
+            if (control is Visual host && host.IsVisualAncestorOf(focusedVisual))
+                return i;
+        }
+
+        return -1;
     }
 
     /// <summary>
@@ -129,7 +164,7 @@ internal static class GamepadControlActivation
 
     private static void CloseParentMenuIfOpen(MenuItem item)
     {
-        // Nested items (e.g. Catalog → Edit Tags) have a MenuItem parent, not ContextMenu.
+        // Nested items (e.g. Customize → Edit Tags) have a MenuItem parent, not ContextMenu.
         for (Control? current = item.Parent as Control; current != null; current = current.Parent as Control)
         {
             if (current is ContextMenu menu)

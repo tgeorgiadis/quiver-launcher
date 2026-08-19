@@ -14,9 +14,20 @@ public static class CatalogReviewSearch
         if (tokens.Count == 0)
             return true;
 
-        var haystacks = CollectHaystacks(row);
-        return tokens.All(token =>
-            haystacks.Any(value => value.Contains(token, StringComparison.OrdinalIgnoreCase)));
+        return TokensMatch(tokens, CollectHaystacks(row));
+    }
+
+    public static bool Matches(GameInfo? app, string? query)
+    {
+        var tokens = SplitTokens(query);
+        if (tokens.Count == 0)
+            return true;
+        if (app == null)
+            return false;
+
+        var values = new List<string>();
+        AddApp(values, app);
+        return TokensMatch(tokens, values);
     }
 
     public static List<string> SplitTokens(string? query)
@@ -29,11 +40,16 @@ public static class CatalogReviewSearch
             .ToList();
     }
 
+    private static bool TokensMatch(List<string> tokens, List<string> haystacks) =>
+        tokens.All(token =>
+            haystacks.Any(value => value.Contains(token, StringComparison.OrdinalIgnoreCase)));
+
     private static List<string> CollectHaystacks(CatalogSyncRowItem row)
     {
         var values = new List<string>();
         AddIfPresent(values, row.DisplayName);
         AddIfPresent(values, row.Repository);
+        AddIfPresent(values, row.Subtitle);
         AddApp(values, row.External);
         AddApp(values, row.Local);
         return values;
@@ -49,6 +65,7 @@ public static class CatalogReviewSearch
         AddIfPresent(values, app.CustomDisplayName);
         AddIfPresent(values, app.Repository);
         AddIfPresent(values, app.FolderName);
+        AddIfPresent(values, app.DisplayName);
         AddIfPresent(
             values,
             AppDisplayName.Resolve(

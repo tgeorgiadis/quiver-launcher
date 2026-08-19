@@ -186,6 +186,19 @@ public class AppCatalogServiceTests
     }
 
     [Fact]
+    public void GetCatalogDiff_ignores_preferredVersion_differences()
+    {
+        var accepted = new List<GameInfo> { CreateApp("owner/app", "Name", "Folder") };
+        accepted[0].PreferredVersion = "v1.0.0";
+
+        var remote = new List<GameInfo> { CreateApp("owner/app", "Name", "Folder") };
+        remote[0].PreferredVersion = "v2.0.0";
+
+        AppCatalogService.GetCatalogDiff(accepted, remote).HasChanges.Should().BeFalse();
+        AppCatalogService.AreCatalogFieldsEquivalent(accepted[0], remote[0]).Should().BeTrue();
+    }
+
+    [Fact]
     public void ApplyUserAppTags_replaces_tags_when_override_exists()
     {
         var app = CreateApp("owner/app", "Name", "Folder");

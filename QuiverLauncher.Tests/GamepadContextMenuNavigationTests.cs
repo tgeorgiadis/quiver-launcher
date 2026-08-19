@@ -99,7 +99,7 @@ public class GamepadContextMenuNavigationTests
     {
         var parent = new MenuItem
         {
-            Header = "Catalog",
+            Header = "Customize",
             Items =
             {
                 new MenuItem { Header = "Browse" },
@@ -144,7 +144,7 @@ public class GamepadContextMenuNavigationTests
         var childB = new MenuItem { Header = "Refresh" };
         var parent = new MenuItem
         {
-            Header = "Catalog",
+            Header = "Customize",
             Items = { childA, childB },
         };
         var leaf = new MenuItem { Header = "Download" };
@@ -176,7 +176,7 @@ public class GamepadContextMenuNavigationTests
         var child = new MenuItem { Header = "Browse" };
         var parent = new MenuItem
         {
-            Header = "Catalog",
+            Header = "Customize",
             Items = { child },
         };
         var menu = new ContextMenu { Items = { parent } };
@@ -201,7 +201,7 @@ public class GamepadContextMenuNavigationTests
         editTags.Click += (_, _) => editTagsClicked = true;
         var catalog = new MenuItem
         {
-            Header = "Catalog",
+            Header = "Customize",
             Items = { editTags },
         };
         var button = new Button { Content = "Options" };

@@ -13,6 +13,14 @@ namespace QuiverLauncher.Services
         Changed,
     }
 
+    public enum CatalogIdentityChangeKind
+    {
+        None,
+        Promote,
+        Demote,
+        Retarget,
+    }
+
     public class CatalogSyncRowItem : INotifyPropertyChanged
     {
         private bool _isGamepadFocused;
@@ -22,13 +30,20 @@ namespace QuiverLauncher.Services
         public CatalogSyncStatus Status { get; init; }
         public string Repository { get; init; } = "";
         public string IdentityKey { get; init; } = "";
+        public string ReviewKey =>
+            !string.IsNullOrWhiteSpace(Repository) ? Repository : IdentityKey;
+        public string Subtitle =>
+            !string.IsNullOrWhiteSpace(Repository) ? Repository : "Manually managed";
         public string DisplayName { get; init; } = "";
         public GameInfo? Local { get; init; }
         public GameInfo? External { get; init; }
         public IReadOnlyList<string> ChangedFields { get; init; } = [];
         public IReadOnlyList<CatalogSyncFieldDiffItem> FieldDiffs { get; init; } = [];
+        public CatalogIdentityChangeKind IdentityChangeKind { get; init; }
+        public string AddBlockedReason { get; init; } = "";
 
         public bool HasInlineDiff => FieldDiffs.Count > 0;
+        public bool HasAddBlockedReason => !string.IsNullOrWhiteSpace(AddBlockedReason);
 
         public string IconUrl =>
             External?.DefaultIconUrl
@@ -40,7 +55,13 @@ namespace QuiverLauncher.Services
             CatalogSyncStatus.InLocalOnly => "Local only",
             CatalogSyncStatus.InExternalOnly => "New",
             CatalogSyncStatus.Unchanged => "Up to date",
-            CatalogSyncStatus.Changed => "Changed",
+            CatalogSyncStatus.Changed => IdentityChangeKind switch
+            {
+                CatalogIdentityChangeKind.Promote => "Promote",
+                CatalogIdentityChangeKind.Demote => "Demote",
+                CatalogIdentityChangeKind.Retarget => "Retarget",
+                _ => "Changed",
+            },
             _ => "",
         };
 
@@ -49,11 +70,17 @@ namespace QuiverLauncher.Services
             CatalogSyncStatus.InLocalOnly => "Local only",
             CatalogSyncStatus.InExternalOnly => "Not in library",
             CatalogSyncStatus.Unchanged => "Up to date",
-            CatalogSyncStatus.Changed => "Changed",
+            CatalogSyncStatus.Changed => IdentityChangeKind switch
+            {
+                CatalogIdentityChangeKind.Promote => "Promote to repository",
+                CatalogIdentityChangeKind.Demote => "Demote to manual",
+                CatalogIdentityChangeKind.Retarget => "Retarget repository",
+                _ => "Changed",
+            },
             _ => "",
         };
 
-        public bool CanAdd => Status == CatalogSyncStatus.InExternalOnly;
+        public bool CanAdd => Status == CatalogSyncStatus.InExternalOnly && !HasAddBlockedReason;
         public bool CanReplace => Status == CatalogSyncStatus.Changed;
         public bool CanMerge => Status == CatalogSyncStatus.Changed;
         public bool CanIgnore => Status is CatalogSyncStatus.Changed or CatalogSyncStatus.InExternalOnly;
@@ -83,17 +110,23 @@ namespace QuiverLauncher.Services
             "name",
             "project",
             "appIconUrl",
-            "preferredVersion",
             "tags",
             "filesToAdd",
             "mods",
+            "repository",
             "repositorySource",
         ];
 
         public static Dictionary<string, GameInfo> IndexByIdentityKey(IEnumerable<GameInfo> apps) =>
             apps
-                .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
+                .Where(a => !string.IsNullOrWhiteSpace(a.IdentityKey))
                 .GroupBy(a => a.IdentityKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        private static Dictionary<string, GameInfo> IndexByFolderName(IEnumerable<GameInfo> apps) =>
+            apps
+                .Where(a => !string.IsNullOrWhiteSpace(a.FolderName))
+                .GroupBy(a => a.FolderName!.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         public static IReadOnlyList<CatalogSyncRowItem> BuildCompareRows(
@@ -101,21 +134,44 @@ namespace QuiverLauncher.Services
             List<GameInfo> externalApps)
         {
             var localByKey = IndexByIdentityKey(localApps);
+            var localByFolder = IndexByFolderName(localApps);
 
             var rows = new List<CatalogSyncRowItem>();
             var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var matchedLocalKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var external in externalApps)
             {
-                if (string.IsNullOrWhiteSpace(external.Repository))
+                if (string.IsNullOrWhiteSpace(external.Repository) &&
+                    string.IsNullOrWhiteSpace(external.FolderName))
                     continue;
 
                 var key = external.IdentityKey;
-                if (!seenKeys.Add(key))
+                if (string.IsNullOrWhiteSpace(key) || !seenKeys.Add(key))
                     continue;
 
-                localByKey.TryGetValue(key, out var local);
-                rows.Add(CreateCompareRow(external.Repository!, local, external));
+                GameInfo? local = null;
+                if (localByKey.TryGetValue(key, out var byIdentity) &&
+                    matchedLocalKeys.Add(byIdentity.IdentityKey))
+                {
+                    local = byIdentity;
+                }
+                else if (!string.IsNullOrWhiteSpace(external.FolderName) &&
+                         localByFolder.TryGetValue(external.FolderName.Trim(), out var byFolder) &&
+                         matchedLocalKeys.Add(byFolder.IdentityKey))
+                {
+                    local = byFolder;
+                }
+
+                GameInfo? folderOccupiedBy = null;
+                if (local == null &&
+                    !string.IsNullOrWhiteSpace(external.FolderName) &&
+                    localByFolder.TryGetValue(external.FolderName.Trim(), out var occupying))
+                {
+                    folderOccupiedBy = occupying;
+                }
+
+                rows.Add(CreateCompareRow(external.Repository ?? "", local, external, folderOccupiedBy));
             }
 
             return rows;
@@ -129,7 +185,11 @@ namespace QuiverLauncher.Services
             return (rows.Count(r => r.Local != null), rows.Count);
         }
 
-        private static CatalogSyncRowItem CreateCompareRow(string repo, GameInfo? local, GameInfo? external)
+        private static CatalogSyncRowItem CreateCompareRow(
+            string repo,
+            GameInfo? local,
+            GameInfo? external,
+            GameInfo? folderOccupiedBy = null)
         {
             CatalogSyncStatus status;
             IReadOnlyList<string> changedFields = [];
@@ -139,7 +199,7 @@ namespace QuiverLauncher.Services
             else if (local == null && external != null)
                 status = CatalogSyncStatus.InExternalOnly;
             else if (local != null && external != null &&
-                     AppCatalogService.AreCatalogFieldsEquivalent(local, external))
+                     IsLibrarySyncedWithCatalog(local, external))
                 status = CatalogSyncStatus.Unchanged;
             else
             {
@@ -151,7 +211,8 @@ namespace QuiverLauncher.Services
             {
                 Status = status,
                 Repository = repo,
-                IdentityKey = (external ?? local)?.IdentityKey
+                IdentityKey = local?.IdentityKey
+                    ?? external?.IdentityKey
                     ?? RepositorySourceHelper.GetIdentityKey(null, repo),
                 // Catalog review keeps project in the title so ports of the same game stay distinct in a dense list.
                 DisplayName = AppDisplayName.Resolve(
@@ -160,19 +221,88 @@ namespace QuiverLauncher.Services
                     customDisplayName: null,
                     LibraryNameStyle.NameAndProjectInTitle) is { Length: > 0 } composed
                     ? composed
-                    : repo,
+                    : (!string.IsNullOrWhiteSpace(repo) ? repo : external?.FolderName ?? local?.FolderName ?? ""),
                 Local = local,
                 External = external,
                 ChangedFields = changedFields,
                 FieldDiffs = CatalogSyncFieldDiffBuilder.BuildFieldDiffs(status, local, external, changedFields),
+                IdentityChangeKind = GetIdentityChangeKind(local, external),
+                AddBlockedReason = status == CatalogSyncStatus.InExternalOnly
+                    ? FormatAddBlockedReason(external, folderOccupiedBy)
+                    : "",
             };
         }
+
+        public static CatalogIdentityChangeKind GetIdentityChangeKind(GameInfo? local, GameInfo? external)
+        {
+            if (local == null || external == null)
+                return CatalogIdentityChangeKind.None;
+            if (local.IsManuallyManaged && !external.IsManuallyManaged)
+                return CatalogIdentityChangeKind.Promote;
+            if (!local.IsManuallyManaged && external.IsManuallyManaged)
+                return CatalogIdentityChangeKind.Demote;
+            if (IsRepositoryRetarget(local, external))
+                return CatalogIdentityChangeKind.Retarget;
+            return CatalogIdentityChangeKind.None;
+        }
+
+        public static string FormatAddBlockedReason(GameInfo? external, GameInfo? occupyingLocal)
+        {
+            if (external == null || occupyingLocal == null ||
+                string.IsNullOrWhiteSpace(external.FolderName))
+                return "";
+
+            var occupant = AppDisplayName.Resolve(
+                occupyingLocal.Name,
+                occupyingLocal.Project,
+                occupyingLocal.CustomDisplayName,
+                LibraryNameStyle.NameAndProjectInTitle);
+            if (string.IsNullOrWhiteSpace(occupant))
+                occupant = occupyingLocal.FolderName ?? occupyingLocal.Repository ?? "another library app";
+
+            return $"Folder \"{external.FolderName.Trim()}\" is already used by {occupant}.";
+        }
+
+        public static string FormatAddBlockedMessage(IReadOnlyList<CatalogSyncRowItem> blockedRows)
+        {
+            if (blockedRows.Count == 0)
+                return "";
+            if (blockedRows.Count == 1)
+                return blockedRows[0].AddBlockedReason;
+
+            var lines = blockedRows
+                .Select(row => string.IsNullOrWhiteSpace(row.AddBlockedReason)
+                    ? row.DisplayName
+                    : row.AddBlockedReason);
+            return $"{blockedRows.Count} apps were not added because their folders are already used:\n" +
+                   string.Join("\n", lines.Select(line => "• " + line));
+        }
+
+        /// <summary>
+        /// Library review sync. Catalog-owned fields must match; extra local tags and
+        /// <see cref="GameInfo.PreferredVersion"/> are local-owned and do not keep a row Changed.
+        /// </summary>
+        public static bool IsLibrarySyncedWithCatalog(GameInfo local, GameInfo external) =>
+            string.Equals(local.Repository ?? "", external.Repository ?? "", StringComparison.OrdinalIgnoreCase) &&
+            (local.IsManuallyManaged || external.IsManuallyManaged ||
+             string.Equals(local.EffectiveRepositorySource, external.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(local.Name, external.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(local.Project ?? "", external.Project ?? "", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(local.GameIconUrl ?? "", external.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase) &&
+            TagHelper.ContainsAllTags(local.Tags, external.Tags) &&
+            AppFilesToAddService.AreEquivalent(local.FilesToAdd, external.FilesToAdd) &&
+            GameModsConfig.AreEquivalent(
+                local.ModsPath, local.ModsSources, local.ModsLayout,
+                external.ModsPath, external.ModsSources, external.ModsLayout);
 
         public static IReadOnlyList<string> GetChangedFields(GameInfo local, GameInfo external)
         {
             var changed = new List<string>();
 
-            if (!string.Equals(local.EffectiveRepositorySource, external.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(local.Repository ?? "", external.Repository ?? "", StringComparison.OrdinalIgnoreCase))
+                changed.Add("repository");
+            if (!local.IsManuallyManaged && !external.IsManuallyManaged &&
+                !string.Equals(local.EffectiveRepositorySource, external.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase))
                 changed.Add("repositorySource");
             if (!string.Equals(local.Name, external.Name, StringComparison.OrdinalIgnoreCase))
                 changed.Add("name");
@@ -181,12 +311,7 @@ namespace QuiverLauncher.Services
             // folderName and installPath are not actionable sync fields (preserved on accept).
             if (!string.Equals(local.GameIconUrl ?? "", external.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase))
                 changed.Add("appIconUrl");
-            if (!string.Equals(local.PreferredVersion ?? "", external.PreferredVersion ?? "", StringComparison.OrdinalIgnoreCase))
-                changed.Add("preferredVersion");
-            if (!string.Equals(
-                    TagHelper.FormatTagsForDisplay(local.Tags),
-                    TagHelper.FormatTagsForDisplay(external.Tags),
-                    StringComparison.OrdinalIgnoreCase))
+            if (!TagHelper.ContainsAllTags(local.Tags, external.Tags))
                 changed.Add("tags");
             if (!AppFilesToAddService.AreEquivalent(local.FilesToAdd, external.FilesToAdd))
                 changed.Add("filesToAdd");
@@ -198,21 +323,24 @@ namespace QuiverLauncher.Services
             return changed;
         }
 
-        public static GameInfo CloneForLocal(GameInfo external, bool autoUpdate = false) =>
-            new()
+        public static GameInfo CloneForLocal(GameInfo external, bool autoUpdate = false)
+        {
+            var manual = external.IsManuallyManaged;
+            return new GameInfo
             {
                 Name = external.Name,
                 Project = string.IsNullOrWhiteSpace(external.Project) ? null : external.Project.Trim(),
-                Repository = external.Repository,
-                RepositorySource = RepositorySourceHelper.IsGitHub(external.RepositorySource)
+                Repository = manual ? string.Empty : external.Repository,
+                RepositorySource = manual || RepositorySourceHelper.IsGitHub(external.RepositorySource)
                     ? null
                     : RepositorySourceHelper.Normalize(external.RepositorySource),
                 FolderName = external.FolderName,
                 InstallPath = external.InstallPath,
                 GameIconUrl = external.GameIconUrl,
-                PreferredVersion = external.PreferredVersion,
-                SkippedUpdateVersion = external.SkippedUpdateVersion,
-                AutoUpdate = autoUpdate,
+                PreferredVersion = manual ? null : external.PreferredVersion,
+                SkippedUpdateVersion = manual ? null : external.SkippedUpdateVersion,
+                AutoUpdate = autoUpdate && !manual,
+                DeferUpdateTracking = false,
                 Tags = TagHelper.NormalizeTags(external.Tags),
                 FilesToAdd = AppFilesToAddService.Normalize(external.FilesToAdd),
                 ModsPath = GameModsConfig.NormalizePath(external.ModsPath) is { Length: > 0 } path ? path : null,
@@ -226,28 +354,45 @@ namespace QuiverLauncher.Services
                 GameManager = external.GameManager,
                 CatalogSourceId = null,
             };
+        }
+
+        private static bool IsRepositoryRetarget(GameInfo local, GameInfo external) =>
+            !local.IsManuallyManaged &&
+            !external.IsManuallyManaged &&
+            !string.Equals(local.IdentityKey, external.IdentityKey, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// Replaces catalog fields from external. Preserves local <see cref="GameInfo.FolderName"/>
         /// and <see cref="GameInfo.InstallPath"/> so accepting catalog updates does not retarget
-        /// installed folders (conservative policy). Also preserves <see cref="GameInfo.CustomDisplayName"/>.
+        /// installed folders (conservative policy). Also preserves <see cref="GameInfo.CustomDisplayName"/>
+        /// and <see cref="GameInfo.PreferredVersion"/> / <see cref="GameInfo.SkippedUpdateVersion"/>
+        /// (unless promotion, demotion, or retarget resets tracking).
+        /// Promoting a manual app onto a repository, or changing which repository an app uses,
+        /// keeps files and leaves Auto Update off.
         /// </summary>
-        public static GameInfo ReplaceFromExternal(GameInfo local, GameInfo external) =>
-            new()
+        public static GameInfo ReplaceFromExternal(GameInfo local, GameInfo external)
+        {
+            var promotion = local.IsManuallyManaged && !external.IsManuallyManaged;
+            var demotion = !local.IsManuallyManaged && external.IsManuallyManaged;
+            var retarget = IsRepositoryRetarget(local, external);
+            var manual = external.IsManuallyManaged;
+            var resetTracking = promotion || demotion || retarget || manual;
+            return new GameInfo
             {
                 Name = external.Name,
                 Project = string.IsNullOrWhiteSpace(external.Project) ? null : external.Project.Trim(),
                 CustomDisplayName = local.CustomDisplayName,
-                Repository = external.Repository,
-                RepositorySource = RepositorySourceHelper.IsGitHub(external.RepositorySource)
+                Repository = manual ? string.Empty : external.Repository,
+                RepositorySource = manual || RepositorySourceHelper.IsGitHub(external.RepositorySource)
                     ? null
                     : RepositorySourceHelper.Normalize(external.RepositorySource),
                 FolderName = !string.IsNullOrWhiteSpace(local.FolderName) ? local.FolderName : external.FolderName,
                 InstallPath = !string.IsNullOrWhiteSpace(local.InstallPath) ? local.InstallPath : external.InstallPath,
                 GameIconUrl = external.GameIconUrl,
-                PreferredVersion = external.PreferredVersion,
-                SkippedUpdateVersion = external.SkippedUpdateVersion,
-                AutoUpdate = local.AutoUpdate,
+                PreferredVersion = resetTracking ? null : local.PreferredVersion,
+                SkippedUpdateVersion = resetTracking ? null : local.SkippedUpdateVersion,
+                AutoUpdate = resetTracking ? false : local.AutoUpdate,
+                DeferUpdateTracking = promotion || retarget,
                 Tags = TagHelper.NormalizeTags(external.Tags),
                 FilesToAdd = AppFilesToAddService.Normalize(external.FilesToAdd),
                 ModsPath = GameModsConfig.NormalizePath(external.ModsPath) is { Length: > 0 } path ? path : null,
@@ -261,6 +406,7 @@ namespace QuiverLauncher.Services
                 GameManager = local.GameManager,
                 CatalogSourceId = null,
             };
+        }
 
         public static GameInfo MergeExternalIntoLocal(GameInfo local, GameInfo external)
         {
@@ -278,22 +424,29 @@ namespace QuiverLauncher.Services
             var modsLayout = GameModsConfig.NormalizeLayout(
                 externalHasMods ? external.ModsLayout : local.ModsLayout);
 
+            var promotion = local.IsManuallyManaged && !external.IsManuallyManaged;
+            var demotion = !local.IsManuallyManaged && external.IsManuallyManaged;
+            var retarget = IsRepositoryRetarget(local, external);
+            var manual = external.IsManuallyManaged;
+            var resetTracking = promotion || demotion || retarget || manual;
+
             return new GameInfo
             {
                 Name = external.Name,
                 Project = string.IsNullOrWhiteSpace(external.Project) ? null : external.Project.Trim(),
                 CustomDisplayName = local.CustomDisplayName,
-                Repository = external.Repository,
-                RepositorySource = RepositorySourceHelper.IsGitHub(external.RepositorySource)
+                Repository = manual ? string.Empty : external.Repository,
+                RepositorySource = manual || RepositorySourceHelper.IsGitHub(external.RepositorySource)
                     ? null
                     : RepositorySourceHelper.Normalize(external.RepositorySource),
                 // Keep installed folder mapping and custom install path stable across catalog updates.
                 FolderName = !string.IsNullOrWhiteSpace(local.FolderName) ? local.FolderName : external.FolderName,
                 InstallPath = !string.IsNullOrWhiteSpace(local.InstallPath) ? local.InstallPath : external.InstallPath,
                 GameIconUrl = external.GameIconUrl,
-                PreferredVersion = external.PreferredVersion,
-                SkippedUpdateVersion = local.SkippedUpdateVersion,
-                AutoUpdate = local.AutoUpdate,
+                PreferredVersion = resetTracking ? null : local.PreferredVersion,
+                SkippedUpdateVersion = resetTracking ? null : local.SkippedUpdateVersion,
+                AutoUpdate = resetTracking ? false : local.AutoUpdate,
+                DeferUpdateTracking = promotion || retarget,
                 Tags = mergedTags,
                 FilesToAdd = AppFilesToAddService.Normalize(external.FilesToAdd),
                 ModsPath = modsPath.Length > 0 ? modsPath : null,
@@ -306,6 +459,20 @@ namespace QuiverLauncher.Services
             };
         }
 
+        public static bool MatchesLocalApp(GameInfo app, CatalogSyncRowItem row)
+        {
+            if (row.Local != null)
+            {
+                return string.Equals(
+                    app.IdentityKey,
+                    row.Local.IdentityKey,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+
+            return !string.IsNullOrWhiteSpace(row.IdentityKey) &&
+                   string.Equals(app.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase);
+        }
+
         public static List<GameInfo> ApplyAddAllExternalOnly(
             List<GameInfo> localApps,
             IReadOnlyList<CatalogSyncRowItem> rows,
@@ -313,15 +480,24 @@ namespace QuiverLauncher.Services
         {
             var result = new List<GameInfo>(localApps);
             var localKeys = new HashSet<string>(
-                result
-                    .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
-                    .Select(a => a.IdentityKey),
+                result.Select(a => a.IdentityKey),
+                StringComparer.OrdinalIgnoreCase);
+            var localFolders = new HashSet<string>(
+                result.Where(a => !string.IsNullOrWhiteSpace(a.FolderName)).Select(a => a.FolderName!),
                 StringComparer.OrdinalIgnoreCase);
 
-            foreach (var row in rows.Where(r => r.Status == CatalogSyncStatus.InExternalOnly && r.External != null))
+            foreach (var row in rows.Where(r => r.CanAdd && r.External != null))
             {
-                if (localKeys.Add(row.IdentityKey))
-                    result.Add(CloneForLocal(row.External!, autoUpdateNewlyAdded));
+                var folderName = row.External!.FolderName;
+                if (!string.IsNullOrWhiteSpace(folderName) && localFolders.Contains(folderName))
+                    continue;
+
+                if (!localKeys.Add(row.IdentityKey))
+                    continue;
+
+                result.Add(CloneForLocal(row.External, autoUpdateNewlyAdded));
+                if (!string.IsNullOrWhiteSpace(folderName))
+                    localFolders.Add(folderName);
             }
 
             return result;
@@ -331,18 +507,15 @@ namespace QuiverLauncher.Services
             List<GameInfo> localApps,
             IReadOnlyList<CatalogSyncRowItem> rows)
         {
-            var replaceByKey = rows
+            var replaceRows = rows
                 .Where(r => r.Status == CatalogSyncStatus.Changed && r.Local != null && r.External != null)
-                .ToDictionary(r => r.IdentityKey, r => r, StringComparer.OrdinalIgnoreCase);
+                .ToList();
 
             return localApps
                 .Select(app =>
                 {
-                    if (string.IsNullOrWhiteSpace(app.Repository) ||
-                        !replaceByKey.TryGetValue(app.IdentityKey, out var row))
-                        return app;
-
-                    return ReplaceFromExternal(app, row.External!);
+                    var row = replaceRows.FirstOrDefault(r => MatchesLocalApp(app, r));
+                    return row?.External != null ? ReplaceFromExternal(app, row.External) : app;
                 })
                 .ToList();
         }
@@ -352,11 +525,13 @@ namespace QuiverLauncher.Services
             CatalogSyncRowItem row,
             bool autoUpdateNewlyAdded = false)
         {
-            if (row.External == null || row.Status != CatalogSyncStatus.InExternalOnly)
+            if (row.External == null || !row.CanAdd)
                 return localApps;
 
             var exists = localApps.Any(a =>
-                string.Equals(a.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase));
+                string.Equals(a.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(row.External.FolderName) &&
+                 string.Equals(a.FolderName, row.External.FolderName, StringComparison.OrdinalIgnoreCase)));
 
             if (exists)
                 return localApps;
@@ -372,7 +547,7 @@ namespace QuiverLauncher.Services
 
             return localApps
                 .Select(app =>
-                    string.Equals(app.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase)
+                    MatchesLocalApp(app, row)
                         ? ReplaceFromExternal(app, row.External)
                         : app)
                 .ToList();
@@ -385,7 +560,7 @@ namespace QuiverLauncher.Services
 
             return localApps
                 .Select(app =>
-                    string.Equals(app.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase)
+                    MatchesLocalApp(app, row)
                         ? MergeExternalIntoLocal(app, row.External)
                         : app)
                 .ToList();
@@ -397,8 +572,7 @@ namespace QuiverLauncher.Services
                 return localApps;
 
             return localApps
-                .Where(app =>
-                    !string.Equals(app.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase))
+                .Where(app => !MatchesLocalApp(app, row))
                 .ToList();
         }
 
@@ -475,13 +649,13 @@ namespace QuiverLauncher.Services
 
         public static bool IsActionableRow(CatalogSyncRowItem row, AppCatalogSource source)
         {
-            if (IsHiddenFromReview(source, row.Repository))
+            if (IsHiddenFromReview(source, row.ReviewKey))
                 return false;
 
             if (row.Status == CatalogSyncStatus.Unchanged)
                 return false;
 
-            if (IsIgnoredForCurrentVersion(source, row.Repository))
+            if (IsIgnoredForCurrentVersion(source, row.ReviewKey))
                 return false;
 
             return row.Status is CatalogSyncStatus.InExternalOnly or CatalogSyncStatus.Changed;
@@ -499,10 +673,10 @@ namespace QuiverLauncher.Services
         {
             foreach (var row in rows)
             {
-                if (IsHiddenFromReview(source, row.Repository))
+                if (IsHiddenFromReview(source, row.ReviewKey))
                     continue;
 
-                if (IsIgnoredForCurrentVersion(source, row.Repository))
+                if (IsIgnoredForCurrentVersion(source, row.ReviewKey))
                     continue;
 
                 if (!showUpToDateApps && row.Status == CatalogSyncStatus.Unchanged)
@@ -519,7 +693,7 @@ namespace QuiverLauncher.Services
         {
             foreach (var row in rows)
             {
-                var isHidden = IsHiddenFromReview(source, row.Repository);
+                var isHidden = IsHiddenFromReview(source, row.ReviewKey);
 
                 if (filter == CatalogReviewFilter.Hidden)
                 {
@@ -533,7 +707,7 @@ namespace QuiverLauncher.Services
 
                 if (filter != CatalogReviewFilter.All &&
                     filter != CatalogReviewFilter.NotInLibrary &&
-                    IsIgnoredForCurrentVersion(source, row.Repository))
+                    IsIgnoredForCurrentVersion(source, row.ReviewKey))
                     continue;
 
                 var include = filter switch
@@ -541,10 +715,10 @@ namespace QuiverLauncher.Services
                     CatalogReviewFilter.All => true,
                     CatalogReviewFilter.NeedsReview => IsActionableRow(row, source),
                     CatalogReviewFilter.New => row.Status == CatalogSyncStatus.InExternalOnly &&
-                                               !IsIgnoredForCurrentVersion(source, row.Repository),
+                                               !IsIgnoredForCurrentVersion(source, row.ReviewKey),
                     CatalogReviewFilter.NotInLibrary => row.Status == CatalogSyncStatus.InExternalOnly,
                     CatalogReviewFilter.Changed => row.Status == CatalogSyncStatus.Changed &&
-                                                   !IsIgnoredForCurrentVersion(source, row.Repository),
+                                                   !IsIgnoredForCurrentVersion(source, row.ReviewKey),
                     CatalogReviewFilter.UpToDate => row.Status == CatalogSyncStatus.Unchanged,
                     _ => true,
                 };

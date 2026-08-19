@@ -41,6 +41,25 @@ public class TagHelperTests
     }
 
     [Fact]
+    public void ContainsAllTags_allows_extra_local_tags()
+    {
+        TagHelper.ContainsAllTags(["n64", "recomp", "favorites"], ["n64", "recomp"]).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ContainsAllTags_returns_false_when_a_catalog_tag_is_missing()
+    {
+        TagHelper.ContainsAllTags(["n64"], ["n64", "recomp"]).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ContainsAllTags_returns_true_when_catalog_has_no_tags()
+    {
+        TagHelper.ContainsAllTags(["favorites"], []).Should().BeTrue();
+        TagHelper.ContainsAllTags([], []).Should().BeTrue();
+    }
+
+    [Fact]
     public void MatchesAllFilterTags_returns_true_when_app_has_every_tag()
     {
         TagHelper.MatchesAllFilterTags(["n64", "recomp", "favorites"], ["n64", "recomp"]).Should().BeTrue();

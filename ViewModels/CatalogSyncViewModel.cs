@@ -26,7 +26,7 @@ public class CatalogSyncViewModel
     public int NotInLibraryCount => AllRows.Count(r =>
         r.Status == CatalogSyncStatus.InExternalOnly &&
         Source != null &&
-        !CatalogCompareService.IsHiddenFromReview(Source, r.Repository));
+        !CatalogCompareService.IsHiddenFromReview(Source, r.ReviewKey));
 
     public int ChangedCount => AllRows.Count(r =>
         r.Status == CatalogSyncStatus.Changed &&
@@ -43,11 +43,11 @@ public class CatalogSyncViewModel
         ? 0
         : AllRows.Count(r =>
             r.Status == CatalogSyncStatus.Unchanged &&
-            !CatalogCompareService.IsIgnoredForCurrentVersion(Source, r.Repository));
+            !CatalogCompareService.IsIgnoredForCurrentVersion(Source, r.ReviewKey));
 
     public int HiddenCount => Source == null
         ? 0
-        : AllRows.Count(r => CatalogCompareService.IsHiddenFromReview(Source, r.Repository));
+        : AllRows.Count(r => CatalogCompareService.IsHiddenFromReview(Source, r.ReviewKey));
 
     public bool HasApplicableChanges => ExternalOnlyCount > 0 || ChangedCount > 0;
 
@@ -117,7 +117,7 @@ public class CatalogSyncViewModel
         source.PreferredTagFilters ??= [];
         source.HiddenTagFilters ??= [];
         AllRows = CatalogCompareService.BuildCompareRows(localApps, externalApps);
-        CatalogCompareService.PruneHiddenRepositories(source, AllRows.Select(r => r.Repository));
+        CatalogCompareService.PruneHiddenRepositories(source, AllRows.Select(r => r.ReviewKey));
         RefreshTagChips(settings);
     }
 
@@ -217,7 +217,22 @@ public class CatalogSyncViewModel
 
         return GetFilteredRows()
             .Where(r =>
-                r.Status == CatalogSyncStatus.InExternalOnly &&
+                r.CanAdd &&
+                CatalogCompareService.IsActionableRow(r, Source))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Visible new-in-catalog rows that cannot be added because the folder is already used.
+    /// </summary>
+    public IReadOnlyList<CatalogSyncRowItem> GetFilteredBlockedAddRows()
+    {
+        if (Source == null)
+            return [];
+
+        return GetFilteredRows()
+            .Where(r =>
+                r.HasAddBlockedReason &&
                 CatalogCompareService.IsActionableRow(r, Source))
             .ToList();
     }

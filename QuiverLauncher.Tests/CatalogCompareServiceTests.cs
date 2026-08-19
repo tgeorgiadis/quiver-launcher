@@ -9,14 +9,14 @@ public class CatalogCompareServiceTests
     private static GameInfo CreateApp(
         string repository,
         string name = "Test App",
-        string folderName = "TestFolder",
+        string? folderName = null,
         string? tags = null)
     {
         return new GameInfo
         {
             Repository = repository,
             Name = name,
-            FolderName = folderName,
+            FolderName = folderName ?? repository.Replace('/', '-'),
             Tags = tags?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() ?? [],
         };
     }
@@ -40,7 +40,7 @@ public class CatalogCompareServiceTests
 
         rows.Should().NotContain(r => r.Repository == "owner/local-only");
         rows.Should().Contain(r => r.Repository == "owner/external-only" && r.Status == CatalogSyncStatus.InExternalOnly);
-        rows.Should().Contain(r => r.Repository == "owner/shared" && r.Status == CatalogSyncStatus.Changed);
+        rows.Should().Contain(r => r.Repository == "owner/shared" && r.Status == CatalogSyncStatus.Changed && r.StatusShortLabel == "Changed");
     }
 
     [Fact]
@@ -150,6 +150,81 @@ public class CatalogCompareServiceTests
     }
 
     [Fact]
+    public void Local_preferredVersion_pin_does_not_mark_library_row_changed()
+    {
+        var local = CreateApp("owner/app", "App");
+        local.PreferredVersion = "v0.1-11609";
+        var external = CreateApp("owner/app", "App");
+        external.PreferredVersion = null;
+
+        CatalogCompareService.IsLibrarySyncedWithCatalog(local, external).Should().BeTrue();
+        CatalogCompareService.GetChangedFields(local, external).Should().NotContain("preferredVersion");
+
+        var rows = CatalogCompareService.BuildCompareRows([local], [external]);
+        rows.Should().ContainSingle(r => r.Repository == "owner/app" && r.Status == CatalogSyncStatus.Unchanged);
+
+        CatalogCompareService.MergeExternalIntoLocal(local, external).PreferredVersion.Should().Be("v0.1-11609");
+        CatalogCompareService.ReplaceFromExternal(local, external).PreferredVersion.Should().Be("v0.1-11609");
+    }
+
+    [Fact]
+    public void Local_extra_tags_do_not_mark_library_row_changed()
+    {
+        var local = CreateApp("owner/app", "App");
+        local.Tags = ["n64", "recomp", "bla bla"];
+        var external = CreateApp("owner/app", "App");
+        external.Tags = ["n64", "recomp"];
+
+        CatalogCompareService.IsLibrarySyncedWithCatalog(local, external).Should().BeTrue();
+        CatalogCompareService.GetChangedFields(local, external).Should().NotContain("tags");
+
+        var rows = CatalogCompareService.BuildCompareRows([local], [external]);
+        rows.Should().ContainSingle(r => r.Repository == "owner/app" && r.Status == CatalogSyncStatus.Unchanged);
+
+        var merged = CatalogCompareService.MergeExternalIntoLocal(local, external);
+        merged.Tags.Should().BeEquivalentTo(["n64", "recomp", "bla bla"]);
+        CatalogCompareService.IsLibrarySyncedWithCatalog(merged, external).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Catalog_added_tag_is_changed_until_merge_unions_it()
+    {
+        var local = CreateApp("owner/app", "App");
+        local.Tags = ["n64"];
+        var external = CreateApp("owner/app", "App");
+        external.Tags = ["n64", "recomp"];
+
+        var rows = CatalogCompareService.BuildCompareRows([local], [external]);
+        var row = rows.Should().ContainSingle(r => r.Repository == "owner/app").Subject;
+        row.Status.Should().Be(CatalogSyncStatus.Changed);
+        row.ChangedFields.Should().Contain("tags");
+
+        var mergedApps = CatalogCompareService.ApplyRowMerge([local], row);
+        TagHelper.NormalizeTags(mergedApps[0].Tags).Should().BeEquivalentTo(["n64", "recomp"]);
+        CatalogCompareService.BuildCompareRows(mergedApps, [external])
+            .Should()
+            .ContainSingle(r => r.Repository == "owner/app" && r.Status == CatalogSyncStatus.Unchanged);
+
+        var replacedApps = CatalogCompareService.ApplyRowReplace([local], row);
+        TagHelper.NormalizeTags(replacedApps[0].Tags).Should().BeEquivalentTo(["n64", "recomp"]);
+    }
+
+    [Fact]
+    public void Replace_drops_extra_local_tags_but_keeps_preferredVersion()
+    {
+        var local = CreateApp("owner/app", "App");
+        local.Tags = ["n64", "favorites"];
+        local.PreferredVersion = "v1.0.0";
+        var external = CreateApp("owner/app", "App");
+        external.Tags = ["n64", "recomp"];
+        external.PreferredVersion = null;
+
+        var replaced = CatalogCompareService.ReplaceFromExternal(local, external);
+        TagHelper.NormalizeTags(replaced.Tags).Should().BeEquivalentTo(["n64", "recomp"]);
+        replaced.PreferredVersion.Should().Be("v1.0.0");
+    }
+
+    [Fact]
     public void MergeAndReplace_preserve_local_AutoUpdate()
     {
         var local = CreateApp("owner/app", "Local");
@@ -163,6 +238,19 @@ public class CatalogCompareServiceTests
     }
 
     [Fact]
+    public void MergeAndReplace_preserve_local_skipped_version()
+    {
+        var local = CreateApp("owner/app", "Local");
+        local.SkippedUpdateVersion = "v1.2.3";
+
+        var external = CreateApp("owner/app", "External");
+        external.SkippedUpdateVersion = null;
+
+        CatalogCompareService.MergeExternalIntoLocal(local, external).SkippedUpdateVersion.Should().Be("v1.2.3");
+        CatalogCompareService.ReplaceFromExternal(local, external).SkippedUpdateVersion.Should().Be("v1.2.3");
+    }
+
+    [Fact]
     public void ApplyAddAllExternalOnly_appends_missing_repositories()
     {
         var local = new List<GameInfo> { CreateApp("owner/existing") };
@@ -173,6 +261,57 @@ public class CatalogCompareServiceTests
         var updated = CatalogCompareService.ApplyAddAllExternalOnly(local, rows);
 
         updated.Select(a => a.Repository).Should().BeEquivalentTo(["owner/existing", "owner/new"]);
+    }
+
+    [Fact]
+    public void BuildCompareRows_blocks_add_when_folder_already_used_by_another_library_app()
+    {
+        var local = new List<GameInfo>
+        {
+            CreateApp("owner/existing", "Existing App", "SharedFolder"),
+        };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/existing", "Existing App", "SharedFolder"),
+            CreateApp("owner/new", "New App", "SharedFolder"),
+        };
+
+        var rows = CatalogCompareService.BuildCompareRows(local, external);
+        var blocked = rows.Should().ContainSingle(r => r.Repository == "owner/new").Subject;
+
+        blocked.Status.Should().Be(CatalogSyncStatus.InExternalOnly);
+        blocked.CanAdd.Should().BeFalse();
+        blocked.HasAddBlockedReason.Should().BeTrue();
+        blocked.AddBlockedReason.Should().Contain("SharedFolder");
+        blocked.AddBlockedReason.Should().Contain("Existing App");
+
+        CatalogCompareService.ApplyRowAdd(local, blocked).Should().BeEquivalentTo(local);
+    }
+
+    [Fact]
+    public void ApplyAddAllExternalOnly_skips_blocked_folder_collisions()
+    {
+        var local = new List<GameInfo>
+        {
+            CreateApp("owner/existing", "Existing App", "SharedFolder"),
+        };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/existing", "Existing App", "SharedFolder"),
+            CreateApp("owner/new", "New App", "SharedFolder"),
+            CreateApp("owner/other", "Other App", "OtherFolder"),
+        };
+        var rows = CatalogCompareService.BuildCompareRows(local, external);
+
+        var updated = CatalogCompareService.ApplyAddAllExternalOnly(local, rows);
+
+        updated.Select(a => a.Repository).Should().BeEquivalentTo(["owner/existing", "owner/other"]);
+        updated.Count(a => string.Equals(a.FolderName, "SharedFolder", StringComparison.OrdinalIgnoreCase))
+            .Should()
+            .Be(1);
+        CatalogCompareService.FormatAddBlockedMessage(rows.Where(r => r.HasAddBlockedReason).ToList())
+            .Should()
+            .Contain("SharedFolder");
     }
 
     [Fact]

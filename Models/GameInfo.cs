@@ -146,7 +146,7 @@ namespace QuiverLauncher.Models
             }
         }
 
-        /// <summary>Clip height for wrapped library card tags (infinity when unlimited).</summary>
+        /// <summary>Clip height for wrapped library card tags (0 when hidden, infinity when unlimited).</summary>
         public double LibraryCardTagsMaxHeight =>
             TagChipHelper.GetLibraryCardTagsMaxHeight(LibraryCardTagMaxLines);
 
@@ -174,13 +174,17 @@ namespace QuiverLauncher.Models
         /// </summary>
         public string? RepositorySource { get; set; }
 
+        /// <summary>True when this library app has no GitHub/GitLab repository and is user-maintained.</summary>
+        public bool IsManuallyManaged =>
+            RepositorySourceHelper.IsManuallyManaged(Repository);
+
         /// <summary>Normalized repository source after unknown-value fallback to GitHub.</summary>
         public string EffectiveRepositorySource =>
             RepositorySourceHelper.Normalize(RepositorySource);
 
         /// <summary>Composite identity key used for catalog dedupe and version cache.</summary>
         public string IdentityKey =>
-            RepositorySourceHelper.GetIdentityKey(RepositorySource, Repository);
+            RepositorySourceHelper.GetIdentityKey(RepositorySource, Repository, FolderName);
 
         public string? FolderName { get; set; }
         public string? InstallPath { get; set; }
@@ -190,7 +194,7 @@ namespace QuiverLauncher.Models
         public string? CatalogSourceId { get; set; }
         public List<string> Tags { get; set; } = [];
 
-        /// <summary>Tags shown on library cards for the current display mode.</summary>
+        /// <summary>Tags shown on library cards (empty when tag lines are 0).</summary>
         public IReadOnlyList<string> LibraryCardTags
         {
             get => _libraryCardTags;
@@ -204,11 +208,9 @@ namespace QuiverLauncher.Models
 
         public bool HasLibraryCardTags => LibraryCardTags.Count > 0;
 
-        public void RefreshLibraryCardTags(
-            LibraryTagDisplayMode mode,
-            IEnumerable<string>? featuredOrCommonTags)
+        public void RefreshLibraryCardTags()
         {
-            LibraryCardTags = TagChipHelper.SelectTagsForCardDisplay(Tags, mode, featuredOrCommonTags);
+            LibraryCardTags = TagChipHelper.SelectTagsForCardDisplay(Tags, LibraryCardTagMaxLines);
         }
 
         public List<string> FilesToAdd { get; set; } = [];
@@ -242,6 +244,27 @@ namespace QuiverLauncher.Models
                 if (_autoUpdate != value)
                 {
                     _autoUpdate = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private bool _deferUpdateTracking;
+        /// <summary>
+        /// After promoting a manual app to a repository, suppress Update for known installed
+        /// versions until the user opts in (Update Now, Force Update, or Change Version).
+        /// Sentinel installs (Unknown, 0.0.0) still show Update so the user can adopt a
+        /// release. Empty InstalledVersion stays Not Installed. AutoUpdate stays off
+        /// separately on promotion.
+        /// </summary>
+        public bool DeferUpdateTracking
+        {
+            get => _deferUpdateTracking;
+            set
+            {
+                if (_deferUpdateTracking != value)
+                {
+                    _deferUpdateTracking = value;
                     OnPropertyChanged();
                 }
             }
@@ -458,13 +481,17 @@ namespace QuiverLauncher.Models
         }
 
         public bool CanLaunch => Status == GameStatus.Installed;
-        public bool CanDownload => Status == GameStatus.NotInstalled;
+        public bool CanDownload => Status == GameStatus.NotInstalled && !IsManuallyManaged;
         public bool CanLocateInstall => Status == GameStatus.NotInstalled;
         public bool CanUpdate => Status == GameStatus.UpdateAvailable;
         public bool CanSkipUpdate => Status == GameStatus.UpdateAvailable;
-        public bool CanChangeVersion => IsInstalled && !string.IsNullOrWhiteSpace(Repository);
-        public bool CanVersionOptions => CanSkipUpdate || CanChangeVersion || IsInstalled;
+        public bool CanChangeVersion => IsInstalled && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
+        public bool CanVersionOptions => !IsManuallyManaged && (CanSkipUpdate || CanChangeVersion || IsInstalled);
         public bool CanLaunchOptions => HasExecutableChoice || IsInstalled;
+        public bool CanToggleAutoUpdate => !IsManuallyManaged;
+        public bool CanOpenFolder => IsManuallyManaged || IsInstalled;
+        public bool ShowReleaseVersionInfo => !IsManuallyManaged;
+        public bool IsWaitingForFiles => IsManuallyManaged && Status == GameStatus.NotInstalled;
 
         /// <summary>Linux-only: configure Wine/Proton runner and prefix for Windows-only installs.</summary>
         public bool ShowWindowsRunnerOptions =>
@@ -564,6 +591,8 @@ namespace QuiverLauncher.Models
                     DispatchPropertyChanged(nameof(CanSkipUpdate));
                     DispatchPropertyChanged(nameof(CanChangeVersion));
                     DispatchPropertyChanged(nameof(CanVersionOptions));
+                    DispatchPropertyChanged(nameof(CanOpenFolder));
+                    DispatchPropertyChanged(nameof(IsWaitingForFiles));
                     DispatchPropertyChanged(nameof(HasExecutableChoice));
                     DispatchPropertyChanged(nameof(CanLaunchOptions));
                     DispatchPropertyChanged(nameof(ShowWindowsRunnerOptions));
@@ -603,6 +632,9 @@ namespace QuiverLauncher.Models
         {
             get
             {
+                if (IsManuallyManaged && Status == GameStatus.NotInstalled)
+                    return "Open Folder";
+
                 return Status switch
                 {
                     GameStatus.NotInstalled => "Download",
@@ -670,6 +702,13 @@ namespace QuiverLauncher.Models
         {
             get
             {
+                if (IsManuallyManaged)
+                {
+                    return Status == GameStatus.Installed
+                        ? "Manually managed"
+                        : "Waiting for files";
+                }
+
                 if (Status == GameStatus.Installed && !string.IsNullOrEmpty(InstalledVersion))
                     return $"Installed: {InstalledVersion}";
 
@@ -827,16 +866,46 @@ namespace QuiverLauncher.Models
         private static bool AreVersionsEquivalent(string? firstVersion, string? secondVersion) =>
             LauncherVersionService.AreVersionsEquivalent(firstVersion, secondVersion);
 
+        /// <summary>
+        /// True when on-disk version is missing or the sentinel written after manual→repo promotion.
+        /// </summary>
+        private static bool IsUnknownInstalledVersion(string? version)
+        {
+            if (string.IsNullOrWhiteSpace(version) ||
+                string.Equals(version, "Unknown", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return AreVersionsEquivalent(version, DefaultInstalledVersion) ||
+                   AreVersionsEquivalent(version, "0.0.0");
+        }
+
         private bool ShouldSuggestUpdate()
         {
-            if (string.IsNullOrWhiteSpace(LatestVersion) ||
-                string.IsNullOrWhiteSpace(InstalledVersion) ||
-                InstalledVersion == "Unknown")
+            if (IsManuallyManaged)
+                return false;
+
+            if (Status is GameStatus.NotInstalled
+                or GameStatus.Downloading
+                or GameStatus.Installing
+                or GameStatus.Updating)
             {
                 return false;
             }
 
-            if (!IsNewerVersion(LatestVersion, InstalledVersion))
+            if (string.IsNullOrWhiteSpace(LatestVersion))
+                return false;
+
+            // Empty means not installed. Sentinel 0.0.0 / Unknown on a real install still qualify.
+            if (string.IsNullOrWhiteSpace(InstalledVersion))
+                return false;
+
+            var unknownInstall = IsUnknownInstalledVersion(InstalledVersion);
+
+            // Defer only blocks when we already know a real installed version.
+            if (DeferUpdateTracking && !unknownInstall)
+                return false;
+
+            if (!unknownInstall && !IsNewerVersion(LatestVersion, InstalledVersion!))
                 return false;
 
             if (!string.IsNullOrWhiteSpace(SkippedUpdateVersion) &&
@@ -852,6 +921,7 @@ namespace QuiverLauncher.Models
         {
             PreferredVersion = preferredVersion;
             SkippedUpdateVersion = skippedUpdateVersion;
+            DeferUpdateTracking = false;
             RefreshInstalledStatus();
         }
 
@@ -885,6 +955,8 @@ namespace QuiverLauncher.Models
 
             if (string.IsNullOrWhiteSpace(Repository))
                 throw new InvalidOperationException("App configuration is invalid (missing repository).");
+
+            DeferUpdateTracking = false;
 
             var gamePath = GetInstallPath(gamesFolder);
             if (!Directory.Exists(gamePath))
@@ -1314,6 +1386,13 @@ namespace QuiverLauncher.Models
             switch (Status)
             {
                 case GameStatus.NotInstalled:
+                    if (IsManuallyManaged)
+                        return false;
+
+                    await GameDownloadInstallService.DownloadAndInstallAsync(
+                        this, httpClient, gamesFolder, GetLatestRelease(), settings, _status, dialogs);
+                    return false;
+
                 case GameStatus.UpdateAvailable:
                     await GameDownloadInstallService.DownloadAndInstallAsync(
                         this, httpClient, gamesFolder, GetLatestRelease(), settings, _status, dialogs);
@@ -1328,6 +1407,12 @@ namespace QuiverLauncher.Models
         }
 
         public GitHubRelease? GetLatestRelease() => _cachedRelease;
+
+        public static GitHubRelease? SelectLatestRelease(
+            IReadOnlyList<GitHubRelease>? releases,
+            string? preferredVersion = null,
+            string? installedVersion = null) =>
+            ReleaseSelection.SelectLatestRelease(releases, preferredVersion, installedVersion);
 
         public bool TrySelectPlatformDownload(AppSettings settings) =>
             GameDownloadService.TrySelectPlatformDownload(this, GetLatestRelease(), settings);
@@ -1347,7 +1432,7 @@ namespace QuiverLauncher.Models
 
         internal async Task CheckLatestVersionAsync(HttpClient httpClient, bool forceCheck = false)
         {
-            if (string.IsNullOrEmpty(Repository))
+            if (IsManuallyManaged || string.IsNullOrEmpty(Repository))
             {
                 System.Diagnostics.Debug.WriteLine($"Warning: Repository is null or empty for game {Name}");
                 return;
@@ -1371,7 +1456,7 @@ namespace QuiverLauncher.Models
                     RepositorySource,
                     Repository,
                     GetReleaseApiToken(),
-                    GitHubApiCache.GetETag(RepositorySource, Repository)).ConfigureAwait(false);
+                    forceCheck ? null : GitHubApiCache.GetETag(RepositorySource, Repository)).ConfigureAwait(false);
 
                 if (result.IsNotModified)
                 {
@@ -1390,7 +1475,7 @@ namespace QuiverLauncher.Models
                     return;
                 }
 
-                var latestRelease = result.Releases.FirstOrDefault();
+                var latestRelease = SelectLatestRelease(result.Releases, PreferredVersion, InstalledVersion);
                 if (latestRelease != null && !string.IsNullOrWhiteSpace(latestRelease.tag_name))
                 {
                     ApplyCachedRelease(latestRelease.tag_name, latestRelease);

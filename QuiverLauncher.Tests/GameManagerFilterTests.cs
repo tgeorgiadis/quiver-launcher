@@ -367,4 +367,69 @@ public class GameManagerFilterTests
 
         Directory.Delete(tempDir, true);
     }
+
+    [Fact]
+    public void Library_search_applies_after_InstalledOnly_and_tag_filter()
+    {
+        var (manager, store, tempDir) = CreateManager();
+        var settings = store.Current;
+        settings.ListScope = AppListScope.InstalledOnly;
+        var filter = new TagDisplayFilter { Name = "N64", Tags = ["n64"] };
+        settings.TagDisplayFilters.Add(filter);
+        settings.ActiveTagDisplayFilterId = filter.Id;
+
+        manager.SetCatalogAppsAndFilter(
+        [
+            CreateGame("Banjo Installed", "banjo-installed", GameStatus.Installed, "n64"),
+            CreateGame("Banjo Missing", "banjo-missing", GameStatus.NotInstalled, "n64"),
+            CreateGame("Zelda Installed", "zelda-installed", GameStatus.Installed, "n64"),
+            CreateGame("Banjo PC", "banjo-pc", GameStatus.Installed, "pc"),
+        ],
+        settings);
+
+        manager.Games.Select(g => g.FolderName)
+            .Should()
+            .BeEquivalentTo("banjo-installed", "zelda-installed");
+
+        manager.LibrarySearchText = "banjo";
+        manager.ApplyTagDisplayFilter(settings);
+
+        manager.Games.Should().ContainSingle(g => g.FolderName == "banjo-installed");
+        manager.Games.Should().NotContain(g => g.FolderName == "banjo-missing");
+        manager.Games.Should().NotContain(g => g.FolderName == "banjo-pc");
+
+        Directory.Delete(tempDir, true);
+    }
+
+    [Fact]
+    public void Library_search_with_no_matches_sets_HasNoLibrarySearchMatches()
+    {
+        var (manager, store, tempDir) = CreateManager();
+        var settings = store.Current;
+
+        manager.SetCatalogAppsAndFilter(
+        [
+            CreateGame("Banjo", "banjo", GameStatus.Installed, "n64"),
+        ],
+        settings);
+
+        manager.IsLibraryEmpty.Should().BeFalse();
+        manager.HasNoLibrarySearchMatches.Should().BeFalse();
+
+        manager.LibrarySearchText = "zelda";
+        manager.ApplyTagDisplayFilter(settings);
+
+        manager.HasLibrarySearch.Should().BeTrue();
+        manager.Games.Should().BeEmpty();
+        manager.HasNoLibrarySearchMatches.Should().BeTrue();
+        manager.IsLibraryEmpty.Should().BeFalse();
+
+        manager.LibrarySearchText = "";
+        manager.ApplyTagDisplayFilter(settings);
+
+        manager.HasNoLibrarySearchMatches.Should().BeFalse();
+        manager.Games.Should().ContainSingle(g => g.FolderName == "banjo");
+
+        Directory.Delete(tempDir, true);
+    }
 }

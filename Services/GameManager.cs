@@ -34,6 +34,11 @@ namespace QuiverLauncher.Services
         }
 
         public ObservableCollection<GameInfo> Games { get; set; } = [];
+        /// <summary>Session-only library search. Applied after Show scope and tag display filters.</summary>
+        public string LibrarySearchText { get; set; } = "";
+        public bool HasLibrarySearch => !string.IsNullOrWhiteSpace(LibrarySearchText);
+        public bool HasNoLibrarySearchMatches =>
+            !IsLibraryEmpty && HasLibrarySearch && Games.Count == 0;
         public HttpClient HttpClient => _httpClient;
         public AppCatalogService CatalogService => _catalogService;
         public ModProviderRegistry ModProviderRegistry => _modProviderRegistry;
@@ -421,6 +426,9 @@ namespace QuiverLauncher.Services
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(LibrarySearchText))
+                visibleGames = visibleGames.Where(game => CatalogReviewSearch.Matches(game, LibrarySearchText));
+
             return visibleGames.ToList();
         }
 
@@ -431,6 +439,8 @@ namespace QuiverLauncher.Services
                 Games.Add(app);
 
             OnPropertyChanged(nameof(Games));
+            OnPropertyChanged(nameof(HasLibrarySearch));
+            OnPropertyChanged(nameof(HasNoLibrarySearchMatches));
         }
 
         private async Task RebuildVisibleGamesAsync(AppSettings settings)
@@ -442,7 +452,11 @@ namespace QuiverLauncher.Services
 
             await ApplyTagDisplayFilterAsync(settings);
 
-            await RunOnUiThreadAsync(() => OnPropertyChanged(nameof(IsLibraryEmpty)));
+            await RunOnUiThreadAsync(() =>
+            {
+                OnPropertyChanged(nameof(IsLibraryEmpty));
+                OnPropertyChanged(nameof(HasNoLibrarySearchMatches));
+            });
         }
 
         private void RebuildVisibleGames(AppSettings settings)
@@ -454,6 +468,7 @@ namespace QuiverLauncher.Services
 
             ApplyTagDisplayFilter(settings);
             OnPropertyChanged(nameof(IsLibraryEmpty));
+            OnPropertyChanged(nameof(HasNoLibrarySearchMatches));
         }
 
         private static List<GameInfo> FilterCatalogByListScope(IEnumerable<GameInfo> catalogApps, AppSettings settings)

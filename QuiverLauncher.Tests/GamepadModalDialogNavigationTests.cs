@@ -450,6 +450,92 @@ public class GamepadModalDialogNavigationTests
     }
 
     [AvaloniaFact]
+    public void CollectDialogFocusableControls_includes_checkbox()
+    {
+        var checkBox = new CheckBox { Content = "Manually managed", Focusable = true };
+        var saveButton = new Button { Content = "Save" };
+        var cancelButton = new Button { Content = "Cancel" };
+        var window = new Window
+        {
+            Width = 420,
+            Height = 280,
+            Content = new StackPanel
+            {
+                Children = { checkBox, saveButton, cancelButton },
+            },
+        };
+
+        try
+        {
+            window.Show();
+            var controls = GamepadModalDialogNavigation.CollectDialogFocusableControls(window);
+
+            controls.Should().Contain(checkBox);
+            controls.OfType<Button>().Where(b => b is not CheckBox).Select(b => b.Content?.ToString())
+                .Should().BeEquivalentTo("Save", "Cancel");
+        }
+        finally
+        {
+            if (window.IsVisible)
+                window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void TryHandleConfirm_on_checkbox_toggles_without_closing()
+    {
+        var checkBox = new CheckBox
+        {
+            Content = "Manually managed",
+            Focusable = true,
+            IsChecked = false,
+            MinHeight = 32,
+        };
+        var saveButton = new Button { Content = "Save", MinWidth = 80 };
+        var cancelButton = new Button { Content = "Cancel", MinWidth = 80 };
+        var dialog = new Window
+        {
+            Width = 420,
+            Height = 280,
+            Content = new StackPanel
+            {
+                Spacing = 10,
+                Margin = new Avalonia.Thickness(20),
+                Children = { checkBox, saveButton, cancelButton },
+            },
+        };
+        var nav = GamepadModalDialogNavigation.Instance;
+        var closed = false;
+        dialog.Closed += (_, _) => closed = true;
+
+        try
+        {
+            GamepadFocusChrome.SetActive(true, dialog);
+            dialog.Show();
+            GamepadModalDialogNavigation.Attach(dialog);
+            nav.RefreshDialogButtons();
+
+            nav.TryHandleNavigation(NavigationDirection.Up).Should().BeTrue();
+            if (!checkBox.Classes.Contains("gamepad-focused"))
+                nav.TryHandleNavigation(NavigationDirection.Up).Should().BeTrue();
+
+            checkBox.Classes.Contains("gamepad-focused").Should().BeTrue();
+            nav.TryHandleConfirm().Should().BeTrue();
+
+            checkBox.IsChecked.Should().BeTrue();
+            closed.Should().BeFalse();
+            dialog.IsVisible.Should().BeTrue();
+        }
+        finally
+        {
+            nav.UnregisterModalDialog(dialog);
+            GamepadFocusChrome.SetActive(false);
+            if (dialog.IsVisible)
+                dialog.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void TryHandleNavigation_moves_up_from_buttons_to_combobox()
     {
         var comboBox = new ComboBox

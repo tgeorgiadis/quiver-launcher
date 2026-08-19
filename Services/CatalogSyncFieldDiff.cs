@@ -27,8 +27,8 @@ public class CatalogSyncTagDiffItem
 
     public string Tooltip => Kind switch
     {
-        CatalogSyncTagDiffKind.LocalOnly => "Only in your library (removed on Replace)",
-        CatalogSyncTagDiffKind.ExternalOnly => "Only in external list (added on Replace)",
+        CatalogSyncTagDiffKind.LocalOnly => "Only in your library (kept on Merge, removed on Replace)",
+        CatalogSyncTagDiffKind.ExternalOnly => "Only in external list (added on Merge and Replace)",
         _ => "In both",
     };
 
@@ -79,6 +79,7 @@ public static class CatalogSyncFieldDiffBuilder
         ["filesToAdd"] = "Files to add",
         ["mods"] = "Mods",
         ["repositorySource"] = "Repository source",
+        ["repository"] = "Repository",
     };
 
     public static IReadOnlyList<CatalogSyncFieldDiffItem> BuildFieldDiffs(
@@ -247,6 +248,7 @@ public static class CatalogSyncFieldDiffBuilder
             "filesToAdd" => AppFilesToAddService.FormatForDisplay(app.FilesToAdd),
             "mods" => GameModsConfig.FormatForDisplay(app.ModsPath, app.ModsSources, app.ModsLayout),
             "repositorySource" => RepositorySourceHelper.DisplayName(app.RepositorySource),
+            "repository" => string.IsNullOrWhiteSpace(app.Repository) ? "Manually managed" : app.Repository,
             _ => "",
         };
 }
