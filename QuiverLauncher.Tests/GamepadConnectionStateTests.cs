@@ -20,4 +20,30 @@ public class GamepadConnectionStateTests
     {
         InputService.GetConnectionChangedSignal(previousCount, nextCount).Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, false)]
+    public void ShouldKeepOpenController_only_when_already_open_and_attached(
+        bool alreadyOpen,
+        bool attached,
+        bool expected)
+    {
+        InputService.ShouldKeepOpenController(alreadyOpen, attached).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, false)]
+    public void ShouldReopenController_when_already_open_but_detached(
+        bool alreadyOpen,
+        bool attached,
+        bool expected)
+    {
+        InputService.ShouldReopenController(alreadyOpen, attached).Should().Be(expected);
+    }
 }

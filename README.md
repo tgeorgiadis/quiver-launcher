@@ -1,6 +1,6 @@
 # Quiver Launcher
 
-[![.NET 9](https://img.shields.io/badge/.NET-9-512BD4)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/github/license/tgeorgiadis/quiver-launcher)](https://github.com/tgeorgiadis/quiver-launcher/blob/main/LICENSE)
 
 > **About** - **Quiver Launcher** is a fork of [GithubLauncher](https://github.com/SirDiabo/GithubLauncher), extended with the features I wanted: **tag filters**, **library management with App Catalog**, **mod management support**, **UI improvements** and more. It was rebranded from GithubLauncher to avoid using the GitHub trademark.
@@ -135,7 +135,8 @@ GameBanana URLs are detected automatically (no `gamebanana|` prefix required). O
 
 - Both sources support infinite scroll / load-more (mouse or gamepad). Multi-source search merges pages from each provider.
 - Content-rated / NSFW mods are **hidden by default**. Use the **Include NSFW** chip to show them (persisted in settings).
-- GameBanana mods with multiple download files show a file picker on Install/Update. **Zip** and **7z** archives are supported.
+- GameBanana mods with multiple download files show a file picker on Install/Update. **Zip**, **7z**, and **RAR** archives are supported.
+- Thunderstore mods that list requirements prompt before install if those mods are not already installed. **Yes** installs the missing requirements (and the selected mod); **No** installs only the selected mod; **Cancel** aborts without installing anything. **Update All** still pulls missing requirements without prompting.
 
 Remote index URL (the only catalog URL built into Quiver Launcher):
 
@@ -200,9 +201,10 @@ Each app entry requires the following properties:
 - **`name`** - Canonical app/title (for ports, usually the game name). Library display can compose this with `project` via Settings → Library name style
 - **`project`** *(optional)* - Project, team, or author attribution shown when library name style includes project
 - **`customDisplayName`** *(optional)* - Per-app library label override; always wins over name/project composition
-- **`repository`** *(required unless manually managed)* - The repository path in the format `username/repository` (GitHub) or `namespace/project` (GitLab). Omit this field for **manually managed** apps: Quiver creates `{Apps}/{folderName}` and you place the files yourself. There is no download or update management until a repository is added. On **Edit App Entry**, filling in a repository promotes the app to a managed install (existing files are kept; Auto Update stays off until you update). Clearing the repository demotes it back to manual.
+- **`repository`** *(required unless manually managed)* - The repository path in the format `username/repository` (GitHub) or `namespace/project` (GitLab). The same repository may be used by more than one app when each has a distinct `folderName` (for example two games shipped in one GitHub release). Omit this field for **manually managed** apps: Quiver creates `{Apps}/{folderName}` and you place the files yourself. There is no download or update management until a repository is added. On **Edit App Entry**, filling in a repository promotes the app to a managed install (existing files are kept; Auto Update stays off until you update). Clearing the repository demotes it back to manual.
 - **`repositorySource`** *(optional)* - `github` (default when omitted) or `gitlab`. Ignored for manually managed apps. Older Quiver Launcher versions ignore this field and treat entries as GitHub-only.
-- **`folderName`** - The folder name under Apps where the app is installed (prefer `Title-Project`, without type suffixes like `-Recomp`). For manually managed apps this folder is created immediately as the drop target.
+- **`folderName`** - The folder name under Apps where the app is installed (prefer `Title-Project`, without type suffixes like `-Recomp`). Must be unique. For manually managed apps this folder is created immediately as the drop target.
+- **`releaseAssetFilter`** *(optional)* - Case-insensitive substring matched against release filenames. Use this when one repository ships more than one game so each app downloads only its files (e.g. `EXIT1` / `EXIT2`). Ignored for manually managed apps.
 - **`tags`** *(optional)* - Freeform tags (classification such as `recomp` / `decomp` lives here, not in the title)
 - **`appIconUrl`** - URL of the app's icon image. If null, a default icon will be used.
 
@@ -267,12 +269,31 @@ When building and running from source, Quiver Launcher is not a packaged release
 
 ```powershell
 # Debug: no env var needed
-dotnet run --project QuiverLauncher.csproj -c Debug
+dotnet run --project QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj -c Debug
 
 # Release local testing
 $env:QuiverLauncher_SKIP_UPDATES = "1"
-dotnet run --project QuiverLauncher.csproj -c Release
+dotnet run --project QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj -c Release
 ```
+
+Requires the **.NET 10 SDK**.
+
+### Android
+
+Android uses a separate head project (`QuiverLauncher.Android`) that installs and launches **APK** release assets. Desktop binaries (.exe, AppImage, Wine/Proton) are not supported on device.
+
+1. Install the .NET 10 SDK and the Android workload:
+   ```powershell
+   dotnet workload install android
+   ```
+2. Install the Android SDK and JDK 11+ ([Avalonia Android setup](https://docs.avaloniaui.net/docs/platform-specific-guides/android/)).
+3. Allow **Install unknown apps** for Quiver on the emulator or device.
+4. Build and deploy:
+   ```powershell
+   dotnet build QuiverLauncher.Android/QuiverLauncher.Android.csproj -c Debug
+   ```
+
+Games without an Android `.apk` asset stay in the catalog as “no Android build” rather than a failed download.
 
 User data for unpackaged Windows debug builds still lives beside the build output. Unpackaged macOS/Linux runs (no AppImage / `.app` package) use the OS app-support fallbacks (`~/Library/Application Support/QuiverLauncher/` or `~/.local/share/QuiverLauncher/`).
 

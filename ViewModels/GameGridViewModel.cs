@@ -57,6 +57,9 @@ public class GameGridViewModel
             return;
 
         var sorted = SortGames(games, sortMode, gamesFolder, ignoreArticlesWhenSorting);
+        if (sorted.Count == games.Count && sorted.SequenceEqual(games))
+            return;
+
         games.Clear();
         foreach (var game in sorted)
             games.Add(game);

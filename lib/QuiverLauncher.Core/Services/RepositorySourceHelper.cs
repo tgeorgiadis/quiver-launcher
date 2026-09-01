@@ -41,8 +41,9 @@ namespace QuiverLauncher.Core.Services
         }
 
         /// <summary>
-        /// Identity / cache key: "{source}:{repository}". Missing source is treated as GitHub.
+        /// Repository identity / API cache key: "{source}:{repository}". Missing source is treated as GitHub.
         /// Apps with no repository use <c>manual:{folderName}</c>.
+        /// Multiple library tiles may share this key when they use the same hosted repository.
         /// </summary>
         public static string GetIdentityKey(string? repositorySource, string? repository, string? folderName = null)
         {
@@ -52,6 +53,40 @@ namespace QuiverLauncher.Core.Services
             var source = Normalize(repositorySource);
             var repo = repository!.Trim();
             return $"{source}:{repo}";
+        }
+
+        /// <summary>
+        /// Unique library-tile key: "{source}:{repository}:{folderName}" for hosted apps,
+        /// or <c>manual:{folderName}</c> when there is no repository.
+        /// </summary>
+        public static string GetInstanceKey(string? repositorySource, string? repository, string? folderName)
+        {
+            if (IsManuallyManaged(repository))
+                return GetManualIdentityKey(folderName);
+
+            var source = Normalize(repositorySource);
+            var repo = repository!.Trim();
+            var folder = folderName?.Trim() ?? string.Empty;
+            return $"{source}:{repo}:{folder}";
+        }
+
+        /// <summary>
+        /// Case-insensitive substring match for a per-app release asset filter.
+        /// Empty/whitespace filters match every asset.
+        /// </summary>
+        public static bool AssetNameMatchesFilter(string? assetName, string? releaseAssetFilter)
+        {
+            var filter = NormalizeReleaseAssetFilter(releaseAssetFilter);
+            if (filter == null)
+                return true;
+
+            return (assetName ?? string.Empty).Contains(filter, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string? NormalizeReleaseAssetFilter(string? releaseAssetFilter)
+        {
+            var trimmed = releaseAssetFilter?.Trim();
+            return string.IsNullOrEmpty(trimmed) ? null : trimmed;
         }
 
         public static string GetRepositoryPageUrl(string? repositorySource, string? repository)

@@ -16,6 +16,9 @@ namespace QuiverLauncher.Core.Services
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     return "macOS";
 
+                if (OperatingSystem.IsAndroid())
+                    return "Android";
+
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
                     return RuntimeInformation.OSArchitecture switch
@@ -37,6 +40,7 @@ namespace QuiverLauncher.Core.Services
                 TargetOS.MacOS => "macOS",
                 TargetOS.LinuxX64 => "Linux-X64",
                 TargetOS.LinuxARM64 => "Linux-ARM64",
+                TargetOS.Android => "Android",
                 _ => throw new PlatformNotSupportedException("Unsupported target OS in settings")
             };
         }
@@ -144,6 +148,18 @@ namespace QuiverLauncher.Core.Services
                     System.Diagnostics.Debug.WriteLine("Linux x64 match result: True");
                     return true;
                 }
+            }
+
+            if (platformLower.Contains("android"))
+            {
+                if (HasAnyOf(assetNameLower, "windows", "win32", "win64", "linux", "macos", "osx", "darwin",
+                        ".exe", ".msi", ".appimage", ".dmg", ".deb", ".rpm", "switch"))
+                {
+                    return false;
+                }
+
+                return HasAnyOf(assetNameLower, ".apk", "android", "arm64-v8a", "aarch64")
+                       || assetNameLower.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
             }
 
             System.Diagnostics.Debug.WriteLine("Using fallback substring match");

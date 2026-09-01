@@ -171,6 +171,29 @@ public class GamepadContextMenuNavigationTests
     }
 
     [AvaloniaFact]
+    public void TryHandleConfirm_on_leaf_unregisters_even_if_menu_never_opened()
+    {
+        var clicked = false;
+        var item = new MenuItem { Header = "Move Up" };
+        item.Click += (_, _) => clicked = true;
+        var menu = new ContextMenu { Items = { item } };
+
+        try
+        {
+            GamepadContextMenuNavigation.Attach(menu);
+            GamepadContextMenuNavigation.Instance.HasActiveContextMenu.Should().BeTrue();
+
+            GamepadContextMenuNavigation.Instance.TryHandleConfirm().Should().BeTrue();
+            clicked.Should().BeTrue();
+            GamepadContextMenuNavigation.Instance.HasActiveContextMenu.Should().BeFalse();
+        }
+        finally
+        {
+            GamepadContextMenuNavigation.Instance.UnregisterContextMenu(menu);
+        }
+    }
+
+    [AvaloniaFact]
     public void TryHandleConfirm_opens_submenu_for_parent_items()
     {
         var child = new MenuItem { Header = "Browse" };

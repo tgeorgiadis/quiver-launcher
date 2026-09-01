@@ -53,6 +53,7 @@ public class CatalogSyncViewModel
 
     public bool ShowSkipReviewButton =>
         Source != null &&
+        ReviewFilter is not CatalogReviewFilter.UpToDate and not CatalogReviewFilter.Hidden &&
         HasApplicableChanges &&
         !string.IsNullOrWhiteSpace(Source.CachedListVersion) &&
         (CatalogCompareService.IsUnreviewedVersion(Source.AcknowledgedListVersion) ||
@@ -78,18 +79,67 @@ public class CatalogSyncViewModel
         }
     }
 
-    public string VersionBannerText
+    public string VersionLastReviewedText
+    {
+        get
+        {
+            if (Source == null)
+                return "";
+
+            if (CatalogCompareService.IsUnreviewedVersion(Source.AcknowledgedListVersion))
+                return "Last reviewed: not yet";
+
+            return string.IsNullOrWhiteSpace(Source.AcknowledgedListVersion)
+                ? ""
+                : $"Last reviewed: {CatalogCompareService.FormatVersionForDisplay(Source.AcknowledgedListVersion)}";
+        }
+    }
+
+    public string VersionBannerTooltip
     {
         get
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(VersionSummary))
-                parts.Add(VersionSummary);
+            if (!string.IsNullOrWhiteSpace(VersionLastReviewedText))
+                parts.Add(VersionLastReviewedText);
             if (!string.IsNullOrWhiteSpace(UsageStatsText))
                 parts.Add(UsageStatsText);
             return string.Join("\n", parts);
         }
     }
+
+    /// <summary>
+    /// One-line summary: list version plus library usage. Last-reviewed details go in the tooltip.
+    /// </summary>
+    public string VersionBannerCompactText
+    {
+        get
+        {
+            if (Source == null)
+                return "";
+
+            var version = string.IsNullOrWhiteSpace(Source.CachedListVersion)
+                ? ""
+                : CatalogCompareService.FormatVersionForDisplay(Source.CachedListVersion);
+            var usage = CatalogSourceListItem.FormatUsageStatsShort(
+                AllRows.Count(r => r.Local != null),
+                AllRows.Count);
+
+            if (string.IsNullOrWhiteSpace(version))
+                return usage;
+            if (string.IsNullOrWhiteSpace(usage))
+                return version;
+            return $"{version} · {usage}";
+        }
+    }
+
+    public string VersionBannerText => VersionBannerCompactText;
+
+    public bool ShowVersionBannerEmphasis =>
+        Source != null &&
+        (CatalogCompareService.IsUnreviewedVersion(Source.AcknowledgedListVersion) || HasApplicableChanges);
+
+    public bool ShowVersionBanner => !string.IsNullOrWhiteSpace(VersionBannerCompactText);
 
     public string FilterSummary
     {
@@ -238,7 +288,7 @@ public class CatalogSyncViewModel
     }
 
     /// <summary>
-    /// Visible (review filter + tag chips + search) rows that bulk "Replace all changed" would apply to.
+    /// Visible (review filter + tag chips + search) rows that bulk "Merge all changed" would apply to.
     /// </summary>
     public IReadOnlyList<CatalogSyncRowItem> GetFilteredBulkReplaceRows()
     {
@@ -255,4 +305,10 @@ public class CatalogSyncViewModel
     public int FilteredBulkAddCount => GetFilteredBulkAddRows().Count;
 
     public int FilteredBulkReplaceCount => GetFilteredBulkReplaceRows().Count;
+
+    public bool ShowBulkAddButton => FilteredBulkAddCount > 0;
+
+    public bool ShowBulkReplaceButton => FilteredBulkReplaceCount > 0;
+
+    public int ActiveTagChipCount => TagChips.Count(c => !c.IsNeutral);
 }

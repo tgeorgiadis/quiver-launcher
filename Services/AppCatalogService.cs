@@ -77,6 +77,7 @@ namespace QuiverLauncher.Services
                 app.LibraryNameStyle = settings.LibraryNameStyle;
                 app.ShowLibraryUpdateBadges = settings.ShowLibraryAppUpdateBadges;
                 app.LibraryCardTagMaxLines = settings.LibraryCardTagMaxLines;
+                app.TruncateLibraryCardTitles = settings.TruncateLibraryCardTitles;
             }
 
             RefreshLibraryCardTags(localApps, settings);
@@ -304,6 +305,14 @@ namespace QuiverLauncher.Services
         {
             var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
             var externalApps = await LoadCachedAppsAsync(source.Id).ConfigureAwait(false);
+            RefreshUpdateAvailable(source, localApps, externalApps);
+        }
+
+        public void RefreshUpdateAvailable(
+            AppCatalogSource source,
+            List<GameInfo> localApps,
+            List<GameInfo> externalApps)
+        {
             (source.LibraryAppCount, source.ListAppCount) =
                 CatalogCompareService.ComputeLibraryUsageStats(localApps, externalApps);
 
@@ -328,11 +337,11 @@ namespace QuiverLauncher.Services
             foreach (var game in games)
                 game.HasPendingCatalogChanges = false;
 
-            var byIdentity = games
-                .GroupBy(g => g.IdentityKey, StringComparer.OrdinalIgnoreCase)
+            var byInstance = games
+                .GroupBy(g => g.InstanceKey, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
 
-            if (byIdentity.Count == 0)
+            if (byInstance.Count == 0)
                 return;
 
             var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
@@ -348,7 +357,7 @@ namespace QuiverLauncher.Services
                         continue;
                     if (string.IsNullOrWhiteSpace(row.IdentityKey))
                         continue;
-                    if (!byIdentity.TryGetValue(row.IdentityKey, out var matches))
+                    if (!byInstance.TryGetValue(row.IdentityKey, out var matches))
                         continue;
 
                     foreach (var game in matches)
@@ -366,10 +375,10 @@ namespace QuiverLauncher.Services
             ArgumentNullException.ThrowIfNull(settings);
             settings.EnsureInitialized();
 
-            if (string.IsNullOrWhiteSpace(game.IdentityKey))
+            if (string.IsNullOrWhiteSpace(game.InstanceKey))
                 return null;
 
-            var identityKey = game.IdentityKey;
+            var instanceKey = game.InstanceKey;
             var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
             foreach (var source in settings.AppCatalogSources.Where(s => s.Enabled))
             {
@@ -378,7 +387,7 @@ namespace QuiverLauncher.Services
                 var match = rows.FirstOrDefault(row =>
                     row.Status == CatalogSyncStatus.Changed &&
                     CatalogCompareService.IsActionableRow(row, source) &&
-                    string.Equals(row.IdentityKey, identityKey, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(row.IdentityKey, instanceKey, StringComparison.OrdinalIgnoreCase));
                 if (match != null)
                     return source.Id;
             }
@@ -511,12 +520,12 @@ namespace QuiverLauncher.Services
         {
             localApps ??= await LoadLocalAppsAsync().ConfigureAwait(false);
             var localKeys = new HashSet<string>(
-                localApps.Select(a => a.IdentityKey),
+                localApps.Select(a => a.InstanceKey),
                 StringComparer.OrdinalIgnoreCase);
 
             var externalApps = await LoadCachedAppsAsync(sourceId).ConfigureAwait(false);
             return externalApps
-                .Where(a => !string.IsNullOrWhiteSpace(a.IdentityKey) && !localKeys.Contains(a.IdentityKey))
+                .Where(a => !string.IsNullOrWhiteSpace(a.InstanceKey) && !localKeys.Contains(a.InstanceKey))
                 .ToList();
         }
 
@@ -542,6 +551,7 @@ namespace QuiverLauncher.Services
             app.LibraryNameStyle = settings.LibraryNameStyle;
             app.ShowLibraryUpdateBadges = settings.ShowLibraryAppUpdateBadges;
             app.LibraryCardTagMaxLines = settings.LibraryCardTagMaxLines;
+            app.TruncateLibraryCardTitles = settings.TruncateLibraryCardTitles;
 
             if (string.IsNullOrWhiteSpace(app.Repository))
                 return;
@@ -561,7 +571,7 @@ namespace QuiverLauncher.Services
         {
             var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
             var localKeys = new HashSet<string>(
-                localApps.Select(a => a.IdentityKey),
+                localApps.Select(a => a.InstanceKey),
                 StringComparer.OrdinalIgnoreCase);
             var localFolders = new HashSet<string>(
                 localApps
@@ -571,13 +581,13 @@ namespace QuiverLauncher.Services
 
             foreach (var app in apps)
             {
-                if (string.IsNullOrWhiteSpace(app.IdentityKey) || localKeys.Contains(app.IdentityKey))
+                if (string.IsNullOrWhiteSpace(app.InstanceKey) || localKeys.Contains(app.InstanceKey))
                     continue;
                 if (!string.IsNullOrWhiteSpace(app.FolderName) && localFolders.Contains(app.FolderName))
                     continue;
 
                 localApps.Add(CatalogCompareService.CloneForLocal(app, autoUpdateNewlyAdded));
-                localKeys.Add(app.IdentityKey);
+                localKeys.Add(app.InstanceKey);
                 if (!string.IsNullOrWhiteSpace(app.FolderName))
                     localFolders.Add(app.FolderName);
             }
@@ -601,6 +611,7 @@ namespace QuiverLauncher.Services
             var entries = apps
                 .Where(a => !string.IsNullOrWhiteSpace(a.IdentityKey))
                 .Select(a => string.Join("|",
+                    a.InstanceKey,
                     a.IdentityKey,
                     a.Repository?.Trim() ?? "",
                     a.Name ?? "",
@@ -610,6 +621,7 @@ namespace QuiverLauncher.Services
                     a.GameIconUrl ?? "",
                     a.PreferredVersion ?? "",
                     a.SkippedUpdateVersion ?? "",
+                    RepositorySourceHelper.NormalizeReleaseAssetFilter(a.ReleaseAssetFilter) ?? "",
                     TagHelper.FormatTagsForDisplay(a.Tags),
                     AppFilesToAddService.FormatForDisplay(a.FilesToAdd)))
                 .OrderBy(e => e, StringComparer.OrdinalIgnoreCase);
@@ -623,11 +635,13 @@ namespace QuiverLauncher.Services
         {
             var baselineByRepo = baselineApps
                 .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
-                .ToDictionary(a => a.IdentityKey, a => a, StringComparer.OrdinalIgnoreCase);
+                .GroupBy(a => a.InstanceKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
             var remoteByRepo = remoteApps
                 .Where(a => !string.IsNullOrWhiteSpace(a.Repository))
-                .ToDictionary(a => a.IdentityKey, a => a, StringComparer.OrdinalIgnoreCase);
+                .GroupBy(a => a.InstanceKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
             var diff = new CatalogDiff();
 
@@ -665,6 +679,10 @@ namespace QuiverLauncher.Services
             string.Equals(a.GameIconUrl ?? "", b.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(TagHelper.FormatTagsForDisplay(a.Tags), TagHelper.FormatTagsForDisplay(b.Tags), StringComparison.OrdinalIgnoreCase) &&
             AppFilesToAddService.AreEquivalent(a.FilesToAdd, b.FilesToAdd) &&
+            string.Equals(
+                RepositorySourceHelper.NormalizeReleaseAssetFilter(a.ReleaseAssetFilter) ?? "",
+                RepositorySourceHelper.NormalizeReleaseAssetFilter(b.ReleaseAssetFilter) ?? "",
+                StringComparison.OrdinalIgnoreCase) &&
             GameModsConfig.AreEquivalent(
                 a.ModsPath, a.ModsSources, a.ModsLayout,
                 b.ModsPath, b.ModsSources, b.ModsLayout);
@@ -854,7 +872,7 @@ namespace QuiverLauncher.Services
 
         private static List<GameInfo> DedupeByRepository(List<GameInfo> apps) =>
             apps
-                .GroupBy(app => app.IdentityKey, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(app => app.InstanceKey, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
 
@@ -903,6 +921,10 @@ namespace QuiverLauncher.Services
                                               deferElement.ValueKind == JsonValueKind.True,
                         Tags = ParseTagsProperty(appElement),
                         FilesToAdd = ParseFilesToAddProperty(appElement),
+                        ReleaseAssetFilter = RepositorySourceHelper.NormalizeReleaseAssetFilter(
+                            appElement.TryGetProperty("releaseAssetFilter", out var releaseAssetFilterElement)
+                                ? releaseAssetFilterElement.GetString()
+                                : null),
                         ModsPath = ParseModsPathProperty(appElement),
                         ModsSources = ParseModsSourcesProperty(appElement),
                         ModsLayout = ParseModsLayoutProperty(appElement),
@@ -935,6 +957,7 @@ namespace QuiverLauncher.Services
                         app.PreferredVersion = null;
                         app.SkippedUpdateVersion = null;
                         app.DeferUpdateTracking = false;
+                        app.ReleaseAssetFilter = null;
                     }
 
                     apps.Add(app);
@@ -1143,6 +1166,10 @@ namespace QuiverLauncher.Services
             var normalizedFilesToAdd = AppFilesToAddService.Normalize(app.FilesToAdd);
             if (normalizedFilesToAdd.Count > 0)
                 payload["filesToAdd"] = normalizedFilesToAdd;
+
+            var releaseAssetFilter = RepositorySourceHelper.NormalizeReleaseAssetFilter(app.ReleaseAssetFilter);
+            if (!app.IsManuallyManaged && releaseAssetFilter != null)
+                payload["releaseAssetFilter"] = releaseAssetFilter;
 
             var modsPath = GameModsConfig.NormalizePath(app.ModsPath);
             var modsSources = GameModsConfig.NormalizeSources(app.ModsSources);

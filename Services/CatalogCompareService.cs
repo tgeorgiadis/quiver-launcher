@@ -24,6 +24,7 @@ namespace QuiverLauncher.Services
     public class CatalogSyncRowItem : INotifyPropertyChanged
     {
         private bool _isGamepadFocused;
+        private bool _isHovered;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -34,16 +35,70 @@ namespace QuiverLauncher.Services
             !string.IsNullOrWhiteSpace(Repository) ? Repository : IdentityKey;
         public string Subtitle =>
             !string.IsNullOrWhiteSpace(Repository) ? Repository : "Manually managed";
+        public bool HasRepository => !string.IsNullOrWhiteSpace(Repository);
+        public string? EffectiveRepositorySource =>
+            External?.EffectiveRepositorySource ?? Local?.EffectiveRepositorySource;
         public string DisplayName { get; init; } = "";
+
+        /// <summary>Library-style title (name only) for grid cards.</summary>
+        public string TitleName
+        {
+            get
+            {
+                var title = AppDisplayName.Resolve(
+                    External?.Name ?? Local?.Name,
+                    External?.Project ?? Local?.Project,
+                    customDisplayName: null,
+                    LibraryNameStyle.NameAndProject);
+                return title.Length > 0 ? title : DisplayName;
+            }
+        }
+
+        /// <summary>Library-style project line under the title on grid cards.</summary>
+        public string ProjectSubtitle =>
+            AppDisplayName.ResolveProjectSubtitle(
+                External?.Name ?? Local?.Name,
+                External?.Project ?? Local?.Project,
+                customDisplayName: null,
+                LibraryNameStyle.NameAndProject);
+
+        public bool HasProjectSubtitle => !string.IsNullOrWhiteSpace(ProjectSubtitle);
+
+        /// <summary>Grid badges for actionable states only — not "Up to date".</summary>
+        public bool HasStatusBadge =>
+            Status is CatalogSyncStatus.InExternalOnly
+                or CatalogSyncStatus.Changed
+                or CatalogSyncStatus.InLocalOnly;
+
+        public bool IsChangedBadge => Status == CatalogSyncStatus.Changed;
+
+        public bool IsHovered
+        {
+            get => _isHovered;
+            set
+            {
+                if (_isHovered == value)
+                    return;
+
+                _isHovered = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsHovered)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShouldScrollTitle)));
+            }
+        }
+
+        public bool ShouldScrollTitle => _isHovered || _isGamepadFocused;
         public GameInfo? Local { get; init; }
         public GameInfo? External { get; init; }
         public IReadOnlyList<string> ChangedFields { get; init; } = [];
         public IReadOnlyList<CatalogSyncFieldDiffItem> FieldDiffs { get; init; } = [];
+        public IReadOnlyList<CatalogSyncFieldDiffItem> DetailsFields { get; init; } = [];
         public CatalogIdentityChangeKind IdentityChangeKind { get; init; }
         public string AddBlockedReason { get; init; } = "";
 
         public bool HasInlineDiff => FieldDiffs.Count > 0;
+        public bool HasDetailsFields => DetailsFields.Count > 0;
         public bool HasAddBlockedReason => !string.IsNullOrWhiteSpace(AddBlockedReason);
+        public bool HasReviewCardFooter => HasAddBlockedReason || HasInlineDiff;
 
         public string IconUrl =>
             External?.DefaultIconUrl
@@ -85,9 +140,55 @@ namespace QuiverLauncher.Services
         public bool CanMerge => Status == CatalogSyncStatus.Changed;
         public bool CanIgnore => Status is CatalogSyncStatus.Changed or CatalogSyncStatus.InExternalOnly;
         public bool CanRemoveFromLibrary => Local != null;
+        public bool ShowGridCardPrimaryAdd => CanAdd;
+        public bool ShowGridCardPrimaryMerge => CanMerge && !CanAdd;
+        public bool ShowMenuAdd => CanAdd && !ShowGridCardPrimaryAdd;
+        public bool ShowMenuMerge => CanMerge && !ShowGridCardPrimaryMerge;
 
         public bool ShowHideButton { get; set; }
+        public bool ShowCardHideButton { get; set; }
         public bool ShowUnhideButton { get; set; }
+        public bool ShowRemoveFromLibrary { get; set; }
+
+        public CatalogReviewGridCardActions.Layout GridCardDesktopLayout =>
+            CatalogReviewGridCardActions.ForDesktop(
+                CanAdd,
+                CanMerge,
+                ShowCardHideButton,
+                ShowUnhideButton,
+                ShowRemoveFromLibrary,
+                IdentityKey);
+
+        public IReadOnlyList<CatalogReviewGridCardActions.ChromeItem> GridCardDesktopChrome =>
+            GridCardDesktopLayout.Chrome;
+
+        public int GridCardDesktopColumnCount => GridCardDesktopLayout.ColumnCount;
+
+        public bool ShowGridInlineAdd =>
+            GridCardDesktopLayout.IsInline(CatalogReviewGridCardActions.Action.Add);
+        public bool ShowGridInlineMerge =>
+            GridCardDesktopLayout.IsInline(CatalogReviewGridCardActions.Action.Merge);
+        public bool ShowGridInlineDetails =>
+            GridCardDesktopLayout.IsInline(CatalogReviewGridCardActions.Action.Details);
+        public bool ShowGridInlineHide =>
+            GridCardDesktopLayout.IsInline(CatalogReviewGridCardActions.Action.Hide);
+        public bool ShowGridInlineUnhide =>
+            GridCardDesktopLayout.IsInline(CatalogReviewGridCardActions.Action.Unhide);
+        public bool ShowGridInlineRemove =>
+            GridCardDesktopLayout.IsInline(CatalogReviewGridCardActions.Action.Remove);
+        public bool ShowGridMore => GridCardDesktopLayout.ShowMore;
+        public bool ShowGridMenuAdd =>
+            GridCardDesktopLayout.IsMenu(CatalogReviewGridCardActions.Action.Add);
+        public bool ShowGridMenuMerge =>
+            GridCardDesktopLayout.IsMenu(CatalogReviewGridCardActions.Action.Merge);
+        public bool ShowGridMenuDetails =>
+            GridCardDesktopLayout.IsMenu(CatalogReviewGridCardActions.Action.Details);
+        public bool ShowGridMenuHide =>
+            GridCardDesktopLayout.IsMenu(CatalogReviewGridCardActions.Action.Hide);
+        public bool ShowGridMenuUnhide =>
+            GridCardDesktopLayout.IsMenu(CatalogReviewGridCardActions.Action.Unhide);
+        public bool ShowGridMenuRemove =>
+            GridCardDesktopLayout.IsMenu(CatalogReviewGridCardActions.Action.Remove);
 
         public bool IsGamepadFocused
         {
@@ -99,6 +200,7 @@ namespace QuiverLauncher.Services
 
                 _isGamepadFocused = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGamepadFocused)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShouldScrollTitle)));
             }
         }
     }
@@ -113,6 +215,7 @@ namespace QuiverLauncher.Services
             "tags",
             "filesToAdd",
             "mods",
+            "releaseAssetFilter",
             "repository",
             "repositorySource",
         ];
@@ -122,6 +225,49 @@ namespace QuiverLauncher.Services
                 .Where(a => !string.IsNullOrWhiteSpace(a.IdentityKey))
                 .GroupBy(a => a.IdentityKey, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        public static Dictionary<string, GameInfo> IndexByInstanceKey(IEnumerable<GameInfo> apps) =>
+            apps
+                .Where(a => !string.IsNullOrWhiteSpace(a.InstanceKey))
+                .GroupBy(a => a.InstanceKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Apps in <paramref name="currentApps"/> that were added or whose install layout
+        /// (folder, path, files-to-add, manual flag) changed versus <paramref name="previousApps"/>.
+        /// </summary>
+        public static List<GameInfo> GetAppsNeedingInstallSync(
+            IEnumerable<GameInfo> previousApps,
+            IEnumerable<GameInfo> currentApps)
+        {
+            var previousList = previousApps as IList<GameInfo> ?? previousApps.ToList();
+            var previousByKey = IndexByInstanceKey(previousList);
+            var result = new List<GameInfo>();
+
+            foreach (var app in currentApps)
+            {
+                GameInfo? previous = null;
+                if (!string.IsNullOrWhiteSpace(app.InstanceKey))
+                    previousByKey.TryGetValue(app.InstanceKey, out previous);
+
+                if (previous == null && !string.IsNullOrWhiteSpace(app.FolderName))
+                {
+                    previous = previousList.FirstOrDefault(p =>
+                        string.Equals(p.FolderName, app.FolderName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (previous == null || NeedsInstallSync(previous, app))
+                    result.Add(app);
+            }
+
+            return result;
+        }
+
+        private static bool NeedsInstallSync(GameInfo previous, GameInfo current) =>
+            previous.IsManuallyManaged != current.IsManuallyManaged ||
+            !string.Equals(previous.FolderName, current.FolderName, StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(previous.InstallPath, current.InstallPath, StringComparison.OrdinalIgnoreCase) ||
+            !AppFilesToAddService.AreEquivalent(previous.FilesToAdd, current.FilesToAdd);
 
         private static Dictionary<string, GameInfo> IndexByFolderName(IEnumerable<GameInfo> apps) =>
             apps
@@ -133,12 +279,16 @@ namespace QuiverLauncher.Services
             List<GameInfo> localApps,
             List<GameInfo> externalApps)
         {
-            var localByKey = IndexByIdentityKey(localApps);
+            var localByInstance = IndexByInstanceKey(localApps);
+            var localByIdentity = localApps
+                .Where(a => !string.IsNullOrWhiteSpace(a.IdentityKey))
+                .GroupBy(a => a.IdentityKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
             var localByFolder = IndexByFolderName(localApps);
 
             var rows = new List<CatalogSyncRowItem>();
-            var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var matchedLocalKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenInstanceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var matchedLocalInstanceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var external in externalApps)
             {
@@ -146,19 +296,25 @@ namespace QuiverLauncher.Services
                     string.IsNullOrWhiteSpace(external.FolderName))
                     continue;
 
-                var key = external.IdentityKey;
-                if (string.IsNullOrWhiteSpace(key) || !seenKeys.Add(key))
+                var instanceKey = external.InstanceKey;
+                if (string.IsNullOrWhiteSpace(instanceKey) || !seenInstanceKeys.Add(instanceKey))
                     continue;
 
                 GameInfo? local = null;
-                if (localByKey.TryGetValue(key, out var byIdentity) &&
-                    matchedLocalKeys.Add(byIdentity.IdentityKey))
+                if (localByInstance.TryGetValue(instanceKey, out var byInstance) &&
+                    matchedLocalInstanceKeys.Add(byInstance.InstanceKey))
                 {
-                    local = byIdentity;
+                    local = byInstance;
+                }
+                else if (localByIdentity.TryGetValue(external.IdentityKey, out var sameRepoLocals) &&
+                         sameRepoLocals.Count == 1 &&
+                         matchedLocalInstanceKeys.Add(sameRepoLocals[0].InstanceKey))
+                {
+                    local = sameRepoLocals[0];
                 }
                 else if (!string.IsNullOrWhiteSpace(external.FolderName) &&
                          localByFolder.TryGetValue(external.FolderName.Trim(), out var byFolder) &&
-                         matchedLocalKeys.Add(byFolder.IdentityKey))
+                         matchedLocalInstanceKeys.Add(byFolder.InstanceKey))
                 {
                     local = byFolder;
                 }
@@ -207,13 +363,18 @@ namespace QuiverLauncher.Services
                 changedFields = GetChangedFields(local!, external!);
             }
 
+            var fieldDiffs = CatalogSyncFieldDiffBuilder.BuildFieldDiffs(status, local, external, changedFields);
+            var detailsFields = fieldDiffs.Count > 0
+                ? fieldDiffs
+                : CatalogSyncFieldDiffBuilder.BuildSnapshot(local ?? external);
+
             return new CatalogSyncRowItem
             {
                 Status = status,
                 Repository = repo,
-                IdentityKey = local?.IdentityKey
-                    ?? external?.IdentityKey
-                    ?? RepositorySourceHelper.GetIdentityKey(null, repo),
+                IdentityKey = local?.InstanceKey
+                    ?? external?.InstanceKey
+                    ?? RepositorySourceHelper.GetInstanceKey(null, repo, external?.FolderName ?? local?.FolderName),
                 // Catalog review keeps project in the title so ports of the same game stay distinct in a dense list.
                 DisplayName = AppDisplayName.Resolve(
                     external?.Name ?? local?.Name,
@@ -225,7 +386,8 @@ namespace QuiverLauncher.Services
                 Local = local,
                 External = external,
                 ChangedFields = changedFields,
-                FieldDiffs = CatalogSyncFieldDiffBuilder.BuildFieldDiffs(status, local, external, changedFields),
+                FieldDiffs = fieldDiffs,
+                DetailsFields = detailsFields,
                 IdentityChangeKind = GetIdentityChangeKind(local, external),
                 AddBlockedReason = status == CatalogSyncStatus.InExternalOnly
                     ? FormatAddBlockedReason(external, folderOccupiedBy)
@@ -291,6 +453,10 @@ namespace QuiverLauncher.Services
             string.Equals(local.GameIconUrl ?? "", external.GameIconUrl ?? "", StringComparison.OrdinalIgnoreCase) &&
             TagHelper.ContainsAllTags(local.Tags, external.Tags) &&
             AppFilesToAddService.AreEquivalent(local.FilesToAdd, external.FilesToAdd) &&
+            string.Equals(
+                RepositorySourceHelper.NormalizeReleaseAssetFilter(local.ReleaseAssetFilter) ?? "",
+                RepositorySourceHelper.NormalizeReleaseAssetFilter(external.ReleaseAssetFilter) ?? "",
+                StringComparison.OrdinalIgnoreCase) &&
             GameModsConfig.AreEquivalent(
                 local.ModsPath, local.ModsSources, local.ModsLayout,
                 external.ModsPath, external.ModsSources, external.ModsLayout);
@@ -315,6 +481,11 @@ namespace QuiverLauncher.Services
                 changed.Add("tags");
             if (!AppFilesToAddService.AreEquivalent(local.FilesToAdd, external.FilesToAdd))
                 changed.Add("filesToAdd");
+            if (!string.Equals(
+                    RepositorySourceHelper.NormalizeReleaseAssetFilter(local.ReleaseAssetFilter) ?? "",
+                    RepositorySourceHelper.NormalizeReleaseAssetFilter(external.ReleaseAssetFilter) ?? "",
+                    StringComparison.OrdinalIgnoreCase))
+                changed.Add("releaseAssetFilter");
             if (!GameModsConfig.AreEquivalent(
                     local.ModsPath, local.ModsSources, local.ModsLayout,
                     external.ModsPath, external.ModsSources, external.ModsLayout))
@@ -343,6 +514,9 @@ namespace QuiverLauncher.Services
                 DeferUpdateTracking = false,
                 Tags = TagHelper.NormalizeTags(external.Tags),
                 FilesToAdd = AppFilesToAddService.Normalize(external.FilesToAdd),
+                ReleaseAssetFilter = manual
+                    ? null
+                    : RepositorySourceHelper.NormalizeReleaseAssetFilter(external.ReleaseAssetFilter),
                 ModsPath = GameModsConfig.NormalizePath(external.ModsPath) is { Length: > 0 } path ? path : null,
                 ModsSources = GameModsConfig.NormalizeSources(external.ModsSources),
                 ModsLayout = GameModsConfig.NormalizeLayout(external.ModsLayout) is { } layout &&
@@ -395,6 +569,9 @@ namespace QuiverLauncher.Services
                 DeferUpdateTracking = promotion || retarget,
                 Tags = TagHelper.NormalizeTags(external.Tags),
                 FilesToAdd = AppFilesToAddService.Normalize(external.FilesToAdd),
+                ReleaseAssetFilter = manual
+                    ? null
+                    : RepositorySourceHelper.NormalizeReleaseAssetFilter(external.ReleaseAssetFilter),
                 ModsPath = GameModsConfig.NormalizePath(external.ModsPath) is { Length: > 0 } path ? path : null,
                 ModsSources = GameModsConfig.NormalizeSources(external.ModsSources),
                 ModsLayout = GameModsConfig.NormalizeLayout(external.ModsLayout) is { } layout &&
@@ -449,6 +626,9 @@ namespace QuiverLauncher.Services
                 DeferUpdateTracking = promotion || retarget,
                 Tags = mergedTags,
                 FilesToAdd = AppFilesToAddService.Normalize(external.FilesToAdd),
+                ReleaseAssetFilter = manual
+                    ? null
+                    : RepositorySourceHelper.NormalizeReleaseAssetFilter(external.ReleaseAssetFilter),
                 ModsPath = modsPath.Length > 0 ? modsPath : null,
                 ModsSources = modsSources,
                 ModsLayout = modsLayout != GameModsConfig.LayoutFlat ? modsLayout : null,
@@ -464,13 +644,30 @@ namespace QuiverLauncher.Services
             if (row.Local != null)
             {
                 return string.Equals(
-                    app.IdentityKey,
-                    row.Local.IdentityKey,
+                    app.InstanceKey,
+                    row.Local.InstanceKey,
                     StringComparison.OrdinalIgnoreCase);
             }
 
             return !string.IsNullOrWhiteSpace(row.IdentityKey) &&
-                   string.Equals(app.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase);
+                   string.Equals(app.InstanceKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static int FindRowIndexForLibraryApp(
+            IReadOnlyList<CatalogSyncRowItem> rows,
+            GameInfo game)
+        {
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                if (MatchesLocalApp(game, row) ||
+                    string.Equals(row.IdentityKey, game.InstanceKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         public static List<GameInfo> ApplyAddAllExternalOnly(
@@ -480,7 +677,7 @@ namespace QuiverLauncher.Services
         {
             var result = new List<GameInfo>(localApps);
             var localKeys = new HashSet<string>(
-                result.Select(a => a.IdentityKey),
+                result.Select(a => a.InstanceKey),
                 StringComparer.OrdinalIgnoreCase);
             var localFolders = new HashSet<string>(
                 result.Where(a => !string.IsNullOrWhiteSpace(a.FolderName)).Select(a => a.FolderName!),
@@ -520,6 +717,23 @@ namespace QuiverLauncher.Services
                 .ToList();
         }
 
+        public static List<GameInfo> ApplyMergeAllChanged(
+            List<GameInfo> localApps,
+            IReadOnlyList<CatalogSyncRowItem> rows)
+        {
+            var mergeRows = rows
+                .Where(r => r.Status == CatalogSyncStatus.Changed && r.Local != null && r.External != null)
+                .ToList();
+
+            return localApps
+                .Select(app =>
+                {
+                    var row = mergeRows.FirstOrDefault(r => MatchesLocalApp(app, r));
+                    return row?.External != null ? MergeExternalIntoLocal(app, row.External) : app;
+                })
+                .ToList();
+        }
+
         public static List<GameInfo> ApplyRowAdd(
             List<GameInfo> localApps,
             CatalogSyncRowItem row,
@@ -529,7 +743,7 @@ namespace QuiverLauncher.Services
                 return localApps;
 
             var exists = localApps.Any(a =>
-                string.Equals(a.IdentityKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(a.InstanceKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrWhiteSpace(row.External.FolderName) &&
                  string.Equals(a.FolderName, row.External.FolderName, StringComparison.OrdinalIgnoreCase)));
 
@@ -618,6 +832,20 @@ namespace QuiverLauncher.Services
         public static bool IsHiddenFromReview(AppCatalogSource source, string repository) =>
             source.HiddenFromReviewRepositories?.Any(r =>
                 r.Equals(repository, StringComparison.OrdinalIgnoreCase)) ?? false;
+
+        public static void ApplyReviewActionButtons(
+            CatalogSyncRowItem row,
+            AppCatalogSource? source,
+            CatalogReviewFilter filter)
+        {
+            var isHiddenFilter = filter == CatalogReviewFilter.Hidden;
+            row.ShowHideButton = !isHiddenFilter &&
+                                 source != null &&
+                                 !IsHiddenFromReview(source, row.ReviewKey);
+            row.ShowCardHideButton = row.ShowHideButton && !row.CanRemoveFromLibrary;
+            row.ShowUnhideButton = isHiddenFilter;
+            row.ShowRemoveFromLibrary = row.CanRemoveFromLibrary && !isHiddenFilter;
+        }
 
         public static void HideFromReview(AppCatalogSource source, string repository)
         {

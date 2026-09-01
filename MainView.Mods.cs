@@ -16,7 +16,7 @@ using System.IO;
 
 namespace QuiverLauncher;
 
-public partial class MainWindow
+public partial class MainView
 {
     private bool _isModsOverlayOpen;
     private bool _isModDetailsOpen;
@@ -42,6 +42,7 @@ public partial class MainWindow
     private ModBrowseSession? _modsBrowseSession;
     private bool _modsUsesPagedBrowse;
     private bool _modsIsLoadingMore;
+    private bool _modsListIsLoading;
     private CancellationTokenSource? _modsBackgroundLoadCts;
     private CancellationTokenSource? _modsSearchDebounceCts;
     private ModInstallService? _modInstallService;
@@ -95,7 +96,7 @@ public partial class MainWindow
         if (ModsHeaderText != null)
             ModsHeaderText.Text = $"Mods — {game.Name}";
 
-        SetModsStatus("Loading mods…");
+        SetModsStatus(string.Empty);
         await RefreshModsCatalogAsync(forceRefresh: false).ConfigureAwait(true);
 
         if (IsGamepadFocusActive)
@@ -117,6 +118,7 @@ public partial class MainWindow
         _modsAllItems = [];
         _modsBrowseSession = null;
         _modsUsesPagedBrowse = false;
+        _modsListIsLoading = false;
         _modsSearchDebounceCts?.Cancel();
         _modsSearchDebounceCts = null;
         _modsBackgroundLoadCts?.Cancel();
@@ -226,12 +228,19 @@ public partial class MainWindow
         }
     }
 
-    private async Task RunRemoteModsSearchAsync(string query, CancellationToken cancellationToken)
+    private async Task RunRemoteModsSearchAsync(
+        string query,
+        CancellationToken cancellationToken,
+        bool manageLoading = true)
     {
         if (_modsGame == null)
             return;
 
-        SetModsStatus("Searching…");
+        if (manageLoading)
+            SetModsListLoading(true, "Searching…");
+        else
+            SetModsListLoadingCaption("Searching…");
+
         try
         {
             var options = CurrentModsListOptions();
@@ -261,6 +270,11 @@ public partial class MainWindow
         catch (Exception ex)
         {
             SetModsStatus($"Search failed: {ex.Message}");
+        }
+        finally
+        {
+            if (manageLoading)
+                SetModsListLoading(false);
         }
     }
 
@@ -408,7 +422,7 @@ public partial class MainWindow
 
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            UrlLauncher.Open(url);
         }
         catch (Exception ex)
         {
@@ -432,12 +446,12 @@ public partial class MainWindow
         if (_modsGame == null)
             return;
 
+        SetModsListLoading(true, forceRefresh ? "Refreshing…" : "Loading mods…");
         try
         {
             _modsBackgroundLoadCts?.Cancel();
             _modsBackgroundLoadCts = null;
             _modsOrphanEnrichAttempted.Clear();
-            SetModsStatus(forceRefresh ? "Refreshing…" : "Loading mods…");
 
             var options = CurrentModsListOptions();
             _modsUsesPagedBrowse = ModCatalog.HasPagedSources(_modsGame.ModsSources);
@@ -447,7 +461,10 @@ public partial class MainWindow
                 !string.Equals(_modsTab, "Installed", StringComparison.OrdinalIgnoreCase) &&
                 ModCatalog.HasRemoteSearchSources(_modsGame.ModsSources))
             {
-                await RunRemoteModsSearchAsync(_modsSearchText, CancellationToken.None).ConfigureAwait(true);
+                await RunRemoteModsSearchAsync(
+                    _modsSearchText,
+                    CancellationToken.None,
+                    manageLoading: false).ConfigureAwait(true);
                 await RefreshModUpdateFlagsForGameAsync(_modsGame).ConfigureAwait(true);
                 return;
             }
@@ -480,6 +497,10 @@ public partial class MainWindow
         catch (Exception ex)
         {
             SetModsStatus($"Failed to load mods: {ex.Message}");
+        }
+        finally
+        {
+            SetModsListLoading(false);
         }
     }
 
@@ -561,6 +582,34 @@ public partial class MainWindow
             return $"{loaded} mods loaded (more available)";
 
         return $"{loaded} mods loaded";
+    }
+
+    /// <summary>
+    /// True when the list-area loading panel should show (catalog load/search and no rows yet).
+    /// </summary>
+    internal static bool ShouldShowModsListLoading(bool isLoading, int rowCount) =>
+        isLoading && rowCount == 0;
+
+    private void SetModsListLoading(bool isLoading, string? caption = null)
+    {
+        _modsListIsLoading = isLoading;
+        SetModsListLoadingCaption(caption);
+        UpdateModsListPlaceholder();
+    }
+
+    private void SetModsListLoadingCaption(string? caption)
+    {
+        if (caption != null && ModsListLoadingText != null)
+            ModsListLoadingText.Text = caption;
+    }
+
+    private void UpdateModsListPlaceholder()
+    {
+        var showLoading = ShouldShowModsListLoading(_modsListIsLoading, ModListRows.Count);
+        if (ModsListLoadingPanel != null)
+            ModsListLoadingPanel.IsVisible = showLoading;
+        if (ModsEmptyText != null)
+            ModsEmptyText.IsVisible = !showLoading && ModListRows.Count == 0;
     }
 
     private void SyncModListItemsFromCatalog()
@@ -808,8 +857,7 @@ public partial class MainWindow
         foreach (var row in rows)
             ModListRows.Add(row);
 
-        if (ModsEmptyText != null)
-            ModsEmptyText.IsVisible = rows.Count == 0;
+        UpdateModsListPlaceholder();
 
         if (ModsUpdateAllButton != null)
             ModsUpdateAllButton.IsEnabled = rows.Any(r => r.CanUpdate);
@@ -823,10 +871,10 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Updates install status on existing list rows without rebuilding ModListItem instances
-    /// (avoids focus loss and AdvancedImage rebinds after install/uninstall).
+    /// Updates install status on every catalog row from the sidecar (root plus dependencies)
+    /// without rebuilding ModListItem instances.
     /// </summary>
-    private void ApplyInstalledStateToMatchingItems(ModPackage package)
+    private void ApplyInstalledStateToAllItems()
     {
         if (_modsGame == null)
             return;
@@ -835,13 +883,8 @@ public partial class MainWindow
         var installedDoc = string.IsNullOrWhiteSpace(installRoot) || !Directory.Exists(installRoot)
             ? new InstalledModsDocument()
             : ModInstaller.LoadInstalled(installRoot);
-        var records = FindInstalledRecords(installedDoc, package);
 
-        foreach (var existing in _modsAllItems)
-        {
-            if (ModCatalogListBuilder.PackagesMatch(existing.Package, package))
-                existing.ApplyInstalled(records);
-        }
+        ModCatalogListBuilder.ApplyInstalledState(_modsAllItems, installedDoc);
     }
 
     private void BuildModsSourceFilterButtons()
@@ -915,7 +958,10 @@ public partial class MainWindow
             ModsStatusText.Text = text;
     }
 
-    private async Task InstallModAsync(ModListItem item, bool updateInstalledFilesOnly = false)
+    private async Task InstallModAsync(
+        ModListItem item,
+        bool updateInstalledFilesOnly = false,
+        bool promptForDependencies = true)
     {
         if (_modsGame == null)
             return;
@@ -1004,6 +1050,31 @@ public partial class MainWindow
                     throw new InvalidOperationException("Could not resolve a download URL for this mod.");
             }
 
+            var installDependencies = true;
+            if (promptForDependencies && provider is ThunderstoreModProvider)
+            {
+                var missingDeps = ModInstaller.ListMissingDirectDependencies(
+                    ModInstaller.LoadInstalled(installRoot),
+                    package,
+                    _modsCatalog);
+                if (missingDeps.Count > 0)
+                {
+                    var list = string.Join("\n", missingDeps);
+                    var choice = await ShowChoicePromptAsync(
+                        "This mod has some requirements you haven't installed yet:\n\n" +
+                        list +
+                        "\n\nDo you wish to install them as well?",
+                        "Mod requirements").ConfigureAwait(true);
+                    if (choice == MessagePromptResult.Cancel)
+                    {
+                        SetModsStatus("Install cancelled");
+                        return;
+                    }
+
+                    installDependencies = choice == MessagePromptResult.Yes;
+                }
+            }
+
             var progress = new Progress<double>(p => item.DownloadProgress = p * 100.0);
 
             await ModInstaller.InstallSelectedFilesAsync(
@@ -1014,9 +1085,10 @@ public partial class MainWindow
                 provider,
                 selectedFiles,
                 progress,
-                modsLayout: _modsGame.ModsLayout).ConfigureAwait(true);
+                modsLayout: _modsGame.ModsLayout,
+                installDependencies: installDependencies).ConfigureAwait(true);
 
-            ApplyInstalledStateToMatchingItems(package);
+            ApplyInstalledStateToAllItems();
             ApplyModsFiltersToUi();
             await RefreshModUpdateFlagsForGameAsync(_modsGame).ConfigureAwait(true);
             SetModsStatus(isUpdate ? $"Updated {item.DisplayName}" : $"Installed {item.DisplayName}");
@@ -1244,7 +1316,7 @@ public partial class MainWindow
             foreach (var record in toRemove)
                 ModInstaller.UninstallMatchingFile(installRoot, modsPath, package, record.DownloadFileId);
 
-            ApplyInstalledStateToMatchingItems(package);
+            ApplyInstalledStateToAllItems();
             ApplyModsFiltersToUi();
             _ = RefreshModUpdateFlagsForGameAsync(_modsGame);
             SetModsStatus($"Uninstalled {item.DisplayName}");
@@ -1264,7 +1336,7 @@ public partial class MainWindow
     {
         var toUpdate = ModListRows.Where(r => r.CanUpdate).ToList();
         foreach (var item in toUpdate)
-            await InstallModAsync(item, updateInstalledFilesOnly: true);
+            await InstallModAsync(item, updateInstalledFilesOnly: true, promptForDependencies: false);
     }
 
     private async Task RefreshModUpdateFlagsForGameAsync(GameInfo game)
@@ -1390,6 +1462,9 @@ public partial class MainWindow
         if (direction == NavigationDirection.Left && currentIndex <= 0)
             return TryApplyGamepadZoneTransition(new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null));
 
+        if (TryMoveXyFocusInRegion(ModsPanel, direction, controls, ApplyModsToolbarSelection))
+            return true;
+
         var nextIndex = _gamepadNavigation.MoveHorizontalIndex(currentIndex, direction, controls.Count);
         ApplyModsToolbarSelection(nextIndex);
         return true;
@@ -1419,6 +1494,9 @@ public partial class MainWindow
 
         if (direction == NavigationDirection.Left && currentIndex <= 0)
             return TryApplyGamepadZoneTransition(new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null));
+
+        if (TryMoveXyFocusInRegion(ModsPanel, direction, controls, ApplyModsFiltersSelection))
+            return true;
 
         var nextIndex = _gamepadNavigation.MoveHorizontalIndex(currentIndex, direction, controls.Count);
         ApplyModsFiltersSelection(nextIndex);
@@ -1454,6 +1532,9 @@ public partial class MainWindow
 
         if (direction == NavigationDirection.Left && currentIndex <= 0)
             return TryApplyGamepadZoneTransition(new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null));
+
+        if (TryMoveXyFocusInRegion(ModsPanel, direction, controls, ApplyModsSourceFiltersSelection))
+            return true;
 
         var nextIndex = _gamepadNavigation.MoveHorizontalIndex(currentIndex, direction, controls.Count);
         ApplyModsSourceFiltersSelection(nextIndex);
@@ -1786,6 +1867,7 @@ public partial class MainWindow
         if (index < 0 || index >= ModListRows.Count)
             return;
 
+        GamepadCardFocusSink.Park(CardGamepadFocusSink);
         var row = ModListRows[index];
         row.IsGamepadFocused = true;
         Dispatcher.UIThread.Post(
@@ -1891,7 +1973,7 @@ public partial class MainWindow
 
         try
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            UrlLauncher.Open(url);
         }
         catch (Exception ex)
         {
@@ -1943,7 +2025,9 @@ public partial class MainWindow
         OnPropertyChanged(nameof(GamepadHintsVisible));
 
         if (IsGamepadFocusActive)
-            Dispatcher.UIThread.Post(() => ApplyModDetailsGamepadSelection(0), DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(
+                () => ApplyModDetailsGamepadSlot(ModDetailsGamepadSlot.Details),
+                DispatcherPriority.Loaded);
 
         await LoadActiveModDetailsTabAsync();
 
@@ -1951,7 +2035,7 @@ public partial class MainWindow
             return;
 
         if (IsGamepadFocusActive)
-            ApplyModDetailsGamepadSelection(0);
+            ApplyModDetailsGamepadSlot(ModDetailsGamepadSlot.Details);
         else
             ClearModDetailsGamepadFocus();
     }
@@ -2102,43 +2186,88 @@ public partial class MainWindow
 
     private bool HandleModDetailsGamepadNavigation(NavigationDirection direction)
     {
-        var controls = CollectModDetailsFocusableControls();
-        if (controls.Count == 0)
-            return false;
-
-        // When Close/Open are focused, Left/Right move between header buttons.
-        // Up/Down always scroll the body; Left/Right on tabs also move selection.
-        var scrollViewer = ModDetailsScrollViewer;
-        var onTabs = _modDetailsGamepadFocusIndex >= 0 &&
-                     _modDetailsGamepadFocusIndex < controls.Count &&
-                     (ReferenceEquals(controls[_modDetailsGamepadFocusIndex], ModDetailsTabDetailsButton) ||
-                      ReferenceEquals(controls[_modDetailsGamepadFocusIndex], ModDetailsTabChangelogButton));
-
-        if (direction is NavigationDirection.Up or NavigationDirection.Down)
+        var current = GetModDetailsGamepadSlot();
+        if (current == null)
         {
+            ApplyModDetailsGamepadSlot(ModDetailsGamepadSlot.Details);
+            return true;
+        }
+
+        var move = ModDetailsGamepadNavigation.Move(
+            current.Value,
+            direction,
+            openPageVisible: ModDetailsOpenPageButton is { IsVisible: true, IsEnabled: true });
+
+        if (move.LeaveZone is { } leave)
+            return TryApplyGamepadZoneTransition(new GamepadZoneTransition(leave, null));
+
+        if (move.ScrollBody)
+        {
+            var scrollViewer = ModDetailsScrollViewer;
             if (scrollViewer != null)
             {
                 const double step = 96;
-                var delta = direction == NavigationDirection.Down ? step : -step;
                 scrollViewer.Offset = new Vector(
                     scrollViewer.Offset.X,
-                    Math.Max(0, scrollViewer.Offset.Y + delta));
+                    scrollViewer.Offset.Y + step);
             }
 
             return true;
         }
 
-        if (direction is NavigationDirection.Left or NavigationDirection.Right)
+        if (move.Slot is { } slot)
+            ApplyModDetailsGamepadSlot(slot);
+
+        return true;
+    }
+
+    private ModDetailsGamepadSlot? GetModDetailsGamepadSlot()
+    {
+        var controls = CollectModDetailsFocusableControls();
+        var index = _gamepadNavigation.ClampIndex(_modDetailsGamepadFocusIndex, controls.Count);
+        if (index < 0 || index >= controls.Count)
+            return null;
+
+        var control = controls[index];
+        if (ReferenceEquals(control, ModDetailsOpenPageButton))
+            return ModDetailsGamepadSlot.OpenPage;
+        if (ReferenceEquals(control, CloseModDetailsButton))
+            return ModDetailsGamepadSlot.Close;
+        if (ReferenceEquals(control, ModDetailsTabDetailsButton))
+            return ModDetailsGamepadSlot.Details;
+        if (ReferenceEquals(control, ModDetailsTabChangelogButton))
+            return ModDetailsGamepadSlot.Changelog;
+        return null;
+    }
+
+    private void ApplyModDetailsGamepadSlot(ModDetailsGamepadSlot slot)
+    {
+        var control = slot switch
         {
-            var delta = direction == NavigationDirection.Right ? 1 : -1;
-            ApplyModDetailsGamepadSelection(_modDetailsGamepadFocusIndex + delta);
-            return true;
+            ModDetailsGamepadSlot.OpenPage => ModDetailsOpenPageButton,
+            ModDetailsGamepadSlot.Close => CloseModDetailsButton,
+            ModDetailsGamepadSlot.Details => ModDetailsTabDetailsButton,
+            ModDetailsGamepadSlot.Changelog => ModDetailsTabChangelogButton,
+            _ => null,
+        };
+
+        var controls = CollectModDetailsFocusableControls();
+        var index = control != null ? controls.IndexOf(control) : -1;
+        if (index < 0)
+        {
+            index = controls.IndexOf(ModDetailsTabDetailsButton);
+            if (index < 0)
+                index = 0;
         }
 
-        // Keep selection painted.
-        if (onTabs)
-            ApplyModDetailsGamepadSelection(_modDetailsGamepadFocusIndex);
-        return true;
+        ApplyModDetailsGamepadSelection(index);
+    }
+
+    private void ApplyModDetailsGamepadSlotFromChrome(GamepadNavigationZone fromZone)
+    {
+        var openPageVisible = ModDetailsOpenPageButton is { IsVisible: true, IsEnabled: true };
+        ApplyModDetailsGamepadSlot(
+            ModDetailsGamepadNavigation.SlotReturningFromChrome(fromZone, openPageVisible));
     }
 
     private void HandleModDetailsGamepadConfirm()

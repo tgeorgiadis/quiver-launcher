@@ -43,4 +43,12 @@ public class LibraryUpdateBadgeTests
 
         game.ShowUpdateBadge.Should().BeFalse();
     }
+
+    [Fact]
+    public void CanInfoOptions_true_when_repository_is_set()
+    {
+        new GameInfo { Repository = "owner/repo" }.CanInfoOptions.Should().BeTrue();
+        new GameInfo { Repository = "" }.CanInfoOptions.Should().BeFalse();
+        new GameInfo().CanInfoOptions.Should().BeFalse();
+    }
 }

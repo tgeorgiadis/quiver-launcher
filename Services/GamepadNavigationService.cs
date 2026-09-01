@@ -28,6 +28,8 @@ public enum GamepadNavigationZone
 
     CatalogReviewRowActions,
 
+    CatalogReviewDetailsOverlay,
+
     AppUpdatesReviewToolbar,
 
     AppUpdatesReviewList,
@@ -152,6 +154,20 @@ public sealed class GamepadNavigationService
 
 
 
+    public bool ShouldKeepLibraryChromeFocus(GamepadNavigationZone zone, bool restoreSearchChrome) =>
+
+        zone is GamepadNavigationZone.TopBar
+
+            or GamepadNavigationZone.Sidebar
+
+            or GamepadNavigationZone.AnnouncementBanner
+
+        || restoreSearchChrome;
+
+
+
+
+
     public int MoveListIndex(int currentIndex, NavigationDirection direction, int count, bool wrap = true)
 
     {
@@ -221,6 +237,53 @@ public sealed class GamepadNavigationService
 
         };
 
+    }
+
+
+
+    /// <summary>
+    /// Vertical field stack plus a trailing horizontal action-button row.
+    /// Up/Down walk fields and enter/leave the row; Left/Right move among action buttons.
+    /// </summary>
+    public int MoveFormIndex(
+        int currentIndex,
+        NavigationDirection direction,
+        int fieldCount,
+        int actionCount)
+    {
+        if (fieldCount < 0)
+            fieldCount = 0;
+        if (actionCount < 0)
+            actionCount = 0;
+
+        var total = fieldCount + actionCount;
+        if (total <= 0)
+            return -1;
+
+        var index = currentIndex < 0 ? 0 : (currentIndex >= total ? total - 1 : currentIndex);
+        var inActions = actionCount > 0 && index >= fieldCount;
+
+        if (inActions)
+        {
+            var actionIndex = index - fieldCount;
+            return direction switch
+            {
+                NavigationDirection.Left or NavigationDirection.Right when actionCount > 1
+                    => fieldCount + MoveHorizontalIndex(actionIndex, direction, actionCount),
+                NavigationDirection.Up when fieldCount > 0
+                    => fieldCount - 1,
+                _ => index,
+            };
+        }
+
+        return direction switch
+        {
+            NavigationDirection.Down when fieldCount > 0 && index >= fieldCount - 1 && actionCount > 0
+                => fieldCount,
+            NavigationDirection.Up or NavigationDirection.Down
+                => MoveListIndex(index, direction, Math.Max(fieldCount, 1), wrap: false),
+            _ => index,
+        };
     }
 
 
@@ -656,6 +719,18 @@ public sealed class GamepadNavigationService
 
 
 
+            if (mainContentZone == GamepadNavigationZone.ModsDetailsOverlay)
+
+                return new GamepadZoneTransition(GamepadNavigationZone.ModsDetailsOverlay, 0);
+
+
+
+            if (mainContentZone == GamepadNavigationZone.CatalogReviewDetailsOverlay)
+
+                return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewDetailsOverlay, 0);
+
+
+
             return new GamepadZoneTransition(GamepadNavigationZone.Library, 0);
 
         }
@@ -702,6 +777,18 @@ public sealed class GamepadNavigationService
                 if (mainContentZone == GamepadNavigationZone.CatalogSources)
 
                     return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesToolbar, 0);
+
+
+
+                if (mainContentZone == GamepadNavigationZone.ModsDetailsOverlay)
+
+                    return new GamepadZoneTransition(GamepadNavigationZone.ModsDetailsOverlay, 0);
+
+
+
+                if (mainContentZone == GamepadNavigationZone.CatalogReviewDetailsOverlay)
+
+                    return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewDetailsOverlay, 0);
 
 
 
@@ -831,13 +918,17 @@ public sealed class GamepadNavigationService
 
         {
 
-            if (direction == NavigationDirection.Left)
+            if (direction == NavigationDirection.Left &&
+
+                IsAtContentEdge(direction, isListLayout, positions, currentIndex, itemCount))
 
                 return new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null);
 
 
 
-            if (direction == NavigationDirection.Up && (itemCount == 0 || currentIndex <= 0))
+            if (direction == NavigationDirection.Up &&
+
+                IsAtContentEdge(direction, isListLayout, positions, currentIndex, itemCount))
 
                 return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewFilters, null);
 

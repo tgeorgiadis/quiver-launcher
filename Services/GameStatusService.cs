@@ -8,6 +8,8 @@ public static class GameStatusService
 {
     private const string DefaultInstalledVersion = "0.0.0";
 
+    public const string AndroidPackageFileName = "android-package.txt";
+
     public static async Task CheckStatusAsync(
         GameInfo game,
         HttpClient httpClient,
@@ -31,6 +33,17 @@ public static class GameStatusService
             var directoryExists = Directory.Exists(gamePath);
             var versionFileExists = File.Exists(versionFile);
 
+            if (OperatingSystem.IsAndroid())
+                TryRestoreAndroidPackageName(game, gamePath);
+
+            var androidPackageInstalled = OperatingSystem.IsAndroid() && AppInstallLaunch.Current.IsInstalled(game);
+
+            if (androidPackageInstalled)
+            {
+                game.InstalledVersion = AppInstallLaunch.Current.GetInstalledVersion(game) ?? game.InstalledVersion;
+                game.Status = GameStatus.Installed;
+            }
+
             if (game.IsManuallyManaged)
             {
                 game.LatestVersion = null;
@@ -48,8 +61,13 @@ public static class GameStatusService
                 return;
             }
 
-            var isInstalled = false;
-            if (directoryExists)
+            var isInstalled = androidPackageInstalled;
+            if (!isInstalled && OperatingSystem.IsAndroid())
+            {
+                game.Status = GameStatus.NotInstalled;
+                game.InstalledVersion = "";
+            }
+            else if (!isInstalled && directoryExists)
             {
                 if (versionFileExists)
                 {
@@ -75,7 +93,7 @@ public static class GameStatusService
                     isInstalled = true;
                 }
             }
-            else
+            else if (!isInstalled)
             {
                 game.Status = GameStatus.NotInstalled;
                 game.InstalledVersion = "";
@@ -116,6 +134,27 @@ public static class GameStatusService
         finally
         {
             game.IsLoading = false;
+        }
+    }
+
+    public static void TryRestoreAndroidPackageName(GameInfo game, string gamePath)
+    {
+        if (!string.IsNullOrWhiteSpace(game.AndroidPackageName) || string.IsNullOrWhiteSpace(gamePath))
+            return;
+
+        var packageFile = Path.Combine(gamePath, AndroidPackageFileName);
+        if (!File.Exists(packageFile))
+            return;
+
+        try
+        {
+            var packageName = File.ReadAllText(packageFile).Trim();
+            if (!string.IsNullOrWhiteSpace(packageName))
+                game.AndroidPackageName = packageName;
+        }
+        catch
+        {
+            // Keep whatever package name is already on the game.
         }
     }
 

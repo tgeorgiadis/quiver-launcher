@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -32,6 +31,37 @@ public static class GameDialogService
         return null;
     }
 
+    private static bool HasInteractiveUi() =>
+        TryGetDesktopMainWindow() is not null ||
+        Application.Current?.ApplicationLifetime is IActivityApplicationLifetime ||
+        Application.Current?.ApplicationLifetime is ISingleViewApplicationLifetime;
+
+    private static MainView? TryGetMainView()
+    {
+        return Application.Current?.ApplicationLifetime switch
+        {
+            IClassicDesktopStyleApplicationLifetime desktop when desktop.MainWindow is MainWindow window =>
+                window.View,
+            IActivityApplicationLifetime => App.TryGetHostedMainView(),
+            ISingleViewApplicationLifetime single when single.MainView is MainView view => view,
+            _ => App.TryGetHostedMainView(),
+        };
+    }
+
+    public static async Task ShowWindowAsync(Window dialog)
+    {
+        if (TryGetDesktopMainWindow() is Window owner)
+        {
+            await dialog.ShowDialog(owner);
+            return;
+        }
+
+        var closed = new TaskCompletionSource();
+        dialog.Closed += (_, _) => closed.TrySetResult();
+        dialog.Show();
+        await closed.Task;
+    }
+
     private static void WriteConsoleError(string title, string message)
     {
         Console.WriteLine();
@@ -44,7 +74,7 @@ public static class GameDialogService
 
     public static async Task ShowMessageBoxAsync(string message, string title)
     {
-        if (TryGetDesktopMainWindow() is not Window mainWindow)
+        if (!HasInteractiveUi())
         {
             WriteConsoleError(title, message);
             return;
@@ -52,6 +82,12 @@ public static class GameDialogService
 
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
+            if (TryGetDesktopMainWindow() is null && TryGetMainView() is MainView view)
+            {
+                await view.ShowOverlayPromptAsync(message, title, isQuestion: false);
+                return;
+            }
+
             var messageBox = new Window
             {
                 Title = title,
@@ -103,7 +139,7 @@ public static class GameDialogService
 
             GamepadModalDialogNavigation.Attach(messageBox);
 
-            await messageBox.ShowDialog(mainWindow);
+            await ShowWindowAsync(messageBox);
         });
     }
 
@@ -175,7 +211,7 @@ public static class GameDialogService
                 messageBox.Tag = accepted;
             });
 
-            await messageBox.ShowDialog(mainWindow);
+            await ShowWindowAsync(messageBox);
             if (messageBox.Tag is bool tagResult)
                 userChoice = tagResult;
         });
@@ -464,7 +500,7 @@ public static class GameDialogService
                 }
             });
 
-            await messageBox.ShowDialog(mainWindow);
+            await ShowWindowAsync(messageBox);
         });
 
         return result;
@@ -472,7 +508,7 @@ public static class GameDialogService
 
     public static async Task ShowRateLimitErrorAsync()
     {
-        if (TryGetDesktopMainWindow() is not Window mainWindow)
+        if (!HasInteractiveUi())
             return;
 
         await Dispatcher.UIThread.InvokeAsync(async () =>
@@ -490,13 +526,7 @@ public static class GameDialogService
             {
                 try
                 {
-                    var url = "https://github.com/settings/tokens";
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                        Process.Start("xdg-open", url);
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                        Process.Start("open", url);
+                    UrlLauncher.Open("https://github.com/settings/tokens");
                 }
                 catch (Exception ex)
                 {
@@ -583,20 +613,19 @@ public static class GameDialogService
             openSettingsButton.Click += (_, _) =>
             {
                 messageBox.Close();
-                if (mainWindow is MainWindow mainWindowInstance)
-                    mainWindowInstance.OpenGitHubApiTokenSettings();
+                TryGetMainView()?.OpenGitHubApiTokenSettings();
             };
             closeButton.Click += (_, _) => messageBox.Close();
 
             GamepadModalDialogNavigation.Attach(messageBox);
 
-            await messageBox.ShowDialog(mainWindow);
+            await ShowWindowAsync(messageBox);
         });
     }
 
     public static async Task ShowGitLabRateLimitErrorAsync()
     {
-        if (TryGetDesktopMainWindow() is not Window mainWindow)
+        if (!HasInteractiveUi())
         {
             WriteConsoleError(
                 "Rate Limit Exceeded",
@@ -619,13 +648,7 @@ public static class GameDialogService
             {
                 try
                 {
-                    var url = "https://gitlab.com/-/user_settings/personal_access_tokens";
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                        Process.Start("xdg-open", url);
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                        Process.Start("open", url);
+                    UrlLauncher.Open("https://gitlab.com/-/user_settings/personal_access_tokens");
                 }
                 catch (Exception ex)
                 {
@@ -710,14 +733,13 @@ public static class GameDialogService
             openSettingsButton.Click += (_, _) =>
             {
                 messageBox.Close();
-                if (mainWindow is MainWindow mainWindowInstance)
-                    mainWindowInstance.OpenGitLabApiTokenSettings();
+                TryGetMainView()?.OpenGitLabApiTokenSettings();
             };
             closeButton.Click += (_, _) => messageBox.Close();
 
             GamepadModalDialogNavigation.Attach(messageBox);
 
-            await messageBox.ShowDialog(mainWindow);
+            await ShowWindowAsync(messageBox);
         });
     }
 }

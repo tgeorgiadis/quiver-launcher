@@ -28,10 +28,15 @@ public class FileSettingsStoreTests : IDisposable
         var store = new FileSettingsStore(_settingsPath);
 
         store.Current.FirstStartup.Should().BeTrue();
+        store.Current.CatalogReviewUseGridView.Should().BeTrue();
+        store.Current.TruncateLibraryCardTitles.Should().BeTrue();
         store.Current.GridCompactCards.Should().BeFalse();
         store.Current.IconFill.Should().BeFalse();
-        store.Current.SlotSize.Should().Be(152);
+        store.Current.SlotSize.Should().Be(180);
         store.Current.IconSize.Should().Be(124);
+        store.Current.ActionButtonSize.Should().Be(36);
+        store.Current.LibraryCardTagMaxLines.Should().Be(2);
+        store.Current.LibraryCardTagZeroMeansHidden.Should().BeTrue();
         store.Current.IconMargin.Should().Be(0);
         store.Current.SlotTextMargin.Should().Be(0);
         store.Current.AppCatalogSources.Should().NotBeNull();
@@ -55,6 +60,8 @@ public class FileSettingsStoreTests : IDisposable
         settings.GitLabApiToken = "gitlab-token";
         settings.SortBy = "Name";
         settings.CatalogReviewSortBy = "Repository";
+        settings.CatalogReviewUseGridView = true;
+        settings.TruncateLibraryCardTitles = false;
         settings.ListScope = AppListScope.InstalledOnly;
         settings.ManuallyHiddenApps.Add("folder:TestGame");
 
@@ -65,6 +72,8 @@ public class FileSettingsStoreTests : IDisposable
         reloaded.GitLabApiToken.Should().Be("gitlab-token");
         reloaded.SortBy.Should().Be("Name");
         reloaded.CatalogReviewSortBy.Should().Be("Repository");
+        reloaded.CatalogReviewUseGridView.Should().BeTrue();
+        reloaded.TruncateLibraryCardTitles.Should().BeFalse();
         reloaded.ListScope.Should().Be(AppListScope.InstalledOnly);
         reloaded.ManuallyHiddenApps.Should().Contain("folder:TestGame");
         reloaded.HiddenApps.Should().BeEmpty();

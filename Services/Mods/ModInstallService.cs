@@ -87,6 +87,62 @@ public sealed class ModInstallService
         return record;
     }
 
+    /// <summary>
+    /// Direct Thunderstore requirements that are not already in the install sidecar,
+    /// using catalog names when available.
+    /// </summary>
+    public IReadOnlyList<string> ListMissingDirectDependencies(
+        InstalledModsDocument document,
+        ModPackage package,
+        IReadOnlyList<ModPackage>? catalog = null)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(package);
+
+        var deps = package.LatestVersion?.Dependencies ?? [];
+        if (deps.Count == 0)
+            return [];
+
+        var missing = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var dep in deps)
+        {
+            if (!ThunderstoreModProvider.TryParseDependencyString(dep, out var depFullName, out _))
+                continue;
+
+            if (!seen.Add(depFullName))
+                continue;
+
+            if (_store.FindByFullName(document, package.ProviderId, package.SourceKey, depFullName) != null)
+                continue;
+
+            missing.Add(ResolveDependencyDisplayName(package, depFullName, catalog));
+        }
+
+        return missing;
+    }
+
+    static string ResolveDependencyDisplayName(
+        ModPackage parent,
+        string depFullName,
+        IReadOnlyList<ModPackage>? catalog)
+    {
+        var catalogMatch = catalog?.FirstOrDefault(p =>
+            string.Equals(p.ProviderId, parent.ProviderId, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(p.SourceKey, parent.SourceKey, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(p.FullName, depFullName, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(catalogMatch?.Name))
+            return catalogMatch.Name;
+
+        if (ThunderstoreModProvider.TrySplitPackageFullName(depFullName, out _, out var name) &&
+            !string.IsNullOrWhiteSpace(name))
+        {
+            return name;
+        }
+
+        return depFullName;
+    }
+
     public async Task InstallWithDependenciesAsync(
         string installRoot,
         string modsPath,
@@ -96,7 +152,8 @@ public sealed class ModInstallService
         ModDownloadFile? selectedFile = null,
         IProgress<double>? progress = null,
         CancellationToken cancellationToken = default,
-        string? modsLayout = null)
+        string? modsLayout = null,
+        bool installDependencies = true)
     {
         var document = _store.Load(installRoot);
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -112,7 +169,8 @@ public sealed class ModInstallService
             selectedFile,
             progress,
             cancellationToken,
-            modsLayout).ConfigureAwait(false);
+            modsLayout,
+            installDependencies).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -128,7 +186,8 @@ public sealed class ModInstallService
         IReadOnlyList<ModDownloadFile>? selectedFiles,
         IProgress<double>? progress = null,
         CancellationToken cancellationToken = default,
-        string? modsLayout = null)
+        string? modsLayout = null,
+        bool installDependencies = true)
     {
         if (selectedFiles == null || selectedFiles.Count == 0)
         {
@@ -141,7 +200,8 @@ public sealed class ModInstallService
                     selectedFile: null,
                     progress,
                     cancellationToken,
-                    modsLayout)
+                    modsLayout,
+                    installDependencies)
                 .ConfigureAwait(false);
             return;
         }
@@ -157,7 +217,8 @@ public sealed class ModInstallService
                     file,
                     progress,
                     cancellationToken,
-                    modsLayout)
+                    modsLayout,
+                    installDependencies)
                 .ConfigureAwait(false);
         }
     }
@@ -173,14 +234,17 @@ public sealed class ModInstallService
         ModDownloadFile? selectedFile,
         IProgress<double>? progress,
         CancellationToken cancellationToken,
-        string? modsLayout)
+        string? modsLayout,
+        bool installDependencies)
     {
         if (!visited.Add(package.FullName))
             return;
 
         package = await EnsureDownloadableAsync(package, provider, cancellationToken).ConfigureAwait(false);
 
-        var deps = package.LatestVersion?.Dependencies ?? [];
+        var deps = installDependencies
+            ? package.LatestVersion?.Dependencies ?? []
+            : [];
         foreach (var dep in deps)
         {
             if (!ThunderstoreModProvider.TryParseDependencyString(dep, out var depFullName, out _))
@@ -215,7 +279,8 @@ public sealed class ModInstallService
                 selectedFile: null,
                 progress,
                 cancellationToken,
-                modsLayout).ConfigureAwait(false);
+                modsLayout,
+                installDependencies: true).ConfigureAwait(false);
 
             document = _store.Load(installRoot);
         }
@@ -397,7 +462,7 @@ public sealed class ModInstallService
     public InstalledModsDocument LoadInstalled(string installRoot) => _store.Load(installRoot);
 
     /// <summary>
-    /// Extracts non-metadata entries from a zip or 7z archive into <paramref name="modsDir"/>.
+    /// Extracts non-metadata entries from a zip, 7z, or rar archive into <paramref name="modsDir"/>.
     /// Returns relative paths that were written (forward-slash normalized).
     /// When <paramref name="modsLayout"/> is folderPerMod and the archive has root-level payload
     /// files, all payload paths are prefixed with <paramref name="wrapFolderName"/>.

@@ -26,6 +26,11 @@ public static class QuiverLauncherPaths
     /// </summary>
     public static Func<string?>? VelopackPackageDirectoryProvider { get; set; }
 
+    /// <summary>
+    /// Optional provider for Android <c>Context.FilesDir</c>. Set from MainActivity.
+    /// </summary>
+    public static Func<string?>? AndroidFilesDirProvider { get; set; }
+
     /// <summary>Test hook to override directory writability checks.</summary>
     internal static Func<string, bool>? DirectoryWritableTester { get; set; }
 
@@ -35,6 +40,13 @@ public static class QuiverLauncherPaths
         {
             if (!string.IsNullOrWhiteSpace(OverrideUserDataRoot))
                 return NormalizeDirectory(OverrideUserDataRoot);
+
+            if (OperatingSystem.IsAndroid())
+            {
+                var androidRoot = AndroidFilesDirProvider?.Invoke();
+                if (!string.IsNullOrWhiteSpace(androidRoot))
+                    return NormalizeDirectory(androidRoot);
+            }
 
             if (OperatingSystem.IsWindows())
             {
@@ -70,6 +82,7 @@ public static class QuiverLauncherPaths
     public static string CacheDirectory => Path.Combine(UserDataRoot, "Cache");
     public static string DefaultAppsDirectory => Path.Combine(UserDataRoot, "Apps");
     public static string CrashLogPath => Path.Combine(UserDataRoot, "crash.log");
+    public static string GamepadDebugLogPath => Path.Combine(UserDataRoot, GamepadDebugLog.FileName);
 
     public static void EnsureUserDataRootExists()
     {

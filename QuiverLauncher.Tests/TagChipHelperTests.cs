@@ -102,7 +102,11 @@ public class TagChipHelperTests
     [Fact]
     public void LibraryCardTagMaxLines_defaults_to_two_and_normalizes()
     {
-        new AppSettings().LibraryCardTagMaxLines.Should().Be(2);
+        var settings = new AppSettings();
+        settings.LibraryCardTagMaxLines.Should().Be(2);
+        settings.LibraryCardTagZeroMeansHidden.Should().BeTrue();
+        settings.EnsureInitialized();
+        settings.LibraryCardTagMaxLines.Should().Be(2);
         TagChipHelper.NormalizeLibraryCardTagMaxLines(-1).Should().Be(0);
         TagChipHelper.NormalizeLibraryCardTagMaxLines(8).Should().Be(8);
         TagChipHelper.NormalizeLibraryCardTagMaxLines(99)
@@ -188,6 +192,7 @@ public class TagChipHelperTests
         {
             LibraryTagDisplayMode = LibraryTagDisplayMode.Hidden,
             LibraryCardTagMaxLines = 2,
+            LibraryCardTagZeroMeansHidden = false,
         };
 
         settings.EnsureInitialized();
@@ -206,6 +211,7 @@ public class TagChipHelperTests
         {
             LibraryTagDisplayMode = LibraryTagDisplayMode.Featured,
             LibraryCardTagMaxLines = 0,
+            LibraryCardTagZeroMeansHidden = false,
         };
 
         settings.EnsureInitialized();

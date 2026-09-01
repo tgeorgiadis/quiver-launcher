@@ -19,7 +19,14 @@ public static class RecycleBinHelper
         if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
             throw new FileNotFoundException("Path does not exist.", fullPath);
 
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsAndroid())
+        {
+            if (Directory.Exists(fullPath))
+                Directory.Delete(fullPath, recursive: true);
+            else
+                File.Delete(fullPath);
+        }
+        else if (OperatingSystem.IsWindows())
             MoveToRecycleBinWindows(fullPath);
         else if (OperatingSystem.IsLinux())
             MoveToRecycleBinLinux(fullPath);

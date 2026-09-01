@@ -214,6 +214,15 @@ public class ModsSystemTests
     }
 
     [Fact]
+    public void ShouldShowModsListLoading_only_when_loading_and_empty()
+    {
+        MainWindow.ShouldShowModsListLoading(isLoading: true, rowCount: 0).Should().BeTrue();
+        MainWindow.ShouldShowModsListLoading(isLoading: true, rowCount: 3).Should().BeFalse();
+        MainWindow.ShouldShowModsListLoading(isLoading: false, rowCount: 0).Should().BeFalse();
+        MainWindow.ShouldShowModsListLoading(isLoading: false, rowCount: 3).Should().BeFalse();
+    }
+
+    [Fact]
     public void GameBananaModProvider_maps_index_nsfw_and_skips_paid()
     {
         var source = new ModSourceRef
@@ -652,6 +661,37 @@ public class ModsSystemTests
     }
 
     [Fact]
+    public void ModInstallService_extracts_rar_payload_and_skips_root_metadata()
+    {
+        var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample-mod.rar");
+        File.Exists(fixture).Should().BeTrue("sample-mod.rar fixture should be copied to test output");
+
+        var root = Path.Combine(Path.GetTempPath(), "quiver-mod-extract-rar-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            using var stream = File.OpenRead(fixture);
+            var metadata = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "manifest.json", "icon.png", "README.md", "CHANGELOG.md",
+            };
+            var files = ModInstallService.ExtractPayloadFiles(stream, root, metadata);
+            files.Should().BeEquivalentTo(["payload.nrm", "nested/data.txt"]);
+            File.Exists(Path.Combine(root, "payload.nrm")).Should().BeTrue();
+            File.Exists(Path.Combine(root, "manifest.json")).Should().BeFalse();
+            File.Exists(Path.Combine(root, "README.md")).Should().BeFalse();
+            File.Exists(Path.Combine(root, "nested", "data.txt")).Should().BeTrue();
+            File.ReadAllText(Path.Combine(root, "payload.nrm")).Should().Be("modbytes");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ModInstallService_folderPerMod_wraps_flat_zip_into_named_folder()
     {
         using var ms = new MemoryStream();
@@ -776,10 +816,11 @@ public class ModsSystemTests
     [Theory]
     [InlineData(new byte[] { (byte)'P', (byte)'K', 0x03, 0x04 }, true)]
     [InlineData(new byte[] { 0x37, 0x7A, 0xBC, 0xAF }, true)]
-    [InlineData(new byte[] { 0x52, 0x61, 0x72, 0x21 }, false)]
-    public void GameBananaModProvider_accepts_zip_and_7z_magic_headers(byte[] header, bool expected)
+    [InlineData(new byte[] { 0x52, 0x61, 0x72, 0x21 }, true)]
+    [InlineData(new byte[] { 0x00, 0x01, 0x02, 0x03 }, false)]
+    public void GameBananaModProvider_accepts_zip_7z_and_rar_magic_headers(byte[] header, bool expected)
     {
-        GameBananaModProvider.IsZipOrSevenZipHeader(header).Should().Be(expected);
+        GameBananaModProvider.IsSupportedArchiveHeader(header).Should().Be(expected);
     }
 
     [Fact]
@@ -1011,6 +1052,77 @@ public class ModsSystemTests
         migrated.Should().BeFalse();
     }
 
+    [Fact]
+    public void ApplyInstalledState_updates_dependency_card_from_sidecar()
+    {
+        var root = MakeThunderstorePackage("Author", "RootMod", "1.0.0");
+        var dep = MakeThunderstorePackage("LibOwner", "SharedLib", "2.0.0");
+        var rootItem = new ModListItem { Package = root };
+        var depItem = new ModListItem { Package = dep };
+        var sidecar = new InstalledModsDocument
+        {
+            Mods =
+            [
+                new InstalledModRecord
+                {
+                    Provider = dep.ProviderId,
+                    SourceKey = dep.SourceKey,
+                    Id = dep.Id,
+                    FullName = dep.FullName,
+                    Owner = dep.Owner,
+                    Name = dep.Name,
+                    Version = "2.0.0",
+                },
+            ],
+        };
+
+        ModCatalogListBuilder.ApplyInstalledState([rootItem, depItem], sidecar);
+
+        rootItem.Status.Should().Be(ModInstallStatus.NotInstalled);
+        depItem.Status.Should().Be(ModInstallStatus.Installed);
+        depItem.InstalledVersion.Should().Be("2.0.0");
+    }
+
+    [Fact]
+    public void ApplyInstalledState_updates_root_and_dependency_cards()
+    {
+        var root = MakeThunderstorePackage("Author", "RootMod", "1.0.0");
+        var dep = MakeThunderstorePackage("LibOwner", "SharedLib", "2.0.0");
+        var rootItem = new ModListItem { Package = root };
+        var depItem = new ModListItem { Package = dep };
+        var sidecar = new InstalledModsDocument
+        {
+            Mods =
+            [
+                new InstalledModRecord
+                {
+                    Provider = root.ProviderId,
+                    SourceKey = root.SourceKey,
+                    Id = root.Id,
+                    FullName = root.FullName,
+                    Owner = root.Owner,
+                    Name = root.Name,
+                    Version = "1.0.0",
+                },
+                new InstalledModRecord
+                {
+                    Provider = dep.ProviderId,
+                    SourceKey = dep.SourceKey,
+                    Id = dep.Id,
+                    FullName = dep.FullName,
+                    Owner = dep.Owner,
+                    Name = dep.Name,
+                    Version = "2.0.0",
+                },
+            ],
+        };
+
+        ModCatalogListBuilder.ApplyInstalledState([rootItem, depItem], sidecar);
+
+        rootItem.Status.Should().Be(ModInstallStatus.Installed);
+        depItem.Status.Should().Be(ModInstallStatus.Installed);
+    }
+
     [Theory]
     [InlineData("1.0.0", "1.1.0", true)]
     [InlineData("1.1.1", "1.1.1", false)]
@@ -1221,6 +1333,119 @@ public class ModsSystemTests
             installed.Mods.Should().Contain(m =>
                 m.FullName == "LT_Schmiddy-RecompExternalPython_for_BanjoRecompiled" &&
                 m.Version == "2.0.0");
+        }
+        finally
+        {
+            if (Directory.Exists(cache))
+                Directory.Delete(cache, recursive: true);
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ModInstallService_lists_missing_direct_dependencies()
+    {
+        var installer = new ModInstallService(new ModProviderRegistry([]));
+        var parent = new ModPackage
+        {
+            ProviderId = ModProviderIds.Thunderstore,
+            SourceKey = "banjo-recompiled",
+            Id = "Vertigo-Stop_N_Swop_Transfer_Tool_BK",
+            Owner = "Vertigo",
+            Name = "Stop_N_Swop_Transfer_Tool_BK",
+            FullName = "Vertigo-Stop_N_Swop_Transfer_Tool_BK",
+            LatestVersion = new ModPackageVersion
+            {
+                Version = "1.1.4",
+                DownloadUrl = "https://example.com/a.zip",
+                Dependencies =
+                [
+                    "LT_Schmiddy-RecompExternalPython_for_BanjoRecompiled-2.0.0",
+                    "Already-InstalledLib-1.0.0",
+                    "Other-MissingLib-3.0.0",
+                ],
+            },
+        };
+
+        var catalog = new[]
+        {
+            parent,
+            new ModPackage
+            {
+                ProviderId = ModProviderIds.Thunderstore,
+                SourceKey = "banjo-recompiled",
+                Id = "LT_Schmiddy-RecompExternalPython_for_BanjoRecompiled",
+                Owner = "LT_Schmiddy",
+                Name = "Python helper",
+                FullName = "LT_Schmiddy-RecompExternalPython_for_BanjoRecompiled",
+                LatestVersion = new ModPackageVersion { Version = string.Empty, DownloadUrl = string.Empty },
+            },
+        };
+
+        var document = new InstalledModsDocument
+        {
+            Mods =
+            [
+                new InstalledModRecord
+                {
+                    Provider = ModProviderIds.Thunderstore,
+                    SourceKey = "banjo-recompiled",
+                    Id = "Already-InstalledLib",
+                    FullName = "Already-InstalledLib",
+                    Name = "InstalledLib",
+                },
+            ],
+        };
+
+        installer.ListMissingDirectDependencies(document, parent, catalog)
+            .Should().Equal("Python helper", "MissingLib");
+    }
+
+    [Fact]
+    public async Task ModInstallService_skips_dependencies_when_installDependencies_is_false()
+    {
+        var cache = Path.Combine(Path.GetTempPath(), "quiver-ts-dep-skip-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "quiver-ts-dep-skip-install-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cache);
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var zipBytes = CreateMinimalModZip("payload.nrm", "bytes");
+            var handler = new StubHttpHandler();
+            handler.BinaryResponses[
+                "https://thunderstore.io/package/download/Vertigo/Stop_N_Swop_Transfer_Tool_BK/1.1.4/"] =
+                zipBytes;
+
+            using var http = new HttpClient(handler);
+            var provider = new ThunderstoreModProvider(http, cache);
+            var installer = new ModInstallService(new ModProviderRegistry([provider]));
+
+            var rootPackage = new ModPackage
+            {
+                ProviderId = ModProviderIds.Thunderstore,
+                SourceKey = "banjo-recompiled",
+                Id = "Vertigo-Stop_N_Swop_Transfer_Tool_BK",
+                Owner = "Vertigo",
+                Name = "Stop_N_Swop_Transfer_Tool_BK",
+                FullName = "Vertigo-Stop_N_Swop_Transfer_Tool_BK",
+                LatestVersion = new ModPackageVersion
+                {
+                    Version = "1.1.4",
+                    DownloadUrl = "https://thunderstore.io/package/download/Vertigo/Stop_N_Swop_Transfer_Tool_BK/1.1.4/",
+                    Dependencies = ["LT_Schmiddy-RecompExternalPython_for_BanjoRecompiled-2.0.0"],
+                },
+            };
+
+            await installer.InstallWithDependenciesAsync(
+                root, "mods", rootPackage, [rootPackage], provider, installDependencies: false);
+
+            var installed = installer.LoadInstalled(root);
+            installed.Mods.Should().ContainSingle(m =>
+                m.FullName == "Vertigo-Stop_N_Swop_Transfer_Tool_BK");
+            handler.RequestedUrls.Should().NotContain(u =>
+                u.Contains("LT_Schmiddy", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -2598,6 +2823,19 @@ public class ModsSystemTests
             LatestVersion = new ModPackageVersion { Version = "1.0.0", DownloadUrl = string.Empty },
         };
 
+    private static ModPackage MakeThunderstorePackage(string owner, string name, string version) =>
+        new()
+        {
+            ProviderId = ModProviderIds.Thunderstore,
+            SourceKey = "banjo-recompiled",
+            SourceDisplayLabel = "Thunderstore · banjo-recompiled",
+            Id = $"{owner}-{name}",
+            Owner = owner,
+            Name = name,
+            FullName = $"{owner}-{name}",
+            LatestVersion = new ModPackageVersion { Version = version, DownloadUrl = string.Empty },
+        };
+
     private static ModPackage MakeMultiFileGbPackage() =>
         new()
         {
@@ -2926,12 +3164,14 @@ public class ModsSystemTests
     {
         public Dictionary<string, (HttpStatusCode Status, string Body)> Responses { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, byte[]> BinaryResponses { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public List<string> RequestedUrls { get; } = [];
         public int RequestCount { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             RequestCount++;
             var url = request.RequestUri?.ToString() ?? string.Empty;
+            RequestedUrls.Add(url);
             if (BinaryResponses.TryGetValue(url, out var bytes))
             {
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)

@@ -76,11 +76,16 @@ namespace QuiverLauncher.Core.Services
                 .ToList();
         }
 
-        public static List<GitHubAsset> GetDownloadableAssets(GitHubRelease release)
+        public static List<GitHubAsset> GetDownloadableAssets(GitHubRelease release, string? releaseAssetFilter = null)
         {
-            return (release.assets ?? [])
-                .Where(asset => !asset.name.Contains("flatpak", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            var assets = (release.assets ?? [])
+                .Where(asset => !asset.name.Contains("flatpak", StringComparison.OrdinalIgnoreCase));
+
+            var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(releaseAssetFilter);
+            if (filter != null)
+                assets = assets.Where(asset => RepositorySourceHelper.AssetNameMatchesFilter(asset.name, filter));
+
+            return assets.ToList();
         }
     }
 }

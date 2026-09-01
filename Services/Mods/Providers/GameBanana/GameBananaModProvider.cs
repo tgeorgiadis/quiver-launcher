@@ -163,7 +163,7 @@ public sealed class GameBananaModProvider : IModProvider
 
         if (!LooksLikeSupportedArchiveUrl(version.DownloadUrl))
             throw new InvalidOperationException(
-                "This GameBanana file does not look like a zip or 7z archive. Quiver Launcher only installs zip/7z mods.");
+                "This GameBanana file does not look like a zip, 7z, or rar archive. Quiver Launcher only installs zip/7z/rar mods.");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, version.DownloadUrl);
         using var response = await _httpClient
@@ -178,7 +178,7 @@ public sealed class GameBananaModProvider : IModProvider
             !LooksLikeSupportedArchiveContentType(contentType))
         {
             throw new InvalidOperationException(
-                "This GameBanana download is not a zip or 7z archive. Quiver Launcher only installs zip/7z mods.");
+                "This GameBanana download is not a zip, 7z, or rar archive. Quiver Launcher only installs zip/7z/rar mods.");
         }
 
         var total = response.Content.Headers.ContentLength ?? version.FileSize;
@@ -196,10 +196,10 @@ public sealed class GameBananaModProvider : IModProvider
                 Span<byte> header = stackalloc byte[4];
                 _ = fileStream.Read(header);
                 fileStream.Position = 0;
-                if (!IsZipOrSevenZipHeader(header))
+                if (!IsSupportedArchiveHeader(header))
                 {
                     throw new InvalidOperationException(
-                        "Downloaded file is not a zip or 7z archive. Quiver Launcher only installs zip/7z mods.");
+                        "Downloaded file is not a zip, 7z, or rar archive. Quiver Launcher only installs zip/7z/rar mods.");
                 }
             }
 
@@ -426,7 +426,8 @@ public sealed class GameBananaModProvider : IModProvider
     private static bool LooksLikeSupportedArchiveUrl(string url)
     {
         if (url.Contains(".zip", StringComparison.OrdinalIgnoreCase) ||
-            url.Contains(".7z", StringComparison.OrdinalIgnoreCase))
+            url.Contains(".7z", StringComparison.OrdinalIgnoreCase) ||
+            url.Contains(".rar", StringComparison.OrdinalIgnoreCase))
             return true;
 
         return url.Contains("gamebanana.com/dl/", StringComparison.OrdinalIgnoreCase);
@@ -434,15 +435,17 @@ public sealed class GameBananaModProvider : IModProvider
 
     private static bool LooksLikeSupportedArchiveFileName(string fileName) =>
         fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
-        fileName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase);
+        fileName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) ||
+        fileName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase);
 
     private static bool LooksLikeSupportedArchiveContentType(string contentType) =>
         contentType.Contains("zip", StringComparison.OrdinalIgnoreCase) ||
         contentType.Contains("7z", StringComparison.OrdinalIgnoreCase) ||
-        contentType.Contains("x-7z", StringComparison.OrdinalIgnoreCase);
+        contentType.Contains("x-7z", StringComparison.OrdinalIgnoreCase) ||
+        contentType.Contains("rar", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Zip local header (<c>PK</c>) or 7z signature (<c>37 7A BC AF</c>).</summary>
-    internal static bool IsZipOrSevenZipHeader(ReadOnlySpan<byte> header)
+    /// <summary>Zip local header (<c>PK</c>), 7z signature (<c>37 7A BC AF</c>), or RAR (<c>Rar!</c>).</summary>
+    internal static bool IsSupportedArchiveHeader(ReadOnlySpan<byte> header)
     {
         if (header.Length < 2)
             return false;
@@ -450,10 +453,19 @@ public sealed class GameBananaModProvider : IModProvider
         if (header[0] == (byte)'P' && header[1] == (byte)'K')
             return true;
 
+        if (header.Length >= 4 &&
+            header[0] == 0x37 &&
+            header[1] == 0x7A &&
+            header[2] == 0xBC &&
+            header[3] == 0xAF)
+        {
+            return true;
+        }
+
         return header.Length >= 4 &&
-               header[0] == 0x37 &&
-               header[1] == 0x7A &&
-               header[2] == 0xBC &&
-               header[3] == 0xAF;
+               header[0] == 0x52 &&
+               header[1] == 0x61 &&
+               header[2] == 0x72 &&
+               header[3] == 0x21;
     }
 }

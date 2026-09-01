@@ -108,7 +108,7 @@ namespace QuiverLauncher
         public int IconSize { get; set; } = 124;
         public int IconMargin { get; set; } = 0;
         public int SlotTextMargin { get; set; } = 0;
-        public int SlotSize { get; set; } = 152;
+        public int SlotSize { get; set; } = 180;
         public int ActionButtonSize { get; set; } = 36;
         public bool ShowOSTopBar { get; set; } = false;
         public string PrimaryColor { get; set; } = "#18181b";
@@ -121,11 +121,15 @@ namespace QuiverLauncher
         public string GitLabApiToken { get; set; } = string.Empty;
         public string SortBy { get; set; } = "LastPlayed";
         public string CatalogReviewSortBy { get; set; } = "Name";
+        /// <summary>Catalog review browse layout. Independent of library <see cref="UseGridView"/>.</summary>
+        public bool CatalogReviewUseGridView { get; set; } = true;
         public string ModsSortBy { get; set; } = "InstalledFirst";
         public bool ModsIncludeNsfw { get; set; }
         public List<string> DismissedAnnouncementIds { get; set; } = new List<string>();
         public bool IgnoreArticlesWhenSorting { get; set; } = true;
         public LibraryNameStyle LibraryNameStyle { get; set; } = LibraryNameStyle.NameAndProject;
+        /// <summary>When true, library card name and project ellipsize and marquee on hover or focus.</summary>
+        public bool TruncateLibraryCardTitles { get; set; } = true;
         public LibraryTagDisplayMode LibraryTagDisplayMode { get; set; } = LibraryTagDisplayMode.Featured;
         /// <summary>
         /// Max wrapped lines of tags on each library card. 0 = hidden; 99 = no limit.
@@ -134,7 +138,7 @@ namespace QuiverLauncher
         /// <summary>
         /// True after 0 was remapped from “no limit” to “hidden” (and old unlimited 0 became 99).
         /// </summary>
-        public bool LibraryCardTagZeroMeansHidden { get; set; }
+        public bool LibraryCardTagZeroMeansHidden { get; set; } = true;
         /// <summary>User-pinned tags preferred for quick-filter chips when present in the current set.</summary>
         public List<string> PinnedFilterTags { get; set; } = new List<string>();
         public bool StartFullscreen { get; set; } = false;

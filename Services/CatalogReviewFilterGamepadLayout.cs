@@ -26,9 +26,9 @@ public static class CatalogReviewFilterGamepadLayout
 
         /// <summary>Index to focus when moving Up from the review list into the filter strip.</summary>
         public int PreferredIndexFromList =>
-            HasTags ? TagStart
+            HasBulk ? BulkStart
+            : HasTags ? TagStart
             : HasStatus ? StatusStart
-            : HasBulk ? BulkStart
             : -1;
 
         public Row ResolveRow(int index)
@@ -96,4 +96,10 @@ public static class CatalogReviewFilterGamepadLayout
     /// </summary>
     public static bool ShouldLeaveToSidebarOnLeft(int localIndex, NavigationDirection direction) =>
         direction == NavigationDirection.Left && localIndex <= 0;
+
+    /// <summary>
+    /// List/Grid confirm should keep chrome focus on the filter strip, not jump to the first app.
+    /// </summary>
+    public static bool ShouldKeepFilterFocusAfterLayoutChange(GamepadNavigationZone zone) =>
+        zone == GamepadNavigationZone.CatalogReviewFilters;
 }

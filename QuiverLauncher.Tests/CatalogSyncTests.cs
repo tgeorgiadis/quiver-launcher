@@ -154,6 +154,39 @@ public class CatalogSyncTests
     }
 
     [Fact]
+    public void RefreshUpdateAvailable_uses_provided_lists_without_rereading_cache()
+    {
+        var (service, tempDir) = TestFixtures.CreateIsolatedCatalogService();
+
+        try
+        {
+            var source = new AppCatalogSource
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = "Test",
+                CachedListVersion = "1.0.0",
+                AcknowledgedListVersion = "1.0.0",
+            };
+            var local = new List<GameInfo>();
+            var external = new List<GameInfo>
+            {
+                new() { Name = "New", Repository = "owner/new", FolderName = "NewFolder" },
+            };
+
+            service.RefreshUpdateAvailable(source, local, external);
+
+            source.PendingReviewCount.Should().Be(1);
+            source.UpdateAvailable.Should().BeTrue();
+            source.ListAppCount.Should().Be(1);
+            source.LibraryAppCount.Should().Be(0);
+        }
+        finally
+        {
+            TestFixtures.CleanupDirectory(tempDir);
+        }
+    }
+
+    [Fact]
     public async Task RefreshUpdateAvailableAsync_does_not_auto_ack_when_actionable_rows_remain()
     {
         var sourceId = Guid.NewGuid().ToString();

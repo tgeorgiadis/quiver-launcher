@@ -89,10 +89,10 @@ public class GamepadControlActivationTests
     }
 
     [Fact]
-    public void ShouldKeyboardFocusOnGamepadHighlight_false_for_textbox()
+    public void ShouldKeyboardFocusOnGamepadHighlight_true_for_textbox()
     {
         GamepadControlActivation.ShouldKeyboardFocusOnGamepadHighlight(new TextBox())
-            .Should().BeFalse();
+            .Should().BeTrue();
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class GamepadControlActivationTests
     }
 
     [AvaloniaFact]
-    public void ApplyGamepadHighlightFocus_does_not_focus_textbox()
+    public void ApplyGamepadHighlightFocus_focuses_textbox()
     {
         var textBox = new TextBox { IsEnabled = true, IsVisible = true, Focusable = true };
         var window = new Window { Content = textBox, Width = 240, Height = 120 };
@@ -111,21 +111,19 @@ public class GamepadControlActivationTests
         try
         {
             window.Show();
-            textBox.Focus();
-            textBox.IsFocused.Should().BeTrue();
-
             GamepadControlActivation.ApplyGamepadHighlightFocus(textBox);
-
-            textBox.IsFocused.Should().BeFalse();
+            textBox.IsFocused.Should().BeTrue();
+            GamepadTextInput.IsEditing.Should().BeFalse();
         }
         finally
         {
+            GamepadTextInput.Reset();
             window.Close();
         }
     }
 
     [AvaloniaFact]
-    public void ApplyGamepadHighlightFocus_on_textbox_clears_button_focus()
+    public void ApplyGamepadHighlightFocus_on_textbox_moves_focus_from_button()
     {
         var textBox = new TextBox { IsEnabled = true, IsVisible = true, Focusable = true };
         var button = new Button { Content = "Save", IsEnabled = true, IsVisible = true, Focusable = true };
@@ -145,10 +143,12 @@ public class GamepadControlActivationTests
             GamepadControlActivation.ApplyGamepadHighlightFocus(textBox);
 
             button.IsFocused.Should().BeFalse();
-            textBox.IsFocused.Should().BeFalse();
+            textBox.IsFocused.Should().BeTrue();
+            GamepadTextInput.IsEditing.Should().BeFalse();
         }
         finally
         {
+            GamepadTextInput.Reset();
             window.Close();
         }
     }

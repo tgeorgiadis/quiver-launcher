@@ -31,4 +31,30 @@ public class PlatformAssetMatcherTests
         PlatformAssetMatcher.MatchesPlatform("CrashBandicoot_Linux", "Linux-ARM64").Should().BeFalse();
         PlatformAssetMatcher.MatchesPlatform("app-linux-arm64.zip", "Linux-ARM64").Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData("app-android.apk")]
+    [InlineData("game-android-arm64-v8a.apk")]
+    [InlineData("MyGame_Android.apk")]
+    public void MatchesPlatform_android_accepts_apk_assets(string assetName)
+    {
+        PlatformAssetMatcher.MatchesPlatform(assetName, "Android").Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("app-win.zip")]
+    [InlineData("game_linux_amd64.tar.gz")]
+    [InlineData("MyApp.AppImage")]
+    [InlineData("setup.exe")]
+    public void MatchesPlatform_android_rejects_desktop_assets(string assetName)
+    {
+        PlatformAssetMatcher.MatchesPlatform(assetName, "Android").Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetPlatformIdentifier_android_enum_returns_android()
+    {
+        PlatformAssetMatcher.GetPlatformIdentifier(QuiverLauncher.Core.Models.TargetOS.Android)
+            .Should().Be("Android");
+    }
 }

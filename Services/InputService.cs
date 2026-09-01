@@ -13,7 +13,7 @@ namespace QuiverLauncher.Services
 {
     public class InputService : IDisposable
     {
-        private readonly Window _mainWindow;
+        private readonly Control _mainWindow;
         private DispatcherTimer? _gamepadTimer;
         private readonly Dictionary<int, GamepadSample> _gamepadStates = new();
         private readonly Dictionary<int, IntPtr> _gameControllers = new();
@@ -71,7 +71,7 @@ namespace QuiverLauncher.Services
 
         public bool IsCaptureMode => _captureMode;
 
-        public InputService(Window mainWindow, AppSettings appSettings)
+        public InputService(Control mainWindow, AppSettings appSettings)
         {
             _mainWindow = mainWindow;
             _modalDialogNavigation.Configure(this);
@@ -102,6 +102,8 @@ namespace QuiverLauncher.Services
 
         public bool HasConnectedGamepad => _gameControllers.Count > 0;
 
+        public int ConnectedGamepadCount => _gameControllers.Count;
+
         /// <summary>
         /// Returns whether a connection-changed event should fire, and the new
         /// <c>hasConnected</c> value when it should. Null means no transition.
@@ -118,6 +120,9 @@ namespace QuiverLauncher.Services
 
         public IReadOnlyList<ConnectedGamepadInfo> GetConnectedGamepads()
         {
+            if (!PlatformCapabilities.SupportsGamepadSdl)
+                return Array.Empty<ConnectedGamepadInfo>();
+
             RefreshConnectedControllers();
 
             return _gameControllers
@@ -134,8 +139,21 @@ namespace QuiverLauncher.Services
                 .ToList();
         }
 
+        /// <summary>
+        /// Whether an already-opened SDL handle at this joystick index is still valid.
+        /// Steam's virtual pad often reconnects at the same index with a new device.
+        /// </summary>
+        public static bool ShouldKeepOpenController(bool alreadyOpen, bool attached) =>
+            alreadyOpen && attached;
+
+        public static bool ShouldReopenController(bool alreadyOpen, bool attached) =>
+            alreadyOpen && !attached;
+
         public void RefreshConnectedControllers()
         {
+            if (!PlatformCapabilities.SupportsGamepadSdl)
+                return;
+
             var previousCount = _gameControllers.Count;
             int numJoysticks = SDL.SDL_NumJoysticks();
             var seen = new HashSet<int>();
@@ -146,8 +164,15 @@ namespace QuiverLauncher.Services
                     continue;
 
                 seen.Add(i);
-                if (_gameControllers.ContainsKey(i))
-                    continue;
+                if (_gameControllers.TryGetValue(i, out var existing))
+                {
+                    var attached = SDL.SDL_GameControllerGetAttached(existing) == SDL.SDL_bool.SDL_TRUE;
+                    if (ShouldKeepOpenController(alreadyOpen: true, attached))
+                        continue;
+
+                    if (ShouldReopenController(alreadyOpen: true, attached))
+                        CloseControllerAt(i);
+                }
 
                 IntPtr controller = SDL.SDL_GameControllerOpen(i);
                 if (controller == IntPtr.Zero)
@@ -160,20 +185,68 @@ namespace QuiverLauncher.Services
 
             var removed = _gameControllers.Keys.Where(index => !seen.Contains(index)).ToList();
             foreach (var index in removed)
-            {
-                SDL.SDL_GameControllerClose(_gameControllers[index]);
-                _gameControllers.Remove(index);
-                _gamepadStates.Remove(index);
-            }
+                CloseControllerAt(index);
 
             var signal = GetConnectionChangedSignal(previousCount, _gameControllers.Count);
             if (signal.HasValue)
                 OnGamepadConnectionChanged?.Invoke(signal.Value);
         }
 
+        /// <summary>
+        /// Drop every open SDL controller, pump joystick events, and rescan.
+        /// Used after a game returns the Steam virtual pad in Gaming Mode.
+        /// </summary>
+        public void ReclaimGamepads(bool reinitIfEmpty = false)
+        {
+            if (!PlatformCapabilities.SupportsGamepadSdl)
+                return;
+
+            CloseAllControllers();
+            CheckSDLWindowFocus();
+            SDL.SDL_GameControllerUpdate();
+            RefreshConnectedControllers();
+
+            if (reinitIfEmpty && _gameControllers.Count == 0)
+                ReinitGameControllerSubsystem();
+        }
+
+        private void CloseControllerAt(int index)
+        {
+            if (_gameControllers.TryGetValue(index, out var controller))
+            {
+                SDL.SDL_GameControllerClose(controller);
+                _gameControllers.Remove(index);
+            }
+
+            _gamepadStates.Remove(index);
+        }
+
+        private void CloseAllControllers()
+        {
+            foreach (var index in _gameControllers.Keys.ToList())
+                CloseControllerAt(index);
+        }
+
+        private void ReinitGameControllerSubsystem()
+        {
+            SDL.SDL_QuitSubSystem(SDL.SDL_INIT_GAMECONTROLLER);
+            SteamDeckSdlHints.ApplyBeforeInit((name, value) => SDL.SDL_SetHint(name, value));
+            if (SDL.SDL_InitSubSystem(SDL.SDL_INIT_GAMECONTROLLER) < 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"SDL gamecontroller reinit failed: {SDL.SDL_GetError()}");
+                return;
+            }
+
+            RefreshConnectedControllers();
+        }
+
         private void InitializeSDL()
         {
+            if (!PlatformCapabilities.SupportsGamepadSdl)
+                return;
+
             // Desktop Mode: avoid Steam HIDAPI so lizard mode / Steam+X keep working.
+            // Gaming Mode: allow Steam Virtual Gamepad so SDL sees the Deck pad.
             SteamDeckSdlHints.ApplyBeforeInit((name, value) => SDL.SDL_SetHint(name, value));
 
             if (SDL.SDL_Init(SDL.SDL_INIT_GAMECONTROLLER) < 0)
@@ -440,19 +513,11 @@ namespace QuiverLauncher.Services
                 return;
             }
 
-            var focused = TopLevel.GetTopLevel(_mainWindow)?.FocusManager?.GetFocusedElement() as Control;
-
-            if (focused == null)
+            if (!XyFocusNavigation.TryMove(_mainWindow, direction))
             {
-                FocusFirstElement();
-                return;
-            }
-
-            Control? nextControl = GetNextControl(focused, direction);
-
-            if (nextControl != null && nextControl.Focusable)
-            {
-                nextControl.Focus();
+                var focused = TopLevel.GetTopLevel(_mainWindow)?.FocusManager?.GetFocusedElement() as Control;
+                if (focused == null)
+                    FocusFirstElement();
             }
 
             OnNavigate?.Invoke(direction);
@@ -737,11 +802,8 @@ namespace QuiverLauncher.Services
                 _gamepadTimer?.Stop();
                 _gamepadTimer = null;
 
-                foreach (var controller in _gameControllers.Values)
-                {
-                    SDL.SDL_GameControllerClose(controller);
-                }
-                _gameControllers.Clear();
+                foreach (var index in _gameControllers.Keys.ToList())
+                    CloseControllerAt(index);
 
                 SDL.SDL_Quit();
                 _disposed = true;

@@ -32,6 +32,12 @@ public class RepositorySourceTests
             .Should().Be("gitlab:group/project");
         RepositorySourceHelper.GetIdentityKey(null, null, "MyFolder")
             .Should().Be("manual:MyFolder");
+        RepositorySourceHelper.GetInstanceKey(null, "owner/app", "FolderA")
+            .Should().Be("github:owner/app:FolderA");
+        RepositorySourceHelper.GetInstanceKey(null, "owner/app", "FolderB")
+            .Should().Be("github:owner/app:FolderB");
+        RepositorySourceHelper.GetInstanceKey(null, null, "MyFolder")
+            .Should().Be("manual:MyFolder");
         RepositorySourceHelper.IsManuallyManaged(null).Should().BeTrue();
         RepositorySourceHelper.IsManuallyManaged("owner/app").Should().BeFalse();
     }

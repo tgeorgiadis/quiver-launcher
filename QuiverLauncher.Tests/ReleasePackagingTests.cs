@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using FluentAssertions;
-using Xunit.Abstractions;
 
 namespace QuiverLauncher.Tests;
 
@@ -89,15 +88,18 @@ public class ReleasePackagingTests
     [Fact]
     public void Project_references_velopack_and_does_not_copy_apps_json()
     {
-        var csprojPath = Path.Combine(RepoRoot, "QuiverLauncher.csproj");
-        var csproj = File.ReadAllText(csprojPath);
+        var sharedPath = Path.Combine(RepoRoot, "QuiverLauncher.App.csproj");
+        var desktopPath = Path.Combine(RepoRoot, "QuiverLauncher.Desktop", "QuiverLauncher.Desktop.csproj");
+        var shared = File.ReadAllText(sharedPath);
+        var desktop = File.ReadAllText(desktopPath);
 
-        csproj.Should().Contain("Velopack");
-        csproj.Should().NotContain(
+        desktop.Should().Contain("Avalonia.Desktop");
+        shared.Should().Contain("Velopack");
+        shared.Should().NotContain(
             "<None Update=\"apps.json\">",
             "apps.json must not be copied to publish output; it is user data created at runtime");
-        csproj.Should().NotContain("CopyWindowsUpdater");
-        csproj.Should().Contain("osx-arm64");
+        shared.Should().NotContain("CopyWindowsUpdater");
+        desktop.Should().Contain("osx-arm64");
     }
 
     [Fact]
@@ -125,7 +127,7 @@ public class ReleasePackagingTests
                 : "linux-x64";
 
             var publishArgs =
-                $"publish \"{Path.Combine(RepoRoot, "QuiverLauncher.csproj")}\" -c Release -r {runtimeIdentifier} --self-contained true -p:PublishTrimmed=false -o \"{publishDir}\"";
+                $"publish \"{Path.Combine(RepoRoot, "QuiverLauncher.Desktop", "QuiverLauncher.Desktop.csproj")}\" -c Release -r {runtimeIdentifier} --self-contained true -p:PublishTrimmed=false -o \"{publishDir}\"";
 
             using var timeoutCts = new CancellationTokenSource(PublishTimeout);
 

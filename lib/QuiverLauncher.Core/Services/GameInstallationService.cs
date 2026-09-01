@@ -57,12 +57,81 @@ public static class GameInstallationService
         return assetName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) ||
+               assetName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
-               assetName.EndsWith(".appimage", StringComparison.OrdinalIgnoreCase);
+               assetName.EndsWith(".appimage", StringComparison.OrdinalIgnoreCase) ||
+               assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsAndroidPackageAsset(string? assetName)
+        => !string.IsNullOrWhiteSpace(assetName)
+           && assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsAppImageAsset(string? assetName)
+        => !string.IsNullOrWhiteSpace(assetName)
+           && assetName.EndsWith(".appimage", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// After a successful AppImage install, delete other top-level <c>.AppImage</c> files
+    /// left behind by versioned release names. Does not recurse, and does not fail the update
+    /// if a stale file is locked. Retargets <c>selected_executable.txt</c> when it points at
+    /// a missing path.
+    /// </summary>
+    public static void RemoveStaleAppImages(string gamePath, string keepPath, GameInstallationOptions? options = null)
+    {
+        options ??= GameInstallationOptions.Default;
+
+        if (string.IsNullOrWhiteSpace(gamePath) || string.IsNullOrWhiteSpace(keepPath))
+            return;
+
+        if (!Directory.Exists(gamePath) || !File.Exists(keepPath))
+            return;
+
+        var keepFullPath = Path.GetFullPath(keepPath);
+
+        foreach (var file in Directory.GetFiles(gamePath, "*", SearchOption.TopDirectoryOnly))
+        {
+            if (!IsAppImageAsset(file))
+                continue;
+
+            if (string.Equals(Path.GetFullPath(file), keepFullPath, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception ex)
+            {
+                Log(options, $"Warning: failed to delete stale AppImage '{file}': {ex.Message}");
+            }
+        }
+
+        RetargetSelectedExecutableIfStale(gamePath, keepFullPath, options);
+    }
+
+    static void RetargetSelectedExecutableIfStale(string gamePath, string keepPath, GameInstallationOptions options)
+    {
+        var selectedPath = Path.Combine(gamePath, "selected_executable.txt");
+        if (!File.Exists(selectedPath))
+            return;
+
+        try
+        {
+            var saved = File.ReadAllText(selectedPath).Trim();
+            if (!string.IsNullOrEmpty(saved) && File.Exists(saved))
+                return;
+
+            File.WriteAllText(selectedPath, keepPath);
+        }
+        catch (Exception ex)
+        {
+            Log(options, $"Warning: failed to update selected_executable.txt: {ex.Message}");
+        }
     }
 
     /// <summary>
-    /// Detects zip / 7z / gzip from the file header when the asset name has no usable extension.
+    /// Detects zip / 7z / gzip / rar from the file header when the asset name has no usable extension.
     /// </summary>
     public static string? DetectArchiveExtensionFromFile(string downloadPath)
     {
@@ -84,6 +153,16 @@ public static class GameInstallationService
                 header[3] == 0xAF)
             {
                 return ".7z";
+            }
+
+            // RAR4: 52 61 72 21 1A 07 00; RAR5: 52 61 72 21 1A 07 01 00
+            if (read >= 4 &&
+                header[0] == 0x52 &&
+                header[1] == 0x61 &&
+                header[2] == 0x72 &&
+                header[3] == 0x21)
+            {
+                return ".rar";
             }
 
             if (header[0] == 0x1F && header[1] == 0x8B)
@@ -131,11 +210,32 @@ public static class GameInstallationService
                 effectiveName = effectiveName + detected;
         }
 
+        if (IsAndroidPackageAsset(effectiveName))
+        {
+            if (!OperatingSystem.IsAndroid())
+            {
+                throw new InvalidOperationException(
+                    $"Android package '{assetName}' cannot be installed on this desktop platform.");
+            }
+
+            var destPath = Path.Combine(gamePath, Path.GetFileName(downloadPath));
+            File.Copy(downloadPath, destPath, true);
+            await File.WriteAllTextAsync(Path.Combine(gamePath, "version.txt"), version).ConfigureAwait(false);
+            return;
+        }
+
         if (IsSingleFileExecutableAsset(effectiveName))
         {
-            var destPath = Path.Combine(gamePath, assetName);
+            var destName = Path.GetFileName(assetName);
+            if (string.IsNullOrWhiteSpace(destName))
+                destName = assetName;
+
+            var destPath = Path.Combine(gamePath, destName);
             File.Move(downloadPath, destPath, true);
             MakeExecutableIfNeeded(destPath);
+
+            if (IsAppImageAsset(destName) || IsAppImageAsset(effectiveName))
+                RemoveStaleAppImages(gamePath, destPath, options);
         }
         else if (effectiveName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
@@ -145,15 +245,16 @@ public static class GameInstallationService
         {
             await ExtractTarGzAsync(downloadPath, gamePath).ConfigureAwait(false);
         }
-        else if (effectiveName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
+        else if (effectiveName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) ||
+                 effectiveName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase))
         {
-            await ExtractSevenZipAsync(downloadPath, gamePath).ConfigureAwait(false);
+            await ExtractSharpCompressArchiveAsync(downloadPath, gamePath).ConfigureAwait(false);
         }
         else
         {
             throw new InvalidOperationException(
                 $"Unsupported release asset type: '{assetName}'. " +
-                "Expected .exe, .appimage, .zip, .tar.gz, .7z, or an extensionless binary.");
+                "Expected .exe, .appimage, .zip, .tar.gz, .7z, .rar, or an extensionless binary.");
         }
 
         try
@@ -451,7 +552,7 @@ public static class GameInstallationService
         }
     }
 
-    static Task ExtractSevenZipAsync(string downloadPath, string gamePath)
+    static Task ExtractSharpCompressArchiveAsync(string downloadPath, string gamePath)
     {
         Directory.CreateDirectory(gamePath);
 
@@ -460,7 +561,7 @@ public static class GameInstallationService
 
         try
         {
-            ExtractSevenZipToDirectory(downloadPath, tempExtractPath);
+            ExtractSharpCompressArchiveToDirectory(downloadPath, tempExtractPath);
             var sourcePath = GetEffectiveExtractionSource(tempExtractPath);
             MoveDirectoryContents(sourcePath, gamePath);
         }
@@ -472,7 +573,7 @@ public static class GameInstallationService
         return Task.CompletedTask;
     }
 
-    static void ExtractSevenZipToDirectory(string archivePath, string destinationDirectoryPath)
+    static void ExtractSharpCompressArchiveToDirectory(string archivePath, string destinationDirectoryPath)
     {
         Directory.CreateDirectory(destinationDirectoryPath);
         var destinationRoot = Path.GetFullPath(destinationDirectoryPath);

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using QuiverLauncher;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 
@@ -42,5 +43,50 @@ public class GameManagerTests
         manager.IsManuallyHidden(game).Should().BeTrue();
 
         Directory.Delete(tempDir, true);
+    }
+
+    [Fact]
+    public async Task ReloadLibraryFromDiskAsync_does_not_fetch_catalog_sources()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "QuiverLauncher.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var reader = new ThrowingCatalogLocationReader();
+        var catalog = new AppCatalogService(null, reader, tempDir);
+        var store = new FileSettingsStore(Path.Combine(tempDir, "settings.json"));
+        store.Current.AppCatalogSources =
+        [
+            new AppCatalogSource
+            {
+                Id = "nintendo",
+                Name = "Nintendo",
+                Location = "https://example.test/nintendo.json",
+                Enabled = true,
+            },
+        ];
+        store.Save(store.Current);
+
+        await catalog.SaveLocalAppsAsync([
+            new GameInfo { Name = "Existing", Repository = "owner/existing", FolderName = "Existing" },
+            new GameInfo { Name = "Added", Repository = "owner/added", FolderName = "Added" },
+        ]);
+
+        using var manager = new GameManager(store, httpClient: new HttpClient(), catalogService: catalog);
+        await manager.ReloadLibraryFromDiskAsync(["owner/added"]);
+
+        reader.FetchCount.Should().Be(0);
+        manager.Games.Select(g => g.Repository).Should().BeEquivalentTo(["owner/existing", "owner/added"]);
+
+        Directory.Delete(tempDir, true);
+    }
+
+    private sealed class ThrowingCatalogLocationReader : ICatalogLocationReader
+    {
+        public int FetchCount { get; private set; }
+
+        public Task<string> ReadAsync(HttpClient httpClient, string location, CancellationToken cancellationToken = default)
+        {
+            FetchCount++;
+            throw new InvalidOperationException($"Unexpected catalog fetch: {location}");
+        }
     }
 }

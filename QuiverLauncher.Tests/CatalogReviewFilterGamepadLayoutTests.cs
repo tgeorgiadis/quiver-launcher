@@ -6,22 +6,33 @@ namespace QuiverLauncher.Tests;
 public class CatalogReviewFilterGamepadLayoutTests
 {
     [Fact]
-    public void Ranges_preferred_index_from_list_prefers_tags()
+    public void Ranges_preferred_index_from_list_prefers_bulk()
     {
         var ranges = CatalogReviewFilterGamepadLayout.FromCounts(statusCount: 7, tagCount: 4, bulkCount: 2);
 
-        ranges.PreferredIndexFromList.Should().Be(ranges.TagStart);
+        ranges.PreferredIndexFromList.Should().Be(ranges.BulkStart);
         ranges.TagStart.Should().Be(7);
         ranges.BulkStart.Should().Be(11);
         ranges.Total.Should().Be(13);
     }
 
     [Fact]
-    public void Ranges_preferred_index_from_list_falls_back_to_status_without_tags()
+    public void Ranges_preferred_index_from_list_falls_back_to_bulk_without_tags()
     {
         var ranges = CatalogReviewFilterGamepadLayout.FromCounts(statusCount: 7, tagCount: 0, bulkCount: 2);
 
+        ranges.PreferredIndexFromList.Should().Be(ranges.BulkStart);
+        ranges.BulkStart.Should().Be(7);
+    }
+
+    [Fact]
+    public void Ranges_preferred_index_from_list_uses_status_when_tags_and_bulk_are_hidden()
+    {
+        var ranges = CatalogReviewFilterGamepadLayout.FromCounts(statusCount: 8, tagCount: 0, bulkCount: 0);
+
         ranges.PreferredIndexFromList.Should().Be(0);
+        ranges.HasTags.Should().BeFalse();
+        ranges.HasBulk.Should().BeFalse();
     }
 
     [Fact]
@@ -68,5 +79,16 @@ public class CatalogReviewFilterGamepadLayoutTests
         // Down from status with tags → first tag
         ranges.HasTags.Should().BeTrue();
         ranges.TagStart.Should().Be(7);
+    }
+
+    [Fact]
+    public void ShouldKeepFilterFocusAfterLayoutChange_only_on_filter_strip()
+    {
+        CatalogReviewFilterGamepadLayout.ShouldKeepFilterFocusAfterLayoutChange(
+                GamepadNavigationZone.CatalogReviewFilters)
+            .Should().BeTrue();
+        CatalogReviewFilterGamepadLayout.ShouldKeepFilterFocusAfterLayoutChange(
+                GamepadNavigationZone.CatalogReviewList)
+            .Should().BeFalse();
     }
 }

@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<ApplicationIcon>..\icon.ico</ApplicationIcon>
+		<AssemblyName>QuiverLauncher.Desktop</AssemblyName>
+		<RootNamespace>QuiverLauncher.Desktop</RootNamespace>
+		<AssemblyTitle>Quiver Launcher</AssemblyTitle>
+		<AssemblyDescription>Quiver Launcher — download and manage GitHub-hosted game ports</AssemblyDescription>
+		<Version>3.2.1</Version>
+		<AssemblyVersion>3.2.1.0</AssemblyVersion>
+		<FileVersion>3.2.1.0</FileVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RuntimeIdentifiers>win-x64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+		<DefineConstants>$(DefineConstants);OSX</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\icon.ico" Link="icon.ico">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\QuiverLauncher.App.csproj" />
+	</ItemGroup>
+
+	<!-- AppHost can be renamed; it still loads QuiverLauncher.Desktop.dll. -->
+	<Target Name="AliasQuiverLauncherExe" AfterTargets="Build;Publish">
+		<PropertyGroup>
+			<_AliasDir Condition="'$(PublishDir)' != '' and Exists('$(PublishDir)$(AssemblyName).exe')">$(PublishDir)</_AliasDir>
+			<_AliasDir Condition="'$(_AliasDir)' == ''">$(OutputPath)</_AliasDir>
+		</PropertyGroup>
+		<Copy SourceFiles="$(_AliasDir)$(AssemblyName).exe"
+		      DestinationFiles="$(_AliasDir)QuiverLauncher.exe"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(_AliasDir)$(AssemblyName).exe')" />
+	</Target>
+</Project>

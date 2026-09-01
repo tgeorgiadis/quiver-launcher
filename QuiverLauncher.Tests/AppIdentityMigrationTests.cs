@@ -173,28 +173,48 @@ public class AppIdentityMigrationTests
     }
 
     [Fact]
-    public void Duplicate_identity_on_edit_is_detectable()
+    public void Duplicate_instance_on_edit_is_detectable_when_folder_matches()
     {
         var existing = new GameInfo
         {
             Name = "Existing",
             Repository = "bighead.0/ladxhd_updated",
             RepositorySource = "gitlab",
-            FolderName = "Other",
+            FolderName = "LADXHD",
         };
         var editing = new GameInfo
         {
             Name = "LA DX HD",
             Repository = "OldOwner/LADXHD",
-            FolderName = "LADXHD",
+            FolderName = "Other",
         };
 
-        var targetKey = RepositorySourceHelper.GetIdentityKey("gitlab", "bighead.0/ladxhd_updated");
+        var targetKey = RepositorySourceHelper.GetInstanceKey("gitlab", "bighead.0/ladxhd_updated", "LADXHD");
         var games = new List<GameInfo> { existing, editing };
         var duplicate = games.Any(g =>
             !ReferenceEquals(g, editing) &&
-            string.Equals(g.IdentityKey, targetKey, StringComparison.OrdinalIgnoreCase));
+            string.Equals(g.InstanceKey, targetKey, StringComparison.OrdinalIgnoreCase));
 
         duplicate.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Same_repository_with_a_different_folder_is_not_a_duplicate_instance()
+    {
+        var existing = new GameInfo
+        {
+            Name = "EXIT",
+            Repository = "FluffyQuack/ReXGlue-EXIT",
+            FolderName = "EXIT-ReXGlue",
+        };
+        var editing = new GameInfo
+        {
+            Name = "EXIT 2",
+            Repository = "FluffyQuack/ReXGlue-EXIT",
+            FolderName = "EXIT2-ReXGlue",
+        };
+
+        existing.IdentityKey.Should().Be(editing.IdentityKey);
+        existing.InstanceKey.Should().NotBe(editing.InstanceKey);
     }
 }

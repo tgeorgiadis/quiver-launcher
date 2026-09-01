@@ -51,4 +51,26 @@ public class GameStatusServiceTests
                 File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public void TryRestoreAndroidPackageName_reads_sidecar_when_missing()
+    {
+        var gamePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(gamePath);
+
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(gamePath, GameStatusService.AndroidPackageFileName),
+                "com.example.game\n");
+
+            var game = new GameInfo { Name = "Android Game", FolderName = "AndroidGame" };
+            GameStatusService.TryRestoreAndroidPackageName(game, gamePath);
+            game.AndroidPackageName.Should().Be("com.example.game");
+        }
+        finally
+        {
+            Directory.Delete(gamePath, true);
+        }
+    }
 }

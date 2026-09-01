@@ -1,6 +1,7 @@
 using FluentAssertions;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
+using QuiverLauncher.Services.Mods;
 
 namespace QuiverLauncher.Tests;
 
@@ -19,6 +20,24 @@ public class CatalogCompareServiceTests
             FolderName = folderName ?? repository.Replace('/', '-'),
             Tags = tags?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() ?? [],
         };
+    }
+
+    [Fact]
+    public void FindRowIndexForLibraryApp_locates_changed_local_row()
+    {
+        var local = CreateApp("owner/shared", "Old Name");
+        var other = CreateApp("owner/other", "Other");
+        var rows = CatalogCompareService.BuildCompareRows(
+            [local, other],
+            [CreateApp("owner/shared", "New Name"), CreateApp("owner/other", "Other")]);
+
+        var index = CatalogCompareService.FindRowIndexForLibraryApp(rows, local);
+        index.Should().BeGreaterThanOrEqualTo(0);
+        CatalogCompareService.MatchesLocalApp(local, rows[index]).Should().BeTrue();
+        rows[index].Status.Should().Be(CatalogSyncStatus.Changed);
+
+        CatalogCompareService.FindRowIndexForLibraryApp(rows, CreateApp("owner/missing", "Missing"))
+            .Should().Be(-1);
     }
 
     [Fact]
@@ -41,6 +60,56 @@ public class CatalogCompareServiceTests
         rows.Should().NotContain(r => r.Repository == "owner/local-only");
         rows.Should().Contain(r => r.Repository == "owner/external-only" && r.Status == CatalogSyncStatus.InExternalOnly);
         rows.Should().Contain(r => r.Repository == "owner/shared" && r.Status == CatalogSyncStatus.Changed && r.StatusShortLabel == "Changed");
+    }
+
+    [Fact]
+    public void BuildCompareRows_grid_title_keeps_project_on_separate_line()
+    {
+        var external = new GameInfo
+        {
+            Repository = "owner/mm",
+            Name = "Majora's Mask",
+            Project = "2 Ship 2 Harkinian",
+            FolderName = "Majora-2S2H",
+        };
+
+        var row = CatalogCompareService.BuildCompareRows([], [external]).Should().ContainSingle().Subject;
+        row.DisplayName.Should().Be("Majora's Mask (2 Ship 2 Harkinian)");
+        row.TitleName.Should().Be("Majora's Mask");
+        row.ProjectSubtitle.Should().Be("2 Ship 2 Harkinian");
+        row.HasProjectSubtitle.Should().BeTrue();
+        row.HasStatusBadge.Should().BeTrue();
+        row.StatusShortLabel.Should().Be("New");
+        row.HasRepository.Should().BeTrue();
+    }
+
+    [Fact]
+    public void BuildCompareRows_unchanged_grid_hides_up_to_date_badge()
+    {
+        var local = CreateApp("owner/same", "Same App");
+        var external = CreateApp("owner/same", "Same App");
+
+        var row = CatalogCompareService.BuildCompareRows([local], [external]).Should().ContainSingle().Subject;
+        row.Status.Should().Be(CatalogSyncStatus.Unchanged);
+        row.StatusShortLabel.Should().Be("Up to date");
+        row.HasStatusBadge.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CatalogSyncRowItem_scrolls_title_when_hovered_or_gamepad_focused()
+    {
+        var row = CatalogCompareService.BuildCompareRows([], [CreateApp("owner/app", "App")]).Should().ContainSingle().Subject;
+        row.ShouldScrollTitle.Should().BeFalse();
+
+        row.IsHovered = true;
+        row.ShouldScrollTitle.Should().BeTrue();
+
+        row.IsHovered = false;
+        row.IsGamepadFocused = true;
+        row.ShouldScrollTitle.Should().BeTrue();
+
+        row.IsGamepadFocused = false;
+        row.ShouldScrollTitle.Should().BeFalse();
     }
 
     [Fact]
@@ -359,6 +428,50 @@ public class CatalogCompareServiceTests
     }
 
     [Fact]
+    public void GetAppsNeedingInstallSync_returns_new_and_layout_changed_apps_only()
+    {
+        var previous = new List<GameInfo>
+        {
+            CreateApp("owner/same", "Same"),
+            CreateApp("owner/folder", "Folder App", "OldFolder"),
+            CreateApp("owner/files", "Files App"),
+        };
+        previous[2].FilesToAdd = ["save.dat"];
+
+        var current = new List<GameInfo>
+        {
+            CreateApp("owner/same", "Renamed But Same Install"),
+            CreateApp("owner/folder", "Folder App", "NewFolder"),
+            CreateApp("owner/files", "Files App"),
+            CreateApp("owner/new", "New App"),
+        };
+        current[2].FilesToAdd = ["save.dat", "extra.bin"];
+
+        var mutated = CatalogCompareService.GetAppsNeedingInstallSync(previous, current);
+
+        mutated.Select(a => a.Repository).Should().BeEquivalentTo([
+            "owner/folder",
+            "owner/files",
+            "owner/new",
+        ]);
+    }
+
+    [Fact]
+    public void ApplyMergeAllChanged_unions_local_tags_and_takes_catalog_name()
+    {
+        var local = new List<GameInfo> { CreateApp("owner/app", "Old Name", "Folder") };
+        local[0].Tags = ["user-tag"];
+        var external = new List<GameInfo> { CreateApp("owner/app", "New Name", "Folder") };
+        external[0].Tags = ["n64"];
+        var rows = CatalogCompareService.BuildCompareRows(local, external);
+
+        var updated = CatalogCompareService.ApplyMergeAllChanged(local, rows);
+
+        updated.Single().Name.Should().Be("New Name");
+        TagHelper.NormalizeTags(updated.Single().Tags).Should().BeEquivalentTo(["user-tag", "n64"]);
+    }
+
+    [Fact]
     public void ApplyReplaceAllChanged_overwrites_catalog_fields()
     {
         var local = new List<GameInfo> { CreateApp("owner/app", "Old Name", "OldFolder") };
@@ -552,7 +665,107 @@ public class CatalogCompareServiceTests
         var row = rows.Single(r => r.Repository == "owner/app");
 
         row.HasInlineDiff.Should().BeTrue();
+        row.HasReviewCardFooter.Should().BeTrue();
         row.FieldDiffs.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void BuildCompareRows_new_app_includes_folder_and_tags_preview()
+    {
+        var external = CreateApp("owner/new", "Chameleon Twist", "ChameleonTwist-Recomp");
+        external.Project = "Chameleon Twist: Recompiled";
+        external.Tags = ["recomp", "n64"];
+        external.GameIconUrl = "https://example.com/icon.png";
+
+        var row = CatalogCompareService.BuildCompareRows([], [external]).Single();
+
+        row.HasInlineDiff.Should().BeTrue();
+        row.HasReviewCardFooter.Should().BeTrue();
+        row.FieldDiffs.Select(d => d.FieldLabel).Should().Equal("Project", "Folder", "Tags");
+        row.FieldDiffs.Single(d => d.FieldLabel == "Project").ExternalValue.Should().Be("Chameleon Twist: Recompiled");
+        row.FieldDiffs.Single(d => d.FieldLabel == "Folder").ExternalValue.Should().Be("ChameleonTwist-Recomp");
+        row.FieldDiffs.Single(d => d.FieldLabel == "Tags").TagDiffs.Select(t => t.Tag).Should().Equal("recomp", "n64");
+        row.IconUrl.Should().Be("https://example.com/icon.png");
+    }
+
+    [Fact]
+    public void BuildFieldDiffs_new_app_includes_preview_rows()
+    {
+        var external = CreateApp("owner/new", "App", "Folder");
+        external.Project = "Project";
+        external.Tags = ["n64"];
+        external.GameIconUrl = "https://example.com/icon.png";
+        external.PreferredVersion = "1.2.3";
+        external.ModsPath = "mods";
+        external.ModsSources =
+        [
+            new GameModSource
+            {
+                Provider = ModProviderIds.Thunderstore,
+                SourceUrl = "https://thunderstore.io/c/banjo-recompiled/",
+            },
+        ];
+
+        var diffs = CatalogSyncFieldDiffBuilder.BuildFieldDiffs(
+            CatalogSyncStatus.InExternalOnly,
+            local: null,
+            external,
+            []);
+
+        diffs.Select(d => d.FieldLabel)
+            .Should()
+            .Equal("Project", "Folder", "Tags", "Preferred version", "Mods");
+        diffs.Single(d => d.FieldLabel == "Project").ExternalValue.Should().Be("Project");
+        diffs.Single(d => d.FieldLabel == "Preferred version").ExternalValue.Should().Be("1.2.3");
+        diffs.Single(d => d.FieldLabel == "Mods").ExternalValue.Should().Contain("path=mods");
+        diffs.Single(d => d.FieldLabel == "Mods").ExternalValue.Should().Contain("thunderstore.io");
+
+        var row = CatalogCompareService.BuildCompareRows([], [external]).Single();
+        row.HasInlineDiff.Should().BeTrue();
+        row.HasReviewCardFooter.Should().BeTrue();
+        row.FieldDiffs.Should().HaveCount(5);
+    }
+
+    [Fact]
+    public void BuildFieldDiffs_puts_project_directly_under_name()
+    {
+        var local = CreateApp("owner/app", "Old Name", "Folder");
+        local.Project = "Old Project";
+        var external = CreateApp("owner/app", "New Name", "Folder");
+        external.Project = "New Project";
+        external.Tags = ["n64"];
+
+        var diffs = CatalogSyncFieldDiffBuilder.BuildFieldDiffs(
+            CatalogSyncStatus.Changed,
+            local,
+            external,
+            ["tags", "project", "name"]);
+
+        diffs.Select(d => d.FieldLabel).Should().Equal("Name", "Project", "Tags");
+    }
+
+    [Fact]
+    public void BuildCompareRows_up_to_date_details_show_project_folder_and_tags()
+    {
+        var local = CreateApp("sonicdcer/ExtremeGRecomp", "Extreme-G", "Extreme-G");
+        local.Project = "ExtremeGRecomp";
+        local.Tags = ["n64", "recomp"];
+        var external = CreateApp("sonicdcer/ExtremeGRecomp", "Extreme-G", "Extreme-G");
+        external.Project = "ExtremeGRecomp";
+        external.Tags = ["n64", "recomp"];
+
+        var row = CatalogCompareService.BuildCompareRows([local], [external]).Should().ContainSingle().Subject;
+
+        row.Status.Should().Be(CatalogSyncStatus.Unchanged);
+        row.FieldDiffs.Should().BeEmpty();
+        row.HasInlineDiff.Should().BeFalse();
+        row.HasDetailsFields.Should().BeTrue();
+        row.DetailsFields.Select(d => d.FieldLabel).Should().Equal("Project", "Folder", "Tags");
+        row.DetailsFields.Single(d => d.FieldLabel == "Project").IsSnapshot.Should().BeTrue();
+        row.DetailsFields.Single(d => d.FieldLabel == "Project").ExternalValue.Should().Be("ExtremeGRecomp");
+        row.DetailsFields.Single(d => d.FieldLabel == "Folder").ExternalValue.Should().Be("Extreme-G");
+        row.DetailsFields.Single(d => d.FieldLabel == "Tags").TagDiffs
+            .Should().OnlyContain(t => t.Kind == CatalogSyncTagDiffKind.Shared);
     }
 
     [Fact]
@@ -778,6 +991,66 @@ public class CatalogCompareServiceTests
     }
 
     [Fact]
+    public void ApplyReviewActionButtons_hidden_filter_shows_unhide_not_remove()
+    {
+        var local = new List<GameInfo> { CreateApp("owner/in-library", "In Library") };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/in-library", "In Library"),
+            CreateApp("owner/not-in-library", "Not In Library"),
+        };
+        var rows = CatalogCompareService.BuildCompareRows(local, external);
+        var source = new AppCatalogSource
+        {
+            HiddenFromReviewRepositories = ["owner/in-library", "owner/not-in-library"],
+        };
+
+        foreach (var row in rows)
+            CatalogCompareService.ApplyReviewActionButtons(row, source, CatalogReviewFilter.Hidden);
+
+        var inLibrary = rows.Single(r => r.Repository == "owner/in-library");
+        inLibrary.ShowHideButton.Should().BeFalse();
+        inLibrary.ShowCardHideButton.Should().BeFalse();
+        inLibrary.ShowUnhideButton.Should().BeTrue();
+        inLibrary.ShowRemoveFromLibrary.Should().BeFalse();
+        inLibrary.CanRemoveFromLibrary.Should().BeTrue();
+
+        var notAdded = rows.Single(r => r.Repository == "owner/not-in-library");
+        notAdded.ShowHideButton.Should().BeFalse();
+        notAdded.ShowCardHideButton.Should().BeFalse();
+        notAdded.ShowUnhideButton.Should().BeTrue();
+        notAdded.ShowRemoveFromLibrary.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplyReviewActionButtons_non_hidden_filter_shows_hide_and_remove()
+    {
+        var local = new List<GameInfo> { CreateApp("owner/in-library", "In Library") };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/in-library", "In Library"),
+            CreateApp("owner/not-in-library", "Not In Library"),
+        };
+        var rows = CatalogCompareService.BuildCompareRows(local, external);
+        var source = new AppCatalogSource();
+
+        foreach (var row in rows)
+            CatalogCompareService.ApplyReviewActionButtons(row, source, CatalogReviewFilter.All);
+
+        var inLibrary = rows.Single(r => r.Repository == "owner/in-library");
+        inLibrary.ShowHideButton.Should().BeTrue();
+        inLibrary.ShowCardHideButton.Should().BeFalse();
+        inLibrary.ShowUnhideButton.Should().BeFalse();
+        inLibrary.ShowRemoveFromLibrary.Should().BeTrue();
+
+        var notAdded = rows.Single(r => r.Repository == "owner/not-in-library");
+        notAdded.ShowHideButton.Should().BeTrue();
+        notAdded.ShowCardHideButton.Should().BeTrue();
+        notAdded.ShowUnhideButton.Should().BeFalse();
+        notAdded.ShowRemoveFromLibrary.Should().BeFalse();
+    }
+
+    [Fact]
     public void ApplyRowRemove_removes_matching_repo_and_leaves_others()
     {
         var local = new List<GameInfo>
@@ -985,6 +1258,22 @@ public class CatalogCompareServiceTests
             .Select(r => r.Repository)
             .Should()
             .Equal("owner/changed", "owner/new", "owner/up");
+    }
+
+    [Fact]
+    public void Grid_card_shows_one_primary_action_and_keeps_it_off_the_more_menu()
+    {
+        var add = CreateRow("owner/new", "New", CatalogSyncStatus.InExternalOnly);
+        add.ShowGridCardPrimaryAdd.Should().BeTrue();
+        add.ShowGridCardPrimaryMerge.Should().BeFalse();
+        add.ShowMenuAdd.Should().BeFalse();
+        add.ShowMenuMerge.Should().BeFalse();
+
+        var merge = CreateRow("owner/changed", "Changed", CatalogSyncStatus.Changed);
+        merge.ShowGridCardPrimaryAdd.Should().BeFalse();
+        merge.ShowGridCardPrimaryMerge.Should().BeTrue();
+        merge.ShowMenuAdd.Should().BeFalse();
+        merge.ShowMenuMerge.Should().BeFalse();
     }
 
     private static CatalogSyncRowItem CreateRow(

@@ -7,5 +7,6 @@ namespace QuiverLauncher.Core.Models
         MacOS,
         LinuxX64,
         LinuxARM64,
+        Android,
     }
 }

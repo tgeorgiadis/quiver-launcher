@@ -63,6 +63,25 @@ public class GameGridViewModelTests
     }
 
     [Fact]
+    public void ApplySort_does_not_reset_collection_when_already_sorted()
+    {
+        var banjo = new GameInfo { Name = "Banjo" };
+        var zelda = new GameInfo { Name = "Zelda" };
+        var games = new System.Collections.ObjectModel.ObservableCollection<GameInfo> { banjo, zelda };
+        var resets = 0;
+        games.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+                resets++;
+        };
+
+        new GameGridViewModel().ApplySort(games, "Name", "/apps", ignoreArticlesWhenSorting: false);
+
+        resets.Should().Be(0);
+        games.Should().Equal(banjo, zelda);
+    }
+
+    [Fact]
     public void GetLastPlayedTime_reads_timestamp_file()
     {
         var tempRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

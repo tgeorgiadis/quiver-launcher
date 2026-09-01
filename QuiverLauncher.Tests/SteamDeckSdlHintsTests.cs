@@ -74,6 +74,81 @@ public class SteamDeckSdlHintsTests
     }
 
     [Fact]
+    public void GetAllowSteamVirtualGamepadHintValue_null_when_not_linux()
+    {
+        SteamDeckSdlHints.GetAllowSteamVirtualGamepadHintValue(
+            isLinux: false,
+            _ => "1",
+            (_, _) => true).Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAllowSteamVirtualGamepadHintValue_null_on_desktop_mode()
+    {
+        SteamDeckSdlHints.GetAllowSteamVirtualGamepadHintValue(
+            isLinux: true,
+            name => name == "SteamDeck" ? "1" : null,
+            (_, _) => false).Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAllowSteamVirtualGamepadHintValue_allows_virtual_pad_in_gaming_mode()
+    {
+        SteamDeckSdlHints.GetAllowSteamVirtualGamepadHintValue(
+            isLinux: true,
+            name => name == "SteamDeck" ? "1" : null,
+            (_, _) => true).Should().Be(SteamDeckSdlHints.AllowSteamVirtualGamepadValue);
+    }
+
+    [Fact]
+    public void GetAllowSteamVirtualGamepadHintValue_uses_real_gaming_mode_detector_for_gamescope()
+    {
+        SteamDeckSdlHints.GetAllowSteamVirtualGamepadHintValue(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "gamescope",
+                _ => null
+            },
+            SteamDeckEnvironment.IsGamingMode).Should().Be(SteamDeckSdlHints.AllowSteamVirtualGamepadValue);
+    }
+
+    [Fact]
+    public void GetAllowSteamVirtualGamepadHintValue_uses_real_gaming_mode_detector_for_desktop()
+    {
+        SteamDeckSdlHints.GetAllowSteamVirtualGamepadHintValue(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "KDE",
+                _ => null
+            },
+            SteamDeckEnvironment.IsGamingMode).Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplyBeforeInit_sets_virtual_gamepad_hint()
+    {
+        string? setName = null;
+        string? setValue = null;
+
+        var applied = SteamDeckSdlHints.ApplyBeforeInit(
+            hidapiSteamHintValue: null,
+            SteamDeckSdlHints.AllowSteamVirtualGamepadValue,
+            (name, value) =>
+            {
+                setName = name;
+                setValue = value;
+            });
+
+        applied.Should().BeTrue();
+        setName.Should().Be(SteamDeckSdlHints.AllowSteamVirtualGamepadHintName);
+        setValue.Should().Be(SteamDeckSdlHints.AllowSteamVirtualGamepadValue);
+    }
+
+    [Fact]
     public void GetHidapiSteamHintValue_uses_real_gaming_mode_detector_for_desktop()
     {
         SteamDeckSdlHints.GetHidapiSteamHintValue(

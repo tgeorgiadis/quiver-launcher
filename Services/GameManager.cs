@@ -2,6 +2,7 @@ using QuiverLauncher.Core.Models;
 using QuiverLauncher.Core.Services;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services.Mods;
+using QuiverLauncher.ViewModels;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -216,20 +217,46 @@ namespace QuiverLauncher.Services
             return Games.FirstOrDefault(g => string.Equals(g.FolderName, folderName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public async Task LoadGamesAsync(bool forceUpdateCheck = false)
+        public Task LoadGamesAsync(bool forceUpdateCheck = false) =>
+            LoadGamesCoreAsync(forceUpdateCheck, refreshRemoteCatalogs: true);
+
+        /// <summary>
+        /// Reloads the library from local apps.json without fetching catalog sources.
+        /// Status is preserved for existing apps; only <paramref name="statusCheckIdentityKeys"/>
+        /// (or every app when null) are re-checked on disk.
+        /// </summary>
+        public Task ReloadLibraryFromDiskAsync(IEnumerable<string>? statusCheckIdentityKeys = null) =>
+            LoadGamesCoreAsync(forceUpdateCheck: false, refreshRemoteCatalogs: false, statusCheckIdentityKeys);
+
+        private async Task LoadGamesCoreAsync(
+            bool forceUpdateCheck,
+            bool refreshRemoteCatalogs,
+            IEnumerable<string>? statusCheckIdentityKeys = null)
         {
             _settings = _settingsStore.Load();
             _settings.EnsureInitialized();
 
-            if (AppCatalogService.MigrateLegacyCatalogSources(_settings))
+            if (refreshRemoteCatalogs && AppCatalogService.MigrateLegacyCatalogSources(_settings))
                 _settingsStore.Save(_settings);
 
-            await _catalogService.RefreshAllSourcesAsync(_httpClient, _settings).ConfigureAwait(false);
-            _settingsStore.Save(_settings);
+            if (refreshRemoteCatalogs)
+            {
+                await _catalogService.RefreshAllSourcesAsync(_httpClient, _settings).ConfigureAwait(false);
+                _settingsStore.Save(_settings);
+            }
 
             Games ??= [];
+            var previousByKey = CatalogCompareService.IndexByInstanceKey(_catalogApps);
             var allApps = await _catalogService.LoadLocalCatalogAsync(_settings).ConfigureAwait(false);
             _catalogApps = allApps.Where(app => app != null).Cast<GameInfo>().ToList();
+
+            HashSet<string>? checkKeys = null;
+            if (!refreshRemoteCatalogs && statusCheckIdentityKeys != null)
+            {
+                checkKeys = new HashSet<string>(
+                    statusCheckIdentityKeys.Where(key => !string.IsNullOrWhiteSpace(key)),
+                    StringComparer.OrdinalIgnoreCase);
+            }
 
             foreach (var app in _catalogApps)
             {
@@ -237,11 +264,21 @@ namespace QuiverLauncher.Services
                     continue;
 
                 app.IsInLocalAppsJson = true;
+                if (checkKeys == null)
+                    continue;
+                if (checkKeys.Contains(app.InstanceKey))
+                    continue;
+                if (previousByKey.TryGetValue(app.InstanceKey, out var previous))
+                    CopyRuntimeLibraryState(app, previous);
             }
 
             if (!string.IsNullOrEmpty(_appsFolder))
             {
-                await Task.WhenAll(_catalogApps.Where(app => app != null).Select(async app =>
+                var appsToCheck = checkKeys == null
+                    ? _catalogApps
+                    : _catalogApps.Where(app => app != null && checkKeys.Contains(app.InstanceKey)).ToList();
+
+                await Task.WhenAll(appsToCheck.Where(app => app != null).Select(async app =>
                 {
                     try
                     {
@@ -254,12 +291,23 @@ namespace QuiverLauncher.Services
                 }));
             }
 
-            await _catalogService.ApplyPendingCatalogChangeFlagsAsync(_catalogApps, _settings)
-                .ConfigureAwait(false);
+            if (refreshRemoteCatalogs)
+            {
+                await _catalogService.ApplyPendingCatalogChangeFlagsAsync(_catalogApps, _settings)
+                    .ConfigureAwait(false);
+            }
 
             await RebuildVisibleGamesAsync(_settings);
 
             await LoadCustomAndCachedIconsAsync();
+        }
+
+        private static void CopyRuntimeLibraryState(GameInfo target, GameInfo source)
+        {
+            target.Status = source.Status;
+            target.InstalledVersion = source.InstalledVersion;
+            target.LatestVersion = source.LatestVersion;
+            target.HasPendingCatalogChanges = source.HasPendingCatalogChanges;
         }
 
         public async Task ExportGamesAsync()
@@ -434,8 +482,14 @@ namespace QuiverLauncher.Services
 
         private void ApplyGamesList(List<GameInfo> gamesToShow)
         {
+            var sorted = new GameGridViewModel().SortGames(
+                gamesToShow,
+                _settings.SortBy ?? "Name",
+                _appsFolder ?? string.Empty,
+                _settings.IgnoreArticlesWhenSorting);
+
             Games.Clear();
-            foreach (var app in gamesToShow)
+            foreach (var app in sorted)
                 Games.Add(app);
 
             OnPropertyChanged(nameof(Games));

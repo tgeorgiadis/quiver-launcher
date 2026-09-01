@@ -56,6 +56,18 @@ public partial class App : Application, INotifyPropertyChanged
     /// </summary>
     public Task StartupSelfUpdatePromptCompleted => _startupSelfUpdatePromptCompleted.Task;
 
+    internal static WeakReference<MainView>? CurrentHostedMainView;
+
+    internal static MainView? TryGetHostedMainView()
+        => CurrentHostedMainView is { } weak && weak.TryGetTarget(out var view) ? view : null;
+
+    private MainView CreateHostedMainView()
+    {
+        var view = new MainView { _app = this };
+        CurrentHostedMainView = new WeakReference<MainView>(view);
+        return view;
+    }
+
     private readonly VelopackUpdateService _velopackUpdates = new();
 
     public override void Initialize()
@@ -68,7 +80,7 @@ public partial class App : Application, INotifyPropertyChanged
 #if DEBUG
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
-            Program.LogCrashFromUiThread("Dispatcher.UIThread.UnhandledException", e.Exception);
+            CrashLog.LogFromUiThread("Dispatcher.UIThread.UnhandledException", e.Exception);
             e.Handled = true;
         };
 #endif
@@ -83,8 +95,19 @@ public partial class App : Application, INotifyPropertyChanged
             mainWindow._app = this;
             desktop.MainWindow = mainWindow;
 
-            InitializeTrayIcon();
-            mainWindow.ApplyTraySettingsFromApp();
+            if (PlatformCapabilities.SupportsTray)
+            {
+                InitializeTrayIcon();
+                mainWindow.ApplyTraySettingsFromApp();
+            }
+        }
+        else if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime)
+        {
+            activityLifetime.MainViewFactory = CreateHostedMainView;
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        {
+            singleView.MainView = CreateHostedMainView();
         }
 
         base.OnFrameworkInitializationCompleted();

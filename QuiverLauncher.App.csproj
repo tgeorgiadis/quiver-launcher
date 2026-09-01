@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
-		<TargetFramework>net9.0</TargetFramework>
-		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
 		<AssemblyName>QuiverLauncher</AssemblyName>
 		<RootNamespace>QuiverLauncher</RootNamespace>
 		<AssemblyTitle>Quiver Launcher</AssemblyTitle>
@@ -11,10 +10,9 @@
 		<AssemblyVersion>3.2.1.0</AssemblyVersion>
 		<FileVersion>3.2.1.0</FileVersion>
 		<Configurations>Debug;Release</Configurations>
-		<Platforms>AnyCPU;x64</Platforms>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<RuntimeIdentifiers>win-x64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+		<AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
@@ -28,11 +26,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AsyncImageLoader.Avalonia" Version="3.7.0" />
-		<PackageReference Include="Avalonia" Version="11.3.12" />
-		<PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
-		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
-		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.12" />
+		<PackageReference Include="AsyncImageLoader.Avalonia" Version="3.8.0" />
+		<PackageReference Include="Avalonia" Version="12.1.1" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
 		<PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
 		<PackageReference Include="SharpCompress" Version="0.50.1" />
 		<PackageReference Include="System.Text.Json" Version="10.0.3" />
@@ -59,14 +56,21 @@
 	<ItemGroup>
 		<Compile Remove="lib\QuiverLauncher.Core\**\*.cs" />
 		<Compile Remove="QuiverLauncher.Tests\**\*.cs" />
+		<Compile Remove="QuiverLauncher.Desktop\**\*.cs" />
+		<Compile Remove="QuiverLauncher.Android\**\*.cs" />
+		<Compile Remove="Program.cs" />
 		<Compile Remove="_test_build\**\*.cs" />
 		<Compile Remove="artifacts\**\*.cs" />
 		<EmbeddedResource Remove="lib\QuiverLauncher.Core\**\*.*" />
 		<EmbeddedResource Remove="QuiverLauncher.Tests\**\*.*" />
+		<EmbeddedResource Remove="QuiverLauncher.Desktop\**\*.*" />
+		<EmbeddedResource Remove="QuiverLauncher.Android\**\*.*" />
 		<EmbeddedResource Remove="_test_build\**\*.*" />
 		<EmbeddedResource Remove="artifacts\**\*.*" />
 		<None Remove="lib\QuiverLauncher.Core\**\*.*" />
 		<None Remove="QuiverLauncher.Tests\**\*.*" />
+		<None Remove="QuiverLauncher.Desktop\**\*.*" />
+		<None Remove="QuiverLauncher.Android\**\*.*" />
 		<None Remove="_test_build\**\*.*" />
 		<None Remove="artifacts\**\*.*" />
 	</ItemGroup>

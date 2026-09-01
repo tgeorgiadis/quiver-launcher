@@ -5,7 +5,7 @@ namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Global gate for orange gamepad/keyboard focus rings. Styles only paint when the
-/// hosting <see cref="Window"/> has class <c>gamepad-chrome</c>.
+/// hosting control has class <c>gamepad-chrome</c>.
 /// </summary>
 internal static class GamepadFocusChrome
 {
@@ -19,24 +19,25 @@ internal static class GamepadFocusChrome
     public static bool ShouldShowGamepadChrome(
         bool enableGamepadInput,
         bool hasConnectedGamepad,
-        bool keyboardNavActive = false) =>
-        (enableGamepadInput && hasConnectedGamepad) || keyboardNavActive;
+        bool keyboardNavActive = false,
+        bool treatAsGamepadPresent = false) =>
+        (enableGamepadInput && (hasConnectedGamepad || treatAsGamepadPresent)) || keyboardNavActive;
 
     public static void SetKeyboardNavigationActive(bool active) =>
         KeyboardNavigationActive = active;
 
-    public static void SetActive(bool active, params Window?[] windows)
+    public static void SetActive(bool active, params StyledElement?[] hosts)
     {
         IsActive = active;
-        foreach (var window in windows)
+        foreach (var host in hosts)
         {
-            if (window != null)
-                window.Classes.Set(WindowClassName, active);
+            if (host != null)
+                host.Classes.Set(WindowClassName, active);
         }
     }
 
-    public static void ApplyToWindow(Window window, bool active) =>
-        window.Classes.Set(WindowClassName, active);
+    public static void ApplyToWindow(StyledElement element, bool active) =>
+        element.Classes.Set(WindowClassName, active);
 
     /// <summary>
     /// Sets <c>gamepad-focused</c>, forcing off when chrome is inactive.

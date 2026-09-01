@@ -1,3 +1,5 @@
+using Avalonia.Controls;
+
 namespace QuiverLauncher.Services;
 
 /// <summary>
@@ -28,6 +30,52 @@ internal static class SteamDeckEnvironment
 
         return !string.IsNullOrWhiteSpace(getEnvironmentVariable("GAMESCOPE_WAYLAND_DISPLAY"));
     }
+
+    /// <summary>
+    /// True on Steam Deck KDE Desktop Mode. Exclusive <see cref="WindowState.FullScreen"/>
+    /// covers the display so Steam's on-screen keyboard appears behind the window.
+    /// </summary>
+    public static bool IsDesktopMode() =>
+        IsDesktopMode(OperatingSystem.IsLinux(), Environment.GetEnvironmentVariable);
+
+    public static bool IsDesktopMode(bool isLinux, Func<string, string?> getEnvironmentVariable)
+    {
+        if (!isLinux)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(getEnvironmentVariable("SteamDeck")))
+            return false;
+
+        return !IsGamingMode(isLinux, getEnvironmentVariable);
+    }
+
+    /// <summary>
+    /// Steam Deck Desktop cannot use exclusive <see cref="WindowState.FullScreen"/>
+    /// (the compositor then hides the on-screen keyboard behind the window).
+    /// </summary>
+    public static bool DisallowsExclusiveFullscreen() =>
+        DisallowsExclusiveFullscreen(OperatingSystem.IsLinux(), Environment.GetEnvironmentVariable);
+
+    public static bool DisallowsExclusiveFullscreen(
+        bool isLinux,
+        Func<string, string?> getEnvironmentVariable) =>
+        IsDesktopMode(isLinux, getEnvironmentVariable);
+
+    /// <summary>
+    /// Window state to apply when Start in Fullscreen is requested.
+    /// Deck Desktop uses <see cref="WindowState.Maximized"/> so the KDE taskbar
+    /// stays visible and Steam's on-screen keyboard can appear above the window.
+    /// Other platforms use exclusive <see cref="WindowState.FullScreen"/>.
+    /// </summary>
+    public static WindowState DesktopFullscreenWindowState() =>
+        DesktopFullscreenWindowState(OperatingSystem.IsLinux(), Environment.GetEnvironmentVariable);
+
+    public static WindowState DesktopFullscreenWindowState(
+        bool isLinux,
+        Func<string, string?> getEnvironmentVariable) =>
+        DisallowsExclusiveFullscreen(isLinux, getEnvironmentVariable)
+            ? WindowState.Maximized
+            : WindowState.FullScreen;
 
     private static bool LooksLikeGamescopeDesktop(string? value) =>
         !string.IsNullOrWhiteSpace(value) &&

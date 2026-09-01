@@ -29,7 +29,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
 
     - name: Restore dependencies
       run: dotnet restore QuiverLauncher.sln
@@ -65,20 +65,20 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          9.0.x
+          10.0.x
           8.0.x
 
     - name: Resolve pack version
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.App.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "Pack version: $VERSION"
 
     - name: Publish Windows x64
       run: |
-        dotnet publish QuiverLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishTrimmed=false -o publish/win-x64
+        dotnet publish QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishTrimmed=false -o publish/win-x64
         Remove-Item publish/win-x64/apps.json -ErrorAction SilentlyContinue
 
     - name: Install vpk
@@ -169,18 +169,18 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
 
     - name: Resolve pack version
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.App.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
     - name: Publish ${{ matrix.rid }}
       run: |
-        dotnet publish QuiverLauncher.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
+        dotnet publish QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         # Do not bake user-data leftovers into the AppImage.
         rm -f publish/${{ matrix.rid }}/apps.json \
               publish/${{ matrix.rid }}/settings.json \
@@ -230,18 +230,18 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
 
     - name: Resolve pack version
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.App.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
     - name: Publish ${{ matrix.rid }}
       run: |
-        dotnet publish QuiverLauncher.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
+        dotnet publish QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishTrimmed=false -o publish/${{ matrix.rid }}
         rm -f publish/${{ matrix.rid }}/apps.json
 
     - name: Install vpk
@@ -303,7 +303,7 @@ jobs:
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.csproj | head -n1 | sed 's/<Version>//')
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.App.csproj | head -n1 | sed 's/<Version>//')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         if [[ "$VERSION" == *-* ]]; then
           echo "prerelease=true" >> "$GITHUB_OUTPUT"
@@ -381,3 +381,26 @@ jobs:
           --target "$GITHUB_SHA" \
           "${PRE_ARGS[@]}" \
           "${FILES[@]}"
+
+  build-android:
+    needs: test
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install Android workload
+      run: dotnet workload install android
+
+    - name: Build Android
+      run: dotnet build QuiverLauncher.Android/QuiverLauncher.Android.csproj -c Release

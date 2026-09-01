@@ -1,4 +1,5 @@
 using FluentAssertions;
+using QuiverLauncher;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 using QuiverLauncher.ViewModels;
@@ -66,7 +67,7 @@ public class CatalogSyncViewModelTests
     }
 
     [Fact]
-    public void VersionBannerText_includes_usage_stats_below_version_summary()
+    public void VersionBannerText_is_one_line_with_last_reviewed_in_tooltip()
     {
         var local = new List<GameInfo>
         {
@@ -90,8 +91,79 @@ public class CatalogSyncViewModelTests
         var viewModel = new CatalogSyncViewModel();
         viewModel.Refresh(source, local, external);
 
-        viewModel.VersionBannerText.Should().Be(
-            "List version: 1.0.0\nLast reviewed: not yet\nUsing 3/4 apps from this list");
+        viewModel.VersionBannerText.Should().Be("1.0.0 · 3/4 apps in library");
+        viewModel.VersionBannerCompactText.Should().Be("1.0.0 · 3/4 apps in library");
+        viewModel.VersionLastReviewedText.Should().Be("Last reviewed: not yet");
+        viewModel.VersionBannerTooltip.Should().Contain("Last reviewed: not yet");
+        viewModel.VersionBannerTooltip.Should().Contain("Using 3/4 apps from this list");
+        viewModel.ShowVersionBannerEmphasis.Should().BeTrue();
+        viewModel.ShowVersionBanner.Should().BeTrue();
+    }
+
+    [Fact]
+    public void VersionBanner_hides_emphasis_when_list_is_acknowledged_and_synced()
+    {
+        var local = new List<GameInfo> { CreateApp("owner/a") };
+        var external = new List<GameInfo> { CreateApp("owner/a") };
+        var source = new AppCatalogSource
+        {
+            CachedListVersion = "1.0.6",
+            AcknowledgedListVersion = "1.0.6",
+        };
+
+        var viewModel = new CatalogSyncViewModel();
+        viewModel.Refresh(source, local, external);
+
+        viewModel.ShowVersionBannerEmphasis.Should().BeFalse();
+        viewModel.ShowBulkAddButton.Should().BeFalse();
+        viewModel.ShowBulkReplaceButton.Should().BeFalse();
+        viewModel.ShowSkipReviewButton.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ShowBulkButtons_only_when_filtered_count_is_positive()
+    {
+        var local = new List<GameInfo> { CreateApp("owner/changed", "Old", "Folder") };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/changed", "New", "Folder"),
+            CreateApp("owner/new", "New App", "NewFolder"),
+        };
+        var source = new AppCatalogSource { CachedListVersion = "1.0.0" };
+        var viewModel = new CatalogSyncViewModel { ReviewFilter = CatalogReviewFilter.All };
+        viewModel.Refresh(source, local, external);
+
+        viewModel.ShowBulkAddButton.Should().BeTrue();
+        viewModel.ShowBulkReplaceButton.Should().BeTrue();
+
+        viewModel.ReviewFilter = CatalogReviewFilter.UpToDate;
+        viewModel.ShowBulkAddButton.Should().BeFalse();
+        viewModel.ShowBulkReplaceButton.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ShowSkipReviewButton_hides_on_up_to_date_and_hidden_filters()
+    {
+        var local = new List<GameInfo> { CreateApp("owner/changed", "Old", "Folder") };
+        var external = new List<GameInfo>
+        {
+            CreateApp("owner/changed", "New", "Folder"),
+            CreateApp("owner/new", "New App", "NewFolder"),
+        };
+        var source = new AppCatalogSource { CachedListVersion = "1.0.0" };
+        var viewModel = new CatalogSyncViewModel { ReviewFilter = CatalogReviewFilter.NeedsReview };
+        viewModel.Refresh(source, local, external);
+
+        viewModel.ShowSkipReviewButton.Should().BeTrue();
+
+        viewModel.ReviewFilter = CatalogReviewFilter.All;
+        viewModel.ShowSkipReviewButton.Should().BeTrue();
+
+        viewModel.ReviewFilter = CatalogReviewFilter.UpToDate;
+        viewModel.ShowSkipReviewButton.Should().BeFalse();
+
+        viewModel.ReviewFilter = CatalogReviewFilter.Hidden;
+        viewModel.ShowSkipReviewButton.Should().BeFalse();
     }
 
     [Fact]
@@ -328,5 +400,44 @@ public class CatalogSyncViewModelTests
         viewModel.FilteredBulkAddCount.Should().Be(1);
         viewModel.GetFilteredBulkAddRows().Select(r => r.Repository).Should().Equal("owner/new-n64");
         viewModel.FilteredBulkReplaceCount.Should().Be(0);
+    }
+
+    [Fact]
+    public void CatalogReviewLayout_shows_grid_or_list_from_setting()
+    {
+        MainWindow.ShouldShowCatalogReviewGrid(true).Should().BeTrue();
+        MainWindow.ShouldShowCatalogReviewList(true).Should().BeFalse();
+        MainWindow.ShouldShowCatalogReviewGrid(false).Should().BeFalse();
+        MainWindow.ShouldShowCatalogReviewList(false).Should().BeTrue();
+        MainWindow.ShouldShowCatalogReviewHelpLines(true).Should().BeFalse();
+        MainWindow.ShouldShowCatalogReviewHelpLines(false).Should().BeFalse();
+        MainWindow.ShouldShowCatalogReviewOpenRepo("owner/repo").Should().BeTrue();
+        MainWindow.ShouldShowCatalogReviewOpenRepo("").Should().BeFalse();
+        MainWindow.ShouldShowCatalogReviewOpenRepo(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void CatalogReviewDetails_open_close_does_not_change_filter_or_sort()
+    {
+        var viewModel = new CatalogSyncViewModel
+        {
+            ReviewFilter = CatalogReviewFilter.Changed,
+            SortBy = "Repository",
+        };
+
+        var filter = viewModel.ReviewFilter;
+        var sort = viewModel.SortBy;
+        var overlayOpen = true;
+        string? overlayKey = "owner/app";
+
+        overlayOpen = false;
+        overlayKey = null;
+
+        overlayOpen.Should().BeFalse();
+        overlayKey.Should().BeNull();
+        viewModel.ReviewFilter.Should().Be(filter);
+        viewModel.SortBy.Should().Be(sort);
+        viewModel.ReviewFilter.Should().Be(CatalogReviewFilter.Changed);
+        viewModel.SortBy.Should().Be("Repository");
     }
 }

@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using FluentAssertions;
 using QuiverLauncher.Services;
 
@@ -74,5 +75,107 @@ public class SteamDeckEnvironmentTests
         SteamDeckEnvironment.IsGamingMode(
             isLinux: true,
             _ => null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsDesktopMode_true_when_steam_deck_and_kde()
+    {
+        SteamDeckEnvironment.IsDesktopMode(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "KDE",
+                _ => null
+            }).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsDesktopMode_false_when_gamescope()
+    {
+        SteamDeckEnvironment.IsDesktopMode(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "gamescope",
+                _ => null
+            }).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsDesktopMode_false_when_not_linux()
+    {
+        SteamDeckEnvironment.IsDesktopMode(
+            isLinux: false,
+            name => name == "SteamDeck" ? "1" : null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void DisallowsExclusiveFullscreen_true_on_deck_kde_desktop()
+    {
+        SteamDeckEnvironment.DisallowsExclusiveFullscreen(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "KDE",
+                _ => null
+            }).Should().BeTrue();
+    }
+
+    [Fact]
+    public void DisallowsExclusiveFullscreen_false_on_deck_gamescope()
+    {
+        SteamDeckEnvironment.DisallowsExclusiveFullscreen(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "gamescope",
+                _ => null
+            }).Should().BeFalse();
+    }
+
+    [Fact]
+    public void DesktopFullscreenWindowState_maximized_on_deck_kde_desktop()
+    {
+        SteamDeckEnvironment.DesktopFullscreenWindowState(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "KDE",
+                _ => null
+            }).Should().Be(WindowState.Maximized);
+    }
+
+    [Fact]
+    public void DesktopFullscreenWindowState_fullscreen_on_deck_gamescope()
+    {
+        SteamDeckEnvironment.DesktopFullscreenWindowState(
+            isLinux: true,
+            name => name switch
+            {
+                "SteamDeck" => "1",
+                "XDG_CURRENT_DESKTOP" => "gamescope",
+                _ => null
+            }).Should().Be(WindowState.FullScreen);
+    }
+
+    [Fact]
+    public void DesktopFullscreenWindowState_fullscreen_when_not_linux()
+    {
+        SteamDeckEnvironment.DesktopFullscreenWindowState(
+            isLinux: false,
+            name => name == "SteamDeck" ? "1" : null).Should().Be(WindowState.FullScreen);
+    }
+
+    [Fact]
+    public void DesktopFullscreenWindowState_fullscreen_on_linux_without_steam_deck()
+    {
+        SteamDeckEnvironment.DesktopFullscreenWindowState(
+            isLinux: true,
+            name => name == "XDG_CURRENT_DESKTOP" ? "KDE" : null).Should().Be(WindowState.FullScreen);
     }
 }

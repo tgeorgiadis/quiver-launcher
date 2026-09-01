@@ -5,17 +5,22 @@
              RequestedThemeVariant="Dark">
 
 	<Application.Resources>
-		<SolidColorBrush x:Key="ThemeBase" Color="#18181b"/>
-		<SolidColorBrush x:Key="ThemeLighter" Color="#252527"/>
-		<SolidColorBrush x:Key="ThemeDarker" Color="#0e0e10"/>
-		<SolidColorBrush x:Key="ThemeBorder" Color="#2d2d30"/>
-		<SolidColorBrush x:Key="ThemeText" Color="White"/>
-		<SolidColorBrush x:Key="ThemeTextSecondary" Color="#B8B8B8"/>
-		<SolidColorBrush x:Key="ThemeSuccess" Color="#22c55e"/>
-		<SolidColorBrush x:Key="ThemeWarning" Color="#f59e0b"/>
-		<SolidColorBrush x:Key="ThemeError" Color="#ef4444"/>
-		<SolidColorBrush x:Key="ThemeAccent" Color="#f59e0b"/>
-		<SolidColorBrush x:Key="ThemeFocusRing" Color="#f59e0b"/>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceInclude Source="avares://QuiverLauncher/Themes/WindowDrawnDecorations.axaml"/>
+			</ResourceDictionary.MergedDictionaries>
+			<SolidColorBrush x:Key="ThemeBase" Color="#18181b"/>
+			<SolidColorBrush x:Key="ThemeLighter" Color="#252527"/>
+			<SolidColorBrush x:Key="ThemeDarker" Color="#0e0e10"/>
+			<SolidColorBrush x:Key="ThemeBorder" Color="#2d2d30"/>
+			<SolidColorBrush x:Key="ThemeText" Color="White"/>
+			<SolidColorBrush x:Key="ThemeTextSecondary" Color="#B8B8B8"/>
+			<SolidColorBrush x:Key="ThemeSuccess" Color="#22c55e"/>
+			<SolidColorBrush x:Key="ThemeWarning" Color="#f59e0b"/>
+			<SolidColorBrush x:Key="ThemeError" Color="#ef4444"/>
+			<SolidColorBrush x:Key="ThemeAccent" Color="#f59e0b"/>
+			<SolidColorBrush x:Key="ThemeFocusRing" Color="#38bdf8"/>
+		</ResourceDictionary>
 	</Application.Resources>
 
 	<Application.Styles>
@@ -26,6 +31,7 @@
 			<Setter Property="SelectionBrush" Value="{DynamicResource ThemeAccent}"/>
 			<Setter Property="SelectionForegroundBrush" Value="{DynamicResource ThemeDarker}"/>
 			<Setter Property="CaretBrush" Value="{DynamicResource ThemeText}"/>
+			<Setter Property="services:GamepadTextInput.EngageOnConfirm" Value="True"/>
 		</Style>
 
 		<Style Selector="ContextMenu">
@@ -50,65 +56,102 @@
 			<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
 		</Style>
 
-		<!-- Orange :focus rings only under nav chrome; :focus-visible stays for Tab. -->
+		<Style Selector="Window.gamepad-chrome Button,
+		                 Window.gamepad-chrome TextBox,
+		                 Window.gamepad-chrome CheckBox,
+		                 Window.gamepad-chrome ComboBox">
+			<Setter Property="FocusAdorner" Value="{x:Null}"/>
+		</Style>
+
+		<!-- Focus rings only under nav chrome; :focus-visible stays for Tab. -->
 		<Style Selector="Window.gamepad-chrome MenuItem:focus">
 			<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
-			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 
 		<Style Selector="MenuItem:focus-visible">
 			<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
-			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 
 		<Style Selector="Window.gamepad-chrome Button:focus">
-			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+		</Style>
+
+		<Style Selector="Window.gamepad-chrome TextBox:focus /template/ Border#PART_BorderElement">
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+		</Style>
+
+		<Style Selector="Window.gamepad-chrome CheckBox:focus /template/ Border#NormalRectangle">
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+		</Style>
+
+		<Style Selector="Window.gamepad-chrome ComboBox:focus">
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 
 		<Style Selector="Window Button:focus-visible">
-			<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 		</Style>
 
-		<!-- Orange gamepad/keyboard rings when Window has class gamepad-chrome. -->
-		<Style Selector="Window.gamepad-chrome Button.gamepad-focused /template/ Border">
+		<!-- Gamepad/keyboard rings. Do not require Window.gamepad-chrome — Avalonia 12
+		     ancestor matches fail in Gamescope the same way DataTemplates do. -->
+		<Style Selector="Button.gamepad-focused /template/ Border">
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
-			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="BorderThickness" Value="3"/>
+		</Style>
+		<Style Selector="Button.gamepad-focused">
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+			<Setter Property="BorderThickness" Value="3"/>
 		</Style>
 
 		<!-- Disabled dialog buttons (e.g. Install with nothing checked) must still show the ring. -->
-		<Style Selector="Window.gamepad-chrome Button.gamepad-focused:disabled">
+		<Style Selector="Button.gamepad-focused:disabled">
 			<Setter Property="Opacity" Value="1"/>
 		</Style>
-		<Style Selector="Window.gamepad-chrome Button.gamepad-focused:disabled /template/ Border">
+		<Style Selector="Button.gamepad-focused:disabled /template/ Border">
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
-			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="BorderThickness" Value="3"/>
 			<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
 		</Style>
 
-		<Style Selector="Window.gamepad-chrome TextBox.gamepad-focused /template/ Border#PART_BorderElement">
+		<Style Selector="TextBox.gamepad-focused /template/ Border#PART_BorderElement">
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
-			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="BorderThickness" Value="3"/>
 		</Style>
 
-		<Style Selector="Window.gamepad-chrome CheckBox.gamepad-focused /template/ Border#NormalRectangle">
+		<Style Selector="CheckBox.gamepad-focused /template/ Border#NormalRectangle">
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
-			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="BorderThickness" Value="3"/>
 		</Style>
 
 		<!-- Modal dialogs are separate Windows; ComboBox focus ring must live in App styles. -->
-		<Style Selector="Window.gamepad-chrome ComboBox.gamepad-focused">
+		<Style Selector="ComboBox.gamepad-focused">
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
-			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="BorderThickness" Value="3"/>
 		</Style>
 
-		<Style Selector="Window.gamepad-chrome ComboBox.gamepad-focused /template/ Border#Background">
+		<Style Selector="ComboBox.gamepad-focused /template/ Border#Background">
 			<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
-			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="BorderThickness" Value="3"/>
+		</Style>
+
+		<!-- Steam virtual mouse in Gaming Mode: don't let :pointerover look like the cursor. -->
+		<Style Selector="Window.gamepad-chrome Button.settings:pointerover">
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+		<Style Selector="Window.gamepad-chrome Button.settings.gamepad-focused:pointerover">
+			<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+			<Setter Property="BorderThickness" Value="3"/>
 		</Style>
 
 		<!-- Dialog ComboBox popups don't inherit MainWindow styles — define item chrome here. -->

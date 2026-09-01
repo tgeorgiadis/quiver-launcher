@@ -80,6 +80,13 @@ public partial class App
 
     public async Task<ManualLauncherCheckResult> CheckForAppUpdatesManually()
     {
+        if (!PlatformCapabilities.SupportsVelopack)
+        {
+            return BuildManualLauncherResult(
+                LauncherVersionService.ReadInstalledVersion(AppDomain.CurrentDomain.BaseDirectory),
+                checkSucceeded: true);
+        }
+
         await _updateCheckSemaphore.WaitAsync();
         try
         {
@@ -137,6 +144,12 @@ public partial class App
 
     private async Task CheckForUpdatesAndApplyAsync(bool isManualCheck = false)
     {
+        if (!PlatformCapabilities.SupportsVelopack)
+        {
+            Trace.WriteLine("Skipping launcher self-update check (not supported on this platform).");
+            return;
+        }
+
         if (!isManualCheck && VelopackUpdateService.ShouldSkipAutomaticSelfUpdate())
         {
             Trace.WriteLine("Skipping launcher self-update check (DEBUG build or QuiverLauncher_SKIP_UPDATES is set).");

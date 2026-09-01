@@ -101,13 +101,40 @@ public static class GameDownloadInstallService
                 }
             }
 
-            var availableAssets = GitHubReleaseService.GetDownloadableAssets(latestRelease);
+            var allAssets = GitHubReleaseService.GetDownloadableAssets(latestRelease);
+            var availableAssets = GitHubReleaseService.GetDownloadableAssets(latestRelease, game.ReleaseAssetFilter);
 
-            if (availableAssets.Count == 0)
+            if (allAssets.Count == 0)
             {
                 await dialogs.ShowErrorAsync($"No download files found for {game.Name}.", "No Assets");
                 ResetNotInstalled(game);
                 return;
+            }
+
+            if (availableAssets.Count == 0)
+            {
+                var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(game.ReleaseAssetFilter);
+                await dialogs.ShowErrorAsync(
+                    $"No download files matched the release asset filter \"{filter}\" for {game.Name}.",
+                    "No Matching Assets");
+                ResetNotInstalled(game);
+                return;
+            }
+
+            if (OperatingSystem.IsAndroid())
+            {
+                availableAssets = availableAssets
+                    .Where(asset => PlatformAssetMatcher.MatchesPlatform(asset.name, "Android"))
+                    .ToList();
+
+                if (availableAssets.Count == 0)
+                {
+                    await dialogs.ShowErrorAsync(
+                        $"{game.Name} has no Android build in this release.",
+                        "No Android Build");
+                    ResetNotInstalled(game);
+                    return;
+                }
             }
 
             game.AvailableDownloads = availableAssets;
@@ -123,6 +150,7 @@ public static class GameDownloadInstallService
             var asset = game.SelectedDownload ?? availableAssets[0];
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
+                !OperatingSystem.IsAndroid() &&
                 PlatformAssetMatcher.IsWindowsAsset(asset.name))
             {
                 var gamePathForRunner = game.GetInstallPath(gamesFolder);
@@ -169,7 +197,11 @@ public static class GameDownloadInstallService
                     asset.name,
                     dispositionFileName);
 
-                downloadPath = Path.Combine(Path.GetTempPath(), effectiveAssetName);
+                var downloadDir = OperatingSystem.IsAndroid()
+                    ? Path.Combine(QuiverLauncherPaths.CacheDirectory, "Downloads")
+                    : Path.GetTempPath();
+                Directory.CreateDirectory(downloadDir);
+                downloadPath = Path.Combine(downloadDir, effectiveAssetName);
 
                 var totalBytes = downloadResponse.Content.Headers.ContentLength ?? 0;
                 var canReportProgress = totalBytes > 0;
@@ -198,12 +230,39 @@ public static class GameDownloadInstallService
                 game.Status = GameStatus.Installing;
                 game.DownloadProgress = 95;
 
-                await GameInstallationService.InstallOrUpdateGameAsync(
-                    downloadPath,
-                    gamePath,
-                    effectiveAssetName,
-                    latestRelease.tag_name,
-                    game.GetInstallationOptions()).ConfigureAwait(false);
+                if (OperatingSystem.IsAndroid() && GameInstallationService.IsAndroidPackageAsset(effectiveAssetName))
+                {
+                    var installed = await AppInstallLaunch.Current.InstallAsync(
+                        game,
+                        downloadPath,
+                        latestRelease.tag_name).ConfigureAwait(false);
+                    if (!installed)
+                    {
+                        await dialogs.ShowErrorAsync(
+                            $"Could not start the Android installer for {game.Name}.",
+                            "Install Failed");
+                        ResetNotInstalled(game);
+                        return;
+                    }
+
+                    Directory.CreateDirectory(gamePath);
+                    await File.WriteAllTextAsync(versionFile, latestRelease.tag_name).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(game.AndroidPackageName))
+                    {
+                        await File.WriteAllTextAsync(
+                            Path.Combine(gamePath, GameStatusService.AndroidPackageFileName),
+                            game.AndroidPackageName).ConfigureAwait(false);
+                    }
+                }
+                else
+                {
+                    await GameInstallationService.InstallOrUpdateGameAsync(
+                        downloadPath,
+                        gamePath,
+                        effectiveAssetName,
+                        latestRelease.tag_name,
+                        game.GetInstallationOptions()).ConfigureAwait(false);
+                }
 
                 AppFilesToAddService.Sync(gamePath, previous: null, game.FilesToAdd);
 

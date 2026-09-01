@@ -25,4 +25,24 @@ public class GamepadFocusChromeTests
                 keyboardNavActive)
             .Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData(true, false, false, true, true)]
+    [InlineData(false, false, false, true, false)]
+    [InlineData(true, false, false, false, false)]
+    [InlineData(true, true, false, true, true)]
+    public void ShouldShowGamepadChrome_treat_as_present_covers_gaming_mode_without_sdl_pad(
+        bool enableGamepadInput,
+        bool hasConnectedGamepad,
+        bool keyboardNavActive,
+        bool treatAsGamepadPresent,
+        bool expected)
+    {
+        GamepadFocusChrome.ShouldShowGamepadChrome(
+                enableGamepadInput,
+                hasConnectedGamepad,
+                keyboardNavActive,
+                treatAsGamepadPresent)
+            .Should().Be(expected);
+    }
 }

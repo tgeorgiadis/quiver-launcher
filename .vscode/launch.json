@@ -6,9 +6,9 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/bin/Debug/net9.0/QuiverLauncher.dll",
+      "program": "${workspaceFolder}/QuiverLauncher.Desktop/bin/Debug/net10.0/QuiverLauncher.Desktop.dll",
       "args": [],
-      "cwd": "${workspaceFolder}/bin/Debug/net9.0",
+      "cwd": "${workspaceFolder}/QuiverLauncher.Desktop/bin/Debug/net10.0",
       "console": "internalConsole"
     }
   ]

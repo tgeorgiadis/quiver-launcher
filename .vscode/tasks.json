@@ -7,7 +7,7 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/QuiverLauncher.csproj",
+        "${workspaceFolder}/QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj",
         "-c",
         "Debug",
         "/property:GenerateFullPaths=true",

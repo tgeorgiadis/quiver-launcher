@@ -88,6 +88,8 @@ public sealed class GamepadModalDialogNavigation
 
         _dialogStack.Add(dialog);
         AttachDialogKeyboardHandlers(dialog);
+        XyFocusNavigation.EnableOnForDialog(dialog);
+        dialog.FocusAdorner = null;
         GamepadFocusChrome.ApplyToWindow(dialog, GamepadFocusChrome.IsActive);
         RefreshDialogButtons();
 
@@ -226,19 +228,17 @@ public sealed class GamepadModalDialogNavigation
         if (TryHandleOpenComboBoxKey(key, modifiers))
             return true;
 
-        // While typing in a dialog TextBox: Enter/A and Escape/B leave edit mode so the user
-        // can navigate other fields. A second Escape/B then cancels the dialog.
-        var editingText = TopLevel.GetTopLevel(ActiveDialog)?.FocusManager?.GetFocusedElement() is TextBox;
-        if (editingText)
+        // While typing: Enter/A and Escape/B leave edit so D-pad can move again.
+        // A second Escape/B then cancels the dialog. Highlight-only TextBoxes are not editing.
+        if (GamepadTextInput.IsEditing)
         {
             if (key is Key.Escape or Key.Enter)
-                return TryExitTextBoxEditMode();
+                return GamepadTextInput.TryEndEdit();
 
             var editingAction = ResolveKeyboardAction?.Invoke(key, modifiers);
             if (editingAction is GamepadAction.Cancel or GamepadAction.Confirm)
-                return TryExitTextBoxEditMode();
+                return GamepadTextInput.TryEndEdit();
 
-            // Let typing / caret keys through to the TextBox.
             return false;
         }
 
@@ -281,22 +281,22 @@ public sealed class GamepadModalDialogNavigation
     }
 
     /// <summary>
-    /// Clears keyboard focus from a dialog TextBox and restores gamepad field highlight.
-    /// Returns false when no TextBox is being edited.
+    /// Leaves TextBox edit mode and restores the field highlight.
+    /// Returns false when no field is being edited.
     /// </summary>
     internal bool TryExitTextBoxEditMode()
     {
-        if (ActiveDialog == null)
+        if (!GamepadTextInput.IsEditing || ActiveDialog == null)
             return false;
 
-        var focusManager = TopLevel.GetTopLevel(ActiveDialog)?.FocusManager;
-        if (focusManager?.GetFocusedElement() is not TextBox textBox)
-            return false;
-
+        var textBox = GamepadTextInput.Active;
         EnsureDialogControls();
-        var index = _dialogControls.FindIndex(c => ReferenceEquals(c, textBox));
-        if (index >= 0)
-            _focusedControlIndex = index;
+        if (textBox != null)
+        {
+            var index = _dialogControls.FindIndex(c => ReferenceEquals(c, textBox));
+            if (index >= 0)
+                _focusedControlIndex = index;
+        }
 
         OnKeyboardNavigationActivated?.Invoke();
         if (!GamepadFocusChrome.IsActive)
@@ -306,7 +306,7 @@ public sealed class GamepadModalDialogNavigation
             SyncChromeClass(true);
         }
 
-        focusManager.ClearFocus();
+        GamepadTextInput.TryEndEdit();
         FocusCurrentControl();
         return true;
     }
@@ -355,34 +355,63 @@ public sealed class GamepadModalDialogNavigation
 
     public bool TryHandleNavigation(NavigationDirection direction)
     {
-        if (ActiveDialog == null)
+        var activeDialog = ActiveDialog;
+        if (activeDialog == null)
             return false;
 
         // Prefer open ComboBox item navigation over moving between dialog fields.
         if (GamepadComboBoxNavigation.Instance.TryHandleNavigation(direction))
             return true;
 
-        // Leave TextBox edit mode first, then move highlight to the next field.
-        TryExitTextBoxEditMode();
-
         EnsureDialogControls();
         if (_dialogControls.Count == 0)
             return true;
 
-        if (_dialogControls.Count == 1 && GetFocusedControl() is not ListBox)
-            return true;
-
-        // ListBox owns Up/Down for moving among its own items; edges fall through to spatial nav.
+        // ListBox owns Up/Down for moving among its own items; edges fall through to XYFocus.
         if (TryMoveListBoxSelection(direction))
             return true;
+
+        var previousIndex = _focusedControlIndex;
+        var previousControl = previousIndex >= 0 && previousIndex < _dialogControls.Count
+            ? _dialogControls[previousIndex]
+            : GetFocusedControl();
+
+        if (!GamepadTextInput.ShouldSkipXyFocusOnHighlight(previousControl) &&
+            XyFocusNavigation.TryMove(activeDialog, direction, activeDialog))
+        {
+            SyncFocusedIndexFromKeyboardFocus();
+            var moved = _focusedControlIndex >= 0 && _focusedControlIndex < _dialogControls.Count
+                ? _dialogControls[_focusedControlIndex]
+                : null;
+            if (moved != null &&
+                !ReferenceEquals(previousControl, moved) &&
+                IsMoveInRequestedDirection(previousIndex, _focusedControlIndex, direction, activeDialog))
+            {
+                FocusCurrentControl();
+                return true;
+            }
+
+            _focusedControlIndex = previousIndex;
+        }
 
         if (_dialogControls.Count == 1)
             return true;
 
         var positions = GetControlPositions(_dialogControls, GetControlCenter);
+        if (ArePositionsCollapsed(positions))
+            positions = GetControlPositions(_dialogControls, control => GetVisualTreeCenter(control, activeDialog));
+
         _focusedControlIndex = MoveFocusIndex(_focusedControlIndex, direction, positions);
         FocusCurrentControl();
         return true;
+    }
+
+    private void SyncFocusedIndexFromKeyboardFocus()
+    {
+        var focused = TopLevel.GetTopLevel(ActiveDialog)?.FocusManager?.GetFocusedElement();
+        var index = GamepadControlActivation.IndexOfControlContainingFocus(_dialogControls, focused);
+        if (index >= 0)
+            _focusedControlIndex = index;
     }
 
     private bool TryMoveListBoxSelection(NavigationDirection direction)
@@ -449,10 +478,6 @@ public sealed class GamepadModalDialogNavigation
             return false;
 
         if (GamepadComboBoxNavigation.Instance.TryHandleConfirm())
-            return true;
-
-        // A / Enter while typing: commit edit and return to field navigation (do not close).
-        if (TryExitTextBoxEditMode())
             return true;
 
         EnsureDialogControls();
@@ -524,7 +549,7 @@ public sealed class GamepadModalDialogNavigation
         if (GamepadComboBoxNavigation.Instance.TryHandleCancel())
             return true;
 
-        // Escape / B while typing: leave the TextBox first; second press cancels the dialog.
+        // Escape / B while typing: leave the field first; second press cancels the dialog.
         if (TryExitTextBoxEditMode())
             return true;
 
@@ -585,6 +610,14 @@ public sealed class GamepadModalDialogNavigation
         if (IsAffirmativeDialogButtonLabel(label))
         {
             dialog.Tag = true;
+            return;
+        }
+
+        if (string.Equals(label, "cancel", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(label, "close", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(label, "not now", StringComparison.OrdinalIgnoreCase))
+        {
+            dialog.Tag = MessagePromptResult.Cancel;
             return;
         }
 
@@ -741,20 +774,25 @@ public sealed class GamepadModalDialogNavigation
 
     public static int FindCancelControlIndex(IReadOnlyList<Control> controls)
     {
+        var fallback = -1;
         for (var i = 0; i < controls.Count; i++)
         {
             if (controls[i] is not Button button)
                 continue;
 
             var label = GetButtonLabel(button);
-            if (DismissDialogLabels.Any(cancel =>
+            if (string.Equals(label, "cancel", StringComparison.OrdinalIgnoreCase))
+                return i;
+
+            if (fallback < 0 &&
+                DismissDialogLabels.Any(cancel =>
                     string.Equals(label, cancel, StringComparison.OrdinalIgnoreCase)))
             {
-                return i;
+                fallback = i;
             }
         }
 
-        return -1;
+        return fallback;
     }
 
     public static List<(double X, double Y)> GetButtonPositions(
@@ -769,7 +807,7 @@ public sealed class GamepadModalDialogNavigation
     {
         var positions = new List<(double X, double Y)>();
         foreach (var control in controls)
-            positions.Add(getCenter(control) ?? (0, positions.Count * 40));
+            positions.Add(getCenter(control) ?? (positions.Count * 80.0, 0));
 
         return positions;
     }
@@ -823,17 +861,16 @@ public sealed class GamepadModalDialogNavigation
     {
         ClearGamepadFocusClasses(_dialogControls);
 
-        var control = GetFocusedControl();
-        if (control == null)
+        if (_focusedControlIndex < 0 || _focusedControlIndex >= _dialogControls.Count)
             return;
+
+        var control = _dialogControls[_focusedControlIndex];
 
         SyncListBoxRowHighlight(control);
 
         if (control is StyledElement styled)
             GamepadFocusChrome.SetFocused(styled, true);
 
-        // TextBoxes: visual highlight only — Confirm (A) calls ActivateTextBox / OSK.
-        // With chrome active, also move keyboard focus for buttons.
         if (GamepadFocusChrome.IsActive)
             GamepadControlActivation.ApplyGamepadHighlightFocus(control);
     }
@@ -920,24 +957,91 @@ public sealed class GamepadModalDialogNavigation
 
     private Control? GetFocusedControl()
     {
-        if (_focusedControlIndex < 0 || _focusedControlIndex >= _dialogControls.Count)
-            return null;
+        if (_focusedControlIndex >= 0 && _focusedControlIndex < _dialogControls.Count)
+            return _dialogControls[_focusedControlIndex];
 
-        return _dialogControls[_focusedControlIndex];
+        var focused = TopLevel.GetTopLevel(ActiveDialog)?.FocusManager?.GetFocusedElement();
+        var index = GamepadControlActivation.IndexOfControlContainingFocus(_dialogControls, focused);
+        if (index >= 0)
+        {
+            _focusedControlIndex = index;
+            return _dialogControls[index];
+        }
+
+        return null;
+    }
+
+    private bool IsMoveInRequestedDirection(
+        int fromIndex,
+        int toIndex,
+        NavigationDirection direction,
+        Window dialog)
+    {
+        if (fromIndex < 0 || toIndex < 0 ||
+            fromIndex >= _dialogControls.Count || toIndex >= _dialogControls.Count)
+        {
+            return true;
+        }
+
+        var positions = GetControlPositions(_dialogControls, GetControlCenter);
+        if (ArePositionsCollapsed(positions))
+            positions = GetControlPositions(_dialogControls, control => GetVisualTreeCenter(control, dialog));
+
+        if (ArePositionsCollapsed(positions))
+            return true;
+
+        return CalculateNavigationScore(positions[fromIndex], positions[toIndex], direction).HasValue;
     }
 
     private (double X, double Y)? GetControlCenter(Control control)
     {
         var activeDialog = ActiveDialog;
-        if (activeDialog == null)
-            return GetApproximateCenter(control);
+        var bounds = control.Bounds;
+        var hasSize = bounds.Width > 0 || bounds.Height > 0;
 
-        var topLeft = control.TranslatePoint(new Avalonia.Point(0, 0), activeDialog);
-        if (!topLeft.HasValue)
+        if (activeDialog != null)
+        {
+            var topLeft = control.TranslatePoint(new Avalonia.Point(0, 0), activeDialog);
+            if (topLeft.HasValue &&
+                (Math.Abs(topLeft.Value.X) > 0.5 || Math.Abs(topLeft.Value.Y) > 0.5 || hasSize))
+            {
+                return (topLeft.Value.X + bounds.Width / 2, topLeft.Value.Y + bounds.Height / 2);
+            }
+        }
+
+        return GetVisualTreeCenter(control, activeDialog) ?? GetApproximateCenter(control);
+    }
+
+    private static (double X, double Y)? GetVisualTreeCenter(Control control, Visual? relativeTo)
+    {
+        var bounds = control.Bounds;
+        if (bounds.Width <= 0 && bounds.Height <= 0)
             return null;
 
-        var bounds = control.Bounds;
-        return (topLeft.Value.X + bounds.Width / 2, topLeft.Value.Y + bounds.Height / 2);
+        double x = bounds.X + bounds.Width / 2;
+        double y = bounds.Y + bounds.Height / 2;
+        for (var parent = control.GetVisualParent(); parent != null; parent = parent.GetVisualParent())
+        {
+            if (relativeTo != null && ReferenceEquals(parent, relativeTo))
+                break;
+
+            if (parent is Control parentControl)
+            {
+                x += parentControl.Bounds.X;
+                y += parentControl.Bounds.Y;
+            }
+        }
+
+        return (x, y);
+    }
+
+    private static bool ArePositionsCollapsed(IReadOnlyList<(double X, double Y)> positions)
+    {
+        if (positions.Count <= 1)
+            return false;
+
+        var first = positions[0];
+        return positions.All(p => Math.Abs(p.X - first.X) < 2 && Math.Abs(p.Y - first.Y) < 2);
     }
 
     private static (double X, double Y)? GetApproximateCenter(Control control)

@@ -138,6 +138,21 @@ public static class ModCatalogListBuilder
         return doc.Mods.Where(m => RecordMatchesPackage(m, package)).ToList();
     }
 
+    /// <summary>
+    /// Recomputes install badges on existing list rows from the sidecar.
+    /// Use after install/uninstall so dependency cards update without a catalog refetch.
+    /// </summary>
+    public static void ApplyInstalledState(
+        IEnumerable<ModListItem> items,
+        InstalledModsDocument doc)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(doc);
+
+        foreach (var item in items)
+            item.ApplyInstalled(FindMatchingRecords(doc, item.Package));
+    }
+
     public static string PackageIdKey(string providerId, string id) =>
         $"{providerId}|id|{id}";
 

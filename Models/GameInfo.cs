@@ -32,6 +32,8 @@ namespace QuiverLauncher.Models
         private GameStatus _status = GameStatus.NotInstalled;
         private bool _isLoading;
         private bool _isGamepadFocused;
+        private bool _isHovered;
+        private bool _truncateLibraryCardTitles = true;
         private GitHubRelease? _cachedRelease;
         public GameManager? GameManager { get; set; }
 
@@ -99,6 +101,67 @@ namespace QuiverLauncher.Models
             }
         }
 
+        /// <summary>Mirrors <see cref="AppSettings.TruncateLibraryCardTitles"/> for card bindings.</summary>
+        public bool TruncateLibraryCardTitles
+        {
+            get => _truncateLibraryCardTitles;
+            set
+            {
+                if (_truncateLibraryCardTitles == value)
+                    return;
+                _truncateLibraryCardTitles = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShouldScrollTitle));
+                OnPropertyChanged(nameof(ShowWrappedProjectSubtitle));
+                OnPropertyChanged(nameof(ShowTruncatedProjectSubtitle));
+                OnPropertyChanged(nameof(ShowWrappedReleaseVersion));
+                OnPropertyChanged(nameof(ShowTruncatedReleaseVersion));
+                OnPropertyChanged(nameof(ShowWrappedPreferredVersion));
+                OnPropertyChanged(nameof(ShowTruncatedPreferredVersion));
+            }
+        }
+
+        public bool IsHovered
+        {
+            get => _isHovered;
+            set
+            {
+                if (_isHovered == value)
+                    return;
+                _isHovered = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShouldScrollTitle));
+            }
+        }
+
+        /// <summary>Marquee name/project when truncate is on and the card is hovered or gamepad-focused.</summary>
+        public bool ShouldScrollTitle =>
+            TruncateLibraryCardTitles && (IsHovered || IsGamepadFocused);
+
+        public bool ShowWrappedProjectSubtitle =>
+            !TruncateLibraryCardTitles && HasProjectSubtitle;
+
+        public bool ShowTruncatedProjectSubtitle =>
+            TruncateLibraryCardTitles && HasProjectSubtitle;
+
+        public bool ShowWrappedReleaseVersion =>
+            !TruncateLibraryCardTitles && ShowReleaseVersionInfo;
+
+        public bool ShowTruncatedReleaseVersion =>
+            TruncateLibraryCardTitles && ShowReleaseVersionInfo;
+
+        public bool ShowWrappedPreferredVersion =>
+            !TruncateLibraryCardTitles && HasPreferredVersion;
+
+        public bool ShowTruncatedPreferredVersion =>
+            TruncateLibraryCardTitles && HasPreferredVersion;
+
+        public string LatestVersionLabel =>
+            string.IsNullOrWhiteSpace(LatestVersion) ? "Latest:" : $"Latest: {LatestVersion}";
+
+        public string PreferredVersionLabel =>
+            string.IsNullOrWhiteSpace(PreferredVersion) ? "Preferred:" : $"Preferred: {PreferredVersion}";
+
         /// <summary>Mirrors <see cref="AppSettings.ShowLibraryAppUpdateBadges"/> for card bindings.</summary>
         public bool ShowLibraryUpdateBadges
         {
@@ -165,6 +228,8 @@ namespace QuiverLauncher.Models
             OnPropertyChanged(nameof(DisplayName));
             OnPropertyChanged(nameof(ProjectSubtitle));
             OnPropertyChanged(nameof(HasProjectSubtitle));
+            OnPropertyChanged(nameof(ShowWrappedProjectSubtitle));
+            OnPropertyChanged(nameof(ShowTruncatedProjectSubtitle));
         }
 
         public string? Repository { get; set; }
@@ -182,11 +247,24 @@ namespace QuiverLauncher.Models
         public string EffectiveRepositorySource =>
             RepositorySourceHelper.Normalize(RepositorySource);
 
-        /// <summary>Composite identity key used for catalog dedupe and version cache.</summary>
+        /// <summary>Repository identity used for version cache: source + repository (or manual folder).</summary>
         public string IdentityKey =>
             RepositorySourceHelper.GetIdentityKey(RepositorySource, Repository, FolderName);
 
+        /// <summary>Unique library-tile key: source + repository + folder (or manual folder).</summary>
+        public string InstanceKey =>
+            RepositorySourceHelper.GetInstanceKey(RepositorySource, Repository, FolderName);
+
         public string? FolderName { get; set; }
+
+        /// <summary>
+        /// Optional case-insensitive substring used to pick this app's release files
+        /// when a repository ships more than one game (e.g. EXIT1).
+        /// </summary>
+        public string? ReleaseAssetFilter { get; set; }
+
+        /// <summary>Android package id after a successful APK install.</summary>
+        public string? AndroidPackageName { get; set; }
         public string? InstallPath { get; set; }
         public string? GameIconUrl { get; set; }
         public bool IsExperimental { get; set; }
@@ -285,6 +363,7 @@ namespace QuiverLauncher.Models
         }
 
         public bool CanOpenMods =>
+            PlatformCapabilities.SupportsModsFolder &&
             GameModsConfig.HasUsableConfig(ModsPath, ModsSources);
         private bool _isInLocalAppsJson;
         public bool IsInLocalAppsJson
@@ -487,15 +566,20 @@ namespace QuiverLauncher.Models
         public bool CanSkipUpdate => Status == GameStatus.UpdateAvailable;
         public bool CanChangeVersion => IsInstalled && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
         public bool CanVersionOptions => !IsManuallyManaged && (CanSkipUpdate || CanChangeVersion || IsInstalled);
-        public bool CanLaunchOptions => HasExecutableChoice || IsInstalled;
+        public bool CanLaunchOptions =>
+            !PlatformCapabilities.IsMobile && (HasExecutableChoice || IsInstalled);
         public bool CanToggleAutoUpdate => !IsManuallyManaged;
-        public bool CanOpenFolder => IsManuallyManaged || IsInstalled;
+        public bool CanOpenFolder =>
+            !PlatformCapabilities.IsMobile && (IsManuallyManaged || IsInstalled);
+        public bool CanAddToSteam => PlatformCapabilities.SupportsSteamShortcuts && IsInstalled;
+        public bool CanManageMods => PlatformCapabilities.SupportsModsFolder && IsInstalled;
+        public bool ShowDesktopOnlyActions => !PlatformCapabilities.IsMobile;
         public bool ShowReleaseVersionInfo => !IsManuallyManaged;
         public bool IsWaitingForFiles => IsManuallyManaged && Status == GameStatus.NotInstalled;
 
         /// <summary>Linux-only: configure Wine/Proton runner and prefix for Windows-only installs.</summary>
         public bool ShowWindowsRunnerOptions =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            PlatformCapabilities.SupportsWine
             && TryFindExecutableCandidates(out _, out var needsWine)
             && needsWine;
         public bool CanInfoOptions => !string.IsNullOrWhiteSpace(Repository);
@@ -519,6 +603,10 @@ namespace QuiverLauncher.Models
 
                     DispatchPropertyChanged();
                     DispatchPropertyChanged(nameof(StatusText));
+                    DispatchPropertyChanged(nameof(LatestVersionLabel));
+                    DispatchPropertyChanged(nameof(PreferredVersionLabel));
+                    DispatchPropertyChanged(nameof(ShowWrappedPreferredVersion));
+                    DispatchPropertyChanged(nameof(ShowTruncatedPreferredVersion));
                 }
             }
         }
@@ -552,6 +640,9 @@ namespace QuiverLauncher.Models
                     _preferredVersion = value;
                     DispatchPropertyChanged();
                     DispatchPropertyChanged(nameof(HasPreferredVersion));
+                    DispatchPropertyChanged(nameof(PreferredVersionLabel));
+                    DispatchPropertyChanged(nameof(ShowWrappedPreferredVersion));
+                    DispatchPropertyChanged(nameof(ShowTruncatedPreferredVersion));
                 }
             }
         }
@@ -624,6 +715,7 @@ namespace QuiverLauncher.Models
                 {
                     _isGamepadFocused = value;
                     DispatchPropertyChanged();
+                    DispatchPropertyChanged(nameof(ShouldScrollTitle));
                 }
             }
         }
@@ -895,8 +987,12 @@ namespace QuiverLauncher.Models
             if (string.IsNullOrWhiteSpace(LatestVersion))
                 return false;
 
-            // Empty means not installed. Sentinel 0.0.0 / Unknown on a real install still qualify.
+            // Empty means not installed. Sentinel 0.0.0 / Unknown on a real install still qualify
+            // when Latest is a different tag.
             if (string.IsNullOrWhiteSpace(InstalledVersion))
+                return false;
+
+            if (AreVersionsEquivalent(LatestVersion, InstalledVersion))
                 return false;
 
             var unknownInstall = IsUnknownInstalledVersion(InstalledVersion);
@@ -1399,7 +1495,7 @@ namespace QuiverLauncher.Models
                     return false;
 
                 case GameStatus.Installed:
-                    return await GameLaunchService.LaunchAsync(this, gamesFolder);
+                    return await AppInstallLaunch.Current.LaunchAsync(this, gamesFolder);
 
                 default:
                     return false;
@@ -1508,6 +1604,21 @@ namespace QuiverLauncher.Models
                 Status = GameStatus.UpdateAvailable;
             else if (Status != GameStatus.Downloading && Status != GameStatus.Installing && !string.IsNullOrWhiteSpace(InstalledVersion))
                 Status = GameStatus.Installed;
+        }
+
+        /// <summary>
+        /// When the selected GitHub tag is already installed, drop UpdateAvailable even if
+        /// numeric comparison still treats Latest as newer.
+        /// </summary>
+        internal bool TryAcknowledgeAlreadyInstalledRelease(string? releaseTag)
+        {
+            if (!ReleaseSelection.IsSameInstalledRelease(InstalledVersion, releaseTag))
+                return false;
+
+            if (Status == GameStatus.UpdateAvailable)
+                Status = GameStatus.Installed;
+
+            return true;
         }
 
         internal void NotifyMultipleDownloadsChanged()

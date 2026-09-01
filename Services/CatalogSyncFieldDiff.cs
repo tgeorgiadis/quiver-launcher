@@ -11,6 +11,7 @@ public enum CatalogSyncFieldDiffKind
     Tags,
     ExternalPreview,
     Icon,
+    Snapshot,
 }
 
 public enum CatalogSyncTagDiffKind
@@ -57,9 +58,13 @@ public class CatalogSyncFieldDiffItem
 
     public bool IsTagDiff => Kind == CatalogSyncFieldDiffKind.Tags;
     public bool IsIconDiff => Kind == CatalogSyncFieldDiffKind.Icon;
-    public bool IsTextValueDiff => Kind is CatalogSyncFieldDiffKind.ValueChange or CatalogSyncFieldDiffKind.ExternalPreview;
+    public bool IsSnapshot => Kind == CatalogSyncFieldDiffKind.Snapshot;
+    public bool IsTextValueDiff => Kind is CatalogSyncFieldDiffKind.ValueChange
+        or CatalogSyncFieldDiffKind.ExternalPreview
+        or CatalogSyncFieldDiffKind.Snapshot;
     public bool HasLocalValue => !string.IsNullOrEmpty(LocalValue);
     public bool HasExternalValue => !string.IsNullOrEmpty(ExternalValue);
+    public bool ShowIncomingValue => HasExternalValue && !IsSnapshot;
     public bool ShowArrow => HasLocalValue && HasExternalValue;
     public bool ShowEmptyLocal => Kind == CatalogSyncFieldDiffKind.ValueChange && !HasLocalValue;
     public bool ShowEmptyExternal => Kind == CatalogSyncFieldDiffKind.ValueChange && !HasExternalValue;
@@ -77,6 +82,7 @@ public static class CatalogSyncFieldDiffBuilder
         ["preferredVersion"] = "Preferred version",
         ["tags"] = "Tags",
         ["filesToAdd"] = "Files to add",
+        ["releaseAssetFilter"] = "Release asset filter",
         ["mods"] = "Mods",
         ["repositorySource"] = "Repository source",
         ["repository"] = "Repository",
@@ -105,34 +111,41 @@ public static class CatalogSyncFieldDiffBuilder
                 diffs.Add(BuildValueDiff(field, local, external));
         }
 
-        return diffs;
+        return OrderFieldDiffs(diffs);
     }
 
-    private static IReadOnlyList<CatalogSyncFieldDiffItem> BuildExternalPreview(GameInfo external)
+    public static IReadOnlyList<CatalogSyncFieldDiffItem> BuildSnapshot(GameInfo? app)
+    {
+        if (app == null)
+            return [];
+
+        return BuildPreview(app, CatalogSyncFieldDiffKind.Snapshot, CatalogSyncTagDiffKind.Shared);
+    }
+
+    private static IReadOnlyList<CatalogSyncFieldDiffItem> BuildExternalPreview(GameInfo external) =>
+        BuildPreview(external, CatalogSyncFieldDiffKind.ExternalPreview, CatalogSyncTagDiffKind.ExternalOnly);
+
+    private static IReadOnlyList<CatalogSyncFieldDiffItem> BuildPreview(
+        GameInfo app,
+        CatalogSyncFieldDiffKind valueKind,
+        CatalogSyncTagDiffKind tagKind)
     {
         var diffs = new List<CatalogSyncFieldDiffItem>();
 
-        if (!string.IsNullOrWhiteSpace(external.FolderName))
+        if (TryProjectPreview(app, valueKind) is { } projectPreview)
+            diffs.Add(projectPreview);
+
+        if (!string.IsNullOrWhiteSpace(app.FolderName))
         {
             diffs.Add(new CatalogSyncFieldDiffItem
             {
                 FieldLabel = "Folder",
-                Kind = CatalogSyncFieldDiffKind.ExternalPreview,
-                ExternalValue = external.FolderName,
+                Kind = valueKind,
+                ExternalValue = app.FolderName,
             });
         }
 
-        if (!string.IsNullOrWhiteSpace(external.Project))
-        {
-            diffs.Add(new CatalogSyncFieldDiffItem
-            {
-                FieldLabel = "Project",
-                Kind = CatalogSyncFieldDiffKind.ExternalPreview,
-                ExternalValue = external.Project,
-            });
-        }
-
-        var tags = TagHelper.NormalizeTags(external.Tags);
+        var tags = TagHelper.NormalizeTags(app.Tags);
         if (tags.Count > 0)
         {
             diffs.Add(new CatalogSyncFieldDiffItem
@@ -143,45 +156,71 @@ public static class CatalogSyncFieldDiffBuilder
                     .Select(tag => new CatalogSyncTagDiffItem
                     {
                         Tag = tag,
-                        Kind = CatalogSyncTagDiffKind.ExternalOnly,
+                        Kind = tagKind,
                     })
                     .ToList(),
             });
         }
 
-        if (!string.IsNullOrWhiteSpace(external.PreferredVersion))
+        if (!string.IsNullOrWhiteSpace(app.PreferredVersion))
         {
             diffs.Add(new CatalogSyncFieldDiffItem
             {
                 FieldLabel = "Preferred version",
-                Kind = CatalogSyncFieldDiffKind.ExternalPreview,
-                ExternalValue = external.PreferredVersion,
+                Kind = valueKind,
+                ExternalValue = app.PreferredVersion,
             });
         }
 
-        if (!string.IsNullOrWhiteSpace(external.GameIconUrl))
-        {
-            diffs.Add(new CatalogSyncFieldDiffItem
-            {
-                FieldLabel = "Icon",
-                Kind = CatalogSyncFieldDiffKind.Icon,
-                ExternalValue = external.GameIconUrl,
-            });
-        }
-
-        var modsDisplay = GameModsConfig.FormatForDisplay(external.ModsPath, external.ModsSources, external.ModsLayout);
+        var modsDisplay = GameModsConfig.FormatForDisplay(app.ModsPath, app.ModsSources, app.ModsLayout);
         if (!string.IsNullOrWhiteSpace(modsDisplay))
         {
             diffs.Add(new CatalogSyncFieldDiffItem
             {
                 FieldLabel = "Mods",
-                Kind = CatalogSyncFieldDiffKind.ExternalPreview,
+                Kind = valueKind,
                 ExternalValue = modsDisplay,
             });
         }
 
         return diffs;
     }
+
+    private static CatalogSyncFieldDiffItem? TryProjectPreview(GameInfo app, CatalogSyncFieldDiffKind kind)
+    {
+        var project = (app.Project ?? string.Empty).Trim();
+        if (project.Length == 0)
+            return null;
+
+        var name = (app.Name ?? string.Empty).Trim();
+        if (name.Length > 0 && string.Equals(name, project, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return new CatalogSyncFieldDiffItem
+        {
+            FieldLabel = "Project",
+            Kind = kind,
+            ExternalValue = project,
+        };
+    }
+
+    private static IReadOnlyList<CatalogSyncFieldDiffItem> OrderFieldDiffs(List<CatalogSyncFieldDiffItem> diffs)
+    {
+        return diffs
+            .Select((diff, index) => (diff, index))
+            .OrderBy(item => FieldRank(item.diff.FieldLabel))
+            .ThenBy(item => item.index)
+            .Select(item => item.diff)
+            .ToList();
+    }
+
+    private static int FieldRank(string label) =>
+        label switch
+        {
+            "Name" => 0,
+            "Project" => 1,
+            _ => 2,
+        };
 
     private static CatalogSyncFieldDiffItem BuildIconDiff(GameInfo local, GameInfo external) =>
         new()
@@ -246,6 +285,7 @@ public static class CatalogSyncFieldDiffBuilder
             "preferredVersion" => app.PreferredVersion ?? "",
             "tags" => TagHelper.FormatTagsForDisplay(app.Tags),
             "filesToAdd" => AppFilesToAddService.FormatForDisplay(app.FilesToAdd),
+            "releaseAssetFilter" => RepositorySourceHelper.NormalizeReleaseAssetFilter(app.ReleaseAssetFilter) ?? "",
             "mods" => GameModsConfig.FormatForDisplay(app.ModsPath, app.ModsSources, app.ModsLayout),
             "repositorySource" => RepositorySourceHelper.DisplayName(app.RepositorySource),
             "repository" => string.IsNullOrWhiteSpace(app.Repository) ? "Manually managed" : app.Repository,

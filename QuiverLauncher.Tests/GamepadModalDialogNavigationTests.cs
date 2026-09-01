@@ -66,7 +66,7 @@ public class GamepadModalDialogNavigationTests
     }
 
     [AvaloniaFact]
-    public void TryHandleNavigation_highlights_textbox_without_keyboard_focus()
+    public void TryHandleNavigation_moves_real_focus_to_textbox()
     {
         var locationBox = new TextBox { Watermark = "URL", Focusable = true };
         var addButton = new Button { Content = "Add", MinWidth = 80 };
@@ -94,10 +94,57 @@ public class GamepadModalDialogNavigationTests
 
             locationBox.Classes.Contains("gamepad-focused").Should().BeTrue();
             dialog.Classes.Contains(GamepadFocusChrome.WindowClassName).Should().BeTrue();
-            locationBox.IsFocused.Should().BeFalse();
+            locationBox.IsFocused.Should().BeTrue();
+            GamepadTextInput.IsEditing.Should().BeFalse();
         }
         finally
         {
+            GamepadTextInput.Reset();
+            nav.UnregisterModalDialog(dialog);
+            GamepadFocusChrome.SetActive(false);
+            if (dialog.IsVisible)
+                dialog.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void TryHandleNavigation_from_highlighted_textbox_moves_to_button()
+    {
+        var locationBox = new TextBox { Watermark = "URL", Focusable = true, MinWidth = 200 };
+        var addButton = new Button { Content = "Add", MinWidth = 80 };
+        var cancelButton = new Button { Content = "Cancel", MinWidth = 80 };
+        var dialog = new Window
+        {
+            Width = 420,
+            Height = 240,
+            Content = new StackPanel
+            {
+                Spacing = 12,
+                Children = { locationBox, addButton, cancelButton },
+            },
+        };
+        var nav = GamepadModalDialogNavigation.Instance;
+
+        try
+        {
+            GamepadFocusChrome.SetActive(true, dialog);
+            dialog.Show();
+            GamepadModalDialogNavigation.Attach(dialog);
+            nav.RefreshDialogButtons();
+            nav.TryHandleNavigation(NavigationDirection.Up).Should().BeTrue();
+            locationBox.Classes.Contains("gamepad-focused").Should().BeTrue();
+            GamepadTextInput.IsEditing.Should().BeFalse();
+
+            nav.TryHandleNavigation(NavigationDirection.Down).Should().BeTrue();
+
+            GamepadTextInput.IsEditing.Should().BeFalse();
+            locationBox.Classes.Contains("gamepad-focused").Should().BeFalse();
+            (addButton.Classes.Contains("gamepad-focused") ||
+             cancelButton.Classes.Contains("gamepad-focused")).Should().BeTrue();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
             nav.UnregisterModalDialog(dialog);
             GamepadFocusChrome.SetActive(false);
             if (dialog.IsVisible)
@@ -144,10 +191,12 @@ public class GamepadModalDialogNavigationTests
             closed.Should().BeFalse();
             dialog.IsVisible.Should().BeTrue();
             locationBox.IsFocused.Should().BeTrue();
+            GamepadTextInput.IsEditing.Should().BeTrue();
             locationBox.CaretIndex.Should().Be(locationBox.Text!.Length);
         }
         finally
         {
+            GamepadTextInput.Reset();
             nav.UnregisterModalDialog(dialog);
             GamepadFocusChrome.SetActive(false);
             if (dialog.IsVisible)
@@ -191,11 +240,12 @@ public class GamepadModalDialogNavigationTests
             nav.TryHandleDialogKeyDown(Key.Escape, KeyModifiers.None).Should().BeTrue();
 
             dialog.IsVisible.Should().BeTrue();
-            locationBox.IsFocused.Should().BeFalse();
+            GamepadTextInput.IsEditing.Should().BeFalse();
             locationBox.Classes.Contains("gamepad-focused").Should().BeTrue();
         }
         finally
         {
+            GamepadTextInput.Reset();
             nav.ResolveKeyboardAction = previousResolver;
             nav.UnregisterModalDialog(dialog);
             GamepadFocusChrome.SetActive(false);
@@ -236,11 +286,12 @@ public class GamepadModalDialogNavigationTests
             nav.TryHandleDialogKeyDown(Key.Enter, KeyModifiers.None).Should().BeTrue();
 
             dialog.IsVisible.Should().BeTrue();
-            locationBox.IsFocused.Should().BeFalse();
+            GamepadTextInput.IsEditing.Should().BeFalse();
             locationBox.Classes.Contains("gamepad-focused").Should().BeTrue();
         }
         finally
         {
+            GamepadTextInput.Reset();
             nav.UnregisterModalDialog(dialog);
             GamepadFocusChrome.SetActive(false);
             if (dialog.IsVisible)
@@ -707,6 +758,15 @@ public class GamepadModalDialogNavigationTests
         };
 
         GamepadModalDialogNavigation.FindCancelButtonIndex(okCancel).Should().Be(0);
+
+        var yesNoCancel = new List<Button>
+        {
+            new() { Content = "Yes" },
+            new() { Content = "No" },
+            new() { Content = "Cancel" },
+        };
+
+        GamepadModalDialogNavigation.FindCancelButtonIndex(yesNoCancel).Should().Be(2);
     }
 
     [Fact]
@@ -944,7 +1004,10 @@ public class GamepadModalDialogNavigationTests
         dialog.Tag.Should().Be(true);
 
         GamepadModalDialogNavigation.ApplyDialogResultHint(dialog, new Button { Content = "Not now" });
-        dialog.Tag.Should().Be(false);
+        dialog.Tag.Should().Be(MessagePromptResult.Cancel);
+
+        GamepadModalDialogNavigation.ApplyDialogResultHint(dialog, new Button { Content = "Cancel" });
+        dialog.Tag.Should().Be(MessagePromptResult.Cancel);
     }
 
     [AvaloniaFact]

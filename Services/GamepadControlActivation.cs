@@ -52,31 +52,27 @@ internal static class GamepadControlActivation
     }
 
     /// <summary>
-    /// Focuses a text field, places the caret at the end, and requests Steam's OSK when available.
+    /// Enters text-edit mode (caret + Steam OSK). Highlight-only navigation uses
+    /// <see cref="GamepadTextInput.Highlight"/> instead.
     /// </summary>
-    public static void ActivateTextBox(TextBox textBox)
-    {
-        if (!textBox.IsEnabled || !textBox.IsVisible)
-            return;
-
-        textBox.Focus();
-        MoveCaretToEnd(textBox);
-        SteamOnScreenKeyboard.TryOpen();
-    }
+    public static void ActivateTextBox(TextBox textBox) =>
+        GamepadTextInput.BeginEdit(textBox);
 
     /// <summary>
-    /// Applies keyboard focus for gamepad highlight navigation.
-    /// TextBoxes are highlighted visually only — press Confirm (A) to enter edit mode / open OSK.
-    /// Clears keyboard focus when leaving a button/textbox so :focus chrome does not stick.
+    /// Applies Avalonia keyboard focus so XYFocus / :focus chrome can follow the cursor.
+    /// TextBoxes stay highlight-only until Confirm.
     /// </summary>
     public static void ApplyGamepadHighlightFocus(Control control)
     {
-        if (control is TextBox || !control.IsEnabled)
+        if (!control.IsEnabled)
         {
-            // Drop keyboard focus from the previous control (often a Button). Leaving a Button
-            // focused makes its :focus ring look like navigation never moved.
-            // Disabled controls cannot take keyboard focus — rely on gamepad-focused chrome.
-            TopLevel.GetTopLevel(control)?.FocusManager?.ClearFocus();
+            TopLevel.GetTopLevel(control)?.FocusManager?.Focus(null);
+            return;
+        }
+
+        if (control is TextBox textBox)
+        {
+            GamepadTextInput.Highlight(textBox);
             return;
         }
 
@@ -85,10 +81,9 @@ internal static class GamepadControlActivation
 
     /// <summary>
     /// True when gamepad highlight should move Avalonia keyboard focus onto the control.
-    /// TextBoxes stay unfocused until <see cref="ActivateTextBox"/>.
     /// </summary>
     public static bool ShouldKeyboardFocusOnGamepadHighlight(Control control) =>
-        control is not TextBox;
+        control.IsEnabled;
 
     public static void MoveCaretToEnd(TextBox textBox)
     {
