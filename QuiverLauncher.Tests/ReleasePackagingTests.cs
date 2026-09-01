@@ -121,6 +121,28 @@ public class ReleasePackagingTests
     }
 
     [Fact]
+    public void Android_excludes_system_drawing_common_from_aot_graph()
+    {
+        var androidPath = Path.Combine(RepoRoot, "QuiverLauncher.Android", "QuiverLauncher.Android.csproj");
+        var sharedPath = Path.Combine(RepoRoot, "QuiverLauncher.App.csproj");
+        var android = File.ReadAllText(androidPath);
+        var shared = File.ReadAllText(sharedPath);
+
+        android.Should().Contain("QuiverExcludeWindowsDrawing=true");
+        android.Should().Contain("<ExcludeAssets>all</ExcludeAssets>");
+        android.Should().Contain("System.Drawing.Common");
+
+        shared.Should().Contain("QuiverExcludeWindowsDrawing");
+        shared.Should().Contain("EXCLUDE_WINDOWS_DRAWING");
+        shared.Should().Contain("bin\\android-ref\\");
+        shared.Should().Contain("obj\\android-ref\\");
+        shared.Should().Contain(
+            "Include=\"System.Drawing.Common\" Version=\"10.0.3\" Condition=\"'$(QuiverExcludeWindowsDrawing)' != 'true'\"");
+        shared.Should().NotContain(
+            "<PackageReference Include=\"System.Drawing.Common\" Version=\"10.0.3\" />");
+    }
+
+    [Fact]
     public void Repository_includes_apps_json_example_for_documentation()
     {
         var examplePath = Path.Combine(RepoRoot, "apps.json.example");

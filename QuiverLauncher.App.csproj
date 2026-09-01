@@ -24,6 +24,12 @@
 	<PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
 		<DefineConstants>$(DefineConstants);OSX</DefineConstants>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(QuiverExcludeWindowsDrawing)' == 'true'">
+		<DefineConstants>$(DefineConstants);EXCLUDE_WINDOWS_DRAWING</DefineConstants>
+		<OutputPath>bin\android-ref\$(Configuration)\</OutputPath>
+		<IntermediateOutputPath>obj\android-ref\$(Configuration)\</IntermediateOutputPath>
+		<DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="AsyncImageLoader.Avalonia" Version="3.8.0" />
@@ -33,7 +39,7 @@
 		<PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
 		<PackageReference Include="SharpCompress" Version="0.50.1" />
 		<PackageReference Include="System.Text.Json" Version="10.0.3" />
-		<PackageReference Include="System.Drawing.Common" Version="10.0.3" />
+		<PackageReference Include="System.Drawing.Common" Version="10.0.3" Condition="'$(QuiverExcludeWindowsDrawing)' != 'true'" />
 		<PackageReference Include="NAudio" Version="2.2.1" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
 		<PackageReference Include="Velopack" Version="1.2.0" />
 	</ItemGroup>
@@ -61,6 +67,8 @@
 		<Compile Remove="Program.cs" />
 		<Compile Remove="_test_build\**\*.cs" />
 		<Compile Remove="artifacts\**\*.cs" />
+		<Compile Remove="bin\**\*.cs" />
+		<Compile Remove="obj\**\*.cs" />
 		<EmbeddedResource Remove="lib\QuiverLauncher.Core\**\*.*" />
 		<EmbeddedResource Remove="QuiverLauncher.Tests\**\*.*" />
 		<EmbeddedResource Remove="QuiverLauncher.Desktop\**\*.*" />

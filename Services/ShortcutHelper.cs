@@ -1,8 +1,10 @@
 using QuiverLauncher.Models;
 using System;
 using System.Diagnostics;
+#if !EXCLUDE_WINDOWS_DRAWING
 using System.Drawing;
 using System.Drawing.Imaging;
+#endif
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -272,13 +274,17 @@ namespace QuiverLauncher.Services
             if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
                 return null;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 string icoPath = Path.Combine(iconsDir, $"{game.FolderName}.ico");
 
                 if (!File.Exists(icoPath))
                 {
+#if !EXCLUDE_WINDOWS_DRAWING
                     ConvertToIco(sourcePath, icoPath);
+#else
+                    return sourcePath;
+#endif
                 }
 
                 return icoPath;
@@ -287,6 +293,7 @@ namespace QuiverLauncher.Services
             return sourcePath;
         }
 
+#if !EXCLUDE_WINDOWS_DRAWING
         [SupportedOSPlatform("windows")]
         private static void ConvertToIco(string sourcePath, string icoPath)
         {
@@ -334,6 +341,7 @@ namespace QuiverLauncher.Services
                 Debug.WriteLine($"Failed to convert icon: {ex.Message}");
             }
         }
+#endif
 
         [SupportedOSPlatform("windows")]
         private static void CreateWindowsShortcut(string desktopPath, string launcherPath, GameInfo game, string? iconPath)
