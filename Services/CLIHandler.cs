@@ -270,7 +270,7 @@ namespace QuiverLauncher
 
             try
             {
-                string launcherPath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+                string launcherPath = ShortcutHelper.ResolveLauncherPath() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(launcherPath))
                     return PrintError("Could not determine launcher location.");
 

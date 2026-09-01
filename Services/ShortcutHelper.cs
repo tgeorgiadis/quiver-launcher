@@ -9,6 +9,7 @@ using System.Runtime.Versioning;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Velopack.Locators;
 
 namespace QuiverLauncher.Services
 {
@@ -16,10 +17,79 @@ namespace QuiverLauncher.Services
     {
         private static readonly string LauncherSteamTag = QuiverLauncherProfile.Instance.SteamTag;
 
+        /// <summary>
+        /// Stable launcher path for shortcuts and Steam. AppImages must use the
+        /// <c>.AppImage</c> file, not the temporary <c>/tmp/.mount_*</c> squashfs.
+        /// </summary>
+        public static string? ResolveLauncherPath() =>
+            ResolveLauncherPath(
+                TryGetVelopackAppImagePath(),
+                Environment.GetEnvironmentVariable("APPIMAGE"),
+                Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName);
+
+        public static string? ResolveLauncherPath(
+            string? velopackAppImagePath,
+            string? appImageEnv,
+            string? processPath)
+        {
+            foreach (var candidate in new[] { velopackAppImagePath, appImageEnv, processPath })
+            {
+                if (IsUsableLauncherPath(candidate))
+                    return candidate;
+            }
+
+            return null;
+        }
+
+        public static bool IsAppImageMountPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            var normalized = path.Replace('\\', '/');
+            return normalized.Contains("/tmp/.mount_", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsUsableLauncherPath(string? path) =>
+            !string.IsNullOrWhiteSpace(path) && !IsAppImageMountPath(path);
+
+        private static string? TryGetVelopackAppImagePath()
+        {
+            try
+            {
+                if (VelopackLocator.Current is LinuxVelopackLocator linux &&
+                    !string.IsNullOrWhiteSpace(linux.AppImagePath))
+                    return linux.AppImagePath;
+            }
+            catch
+            {
+                // Not a Velopack AppImage, or locator unavailable.
+            }
+
+            return null;
+        }
+
+        private static string RequireLauncherPath(string? launcherPath)
+        {
+            var resolved = ResolveLauncherPath(
+                TryGetVelopackAppImagePath(),
+                Environment.GetEnvironmentVariable("APPIMAGE"),
+                launcherPath);
+            if (string.IsNullOrWhiteSpace(resolved))
+            {
+                throw new InvalidOperationException(
+                    "Could not determine a stable launcher path. Shortcuts cannot use an AppImage mount directory.");
+            }
+
+            return resolved;
+        }
+
         public static async Task CreateGameShortcutAsync(GameInfo game, string launcherPath, string? cacheDirectory)
         {
             if (string.IsNullOrWhiteSpace(game?.Name))
                 throw new ArgumentException("Game name is required.", nameof(game));
+
+            launcherPath = RequireLauncherPath(launcherPath);
 
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string? iconPath = await PrepareIconAsync(game, cacheDirectory).ConfigureAwait(false);
@@ -48,8 +118,7 @@ namespace QuiverLauncher.Services
             if (string.IsNullOrWhiteSpace(game?.Name))
                 throw new ArgumentException("Game name is required.", nameof(game));
 
-            if (string.IsNullOrWhiteSpace(launcherPath))
-                throw new ArgumentException("Launcher path is required.", nameof(launcherPath));
+            launcherPath = RequireLauncherPath(launcherPath);
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
                 !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -68,8 +137,7 @@ namespace QuiverLauncher.Services
             if (string.IsNullOrWhiteSpace(game?.Name))
                 throw new ArgumentException("Game name is required.", nameof(game));
 
-            if (string.IsNullOrWhiteSpace(launcherPath))
-                throw new ArgumentException("Launcher path is required.", nameof(launcherPath));
+            launcherPath = RequireLauncherPath(launcherPath);
 
             if (IsRunningUnderSteam())
                 throw new InvalidOperationException("Steam is running this launcher, so the shortcut worker would keep Steam from seeing the launcher as closed. Close Steam and run the launcher outside Steam to add shortcuts.");
@@ -107,6 +175,8 @@ namespace QuiverLauncher.Services
 
         private static async Task<string> AddGameToSteamInternalAsync(GameInfo game, string launcherPath, string? cacheDirectory)
         {
+            launcherPath = RequireLauncherPath(launcherPath);
+
             string? configDirectory = FindSteamConfigDirectory();
             if (string.IsNullOrWhiteSpace(configDirectory))
             {

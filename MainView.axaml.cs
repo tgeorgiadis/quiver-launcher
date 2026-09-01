@@ -16341,7 +16341,7 @@ namespace QuiverLauncher
 
             try
             {
-                string launcherPath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                string launcherPath = QuiverLauncher.Services.ShortcutHelper.ResolveLauncherPath() ?? "";
                 if (string.IsNullOrEmpty(launcherPath))
                 {
                     await ShowMessageBoxAsync("Could not determine launcher location.", "Error");
@@ -16373,7 +16373,7 @@ namespace QuiverLauncher
 
             try
             {
-                string launcherPath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                string launcherPath = QuiverLauncher.Services.ShortcutHelper.ResolveLauncherPath() ?? "";
                 if (string.IsNullOrEmpty(launcherPath))
                 {
                     await ShowMessageBoxAsync("Could not determine launcher location.", "Error");
