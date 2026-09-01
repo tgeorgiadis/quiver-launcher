@@ -189,6 +189,11 @@ jobs:
               publish/${{ matrix.rid }}/crash.log
         rm -rf publish/${{ matrix.rid }}/Apps publish/${{ matrix.rid }}/Cache
 
+    - name: Install AppImage pack dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y squashfs-tools
+
     - name: Install vpk
       run: dotnet tool install -g vpk --version ${{ env.VELOPACK_VERSION }}
 

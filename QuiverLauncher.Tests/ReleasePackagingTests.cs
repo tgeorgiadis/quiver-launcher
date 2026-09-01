@@ -57,6 +57,7 @@ public class ReleasePackagingTests
         workflow.Should().Contain("Assets/quiver-icon.png");
         workflow.Should().Contain("QuiverLauncher.icns");
         workflow.Should().Contain("rm -rf publish/${{ matrix.rid }}/Apps");
+        workflow.Should().Contain("squashfs-tools");
         workflow.Should().Contain("continue-on-error: true");
         workflow.Should().Contain("--noInst true");
         workflow.Should().Contain("environment: signing");
@@ -108,6 +109,9 @@ public class ReleasePackagingTests
             "apps.json must not be copied to publish output; it is user data created at runtime");
         shared.Should().NotContain("CopyWindowsUpdater");
         desktop.Should().Contain("osx-arm64");
+        desktop.Should().Contain("DestinationFiles=\"$(_AliasDir)QuiverLauncher.exe\"");
+        desktop.Should().Contain("DestinationFiles=\"$(_AliasDir)QuiverLauncher\"");
+        desktop.Should().Contain("!Exists('$(_AliasDir)$(AssemblyName).exe')");
     }
 
     [Fact]

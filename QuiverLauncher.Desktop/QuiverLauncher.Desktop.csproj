@@ -44,11 +44,16 @@
 	<Target Name="AliasQuiverLauncherExe" AfterTargets="Build;Publish">
 		<PropertyGroup>
 			<_AliasDir Condition="'$(PublishDir)' != '' and Exists('$(PublishDir)$(AssemblyName).exe')">$(PublishDir)</_AliasDir>
+			<_AliasDir Condition="'$(PublishDir)' != '' and Exists('$(PublishDir)$(AssemblyName)')">$(PublishDir)</_AliasDir>
 			<_AliasDir Condition="'$(_AliasDir)' == ''">$(OutputPath)</_AliasDir>
 		</PropertyGroup>
 		<Copy SourceFiles="$(_AliasDir)$(AssemblyName).exe"
 		      DestinationFiles="$(_AliasDir)QuiverLauncher.exe"
 		      SkipUnchangedFiles="true"
 		      Condition="Exists('$(_AliasDir)$(AssemblyName).exe')" />
+		<Copy SourceFiles="$(_AliasDir)$(AssemblyName)"
+		      DestinationFiles="$(_AliasDir)QuiverLauncher"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(_AliasDir)$(AssemblyName)') and !Exists('$(_AliasDir)$(AssemblyName).exe')" />
 	</Target>
 </Project>
