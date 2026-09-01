@@ -421,6 +421,13 @@ jobs:
     - name: Install Android workload
       run: dotnet workload install android
 
+    - name: Install Android SDK dependencies
+      run: |
+        dotnet build QuiverLauncher.Android/QuiverLauncher.Android.csproj -t:InstallAndroidDependencies \
+          -f net10.0-android \
+          -p:AndroidSdkDirectory="${ANDROID_HOME:-${ANDROID_SDK_ROOT}}" \
+          -p:AcceptAndroidSDKLicenses=True
+
     - name: Resolve Android version
       id: ver
       shell: bash
@@ -464,22 +471,28 @@ jobs:
         ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       run: |
         set -euo pipefail
-        KEYSTORE_PATH="${RUNNER_TEMP}/android-release.jks"
-        echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > "${KEYSTORE_PATH}"
+        KEYSTORE_PATH="QuiverLauncher.Android/ci-release.jks"
+        printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 -d > "${KEYSTORE_PATH}"
         mkdir -p artifacts/android
         dotnet publish QuiverLauncher.Android/QuiverLauncher.Android.csproj -c Release \
           -p:AndroidPackageFormat=apk \
           -p:ApplicationDisplayVersion="${{ steps.ver.outputs.display }}" \
           -p:ApplicationVersion="${{ steps.ver.outputs.version_code }}" \
           -p:AndroidKeyStore=true \
-          -p:AndroidSigningKeyStore="${KEYSTORE_PATH}" \
-          -p:AndroidSigningStorePass="${ANDROID_KEYSTORE_PASSWORD}" \
+          -p:AndroidSigningKeyStore=ci-release.jks \
+          -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD \
           -p:AndroidSigningKeyAlias="${ANDROID_KEY_ALIAS}" \
-          -p:AndroidSigningKeyPass="${ANDROID_KEY_PASSWORD}"
-        APK=$(find QuiverLauncher.Android -path '*/bin/Release/*' -name '*-Signed.apk' | head -n1)
-        test -n "${APK}"
-        cp "${APK}" artifacts/android/QuiverLauncher-android.apk
+          -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD
+        shopt -s globstar nullglob
+        apks=(QuiverLauncher.Android/**/*-Signed.apk)
+        if [[ ${#apks[@]} -eq 0 ]]; then
+          echo "No *-Signed.apk produced."
+          find QuiverLauncher.Android -name '*.apk' -print || true
+          exit 1
+        fi
+        cp "${apks[0]}" artifacts/android/QuiverLauncher-android.apk
         ls -lh artifacts/android/QuiverLauncher-android.apk
+        rm -f "${KEYSTORE_PATH}"
 
     - name: Upload Android APK
       if: steps.sign.outputs.available == 'true'

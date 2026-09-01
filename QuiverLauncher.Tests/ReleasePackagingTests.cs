@@ -74,6 +74,9 @@ public class ReleasePackagingTests
         workflow.Should().Contain("AndroidKeyStore=true");
         workflow.Should().Contain("ApplicationDisplayVersion");
         workflow.Should().Contain("ApplicationVersion");
+        workflow.Should().Contain("InstallAndroidDependencies");
+        workflow.Should().Contain("ci-release.jks");
+        workflow.Should().Contain("env:ANDROID_KEYSTORE_PASSWORD");
         workflow.Should().Contain("needs.build-android.result == 'success'");
         workflow.Should().Contain("name: android-apk");
         // Publish bare AppImages; do not wrap in tar.gz or strip executable bit via CI chmod.
