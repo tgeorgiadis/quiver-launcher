@@ -125,10 +125,13 @@ public class ReleasePackagingTests
     {
         var androidPath = Path.Combine(RepoRoot, "QuiverLauncher.Android", "QuiverLauncher.Android.csproj");
         var sharedPath = Path.Combine(RepoRoot, "QuiverLauncher.App.csproj");
+        var corePath = Path.Combine(RepoRoot, "lib", "QuiverLauncher.Core", "QuiverLauncher.Core.csproj");
         var android = File.ReadAllText(androidPath);
         var shared = File.ReadAllText(sharedPath);
+        var core = File.ReadAllText(corePath);
 
         android.Should().Contain("QuiverExcludeWindowsDrawing=true");
+        android.Should().Contain("DisableTransitiveProjectReferences");
         android.Should().Contain("<ExcludeAssets>all</ExcludeAssets>");
         android.Should().Contain("System.Drawing.Common");
 
@@ -136,6 +139,10 @@ public class ReleasePackagingTests
         shared.Should().Contain("EXCLUDE_WINDOWS_DRAWING");
         shared.Should().Contain("bin\\android-ref\\");
         shared.Should().Contain("obj\\android-ref\\");
+
+        core.Should().Contain("QuiverExcludeWindowsDrawing");
+        core.Should().Contain("bin\\android-ref\\");
+        core.Should().Contain("obj\\android-ref\\");
         shared.Should().Contain(
             "Include=\"System.Drawing.Common\" Version=\"10.0.3\" Condition=\"'$(QuiverExcludeWindowsDrawing)' != 'true'\"");
         shared.Should().NotContain(

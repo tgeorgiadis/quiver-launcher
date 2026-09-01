@@ -10,6 +10,7 @@
 		<ApplicationDisplayVersion>3.3.0</ApplicationDisplayVersion>
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
 		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+		<DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
 		<RootNamespace>QuiverLauncher.Android</RootNamespace>
 		<AssemblyName>QuiverLauncher.Android</AssemblyName>
 	</PropertyGroup>

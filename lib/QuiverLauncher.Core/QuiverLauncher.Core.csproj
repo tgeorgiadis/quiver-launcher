@@ -7,6 +7,11 @@
 		<RootNamespace>QuiverLauncher.Core</RootNamespace>
 		<PublishSingleFile>false</PublishSingleFile>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(QuiverExcludeWindowsDrawing)' == 'true'">
+		<OutputPath>bin\android-ref\$(Configuration)\</OutputPath>
+		<IntermediateOutputPath>obj\android-ref\$(Configuration)\</IntermediateOutputPath>
+		<DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="SharpCompress" Version="0.50.1" />
 	</ItemGroup>
