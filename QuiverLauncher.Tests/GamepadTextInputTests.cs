@@ -121,6 +121,8 @@ public class GamepadTextInputTests
             GamepadTextInput.BeginEdit(box);
 
             GamepadTextInput.IsEditing.Should().BeTrue();
+            GamepadTextInput.ShouldSkipXyFocusOnHighlight(box).Should().BeFalse();
+            GamepadTextInput.ShouldSkipXyFocusOnHighlight(new TextBox()).Should().BeTrue();
             GamepadTextInput.ShouldOpenSteamOskOnGotFocus.Should().BeTrue();
             box.IsFocused.Should().BeTrue();
             box.IsReadOnly.Should().BeFalse();
@@ -167,8 +169,16 @@ public class GamepadTextInputTests
     [Fact]
     public void ShouldSkipXyFocusOnHighlight_true_for_textbox_until_edit()
     {
-        GamepadTextInput.ShouldSkipXyFocusOnHighlight(new TextBox()).Should().BeTrue();
-        GamepadTextInput.ShouldSkipXyFocusOnHighlight(new Button()).Should().BeFalse();
-        GamepadTextInput.ShouldSkipXyFocusOnHighlight(null).Should().BeFalse();
+        GamepadTextInput.Reset();
+        try
+        {
+            GamepadTextInput.ShouldSkipXyFocusOnHighlight(new TextBox()).Should().BeTrue();
+            GamepadTextInput.ShouldSkipXyFocusOnHighlight(new Button()).Should().BeFalse();
+            GamepadTextInput.ShouldSkipXyFocusOnHighlight(null).Should().BeFalse();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
+        }
     }
 }

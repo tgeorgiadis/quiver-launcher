@@ -57,9 +57,10 @@ internal static class GamepadTextInput
     /// <summary>
     /// Highlight-only TextBoxes have no keyboard focus in Gaming Mode; Avalonia XY
     /// would start from the sidebar. Walk the collected list instead.
+    /// Skip unless this exact field is in Confirm-edit (caret / OSK).
     /// </summary>
     public static bool ShouldSkipXyFocusOnHighlight(Control? current) =>
-        current is TextBox && !IsEditing;
+        current is TextBox box && !(IsEditing && ReferenceEquals(box, Active));
 
     /// <summary>
     /// Orange-ring highlight without a caret or OSK. Safe to call repeatedly.
