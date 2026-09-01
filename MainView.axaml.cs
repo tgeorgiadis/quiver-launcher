@@ -594,7 +594,16 @@ namespace QuiverLauncher
             }
 
             _gameManager = new GameManager();
-            GameManager.UiThreadInvoker = action => Dispatcher.UIThread.InvokeAsync(action).GetTask();
+            GameManager.UiThreadInvoker = action =>
+            {
+                if (Dispatcher.UIThread.CheckAccess())
+                {
+                    action();
+                    return Task.CompletedTask;
+                }
+
+                return Dispatcher.UIThread.InvokeAsync(action).GetTask();
+            };
 
             // Initialize theme
             ThemeColorBrush = new SolidColorBrush(Color.Parse(_settings?.PrimaryColor ?? "#18181b"));

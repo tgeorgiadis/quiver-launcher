@@ -28,10 +28,14 @@ namespace QuiverLauncher.Services
 
         private static async Task RunOnUiThreadAsync(Action action)
         {
-            if (UiThreadInvoker != null)
-                await UiThreadInvoker(action);
-            else
+            var invoker = UiThreadInvoker;
+            if (invoker == null)
+            {
                 action();
+                return;
+            }
+
+            await invoker(action).ConfigureAwait(false);
         }
 
         public ObservableCollection<GameInfo> Games { get; set; } = [];

@@ -58,6 +58,14 @@ public partial class App : Application, INotifyPropertyChanged
 
     internal static WeakReference<MainView>? CurrentHostedMainView;
 
+    /// <summary>
+    /// Headless tests set this so OnFrameworkInitializationCompleted does not construct
+    /// MainWindow or start a Velopack self-update check. Those side effects leave
+    /// GameManager.UiThreadInvoker posted to a dispatcher that is only pumped during
+    /// AvaloniaFact, hanging later Fact tests.
+    /// </summary>
+    internal static bool SuppressDesktopHost { get; set; }
+
     internal static MainView? TryGetHostedMainView()
         => CurrentHostedMainView is { } weak && weak.TryGetTarget(out var view) ? view : null;
 
@@ -89,16 +97,23 @@ public partial class App : Application, INotifyPropertyChanged
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
-
-            var mainWindow = new MainWindow();
-            mainWindow._app = this;
-            desktop.MainWindow = mainWindow;
-
-            if (PlatformCapabilities.SupportsTray)
+            if (SuppressDesktopHost)
             {
-                InitializeTrayIcon();
-                mainWindow.ApplyTraySettingsFromApp();
+                desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            }
+            else
+            {
+                desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+                var mainWindow = new MainWindow();
+                mainWindow._app = this;
+                desktop.MainWindow = mainWindow;
+
+                if (PlatformCapabilities.SupportsTray)
+                {
+                    InitializeTrayIcon();
+                    mainWindow.ApplyTraySettingsFromApp();
+                }
             }
         }
         else if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime)
@@ -111,6 +126,12 @@ public partial class App : Application, INotifyPropertyChanged
         }
 
         base.OnFrameworkInitializationCompleted();
+
+        if (SuppressDesktopHost)
+        {
+            _startupSelfUpdatePromptCompleted.TrySetResult();
+            return;
+        }
 
         lock (_updateLock)
         {

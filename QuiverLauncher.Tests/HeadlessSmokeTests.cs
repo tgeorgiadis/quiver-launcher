@@ -1,6 +1,7 @@
 using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using QuiverLauncher;
+using QuiverLauncher.Services;
 
 namespace QuiverLauncher.Tests;
 
@@ -19,9 +20,18 @@ public class HeadlessSmokeTests
     [AvaloniaFact]
     public void MainWindow_can_be_created_in_headless_mode()
     {
+        var previousInvoker = GameManager.UiThreadInvoker;
         var window = new MainWindow();
-
-        window.Should().NotBeNull();
-        window.Width.Should().BeGreaterThan(0);
+        try
+        {
+            window.Should().NotBeNull();
+            window.Width.Should().BeGreaterThan(0);
+        }
+        finally
+        {
+            window.RequestExit();
+            window.Close();
+            GameManager.UiThreadInvoker = previousInvoker;
+        }
     }
 }

@@ -8,6 +8,9 @@ namespace QuiverLauncher.Tests;
 public static class HeadlessTestApp
 {
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<QuiverLauncher.App>()
+    {
+        App.SuppressDesktopHost = true;
+        return AppBuilder.Configure<App>()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions());
+    }
 }

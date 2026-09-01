@@ -48,35 +48,54 @@ public class GameManagerTests
     [Fact]
     public async Task ReloadLibraryFromDiskAsync_does_not_fetch_catalog_sources()
     {
+        var previousInvoker = GameManager.UiThreadInvoker;
+        var previousRoot = QuiverLauncherPaths.OverrideUserDataRoot;
         var tempDir = Path.Combine(Path.GetTempPath(), "QuiverLauncher.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
-        var reader = new ThrowingCatalogLocationReader();
-        var catalog = new AppCatalogService(null, reader, tempDir);
-        var store = new FileSettingsStore(Path.Combine(tempDir, "settings.json"));
-        store.Current.AppCatalogSources =
-        [
-            new AppCatalogSource
-            {
-                Id = "nintendo",
-                Name = "Nintendo",
-                Location = "https://example.test/nintendo.json",
-                Enabled = true,
-            },
-        ];
-        store.Save(store.Current);
+        GameManager.UiThreadInvoker = null;
+        QuiverLauncherPaths.OverrideUserDataRoot = tempDir;
 
-        await catalog.SaveLocalAppsAsync([
-            new GameInfo { Name = "Existing", Repository = "owner/existing", FolderName = "Existing" },
-            new GameInfo { Name = "Added", Repository = "owner/added", FolderName = "Added" },
-        ]);
+        try
+        {
+            var reader = new ThrowingCatalogLocationReader();
+            var catalog = new AppCatalogService(null, reader, tempDir);
+            var store = new FileSettingsStore(Path.Combine(tempDir, "settings.json"));
+            store.Current.AppsPath = Path.Combine(tempDir, "Apps");
+            store.Current.AppCatalogSources =
+            [
+                new AppCatalogSource
+                {
+                    Id = "nintendo",
+                    Name = "Nintendo",
+                    Location = "https://example.test/nintendo.json",
+                    Enabled = true,
+                },
+            ];
+            store.Save(store.Current);
 
-        using var manager = new GameManager(store, httpClient: new HttpClient(), catalogService: catalog);
-        await manager.ReloadLibraryFromDiskAsync(["owner/added"]);
+            var added = new GameInfo { Name = "Added", Repository = "owner/added", FolderName = "Added" };
+            await catalog.SaveLocalAppsAsync([
+                new GameInfo { Name = "Existing", Repository = "owner/existing", FolderName = "Existing" },
+                added,
+            ]);
 
-        reader.FetchCount.Should().Be(0);
-        manager.Games.Select(g => g.Repository).Should().BeEquivalentTo(["owner/existing", "owner/added"]);
+            using var manager = new GameManager(
+                store,
+                httpClient: new HttpClient { Timeout = TimeSpan.FromSeconds(2) },
+                catalogService: catalog);
+            await manager.ReloadLibraryFromDiskAsync([added.InstanceKey])
+                .WaitAsync(TimeSpan.FromSeconds(15));
 
-        Directory.Delete(tempDir, true);
+            reader.FetchCount.Should().Be(0);
+            manager.Games.Select(g => g.Repository).Should().BeEquivalentTo(["owner/existing", "owner/added"]);
+        }
+        finally
+        {
+            GameManager.UiThreadInvoker = previousInvoker;
+            QuiverLauncherPaths.OverrideUserDataRoot = previousRoot;
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
     }
 
     private sealed class ThrowingCatalogLocationReader : ICatalogLocationReader
