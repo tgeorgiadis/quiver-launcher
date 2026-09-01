@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using QuiverLauncher.Services;
 using NavigationDirection = QuiverLauncher.Services.NavigationDirection;
@@ -7,7 +8,7 @@ namespace QuiverLauncher.Tests;
 
 public class GamepadTopBarSearchNavTests
 {
-    [Fact]
+    [AvaloniaFact]
     public void Search_highlight_skips_xy_and_right_selects_add()
     {
         GamepadTextInput.Reset();

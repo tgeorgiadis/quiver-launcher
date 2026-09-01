@@ -166,7 +166,7 @@ public class GamepadTextInputTests
         }
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void ShouldSkipXyFocusOnHighlight_true_for_textbox_until_edit()
     {
         GamepadTextInput.Reset();

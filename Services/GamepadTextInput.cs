@@ -1,8 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Media;
 using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace QuiverLauncher.Services;
 
@@ -136,7 +137,7 @@ internal static class GamepadTextInput
 
     public static void Reset()
     {
-        if (Active != null && IsEditing)
+        if (Active != null && IsEditing && Dispatcher.UIThread.CheckAccess())
             ApplyEditVisuals(Active);
 
         IsEditing = false;
