@@ -1,5 +1,5 @@
 {
-  "id": "2026-08-19-320",
+  "id": "2026-09-01-330",
   "enabled": true,
-  "message": "3.2.0: manually managed apps, library search, catalog review comparison fixes, and improved app release tracking logic. Still on 2.4.2? Update to 3.x manually (click the GitHub icon bottom left)."
+  "message": "3.3.0: Android release, App Catalog grid view, library card options, Steam Deck shortcut fix, AppImage cleanup, shared-repo games, Thunderstore dependencies, .NET 10 and Avalonia 12."
 }

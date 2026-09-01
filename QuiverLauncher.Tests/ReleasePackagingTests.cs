@@ -64,9 +64,17 @@ public class ReleasePackagingTests
         workflow.Should().Contain("QuiverLauncher-win-Portable.zip");
         workflow.Should().Contain("QuiverLauncher-linux-x64.AppImage");
         workflow.Should().Contain("QuiverLauncher-linux-arm64.AppImage");
+        workflow.Should().Contain("QuiverLauncher-android.apk");
         workflow.Should().Contain("macOS:** work in progress while I get the signing sorted");
         workflow.Should().Contain("-name '*.AppImage'");
+        workflow.Should().Contain("-name '*.apk'");
         workflow.Should().Contain("releases.*.json");
+        workflow.Should().Contain("actions/setup-java@v4");
+        workflow.Should().Contain("AndroidKeyStore=true");
+        workflow.Should().Contain("ApplicationDisplayVersion");
+        workflow.Should().Contain("ApplicationVersion");
+        workflow.Should().Contain("needs.build-android.result == 'success'");
+        workflow.Should().Contain("name: android-apk");
         // Publish bare AppImages; do not wrap in tar.gz or strip executable bit via CI chmod.
         workflow.Should().NotContain("Package AppImage as tar.gz");
         workflow.Should().NotContain("chmod +x releases/");

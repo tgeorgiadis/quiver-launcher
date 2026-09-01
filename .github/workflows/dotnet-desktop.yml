@@ -285,10 +285,11 @@ jobs:
         retention-days: 14
 
   # Publish Velopack packages to a GitHub Release when a v* tag is pushed.
-  # Runs even if some platform packs fail so successful channels still ship.
+  # Runs even if some desktop packs fail so successful channels still ship.
+  # Android is required: tags must include a signed APK.
   publish-github-release:
-    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.test.result == 'success'
-    needs: [test, pack-windows, pack-linux, pack-macos]
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.test.result == 'success' && needs.build-android.result == 'success'
+    needs: [test, pack-windows, pack-linux, pack-macos, build-android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -318,6 +319,12 @@ jobs:
         path: release-assets
         merge-multiple: false
 
+    - name: Download Android APK
+      uses: actions/download-artifact@v4
+      with:
+        name: android-apk
+        path: release-assets/android
+
     - name: Publish GitHub Release with user + Velopack feed assets
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -338,7 +345,8 @@ jobs:
             -name '*.nupkg' -o \
             -name 'releases.*.json' -o \
             -name '*Portable.zip' -o \
-            -name '*.AppImage' \
+            -name '*.AppImage' -o \
+            -name '*.apk' \
           \) | sort
         )
         if [[ ${#FILES[@]} -eq 0 ]]; then
@@ -354,6 +362,7 @@ jobs:
           echo "- **Windows:** [${BASE}/QuiverLauncher-win-Portable.zip](${BASE}/QuiverLauncher-win-Portable.zip)"
           echo "- **Linux x64:** [${BASE}/QuiverLauncher-linux-x64.AppImage](${BASE}/QuiverLauncher-linux-x64.AppImage)"
           echo "- **Linux ARM64:** [${BASE}/QuiverLauncher-linux-arm64.AppImage](${BASE}/QuiverLauncher-linux-arm64.AppImage)"
+          echo "- **Android:** [${BASE}/QuiverLauncher-android.apk](${BASE}/QuiverLauncher-android.apk)"
           echo "- **macOS:** work in progress while I get the signing sorted"
           echo ""
           echo "---"
@@ -385,11 +394,16 @@ jobs:
   build-android:
     needs: test
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
+    - name: Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -402,5 +416,70 @@ jobs:
     - name: Install Android workload
       run: dotnet workload install android
 
-    - name: Build Android
+    - name: Resolve Android version
+      id: ver
+      shell: bash
+      run: |
+        VERSION=$(grep -oE '<Version>[^<]+' QuiverLauncher.App.csproj | head -n1 | sed 's/<Version>//')
+        BASE="${VERSION%%-*}"
+        IFS='.' read -r MAJOR MINOR PATCH _ <<< "${BASE}.0.0"
+        APP_VERSION=$((10#${MAJOR:-0} * 10000 + 10#${MINOR:-0} * 100 + 10#${PATCH:-0}))
+        echo "display=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "version_code=$APP_VERSION" >> "$GITHUB_OUTPUT"
+        echo "Android display=$VERSION versionCode=$APP_VERSION"
+
+    - name: Detect Android signing secrets
+      id: sign
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        if [[ -n "${ANDROID_KEYSTORE_BASE64}" && -n "${ANDROID_KEYSTORE_PASSWORD}" && -n "${ANDROID_KEY_ALIAS}" && -n "${ANDROID_KEY_PASSWORD}" ]]; then
+          echo "available=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "available=false" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "Android keystore secrets are required to publish a signed APK on tags."
+            exit 1
+          fi
+        fi
+
+    - name: Compile Android
+      if: steps.sign.outputs.available != 'true'
       run: dotnet build QuiverLauncher.Android/QuiverLauncher.Android.csproj -c Release
+
+    - name: Publish signed Android APK
+      if: steps.sign.outputs.available == 'true'
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        set -euo pipefail
+        KEYSTORE_PATH="${RUNNER_TEMP}/android-release.jks"
+        echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > "${KEYSTORE_PATH}"
+        mkdir -p artifacts/android
+        dotnet publish QuiverLauncher.Android/QuiverLauncher.Android.csproj -c Release \
+          -p:AndroidPackageFormat=apk \
+          -p:ApplicationDisplayVersion="${{ steps.ver.outputs.display }}" \
+          -p:ApplicationVersion="${{ steps.ver.outputs.version_code }}" \
+          -p:AndroidKeyStore=true \
+          -p:AndroidSigningKeyStore="${KEYSTORE_PATH}" \
+          -p:AndroidSigningStorePass="${ANDROID_KEYSTORE_PASSWORD}" \
+          -p:AndroidSigningKeyAlias="${ANDROID_KEY_ALIAS}" \
+          -p:AndroidSigningKeyPass="${ANDROID_KEY_PASSWORD}"
+        APK=$(find QuiverLauncher.Android -path '*/bin/Release/*' -name '*-Signed.apk' | head -n1)
+        test -n "${APK}"
+        cp "${APK}" artifacts/android/QuiverLauncher-android.apk
+        ls -lh artifacts/android/QuiverLauncher-android.apk
+
+    - name: Upload Android APK
+      if: steps.sign.outputs.available == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: artifacts/android/QuiverLauncher-android.apk
+        retention-days: 14
