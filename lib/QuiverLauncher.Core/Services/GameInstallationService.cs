@@ -286,7 +286,9 @@ public static class GameInstallationService
 
             var flattened = false;
 
-            if (topLevelDirs.Length == 1)
+            // Only hoist a single wrapper folder. Sibling files or directories
+            // (e.g. game.toml + recomp-ui/ + psxrecomp/ are part of the app tree.
+            if (topLevelDirs.Length == 1 && topLevelFiles.Count == 0)
             {
                 var singleDir = topLevelDirs[0];
                 var singleDirCandidates = FindExecutableCandidates(singleDir, SearchOption.AllDirectories, options, out _);
@@ -317,32 +319,7 @@ public static class GameInstallationService
                 .Where(f => !IsInRootDirectory(f, gamePath))
                 .ToList();
 
-            if (nestedCandidates.Count == 0)
-                return;
-
-            var candidateFile = nestedCandidates[0];
-            var parentDir = Path.GetDirectoryName(candidateFile);
-
-            if (!string.IsNullOrEmpty(parentDir) &&
-                topLevelDirs.Contains(parentDir, StringComparer.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                    Directory.Move(parentDir, tempDir);
-                    MoveDirectoryContents(tempDir, gamePath);
-                    TryDeleteDirectory(tempDir);
-
-                    Log(options, $"Flattened directory containing executable: {parentDir}");
-                    continue;
-                }
-                catch (Exception ex)
-                {
-                    Log(options, $"Failed to flatten directory: {ex.Message}");
-                }
-            }
-
-            if (topLevelFiles.Count > 0)
+            if (nestedCandidates.Count > 0 && (topLevelFiles.Count > 0 || topLevelDirs.Length > 1))
             {
                 Log(options, "Leaving wrapper folder structure in place because nested executable cannot be safely flattened.");
             }
@@ -485,16 +462,12 @@ public static class GameInstallationService
                     return;
                 }
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var tarGzFile = Directory.GetFiles(tempExtractPath, "*.tar.gz", SearchOption.AllDirectories)
-                    .FirstOrDefault();
 
-                if (!string.IsNullOrEmpty(tarGzFile))
-                {
-                    await ExtractTarGzAsync(tarGzFile, gamePath).ConfigureAwait(false);
-                    return;
-                }
+            if (TryGetNestedTarGzPayload(tempExtractPath, out var tarGzFile) &&
+                !string.IsNullOrEmpty(tarGzFile))
+            {
+                await ExtractTarGzAsync(tarGzFile, gamePath).ConfigureAwait(false);
+                return;
             }
 
             var sourcePath = GetEffectiveExtractionSource(tempExtractPath);
@@ -517,6 +490,33 @@ public static class GameInstallationService
         }
 
         return extractPath;
+    }
+
+    /// <summary>
+    /// True when an unzipped tree is only a tar.gz wrapper: a single <c>.tar.gz</c>
+    /// (optionally nested in folders) plus launcher metadata. Full app zips that
+    /// happen to contain a nested archive are left intact.
+    /// </summary>
+    public static bool TryGetNestedTarGzPayload(string extractPath, out string? tarGzPath)
+    {
+        tarGzPath = null;
+
+        if (string.IsNullOrWhiteSpace(extractPath) || !Directory.Exists(extractPath))
+            return false;
+
+        var payloadFiles = Directory.GetFiles(extractPath, "*", SearchOption.AllDirectories)
+            .Where(f => !IsLauncherMetadataFile(f))
+            .ToList();
+
+        if (payloadFiles.Count != 1)
+            return false;
+
+        var onlyFile = payloadFiles[0];
+        if (!onlyFile.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        tarGzPath = onlyFile;
+        return true;
     }
 
     static void ExtractNestedZips(string tempExtractPath)

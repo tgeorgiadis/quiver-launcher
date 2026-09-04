@@ -136,6 +136,176 @@ public class GameInstallationServiceTarTests
     }
 
     [Fact]
+    public void TryGetNestedTarGzPayload_true_for_lone_tar_gz()
+    {
+        var extractPath = CreateTempDir("nested-targz-lone-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(extractPath, "app.tar.gz"), [1, 2, 3]);
+
+            GameInstallationService.TryGetNestedTarGzPayload(extractPath, out var tarGz)
+                .Should().BeTrue();
+            tarGz.Should().Be(Path.Combine(extractPath, "app.tar.gz"));
+        }
+        finally
+        {
+            Directory.Delete(extractPath, true);
+        }
+    }
+
+    [Fact]
+    public void TryGetNestedTarGzPayload_true_for_wrapped_tar_gz_plus_metadata()
+    {
+        var extractPath = CreateTempDir("nested-targz-wrap-");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(extractPath, "wrapper"));
+            File.WriteAllBytes(Path.Combine(extractPath, "wrapper", "app.tar.gz"), [1, 2, 3]);
+            File.WriteAllText(Path.Combine(extractPath, "version.txt"), "v1");
+
+            GameInstallationService.TryGetNestedTarGzPayload(extractPath, out var tarGz)
+                .Should().BeTrue();
+            tarGz.Should().Be(Path.Combine(extractPath, "wrapper", "app.tar.gz"));
+        }
+        finally
+        {
+            Directory.Delete(extractPath, true);
+        }
+    }
+
+    [Fact]
+    public void TryGetNestedTarGzPayload_false_when_app_tree_has_incidental_tar_gz()
+    {
+        var extractPath = CreateTempDir("nested-targz-app-");
+        try
+        {
+            File.WriteAllBytes(Path.Combine(extractPath, "game.exe"), new byte[2048]);
+            File.WriteAllText(Path.Combine(extractPath, "game.toml"), "title = \"demo\"");
+            Directory.CreateDirectory(Path.Combine(extractPath, "mods"));
+            File.WriteAllText(Path.Combine(extractPath, "mods", "readme.txt"), "mods");
+            Directory.CreateDirectory(Path.Combine(extractPath, "recomp-ui"));
+            File.WriteAllBytes(Path.Combine(extractPath, "recomp-ui", "payload.tar.gz"), [1, 2, 3]);
+
+            GameInstallationService.TryGetNestedTarGzPayload(extractPath, out var tarGz)
+                .Should().BeFalse();
+            tarGz.Should().BeNull();
+        }
+        finally
+        {
+            Directory.Delete(extractPath, true);
+        }
+    }
+
+    [Fact]
+    public async Task InstallOrUpdateGameAsync_keeps_full_zip_when_nested_tar_gz_is_incidental()
+    {
+        var archivePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.zip");
+        var gamePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            var host = Encoding.UTF8.GetBytes(new string('H', 2048));
+            var toml = Encoding.UTF8.GetBytes("title = \"Twisted Metal 4\"");
+            var mod = Encoding.UTF8.GetBytes("mod");
+            var nestedTar = CreateTarGz([("unpacked-from-nested.txt", Encoding.UTF8.GetBytes("should-not-install"))]);
+            File.WriteAllBytes(archivePath, CreateZip(
+            [
+                ("game.exe", host),
+                ("game.toml", toml),
+                ("mods/preloaded/readme.txt", mod),
+                ("recomp-ui/payload.tar.gz", nestedTar),
+            ]));
+
+            await GameInstallationService.InstallOrUpdateGameAsync(
+                archivePath,
+                gamePath,
+                "twistedmetal4-0.3.29-linux-x64.zip",
+                "v0.3.29");
+
+            File.ReadAllBytes(Path.Combine(gamePath, "game.exe")).Should().Equal(host);
+            File.ReadAllBytes(Path.Combine(gamePath, "game.toml")).Should().Equal(toml);
+            File.ReadAllBytes(Path.Combine(gamePath, "mods", "preloaded", "readme.txt")).Should().Equal(mod);
+            File.Exists(Path.Combine(gamePath, "recomp-ui", "payload.tar.gz")).Should().BeTrue();
+            File.Exists(Path.Combine(gamePath, "unpacked-from-nested.txt")).Should().BeFalse();
+        }
+        finally
+        {
+            if (File.Exists(archivePath))
+                File.Delete(archivePath);
+            if (Directory.Exists(gamePath))
+                Directory.Delete(gamePath, true);
+        }
+    }
+
+    [Fact]
+    public async Task InstallOrUpdateGameAsync_extracts_zip_that_is_only_a_tar_gz_wrapper()
+    {
+        var archivePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.zip");
+        var gamePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            var binary = Encoding.UTF8.GetBytes("wrapped-binary");
+            var readme = Encoding.UTF8.GetBytes("wrapped-readme");
+            var nestedTar = CreateTarGz(
+            [
+                ("game.exe", binary),
+                ("readme.txt", readme),
+            ]);
+            File.WriteAllBytes(archivePath, CreateZip(
+            [
+                ("wrapper/app.tar.gz", nestedTar),
+            ]));
+
+            await GameInstallationService.InstallOrUpdateGameAsync(
+                archivePath,
+                gamePath,
+                "legacy-linux-wrapper.zip",
+                "v1.0.0");
+
+            File.ReadAllBytes(Path.Combine(gamePath, "game.exe")).Should().Equal(binary);
+            File.ReadAllBytes(Path.Combine(gamePath, "readme.txt")).Should().Equal(readme);
+            File.Exists(Path.Combine(gamePath, "app.tar.gz")).Should().BeFalse();
+            Directory.Exists(Path.Combine(gamePath, "wrapper")).Should().BeFalse();
+        }
+        finally
+        {
+            if (File.Exists(archivePath))
+                File.Delete(archivePath);
+            if (Directory.Exists(gamePath))
+                Directory.Delete(gamePath, true);
+        }
+    }
+
+    [Fact]
+    public void EnsureExecutableAtRoot_does_not_flatten_recomp_ui_when_siblings_exist()
+    {
+        var gamePath = CreateTempDir("flatten-siblings-");
+        try
+        {
+            File.WriteAllText(Path.Combine(gamePath, "game.toml"), "title = \"demo\"");
+            Directory.CreateDirectory(Path.Combine(gamePath, "psxrecomp"));
+            File.WriteAllText(Path.Combine(gamePath, "psxrecomp", "readme.txt"), "framework");
+            Directory.CreateDirectory(Path.Combine(gamePath, "recomp-ui"));
+            File.WriteAllBytes(Path.Combine(gamePath, "recomp-ui", "launch.exe"), new byte[2048]);
+            File.WriteAllText(Path.Combine(gamePath, "recomp-ui", "launch.sh"), "#!/bin/sh\n");
+
+            GameInstallationService.EnsureExecutableAtRoot(gamePath);
+
+            File.Exists(Path.Combine(gamePath, "game.toml")).Should().BeTrue();
+            Directory.Exists(Path.Combine(gamePath, "psxrecomp")).Should().BeTrue();
+            Directory.Exists(Path.Combine(gamePath, "recomp-ui")).Should().BeTrue();
+            File.Exists(Path.Combine(gamePath, "recomp-ui", "launch.exe")).Should().BeTrue();
+            File.Exists(Path.Combine(gamePath, "launch.exe")).Should().BeFalse();
+            File.Exists(Path.Combine(gamePath, "launch.sh")).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(gamePath, true);
+        }
+    }
+
+    [Fact]
     public async Task InstallOrUpdateGameAsync_strips_single_root_directory_from_zip()
     {
         var archivePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.zip");
@@ -168,6 +338,13 @@ public class GameInstallationServiceTarTests
             if (Directory.Exists(gamePath))
                 Directory.Delete(gamePath, true);
         }
+    }
+
+    static string CreateTempDir(string prefix)
+    {
+        var path = Path.Combine(Path.GetTempPath(), prefix + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        return path;
     }
 
     static byte[] CreateZip(IReadOnlyList<(string Path, byte[] Content)> entries)

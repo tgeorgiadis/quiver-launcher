@@ -1,5 +1,5 @@
 {
-  "id": "2026-09-01-330",
+  "id": "2026-09-04-331",
   "enabled": true,
-  "message": "3.3.0: Android release, App Catalog grid view, library card options, Steam Deck shortcut fix, AppImage cleanup, shared-repo games, Thunderstore dependencies, .NET 10 and Avalonia 12."
+  "message": "3.3.1: Fix Linux zip installs that dropped nested archives, preserve maximized window after minimize, and add a Ko-fi link in the sidebar."
 }

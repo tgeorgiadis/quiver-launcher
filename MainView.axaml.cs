@@ -289,8 +289,6 @@ namespace QuiverLauncher
         private bool _launchedGameOwnsInput;
         private bool _trackingLaunchedGameProcess;
         private System.Threading.CancellationTokenSource? _gamepadReclaimCts;
-        private WindowState _windowStateBeforeMinimize = WindowState.Normal;
-        private bool _restoreWindowStateAfterMinimize;
         private bool _rewritingHostWindowState;
         private string _launcherMusicPath = string.Empty;
         public string LauncherMusicPath
@@ -2280,23 +2278,12 @@ namespace QuiverLauncher
         }
 
         public void MinimizeButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (GetHostWindowState() != WindowState.Minimized)
-            {
-                // Avalonia/Win32 drops FullScreen across minimize (restores as Normal). Remember intent here.
-                // IsFullscreen can outlive WindowState when the platform briefly transitions through Normal.
-                _windowStateBeforeMinimize = (IsFullscreen || GetHostWindowState() == WindowState.FullScreen)
-                    ? SteamDeckEnvironment.DesktopFullscreenWindowState()
-                    : GetHostWindowState();
-                _restoreWindowStateAfterMinimize =
-                    _windowStateBeforeMinimize is WindowState.Maximized or WindowState.FullScreen;
-            }
-
-            SetHostWindowState(WindowState.Minimized);
-        }
+            => SetHostWindowState(WindowState.Minimized);
 
         public void HandleHostWindowStateChanged(WindowState oldState, WindowState newState)
         {
+            _ = oldState;
+
             if (_rewritingHostWindowState)
                 return;
 
@@ -2305,27 +2292,6 @@ namespace QuiverLauncher
                 RewriteHostWindowState(WindowState.Maximized);
                 OnPropertyChanged(nameof(MaximizeButtonTip));
                 return;
-            }
-
-            // Platform may hop FullScreen -> Normal -> Minimized while minimizing; keep FullScreen intent.
-            if (newState == WindowState.Minimized && oldState != WindowState.Minimized)
-            {
-                if (IsFullscreen || oldState == WindowState.FullScreen
-                    || _windowStateBeforeMinimize == WindowState.FullScreen)
-                {
-                    _windowStateBeforeMinimize = SteamDeckEnvironment.DesktopFullscreenWindowState();
-                    _restoreWindowStateAfterMinimize = true;
-                }
-                else if (oldState == WindowState.Maximized)
-                {
-                    _windowStateBeforeMinimize = WindowState.Maximized;
-                    _restoreWindowStateAfterMinimize = true;
-                }
-            }
-            else if (oldState == WindowState.Minimized && newState != WindowState.Minimized)
-            {
-                // Known Avalonia issue: fullscreen/maximize often restores as Normal after taskbar un-minimize.
-                ScheduleRestoreWindowStateAfterMinimize();
             }
 
             OnPropertyChanged(nameof(MaximizeButtonTip));
@@ -2341,74 +2307,6 @@ namespace QuiverLauncher
             finally
             {
                 _rewritingHostWindowState = false;
-            }
-        }
-
-        private void RestoreWindowStateAfterMinimizeIfNeeded()
-        {
-            ScheduleRestoreWindowStateAfterMinimize();
-        }
-
-        private void ScheduleRestoreWindowStateAfterMinimize()
-        {
-            if (!_restoreWindowStateAfterMinimize)
-                return;
-
-            var desired = ResolveRestoredFullscreenWindowState(_windowStateBeforeMinimize);
-            if (desired is not (WindowState.Maximized or WindowState.FullScreen))
-            {
-                _restoreWindowStateAfterMinimize = false;
-                return;
-            }
-
-            // Do not clear the flag until applied — Activated can fire while still Minimized.
-            Dispatcher.UIThread.Post(() => TryApplyRestoredWindowState(desired, retry: true), DispatcherPriority.Input);
-        }
-
-        /// <summary>
-        /// Exclusive FullScreen stored from an older session or platform hop becomes
-        /// Maximized on Steam Deck Desktop so the KDE taskbar stays visible.
-        /// </summary>
-        static WindowState ResolveRestoredFullscreenWindowState(WindowState desired) =>
-            desired == WindowState.FullScreen
-                ? SteamDeckEnvironment.DesktopFullscreenWindowState()
-                : desired;
-
-        private void TryApplyRestoredWindowState(WindowState desired, bool retry)
-        {
-            if (!_restoreWindowStateAfterMinimize)
-                return;
-
-            if (GetHostWindowState() == WindowState.Minimized)
-            {
-                if (retry)
-                    Dispatcher.UIThread.Post(() => TryApplyRestoredWindowState(desired, retry: false), DispatcherPriority.Background);
-                return;
-            }
-
-            if (desired == WindowState.FullScreen)
-                IsFullscreen = true;
-
-            if (GetHostWindowState() != desired)
-                SetHostWindowState(desired);
-
-            // Second kick: Win32/Avalonia sometimes applies Normal after our first FullScreen set.
-            if (retry)
-            {
-                Dispatcher.UIThread.Post(() =>
-                {
-                    if (GetHostWindowState() == WindowState.Minimized)
-                        return;
-                    if (desired == WindowState.FullScreen)
-                        IsFullscreen = true;
-                    if (GetHostWindowState() != desired)
-                        SetHostWindowState(desired);
-                    _restoreWindowStateAfterMinimize = false;
-                }, DispatcherPriority.Background);
-            }
-            else
-            {
-                _restoreWindowStateAfterMinimize = false;
             }
         }
 
@@ -6372,6 +6270,18 @@ namespace QuiverLauncher
             catch (Exception ex)
             {
                 _ = ShowMessageBoxAsync($"Failed to open Discord link: {ex.Message}", "Action Error");
+            }
+        }
+
+        private void KofiButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                OpenUrl("https://ko-fi.com/magicturt1e");
+            }
+            catch (Exception ex)
+            {
+                _ = ShowMessageBoxAsync($"Failed to open Ko-fi link: {ex.Message}", "Action Error");
             }
         }
 
@@ -12709,7 +12619,8 @@ namespace QuiverLauncher
             for (var i = 0; i < controls.Count; i++)
             {
                 if (ReferenceEquals(controls[i], GitHubFooterButton) ||
-                    ReferenceEquals(controls[i], DiscordFooterButton))
+                    ReferenceEquals(controls[i], DiscordFooterButton) ||
+                    ReferenceEquals(controls[i], KofiFooterButton))
                 {
                     return i;
                 }
@@ -12871,6 +12782,7 @@ namespace QuiverLauncher
 
             Add(GitHubFooterButton);
             Add(DiscordFooterButton);
+            Add(KofiFooterButton);
             return controls;
         }
 
@@ -14894,8 +14806,6 @@ namespace QuiverLauncher
 
         private void MainWindow_Activated(object? sender, EventArgs e)
         {
-            RestoreWindowStateAfterMinimizeIfNeeded();
-
             // Always reclaim input when Quiver is focused. Waiting on the launched process can
             // hang (shell-execute / orphaned waiters), which used to leave _launchedGameOwnsInput
             // true and swallow all gamepad/keyboard navigation while Cancel still worked.
