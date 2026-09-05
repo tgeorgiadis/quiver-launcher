@@ -11,7 +11,8 @@ namespace QuiverLauncher.Core.Services
             var list = sources?.ToList() ??
             [
                 new GitHubReleaseSource(),
-                new GitLabReleaseSource()
+                new GitLabReleaseSource(),
+                new IpfsReleaseSource()
             ];
 
             _sources = list.ToDictionary(s => s.Id, StringComparer.OrdinalIgnoreCase);

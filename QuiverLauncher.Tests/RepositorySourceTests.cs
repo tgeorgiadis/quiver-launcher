@@ -185,5 +185,16 @@ public class RepositorySourceTests
         registry.Get(null).Id.Should().Be(RepositorySourceIds.GitHub);
         registry.Get("gitlab").Id.Should().Be(RepositorySourceIds.GitLab);
         registry.Get("gitea").Id.Should().Be(RepositorySourceIds.GitHub);
+        registry.Get("ipfs").Id.Should().Be(RepositorySourceIds.Ipfs);
+    }
+
+    [Fact]
+    public void RepositorySourceHelper_recognizes_ipfs()
+    {
+        RepositorySourceHelper.Normalize("ipfs").Should().Be(RepositorySourceIds.Ipfs);
+        RepositorySourceHelper.Normalize("IPFS").Should().Be(RepositorySourceIds.Ipfs);
+        RepositorySourceHelper.IsIpfs("ipfs").Should().BeTrue();
+        RepositorySourceHelper.Normalize("ipfs", out var wasUnsupported).Should().Be(RepositorySourceIds.Ipfs);
+        wasUnsupported.Should().BeFalse();
     }
 }

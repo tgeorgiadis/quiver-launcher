@@ -30,6 +30,7 @@ public class AppCatalogServiceTests
     [InlineData("https://example.com/apps.json", true)]
     [InlineData("http://example.com/apps.json", true)]
     [InlineData("HTTPS://EXAMPLE.COM/apps.json", true)]
+    [InlineData("ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi", true)]
     [InlineData("community-app-catalog/N64-Recomps.json", false)]
     [InlineData(@"C:\Catalogs\apps.json", false)]
     public void IsRemoteLocation_classifies_locations(string location, bool expectedRemote)

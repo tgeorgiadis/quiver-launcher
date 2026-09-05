@@ -18,6 +18,9 @@ namespace QuiverLauncher.Core.Services
             if (string.Equals(trimmed, RepositorySourceIds.GitLab, StringComparison.OrdinalIgnoreCase))
                 return RepositorySourceIds.GitLab;
 
+            if (string.Equals(trimmed, RepositorySourceIds.Ipfs, StringComparison.OrdinalIgnoreCase))
+                return RepositorySourceIds.Ipfs;
+
             wasUnsupported = true;
             return RepositorySourceIds.GitHub;
         }
@@ -30,6 +33,9 @@ namespace QuiverLauncher.Core.Services
 
         public static bool IsGitLab(string? repositorySource) =>
             string.Equals(Normalize(repositorySource), RepositorySourceIds.GitLab, StringComparison.OrdinalIgnoreCase);
+
+        public static bool IsIpfs(string? repositorySource) =>
+            string.Equals(Normalize(repositorySource), RepositorySourceIds.Ipfs, StringComparison.OrdinalIgnoreCase);
 
         public static bool IsManuallyManaged(string? repository) =>
             string.IsNullOrWhiteSpace(repository);
@@ -95,12 +101,16 @@ namespace QuiverLauncher.Core.Services
             if (string.IsNullOrEmpty(repo))
                 return string.Empty;
 
+            if (IsIpfs(repositorySource))
+                return $"https://ipfs.io/ipfs/{repo}";
+
             return IsGitLab(repositorySource)
                 ? $"https://gitlab.com/{repo}"
                 : $"https://github.com/{repo}";
         }
 
         public static string DisplayName(string? repositorySource) =>
+            IsIpfs(repositorySource) ? "IPFS" :
             IsGitLab(repositorySource) ? "GitLab" : "GitHub";
     }
 }

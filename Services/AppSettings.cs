@@ -119,6 +119,12 @@ namespace QuiverLauncher
         public string AppsPath { get; set; } = string.Empty;
         public string GitHubApiToken { get; set; } = string.Empty;
         public string GitLabApiToken { get; set; } = string.Empty;
+        /// <summary>
+        /// Base URL of the local Kubo (go-ipfs) node's HTTP RPC API used for "ipfs" apps and
+        /// catalog sources. Empty means use the default (<see cref="QuiverLauncher.Core.Services.IpfsSettings.DefaultApiBaseUrl"/>)
+        /// or the QUIVERLAUNCHER_IPFS_API_URL environment variable.
+        /// </summary>
+        public string IpfsApiUrl { get; set; } = string.Empty;
         public string SortBy { get; set; } = "LastPlayed";
         public string CatalogReviewSortBy { get; set; } = "Name";
         /// <summary>Catalog review browse layout. Independent of library <see cref="UseGridView"/>.</summary>

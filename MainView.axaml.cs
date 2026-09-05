@@ -2002,6 +2002,8 @@ namespace QuiverLauncher
             {
                 await _gameManager.LoadGamesAsync();
                 _settings = AppSettings.Load();
+                if (!string.IsNullOrWhiteSpace(_settings.IpfsApiUrl))
+                    IpfsSettings.ApiBaseUrl = _settings.IpfsApiUrl;
 
                 await _gameManager.CatalogService.EnsureCommunitySourcesCachedAsync(
                     _gameManager.HttpClient,
@@ -8732,6 +8734,16 @@ namespace QuiverLauncher
             if (_settings != null && sender is TextBox textBox)
             {
                 _settings.GitLabApiToken = textBox.Text ?? string.Empty;
+                OnSettingChanged();
+            }
+        }
+
+        private void IpfsApiUrlTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_settings != null && sender is TextBox textBox)
+            {
+                _settings.IpfsApiUrl = textBox.Text ?? string.Empty;
+                IpfsSettings.ApiBaseUrl = _settings.IpfsApiUrl;
                 OnSettingChanged();
             }
         }

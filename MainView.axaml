@@ -5579,6 +5579,30 @@
 												   TextWrapping="Wrap"
 												   Margin="0,8,0,0"/>
 
+										<!-- IPFS Node API URL -->
+										<TextBlock Text="IPFS NODE API URL"
+												   FontSize="10" FontWeight="Bold"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   LetterSpacing="1"
+												   Margin="0,0,0,4"/>
+
+										<TextBlock Text="Used for 'IPFS (Local Node)' apps and catalog sources (ipfs:// locations). Requires a running Kubo (go-ipfs) daemon. Leave empty for the default http://127.0.0.1:5001."
+												   FontSize="11"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   TextWrapping="Wrap"
+												   Margin="0,0,0,6"/>
+
+										<TextBox x:Name="IpfsApiUrlTextBox"
+												 Watermark="http://127.0.0.1:5001"
+												 Foreground="{DynamicResource ThemeText}"
+												 Background="{DynamicResource ThemeBase}"
+												 BorderBrush="{DynamicResource ThemeBorder}"
+												 BorderThickness="1"
+												 Padding="12,10"
+												 CornerRadius="4"
+												 TextChanged="IpfsApiUrlTextBox_TextChanged"
+												 Text="{Binding Settings.IpfsApiUrl, Mode=TwoWay}"/>
+
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,12,0,8"/>
 
 										<StackPanel Spacing="2">
@@ -6133,6 +6157,7 @@
 											  SelectedIndex="0">
 										<ComboBoxItem Content="GitHub" Tag="github"/>
 										<ComboBoxItem Content="GitLab" Tag="gitlab"/>
+										<ComboBoxItem Content="IPFS (Local Node)" Tag="ipfs"/>
 									</ComboBox>
 
 									<TextBlock x:Name="NewGameRepositoryLabel"

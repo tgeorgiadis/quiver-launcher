@@ -39,6 +39,30 @@ public class CatalogLocationReaderTests
         await act.Should().ThrowAsync<FileNotFoundException>();
     }
 
+    [Fact]
+    public async Task ReadAsync_fetches_ipfs_content_via_local_node_cat_endpoint()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            capturedRequest = request;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"apps\":[]}"),
+            };
+        });
+        var client = new HttpClient(handler);
+        var reader = new CatalogLocationReader();
+
+        var json = await reader.ReadAsync(client, "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi");
+
+        json.Should().Be("{\"apps\":[]}");
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Method.Should().Be(HttpMethod.Post);
+        capturedRequest.RequestUri!.ToString().Should().Contain("/api/v0/cat");
+        capturedRequest.RequestUri!.ToString().Should().Contain("bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi");
+    }
+
     private sealed class StubHttpMessageHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;

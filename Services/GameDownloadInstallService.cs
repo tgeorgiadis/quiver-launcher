@@ -186,7 +186,11 @@ public static class GameDownloadInstallService
 
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, asset.browser_download_url);
+                // IPFS assets are stored as "ipfs://<cid>" (see IpfsAssetUrl) and are fetched from
+                // the local Kubo node's "cat" RPC endpoint (POST) instead of a normal HTTP GET.
+                using var request = IpfsAssetUrl.TryGetCid(asset.browser_download_url, out var ipfsCid)
+                    ? new HttpRequestMessage(HttpMethod.Post, IpfsSettings.BuildCatUrl(ipfsCid))
+                    : new HttpRequestMessage(HttpMethod.Get, asset.browser_download_url);
                 using var downloadResponse = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
                     .ConfigureAwait(false);
                 downloadResponse.EnsureSuccessStatusCode();

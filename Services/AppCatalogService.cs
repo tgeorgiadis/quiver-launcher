@@ -809,7 +809,8 @@ namespace QuiverLauncher.Services
         public static bool IsRemoteLocation(string location)
         {
             return location.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                   location.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+                   location.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                   location.StartsWith(QuiverLauncher.Core.Services.IpfsAssetUrl.Scheme, StringComparison.OrdinalIgnoreCase);
         }
 
         public static string ResolveLocalPath(string location)
