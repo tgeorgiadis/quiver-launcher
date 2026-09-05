@@ -86,6 +86,8 @@ public static class GameLaunchService
                 await MakeExecutableAsync(executablePath);
             }
 
+            var processEnvBefore = LaunchDebugReport.SnapshotProcessEnvironment();
+            var gameName = game.Name ?? game.FolderName;
             var startInfo = new ProcessStartInfo();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && executablePath.EndsWith(".app"))
@@ -113,15 +115,19 @@ public static class GameLaunchService
                 foreach (var argument in runnerCommand.Arguments)
                     startInfo.ArgumentList.Add(argument);
 
-                foreach (var variable in runnerCommand.EnvironmentVariables)
-                    startInfo.Environment[variable.Key] = variable.Value;
+                HostProcessEnvironment.SanitizeThenApply(startInfo, runnerCommand.EnvironmentVariables);
             }
             else
             {
                 startInfo.FileName = executablePath;
                 startInfo.WorkingDirectory = Path.GetDirectoryName(executablePath) ?? gamePath;
                 startInfo.UseShellExecute = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                if (!startInfo.UseShellExecute)
+                    HostProcessEnvironment.Sanitize(startInfo);
             }
+
+            var startInfoEnvAfter = LaunchDebugReport.SnapshotStartInfoEnvironment(startInfo);
+            var selectedExecutableFile = TryReadSelectedExecutableFile(gamePath);
 
             game.UpdateLastPlayedTime(RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && executablePath.EndsWith(".app")
                 ? gamePath
@@ -130,11 +136,50 @@ public static class GameLaunchService
             var gameProcess = Process.Start(startInfo);
             if (gameProcess == null)
             {
+                WriteLaunchReport(
+                    gameName,
+                    gamePath,
+                    executablePath,
+                    executables,
+                    selectedExecutableFile,
+                    startInfo,
+                    processEnvBefore,
+                    startInfoEnvAfter,
+                    pid: null,
+                    liveProcEnviron: null);
                 await GameDialogService.ShowMessageBoxAsync(
                     $"Failed to start {game.Name}. The operating system did not create a process.",
                     "Launch Error");
                 return false;
             }
+
+            var liveProcEnviron = OperatingSystem.IsLinux()
+                ? LaunchDebugReport.TryReadProcEnviron(gameProcess.Id)
+                : null;
+
+            WriteLaunchReport(
+                gameName,
+                gamePath,
+                executablePath,
+                executables,
+                selectedExecutableFile,
+                startInfo,
+                processEnvBefore,
+                startInfoEnvAfter,
+                gameProcess.Id,
+                liveProcEnviron);
+
+            ScheduleLaunchExitFollowUp(
+                gameName,
+                gamePath,
+                executablePath,
+                executables,
+                selectedExecutableFile,
+                startInfo,
+                processEnvBefore,
+                startInfoEnvAfter,
+                gameProcess,
+                liveProcEnviron);
 
             game.RaiseGameProcessStarted(gameProcess);
 
@@ -167,5 +212,132 @@ public static class GameLaunchService
         using var process = Process.Start(chmodProcess);
         if (process != null)
             await process.WaitForExitAsync();
+    }
+
+    static string? TryReadSelectedExecutableFile(string gamePath)
+    {
+        try
+        {
+            var path = Path.Combine(gamePath, "selected_executable.txt");
+            return File.Exists(path) ? File.ReadAllText(path).Trim() : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    static string BuildLaunchReport(
+        string gameName,
+        string gamePath,
+        string chosenExecutable,
+        IReadOnlyList<string> candidates,
+        string? selectedExecutableFile,
+        ProcessStartInfo startInfo,
+        IReadOnlyDictionary<string, string> processEnvBefore,
+        IReadOnlyDictionary<string, string> startInfoEnvAfter,
+        int? pid,
+        IReadOnlyDictionary<string, string>? liveProcEnviron,
+        bool? hasExited = null,
+        int? exitCode = null) =>
+        LaunchDebugReport.Build(
+            DateTimeOffset.UtcNow,
+            gameName,
+            gamePath,
+            chosenExecutable,
+            candidates,
+            selectedExecutableFile,
+            startInfo,
+            processEnvBefore,
+            startInfoEnvAfter,
+            pid,
+            liveProcEnviron,
+            hasExited,
+            exitCode);
+
+    static void WriteLaunchReport(
+        string gameName,
+        string gamePath,
+        string chosenExecutable,
+        IReadOnlyList<string> candidates,
+        string? selectedExecutableFile,
+        ProcessStartInfo startInfo,
+        IReadOnlyDictionary<string, string> processEnvBefore,
+        IReadOnlyDictionary<string, string> startInfoEnvAfter,
+        int? pid,
+        IReadOnlyDictionary<string, string>? liveProcEnviron,
+        bool? hasExited = null,
+        int? exitCode = null)
+    {
+        var report = BuildLaunchReport(
+            gameName,
+            gamePath,
+            chosenExecutable,
+            candidates,
+            selectedExecutableFile,
+            startInfo,
+            processEnvBefore,
+            startInfoEnvAfter,
+            pid,
+            liveProcEnviron,
+            hasExited,
+            exitCode);
+        LaunchDebugReport.TryWrite(gamePath, report);
+    }
+
+    static void ScheduleLaunchExitFollowUp(
+        string gameName,
+        string gamePath,
+        string chosenExecutable,
+        IReadOnlyList<string> candidates,
+        string? selectedExecutableFile,
+        ProcessStartInfo startInfo,
+        IReadOnlyDictionary<string, string> processEnvBefore,
+        IReadOnlyDictionary<string, string> startInfoEnvAfter,
+        Process gameProcess,
+        IReadOnlyDictionary<string, string>? liveProcEnviron)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(2000);
+                gameProcess.Refresh();
+                var hasExited = gameProcess.HasExited;
+                int? exitCode = null;
+                if (hasExited)
+                {
+                    try
+                    {
+                        exitCode = gameProcess.ExitCode;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                var report = BuildLaunchReport(
+                    gameName,
+                    gamePath,
+                    chosenExecutable,
+                    candidates,
+                    selectedExecutableFile,
+                    startInfo,
+                    processEnvBefore,
+                    startInfoEnvAfter,
+                    gameProcess.Id,
+                    liveProcEnviron,
+                    hasExited,
+                    exitCode);
+                LaunchDebugReport.TryRewriteGameFolder(gamePath, report);
+                LaunchDebugReport.TryAppendUserData(
+                    hasExited
+                        ? $"[{DateTimeOffset.UtcNow:O}] pid={gameProcess.Id} HasExited=true ExitCode={exitCode}{Environment.NewLine}"
+                        : $"[{DateTimeOffset.UtcNow:O}] pid={gameProcess.Id} HasExited=false{Environment.NewLine}");
+            }
+            catch
+            {
+            }
+        });
     }
 }

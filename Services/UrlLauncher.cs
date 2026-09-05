@@ -10,15 +10,6 @@ namespace QuiverLauncher.Services;
 /// </summary>
 public static class UrlLauncher
 {
-    internal static readonly string[] HostBreakingEnvironmentVariables =
-    [
-        "LD_LIBRARY_PATH",
-        "LD_PRELOAD",
-        "QT_PLUGIN_PATH",
-        "QTDIR",
-        "QT_QPA_PLATFORM_PLUGIN_PATH",
-    ];
-
     /// <summary>
     /// Starts a Linux desktop opener. Returns exit code when waited; null when the
     /// process is still running after hand-off. Throws on launch failure.
@@ -171,14 +162,8 @@ public static class UrlLauncher
         foreach (var argument in arguments)
             startInfo.ArgumentList.Add(argument);
 
-        SanitizeHostEnvironment(startInfo);
+        HostProcessEnvironment.Sanitize(startInfo);
         return startInfo;
-    }
-
-    internal static void SanitizeHostEnvironment(ProcessStartInfo startInfo)
-    {
-        foreach (var name in HostBreakingEnvironmentVariables)
-            startInfo.Environment.Remove(name);
     }
 
     private static int? StartLinuxProcess(ProcessStartInfo startInfo)

@@ -30,9 +30,9 @@ public class UrlLauncherTests
         startInfo.Environment["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/tmp/.mount_foo/plugins/platforms";
         startInfo.Environment["PATH"] = "/usr/bin";
 
-        UrlLauncher.SanitizeHostEnvironment(startInfo);
+        HostProcessEnvironment.Sanitize(startInfo);
 
-        foreach (var name in UrlLauncher.HostBreakingEnvironmentVariables)
+        foreach (var name in HostProcessEnvironment.HostBreakingEnvironmentVariables)
             startInfo.Environment.ContainsKey(name).Should().BeFalse($"'{name}' should be stripped");
 
         startInfo.Environment["PATH"].Should().Be("/usr/bin");
@@ -43,7 +43,7 @@ public class UrlLauncherTests
     {
         var startInfo = UrlLauncher.CreateLinuxStartInfo("xdg-open", ["/tmp/game"]);
 
-        foreach (var name in UrlLauncher.HostBreakingEnvironmentVariables)
+        foreach (var name in HostProcessEnvironment.HostBreakingEnvironmentVariables)
             startInfo.Environment.ContainsKey(name).Should().BeFalse();
     }
 
@@ -65,7 +65,7 @@ public class UrlLauncherTests
         seen!.FileName.Should().Be("xdg-open");
         seen.UseShellExecute.Should().BeFalse();
         seen.ArgumentList.Should().Equal(SpacedPath);
-        foreach (var name in UrlLauncher.HostBreakingEnvironmentVariables)
+        foreach (var name in HostProcessEnvironment.HostBreakingEnvironmentVariables)
             seen.Environment.ContainsKey(name).Should().BeFalse();
     }
 

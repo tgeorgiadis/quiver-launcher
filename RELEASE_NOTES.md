@@ -1,5 +1,4 @@
-# Quiver Launcher 3.3.2
+# Quiver Launcher 3.3.3-rc.1
 
-- Fix Open Folder (and Open Mod Folder) doing nothing on Linux / Steam Deck. The file manager was started with AppImage or Steam library paths, so Dolphin died silently. Quiver now opens folders through the host `xdg-open` / `gio` / Dolphin with a clean environment, keeps paths with spaces intact, and shows an error if opening still fails.
-- Prefer GitHub’s **Latest** release for catalog “latest”, instead of the first non-prerelease on the created-at list. That picks Super Mario Bros. Remastered `1.1.0` over `1.1-rc5` when GitHub has marked `1.1.0` as Latest. Version pins, prerelease-only repos, Relive-style list order, and GitLab are unchanged.
-- Fix Linux zip installs that dropped Unix execute bits (and could mishandle symlinks). .NET’s unzip left nested tools non-executable, so ports such as Yu-Gi-Oh / psxrecomp could generate a build that then failed looking for `bios/openbios.bin`. Installs now use `bsdtar` or `unzip` when present (same as a manual extract), and otherwise restore Unix modes. A single wrapper folder is still unwrapped; the rest of the tree is left as-is.
+- Fix Linux AppImage Play for ports such as Yu-Gi-Oh / psxrecomp. The setup host started, but pressing Play did nothing because the child inherited Quiver’s AppImage identity (`APPDIR`, `APPIMAGE`, `ARGV0`, `OWD`), an AppImage-prefixed `PATH`, and a stale `PWD`. Native games now launch with a host-like environment. Open Folder uses the same sanitizer.
+- Play writes `quiver-launch.log` in the app install folder (and appends `launch-debug.log` next to user data) so a failed Linux launch can be diagnosed without a debugger.
