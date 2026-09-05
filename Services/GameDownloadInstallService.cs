@@ -68,7 +68,8 @@ public static class GameDownloadInstallService
                     latestRelease = GameInfo.SelectLatestRelease(
                         releaseResult.Releases,
                         game.PreferredVersion,
-                        game.InstalledVersion);
+                        game.InstalledVersion,
+                        releaseResult.LatestTag);
 
                     if (latestRelease == null)
                     {

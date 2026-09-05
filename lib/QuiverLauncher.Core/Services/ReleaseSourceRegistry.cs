@@ -48,7 +48,7 @@ namespace QuiverLauncher.Core.Services
                 .ConfigureAwait(false);
         }
 
-        public async Task<List<GitHubRelease>> FetchReleasesWithAssetsAsync(
+        public async Task<GitHubReleaseFetchResult> FetchReleasesWithAssetsAsync(
             HttpClient httpClient,
             string? repositorySource,
             string repository,
@@ -56,9 +56,15 @@ namespace QuiverLauncher.Core.Services
         {
             var result = await FetchReleasesAsync(httpClient, repositorySource, repository, token)
                 .ConfigureAwait(false);
-            return result.Releases
-                .Where(release => release.assets != null && release.assets.Length > 0)
-                .ToList();
+            return new GitHubReleaseFetchResult
+            {
+                StatusCode = result.StatusCode,
+                Releases = result.Releases
+                    .Where(release => release.assets != null && release.assets.Length > 0)
+                    .ToList(),
+                ETag = result.ETag,
+                LatestTag = result.LatestTag
+            };
         }
     }
 }

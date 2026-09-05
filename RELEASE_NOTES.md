@@ -1,5 +1,5 @@
-# Quiver Launcher 3.3.1
+# Quiver Launcher 3.3.2
 
-- Fix Linux zip installs that only unpacked a nested `.tar.gz` and dropped the rest of the app (e.g. psxrecomp / recomp-ui releases) ([#19](https://github.com/tgeorgiadis/quiver-launcher/issues/19))
-- Fix maximized window restoring as fullscreen after minimize - removed custom restore logic so windowed/maximized state is preserved when coming back from the taskbar
-- Add a Ko-fi button next to GitHub and Discord in the sidebar footer
+- Fix Open Folder (and Open Mod Folder) doing nothing on Linux / Steam Deck. The file manager was started with AppImage or Steam library paths, so Dolphin died silently. Quiver now opens folders through the host `xdg-open` / `gio` / Dolphin with a clean environment, keeps paths with spaces intact, and shows an error if opening still fails.
+- Prefer GitHub’s **Latest** release for catalog “latest”, instead of the first non-prerelease on the created-at list. That picks Super Mario Bros. Remastered `1.1.0` over `1.1-rc5` when GitHub has marked `1.1.0` as Latest. Version pins, prerelease-only repos, Relive-style list order, and GitLab are unchanged.
+- Fix Linux zip installs that dropped Unix execute bits (and could mishandle symlinks). .NET’s unzip left nested tools non-executable, so ports such as Yu-Gi-Oh / psxrecomp could generate a build that then failed looking for `bios/openbios.bin`. Installs now use `bsdtar` or `unzip` when present (same as a manual extract), and otherwise restore Unix modes. A single wrapper folder is still unwrapped; the rest of the tree is left as-is.

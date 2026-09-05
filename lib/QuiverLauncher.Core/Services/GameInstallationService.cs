@@ -419,17 +419,38 @@ public static class GameInstallationService
     {
         Directory.CreateDirectory(destDir);
 
-        foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.TopDirectoryOnly))
         {
-            var relative = Path.GetRelativePath(sourceDir, file);
-            var destFile = Path.Combine(destDir, relative);
-
-            var destParent = Path.GetDirectoryName(destFile);
-            if (!string.IsNullOrEmpty(destParent))
-                Directory.CreateDirectory(destParent);
-
-            File.Move(file, destFile, true);
+            var destFile = Path.Combine(destDir, Path.GetFileName(file));
+            File.Move(file, destFile, overwrite: true);
         }
+
+        foreach (var dir in Directory.GetDirectories(sourceDir, "*", SearchOption.TopDirectoryOnly))
+        {
+            var destSub = Path.Combine(destDir, Path.GetFileName(dir));
+            MoveDirectoryPreserveTree(dir, destSub);
+        }
+    }
+
+    static void MoveDirectoryPreserveTree(string sourceDir, string destDir)
+    {
+        if (!Directory.Exists(destDir))
+        {
+            try
+            {
+                Directory.Move(sourceDir, destDir);
+                return;
+            }
+            catch (IOException)
+            {
+                CopyDirectory(sourceDir, destDir);
+                TryDeleteDirectory(sourceDir);
+                return;
+            }
+        }
+
+        MoveDirectoryContents(sourceDir, destDir);
+        TryDeleteDirectory(sourceDir);
     }
 
     static async Task ExtractZipAsync(string downloadPath, string gamePath)
@@ -439,7 +460,7 @@ public static class GameInstallationService
 
         try
         {
-            ZipFile.ExtractToDirectory(downloadPath, tempExtractPath, overwriteFiles: true);
+            ExtractZipToDirectory(downloadPath, tempExtractPath);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -476,6 +497,136 @@ public static class GameInstallationService
         finally
         {
             TryDeleteDirectory(tempExtractPath);
+        }
+    }
+
+    internal static void ExtractZipToDirectory(string zipPath, string destinationDirectoryPath)
+    {
+        Directory.CreateDirectory(destinationDirectoryPath);
+
+        if (!OperatingSystem.IsWindows() &&
+            TryExtractZipWithSystemTool(zipPath, destinationDirectoryPath))
+        {
+            return;
+        }
+
+        ExtractZipManaged(zipPath, destinationDirectoryPath);
+    }
+
+    internal static void ExtractZipManaged(string zipPath, string destinationDirectoryPath)
+    {
+        Directory.CreateDirectory(destinationDirectoryPath);
+
+        using var archive = ZipFile.OpenRead(zipPath);
+        foreach (var entry in archive.Entries)
+        {
+            var relative = (entry.FullName ?? string.Empty).Replace('\\', '/').TrimStart('/');
+            if (relative.Length == 0)
+                continue;
+
+            var destPath = GetSafeExtractionPath(destinationDirectoryPath, relative);
+            var unixMode = (entry.ExternalAttributes >> 16) & 0xFFFF;
+            var fileType = unixMode & 0xF000;
+
+            if (IsZipDirectoryEntry(entry, relative, fileType))
+            {
+                Directory.CreateDirectory(destPath);
+                continue;
+            }
+
+            var destParent = Path.GetDirectoryName(destPath);
+            if (!string.IsNullOrEmpty(destParent))
+                Directory.CreateDirectory(destParent);
+
+            if (fileType == 0xA000)
+            {
+                ExtractZipSymlink(entry, destPath);
+                continue;
+            }
+
+            entry.ExtractToFile(destPath, overwrite: true);
+            TryApplyUnixFileMode(destPath, unixMode);
+        }
+    }
+
+    static bool IsZipDirectoryEntry(ZipArchiveEntry entry, string relative, int unixFileType)
+    {
+        if (unixFileType == 0x4000)
+            return true;
+
+        if (string.IsNullOrEmpty(entry.Name))
+            return true;
+
+        return relative.EndsWith('/');
+    }
+
+    static void ExtractZipSymlink(ZipArchiveEntry entry, string destPath)
+    {
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        var target = reader.ReadToEnd();
+
+        try
+        {
+            if (File.Exists(destPath))
+                File.Delete(destPath);
+
+            File.CreateSymbolicLink(destPath, target);
+        }
+        catch
+        {
+            File.WriteAllText(destPath, target);
+        }
+    }
+
+    static void TryApplyUnixFileMode(string path, int unixMode)
+    {
+        if (OperatingSystem.IsWindows() || unixMode == 0)
+            return;
+
+        try
+        {
+            File.SetUnixFileMode(path, (UnixFileMode)(unixMode & 0x1FF));
+        }
+        catch
+        {
+        }
+    }
+
+    static bool TryExtractZipWithSystemTool(string zipPath, string destinationDirectoryPath)
+    {
+        if (TryRunArchiveExtractor("bsdtar", ["-xf", zipPath, "-C", destinationDirectoryPath]))
+            return true;
+
+        return TryRunArchiveExtractor("unzip", ["-o", "-q", zipPath, "-d", destinationDirectoryPath]);
+    }
+
+    static bool TryRunArchiveExtractor(string fileName, IReadOnlyList<string> arguments)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+
+            foreach (var argument in arguments)
+                startInfo.ArgumentList.Add(argument);
+
+            using var process = Process.Start(startInfo);
+            if (process == null)
+                return false;
+
+            process.WaitForExit();
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or FileNotFoundException)
+        {
+            return false;
         }
     }
 
@@ -527,7 +678,7 @@ public static class GameInstallationService
             var nestedZipDirectory = Path.GetDirectoryName(nestedZip) ?? tempExtractPath;
             var nestedExtractPath = Path.Combine(nestedZipDirectory, Path.GetFileNameWithoutExtension(nestedZip));
             Directory.CreateDirectory(nestedExtractPath);
-            ZipFile.ExtractToDirectory(nestedZip, nestedExtractPath, overwriteFiles: true);
+            ExtractZipToDirectory(nestedZip, nestedExtractPath);
 
             try { File.Delete(nestedZip); } catch { }
         }

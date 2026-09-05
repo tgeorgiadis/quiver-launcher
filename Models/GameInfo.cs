@@ -1507,8 +1507,9 @@ namespace QuiverLauncher.Models
         public static GitHubRelease? SelectLatestRelease(
             IReadOnlyList<GitHubRelease>? releases,
             string? preferredVersion = null,
-            string? installedVersion = null) =>
-            ReleaseSelection.SelectLatestRelease(releases, preferredVersion, installedVersion);
+            string? installedVersion = null,
+            string? githubLatestTag = null) =>
+            ReleaseSelection.SelectLatestRelease(releases, preferredVersion, installedVersion, githubLatestTag);
 
         public bool TrySelectPlatformDownload(AppSettings settings) =>
             GameDownloadService.TrySelectPlatformDownload(this, GetLatestRelease(), settings);
@@ -1571,7 +1572,8 @@ namespace QuiverLauncher.Models
                     return;
                 }
 
-                var latestRelease = SelectLatestRelease(result.Releases, PreferredVersion, InstalledVersion);
+                var latestRelease = SelectLatestRelease(
+                    result.Releases, PreferredVersion, InstalledVersion, result.LatestTag);
                 if (latestRelease != null && !string.IsNullOrWhiteSpace(latestRelease.tag_name))
                 {
                     ApplyCachedRelease(latestRelease.tag_name, latestRelease);
@@ -1662,10 +1664,10 @@ namespace QuiverLauncher.Models
             }
         }
 
-        public async Task<List<GitHubRelease>> FetchReleasesAsync(HttpClient httpClient)
+        public async Task<GitHubReleaseFetchResult> FetchReleasesAsync(HttpClient httpClient)
         {
             if (string.IsNullOrWhiteSpace(Repository))
-                return [];
+                return new GitHubReleaseFetchResult();
 
             return await ReleaseSourceRegistry.Default.FetchReleasesWithAssetsAsync(
                 httpClient,

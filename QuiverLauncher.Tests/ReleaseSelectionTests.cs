@@ -78,6 +78,69 @@ public class ReleaseSelectionTests
     }
 
     [Fact]
+    public void SelectLatestRelease_prefers_github_latest_over_first_unflagged_stable()
+    {
+        var rc5 = Release("1.1-rc5", prerelease: false);
+        var rc4 = Release("1.1-rc4", prerelease: false);
+        var stable = Release("1.1.0", prerelease: false);
+
+        var selected = ReleaseSelection.SelectLatestRelease(
+            [rc5, rc4, stable],
+            githubLatestTag: "1.1.0");
+
+        selected.Should().BeSameAs(stable);
+    }
+
+    [Fact]
+    public void SelectLatestRelease_without_github_latest_keeps_first_stable()
+    {
+        var rc5 = Release("1.1-rc5", prerelease: false);
+        var rc4 = Release("1.1-rc4", prerelease: false);
+
+        var selected = ReleaseSelection.SelectLatestRelease([rc5, rc4]);
+
+        selected.Should().BeSameAs(rc5);
+    }
+
+    [Fact]
+    public void SelectLatestRelease_pin_beats_github_latest()
+    {
+        var latest = Release("1.1.0", prerelease: false);
+        var pinned = Release("1.1-rc5", prerelease: false);
+
+        var selected = ReleaseSelection.SelectLatestRelease(
+            [pinned, latest],
+            preferredVersion: "1.1-rc5",
+            githubLatestTag: "1.1.0");
+
+        selected.Should().BeSameAs(pinned);
+    }
+
+    [Fact]
+    public void SelectLatestRelease_prerelease_only_without_latest_picks_first_with_assets()
+    {
+        var newer = Release("0.2.0-beta.1", prerelease: true);
+        var older = Release("0.1.0-beta.1", prerelease: true);
+
+        var selected = ReleaseSelection.SelectLatestRelease([newer, older], githubLatestTag: null);
+
+        selected.Should().BeSameAs(newer);
+    }
+
+    [Fact]
+    public void SelectLatestRelease_skips_github_latest_without_assets()
+    {
+        var emptyLatest = NoAssets("1.1.0", prerelease: false);
+        var rc5 = Release("1.1-rc5", prerelease: false);
+
+        var selected = ReleaseSelection.SelectLatestRelease(
+            [emptyLatest, rc5],
+            githubLatestTag: "1.1.0");
+
+        selected.Should().BeSameAs(rc5);
+    }
+
+    [Fact]
     public void SelectLatestRelease_skips_prerelease_without_assets()
     {
         var noAssets = NoAssets("0.2.0-beta.2", prerelease: true);

@@ -1,5 +1,5 @@
 {
-  "id": "2026-09-04-331",
+  "id": "2026-09-05-332",
   "enabled": true,
-  "message": "3.3.1: Fix Linux zip installs that dropped nested archives, preserve maximized window after minimize, and add a Ko-fi link in the sidebar."
+  "message": "3.3.2: Fix Open Folder on Linux, improved Latest release detection, and preserve Unix permissions when extracting Linux zips."
 }

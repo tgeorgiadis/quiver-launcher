@@ -8,12 +8,14 @@ namespace QuiverLauncher.Services;
 public static class ReleaseSelection
 {
     /// <summary>
-    /// Preferred pin wins. Otherwise first stable with assets (GitHub order), else first prerelease with assets.
+    /// Preferred pin wins. Then GitHub's Latest tag when present with assets.
+    /// Otherwise first stable with assets (GitHub list order), else first prerelease with assets.
     /// </summary>
     public static GitHubRelease? SelectLatestRelease(
         IReadOnlyList<GitHubRelease>? releases,
         string? preferredVersion = null,
-        string? installedVersion = null)
+        string? installedVersion = null,
+        string? githubLatestTag = null)
     {
         _ = installedVersion;
 
@@ -25,6 +27,13 @@ public static class ReleaseSelection
             var pinned = FindByTag(releases, preferredVersion);
             if (pinned != null)
                 return pinned;
+        }
+
+        if (!string.IsNullOrWhiteSpace(githubLatestTag))
+        {
+            var flagged = FindByTag(releases, githubLatestTag);
+            if (flagged != null && HasAssets(flagged))
+                return flagged;
         }
 
         return FirstWithAssets(releases, prerelease: false)

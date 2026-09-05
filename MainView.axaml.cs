@@ -2952,8 +2952,12 @@ namespace QuiverLauncher
             try
             {
                 game.IsLoading = true;
-                var releases = await game.FetchReleasesAsync(_gameManager.HttpClient);
-                var latestRelease = GameInfo.SelectLatestRelease(releases, game.PreferredVersion, game.InstalledVersion);
+                var releaseResult = await game.FetchReleasesAsync(_gameManager.HttpClient);
+                var latestRelease = GameInfo.SelectLatestRelease(
+                    releaseResult.Releases,
+                    game.PreferredVersion,
+                    game.InstalledVersion,
+                    releaseResult.LatestTag);
                 if (latestRelease == null)
                 {
                     if (allowAssetPicker)
@@ -3176,14 +3180,14 @@ namespace QuiverLauncher
             try
             {
                 game.IsLoading = true;
-                var releases = await game.FetchReleasesAsync(_gameManager.HttpClient);
-                if (releases.Count == 0)
+                var releaseResult = await game.FetchReleasesAsync(_gameManager.HttpClient);
+                if (releaseResult.Releases.Count == 0)
                 {
                     await ShowMessageBoxAsync($"No downloadable releases were found for {game.Name}.", "No Releases");
                     return;
                 }
 
-                ShowVersionSelectionMenu(anchor, game, releases);
+                ShowVersionSelectionMenu(anchor, game, releaseResult.Releases);
             }
             catch (Exception ex)
             {
