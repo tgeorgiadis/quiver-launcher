@@ -143,4 +143,39 @@ public class LaunchDebugReportTests
         LaunchDebugReport.FormatEnvBlock("empty", new Dictionary<string, string>())
             .Should().Contain("(none)");
     }
+
+    [Fact]
+    public void SnapshotStartInfoEnvironment_is_empty_when_use_shell_execute()
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "game.exe",
+            UseShellExecute = true,
+        };
+
+        LaunchDebugReport.SnapshotStartInfoEnvironment(startInfo)
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SnapshotStartInfoEnvironment_does_not_block_shell_execute_start()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = "/c exit 0",
+            UseShellExecute = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+        };
+
+        LaunchDebugReport.SnapshotStartInfoEnvironment(startInfo).Should().BeEmpty();
+
+        using var process = Process.Start(startInfo);
+        process.Should().NotBeNull();
+        process!.WaitForExit(10_000).Should().BeTrue();
+        process.ExitCode.Should().Be(0);
+    }
 }

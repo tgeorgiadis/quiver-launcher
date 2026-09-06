@@ -126,7 +126,9 @@ public static class GameLaunchService
                     HostProcessEnvironment.Sanitize(startInfo);
             }
 
-            var startInfoEnvAfter = LaunchDebugReport.SnapshotStartInfoEnvironment(startInfo);
+            var startInfoEnvAfter = startInfo.UseShellExecute
+                ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                : LaunchDebugReport.SnapshotStartInfoEnvironment(startInfo);
             var selectedExecutableFile = TryReadSelectedExecutableFile(gamePath);
 
             game.UpdateLastPlayedTime(RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && executablePath.EndsWith(".app")

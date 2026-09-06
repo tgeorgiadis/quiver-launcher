@@ -7,7 +7,7 @@
 		<RootNamespace>QuiverLauncher.Desktop</RootNamespace>
 		<AssemblyTitle>Quiver Launcher</AssemblyTitle>
 		<AssemblyDescription>Quiver Launcher — download and manage GitHub-hosted game ports</AssemblyDescription>
-		<Version>3.3.3-rc.1</Version>
+		<Version>3.3.3-rc.2</Version>
 		<AssemblyVersion>3.3.3.0</AssemblyVersion>
 		<FileVersion>3.3.3.0</FileVersion>
 		<Nullable>enable</Nullable>

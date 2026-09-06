@@ -80,6 +80,9 @@ internal static class LaunchDebugReport
 
     public static Dictionary<string, string> SnapshotStartInfoEnvironment(ProcessStartInfo startInfo)
     {
+        if (startInfo.UseShellExecute)
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         var pairs = new List<KeyValuePair<string, string>>();
         foreach (var pair in startInfo.Environment)
         {
