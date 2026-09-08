@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using SharpCompress.Archives;
 using SharpCompress.Common;
+using SharpCompress.Readers;
 
 namespace QuiverLauncher.Core.Services;
 
@@ -248,7 +249,7 @@ public static class GameInstallationService
         else if (effectiveName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) ||
                  effectiveName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase))
         {
-            await ExtractSharpCompressArchiveAsync(downloadPath, gamePath).ConfigureAwait(false);
+            await ExtractSharpCompressArchiveAsync(downloadPath, gamePath, options).ConfigureAwait(false);
         }
         else
         {
@@ -268,6 +269,7 @@ public static class GameInstallationService
 
         var versionFile = Path.Combine(gamePath, "version.txt");
         await File.WriteAllTextAsync(versionFile, version).ConfigureAwait(false);
+        options.ExtractProgress?.Report(1);
     }
 
     public static void EnsureExecutableAtRoot(string gamePath, GameInstallationOptions? options = null)
@@ -703,7 +705,10 @@ public static class GameInstallationService
         }
     }
 
-    static Task ExtractSharpCompressArchiveAsync(string downloadPath, string gamePath)
+    static async Task ExtractSharpCompressArchiveAsync(
+        string downloadPath,
+        string gamePath,
+        GameInstallationOptions options)
     {
         Directory.CreateDirectory(gamePath);
 
@@ -712,7 +717,8 @@ public static class GameInstallationService
 
         try
         {
-            ExtractSharpCompressArchiveToDirectory(downloadPath, tempExtractPath);
+            await ExtractSharpCompressArchiveToDirectoryAsync(downloadPath, tempExtractPath, options)
+                .ConfigureAwait(false);
             var sourcePath = GetEffectiveExtractionSource(tempExtractPath);
             MoveDirectoryContents(sourcePath, gamePath);
         }
@@ -720,41 +726,97 @@ public static class GameInstallationService
         {
             TryDeleteDirectory(tempExtractPath);
         }
-
-        return Task.CompletedTask;
     }
 
-    static void ExtractSharpCompressArchiveToDirectory(string archivePath, string destinationDirectoryPath)
+    static async Task ExtractSharpCompressArchiveToDirectoryAsync(
+        string archivePath,
+        string destinationDirectoryPath,
+        GameInstallationOptions options)
     {
         Directory.CreateDirectory(destinationDirectoryPath);
-        var destinationRoot = Path.GetFullPath(destinationDirectoryPath);
 
-        using var archive = ArchiveFactory.OpenArchive(archivePath);
+        using var stream = await ArchiveFileLock.OpenReadAsync(archivePath).ConfigureAwait(false);
+        using var archive = ArchiveFactory.OpenArchive(stream);
+
+        long totalBytes = 0;
+        var fileCount = 0;
         foreach (var entry in archive.Entries)
         {
             if (entry.IsDirectory)
                 continue;
 
-            var key = entry.Key ?? string.Empty;
-            var relative = key.Replace('\\', '/').TrimStart('/');
-            if (relative.Length == 0)
-                continue;
-
-            var destination = Path.GetFullPath(
-                Path.Combine(destinationDirectoryPath, relative.Replace('/', Path.DirectorySeparatorChar)));
-            if (!destination.StartsWith(destinationRoot, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var destDir = Path.GetDirectoryName(destination);
-            if (!string.IsNullOrEmpty(destDir))
-                Directory.CreateDirectory(destDir);
-
-            entry.WriteToFile(destination, new ExtractionOptions
-            {
-                Overwrite = true,
-                ExtractFullPath = false,
-            });
+            fileCount++;
+            if (entry.Size > 0)
+                totalBytes += entry.Size;
         }
+
+        options.ExtractProgress?.Report(0);
+
+        long extractedBytes = 0;
+        var extractedFiles = 0;
+
+        void ReportProgress(long size)
+        {
+            extractedFiles++;
+            if (size > 0)
+                extractedBytes += size;
+
+            if (totalBytes > 0)
+                options.ExtractProgress?.Report(Math.Clamp(extractedBytes / (double)totalBytes, 0, 0.99));
+            else if (fileCount > 0)
+                options.ExtractProgress?.Report(Math.Clamp(extractedFiles / (double)fileCount, 0, 0.99));
+        }
+
+        var extractOptions = new ExtractionOptions
+        {
+            Overwrite = true,
+            ExtractFullPath = false,
+        };
+
+        if (archive.IsSolid || archive.Type == ArchiveType.SevenZip)
+        {
+            using var reader = archive.ExtractAllEntries();
+            while (reader.MoveToNextEntry())
+            {
+                if (reader.Entry.IsDirectory)
+                    continue;
+
+                if (!TryGetSafeArchiveDestination(destinationDirectoryPath, reader.Entry.Key, out var destination))
+                    continue;
+
+                reader.WriteEntryToFile(destination, extractOptions);
+                ReportProgress(reader.Entry.Size);
+            }
+        }
+        else
+        {
+            foreach (var entry in archive.Entries)
+            {
+                if (entry.IsDirectory)
+                    continue;
+
+                if (!TryGetSafeArchiveDestination(destinationDirectoryPath, entry.Key, out var destination))
+                    continue;
+
+                entry.WriteToFile(destination, extractOptions);
+                ReportProgress(entry.Size);
+            }
+        }
+    }
+
+    static bool TryGetSafeArchiveDestination(string destinationDirectoryPath, string? entryKey, out string destination)
+    {
+        destination = string.Empty;
+        var relative = (entryKey ?? string.Empty).Replace('\\', '/').TrimStart('/');
+        if (relative.Length == 0)
+            return false;
+
+        destination = GetSafeExtractionPath(destinationDirectoryPath, relative);
+        var destDir = Path.GetDirectoryName(destination);
+        if (!string.IsNullOrEmpty(destDir))
+            Directory.CreateDirectory(destDir);
+
+        return true;
     }
 
     static async Task ExtractTarGzToDirectoryAsync(string sourceFilePath, string destinationDirectoryPath)

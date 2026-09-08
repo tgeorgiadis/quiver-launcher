@@ -41,6 +41,8 @@ public class FileSettingsStoreTests : IDisposable
         store.Current.SlotTextMargin.Should().Be(0);
         store.Current.AppCatalogSources.Should().NotBeNull();
         store.Current.HiddenApps.Should().NotBeNull();
+        store.Current.CatalogPlatformFilters.Should().NotBeNull().And.BeEmpty();
+        store.Current.CatalogPlatformFilterChosen.Should().BeFalse();
     }
 
     [Fact]
@@ -61,6 +63,8 @@ public class FileSettingsStoreTests : IDisposable
         settings.SortBy = "Name";
         settings.CatalogReviewSortBy = "Repository";
         settings.CatalogReviewUseGridView = true;
+        settings.CatalogPlatformFilters = ["Windows", "Linux"];
+        settings.CatalogPlatformFilterChosen = true;
         settings.TruncateLibraryCardTitles = false;
         settings.ListScope = AppListScope.InstalledOnly;
         settings.ManuallyHiddenApps.Add("folder:TestGame");
@@ -73,6 +77,8 @@ public class FileSettingsStoreTests : IDisposable
         reloaded.SortBy.Should().Be("Name");
         reloaded.CatalogReviewSortBy.Should().Be("Repository");
         reloaded.CatalogReviewUseGridView.Should().BeTrue();
+        reloaded.CatalogPlatformFilters.Should().Equal("Windows", "Linux");
+        reloaded.CatalogPlatformFilterChosen.Should().BeTrue();
         reloaded.TruncateLibraryCardTitles.Should().BeFalse();
         reloaded.ListScope.Should().Be(AppListScope.InstalledOnly);
         reloaded.ManuallyHiddenApps.Should().Contain("folder:TestGame");

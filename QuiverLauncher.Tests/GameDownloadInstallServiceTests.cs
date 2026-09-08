@@ -77,6 +77,74 @@ public class GameDownloadInstallServiceTests
     }
 
     [Fact]
+    public async Task DownloadAndInstallAsync_installs_7z_asset_from_unique_staging_path()
+    {
+        var gamesFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(gamesFolder);
+        var archivePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.7z");
+
+        try
+        {
+            GameInstallationServiceSevenZipTests.WriteSolidSevenZip(archivePath, new Dictionary<string, string>
+            {
+                ["game.exe"] = "staged-binary",
+                ["readme.txt"] = "staged-readme",
+            });
+
+            const string assetName = "CutTheRopeDX-v2.29.0.3-Windows-x64.7z";
+            var release = new GitHubRelease
+            {
+                tag_name = "v2.29.0.3",
+                assets =
+                [
+                    new GitHubAsset
+                    {
+                        name = assetName,
+                        browser_download_url = "https://example.com/download/asset",
+                    },
+                ],
+            };
+
+            var game = new GameInfo
+            {
+                Name = "Cut the Rope DX",
+                Repository = "owner/cuttherope-dx",
+                FolderName = "CutTheRopeDX",
+            };
+
+            var dialogs = new RecordingDialogs();
+            using var client = new HttpClient(new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(File.ReadAllBytes(archivePath)),
+            }));
+
+            await GameDownloadInstallService.DownloadAndInstallAsync(
+                game,
+                client,
+                gamesFolder,
+                release,
+                new AppSettings(),
+                GameStatus.NotInstalled,
+                dialogs);
+
+            dialogs.LastError.Should().BeNull("install failed with: {0}", dialogs.LastError);
+            game.Status.Should().Be(GameStatus.Installed);
+
+            var gamePath = game.GetInstallPath(gamesFolder);
+            File.ReadAllText(Path.Combine(gamePath, "game.exe")).Should().Be("staged-binary");
+            File.ReadAllText(Path.Combine(gamePath, "version.txt")).Trim().Should().Be("v2.29.0.3");
+            game.DownloadProgress.Should().Be(0);
+        }
+        finally
+        {
+            if (File.Exists(archivePath))
+                File.Delete(archivePath);
+            if (Directory.Exists(gamesFolder))
+                Directory.Delete(gamesFolder, true);
+        }
+    }
+
+    [Fact]
     public async Task DownloadAndInstallAsync_resets_status_when_release_has_no_assets()
     {
         var gamesFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

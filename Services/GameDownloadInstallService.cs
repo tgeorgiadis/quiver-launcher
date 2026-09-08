@@ -183,6 +183,7 @@ public static class GameDownloadInstallService
             }
 
             string? downloadPath = null;
+            string? stagingDir = null;
 
             try
             {
@@ -198,11 +199,11 @@ public static class GameDownloadInstallService
                     asset.name,
                     dispositionFileName);
 
-                var downloadDir = OperatingSystem.IsAndroid()
+                var downloadRoot = OperatingSystem.IsAndroid()
                     ? Path.Combine(QuiverLauncherPaths.CacheDirectory, "Downloads")
-                    : Path.GetTempPath();
-                Directory.CreateDirectory(downloadDir);
-                downloadPath = Path.Combine(downloadDir, effectiveAssetName);
+                    : DownloadStaging.GetDesktopRoot();
+                Directory.CreateDirectory(downloadRoot);
+                (stagingDir, downloadPath) = DownloadStaging.CreateStagedDownload(downloadRoot, effectiveAssetName);
 
                 var totalBytes = downloadResponse.Content.Headers.ContentLength ?? 0;
                 var canReportProgress = totalBytes > 0;
@@ -225,11 +226,13 @@ public static class GameDownloadInstallService
                             game.DownloadProgress = 10 + (downloadPercent * 80);
                         }
                     }
+
+                    await fs.FlushAsync().ConfigureAwait(false);
+                    fs.Flush(true);
                 }
 
                 game.DownloadProgress = 90;
                 game.Status = GameStatus.Installing;
-                game.DownloadProgress = 95;
 
                 if (OperatingSystem.IsAndroid() && GameInstallationService.IsAndroidPackageAsset(effectiveAssetName))
                 {
@@ -257,12 +260,23 @@ public static class GameDownloadInstallService
                 }
                 else
                 {
+                    var baseOptions = game.GetInstallationOptions();
+                    var installOptions = new GameInstallationOptions
+                    {
+                        Log = baseOptions.Log,
+                        AdditionalMetadataFileNames = baseOptions.AdditionalMetadataFileNames,
+                        ExtractProgress = new Progress<double>(p =>
+                        {
+                            game.DownloadProgress = 90 + (Math.Clamp(p, 0, 1) * 9);
+                        }),
+                    };
+
                     await GameInstallationService.InstallOrUpdateGameAsync(
                         downloadPath,
                         gamePath,
                         effectiveAssetName,
                         latestRelease.tag_name,
-                        game.GetInstallationOptions()).ConfigureAwait(false);
+                        installOptions).ConfigureAwait(false);
                 }
 
                 AppFilesToAddService.Sync(gamePath, previous: null, game.FilesToAdd);
@@ -284,7 +298,7 @@ public static class GameDownloadInstallService
             }
             finally
             {
-                // Single-file assets are moved into the game folder; archives stay in temp and must be deleted.
+                // Single-file assets are moved into the game folder; archives stay in the staging dir and must be deleted.
                 // If a single-file move failed, the temp file may still exist — clean it up either way for archives,
                 // and for leftover single-file temps after a failed install.
                 if (!string.IsNullOrEmpty(downloadPath) && File.Exists(downloadPath))
@@ -304,6 +318,8 @@ public static class GameDownloadInstallService
                         }
                     }
                 }
+
+                DownloadStaging.TryDeleteDirectory(stagingDir);
             }
 
             if (game.GameManager != null)

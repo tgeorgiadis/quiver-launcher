@@ -59,4 +59,28 @@ public class InstallationErrorMessagesTests
         result.Should().Be("Error installing Super Smash Bros.: Network error: connection timed out");
         result.Should().NotContain("Protection history");
     }
+
+    [Theory]
+    [InlineData("The process cannot access the file because it is being used by another process.")]
+    [InlineData("Could not open 'game.7z' because it is still locked by another process.")]
+    public void IsLikelyFileLock_returns_true_for_sharing_violations(string errorMessage)
+    {
+        InstallationErrorMessages.IsLikelyFileLock(errorMessage).Should().BeTrue();
+    }
+
+    [Fact]
+    public void FormatInstallationError_appends_file_lock_guidance_on_windows()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return;
+
+        var result = InstallationErrorMessages.FormatInstallationError(
+            "Cut the Rope DX",
+            "The process cannot access the file because it is being used by another process.");
+
+        result.Should().Contain("Error installing Cut the Rope DX:");
+        result.Should().Contain("being used by another process");
+        result.Should().Contain("scanning the downloaded archive");
+        result.Should().NotContain("Protection history");
+    }
 }

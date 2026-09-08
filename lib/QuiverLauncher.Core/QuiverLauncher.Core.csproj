@@ -16,6 +16,7 @@
 		<PackageReference Include="SharpCompress" Version="0.50.1" />
 	</ItemGroup>
 	<ItemGroup>
+		<InternalsVisibleTo Include="QuiverLauncher" />
 		<InternalsVisibleTo Include="QuiverLauncher.Tests" />
 	</ItemGroup>
 </Project>

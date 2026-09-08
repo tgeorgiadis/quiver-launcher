@@ -3009,12 +3009,17 @@
 		<Setter Property="Orientation" Value="Horizontal"/>
 	</Style>
 	<Style Selector="ScrollViewer#CatalogReviewStatusScroller">
-		<Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
 		<Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="MinHeight" Value="40"/>
+		<Setter Property="Padding" Value="0,0,0,10"/>
+		<Setter Property="VerticalAlignment" Value="Top"/>
 	</Style>
 	<Style Selector="UserControl.mobile ScrollViewer#CatalogReviewStatusScroller">
 		<Setter Property="HorizontalScrollBarVisibility" Value="Hidden"/>
 		<Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="Padding" Value="0"/>
 		<Setter Property="ScrollViewer.IsScrollInertiaEnabled" Value="True"/>
 	</Style>
 	<Style Selector="UserControl.mobile StackPanel#CatalogReviewStatusChips Button.catalog-filter">
@@ -3689,6 +3694,11 @@
 											<MenuItem Header="Status" Tag="Status" Click="MobileCatalogSortItem_Click"/>
 											<MenuItem Header="List" Tag="view:list" Click="MobileCatalogViewItem_Click"/>
 											<MenuItem Header="Grid" Tag="view:grid" Click="MobileCatalogViewItem_Click"/>
+											<MenuItem Header="All platforms" Tag="platform:All" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Windows" Tag="platform:Windows" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Linux" Tag="platform:Linux" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Mac" Tag="platform:Mac" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Android" Tag="platform:Android" Click="CatalogReviewPlatformItem_Click"/>
 										</MenuFlyout>
 									</Button.Flyout>
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
@@ -4290,7 +4300,7 @@
 						  XYFocus.RightNavigationStrategy="Projection"
 						  IsVisible="False" RowDefinitions="Auto,*">
 						<StackPanel Grid.Row="0" Spacing="8">
-						<Grid ColumnDefinitions="*,Auto" MinHeight="32">
+						<Grid ColumnDefinitions="*,Auto" MinHeight="40">
 							<DockPanel LastChildFill="True">
 								<Button x:Name="CatalogReviewTagsToggle"
 										DockPanel.Dock="Right"
@@ -4300,7 +4310,7 @@
 										FontSize="11"
 										MinHeight="32"
 										Padding="10,0"
-										VerticalAlignment="Center"
+										VerticalAlignment="Top"
 										Margin="8,0,0,0"
 										ToolTip.Tip="Filter by tag: off → include → exclude"/>
 								<TextBox x:Name="CatalogSearchTextBox"
@@ -4309,12 +4319,12 @@
 										 Width="200"
 										 MinHeight="32"
 										 FontSize="12"
-										 VerticalAlignment="Center"
+										 VerticalAlignment="Top"
 										 VerticalContentAlignment="Center"
 										 Margin="12,0,0,0"
 										 TextChanged="CatalogSearch_TextChanged"/>
 								<ScrollViewer x:Name="CatalogReviewStatusScroller"
-											  VerticalAlignment="Center"
+											  VerticalAlignment="Top"
 											  VerticalScrollBarVisibility="Disabled"
 											  HorizontalScrollBarVisibility="Auto">
 									<StackPanel x:Name="CatalogReviewStatusChips" Orientation="Horizontal">
@@ -4348,8 +4358,27 @@
 							<StackPanel x:Name="CatalogReviewDesktopToolsRow"
 										Grid.Column="1"
 										Orientation="Horizontal"
-										VerticalAlignment="Center"
+										VerticalAlignment="Top"
 										Margin="12,0,0,0">
+								<Button x:Name="CatalogReviewPlatformButton"
+										Classes="catalog-filter"
+										Content="All platforms"
+										FontSize="11"
+										MinHeight="32"
+										VerticalAlignment="Center"
+										Margin="0,0,8,0"
+										ToolTip.Tip="Filter apps by platforms in the latest release">
+									<Button.Flyout>
+										<MenuFlyout Placement="BottomEdgeAlignedRight"
+													Opening="CatalogReviewPlatformFlyout_Opening">
+											<MenuItem Header="All platforms" Tag="All" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Windows" Tag="Windows" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Linux" Tag="Linux" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Mac" Tag="Mac" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Android" Tag="Android" Click="CatalogReviewPlatformItem_Click"/>
+										</MenuFlyout>
+									</Button.Flyout>
+								</Button>
 								<ComboBox x:Name="CatalogReviewSortByComboBox"
 										  Foreground="{DynamicResource ThemeText}"
 										  Background="{DynamicResource ThemeDarker}"

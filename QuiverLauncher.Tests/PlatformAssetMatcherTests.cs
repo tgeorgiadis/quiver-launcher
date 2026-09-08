@@ -57,4 +57,34 @@ public class PlatformAssetMatcherTests
         PlatformAssetMatcher.GetPlatformIdentifier(QuiverLauncher.Core.Models.TargetOS.Android)
             .Should().Be("Android");
     }
+
+    [Theory]
+    [InlineData("SotE-Recomp-0.9beta.zip")]
+    [InlineData("ChameleonTwistJPRecompiled.zip")]
+    [InlineData("payload.7z")]
+    [InlineData("game.rar")]
+    public void MatchesPlatform_windows_accepts_unlabeled_archives(string assetName)
+    {
+        PlatformAssetMatcher.MatchesPlatform(assetName, "Windows").Should().BeTrue();
+        PlatformAssetMatcher.IsWindowsAsset(assetName).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("app-linux-x64.zip")]
+    [InlineData("game-macos.zip")]
+    [InlineData("app-darwin.zip")]
+    [InlineData("textures-android.zip")]
+    public void MatchesPlatform_windows_rejects_labeled_non_windows_archives(string assetName)
+    {
+        PlatformAssetMatcher.MatchesPlatform(assetName, "Windows").Should().BeFalse();
+        PlatformAssetMatcher.IsWindowsAsset(assetName).Should().BeFalse();
+    }
+
+    [Fact]
+    public void MatchesPlatform_labeled_linux_and_mac_zips_keep_their_platforms()
+    {
+        PlatformAssetMatcher.MatchesPlatform("app-linux-x64.zip", "Linux-X64").Should().BeTrue();
+        PlatformAssetMatcher.MatchesPlatform("game-macos.zip", "macOS").Should().BeTrue();
+        PlatformAssetMatcher.MatchesPlatform("app-darwin.zip", "macOS").Should().BeTrue();
+    }
 }

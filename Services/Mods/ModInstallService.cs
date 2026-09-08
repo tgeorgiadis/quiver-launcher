@@ -1,6 +1,7 @@
 using QuiverLauncher.Services.Mods.Providers.Thunderstore;
 using SharpCompress.Archives;
 using SharpCompress.Common;
+using SharpCompress.Readers;
 
 namespace QuiverLauncher.Services.Mods;
 
@@ -479,7 +480,7 @@ public sealed class ModInstallService
         var modsRootFull = Path.GetFullPath(modsDir);
 
         using var archive = ArchiveFactory.OpenArchive(archiveStream);
-        var payloadEntries = new List<(IArchiveEntry Entry, string Relative)>();
+        var payloadRelatives = new List<string>();
 
         foreach (var entry in archive.Entries)
         {
@@ -495,39 +496,95 @@ public sealed class ModInstallService
             if (!relative.Contains('/') && metadataFileNames.Contains(relative))
                 continue;
 
-            payloadEntries.Add((entry, relative));
+            payloadRelatives.Add(relative);
         }
 
         var shouldWrap = GameModsConfig.IsFolderPerMod(modsLayout) &&
-                         payloadEntries.Any(e => !e.Relative.Contains('/'));
+                         payloadRelatives.Any(relative => !relative.Contains('/'));
         var prefix = shouldWrap
             ? GameModsConfig.SanitizeFolderName(wrapFolderName)
             : string.Empty;
         if (shouldWrap && prefix.Length == 0)
             prefix = "mod";
 
-        foreach (var (entry, relative) in payloadEntries)
+        var payloadSet = new HashSet<string>(payloadRelatives, StringComparer.OrdinalIgnoreCase);
+        var extractOptions = new ExtractionOptions
         {
-            var destRelative = prefix.Length > 0 ? $"{prefix}/{relative}" : relative;
+            Overwrite = true,
+            ExtractFullPath = false,
+        };
 
-            // Zip-slip protection
-            var destination = Path.GetFullPath(
-                Path.Combine(modsDir, destRelative.Replace('/', Path.DirectorySeparatorChar)));
-            if (!destination.StartsWith(modsRootFull, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var destDir = Path.GetDirectoryName(destination);
-            if (!string.IsNullOrEmpty(destDir))
-                Directory.CreateDirectory(destDir);
-
-            entry.WriteToFile(destination, new ExtractionOptions
+        if (archive.IsSolid || archive.Type == ArchiveType.SevenZip)
+        {
+            using var reader = archive.ExtractAllEntries();
+            while (reader.MoveToNextEntry())
             {
-                Overwrite = true,
-                ExtractFullPath = false,
-            });
-            installed.Add(destRelative);
+                if (reader.Entry.IsDirectory)
+                    continue;
+
+                if (!TryWriteModPayloadEntry(
+                        reader.Entry.Key,
+                        payloadSet,
+                        prefix,
+                        modsDir,
+                        modsRootFull,
+                        destination => reader.WriteEntryToFile(destination, extractOptions),
+                        installed))
+                {
+                    continue;
+                }
+            }
+        }
+        else
+        {
+            foreach (var entry in archive.Entries)
+            {
+                if (entry.IsDirectory)
+                    continue;
+
+                if (!TryWriteModPayloadEntry(
+                        entry.Key,
+                        payloadSet,
+                        prefix,
+                        modsDir,
+                        modsRootFull,
+                        destination => entry.WriteToFile(destination, extractOptions),
+                        installed))
+                {
+                    continue;
+                }
+            }
         }
 
         return installed;
+    }
+
+    static bool TryWriteModPayloadEntry(
+        string? entryKey,
+        HashSet<string> payloadSet,
+        string prefix,
+        string modsDir,
+        string modsRootFull,
+        Action<string> write,
+        List<string> installed)
+    {
+        var relative = (entryKey ?? string.Empty).Replace('\\', '/').TrimStart('/');
+        if (relative.Length == 0 || !payloadSet.Contains(relative))
+            return false;
+
+        var destRelative = prefix.Length > 0 ? $"{prefix}/{relative}" : relative;
+
+        var destination = Path.GetFullPath(
+            Path.Combine(modsDir, destRelative.Replace('/', Path.DirectorySeparatorChar)));
+        if (!destination.StartsWith(modsRootFull, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var destDir = Path.GetDirectoryName(destination);
+        if (!string.IsNullOrEmpty(destDir))
+            Directory.CreateDirectory(destDir);
+
+        write(destination);
+        installed.Add(destRelative);
+        return true;
     }
 }

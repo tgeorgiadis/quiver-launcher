@@ -218,6 +218,7 @@ namespace QuiverLauncher
         private string? _catalogReviewDetailsIdentityKey;
         private string? _catalogReviewReadmeKey;
         private CancellationTokenSource? _catalogReviewReadmeCts;
+        private CancellationTokenSource? _catalogReleaseWarmupCts;
         private readonly RepositoryReadmeService _repositoryReadmeService = new();
         private int _catalogReviewDetailsActionIndex = -1;
         private bool _catalogReviewDetailsBodyFocused;
@@ -1941,6 +1942,7 @@ namespace QuiverLauncher
         {
             MarkCurrentSortFlyoutItem(sender as MenuFlyout, CatalogReviewSortByComboBox);
             MarkCurrentCatalogViewFlyoutItem(sender as MenuFlyout);
+            MarkCurrentCatalogPlatformFlyoutItem(sender as MenuFlyout);
         }
 
         private void MarkCurrentCatalogViewFlyoutItem(MenuFlyout? flyout)
@@ -3703,6 +3705,7 @@ namespace QuiverLauncher
                 }
 
                 ApplyCatalogReviewSortSelection(_settings.CatalogReviewSortBy ?? "Name");
+                UpdateCatalogReviewPlatformButton();
                 UpdateCatalogReviewLayoutVisibility();
 
                 if (GitHubTokenTextBox != null)
@@ -3952,7 +3955,10 @@ namespace QuiverLauncher
         private void ShowLibraryView()
         {
             if (_appCatalogSubView == AppCatalogSubView.Review)
+            {
+                CancelCatalogReleaseWarmup();
                 _catalogReviewOpenGeneration++;
+            }
             _mainViewMode = MainViewMode.Library;
             _appCatalogSubView = AppCatalogSubView.Sources;
             _isAppUpdatesReviewOpen = false;
@@ -3971,6 +3977,7 @@ namespace QuiverLauncher
             if (_isCatalogReviewDetailsOpen)
                 CloseCatalogReviewDetails(restoreReviewSelection: false);
 
+            CancelCatalogReleaseWarmup();
             _catalogReviewOpenGeneration++;
             _mainViewMode = MainViewMode.AppCatalog;
             _appCatalogSubView = AppCatalogSubView.Sources;
@@ -4807,14 +4814,17 @@ namespace QuiverLauncher
                     ? CatalogReviewFilter.NeedsReview
                     : CatalogReviewFilter.All);
 
+            CancelCatalogReleaseWarmup();
             var generation = ++_catalogReviewOpenGeneration;
             _activeCatalogSyncSource = source;
             _catalogReviewFiltersExpanded = false;
             if (filter == CatalogReviewFilter.New)
                 filter = CatalogReviewFilter.NotInLibrary;
+            EnsureCatalogPlatformFilterDefault();
             _catalogSyncViewModel.ReviewFilter = filter;
             _catalogSyncViewModel.SortBy = _currentCatalogReviewSortBy;
             _catalogSyncViewModel.IgnoreArticlesWhenSorting = _settings.IgnoreArticlesWhenSorting;
+            _catalogSyncViewModel.PlatformFilters = _settings.CatalogPlatformFilters;
             _catalogSyncViewModel.SearchText = "";
             if (CatalogSearchTextBox != null)
                 CatalogSearchTextBox.Text = "";
@@ -4853,10 +4863,14 @@ namespace QuiverLauncher
             List<GameInfo> localApps,
             List<GameInfo> externalApps)
         {
+            EnsureCatalogPlatformFilterDefault();
+            _catalogSyncViewModel.PlatformFilters = _settings.CatalogPlatformFilters;
             _catalogSyncViewModel.Refresh(source, localApps, externalApps, _settings);
             RefreshCatalogReviewFilterButtons(GetCatalogReviewFilterTag(_catalogSyncViewModel.ReviewFilter));
             ApplyCatalogSyncFilter();
+            UpdateCatalogReviewPlatformButton();
             UpdateCatalogSyncBulkButtons();
+            StartCatalogReleaseWarmup();
         }
 
         private void ApplyCatalogSyncFilter()
@@ -7814,6 +7828,137 @@ namespace QuiverLauncher
             _settings.CatalogReviewSortBy = sortMode;
             OnSettingChanged();
             ApplyCatalogSyncFilter();
+        }
+
+        private void CatalogReviewPlatformFlyout_Opening(object? sender, EventArgs e) =>
+            MarkCurrentCatalogPlatformFlyoutItem(sender as MenuFlyout);
+
+        private void MarkCurrentCatalogPlatformFlyoutItem(MenuFlyout? flyout)
+        {
+            if (flyout == null)
+                return;
+
+            foreach (var entry in flyout.Items)
+            {
+                if (entry is not MenuItem item || item.Tag is not string tag)
+                    continue;
+
+                if (CatalogPlatformSupport.Canonical(tag) == null &&
+                    !tag.Equals("All", StringComparison.OrdinalIgnoreCase) &&
+                    !tag.StartsWith("platform:", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                item.FontWeight = CatalogPlatformSupport.IsSelected(_settings.CatalogPlatformFilters, tag)
+                    ? FontWeight.Bold
+                    : FontWeight.Normal;
+            }
+        }
+
+        private void CatalogReviewPlatformItem_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem item || item.Tag is not string tag)
+                return;
+
+            if (CatalogPlatformSupport.Canonical(tag) == null &&
+                !tag.Equals("All", StringComparison.OrdinalIgnoreCase) &&
+                !tag.StartsWith("platform:", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (tag.Equals("All", StringComparison.OrdinalIgnoreCase) ||
+                tag.Equals("platform:All", StringComparison.OrdinalIgnoreCase))
+            {
+                CatalogPlatformFilterSettings.SetAll(_settings);
+            }
+            else
+            {
+                CatalogPlatformFilterSettings.Toggle(_settings, tag);
+            }
+
+            _catalogSyncViewModel.PlatformFilters = _settings.CatalogPlatformFilters;
+            UpdateCatalogReviewPlatformButton();
+            OnSettingChanged();
+            ApplyCatalogSyncFilter();
+        }
+
+        private void EnsureCatalogPlatformFilterDefault()
+        {
+            if (CatalogPlatformFilterSettings.EnsureDefault(_settings))
+                OnSettingChanged();
+
+            _catalogSyncViewModel.PlatformFilters = _settings.CatalogPlatformFilters;
+            UpdateCatalogReviewPlatformButton();
+        }
+
+        private void UpdateCatalogReviewPlatformButton()
+        {
+            if (CatalogReviewPlatformButton == null)
+                return;
+
+            CatalogReviewPlatformButton.Content = CatalogPlatformSupport.FormatLabel(_settings.CatalogPlatformFilters);
+        }
+
+        private void CancelCatalogReleaseWarmup()
+        {
+            try
+            {
+                _catalogReleaseWarmupCts?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            _catalogReleaseWarmupCts?.Dispose();
+            _catalogReleaseWarmupCts = null;
+        }
+
+        private void StartCatalogReleaseWarmup()
+        {
+            CancelCatalogReleaseWarmup();
+            if (_activeCatalogSyncSource == null || _catalogSyncViewModel.AllRows.Count == 0)
+                return;
+
+            var cts = new CancellationTokenSource();
+            _catalogReleaseWarmupCts = cts;
+            var generation = _catalogReviewOpenGeneration;
+            var sourceId = _activeCatalogSyncSource.Id;
+            var rows = _catalogSyncViewModel.AllRows;
+            _ = WarmCatalogReleaseIndexAsync(rows, sourceId, generation, cts.Token);
+        }
+
+        private async Task WarmCatalogReleaseIndexAsync(
+            IReadOnlyList<CatalogSyncRowItem> rows,
+            string sourceId,
+            int generation,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await CatalogReleaseIndexWarmup.WarmAsync(
+                    _gameManager.HttpClient,
+                    rows,
+                    game => game.GetReleaseApiToken(_settings),
+                    cancellationToken,
+                    async () =>
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            if (!IsCurrentCatalogReviewOpen(sourceId, generation))
+                                return;
+                            ApplyCatalogSyncFilter();
+                        });
+                    }).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Catalog release index warmup failed: {ex.Message}");
+            }
         }
 
         private void ApplyCatalogReviewSortSelection(string sortMode)
@@ -12880,6 +13025,7 @@ namespace QuiverLauncher
             {
                 Add(CatalogSearchTextBox);
                 Add(CatalogReviewTagsToggle);
+                Add(CatalogReviewPlatformButton);
                 Add(CatalogReviewSortByComboBox);
                 Add(CatalogReviewListViewButton);
                 Add(CatalogReviewGridViewButton);

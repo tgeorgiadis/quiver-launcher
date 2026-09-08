@@ -1,5 +1,5 @@
 {
-  "id": "2026-09-05-332",
+  "id": "2026-09-08-333",
   "enabled": true,
-  "message": "3.3.2: Fix Open Folder on Linux, improved Latest release detection, and preserve Unix permissions when extracting Linux zips."
+  "message": "3.3.3: Catalog platform filter, Linux AppImage and Windows Play fixes, and more reliable archive installs."
 }

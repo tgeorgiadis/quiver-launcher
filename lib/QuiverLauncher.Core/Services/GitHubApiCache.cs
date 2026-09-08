@@ -11,6 +11,8 @@ namespace QuiverLauncher.Core.Services
         public string ETag { get; set; } = string.Empty;
         public GitHubRelease? CachedRelease { get; set; }
         public DateTime LastUpdateCheck { get; set; }
+        /// <summary>Downloadable asset names from the cached latest release (flatpak excluded).</summary>
+        public List<string> AssetNames { get; set; } = [];
     }
 
     public static class GitHubApiCache
@@ -149,21 +151,34 @@ namespace QuiverLauncher.Core.Services
         {
             var cacheKey = GetCacheKey(repositorySource, repository);
             _cache.AddOrUpdate(cacheKey,
-                new GameVersionCache
+                _ =>
                 {
-                    Version = version,
-                    LastChecked = DateTime.UtcNow,
-                    LastUpdateCheck = DateTime.UtcNow,
-                    ETag = etag,
-                    CachedRelease = release
+                    var assetNames = ExtractAssetNames(release);
+                    return new GameVersionCache
+                    {
+                        Version = version,
+                        LastChecked = DateTime.UtcNow,
+                        LastUpdateCheck = DateTime.UtcNow,
+                        ETag = etag,
+                        CachedRelease = release,
+                        AssetNames = assetNames
+                    };
                 },
-                (key, old) => new GameVersionCache
+                (_, old) =>
                 {
-                    Version = version,
-                    LastChecked = DateTime.UtcNow,
-                    LastUpdateCheck = DateTime.UtcNow,
-                    ETag = etag ?? old.ETag,
-                    CachedRelease = release ?? old.CachedRelease
+                    var resolvedRelease = release ?? old.CachedRelease;
+                    var assetNames = ExtractAssetNames(resolvedRelease);
+                    if (assetNames.Count == 0 && old.AssetNames is { Count: > 0 })
+                        assetNames = old.AssetNames;
+                    return new GameVersionCache
+                    {
+                        Version = version,
+                        LastChecked = DateTime.UtcNow,
+                        LastUpdateCheck = DateTime.UtcNow,
+                        ETag = etag ?? old.ETag,
+                        CachedRelease = resolvedRelease,
+                        AssetNames = assetNames
+                    };
                 });
 
             // Drop legacy bare key once migrated to composite GitHub key.
@@ -207,5 +222,62 @@ namespace QuiverLauncher.Core.Services
         /// <summary>Legacy overload: treats repository as GitHub.</summary>
         public static void RemoveCache(string repository) =>
             RemoveCache(RepositorySourceIds.GitHub, repository);
+
+        /// <summary>
+        /// Returns cached latest-release asset names even if the entry is past the update TTL.
+        /// Backfills from <see cref="GameVersionCache.CachedRelease"/> when names were not stored.
+        /// </summary>
+        public static bool TryGetAssetNames(
+            string? repositorySource,
+            string? repository,
+            out IReadOnlyList<string> assetNames)
+        {
+            assetNames = [];
+            if (string.IsNullOrWhiteSpace(repository))
+                return false;
+
+            if (!TryResolveCacheEntry(repositorySource, repository, out _, out var cache) || cache == null)
+                return false;
+
+            if (cache.AssetNames is { Count: > 0 })
+            {
+                assetNames = cache.AssetNames;
+                return true;
+            }
+
+            var backfill = ExtractAssetNames(cache.CachedRelease);
+            if (backfill.Count == 0 && cache.CachedRelease == null)
+                return false;
+
+            cache.AssetNames = backfill;
+            assetNames = backfill;
+            return true;
+        }
+
+        /// <summary>
+        /// True when a still-valid cache entry already has latest-release asset names
+        /// (or a release that can be used to backfill them).
+        /// </summary>
+        public static bool HasFreshAssetIndex(string? repositorySource, string? repository)
+        {
+            if (string.IsNullOrWhiteSpace(repository))
+                return false;
+
+            if (!TryGetCachedVersion(repositorySource, repository, out var cache) || cache == null)
+                return false;
+
+            return cache.CachedRelease != null || cache.AssetNames is { Count: > 0 };
+        }
+
+        public static List<string> ExtractAssetNames(GitHubRelease? release)
+        {
+            if (release == null)
+                return [];
+
+            return GitHubReleaseService.GetDownloadableAssets(release)
+                .Select(asset => asset.name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList();
+        }
     }
 }

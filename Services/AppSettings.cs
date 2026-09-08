@@ -123,6 +123,15 @@ namespace QuiverLauncher
         public string CatalogReviewSortBy { get; set; } = "Name";
         /// <summary>Catalog review browse layout. Independent of library <see cref="UseGridView"/>.</summary>
         public bool CatalogReviewUseGridView { get; set; } = true;
+        /// <summary>
+        /// Selected catalog-review platform filters (Windows, Linux, Mac, Android).
+        /// Empty means all platforms.
+        /// </summary>
+        public List<string> CatalogPlatformFilters { get; set; } = new List<string>();
+        /// <summary>
+        /// True after the user has a catalog platform filter (including the first-run OS default).
+        /// </summary>
+        public bool CatalogPlatformFilterChosen { get; set; }
         public string ModsSortBy { get; set; } = "InstalledFirst";
         public bool ModsIncludeNsfw { get; set; }
         public List<string> DismissedAnnouncementIds { get; set; } = new List<string>();
@@ -184,6 +193,7 @@ namespace QuiverLauncher
             ManuallyHiddenApps ??= new List<string>();
             TagDisplayFilters ??= new List<TagDisplayFilter>();
             PinnedFilterTags ??= new List<string>();
+            CatalogPlatformFilters ??= new List<string>();
             UserAppTags ??= new Dictionary<string, List<string>>();
             UserAppDisplayNames ??= new Dictionary<string, string>();
             DismissedAnnouncementIds ??= new List<string>();

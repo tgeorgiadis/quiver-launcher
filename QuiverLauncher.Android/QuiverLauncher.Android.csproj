@@ -7,7 +7,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationId>com.quiverlauncher.app</ApplicationId>
 		<ApplicationVersion>30303</ApplicationVersion>
-		<ApplicationDisplayVersion>3.3.3-rc.2</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>3.3.3</ApplicationDisplayVersion>
 		<AndroidPackageFormat>apk</AndroidPackageFormat>
 		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
 		<DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using QuiverLauncher.Core.Services;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 
@@ -17,6 +18,7 @@ public class CatalogSyncViewModel
     public string SortBy { get; set; } = "Name";
     public bool IgnoreArticlesWhenSorting { get; set; } = true;
     public string SearchText { get; set; } = "";
+    public IReadOnlyList<string> PlatformFilters { get; set; } = [];
 
     public int ExternalOnlyCount => AllRows.Count(r =>
         r.Status == CatalogSyncStatus.InExternalOnly &&
@@ -231,6 +233,27 @@ public class CatalogSyncViewModel
     private IEnumerable<CatalogSyncRowItem> ApplySearchFilter(IEnumerable<CatalogSyncRowItem> rows) =>
         rows.Where(r => CatalogReviewSearch.Matches(r, SearchText));
 
+    private IEnumerable<CatalogSyncRowItem> ApplyPlatformFilter(IEnumerable<CatalogSyncRowItem> rows)
+    {
+        if (CatalogPlatformSupport.IsAll(PlatformFilters))
+            return rows;
+
+        return rows.Where(MatchesPlatformFilter);
+    }
+
+    internal static bool MatchesPlatformFilter(CatalogSyncRowItem row, IReadOnlyList<string> platformFilters)
+    {
+        var game = row.External ?? row.Local;
+        return CatalogPlatformSupport.AppMatches(
+            game?.EffectiveRepositorySource ?? row.EffectiveRepositorySource,
+            game?.Repository ?? row.Repository,
+            game?.ReleaseAssetFilter,
+            platformFilters);
+    }
+
+    private bool MatchesPlatformFilter(CatalogSyncRowItem row) =>
+        MatchesPlatformFilter(row, PlatformFilters);
+
     public IEnumerable<CatalogSyncRowItem> GetVisibleRows()
     {
         if (Source == null)
@@ -238,8 +261,9 @@ public class CatalogSyncViewModel
 
         return CatalogCompareService.SortRows(
             ApplySearchFilter(
-                ApplyTagChipFilter(
-                    CatalogCompareService.FilterVisibleRows(AllRows, Source, ShowUpToDateApps))),
+                ApplyPlatformFilter(
+                    ApplyTagChipFilter(
+                        CatalogCompareService.FilterVisibleRows(AllRows, Source, ShowUpToDateApps)))),
             SortBy,
             IgnoreArticlesWhenSorting);
     }
@@ -251,14 +275,15 @@ public class CatalogSyncViewModel
 
         return CatalogCompareService.SortRows(
             ApplySearchFilter(
-                ApplyTagChipFilter(
-                    CatalogCompareService.FilterByReviewFilter(AllRows, Source, ReviewFilter))),
+                ApplyPlatformFilter(
+                    ApplyTagChipFilter(
+                        CatalogCompareService.FilterByReviewFilter(AllRows, Source, ReviewFilter)))),
             SortBy,
             IgnoreArticlesWhenSorting);
     }
 
     /// <summary>
-    /// Visible (review filter + tag chips + search) rows that bulk "Add all new" would apply to.
+    /// Visible (review filter + tag chips + platform + search) rows that bulk "Add all new" would apply to.
     /// </summary>
     public IReadOnlyList<CatalogSyncRowItem> GetFilteredBulkAddRows()
     {

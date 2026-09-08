@@ -45,14 +45,23 @@ namespace QuiverLauncher.Core.Services
             };
         }
 
+        private static readonly string[] NonWindowsPlatformMarkers =
+        [
+            "linux", "macos", "osx", "darwin", "apple",
+            ".deb", ".rpm", ".appimage", ".dmg", ".pkg",
+            "android", "switch"
+        ];
+
         public static bool IsWindowsAsset(string assetName)
         {
             if (string.IsNullOrWhiteSpace(assetName))
                 return false;
 
             var assetNameLower = assetName.ToLowerInvariant();
-            return HasAnyOf(assetNameLower, "windows", "win64", "win32", "win-x64", "win-x86", "-win.", "_win.", ".exe", ".msi") ||
-                   Regex.IsMatch(assetNameLower, @"[_-]win[_-]|[_-]win\d|^win[_-]");
+            if (HasNonWindowsPlatformMarker(assetNameLower))
+                return false;
+
+            return HasExplicitWindowsMarker(assetNameLower) || IsUnlabeledWindowsArchive(assetNameLower);
         }
 
         public static bool MatchesPlatform(string assetName, string platformIdentifier)
@@ -73,16 +82,14 @@ namespace QuiverLauncher.Core.Services
             {
                 System.Diagnostics.Debug.WriteLine("Checking Windows patterns...");
 
-                if (HasAnyOf(assetNameLower, "linux", "macos", "osx", "darwin", "apple", ".deb", ".rpm", ".appimage", ".dmg", ".pkg", "switch"))
+                if (HasNonWindowsPlatformMarker(assetNameLower))
                 {
                     System.Diagnostics.Debug.WriteLine("Excluded: contains non-Windows platform marker");
                     return false;
                 }
 
-                bool isWindows = HasAnyOf(assetNameLower,
-                    "windows", "win64", "win32", "win-x64", "win-x86",
-                    "-win.", "_win.", ".exe", ".msi", "msvc", "mingw") ||
-                    Regex.IsMatch(assetNameLower, @"[_-]win[_-]|[_-]win\d|^win[_-]");
+                bool isWindows = HasExplicitWindowsMarker(assetNameLower) ||
+                    IsUnlabeledWindowsArchive(assetNameLower);
 
                 System.Diagnostics.Debug.WriteLine($"Windows match result: {isWindows}");
                 return isWindows;
@@ -178,5 +185,19 @@ namespace QuiverLauncher.Core.Services
 
             return false;
         }
+
+        private static bool HasNonWindowsPlatformMarker(string assetNameLower) =>
+            HasAnyOf(assetNameLower, NonWindowsPlatformMarkers);
+
+        private static bool HasExplicitWindowsMarker(string assetNameLower) =>
+            HasAnyOf(assetNameLower,
+                "windows", "win64", "win32", "win-x64", "win-x86",
+                "-win.", "_win.", ".exe", ".msi", "msvc", "mingw") ||
+            Regex.IsMatch(assetNameLower, @"[_-]win[_-]|[_-]win\d|^win[_-]");
+
+        private static bool IsUnlabeledWindowsArchive(string assetNameLower) =>
+            assetNameLower.EndsWith(".zip", StringComparison.Ordinal) ||
+            assetNameLower.EndsWith(".7z", StringComparison.Ordinal) ||
+            assetNameLower.EndsWith(".rar", StringComparison.Ordinal);
     }
 }
