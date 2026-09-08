@@ -219,10 +219,14 @@ namespace QuiverLauncher
         private string? _catalogReviewReadmeKey;
         private CancellationTokenSource? _catalogReviewReadmeCts;
         private CancellationTokenSource? _catalogReleaseWarmupCts;
+        private Task? _catalogReleaseWarmupTask;
+        private int _catalogReleaseWarmupGeneration;
+        private bool _catalogReleaseWarmupNeedsFollowUp;
         private readonly RepositoryReadmeService _repositoryReadmeService = new();
         private int _catalogReviewDetailsActionIndex = -1;
         private bool _catalogReviewDetailsBodyFocused;
         private string? _activeAnnouncementId;
+        private int _topBannerGamepadIndex;
         private bool _suppressCatalogSourceUiEvents;
         private bool _suppressSettingsUiEvents;
         private bool _isRefreshingCatalogSources;
@@ -414,13 +418,11 @@ namespace QuiverLauncher
             PlatformCapabilities.IsMobile ? double.NaN : (_settings?.SlotSize ?? 180);
 
         /// <summary>
-        /// Catalog-review grid card width. Desktop is fixed; Android is computed from the viewport
-        /// so two portrait columns fill the screen without overlapping.
+        /// Catalog-review grid card width. Desktop is fixed. Mobile cards stretch to fill
+        /// virtualizing-grid cells, so width is Auto (NaN).
         /// </summary>
         public double CatalogReviewGridCardPixelSize =>
-            PlatformCapabilities.IsMobile
-                ? (_mobileCatalogReviewCardWidth > 1 ? _mobileCatalogReviewCardWidth : 172)
-                : 196;
+            PlatformCapabilities.IsMobile ? double.NaN : 196;
 
         private bool _mobileTopBarReparented;
         private bool _mobileCatalogReviewReparented;
@@ -439,8 +441,6 @@ namespace QuiverLauncher
         private double _imeBottomInset;
         private IInputPane? _androidInputPane;
         private int _mobileGridColumns;
-        private double _mobileCatalogReviewCardWidth;
-        private int _mobileCatalogReviewGridColumns;
 
         private bool _isMobileNavOpen;
         public bool IsMobileNavOpen
@@ -1409,6 +1409,8 @@ namespace QuiverLauncher
                 HeaderTitleColumn.Margin = new Thickness(8, 0, 4, 0);
             if (HeaderTitleText != null)
                 HeaderTitleText.Margin = new Thickness(0);
+            if (CatalogReviewHeaderTitleScroll != null)
+                CatalogReviewHeaderTitleScroll.Margin = new Thickness(0);
             if (LibrarySearchHost != null)
             {
                 LibrarySearchHost.Margin = new Thickness(0);
@@ -1436,8 +1438,8 @@ namespace QuiverLauncher
             };
             if (LibraryViewContainer != null)
                 LibraryViewContainer.SizeChanged += (_, _) => FitMobileLibraryCardWidth();
-            if (CatalogReviewGridScrollViewer != null)
-                CatalogReviewGridScrollViewer.SizeChanged += (_, _) => FitMobileCatalogReviewGrid();
+            if (CatalogReviewGridItemsControl != null)
+                CatalogReviewGridItemsControl.SizeChanged += (_, _) => FitMobileCatalogReviewGrid();
             if (CatalogReviewItemsHost != null)
                 CatalogReviewItemsHost.SizeChanged += (_, _) => FitMobileCatalogReviewGrid();
             if (LibraryItemsHost != null)
@@ -1497,51 +1499,19 @@ namespace QuiverLauncher
             ApplyMobileLibraryItemsPanel(columns);
         }
 
-        private double GetMobileCatalogReviewViewportWidth()
-        {
-            if (CatalogReviewGridScrollViewer is { Bounds.Width: > 1 } scroller)
-                return scroller.Bounds.Width;
-
-            if (CatalogReviewItemsHost is { Bounds.Width: > 1 } host)
-                return host.Bounds.Width;
-
-            return Bounds.Width - Padding.Left - Padding.Right;
-        }
-
         private void FitMobileCatalogReviewGrid()
         {
             if (!PlatformCapabilities.IsMobile)
                 return;
 
-            var viewport = GetMobileCatalogReviewViewportWidth();
-            var cardWidth = CatalogReviewGridLayout.GetCardWidth(viewport, IsMobileLandscape);
-            ApplyMobileCatalogReviewItemsPanel(viewport);
+            if (CatalogReviewGridItemsControl != null)
+            {
+                CatalogReviewGridItemsControl.HorizontalAlignment = HorizontalAlignment.Stretch;
+                CatalogReviewGridItemsControl.InvalidateMeasure();
+            }
 
-            if (Math.Abs(_mobileCatalogReviewCardWidth - cardWidth) < 0.5)
-                return;
-
-            _mobileCatalogReviewCardWidth = cardWidth;
-            OnPropertyChanged(nameof(CatalogReviewGridCardPixelSize));
-        }
-
-        private void ApplyMobileCatalogReviewItemsPanel(double viewport)
-        {
-            if (CatalogReviewGridItemsControl == null)
-                return;
-
-            var columns = CatalogReviewGridLayout.GetColumns(viewport, IsMobileLandscape);
-            CatalogReviewGridItemsControl.HorizontalAlignment = HorizontalAlignment.Stretch;
-            if (_mobileCatalogReviewGridColumns == columns)
-                return;
-
-            _mobileCatalogReviewGridColumns = columns;
-            CatalogReviewGridItemsControl.ItemsPanel = new FuncTemplate<Panel?>(() =>
-                new UniformGrid
-                {
-                    Columns = columns,
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    VerticalAlignment = VerticalAlignment.Top,
-                });
+            if (CatalogReviewGridItemsControl?.ItemsPanelRoot is Panel panel)
+                panel.InvalidateMeasure();
         }
 
         private void ApplyMobileLibraryItemsPanel(int columns)
@@ -1636,8 +1606,15 @@ namespace QuiverLauncher
                 CatalogSearchTextBox.VerticalAlignment = VerticalAlignment.Center;
             }
 
-            MoveControlTo(CatalogReviewVersionBanner, CatalogReviewFiltersExtra, insertIndex: 0);
-            MoveControlTo(CatalogReviewBulkPanel, CatalogReviewFiltersExtra, insertIndex: 1);
+            MoveControlTo(CatalogReviewTagsToggle, CatalogReviewMobileChromeRow, column: 2);
+            if (CatalogReviewTagsToggle != null)
+            {
+                CatalogReviewTagsToggle.Margin = new Thickness(0);
+                CatalogReviewTagsToggle.MinHeight = 0;
+                CatalogReviewTagsToggle.Padding = new Thickness(10, 4);
+                CatalogReviewTagsToggle.VerticalAlignment = VerticalAlignment.Center;
+            }
+
             ReparentMobileCatalogReviewStatusChips();
 
             _mobileCatalogReviewReparented = true;
@@ -1851,10 +1828,13 @@ namespace QuiverLauncher
 
             if (HeaderTitleText != null)
                 HeaderTitleText.FontSize = landscape ? 14 : 18;
+            if (CatalogReviewHeaderTitleScroll != null)
+                CatalogReviewHeaderTitleScroll.FontSize = landscape ? 14 : 18;
 
             if (HeaderTitleColumn != null)
                 HeaderTitleColumn.MinHeight = landscape ? 28 : 44;
 
+            ApplyCatalogReviewHeaderTitle();
             FitMobileCatalogReviewGrid();
         }
 
@@ -1909,8 +1889,7 @@ namespace QuiverLauncher
                 return;
 
             var open = _isMobileSearchOpen;
-            if (HeaderTitleText != null)
-                HeaderTitleText.IsVisible = !open;
+            ApplyCatalogReviewHeaderTitle();
             if (LibrarySearchHost != null)
                 LibrarySearchHost.IsVisible = open;
 
@@ -1935,14 +1914,29 @@ namespace QuiverLauncher
             }, DispatcherPriority.Input);
         }
 
-        private void MobileLibrarySortFlyout_Opening(object? sender, EventArgs e) =>
+        private void MobileLibrarySortFlyout_Opening(object? sender, EventArgs e)
+        {
+            GamepadMenuFlyoutNavigation.Attach(sender as MenuFlyout);
             MarkCurrentSortFlyoutItem(sender as MenuFlyout, SortByComboBox);
+        }
 
         private void MobileCatalogSortFlyout_Opening(object? sender, EventArgs e)
         {
+            GamepadMenuFlyoutNavigation.Attach(sender as MenuFlyout);
             MarkCurrentSortFlyoutItem(sender as MenuFlyout, CatalogReviewSortByComboBox);
+        }
+
+        private void MobileCatalogMoreFlyout_Opening(object? sender, EventArgs e)
+        {
+            GamepadMenuFlyoutNavigation.Attach(sender as MenuFlyout);
             MarkCurrentCatalogViewFlyoutItem(sender as MenuFlyout);
             MarkCurrentCatalogPlatformFlyoutItem(sender as MenuFlyout);
+        }
+
+        private void MobileCatalogBulkFlyout_Opening(object? sender, EventArgs e)
+        {
+            GamepadMenuFlyoutNavigation.Attach(sender as MenuFlyout);
+            ApplyMobileCatalogBulkFlyoutItems();
         }
 
         private void MarkCurrentCatalogViewFlyoutItem(MenuFlyout? flyout)
@@ -2028,6 +2022,8 @@ namespace QuiverLauncher
                         SetInitialFocus();
                         _hasInitializedFocus = true;
                     }
+
+                    ApplyTopBanner();
                 });
 
                 await NotifyCatalogUpdatesIfNeededAsync();
@@ -2057,6 +2053,7 @@ namespace QuiverLauncher
                     if (!AnnouncementService.ShouldShow(payload, _settings.DismissedAnnouncementIds))
                     {
                         HideAnnouncementBanner();
+                        ApplyTopBanner();
                         return;
                     }
 
@@ -2066,16 +2063,26 @@ namespace QuiverLauncher
             catch (Exception ex)
             {
                 Debug.WriteLine($"Announcement banner fetch failed: {ex.Message}");
+                await Dispatcher.UIThread.InvokeAsync(ApplyTopBanner);
             }
         }
 
         private void ShowAnnouncementBanner(AnnouncementPayload payload)
         {
+            var tokenHadGamepad = GitHubTokenBanner is { IsVisible: true } &&
+                _gamepadNavigation.ActiveZone == GamepadNavigationZone.AnnouncementBanner;
+
+            if (GitHubTokenBanner != null)
+                GitHubTokenBanner.IsVisible = false;
+
             _activeAnnouncementId = payload.Id;
             if (AnnouncementBannerText != null)
                 AnnouncementBannerText.Text = payload.Message.Trim();
             if (AnnouncementBanner != null)
                 AnnouncementBanner.IsVisible = true;
+
+            if (tokenHadGamepad && IsGamepadFocusActive)
+                ApplyAnnouncementBannerGamepadSelection(0);
         }
 
         private void HideAnnouncementBanner()
@@ -2087,9 +2094,52 @@ namespace QuiverLauncher
                 AnnouncementBannerText.Text = string.Empty;
         }
 
+        private void ApplyTopBanner()
+        {
+            _settings.EnsureInitialized();
+
+            var announcementShowing = AnnouncementBanner is { IsVisible: true };
+            var tokenWasVisible = GitHubTokenBanner is { IsVisible: true };
+            var showToken = !announcementShowing &&
+                GitHubTokenBannerPolicy.ShouldShow(
+                    _settings.GitHubApiToken,
+                    _settings.GitHubTokenBannerPermanentlyDismissed,
+                    _settings.GitHubTokenBannerSnoozedUntilUtc,
+                    DateTimeOffset.UtcNow);
+
+            if (GitHubTokenBanner != null)
+                GitHubTokenBanner.IsVisible = showToken;
+
+            if (tokenWasVisible && !showToken)
+                RestoreGamepadAfterTopBannerDismiss();
+        }
+
         private void AnnouncementBannerClose_Click(object? sender, RoutedEventArgs e)
         {
             DismissAnnouncementBanner();
+        }
+
+        private void GitHubTokenBannerSettings_Click(object? sender, RoutedEventArgs e)
+        {
+            OpenGitHubApiTokenSettings();
+        }
+
+        private void GitHubTokenBannerDontShowAgain_Click(object? sender, RoutedEventArgs e)
+        {
+            _settings.EnsureInitialized();
+            _settings.GitHubTokenBannerPermanentlyDismissed = true;
+            _settings.GitHubTokenBannerSnoozedUntilUtc = null;
+            AppSettings.Save(_settings);
+            ApplyTopBanner();
+        }
+
+        private void GitHubTokenBannerClose_Click(object? sender, RoutedEventArgs e)
+        {
+            _settings.EnsureInitialized();
+            _settings.GitHubTokenBannerSnoozedUntilUtc =
+                GitHubTokenBannerPolicy.SnoozeUntil(DateTimeOffset.UtcNow);
+            AppSettings.Save(_settings);
+            ApplyTopBanner();
         }
 
         private void DismissAnnouncementBanner()
@@ -2097,25 +2147,32 @@ namespace QuiverLauncher
             var id = _activeAnnouncementId;
             HideAnnouncementBanner();
 
-            if (string.IsNullOrWhiteSpace(id))
-                return;
-
-            _settings.EnsureInitialized();
-            if (!_settings.DismissedAnnouncementIds.Any(existing =>
-                    string.Equals(existing, id, StringComparison.OrdinalIgnoreCase)))
+            if (!string.IsNullOrWhiteSpace(id))
             {
-                _settings.DismissedAnnouncementIds.Add(id);
-                AppSettings.Save(_settings);
+                _settings.EnsureInitialized();
+                if (!_settings.DismissedAnnouncementIds.Any(existing =>
+                        string.Equals(existing, id, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _settings.DismissedAnnouncementIds.Add(id);
+                    AppSettings.Save(_settings);
+                }
             }
 
-            // Drop focus chrome if the close button was selected.
-            if (AnnouncementBannerCloseButton != null)
-                ClearFocusIfOnControls([AnnouncementBannerCloseButton]);
+            ApplyTopBanner();
+            RestoreGamepadAfterTopBannerDismiss();
+        }
+
+        private void RestoreGamepadAfterTopBannerDismiss()
+        {
+            ClearAnnouncementBannerGamepadFocus();
 
             if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.AnnouncementBanner && IsGamepadFocusActive)
             {
                 ClearAnnouncementBannerGamepadFocus();
-                ApplyTopBarGamepadSelection(Math.Max(0, _gamepadNavigation.TopBarSelectedIndex));
+                if (IsAnnouncementBannerVisible)
+                    ApplyAnnouncementBannerGamepadSelection(0);
+                else
+                    ApplyTopBarGamepadSelection(Math.Max(0, _gamepadNavigation.TopBarSelectedIndex));
             }
             else if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.TopBar && IsGamepadFocusActive)
             {
@@ -4004,9 +4061,7 @@ namespace QuiverLauncher
             ResetGamepadNavigationIndices();
             UpdateMainViewUi();
             ApplyCatalogReviewChrome();
-
-            if (this.FindControl<TextBlock>("HeaderTitleText") is TextBlock headerTitle)
-                headerTitle.Text = $"Review: {source.Name}";
+            ApplyCatalogReviewHeaderTitle();
 
             if (IsGamepadFocusActive)
                 SelectInitialCatalogReviewGamepadItem();
@@ -4167,6 +4222,7 @@ namespace QuiverLauncher
             if (!isReview && CatalogReviewCompactSummary != null)
                 CatalogReviewCompactSummary.IsVisible = false;
 
+            ApplyCatalogReviewHeaderTitle();
             ApplyMobileSearchChrome();
 
             UpdateLibraryEmptyState();
@@ -4955,7 +5011,6 @@ namespace QuiverLauncher
             var mobile = PlatformCapabilities.IsMobile;
             var extraOpen = _catalogReviewFiltersExpanded;
             var compactText = _catalogSyncViewModel.VersionBannerCompactText;
-            var bannerText = _catalogSyncViewModel.VersionBannerText;
             var hasTags = HasCatalogTagChips;
 
             var isReview = _mainViewMode == MainViewMode.AppCatalog &&
@@ -4968,37 +5023,69 @@ namespace QuiverLauncher
                 CatalogReviewDesktopToolsRow.IsVisible = !mobile;
 
             if (CatalogReviewVersionBanner != null)
-                CatalogReviewVersionBanner.IsVisible =
-                    mobile && extraOpen && _catalogSyncViewModel.ShowVersionBannerEmphasis &&
-                    !string.IsNullOrWhiteSpace(bannerText);
+                CatalogReviewVersionBanner.IsVisible = false;
 
             if (CatalogReviewMobileChromeRow != null)
                 CatalogReviewMobileChromeRow.IsVisible = mobile;
 
             if (CatalogReviewFiltersExtra != null)
-                CatalogReviewFiltersExtra.IsVisible = extraOpen && (hasTags || mobile);
+                CatalogReviewFiltersExtra.IsVisible = extraOpen && hasTags;
 
             if (CatalogReviewFiltersToggle != null)
-            {
-                var count = GetCatalogReviewActiveFilterCount();
-                CatalogReviewFiltersToggle.Content = count > 0 ? $"Filters ({count})" : "Filters";
-                CatalogReviewFiltersToggle.Classes.Set("selected", _catalogReviewFiltersExpanded);
-            }
+                CatalogReviewFiltersToggle.Content = "More";
 
             if (CatalogReviewTagsToggle != null)
             {
                 var tagCount = _catalogSyncViewModel.ActiveTagChipCount;
-                CatalogReviewTagsToggle.IsVisible = !mobile && hasTags;
+                CatalogReviewTagsToggle.IsVisible = hasTags;
                 CatalogReviewTagsToggle.Content = tagCount > 0 ? $"Tags ({tagCount})" : "Tags";
-                CatalogReviewTagsToggle.Classes.Set("selected", extraOpen);
+                CatalogReviewTagsToggle.Classes.Set("selected", extraOpen && hasTags);
             }
+
+            ApplyCatalogReviewHeaderTitle();
         }
 
-        private int GetCatalogReviewActiveFilterCount()
+        private void ApplyCatalogReviewHeaderTitle()
         {
-            var tags = CatalogTagChips.Count(c => !c.IsNeutral);
-            var nonDefault = _catalogSyncViewModel.ReviewFilter != CatalogReviewFilter.NeedsReview ? 1 : 0;
-            return tags + nonDefault;
+            var isReview = _mainViewMode == MainViewMode.AppCatalog &&
+                           _appCatalogSubView == AppCatalogSubView.Review &&
+                           _activeCatalogSyncSource != null;
+            var mobileReview = PlatformCapabilities.IsMobile && isReview;
+            var searchOpen = PlatformCapabilities.IsMobile && _isMobileSearchOpen;
+            var compact = _catalogSyncViewModel.VersionBannerCompactText;
+            var name = _activeCatalogSyncSource?.Name ?? "";
+            var landscape = IsMobileLandscape;
+
+            if (HeaderTitleText != null)
+            {
+                if (PlatformCapabilities.IsMobile)
+                    HeaderTitleText.FontSize = landscape ? 14 : 18;
+                HeaderTitleText.IsVisible = !searchOpen && !mobileReview;
+            }
+
+            if (CatalogReviewHeaderTitleScroll != null)
+            {
+                if (PlatformCapabilities.IsMobile)
+                    CatalogReviewHeaderTitleScroll.FontSize = landscape ? 14 : 18;
+
+                var showScroll = mobileReview && !searchOpen;
+                CatalogReviewHeaderTitleScroll.IsVisible = showScroll;
+                if (showScroll)
+                {
+                    CatalogReviewHeaderTitleScroll.Text = string.IsNullOrWhiteSpace(compact)
+                        ? $"Review: {name}"
+                        : $"Review: {name} · {compact}";
+                    CatalogReviewHeaderTitleScroll.IsActive = true;
+                    var tip = _catalogSyncViewModel.VersionBannerTooltip;
+                    ToolTip.SetTip(
+                        CatalogReviewHeaderTitleScroll,
+                        string.IsNullOrWhiteSpace(tip) ? null : tip);
+                }
+                else
+                {
+                    CatalogReviewHeaderTitleScroll.IsActive = false;
+                }
+            }
         }
 
         private void ReplaceCatalogSyncRows(IEnumerable<CatalogSyncRowItem> rows)
@@ -5067,12 +5154,14 @@ namespace QuiverLauncher
                 addAllButton.IsVisible = !PlatformCapabilities.IsMobile && addCount > 0;
             }
 
-            if (this.FindControl<Button>("CatalogSyncAddAllCompactButton") is Button compactAddAll)
+            if (this.FindControl<Button>("CatalogReviewBulkButton") is Button bulkButton)
             {
-                compactAddAll.Content = addCount > 0 ? $"Add all ({addCount})" : "Add all";
-                compactAddAll.IsEnabled = addCount > 0;
-                compactAddAll.IsVisible = addCount > 0;
+                var showSkip = _catalogSyncViewModel.ShowSkipReviewButton;
+                bulkButton.IsVisible = PlatformCapabilities.IsMobile &&
+                    (addCount > 0 || replaceCount > 0 || showSkip);
             }
+
+            ApplyMobileCatalogBulkFlyoutItems();
 
             if (this.FindControl<Button>("CatalogSyncReplaceAllButton") is Button replaceAllButton)
             {
@@ -5087,10 +5176,41 @@ namespace QuiverLauncher
             if (CatalogReviewBulkPanel != null)
             {
                 CatalogReviewBulkPanel.IsVisible =
-                    (!PlatformCapabilities.IsMobile && addCount > 0) ||
-                    replaceCount > 0 ||
-                    _catalogSyncViewModel.ShowSkipReviewButton;
+                    !PlatformCapabilities.IsMobile &&
+                    (addCount > 0 ||
+                     replaceCount > 0 ||
+                     _catalogSyncViewModel.ShowSkipReviewButton);
             }
+        }
+
+        private void ApplyMobileCatalogBulkFlyoutItems()
+        {
+            var addCount = _catalogSyncViewModel.FilteredBulkAddCount;
+            var replaceCount = _catalogSyncViewModel.FilteredBulkReplaceCount;
+            var showMerge = replaceCount > 0;
+            var showSkip = _catalogSyncViewModel.ShowSkipReviewButton;
+
+            if (CatalogReviewBulkAddItem != null)
+            {
+                CatalogReviewBulkAddItem.Header = addCount > 0 ? $"Add all ({addCount})" : "Add all";
+                CatalogReviewBulkAddItem.IsEnabled = addCount > 0;
+            }
+
+            if (CatalogReviewBulkAddSeparator != null)
+                CatalogReviewBulkAddSeparator.IsVisible = showMerge || showSkip;
+
+            if (CatalogReviewBulkMergeItem != null)
+            {
+                CatalogReviewBulkMergeItem.Header = $"Merge all changed ({replaceCount})";
+                CatalogReviewBulkMergeItem.IsVisible = showMerge;
+                CatalogReviewBulkMergeItem.IsEnabled = showMerge;
+            }
+
+            if (CatalogReviewBulkSkipSeparator != null)
+                CatalogReviewBulkSkipSeparator.IsVisible = showMerge && showSkip;
+
+            if (CatalogReviewBulkSkipItem != null)
+                CatalogReviewBulkSkipItem.IsVisible = showSkip;
         }
 
         private CatalogSyncRowItem? FindCatalogSyncRow(string key) =>
@@ -7830,8 +7950,11 @@ namespace QuiverLauncher
             ApplyCatalogSyncFilter();
         }
 
-        private void CatalogReviewPlatformFlyout_Opening(object? sender, EventArgs e) =>
+        private void CatalogReviewPlatformFlyout_Opening(object? sender, EventArgs e)
+        {
+            GamepadMenuFlyoutNavigation.Attach(sender as MenuFlyout);
             MarkCurrentCatalogPlatformFlyoutItem(sender as MenuFlyout);
+        }
 
         private void MarkCurrentCatalogPlatformFlyoutItem(MenuFlyout? flyout)
         {
@@ -7901,8 +8024,14 @@ namespace QuiverLauncher
             CatalogReviewPlatformButton.Content = CatalogPlatformSupport.FormatLabel(_settings.CatalogPlatformFilters);
         }
 
+        private bool IsCatalogReleaseWarmupRunning() =>
+            _catalogReleaseWarmupTask is { IsCompleted: false } &&
+            _catalogReleaseWarmupCts is { IsCancellationRequested: false } &&
+            _catalogReleaseWarmupGeneration == _catalogReviewOpenGeneration;
+
         private void CancelCatalogReleaseWarmup()
         {
+            _catalogReleaseWarmupNeedsFollowUp = false;
             try
             {
                 _catalogReleaseWarmupCts?.Cancel();
@@ -7913,20 +8042,28 @@ namespace QuiverLauncher
 
             _catalogReleaseWarmupCts?.Dispose();
             _catalogReleaseWarmupCts = null;
+            _catalogReleaseWarmupTask = null;
         }
 
         private void StartCatalogReleaseWarmup()
         {
-            CancelCatalogReleaseWarmup();
             if (_activeCatalogSyncSource == null || _catalogSyncViewModel.AllRows.Count == 0)
                 return;
 
+            if (IsCatalogReleaseWarmupRunning())
+            {
+                _catalogReleaseWarmupNeedsFollowUp = true;
+                return;
+            }
+
+            CancelCatalogReleaseWarmup();
             var cts = new CancellationTokenSource();
             _catalogReleaseWarmupCts = cts;
+            _catalogReleaseWarmupGeneration = _catalogReviewOpenGeneration;
             var generation = _catalogReviewOpenGeneration;
             var sourceId = _activeCatalogSyncSource.Id;
             var rows = _catalogSyncViewModel.AllRows;
-            _ = WarmCatalogReleaseIndexAsync(rows, sourceId, generation, cts.Token);
+            _catalogReleaseWarmupTask = WarmCatalogReleaseIndexAsync(rows, sourceId, generation, cts.Token);
         }
 
         private async Task WarmCatalogReleaseIndexAsync(
@@ -7937,20 +8074,21 @@ namespace QuiverLauncher
         {
             try
             {
-                await CatalogReleaseIndexWarmup.WarmAsync(
-                    _gameManager.HttpClient,
-                    rows,
-                    game => game.GetReleaseApiToken(_settings),
-                    cancellationToken,
-                    async () =>
-                    {
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            if (!IsCurrentCatalogReviewOpen(sourceId, generation))
-                                return;
-                            ApplyCatalogSyncFilter();
-                        });
-                    }).ConfigureAwait(false);
+                await WarmCatalogReleaseIndexPassAsync(rows, sourceId, generation, cancellationToken)
+                    .ConfigureAwait(false);
+
+                while (_catalogReleaseWarmupNeedsFollowUp &&
+                       IsCurrentCatalogReviewOpen(sourceId, generation) &&
+                       !cancellationToken.IsCancellationRequested)
+                {
+                    _catalogReleaseWarmupNeedsFollowUp = false;
+                    await WarmCatalogReleaseIndexPassAsync(
+                            _catalogSyncViewModel.AllRows,
+                            sourceId,
+                            generation,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -7960,6 +8098,26 @@ namespace QuiverLauncher
                 Debug.WriteLine($"Catalog release index warmup failed: {ex.Message}");
             }
         }
+
+        private Task WarmCatalogReleaseIndexPassAsync(
+            IReadOnlyList<CatalogSyncRowItem> rows,
+            string sourceId,
+            int generation,
+            CancellationToken cancellationToken) =>
+            CatalogReleaseIndexWarmup.WarmAsync(
+                _gameManager.HttpClient,
+                rows,
+                game => game.GetReleaseApiToken(_settings),
+                cancellationToken,
+                async () =>
+                {
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (!IsCurrentCatalogReviewOpen(sourceId, generation))
+                            return;
+                        ApplyCatalogSyncFilter();
+                    });
+                });
 
         private void ApplyCatalogReviewSortSelection(string sortMode)
         {
@@ -8027,8 +8185,8 @@ namespace QuiverLauncher
             var useGrid = _settings.CatalogReviewUseGridView;
             if (CatalogSyncRowsItemsControl != null)
                 CatalogSyncRowsItemsControl.IsVisible = ShouldShowCatalogReviewList(useGrid);
-            if (CatalogReviewGridScrollViewer != null)
-                CatalogReviewGridScrollViewer.IsVisible = ShouldShowCatalogReviewGrid(useGrid);
+            if (CatalogReviewGridItemsControl != null)
+                CatalogReviewGridItemsControl.IsVisible = ShouldShowCatalogReviewGrid(useGrid);
 
             CatalogReviewListViewButton?.Classes.Set("selected", ShouldShowCatalogReviewList(useGrid));
             CatalogReviewGridViewButton?.Classes.Set("selected", ShouldShowCatalogReviewGrid(useGrid));
@@ -8869,6 +9027,8 @@ namespace QuiverLauncher
             {
                 _settings.GitHubApiToken = textBox.Text ?? string.Empty;
                 OnSettingChanged();
+                if (!_suppressSettingsUiEvents)
+                    ApplyTopBanner();
             }
         }
 
@@ -8991,6 +9151,7 @@ namespace QuiverLauncher
                 if (GitHubTokenTextBox != null)
                     GitHubTokenTextBox.Text = string.Empty;
                 OnSettingChanged();
+                ApplyTopBanner();
             }
         }
 
@@ -11598,7 +11759,7 @@ namespace QuiverLauncher
                         _gamepadNavigation.ActiveZone is not (GamepadNavigationZone.TopBar
                             or GamepadNavigationZone.AnnouncementBanner))
                     {
-                        ApplyAnnouncementBannerGamepadSelection();
+                        ApplyAnnouncementBannerGamepadSelection(0);
                         return true;
                     }
 
@@ -11609,7 +11770,7 @@ namespace QuiverLauncher
                     ApplyTopBarGamepadSelection(_gamepadNavigation.TopBarSelectedIndex < 0 ? 0 : _gamepadNavigation.TopBarSelectedIndex);
                     return true;
                 case GamepadNavigationZone.AnnouncementBanner:
-                    ApplyAnnouncementBannerGamepadSelection();
+                    ApplyAnnouncementBannerGamepadSelection(0);
                     return true;
                 case GamepadNavigationZone.Library:
                     ApplyLibraryGamepadSelection(transition.SelectedIndex ?? 0);
@@ -12806,7 +12967,7 @@ namespace QuiverLauncher
                 !_isCatalogReviewDetailsOpen)
             {
                 ClearTopBarGamepadFocus();
-                ApplyAnnouncementBannerGamepadSelection();
+                ApplyAnnouncementBannerGamepadSelection(0);
                 return true;
             }
 
@@ -12847,14 +13008,26 @@ namespace QuiverLauncher
                     new GamepadZoneTransition(GetMainContentGamepadZone(), 0));
             }
 
+            var controls = CollectTopBannerGamepadControls();
+            if (direction is Services.NavigationDirection.Left or Services.NavigationDirection.Right &&
+                controls.Count > 1)
+            {
+                var nextIndex = _gamepadNavigation.MoveHorizontalIndex(
+                    _topBannerGamepadIndex,
+                    direction,
+                    controls.Count);
+                ApplyAnnouncementBannerGamepadSelection(nextIndex);
+                return true;
+            }
+
             var zoneTransition = _gamepadNavigation.TryGetZoneTransition(
                 direction,
                 GamepadNavigationZone.AnnouncementBanner,
                 GetMainContentGamepadZone(),
                 isListLayout: true,
                 positions: null,
-                currentIndex: 0,
-                itemCount: 1);
+                currentIndex: _topBannerGamepadIndex,
+                itemCount: Math.Max(1, controls.Count));
 
             if (zoneTransition.HasValue)
                 return TryApplyGamepadZoneTransition(zoneTransition.Value);
@@ -12863,31 +13036,99 @@ namespace QuiverLauncher
         }
 
         private bool IsAnnouncementBannerVisible =>
-            AnnouncementBanner is { IsVisible: true } &&
-            AnnouncementBannerCloseButton is { IsVisible: true, IsEnabled: true };
+            (AnnouncementBanner is { IsVisible: true } &&
+             AnnouncementBannerCloseButton is { IsVisible: true, IsEnabled: true }) ||
+            (GitHubTokenBanner is { IsVisible: true } &&
+             GitHubTokenBannerCloseButton is { IsVisible: true, IsEnabled: true });
 
-        private void ApplyAnnouncementBannerGamepadSelection()
+        private List<Control> CollectTopBannerGamepadControls()
+        {
+            var controls = new List<Control>();
+
+            void Add(Control? control)
+            {
+                if (control != null && control.IsVisible && control.IsEnabled)
+                    controls.Add(control);
+            }
+
+            if (AnnouncementBanner is { IsVisible: true })
+            {
+                Add(AnnouncementBannerCloseButton);
+                return controls;
+            }
+
+            if (GitHubTokenBanner is { IsVisible: true })
+            {
+                Add(GitHubTokenBannerSettingsButton);
+                Add(GitHubTokenBannerDontShowAgainButton);
+                Add(GitHubTokenBannerCloseButton);
+            }
+
+            return controls;
+        }
+
+        private void ApplyAnnouncementBannerGamepadSelection(int? selectedIndex = null)
         {
             if (!IsAnnouncementBannerVisible)
+                return;
+
+            var controls = CollectTopBannerGamepadControls();
+            if (controls.Count == 0)
                 return;
 
             ClearGamepadFocus();
             ClearAnnouncementBannerGamepadFocus();
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.AnnouncementBanner;
+            _topBannerGamepadIndex = _gamepadNavigation.ClampIndex(
+                selectedIndex ?? _topBannerGamepadIndex,
+                controls.Count);
 
-            if (AnnouncementBannerCloseButton is StyledElement styled)
+            if (_topBannerGamepadIndex < 0)
+                return;
+
+            if (controls[_topBannerGamepadIndex] is StyledElement styled)
                 styled.Classes.Set("gamepad-focused", true);
 
-            GamepadControlActivation.ApplyGamepadHighlightFocus(AnnouncementBannerCloseButton!);
+            GamepadControlActivation.ApplyGamepadHighlightFocus(controls[_topBannerGamepadIndex]);
+        }
+
+        private void ActivateTopBannerGamepadSelection()
+        {
+            var controls = CollectTopBannerGamepadControls();
+            var index = _gamepadNavigation.ClampIndex(_topBannerGamepadIndex, controls.Count);
+            if (index < 0 || controls[index] is not Button button)
+                return;
+
+            GamepadControlActivation.ActivateButton(button);
         }
 
         private void ClearAnnouncementBannerGamepadFocus()
         {
-            if (AnnouncementBannerCloseButton is StyledElement styled)
-                styled.Classes.Set("gamepad-focused", false);
+            foreach (var control in CollectTopBannerGamepadControls())
+            {
+                if (control is StyledElement styled)
+                    styled.Classes.Set("gamepad-focused", false);
+            }
 
+            if (AnnouncementBannerCloseButton is StyledElement announcementClose)
+                announcementClose.Classes.Set("gamepad-focused", false);
+            if (GitHubTokenBannerSettingsButton is StyledElement settingsLink)
+                settingsLink.Classes.Set("gamepad-focused", false);
+            if (GitHubTokenBannerDontShowAgainButton is StyledElement dismissLink)
+                dismissLink.Classes.Set("gamepad-focused", false);
+            if (GitHubTokenBannerCloseButton is StyledElement tokenClose)
+                tokenClose.Classes.Set("gamepad-focused", false);
+
+            var focused = new List<Control>();
             if (AnnouncementBannerCloseButton != null)
-                ClearFocusIfOnControls([AnnouncementBannerCloseButton]);
+                focused.Add(AnnouncementBannerCloseButton);
+            if (GitHubTokenBannerSettingsButton != null)
+                focused.Add(GitHubTokenBannerSettingsButton);
+            if (GitHubTokenBannerDontShowAgainButton != null)
+                focused.Add(GitHubTokenBannerDontShowAgainButton);
+            if (GitHubTokenBannerCloseButton != null)
+                focused.Add(GitHubTokenBannerCloseButton);
+            ClearFocusIfOnControls(focused);
         }
 
         private List<Control> CollectSidebarFocusableControls()
@@ -13011,7 +13252,8 @@ namespace QuiverLauncher
             if (PlatformCapabilities.IsMobile)
             {
                 Add(CatalogSearchTextBox);
-                Add(CatalogSyncAddAllCompactButton);
+                Add(CatalogReviewBulkButton);
+                Add(CatalogReviewTagsToggle);
                 Add(CatalogReviewFiltersToggle);
             }
 
@@ -14189,10 +14431,10 @@ namespace QuiverLauncher
 
         private void EnsureCatalogReviewRowRealized(CatalogSyncRowItem row)
         {
-            if (!_settings.CatalogReviewUseGridView)
-                CatalogSyncRowsItemsControl?.ScrollIntoView(row);
+            if (_settings.CatalogReviewUseGridView)
+                CatalogReviewGridItemsControl?.ScrollIntoView(row);
             else
-                FindCatalogSyncRowBorder(row)?.BringIntoView();
+                CatalogSyncRowsItemsControl?.ScrollIntoView(row);
         }
 
         private void BringCatalogReviewRowIntoView(CatalogSyncRowItem row)
@@ -14469,6 +14711,9 @@ namespace QuiverLauncher
             if (_inputService?.TryHandleContextMenuOptionsDismiss() == true)
                 return;
 
+            if (_inputService?.TryHandleMenuFlyoutCancel() == true)
+                return;
+
             // Don't open the app options menu over combo boxes / modal dialogs.
             if (_inputService?.IsGamepadOverlayActive == true)
                 return;
@@ -14552,6 +14797,9 @@ namespace QuiverLauncher
             if (AllowChromeActions && _inputService?.TryHandleComboBoxConfirm() == true)
                 return;
 
+            if (AllowChromeActions && _inputService?.TryHandleMenuFlyoutConfirm() == true)
+                return;
+
             // Prefer overlays whenever open, even if a layout sync briefly flipped ActiveZone.
             if (isSettingsPanelOpen)
             {
@@ -14598,7 +14846,7 @@ namespace QuiverLauncher
             if (AllowChromeActions &&
                 _gamepadNavigation.ActiveZone == GamepadNavigationZone.AnnouncementBanner)
             {
-                DismissAnnouncementBanner();
+                ActivateTopBannerGamepadSelection();
                 return;
             }
 
@@ -14795,6 +15043,9 @@ namespace QuiverLauncher
                 return;
 
             if (AllowChromeActions && _inputService?.TryHandleComboBoxCancel() == true)
+                return;
+
+            if (AllowChromeActions && _inputService?.TryHandleMenuFlyoutCancel() == true)
                 return;
 
             // First Cancel leaves text edit / dismisses Steam OSK; second closes the overlay.

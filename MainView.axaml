@@ -2218,6 +2218,82 @@
 		<Setter Property="Foreground" Value="#ffffff"/>
 	</Style>
 
+	<!-- GitHub token warning strip — same slot as the announcement; announcement wins. -->
+	<Style Selector="Border.github-token-banner">
+		<Setter Property="Background" Value="#7f1d1d"/>
+		<Setter Property="BorderBrush" Value="#991b1b"/>
+		<Setter Property="BorderThickness" Value="0,0,0,1"/>
+	</Style>
+
+	<Style Selector="Border.github-token-banner TextBlock">
+		<Setter Property="Foreground" Value="#fef2f2"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-link">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="#fecaca"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="0,6,12,6"/>
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="HorizontalContentAlignment" Value="Left"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FontSize" Value="13"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-link:pointerover">
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-link TextBlock">
+		<Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}"/>
+		<Setter Property="TextDecorations" Value="Underline"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-close">
+		<Setter Property="Background" Value="#991b1b"/>
+		<Setter Property="Foreground" Value="#fef2f2"/>
+		<Setter Property="BorderBrush" Value="#7f1d1d"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="4"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+						VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+						HorizontalContentAlignment="Center"
+						VerticalContentAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-close:pointerover">
+		<Setter Property="Background" Value="#b91c1c"/>
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-close:pressed">
+		<Setter Property="Background" Value="#7f1d1d"/>
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
 	<Style Selector="Button.settings">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
@@ -2644,7 +2720,10 @@
 	                 Button.modern.gamepad-focused,
 	                 Button.modern-icon.gamepad-focused,
 	                 Button.options.gamepad-focused,
-	                 Button.catalog-filter.gamepad-focused">
+	                 Button.catalog-filter.gamepad-focused,
+	                 Button.github-token-banner-link.gamepad-focused,
+	                 Button.github-token-banner-close.gamepad-focused,
+	                 Button.announcement-banner-close.gamepad-focused">
 		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 		<Setter Property="BorderThickness" Value="3"/>
 		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
@@ -2659,7 +2738,9 @@
 	                 Button.modern.gamepad-focused /template/ Border,
 	                 Button.modern-icon.gamepad-focused /template/ Border,
 	                 Button.options.gamepad-focused /template/ Border,
-	                 Button.catalog-filter.gamepad-focused /template/ Border">
+	                 Button.catalog-filter.gamepad-focused /template/ Border,
+	                 Button.github-token-banner-close.gamepad-focused /template/ Border,
+	                 Button.announcement-banner-close.gamepad-focused /template/ Border">
 		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 		<Setter Property="BorderThickness" Value="3"/>
 	</Style>
@@ -2716,7 +2797,8 @@
 		<Setter Property="BorderThickness" Value="2"/>
 	</Style>
 
-	<Style Selector="ListBox.catalog-review-list">
+	<Style Selector="ListBox.catalog-review-list,
+	                 ListBox.catalog-review-grid">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="BorderThickness" Value="0"/>
@@ -2731,7 +2813,10 @@
 
 	<Style Selector="UserControl.gamepad-chrome ListBox.catalog-review-list,
 	                 UserControl.gamepad-chrome ListBox.catalog-review-list:focus,
-	                 UserControl.gamepad-chrome ListBox.catalog-review-list.gamepad-focused">
+	                 UserControl.gamepad-chrome ListBox.catalog-review-list.gamepad-focused,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-grid,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-grid:focus,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-grid.gamepad-focused">
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="BorderThickness" Value="0"/>
 	</Style>
@@ -2739,7 +2824,11 @@
 	<Style Selector="ListBox.catalog-review-list ListBoxItem:pointerover,
 	                 ListBox.catalog-review-list ListBoxItem:pressed,
 	                 ListBox.catalog-review-list ListBoxItem:selected,
-	                 ListBox.catalog-review-list ListBoxItem:focus">
+	                 ListBox.catalog-review-list ListBoxItem:focus,
+	                 ListBox.catalog-review-grid ListBoxItem:pointerover,
+	                 ListBox.catalog-review-grid ListBoxItem:pressed,
+	                 ListBox.catalog-review-grid ListBoxItem:selected,
+	                 ListBox.catalog-review-grid ListBoxItem:focus">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="BorderBrush" Value="Transparent"/>
 		<Setter Property="BorderThickness" Value="0"/>
@@ -2976,8 +3065,12 @@
 	</Style>
 	<Style Selector="UserControl.mobile Border.catalog-review-grid-card">
 		<Setter Property="MinWidth" Value="0"/>
-		<Setter Property="HorizontalAlignment" Value="Left"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
 		<Setter Property="Margin" Value="4"/>
+	</Style>
+	<Style Selector="UserControl.mobile ListBox#CatalogReviewGridItemsControl ListBoxItem">
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+		<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
 	</Style>
 	<Style Selector="UserControl.mobile Border.catalog-review-grid-card Border.catalog-review-icon">
 		<Setter Property="Height" Value="80"/>
@@ -2993,14 +3086,11 @@
 		<Setter Property="MinWidth" Value="0"/>
 		<Setter Property="Padding" Value="6,3"/>
 	</Style>
-	<Style Selector="UserControl.mobile ScrollViewer#CatalogReviewGridScrollViewer">
-		<Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+	<Style Selector="UserControl.mobile ListBox#CatalogReviewGridItemsControl">
 		<Setter Property="HorizontalAlignment" Value="Stretch"/>
 		<Setter Property="ClipToBounds" Value="True"/>
-	</Style>
-	<Style Selector="UserControl.mobile ItemsControl#CatalogReviewGridItemsControl">
-		<Setter Property="HorizontalAlignment" Value="Stretch"/>
-		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
 	</Style>
 	<Style Selector="UserControl.mobile Grid#CatalogReviewItemsHost">
 		<Setter Property="ClipToBounds" Value="True"/>
@@ -3030,7 +3120,7 @@
 		<Setter Property="MinHeight" Value="32"/>
 		<Setter Property="VerticalAlignment" Value="Center"/>
 	</Style>
-	<Style Selector="UserControl.mobile Button#CatalogSyncAddAllCompactButton">
+	<Style Selector="UserControl.mobile Button#CatalogReviewBulkButton">
 		<Setter Property="MinHeight" Value="32"/>
 		<Setter Property="Padding" Value="8,4"/>
 	</Style>
@@ -3123,6 +3213,25 @@
 	<Style Selector="UserControl.mobile TextBlock#HeaderTitleText">
 		<Setter Property="FontSize" Value="18"/>
 		<Setter Property="Margin" Value="0"/>
+	</Style>
+	<Style Selector="UserControl.mobile services|HoverScrollText#CatalogReviewHeaderTitleScroll">
+		<Setter Property="FontSize" Value="18"/>
+		<Setter Property="Margin" Value="0"/>
+	</Style>
+	<Style Selector="MenuItem.catalog-bulk-item">
+		<Setter Property="MinHeight" Value="44"/>
+		<Setter Property="Padding" Value="16,12"/>
+		<Setter Property="FontSize" Value="14"/>
+	</Style>
+	<Style Selector="MenuItem.catalog-bulk-item.catalog-review-add">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>
+	</Style>
+	<Style Selector="MenuItem.catalog-bulk-item.catalog-review-merge">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeWarning}"/>
+	</Style>
+	<Style Selector="Separator.catalog-bulk-separator">
+		<Setter Property="Margin" Value="8,10"/>
+		<Setter Property="Height" Value="12"/>
 	</Style>
 	<Style Selector="UserControl.mobile TextBox#LibrarySearchTextBox">
 		<Setter Property="MinHeight" Value="32"/>
@@ -3563,6 +3672,15 @@
 								   TextWrapping="NoWrap"
 								   TextTrimming="CharacterEllipsis"
 								   IsVisible="False"/>
+						<services:HoverScrollText x:Name="CatalogReviewHeaderTitleScroll"
+												  Grid.Column="1"
+												  FontSize="24"
+												  FontWeight="Bold"
+												  Foreground="{DynamicResource ThemeText}"
+												  VerticalAlignment="Center"
+												  HorizontalAlignment="Stretch"
+												  Margin="12,0,8,0"
+												  IsVisible="False"/>
 						</Grid>
 						<StackPanel Grid.Column="2"
 									Orientation="Horizontal"
@@ -3692,13 +3810,6 @@
 											<MenuItem Header="Name (Z-A)" Tag="NameDesc" Click="MobileCatalogSortItem_Click"/>
 											<MenuItem Header="Repository (A-Z)" Tag="Repository" Click="MobileCatalogSortItem_Click"/>
 											<MenuItem Header="Status" Tag="Status" Click="MobileCatalogSortItem_Click"/>
-											<MenuItem Header="List" Tag="view:list" Click="MobileCatalogViewItem_Click"/>
-											<MenuItem Header="Grid" Tag="view:grid" Click="MobileCatalogViewItem_Click"/>
-											<MenuItem Header="All platforms" Tag="platform:All" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Windows" Tag="platform:Windows" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Linux" Tag="platform:Linux" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Mac" Tag="platform:Mac" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Android" Tag="platform:Android" Click="CatalogReviewPlatformItem_Click"/>
 										</MenuFlyout>
 									</Button.Flyout>
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
@@ -3927,12 +4038,11 @@
 					</Grid>
 				</Border>
 			</Grid>
-			<!-- Remote announcement banner (sky blue — not focus orange / success green) -->
+			<!-- Top strip: announcement always wins over the GitHub token warning. -->
+			<StackPanel Grid.Row="1" ZIndex="1">
 			<Border x:Name="AnnouncementBanner"
-					Grid.Row="1"
 					Classes="announcement-banner"
-					IsVisible="False"
-					ZIndex="1">
+					IsVisible="False">
 				<Grid ColumnDefinitions="*,Auto" Margin="12,8">
 					<TextBlock x:Name="AnnouncementBannerText"
 							   Grid.Column="0"
@@ -3954,6 +4064,44 @@
 							Click="AnnouncementBannerClose_Click"/>
 				</Grid>
 			</Border>
+			<Border x:Name="GitHubTokenBanner"
+					Classes="github-token-banner"
+					IsVisible="False">
+				<Grid ColumnDefinitions="*,Auto" Margin="12,8">
+					<StackPanel Grid.Column="0" Margin="0,0,12,0" Spacing="2">
+						<TextBlock x:Name="GitHubTokenBannerText"
+								   Text="GitHub rate-limits unauthenticated use, so catalog refresh and downloads can fail or stall."
+								   TextWrapping="Wrap"
+								   VerticalAlignment="Center"
+								   FontSize="13"
+								   FontWeight="SemiBold"/>
+						<WrapPanel Orientation="Horizontal">
+							<Button x:Name="GitHubTokenBannerSettingsButton"
+									Classes="github-token-banner-link"
+									Click="GitHubTokenBannerSettings_Click">
+								<TextBlock Text="Set a GitHub token"/>
+							</Button>
+							<Button x:Name="GitHubTokenBannerDontShowAgainButton"
+									Classes="github-token-banner-link"
+									Click="GitHubTokenBannerDontShowAgain_Click">
+								<TextBlock Text="Don't show this again"/>
+							</Button>
+						</WrapPanel>
+					</StackPanel>
+					<Button x:Name="GitHubTokenBannerCloseButton"
+							Grid.Column="1"
+							Classes="github-token-banner-close"
+							Content="✕"
+							Width="32"
+							Height="28"
+							FontSize="14"
+							FontWeight="Bold"
+							VerticalAlignment="Center"
+							ToolTip.Tip="Dismiss for a week"
+							Click="GitHubTokenBannerClose_Click"/>
+				</Grid>
+			</Border>
+			</StackPanel>
 
 			<!-- Apps Content with Settings Panel Overlay -->
 			<Grid Grid.Row="2">
@@ -4463,23 +4611,59 @@
 									   TextWrapping="Wrap"/>
 						</Border>
 						<Grid x:Name="CatalogReviewMobileChromeRow"
-							  ColumnDefinitions="*,Auto,Auto"
+							  ColumnDefinitions="*,Auto,Auto,Auto"
 							  ColumnSpacing="8"
 							  IsVisible="False">
-							<Button x:Name="CatalogSyncAddAllCompactButton"
+							<Button x:Name="CatalogReviewBulkButton"
 									Grid.Column="1"
-									Classes="options catalog-review-add"
-									Content="Add all"
-									Click="CatalogSyncAddAll_Click"
-									FontSize="11"
-									Padding="8,4"/>
-							<Button x:Name="CatalogReviewFiltersToggle"
-									Grid.Column="2"
 									Classes="catalog-filter"
-									Content="Filters"
-									Click="CatalogReviewFiltersToggle_Click"
+									Content="Bulk"
 									FontSize="11"
-									Padding="10,4"/>
+									Padding="10,4"
+									ToolTip.Tip="Bulk add, merge, and skip">
+								<Button.Flyout>
+									<MenuFlyout Placement="BottomEdgeAlignedRight"
+												Opening="MobileCatalogBulkFlyout_Opening">
+										<MenuItem x:Name="CatalogReviewBulkAddItem"
+												  Classes="catalog-bulk-item catalog-review-add"
+												  Header="Add all"
+												  Click="CatalogSyncAddAll_Click"/>
+										<Separator x:Name="CatalogReviewBulkAddSeparator"
+												   Classes="catalog-bulk-separator"/>
+										<MenuItem x:Name="CatalogReviewBulkMergeItem"
+												  Classes="catalog-bulk-item catalog-review-merge"
+												  Header="Merge all changed"
+												  Click="CatalogSyncReplaceAll_Click"/>
+										<Separator x:Name="CatalogReviewBulkSkipSeparator"
+												   Classes="catalog-bulk-separator"/>
+										<MenuItem x:Name="CatalogReviewBulkSkipItem"
+												  Classes="catalog-bulk-item"
+												  Header="Skip &amp; mark reviewed"
+												  Click="CatalogSyncAcknowledge_Click"/>
+									</MenuFlyout>
+								</Button.Flyout>
+							</Button>
+							<Button x:Name="CatalogReviewFiltersToggle"
+									Grid.Column="3"
+									Classes="catalog-filter"
+									Content="More"
+									FontSize="11"
+									Padding="10,4"
+									ToolTip.Tip="View and platform filters">
+								<Button.Flyout>
+									<MenuFlyout Placement="BottomEdgeAlignedRight"
+												Opening="MobileCatalogMoreFlyout_Opening">
+										<MenuItem Header="List" Tag="view:list" Click="MobileCatalogViewItem_Click"/>
+										<MenuItem Header="Grid" Tag="view:grid" Click="MobileCatalogViewItem_Click"/>
+										<Separator/>
+										<MenuItem Header="All platforms" Tag="platform:All" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Windows" Tag="platform:Windows" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Linux" Tag="platform:Linux" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Mac" Tag="platform:Mac" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Android" Tag="platform:Android" Click="CatalogReviewPlatformItem_Click"/>
+									</MenuFlyout>
+								</Button.Flyout>
+							</Button>
 						</Grid>
 								<StackPanel x:Name="CatalogSyncNeedsReviewEmptyPanel"
 											Spacing="12"
@@ -4579,21 +4763,71 @@
 								<StaticResource ResourceKey="CatalogReviewCardTemplate"/>
 							</ListBox.ItemTemplate>
 						</ListBox>
-						<ScrollViewer x:Name="CatalogReviewGridScrollViewer"
-									  IsVisible="False"
-									  VerticalScrollBarVisibility="Auto">
-							<ItemsControl x:Name="CatalogReviewGridItemsControl"
-										  ItemsSource="{Binding CatalogSyncRows}">
-								<ItemsControl.ItemsPanel>
-									<ItemsPanelTemplate>
-										<WrapPanel Orientation="Horizontal"/>
-									</ItemsPanelTemplate>
-								</ItemsControl.ItemsPanel>
-								<ItemsControl.ItemTemplate>
-									<StaticResource ResourceKey="CatalogReviewGridCardTemplate"/>
-								</ItemsControl.ItemTemplate>
-							</ItemsControl>
-						</ScrollViewer>
+						<ListBox x:Name="CatalogReviewGridItemsControl"
+								 Classes="catalog-review-grid"
+								 IsVisible="False"
+								 ItemsSource="{Binding CatalogSyncRows}"
+								 SelectionMode="Single"
+								 Background="Transparent"
+								 BorderThickness="0"
+								 SelectionChanged="CatalogReviewList_SelectionChanged"
+								 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+								 ScrollViewer.VerticalScrollBarVisibility="Auto">
+							<ListBox.ItemContainerTheme>
+								<ControlTheme TargetType="ListBoxItem">
+									<Setter Property="Padding" Value="0"/>
+									<Setter Property="Margin" Value="0"/>
+									<Setter Property="HorizontalAlignment" Value="Left"/>
+									<Setter Property="HorizontalContentAlignment" Value="Left"/>
+									<Setter Property="Background" Value="Transparent"/>
+									<Setter Property="BorderBrush" Value="Transparent"/>
+									<Setter Property="BorderThickness" Value="0"/>
+									<Setter Property="Focusable" Value="False"/>
+									<Setter Property="PlatformFeedback.FeedbackType" Value="None"/>
+									<Setter Property="Template">
+										<ControlTemplate TargetType="ListBoxItem">
+											<ContentPresenter Name="PART_ContentPresenter"
+															  Background="Transparent"
+															  BorderBrush="Transparent"
+															  BorderThickness="0"
+															  Content="{TemplateBinding Content}"
+															  ContentTemplate="{TemplateBinding ContentTemplate}"
+															  Padding="{TemplateBinding Padding}"
+															  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+															  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+										</ControlTemplate>
+									</Setter>
+									<Style Selector="^:pointerover">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:pressed">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:selected">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:focus">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+								</ControlTheme>
+							</ListBox.ItemContainerTheme>
+							<ListBox.ItemsPanel>
+								<ItemsPanelTemplate>
+									<local:CatalogReviewVirtualizingGridPanel/>
+								</ItemsPanelTemplate>
+							</ListBox.ItemsPanel>
+							<ListBox.ItemTemplate>
+								<StaticResource ResourceKey="CatalogReviewGridCardTemplate"/>
+							</ListBox.ItemTemplate>
+						</ListBox>
 						</Grid>
 					</Grid>
 				</Grid>

@@ -43,6 +43,8 @@ public class FileSettingsStoreTests : IDisposable
         store.Current.HiddenApps.Should().NotBeNull();
         store.Current.CatalogPlatformFilters.Should().NotBeNull().And.BeEmpty();
         store.Current.CatalogPlatformFilterChosen.Should().BeFalse();
+        store.Current.GitHubTokenBannerPermanentlyDismissed.Should().BeFalse();
+        store.Current.GitHubTokenBannerSnoozedUntilUtc.Should().BeNull();
     }
 
     [Fact]
@@ -68,6 +70,8 @@ public class FileSettingsStoreTests : IDisposable
         settings.TruncateLibraryCardTitles = false;
         settings.ListScope = AppListScope.InstalledOnly;
         settings.ManuallyHiddenApps.Add("folder:TestGame");
+        settings.GitHubTokenBannerPermanentlyDismissed = true;
+        settings.GitHubTokenBannerSnoozedUntilUtc = new DateTimeOffset(2026, 9, 15, 0, 0, 0, TimeSpan.Zero);
 
         store.Save(settings);
 
@@ -83,6 +87,9 @@ public class FileSettingsStoreTests : IDisposable
         reloaded.ListScope.Should().Be(AppListScope.InstalledOnly);
         reloaded.ManuallyHiddenApps.Should().Contain("folder:TestGame");
         reloaded.HiddenApps.Should().BeEmpty();
+        reloaded.GitHubTokenBannerPermanentlyDismissed.Should().BeTrue();
+        reloaded.GitHubTokenBannerSnoozedUntilUtc.Should().Be(
+            new DateTimeOffset(2026, 9, 15, 0, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]

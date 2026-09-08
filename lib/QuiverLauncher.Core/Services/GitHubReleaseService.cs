@@ -11,6 +11,8 @@ namespace QuiverLauncher.Core.Services
         public IReadOnlyList<GitHubRelease> Releases { get; init; } = [];
         public string? ETag { get; init; }
         public string? LatestTag { get; init; }
+        public string? ErrorMessage { get; init; }
+        public bool IsRateLimited { get; init; }
         public bool IsNotModified => StatusCode == HttpStatusCode.NotModified;
     }
 
@@ -65,6 +67,74 @@ namespace QuiverLauncher.Core.Services
                 StatusCode = response.StatusCode,
                 Releases = merged,
                 ETag = response.Headers.ETag?.Tag,
+                LatestTag = string.IsNullOrWhiteSpace(latest?.tag_name) ? null : latest.tag_name
+            };
+        }
+
+        /// <summary>
+        /// Latest GitHub release for catalog platform indexing. One HTTP call; does not
+        /// download the full <c>/releases</c> list. 404 means prerelease-only (no GitHub Latest).
+        /// </summary>
+        public static async Task<GitHubReleaseFetchResult> FetchLatestReleaseIndexAsync(
+            HttpClient httpClient,
+            string repository,
+            string? token = null,
+            string? etag = null)
+        {
+            if (string.IsNullOrWhiteSpace(repository))
+            {
+                return new GitHubReleaseFetchResult
+                {
+                    StatusCode = HttpStatusCode.BadRequest
+                };
+            }
+
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"https://api.github.com/repos/{repository}/releases/latest");
+
+            if (!string.IsNullOrWhiteSpace(etag))
+                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
+
+            if (!string.IsNullOrWhiteSpace(token))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            using var response = await httpClient.SendAsync(request).ConfigureAwait(false);
+            var responseEtag = response.Headers.ETag?.Tag;
+
+            if (response.StatusCode == HttpStatusCode.NotModified)
+            {
+                return new GitHubReleaseFetchResult
+                {
+                    StatusCode = response.StatusCode,
+                    ETag = responseEtag
+                };
+            }
+
+            if (response.StatusCode is HttpStatusCode.NotFound
+                or HttpStatusCode.Forbidden
+                or HttpStatusCode.Unauthorized
+                or HttpStatusCode.TooManyRequests
+                || !response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                return new GitHubReleaseFetchResult
+                {
+                    StatusCode = response.StatusCode,
+                    ETag = responseEtag,
+                    ErrorMessage = string.IsNullOrWhiteSpace(errorBody) ? null : errorBody,
+                    IsRateLimited = IsRateLimitResponse(response.StatusCode, response.Headers, errorBody)
+                };
+            }
+
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var latest = JsonSerializer.Deserialize<GitHubRelease>(content);
+
+            return new GitHubReleaseFetchResult
+            {
+                StatusCode = response.StatusCode,
+                Releases = latest == null ? [] : [latest],
+                ETag = responseEtag,
                 LatestTag = string.IsNullOrWhiteSpace(latest?.tag_name) ? null : latest.tag_name
             };
         }
@@ -162,5 +232,34 @@ namespace QuiverLauncher.Core.Services
 
         private static bool HasAssets(GitHubRelease release) =>
             release.assets is { Length: > 0 };
+
+        public static bool IsRateLimitResponse(
+            HttpStatusCode status,
+            HttpResponseHeaders? headers,
+            string? body)
+        {
+            if (status == HttpStatusCode.TooManyRequests)
+                return true;
+
+            if (status != HttpStatusCode.Forbidden)
+                return false;
+
+            if (headers != null &&
+                headers.TryGetValues("X-RateLimit-Remaining", out var remainingValues))
+            {
+                foreach (var value in remainingValues)
+                {
+                    if (int.TryParse(value, out var remaining) && remaining <= 0)
+                        return true;
+                }
+            }
+
+            return LooksLikeRateLimitMessage(body);
+        }
+
+        public static bool LooksLikeRateLimitMessage(string? message) =>
+            !string.IsNullOrWhiteSpace(message) &&
+            (message.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ||
+             message.Contains("rate-limit", StringComparison.OrdinalIgnoreCase));
     }
 }

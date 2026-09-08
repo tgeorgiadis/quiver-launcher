@@ -135,6 +135,10 @@ namespace QuiverLauncher
         public string ModsSortBy { get; set; } = "InstalledFirst";
         public bool ModsIncludeNsfw { get; set; }
         public List<string> DismissedAnnouncementIds { get; set; } = new List<string>();
+        /// <summary>When true, the GitHub token rate-limit warning never shows again.</summary>
+        public bool GitHubTokenBannerPermanentlyDismissed { get; set; }
+        /// <summary>UTC time until which the GitHub token warning stays hidden after the user closed it.</summary>
+        public DateTimeOffset? GitHubTokenBannerSnoozedUntilUtc { get; set; }
         public bool IgnoreArticlesWhenSorting { get; set; } = true;
         public LibraryNameStyle LibraryNameStyle { get; set; } = LibraryNameStyle.NameAndProject;
         /// <summary>When true, library card name and project ellipsize and marquee on hover or focus.</summary>

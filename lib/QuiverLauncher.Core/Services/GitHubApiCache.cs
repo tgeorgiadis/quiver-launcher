@@ -147,7 +147,9 @@ namespace QuiverLauncher.Core.Services
             string repository,
             string version,
             string etag,
-            GitHubRelease? release = null)
+            GitHubRelease? release = null,
+            bool persist = true,
+            bool replaceAssetNames = false)
         {
             var cacheKey = GetCacheKey(repositorySource, repository);
             _cache.AddOrUpdate(cacheKey,
@@ -168,7 +170,7 @@ namespace QuiverLauncher.Core.Services
                 {
                     var resolvedRelease = release ?? old.CachedRelease;
                     var assetNames = ExtractAssetNames(resolvedRelease);
-                    if (assetNames.Count == 0 && old.AssetNames is { Count: > 0 })
+                    if (!replaceAssetNames && assetNames.Count == 0 && old.AssetNames is { Count: > 0 })
                         assetNames = old.AssetNames;
                     return new GameVersionCache
                     {
@@ -189,8 +191,12 @@ namespace QuiverLauncher.Core.Services
                 _cache.TryRemove(repository, out _);
             }
 
-            SaveToDisk();
+            if (persist)
+                SaveToDisk();
         }
+
+        /// <summary>Writes in-memory cache entries to disk. No-op when nothing has been initialized.</summary>
+        public static void Flush() => SaveToDisk();
 
         /// <summary>Legacy overload: treats repository as GitHub.</summary>
         public static void SetCache(string repository, string version, string etag, GitHubRelease? release = null) =>

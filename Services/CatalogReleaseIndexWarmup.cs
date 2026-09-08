@@ -14,6 +14,8 @@ public readonly record struct CatalogReleaseWarmupTarget(
 public static class CatalogReleaseIndexWarmup
 {
     public const int MaxConcurrency = 2;
+    public const int UpdateDebounceMs = 750;
+    public const int DiskFlushEvery = 10;
 
     public static IReadOnlyList<CatalogReleaseWarmupTarget> CollectTargets(
         IEnumerable<CatalogSyncRowItem> rows)
@@ -53,9 +55,17 @@ public static class CatalogReleaseIndexWarmup
         CancellationToken cancellationToken,
         Func<Task>? onUpdated = null)
     {
-        var pending = CollectPending(rows);
+        var rowList = rows as IReadOnlyList<CatalogSyncRowItem> ?? rows.ToList();
+        var pending = CollectPending(rowList);
         if (pending.Count == 0)
             return;
+
+        var dirty = 0;
+        var warmedSinceFlush = 0;
+        using var debounceCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var debounceLoop = onUpdated == null
+            ? Task.CompletedTask
+            : RunDebounceLoopAsync(onUpdated, () => Interlocked.Exchange(ref dirty, 0), debounceCts.Token);
 
         using var gate = new SemaphoreSlim(MaxConcurrency, MaxConcurrency);
         var stop = false;
@@ -68,16 +78,20 @@ public static class CatalogReleaseIndexWarmup
                 if (stop || cancellationToken.IsCancellationRequested)
                     return;
 
-                var token = ResolveToken(rows, target, getApiToken);
+                var token = ResolveToken(rowList, target, getApiToken);
                 var updated = await WarmOneAsync(httpClient, target, token, cancellationToken).ConfigureAwait(false);
-                if (updated && onUpdated != null)
-                    await onUpdated().ConfigureAwait(false);
+                if (!updated)
+                    return;
+
+                Interlocked.Increment(ref dirty);
+                if (Interlocked.Increment(ref warmedSinceFlush) % DiskFlushEvery == 0)
+                    GitHubApiCache.Flush();
             }
             catch (OperationCanceledException)
             {
                 throw;
             }
-            catch (HttpRequestException ex) when (IsRateLimited(ex.StatusCode))
+            catch (HttpRequestException ex) when (IsConfirmedRateLimit(ex.StatusCode, ex.Message))
             {
                 stop = true;
             }
@@ -100,6 +114,36 @@ public static class CatalogReleaseIndexWarmup
         {
             // Caller left the catalog review list.
         }
+        finally
+        {
+            GitHubApiCache.Flush();
+            try
+            {
+                await debounceCts.CancelAsync().ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            try
+            {
+                await debounceLoop.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            if (onUpdated != null && Interlocked.Exchange(ref dirty, 0) > 0)
+            {
+                try
+                {
+                    await onUpdated().ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+        }
     }
 
     internal static async Task<bool> WarmOneAsync(
@@ -110,47 +154,76 @@ public static class CatalogReleaseIndexWarmup
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        var useLatestOnly = RepositorySourceHelper.IsGitHub(target.RepositorySource) &&
+                            string.IsNullOrWhiteSpace(target.PreferredVersion);
         var etag = GitHubApiCache.GetETag(target.RepositorySource, target.Repository);
-        var result = await ReleaseSourceRegistry.Default.FetchReleasesAsync(
-            httpClient,
-            target.RepositorySource,
-            target.Repository,
-            apiToken,
-            string.IsNullOrWhiteSpace(etag) ? null : etag).ConfigureAwait(false);
+        GitHubReleaseFetchResult result;
+        try
+        {
+            result = useLatestOnly
+                ? await GitHubReleaseService.FetchLatestReleaseIndexAsync(
+                    httpClient,
+                    target.Repository,
+                    apiToken,
+                    string.IsNullOrWhiteSpace(etag) ? null : etag).ConfigureAwait(false)
+                : await ReleaseSourceRegistry.Default.FetchReleasesAsync(
+                    httpClient,
+                    target.RepositorySource,
+                    target.Repository,
+                    apiToken,
+                    string.IsNullOrWhiteSpace(etag) ? null : etag).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            return HandleFetchFailure(target, ex);
+        }
 
-        if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized or HttpStatusCode.TooManyRequests)
-            throw new HttpRequestException("Release index warmup was rate limited.", null, result.StatusCode);
+        ThrowIfRateLimited(result);
+
+        if (IsPerRepoAccessDenied(result.StatusCode))
+            return CacheEmptyIndex(target, result.ETag);
 
         if (result.IsNotModified)
         {
-            if (GitHubApiCache.TryGetCachedVersion(target.RepositorySource, target.Repository, out var existing) &&
-                existing?.CachedRelease != null)
-            {
-                GitHubApiCache.SetCache(
-                    target.RepositorySource,
-                    target.Repository,
-                    existing.Version,
-                    existing.ETag,
-                    existing.CachedRelease);
+            if (TryRefreshNotModified(target))
                 return true;
-            }
 
             if (GitHubApiCache.HasFreshAssetIndex(target.RepositorySource, target.Repository))
                 return false;
 
-            result = await ReleaseSourceRegistry.Default.FetchReleasesAsync(
-                httpClient,
-                target.RepositorySource,
-                target.Repository,
-                apiToken,
-                etag: null).ConfigureAwait(false);
+            try
+            {
+                result = await FetchFullIndexAsync(httpClient, target, apiToken, etag: null).ConfigureAwait(false);
+            }
+            catch (HttpRequestException ex)
+            {
+                return HandleFetchFailure(target, ex);
+            }
+        }
+        else if (useLatestOnly &&
+                 (result.StatusCode == HttpStatusCode.NotFound ||
+                  (result.StatusCode == HttpStatusCode.OK && result.Releases.Count == 0)))
+        {
+            try
+            {
+                result = await FetchFullIndexAsync(httpClient, target, apiToken, etag: null).ConfigureAwait(false);
+            }
+            catch (HttpRequestException ex)
+            {
+                return HandleFetchFailure(target, ex);
+            }
         }
 
-        if (result.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized or HttpStatusCode.TooManyRequests)
-            throw new HttpRequestException("Release index warmup was rate limited.", null, result.StatusCode);
+        ThrowIfRateLimited(result);
+
+        if (IsPerRepoAccessDenied(result.StatusCode))
+            return CacheEmptyIndex(target, result.ETag);
+
+        if (!IsUsableIndexStatus(result.StatusCode))
+            return false;
 
         if (result.Releases.Count == 0)
-            return false;
+            return CacheEmptyIndex(target, result.ETag);
 
         var latest = ReleaseSelection.SelectLatestRelease(
             result.Releases,
@@ -158,16 +231,68 @@ public static class CatalogReleaseIndexWarmup
             installedVersion: null,
             result.LatestTag);
         if (latest == null || string.IsNullOrWhiteSpace(latest.tag_name))
-            return false;
+            return CacheEmptyIndex(target, result.ETag);
 
         GitHubApiCache.SetCache(
             target.RepositorySource,
             target.Repository,
             latest.tag_name,
             result.ETag ?? string.Empty,
-            latest);
+            latest,
+            persist: false);
         return true;
     }
+
+    private static async Task RunDebounceLoopAsync(
+        Func<Task> onUpdated,
+        Func<int> takeDirty,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(UpdateDebounceMs, cancellationToken).ConfigureAwait(false);
+                if (takeDirty() <= 0)
+                    continue;
+
+                await onUpdated().ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private static bool TryRefreshNotModified(CatalogReleaseWarmupTarget target)
+    {
+        if (!GitHubApiCache.TryGetCachedVersion(target.RepositorySource, target.Repository, out var existing) ||
+            existing?.CachedRelease == null)
+        {
+            return false;
+        }
+
+        GitHubApiCache.SetCache(
+            target.RepositorySource,
+            target.Repository,
+            existing.Version,
+            existing.ETag,
+            existing.CachedRelease,
+            persist: false);
+        return true;
+    }
+
+    private static Task<GitHubReleaseFetchResult> FetchFullIndexAsync(
+        HttpClient httpClient,
+        CatalogReleaseWarmupTarget target,
+        string? apiToken,
+        string? etag) =>
+        ReleaseSourceRegistry.Default.FetchReleasesAsync(
+            httpClient,
+            target.RepositorySource,
+            target.Repository,
+            apiToken,
+            etag);
 
     private static string? ResolveToken(
         IEnumerable<CatalogSyncRowItem> rows,
@@ -190,6 +315,52 @@ public static class CatalogReleaseIndexWarmup
         return game == null ? target.GetApiToken() : getApiToken(game);
     }
 
-    private static bool IsRateLimited(HttpStatusCode? status) =>
-        status is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized or HttpStatusCode.TooManyRequests;
+    private static bool HandleFetchFailure(CatalogReleaseWarmupTarget target, HttpRequestException ex)
+    {
+        if (IsConfirmedRateLimit(ex.StatusCode, ex.Message))
+            throw new HttpRequestException("Release index warmup was rate limited.", ex, ex.StatusCode);
+
+        if (ex.StatusCode is HttpStatusCode.Forbidden
+            or HttpStatusCode.Unauthorized
+            or HttpStatusCode.NotFound)
+        {
+            return CacheEmptyIndex(target, etag: null);
+        }
+
+        System.Diagnostics.Debug.WriteLine(
+            $"Catalog release index warmup skipped {target.Repository}: {ex.Message}");
+        return false;
+    }
+
+    private static bool CacheEmptyIndex(CatalogReleaseWarmupTarget target, string? etag)
+    {
+        GitHubApiCache.SetCache(
+            target.RepositorySource,
+            target.Repository,
+            version: string.Empty,
+            etag ?? string.Empty,
+            new GitHubRelease { tag_name = string.Empty, assets = [] },
+            persist: false,
+            replaceAssetNames: true);
+        return true;
+    }
+
+    private static void ThrowIfRateLimited(GitHubReleaseFetchResult result)
+    {
+        if (result.IsRateLimited ||
+            IsConfirmedRateLimit(result.StatusCode, result.ErrorMessage))
+        {
+            throw new HttpRequestException("Release index warmup was rate limited.", null, result.StatusCode);
+        }
+    }
+
+    private static bool IsConfirmedRateLimit(HttpStatusCode? status, string? message) =>
+        status == HttpStatusCode.TooManyRequests ||
+        (status == HttpStatusCode.Forbidden && GitHubReleaseService.LooksLikeRateLimitMessage(message));
+
+    private static bool IsPerRepoAccessDenied(HttpStatusCode status) =>
+        status is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized;
+
+    private static bool IsUsableIndexStatus(HttpStatusCode status) =>
+        status == HttpStatusCode.OK || status == HttpStatusCode.NotFound;
 }

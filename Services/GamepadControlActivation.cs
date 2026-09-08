@@ -14,6 +14,14 @@ internal static class GamepadControlActivation
             return;
 
         button.Focus();
+
+        // ClickEvent does not run Button.OnClick, so attached flyouts never open.
+        if (button.Flyout != null)
+        {
+            GamepadMenuFlyoutNavigation.Toggle(button);
+            return;
+        }
+
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, RoutingStrategies.Bubble) { Source = button });
     }
 

@@ -8,6 +8,37 @@ namespace QuiverLauncher.Tests;
 public class GamepadControlActivationTests
 {
     [AvaloniaFact]
+    public void ActivateButton_opens_attached_menu_flyout()
+    {
+        var flyout = new MenuFlyout
+        {
+            Items = { new MenuItem { Header = "Windows" } },
+        };
+        var button = new Button
+        {
+            Content = "All platforms",
+            IsEnabled = true,
+            IsVisible = true,
+            Flyout = flyout,
+        };
+        var window = new Window { Content = button, Width = 280, Height = 160 };
+
+        try
+        {
+            window.Show();
+            GamepadControlActivation.ActivateButton(button);
+            flyout.IsOpen.Should().BeTrue();
+        }
+        finally
+        {
+            if (flyout.IsOpen)
+                flyout.Hide();
+            GamepadMenuFlyoutNavigation.Instance.Close(flyout);
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void ActivateButton_raises_click_once()
     {
         var clickCount = 0;

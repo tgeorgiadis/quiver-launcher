@@ -126,6 +126,73 @@ public class GitHubReleaseServiceTests
         result.Releases.Should().ContainSingle(release => release.tag_name == "github-v1.0.9");
     }
 
+    [Fact]
+    public async Task FetchLatestReleaseIndexAsync_returns_single_release()
+    {
+        using var client = new HttpClient(new StubHttpMessageHandler(_ =>
+            JsonOk("""{"tag_name":"1.2.0","prerelease":false,"assets":[{"name":"app.apk","browser_download_url":"https://example.com/app.apk"}]}""")));
+
+        var result = await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo");
+
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.LatestTag.Should().Be("1.2.0");
+        result.Releases.Should().ContainSingle(release => release.tag_name == "1.2.0");
+    }
+
+    [Fact]
+    public async Task FetchLatestReleaseIndexAsync_returns_not_modified()
+    {
+        using var client = new HttpClient(new StubHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.NotModified)));
+
+        var result = await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo", etag: "\"abc\"");
+
+        result.IsNotModified.Should().BeTrue();
+        result.Releases.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task FetchLatestReleaseIndexAsync_returns_not_found_without_throwing()
+    {
+        using var client = new HttpClient(new StubHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.NotFound)));
+
+        var result = await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo");
+
+        result.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        result.Releases.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task FetchLatestReleaseIndexAsync_surfaces_rate_limit_status()
+    {
+        using var client = new HttpClient(new StubHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.Forbidden)
+            {
+                Content = new StringContent("""{"message":"API rate limit exceeded"}""")
+            }));
+
+        var result = await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo");
+
+        result.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        result.IsRateLimited.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task FetchLatestReleaseIndexAsync_treats_plain_403_as_not_rate_limited()
+    {
+        using var client = new HttpClient(new StubHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.Forbidden)
+            {
+                Content = new StringContent("""{"message":"Not Found"}""")
+            }));
+
+        var result = await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo");
+
+        result.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        result.IsRateLimited.Should().BeFalse();
+    }
+
     private static GitHubRelease Release(string tag) =>
         new()
         {

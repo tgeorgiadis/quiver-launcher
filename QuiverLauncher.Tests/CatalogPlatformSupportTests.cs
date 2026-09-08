@@ -138,6 +138,26 @@ public class CatalogPlatformSupportTests : IDisposable
     }
 
     [Fact]
+    public void AppMatches_empty_asset_index_is_hidden_on_android()
+    {
+        var repo = UniqueRepo("empty-index");
+        GitHubApiCache.SetCache(
+            "github",
+            repo,
+            version: string.Empty,
+            etag: "etag",
+            new GitHubRelease { tag_name = string.Empty, assets = [] },
+            replaceAssetNames: true);
+
+        GitHubApiCache.TryGetAssetNames("github", repo, out var names).Should().BeTrue();
+        names.Should().BeEmpty();
+        CatalogPlatformSupport.AppMatches("github", repo, null, ["Android"])
+            .Should().BeFalse();
+        CatalogPlatformSupport.AppMatches("github", repo, null, ["Windows"])
+            .Should().BeFalse();
+    }
+
+    [Fact]
     public void AppMatches_no_repository_stays_visible()
     {
         CatalogPlatformSupport.AppMatches("github", null, null, ["Android"])

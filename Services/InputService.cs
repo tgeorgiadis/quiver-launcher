@@ -61,11 +61,13 @@ namespace QuiverLauncher.Services
         private readonly GamepadModalDialogNavigation _modalDialogNavigation = GamepadModalDialogNavigation.Instance;
         private readonly GamepadContextMenuNavigation _contextMenuNavigation = GamepadContextMenuNavigation.Instance;
         private readonly GamepadComboBoxNavigation _comboBoxNavigation = GamepadComboBoxNavigation.Instance;
+        private readonly GamepadMenuFlyoutNavigation _menuFlyoutNavigation = GamepadMenuFlyoutNavigation.Instance;
 
         public bool IsGamepadOverlayActive =>
             _modalDialogNavigation.HasActiveDialog ||
             _contextMenuNavigation.HasActiveContextMenu ||
-            _comboBoxNavigation.HasActiveComboBox;
+            _comboBoxNavigation.HasActiveComboBox ||
+            _menuFlyoutNavigation.HasActiveMenuFlyout;
 
         public bool ShouldKeepPollingWhenDeactivated() => IsGamepadOverlayActive;
 
@@ -492,6 +494,12 @@ namespace QuiverLauncher.Services
                 return;
             }
 
+            if (_menuFlyoutNavigation.TryHandleNavigation(direction))
+            {
+                OnNavigate?.Invoke(direction);
+                return;
+            }
+
             if (_contextMenuNavigation.TryHandleNavigation(direction))
             {
                 OnNavigate?.Invoke(direction);
@@ -542,6 +550,10 @@ namespace QuiverLauncher.Services
         public bool TryHandleComboBoxConfirm() => _comboBoxNavigation.TryHandleConfirm();
 
         public bool TryHandleComboBoxCancel() => _comboBoxNavigation.TryHandleCancel();
+
+        public bool TryHandleMenuFlyoutConfirm() => _menuFlyoutNavigation.TryHandleConfirm();
+
+        public bool TryHandleMenuFlyoutCancel() => _menuFlyoutNavigation.TryHandleCancel();
 
         public bool TryHandleModalConfirm() => _modalDialogNavigation.TryHandleConfirm();
 
