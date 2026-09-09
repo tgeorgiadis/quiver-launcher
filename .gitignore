@@ -414,6 +414,7 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# JetBrains Rider
+# JetBrains Rider / IntelliJ
+.idea/
 *.sln.iml
 flatpak.bat
