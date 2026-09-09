@@ -20,6 +20,7 @@ public sealed class GamepadModalDialogNavigation
     private int _listBoxCursorIndex = -1;
     private InputService? _inputService;
     private readonly EventHandler<PointerEventArgs> _dialogControlPointerEntered;
+    private readonly EventHandler<PointerPressedEventArgs> _dialogControlPointerPressed;
     private readonly EventHandler<KeyEventArgs> _dialogKeyDownHandler;
     private readonly EventHandler<KeyEventArgs> _dialogKeyUpHandler;
 
@@ -45,6 +46,7 @@ public sealed class GamepadModalDialogNavigation
     public GamepadModalDialogNavigation()
     {
         _dialogControlPointerEntered = OnDialogControlPointerEntered;
+        _dialogControlPointerPressed = OnDialogControlPointerPressed;
         _dialogKeyDownHandler = OnDialogKeyDown;
         _dialogKeyUpHandler = OnDialogKeyUp;
     }
@@ -914,13 +916,27 @@ public sealed class GamepadModalDialogNavigation
     private void AttachDialogControlHoverHandlers(IReadOnlyList<Control> controls)
     {
         foreach (var control in controls)
+        {
             control.PointerEntered += _dialogControlPointerEntered;
+            control.AddHandler(InputElement.PointerPressedEvent, _dialogControlPointerPressed, RoutingStrategies.Tunnel);
+        }
     }
 
     private void DetachDialogControlHoverHandlers(IReadOnlyList<Control> controls)
     {
         foreach (var control in controls)
+        {
             control.PointerEntered -= _dialogControlPointerEntered;
+            control.RemoveHandler(InputElement.PointerPressedEvent, _dialogControlPointerPressed);
+        }
+    }
+
+    private void OnDialogControlPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Pointer.Type != PointerType.Mouse)
+            return;
+
+        OnDialogControlPointerEntered(sender, e);
     }
 
     private void OnDialogControlPointerEntered(object? sender, PointerEventArgs e)

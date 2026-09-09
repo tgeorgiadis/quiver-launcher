@@ -2205,6 +2205,12 @@ namespace QuiverLauncher
             if (e.Pointer.Type != PointerType.Mouse)
                 return;
 
+            if (!IsGamepadFocusActive)
+                return;
+
+            if (TryMoveGamepadHighlightToPointer(e.Source))
+                return;
+
             if (_inputService?.HasConnectedGamepad == true)
                 return;
 
@@ -2214,6 +2220,349 @@ namespace QuiverLauncher
             GamepadFocusChrome.SetKeyboardNavigationActive(false);
             UpdateGamepadChromeClass();
             ClearGamepadFocus();
+        }
+
+        /// <summary>
+        /// Moves the orange gamepad/keyboard ring to the clicked control so D-pad
+        /// continues from there. Returns false when the click missed navigable UI.
+        /// </summary>
+        private bool TryMoveGamepadHighlightToPointer(object? source)
+        {
+            if (IsDisplayFilterOverlayOpen)
+            {
+                return TryApplyPointerHit(
+                    CollectDisplayFilterFocusableControls(),
+                    GamepadNavigationZone.DisplayFilterOverlay,
+                    _displayFilterGamepadFocusIndex,
+                    ApplyDisplayFilterGamepadSelection,
+                    source);
+            }
+
+            if (_isChangelogOpen)
+            {
+                return TryApplyPointerHit(
+                    CollectChangelogFocusableControls(),
+                    GamepadNavigationZone.ChangelogOverlay,
+                    _changelogGamepadFocusIndex,
+                    ApplyChangelogGamepadSelection,
+                    source);
+            }
+
+            if (_isCatalogReviewDetailsOpen)
+            {
+                return TryApplyPointerHit(
+                    CollectCatalogReviewDetailsControls(),
+                    GamepadNavigationZone.CatalogReviewDetailsOverlay,
+                    _catalogReviewDetailsActionIndex,
+                    ApplyCatalogReviewDetailsActionSelection,
+                    source);
+            }
+
+            if (_isModDetailsOpen)
+            {
+                return TryApplyPointerHit(
+                    CollectModDetailsFocusableControls(),
+                    GamepadNavigationZone.ModsDetailsOverlay,
+                    _modDetailsGamepadFocusIndex,
+                    ApplyModDetailsGamepadSelection,
+                    source);
+            }
+
+            if (_isEntryFormOpen)
+            {
+                return TryApplyPointerHit(
+                    CollectEntryFormFocusableControls(),
+                    GamepadNavigationZone.EntryFormOverlay,
+                    _entryFormGamepadFocusIndex,
+                    ApplyEntryFormGamepadSelection,
+                    source);
+            }
+
+            if (_isTagEditOpen)
+            {
+                return TryApplyPointerHit(
+                    CollectTagEditFocusableControls(),
+                    GamepadNavigationZone.TagEditOverlay,
+                    _tagEditGamepadFocusIndex,
+                    ApplyTagEditGamepadSelection,
+                    source);
+            }
+
+            if (isSettingsPanelOpen)
+            {
+                return TryApplyPointerHit(
+                    CollectSettingsFocusableControls(),
+                    GamepadNavigationZone.Settings,
+                    _settingsGamepadFocusIndex,
+                    ApplySettingsGamepadSelection,
+                    source);
+            }
+
+            if (_mainViewMode == MainViewMode.Library && _isModsOverlayOpen)
+            {
+                if (TryApplyPointerHit(
+                        CollectModsToolbarControls(),
+                        GamepadNavigationZone.ModsOverlayToolbar,
+                        _modsGamepadToolbarIndex,
+                        ApplyModsToolbarSelection,
+                        source) ||
+                    TryApplyPointerHit(
+                        CollectModsFilterControls(),
+                        GamepadNavigationZone.ModsOverlayFilters,
+                        _modsGamepadFilterIndex,
+                        ApplyModsFiltersSelection,
+                        source) ||
+                    TryApplyPointerHit(
+                        CollectModsSourceFilterControls(),
+                        GamepadNavigationZone.ModsOverlaySourceFilters,
+                        _modsGamepadSourceFilterIndex,
+                        ApplyModsSourceFiltersSelection,
+                        source))
+                {
+                    return true;
+                }
+
+                var mods = ModListRows.ToList();
+                var rowIndex = GamepadPointerFocusSync.IndexOfDataContext(mods, source as Visual);
+                if (rowIndex >= 0)
+                {
+                    var actions = CollectModsRowActionControls(rowIndex);
+                    var actionIndex = GamepadControlActivation.IndexOfControlContainingFocus(actions, source);
+                    if (actionIndex >= 0)
+                    {
+                        if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.ModsOverlayRowActions &&
+                            _modsGamepadListIndex == rowIndex &&
+                            _modsGamepadRowActionIndex == actionIndex)
+                        {
+                            return true;
+                        }
+
+                        GamepadTextInput.Reset();
+                        _modsGamepadListIndex = rowIndex;
+                        ApplyModsRowActionSelection(actionIndex);
+                        return true;
+                    }
+
+                    return TryApplyPointerCard(
+                        mods,
+                        GamepadNavigationZone.ModsOverlayList,
+                        _modsGamepadListIndex,
+                        index => ApplyModsListSelection(index, stealFocus: false),
+                        source);
+                }
+            }
+            else if (_mainViewMode == MainViewMode.Library && _isAppUpdatesReviewOpen)
+            {
+                if (TryApplyPointerHit(
+                    CollectAppUpdatesReviewToolbarControls(),
+                    GamepadNavigationZone.AppUpdatesReviewToolbar,
+                    _gamepadNavigation.AppUpdatesReviewToolbarIndex,
+                    ApplyAppUpdatesReviewToolbarSelection,
+                    source))
+                {
+                    return true;
+                }
+
+                var rows = AppUpdateReviewRows.ToList();
+                var rowIndex = GamepadPointerFocusSync.IndexOfDataContext(rows, source as Visual);
+                if (rowIndex >= 0)
+                {
+                    var actions = CollectAppUpdatesReviewRowActionControls(rows[rowIndex]);
+                    var actionIndex = GamepadControlActivation.IndexOfControlContainingFocus(actions, source);
+                    if (actionIndex >= 0)
+                    {
+                        if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.AppUpdatesReviewRowActions &&
+                            _gamepadNavigation.AppUpdatesReviewSelectedIndex == rowIndex &&
+                            _gamepadNavigation.AppUpdatesReviewRowActionIndex == actionIndex)
+                        {
+                            return true;
+                        }
+
+                        GamepadTextInput.Reset();
+                        _gamepadNavigation.AppUpdatesReviewSelectedIndex = rowIndex;
+                        ApplyAppUpdatesReviewRowActionSelection(actionIndex);
+                        return true;
+                    }
+
+                    return TryApplyPointerCard(
+                        rows,
+                        GamepadNavigationZone.AppUpdatesReviewList,
+                        _gamepadNavigation.AppUpdatesReviewSelectedIndex,
+                        index => ApplyAppUpdatesReviewRowSelection(index, stealFocus: false),
+                        source);
+                }
+            }
+            else if (_mainViewMode == MainViewMode.AppCatalog && _appCatalogSubView == AppCatalogSubView.Review)
+            {
+                if (TryApplyPointerHit(
+                        CollectCatalogReviewFilterControls(),
+                        GamepadNavigationZone.CatalogReviewFilters,
+                        _gamepadNavigation.CatalogReviewFilterIndex,
+                        ApplyCatalogReviewFilterSelection,
+                        source) ||
+                    TryApplyPointerHit(
+                        CollectCatalogReviewEmptyActionControls(),
+                        GamepadNavigationZone.CatalogReviewList,
+                        _gamepadNavigation.CatalogReviewSelectedIndex,
+                        ApplyCatalogReviewEmptyActionSelection,
+                        source))
+                {
+                    return true;
+                }
+
+                var rows = CatalogSyncRows.ToList();
+                var rowIndex = GamepadPointerFocusSync.IndexOfDataContext(rows, source as Visual);
+                if (rowIndex >= 0)
+                {
+                    var actions = CollectCatalogReviewRowActionControls(rows[rowIndex]);
+                    var actionIndex = GamepadControlActivation.IndexOfControlContainingFocus(actions, source);
+                    if (actionIndex >= 0)
+                    {
+                        if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogReviewRowActions &&
+                            _gamepadNavigation.CatalogReviewSelectedIndex == rowIndex &&
+                            _gamepadNavigation.CatalogReviewRowActionIndex == actionIndex)
+                        {
+                            return true;
+                        }
+
+                        GamepadTextInput.Reset();
+                        _gamepadNavigation.CatalogReviewSelectedIndex = rowIndex;
+                        ApplyCatalogReviewRowActionSelection(actionIndex);
+                        return true;
+                    }
+
+                    return TryApplyPointerCard(
+                        rows,
+                        GamepadNavigationZone.CatalogReviewList,
+                        _gamepadNavigation.CatalogReviewSelectedIndex,
+                        index => ApplyCatalogReviewRowSelection(index, stealFocus: false),
+                        source);
+                }
+            }
+            else if (_mainViewMode == MainViewMode.AppCatalog && _appCatalogSubView == AppCatalogSubView.Sources)
+            {
+                if (TryApplyPointerHit(
+                        CollectCatalogSourcesToolbarControls(),
+                        GamepadNavigationZone.CatalogSourcesToolbar,
+                        _gamepadNavigation.CatalogSourcesToolbarSelectedIndex,
+                        ApplyCatalogSourcesToolbarSelection,
+                        source) ||
+                    TryApplyPointerHit(
+                        CollectCatalogSourcesFilterControls(),
+                        GamepadNavigationZone.CatalogSourcesFilters,
+                        _gamepadNavigation.CatalogSourcesFilterIndex,
+                        ApplyCatalogSourcesFilterSelection,
+                        source))
+                {
+                    return true;
+                }
+
+                var sources = CatalogSources.ToList();
+                var sourceIndex = GamepadPointerFocusSync.IndexOfDataContext(sources, source as Visual);
+                if (sourceIndex >= 0)
+                {
+                    var actions = CollectCatalogSourceCardActionControls(sources[sourceIndex]);
+                    var actionIndex = GamepadControlActivation.IndexOfControlContainingFocus(actions, source);
+                    if (actionIndex >= 0)
+                    {
+                        if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogSourceCardActions &&
+                            _gamepadNavigation.CatalogSelectedIndex == sourceIndex &&
+                            _gamepadNavigation.CatalogSourceCardActionIndex == actionIndex)
+                        {
+                            return true;
+                        }
+
+                        GamepadTextInput.Reset();
+                        ApplyCatalogGamepadSelection(sourceIndex, stealFocus: false);
+                        ApplyCatalogSourceCardActionSelection(actionIndex);
+                        return true;
+                    }
+
+                    return TryApplyPointerCard(
+                        sources,
+                        GamepadNavigationZone.CatalogSources,
+                        _gamepadNavigation.CatalogSelectedIndex,
+                        index => ApplyCatalogGamepadSelection(index, stealFocus: false),
+                        source);
+                }
+            }
+
+            if (TryApplyPointerHit(
+                    CollectTopBannerGamepadControls(),
+                    GamepadNavigationZone.AnnouncementBanner,
+                    _topBannerGamepadIndex,
+                    index => ApplyAnnouncementBannerGamepadSelection(index),
+                    source) ||
+                TryApplyPointerHit(
+                    CollectTopBarControls(),
+                    GamepadNavigationZone.TopBar,
+                    _gamepadNavigation.TopBarSelectedIndex,
+                    ApplyTopBarGamepadSelection,
+                    source) ||
+                TryApplyPointerHit(
+                    CollectSidebarFocusableControls(),
+                    GamepadNavigationZone.Sidebar,
+                    _gamepadNavigation.SidebarSelectedIndex,
+                    ApplySidebarGamepadSelection,
+                    source))
+            {
+                return true;
+            }
+
+            if (_mainViewMode == MainViewMode.Library &&
+                !_isModsOverlayOpen &&
+                !_isAppUpdatesReviewOpen)
+            {
+                return TryApplyPointerCard(
+                    Games.ToList(),
+                    GamepadNavigationZone.Library,
+                    _gamepadNavigation.LibrarySelectedIndex,
+                    index => ApplyLibraryGamepadSelection(index, stealFocus: false),
+                    source);
+            }
+
+            return false;
+        }
+
+        private bool TryApplyPointerHit(
+            IReadOnlyList<Control> controls,
+            GamepadNavigationZone zone,
+            int currentIndex,
+            Action<int> apply,
+            object? source)
+        {
+            var index = GamepadControlActivation.IndexOfControlContainingFocus(controls, source);
+            if (index < 0)
+                return false;
+
+            if (_gamepadNavigation.ActiveZone == zone && currentIndex == index)
+                return true;
+
+            if (controls[index] is not TextBox)
+                GamepadTextInput.Reset();
+
+            apply(index);
+            return true;
+        }
+
+        private bool TryApplyPointerCard<T>(
+            IReadOnlyList<T> items,
+            GamepadNavigationZone zone,
+            int currentIndex,
+            Action<int> apply,
+            object? source)
+            where T : class
+        {
+            var index = GamepadPointerFocusSync.IndexOfDataContext(items, source as Visual);
+            if (index < 0)
+                return false;
+
+            if (_gamepadNavigation.ActiveZone == zone && currentIndex == index)
+                return true;
+
+            GamepadTextInput.Reset();
+            apply(index);
+            return true;
         }
 
         private void HandleGamepadConnectionChanged(bool hasConnected)
@@ -6482,15 +6831,7 @@ namespace QuiverLauncher
                 return;
             }
 
-            var folderName = Path.GetFileName(selectedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-            if (string.IsNullOrWhiteSpace(folderName))
-            {
-                await ShowMessageBoxAsync("The selected folder does not have a valid folder name.", "Invalid Folder");
-                return;
-            }
-
-            game.InstallPath = selectedPath;
-            game.FolderName = folderName;
+            GameInstallLocationService.ApplyLocatedPath(game, selectedPath);
 
             await PersistGameInstallLocationAsync(game);
             await game.CheckStatusAsync(_gameManager.HttpClient, _gameManager.GamesFolder, forceUpdateCheck: true);
@@ -9401,14 +9742,7 @@ namespace QuiverLauncher
         private async Task PersistGameInstallLocationAsync(GameInfo game)
         {
             var allGames = await LoadGamesFromJsonAsync();
-            var matchingGame = FindMatchingSavedApp(allGames, game);
-
-            if (matchingGame == null)
-                return;
-
-            matchingGame.FolderName = game.FolderName;
-            matchingGame.InstallPath = game.InstallPath;
-
+            GameInstallLocationService.PersistTo(allGames, game);
             await SaveGamesToJsonAsync(allGames);
         }
 
@@ -12691,7 +13025,7 @@ namespace QuiverLauncher
             controls[index].Focus();
         }
 
-        private void ApplyAppUpdatesReviewRowSelection(int index)
+        private void ApplyAppUpdatesReviewRowSelection(int index, bool stealFocus = true)
         {
             var rows = AppUpdateReviewRows.ToList();
             index = _gamepadNavigation.ClampIndex(index, rows.Count);
@@ -12706,7 +13040,7 @@ namespace QuiverLauncher
             if (index < 0 || index >= rows.Count)
                 return;
 
-            GamepadCardFocusSink.Park(CardGamepadFocusSink);
+            GamepadPointerFocusSync.ApplyCardSelectionFocus(CardGamepadFocusSink, stealFocus);
             rows[index].IsGamepadFocused = true;
             Dispatcher.UIThread.Post(
                 () => FindAppUpdateReviewRowBorder(rows[index])?.BringIntoView(),
@@ -13631,18 +13965,20 @@ namespace QuiverLauncher
             WireChromeXyFocusEdges();
         }
 
-        private void ClearSidebarGamepadFocus()
+        private void ClearSidebarGamepadFocus(bool stealFocus = true)
         {
             var controls = CollectSidebarFocusableControls();
             ClearSidebarGamepadFocusClasses(controls);
-            ClearFocusIfOnControls(controls);
+            if (stealFocus)
+                ClearFocusIfOnControls(controls);
         }
 
-        private void ClearTopBarGamepadFocus()
+        private void ClearTopBarGamepadFocus(bool stealFocus = true)
         {
             var controls = CollectTopBarControls();
             ClearTopBarGamepadFocusClasses(controls);
-            ClearFocusIfOnControls(controls);
+            if (stealFocus)
+                ClearFocusIfOnControls(controls);
         }
 
         private static void ClearSidebarGamepadFocusClasses(IReadOnlyList<Control> controls)
@@ -13824,7 +14160,7 @@ namespace QuiverLauncher
             ClearFocusIfOnControls(controls);
         }
 
-        private void ApplyCatalogReviewRowSelection(int index)
+        private void ApplyCatalogReviewRowSelection(int index, bool stealFocus = true)
         {
             var rows = CatalogSyncRows.ToList();
             index = _gamepadNavigation.ClampIndex(index, rows.Count);
@@ -13840,7 +14176,7 @@ namespace QuiverLauncher
 
             // Rows are not Focusable. Park after ClearFocusIfOnControls so the next
             // arrow does not Tab to Continue.
-            GamepadCardFocusSink.Park(CardGamepadFocusSink);
+            GamepadPointerFocusSync.ApplyCardSelectionFocus(CardGamepadFocusSink, stealFocus);
             rows[index].IsGamepadFocused = true;
             Dispatcher.UIThread.Post(
                 () => BringCatalogReviewRowIntoView(rows[index]),
@@ -14173,7 +14509,7 @@ namespace QuiverLauncher
             ApplyCatalogReviewRowSelection(clamped);
         }
 
-        private void ApplyLibraryGamepadSelection(int index)
+        private void ApplyLibraryGamepadSelection(int index, bool stealFocus = true)
         {
             // Overlays sit above the library; never steal zone/focus while they are open.
             if (isSettingsPanelOpen ||
@@ -14190,15 +14526,15 @@ namespace QuiverLauncher
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.Library;
 
             // Drop chrome focus entirely so sidebar/top bar don't keep or regain orange rings.
-            ClearSidebarGamepadFocus();
-            ClearTopBarGamepadFocus();
+            ClearSidebarGamepadFocus(stealFocus);
+            ClearTopBarGamepadFocus(stealFocus);
             _gamepadNavigation.SidebarSelectedIndex = -1;
             _gamepadNavigation.TopBarSelectedIndex = -1;
 
             ClearGamepadFocus();
             // Cards are not Focusable. Park on a non-tab-stop sink — Focus(null) lets
             // Avalonia's next arrow Tab to Continue (first tab stop).
-            GamepadCardFocusSink.Park(CardGamepadFocusSink);
+            GamepadPointerFocusSync.ApplyCardSelectionFocus(CardGamepadFocusSink, stealFocus);
             if (index < 0 || index >= games.Count)
                 return;
 
@@ -14206,7 +14542,7 @@ namespace QuiverLauncher
             Dispatcher.UIThread.Post(() => FindGameCardRoot(games[index])?.BringIntoView(), DispatcherPriority.Loaded);
         }
 
-        private void ApplyCatalogGamepadSelection(int index)
+        private void ApplyCatalogGamepadSelection(int index, bool stealFocus = true)
         {
             if (CatalogSources.Count == 0)
             {
@@ -14221,11 +14557,11 @@ namespace QuiverLauncher
             _gamepadNavigation.CatalogSelectedIndex = index;
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.CatalogSources;
 
-            ClearSidebarGamepadFocus();
+            ClearSidebarGamepadFocus(stealFocus);
             ClearCatalogSourcesToolbarGamepadFocus();
             ClearGamepadFocus();
             ClearCatalogSourceCardActionsGamepadFocus();
-            GamepadCardFocusSink.Park(CardGamepadFocusSink);
+            GamepadPointerFocusSync.ApplyCardSelectionFocus(CardGamepadFocusSink, stealFocus);
             if (index < 0 || index >= CatalogSources.Count)
                 return;
 

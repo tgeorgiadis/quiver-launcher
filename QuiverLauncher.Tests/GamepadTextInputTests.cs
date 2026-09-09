@@ -1,5 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Media;
 using FluentAssertions;
 using QuiverLauncher.Services;
@@ -180,5 +183,190 @@ public class GamepadTextInputTests
         {
             GamepadTextInput.Reset();
         }
+    }
+
+    [AvaloniaFact]
+    public void Mouse_press_on_already_focused_highlight_enters_edit()
+    {
+        var box = CreateEngagedBox();
+        var window = new Window { Content = box, Width = 240, Height = 120 };
+
+        try
+        {
+            GamepadTextInput.SkipNativeFocusOverride = () => false;
+            GamepadFocusChrome.SetActive(true, window);
+            window.Show();
+            window.UpdateLayout();
+
+            GamepadTextInput.Highlight(box);
+            box.IsFocused.Should().BeTrue();
+            box.IsReadOnly.Should().BeTrue();
+            GamepadTextInput.IsEditing.Should().BeFalse();
+
+            var point = box.TranslatePoint(new Point(12, 12), window) ?? new Point(12, 12);
+            window.MouseDown(point, MouseButton.Left);
+
+            GamepadTextInput.IsEditing.Should().BeTrue();
+            GamepadTextInput.Active.Should().BeSameAs(box);
+            box.IsReadOnly.Should().BeFalse();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
+            GamepadFocusChrome.SetActive(false);
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Reset_after_highlight_restores_writable()
+    {
+        var box = new TextBox { Text = "hello", Focusable = true, IsEnabled = true };
+        var window = new Window { Content = box, Width = 240, Height = 120 };
+
+        try
+        {
+            window.Show();
+            GamepadTextInput.Highlight(box);
+            box.IsReadOnly.Should().BeTrue();
+
+            GamepadTextInput.Reset();
+
+            box.IsReadOnly.Should().BeFalse();
+            GamepadTextInput.Active.Should().BeNull();
+            GamepadTextInput.IsEditing.Should().BeFalse();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Highlight_twice_does_not_stick_readonly_after_begin_edit()
+    {
+        var box = new TextBox { Text = "token", Focusable = true, IsEnabled = true };
+        var window = new Window { Content = box, Width = 240, Height = 120 };
+
+        try
+        {
+            window.Show();
+            GamepadTextInput.Highlight(box);
+            GamepadTextInput.Highlight(box);
+            box.IsReadOnly.Should().BeTrue();
+
+            GamepadTextInput.BeginEdit(box);
+
+            box.IsReadOnly.Should().BeFalse();
+            GamepadTextInput.IsEditing.Should().BeTrue();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Detach_after_highlight_restores_writable_and_next_edit_is_not_stuck()
+    {
+        var box = CreateEngagedBox();
+        var window = new Window { Content = box, Width = 240, Height = 120 };
+
+        try
+        {
+            window.Show();
+            GamepadTextInput.Highlight(box);
+            box.IsReadOnly.Should().BeTrue();
+
+            GamepadTextInput.SetEngageOnConfirm(box, false);
+            box.IsReadOnly.Should().BeFalse();
+
+            GamepadTextInput.SetEngageOnConfirm(box, true);
+            GamepadTextInput.Highlight(box);
+            GamepadTextInput.BeginEdit(box);
+
+            box.IsReadOnly.Should().BeFalse();
+            GamepadTextInput.IsEditing.Should().BeTrue();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Ctrl_V_on_highlighted_field_enters_edit()
+    {
+        var box = CreateEngagedBox();
+        var window = new Window { Content = box, Width = 240, Height = 120 };
+
+        try
+        {
+            GamepadTextInput.SkipNativeFocusOverride = () => false;
+            GamepadFocusChrome.SetActive(true, window);
+            window.Show();
+            window.UpdateLayout();
+
+            GamepadTextInput.Highlight(box);
+            box.IsFocused.Should().BeTrue();
+            box.IsReadOnly.Should().BeTrue();
+
+            window.KeyPress(Key.V, RawInputModifiers.Control, PhysicalKey.V, "v");
+
+            GamepadTextInput.IsEditing.Should().BeTrue();
+            box.IsReadOnly.Should().BeFalse();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
+            GamepadFocusChrome.SetActive(false);
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Arrow_key_on_highlighted_field_does_not_enter_edit()
+    {
+        var box = CreateEngagedBox();
+        var window = new Window { Content = box, Width = 240, Height = 120 };
+
+        try
+        {
+            GamepadTextInput.SkipNativeFocusOverride = () => false;
+            GamepadFocusChrome.SetActive(true, window);
+            window.Show();
+            window.UpdateLayout();
+
+            GamepadTextInput.Highlight(box);
+            box.IsReadOnly.Should().BeTrue();
+
+            window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
+
+            GamepadTextInput.IsEditing.Should().BeFalse();
+            box.IsReadOnly.Should().BeTrue();
+        }
+        finally
+        {
+            GamepadTextInput.Reset();
+            GamepadFocusChrome.SetActive(false);
+            window.Close();
+        }
+    }
+
+    private static TextBox CreateEngagedBox()
+    {
+        var box = new TextBox
+        {
+            Text = "hello",
+            Focusable = true,
+            IsEnabled = true,
+            Width = 200,
+            Height = 40,
+        };
+        GamepadTextInput.SetEngageOnConfirm(box, true);
+        return box;
     }
 }

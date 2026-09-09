@@ -79,8 +79,11 @@ internal static class GamepadTextInput
         _applying = true;
         try
         {
-            if (IsEditing && Active != null && !ReferenceEquals(Active, textBox))
-                EndEditCore(restoreHighlight: false);
+            if (Active != null && !ReferenceEquals(Active, textBox))
+            {
+                ApplyEditVisuals(Active);
+                IsEditing = false;
+            }
 
             Active = textBox;
             IsEditing = false;
@@ -110,6 +113,9 @@ internal static class GamepadTextInput
         state.BeginEditRequested = true;
         try
         {
+            if (Active != null && !ReferenceEquals(Active, textBox))
+                ApplyEditVisuals(Active);
+
             Active = textBox;
             IsEditing = true;
             ApplyEditVisuals(textBox);
@@ -137,8 +143,17 @@ internal static class GamepadTextInput
 
     public static void Reset()
     {
-        if (Active != null && IsEditing && Dispatcher.UIThread.CheckAccess())
-            ApplyEditVisuals(Active);
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            foreach (var pair in States.ToArray())
+            {
+                if (pair.Value.HighlightApplied)
+                    ApplyEditVisuals(pair.Key);
+            }
+
+            if (Active != null)
+                ApplyEditVisuals(Active);
+        }
 
         IsEditing = false;
         Active = null;
@@ -155,7 +170,7 @@ internal static class GamepadTextInput
         if (restoreHighlight)
             Highlight(box);
         else
-            ApplyHighlightVisuals(box);
+            ApplyEditVisuals(box);
     }
 
     private static void OnEngageOnConfirmChanged(TextBox box, AvaloniaPropertyChangedEventArgs args)
@@ -168,6 +183,7 @@ internal static class GamepadTextInput
         if (enabled)
         {
             box.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
+            box.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
             box.GotFocus += OnGotFocus;
             box.LostFocus += OnLostFocus;
             box.Unloaded += OnUnloaded;
@@ -185,10 +201,14 @@ internal static class GamepadTextInput
             return;
 
         box.RemoveHandler(InputElement.PointerPressedEvent, OnPointerPressed);
+        box.RemoveHandler(InputElement.KeyDownEvent, OnKeyDown);
         box.GotFocus -= OnGotFocus;
         box.LostFocus -= OnLostFocus;
         box.Unloaded -= OnUnloaded;
         state.Attached = false;
+
+        if (state.HighlightApplied)
+            ApplyEditVisuals(box);
 
         if (ReferenceEquals(Active, box))
         {
@@ -204,7 +224,57 @@ internal static class GamepadTextInput
         if (sender is not TextBox box)
             return;
 
-        GetState(box).PointerEngaging = e.Pointer.Type == PointerType.Mouse;
+        if (e.Pointer.Type != PointerType.Mouse)
+            return;
+
+        // Clicking an already-highlighted field does not fire GotFocus. Enter edit
+        // here so Paste/Ctrl+V work without waiting for a focus change.
+        GetState(box).PointerEngaging = true;
+        BeginEdit(box);
+    }
+
+    private static void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox box)
+            return;
+
+        if (IsEditing && ReferenceEquals(Active, box))
+            return;
+
+        if (!ShouldBeginEditOnKey(e))
+            return;
+
+        if (!ReferenceEquals(Active, box) && !box.IsFocused)
+            return;
+
+        BeginEdit(box);
+    }
+
+    /// <summary>
+    /// Paste/cut/copy/select-all and typing should enter edit while highlighted.
+    /// Navigation, Confirm, and Cancel stay with the window/gamepad handlers.
+    /// </summary>
+    private static bool ShouldBeginEditOnKey(KeyEventArgs e)
+    {
+        if (e.Key is Key.Escape or Key.Enter or Key.Return or Key.Tab
+            or Key.Up or Key.Down or Key.Left or Key.Right
+            or Key.PageUp or Key.PageDown or Key.Home or Key.End
+            or Key.LeftAlt or Key.RightAlt or Key.LeftCtrl or Key.RightCtrl
+            or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin)
+        {
+            return false;
+        }
+
+        if (e.Key is >= Key.F1 and <= Key.F24)
+            return false;
+
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            return false;
+
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta))
+            return e.Key is Key.V or Key.C or Key.X or Key.A or Key.Z or Key.Y;
+
+        return true;
     }
 
     private static void OnGotFocus(object? sender, RoutedEventArgs e)
@@ -234,11 +304,14 @@ internal static class GamepadTextInput
         if (sender is not TextBox box)
             return;
 
-        if (IsEditing && ReferenceEquals(Active, box))
-        {
+        var state = GetState(box);
+        if (!state.HighlightApplied && !(IsEditing && ReferenceEquals(Active, box)))
+            return;
+
+        if (ReferenceEquals(Active, box))
             IsEditing = false;
-            ApplyHighlightVisuals(box);
-        }
+
+        ApplyEditVisuals(box);
     }
 
     private static void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -250,8 +323,12 @@ internal static class GamepadTextInput
     private static void ApplyHighlightVisuals(TextBox box)
     {
         var state = GetState(box);
-        state.SavedReadOnly ??= box.IsReadOnly;
-        state.SavedCaretBrush ??= box.CaretBrush;
+        if (!state.HighlightApplied)
+        {
+            state.SavedReadOnly = box.IsReadOnly;
+            state.SavedCaretBrush = box.CaretBrush;
+            state.HighlightApplied = true;
+        }
 
         box.IsReadOnly = true;
         box.CaretBrush = Brushes.Transparent;
@@ -263,6 +340,9 @@ internal static class GamepadTextInput
     private static void ApplyEditVisuals(TextBox box)
     {
         var state = GetState(box);
+        if (!state.HighlightApplied && state.SavedReadOnly == null && state.SavedCaretBrush == null)
+            return;
+
         if (state.SavedReadOnly != null)
             box.IsReadOnly = state.SavedReadOnly.Value;
 
@@ -270,6 +350,8 @@ internal static class GamepadTextInput
             box.CaretBrush = state.SavedCaretBrush;
         else
             box.ClearValue(TextBox.CaretBrushProperty);
+
+        state.HighlightApplied = false;
     }
 
     private static FieldState GetState(TextBox box)
@@ -288,6 +370,7 @@ internal static class GamepadTextInput
         public bool Attached;
         public bool PointerEngaging;
         public bool BeginEditRequested;
+        public bool HighlightApplied;
         public bool? SavedReadOnly;
         public IBrush? SavedCaretBrush;
     }

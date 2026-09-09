@@ -119,6 +119,33 @@ public class GamepadControlActivationTests
         GamepadControlActivation.IndexOfControlContainingFocus(controls, new Button()).Should().Be(-1);
     }
 
+    [AvaloniaFact]
+    public void IndexOfControlContainingFocus_matches_descendant_of_second_control()
+    {
+        var nested = new Button { Content = "inner" };
+        var first = new Button { Content = "one" };
+        var second = new StackPanel { Children = { nested } };
+        var window = new Window
+        {
+            Width = 240,
+            Height = 120,
+            Content = new StackPanel { Children = { first, second } },
+        };
+
+        try
+        {
+            window.Show();
+            window.UpdateLayout();
+
+            var controls = new List<Control> { first, second };
+            GamepadControlActivation.IndexOfControlContainingFocus(controls, nested).Should().Be(1);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [Fact]
     public void ShouldKeyboardFocusOnGamepadHighlight_true_for_textbox()
     {

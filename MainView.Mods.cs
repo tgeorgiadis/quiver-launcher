@@ -1851,7 +1851,7 @@ public partial class MainView
         GamepadControlActivation.ApplyGamepadHighlightFocus(controls[index]);
     }
 
-    private void ApplyModsListSelection(int index)
+    private void ApplyModsListSelection(int index, bool stealFocus = true)
     {
         index = _gamepadNavigation.ClampIndex(index, ModListRows.Count);
         _modsGamepadListIndex = index;
@@ -1867,7 +1867,7 @@ public partial class MainView
         if (index < 0 || index >= ModListRows.Count)
             return;
 
-        GamepadCardFocusSink.Park(CardGamepadFocusSink);
+        GamepadPointerFocusSync.ApplyCardSelectionFocus(CardGamepadFocusSink, stealFocus);
         var row = ModListRows[index];
         row.IsGamepadFocused = true;
         Dispatcher.UIThread.Post(
