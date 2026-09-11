@@ -92,25 +92,25 @@ namespace QuiverLauncher.Core.Services
         }
 
         /// <summary>
-        /// Unknown apps (no repository or no cached asset names) stay visible.
+        /// Unknown apps stay visible only when no platform filter is selected.
         /// Known latest-release assets must intersect the selected platforms.
         /// </summary>
         public static bool AppMatches(
             string? repositorySource,
             string? repository,
             string? releaseAssetFilter,
-            IEnumerable<string>? selectedFilters)
+            IEnumerable<string>? selectedFilters, string? preferredVersion = null, string? token = null)
         {
             if (IsAll(selectedFilters))
                 return true;
 
             if (string.IsNullOrWhiteSpace(repository))
-                return true;
+                return false;
 
-            if (!GitHubApiCache.TryGetAssetNames(repositorySource, repository, out var assetNames))
-                return true;
+            if (!CatalogPlatformIndex.TryGet(repositorySource, repository, preferredVersion, token, out var entry))
+                return false;
 
-            var filtered = FilterAssetNames(assetNames, releaseAssetFilter);
+            var filtered = FilterAssetNames(entry!.AssetNames, releaseAssetFilter);
             var supported = FromAssetNames(filtered);
             return Matches(supported, ParseFilters(selectedFilters));
         }

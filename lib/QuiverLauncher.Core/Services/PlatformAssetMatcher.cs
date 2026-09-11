@@ -48,8 +48,8 @@ namespace QuiverLauncher.Core.Services
         private static readonly string[] NonWindowsPlatformMarkers =
         [
             "linux", "macos", "osx", "darwin", "apple",
-            ".deb", ".rpm", ".appimage", ".dmg", ".pkg",
-            "android", "switch"
+            ".deb", ".rpm", "appimage", ".dmg", ".pkg",
+            "android", "arm64-v8a", ".apk", "switch"
         ];
 
         public static bool IsWindowsAsset(string assetName)
@@ -58,7 +58,7 @@ namespace QuiverLauncher.Core.Services
                 return false;
 
             var assetNameLower = assetName.ToLowerInvariant();
-            if (HasNonWindowsPlatformMarker(assetNameLower))
+            if (IsIosAsset(assetNameLower) || DownloadAssetPolicy.IsAuxiliary(assetNameLower) || IsDebugSymbolPackage(assetNameLower) || HasNonWindowsPlatformMarker(assetNameLower))
                 return false;
 
             return HasExplicitWindowsMarker(assetNameLower) || IsUnlabeledWindowsArchive(assetNameLower);
@@ -74,6 +74,10 @@ namespace QuiverLauncher.Core.Services
 
             var assetNameLower = assetName.ToLowerInvariant();
             var platformLower = platformIdentifier.ToLowerInvariant();
+
+            // Symbol archives are downloadable, but are not runnable platform builds.
+            if (IsIosAsset(assetNameLower) || DownloadAssetPolicy.IsAuxiliary(assetNameLower) || IsDebugSymbolPackage(assetNameLower))
+                return false;
 
             System.Diagnostics.Debug.WriteLine($"Checking asset: {assetName}");
             System.Diagnostics.Debug.WriteLine($"Platform identifier: {platformIdentifier}");
@@ -99,14 +103,13 @@ namespace QuiverLauncher.Core.Services
             {
                 System.Diagnostics.Debug.WriteLine("Checking macOS patterns...");
 
-                if (HasAnyOf(assetNameLower, "linux", "windows", "win32", "win64", ".exe", ".msi", "switch"))
+                if (HasAnyOf(assetNameLower, "linux", "windows", "win32", "win64", ".exe", ".msi", "switch", "android", ".apk"))
                 {
                     System.Diagnostics.Debug.WriteLine("Excluded: contains non-macOS platform marker");
                     return false;
                 }
 
-                bool isMac = HasAnyOf(assetNameLower, "macos", "osx", "darwin", ".dmg", ".pkg") ||
-                             (assetNameLower.Contains("mac") && !assetNameLower.Contains("machin"));
+                bool isMac = HasMacPlatformMarker(assetNameLower);
 
                 System.Diagnostics.Debug.WriteLine($"macOS match result: {isMac}");
                 return isMac;
@@ -116,13 +119,13 @@ namespace QuiverLauncher.Core.Services
             {
                 System.Diagnostics.Debug.WriteLine("Checking Linux patterns...");
 
-                if (HasAnyOf(assetNameLower, "windows", "win32", "win64", "macos", "osx", "darwin", ".exe", ".msi", ".dmg", "switch"))
+                if (IsWindowsAsset(assetNameLower) || HasMacPlatformMarker(assetNameLower) || HasAnyOf(assetNameLower, "windows", "win32", "win64", "macos", "osx", "darwin", ".exe", ".msi", ".dmg", "switch", "android", ".apk"))
                 {
                     System.Diagnostics.Debug.WriteLine("Excluded: contains non-Linux platform marker");
                     return false;
                 }
 
-                bool hasLinux = HasAnyOf(assetNameLower, "linux", ".appimage", ".deb", ".rpm", "tar.gz", "tar.xz");
+                bool hasLinux = HasAnyOf(assetNameLower, "linux", "appimage", ".deb", ".rpm", "tar.gz", "tar.xz");
 
                 if (!hasLinux)
                 {
@@ -132,7 +135,7 @@ namespace QuiverLauncher.Core.Services
 
                 if (platformLower.Contains("arm64") || platformLower.Contains("arm") || platformLower.Contains("aarch64"))
                 {
-                    bool isArm = HasAnyOf(assetNameLower, "arm64", "aarch64", "armv7", "armhf", "arm-");
+                    bool isArm = !HasAnyOf(assetNameLower, "x64", "x86", "amd64", "i686", "i386", "i586", "armv7", "armhf", "arm-");
                     System.Diagnostics.Debug.WriteLine($"Linux ARM64 match result: {isArm}");
                     return isArm;
                 }
@@ -159,13 +162,13 @@ namespace QuiverLauncher.Core.Services
 
             if (platformLower.Contains("android"))
             {
-                if (HasAnyOf(assetNameLower, "windows", "win32", "win64", "linux", "macos", "osx", "darwin",
-                        ".exe", ".msi", ".appimage", ".dmg", ".deb", ".rpm", "switch"))
+                if (HasMacPlatformMarker(assetNameLower) || HasAnyOf(assetNameLower, "windows", "win32", "win64", "linux", "macos", "osx", "darwin",
+                        ".exe", ".msi", "appimage", ".dmg", ".deb", ".rpm", "switch"))
                 {
                     return false;
                 }
 
-                return HasAnyOf(assetNameLower, ".apk", "android", "arm64-v8a", "aarch64")
+                return HasAnyOf(assetNameLower, "android", "arm64-v8a")
                        || assetNameLower.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
             }
 
@@ -186,8 +189,21 @@ namespace QuiverLauncher.Core.Services
             return false;
         }
 
+        // Match platform tokens, not substrings such as "BIOS" or "Studios".
+        // iOS is a known incompatible platform, not an unknown desktop archive.
+        public static bool IsIosAsset(string assetName) =>
+            Regex.IsMatch(assetName, @"(?:^|[^a-z0-9])(?:ios|ipados|iphone|ipad|iphoneos|iphonesimulator)(?:$|[^a-z0-9])|\.ipa(?:$|[._-])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
         private static bool HasNonWindowsPlatformMarker(string assetNameLower) =>
-            HasAnyOf(assetNameLower, NonWindowsPlatformMarkers);
+            HasAnyOf(assetNameLower, NonWindowsPlatformMarkers) || HasMacPlatformMarker(assetNameLower);
+
+        private static bool HasMacPlatformMarker(string assetNameLower) =>
+            HasAnyOf(assetNameLower, "macos", "osx", "darwin", ".dmg", ".pkg", "apple") ||
+            Regex.IsMatch(assetNameLower, @"(?:^|[^a-z0-9])mac(?:$|[^a-z0-9])");
+
+        private static bool IsDebugSymbolPackage(string assetNameLower) =>
+            Regex.IsMatch(assetNameLower, @"(?:^|[._-])(?:pdb|symbols|debugsymbols|debug[._-]symbols)(?:$|[._-])");
 
         private static bool HasExplicitWindowsMarker(string assetNameLower) =>
             HasAnyOf(assetNameLower,

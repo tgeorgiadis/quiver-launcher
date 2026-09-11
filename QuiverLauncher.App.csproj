@@ -65,6 +65,7 @@
 		<Compile Remove="QuiverLauncher.Desktop\**\*.cs" />
 		<Compile Remove="QuiverLauncher.Android\**\*.cs" />
 		<Compile Remove="Program.cs" />
+        <Compile Remove="tools\**\*.cs" />
 		<Compile Remove="_test_build\**\*.cs" />
 		<Compile Remove="artifacts\**\*.cs" />
 		<Compile Remove="bin\**\*.cs" />

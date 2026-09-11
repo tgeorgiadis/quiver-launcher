@@ -30,6 +30,7 @@ namespace QuiverLauncher.Core.Services
         {
             _cacheFilePath = Path.Combine(cacheDirectory, "version_cache.json");
             LoadFromDisk();
+            CatalogPlatformIndex.Initialize(cacheDirectory);
         }
 
         private static void LoadFromDisk()
@@ -45,6 +46,7 @@ namespace QuiverLauncher.Core.Services
                 {
                     foreach (var kvp in diskCache)
                     {
+                        kvp.Value.ETag = string.Empty; // Legacy validators have no endpoint identity.
                         _cache.TryAdd(kvp.Key, kvp.Value);
                     }
                 }
@@ -170,7 +172,7 @@ namespace QuiverLauncher.Core.Services
                 {
                     var resolvedRelease = release ?? old.CachedRelease;
                     var assetNames = ExtractAssetNames(resolvedRelease);
-                    if (!replaceAssetNames && assetNames.Count == 0 && old.AssetNames is { Count: > 0 })
+                    if (!replaceAssetNames && release == null && assetNames.Count == 0 && old.AssetNames is { Count: > 0 })
                         assetNames = old.AssetNames;
                     return new GameVersionCache
                     {

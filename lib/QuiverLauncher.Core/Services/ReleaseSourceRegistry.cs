@@ -41,10 +41,10 @@ namespace QuiverLauncher.Core.Services
             string? repositorySource,
             string repository,
             string? token = null,
-            string? etag = null)
+            string? etag = null, CancellationToken cancellationToken = default)
         {
             var source = Get(repositorySource);
-            return await source.FetchReleasesAsync(httpClient, repository, token, etag)
+            return await source.FetchReleasesAsync(httpClient, repository, token, etag, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -52,19 +52,12 @@ namespace QuiverLauncher.Core.Services
             HttpClient httpClient,
             string? repositorySource,
             string repository,
-            string? token = null)
+            string? token = null, CancellationToken cancellationToken = default)
         {
-            var result = await FetchReleasesAsync(httpClient, repositorySource, repository, token)
+            var result = await FetchReleasesAsync(httpClient, repositorySource, repository, token, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
-            return new GitHubReleaseFetchResult
-            {
-                StatusCode = result.StatusCode,
-                Releases = result.Releases
-                    .Where(release => release.assets != null && release.assets.Length > 0)
-                    .ToList(),
-                ETag = result.ETag,
-                LatestTag = result.LatestTag
-            };
+            result.EnsureSuccess();
+            return result with { Releases = result.Releases.Where(release => release.assets is { Length: > 0 }).ToList() };
         }
     }
 }
