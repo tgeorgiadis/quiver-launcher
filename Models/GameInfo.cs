@@ -1369,8 +1369,9 @@ namespace QuiverLauncher.Models
             if (!CachedArtworkOnly) return;
             // The shared loader reuses catalog memory/disk entries and downloads only
             // on a cache miss. Keep ownership of its shared bitmap with the loader.
-            if (Uri.TryCreate(IconUrl, UriKind.Absolute, out var existing) && existing.IsFile ||
-                !Uri.TryCreate(DefaultIconUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) return;
+            // IconUrl can be the /Assets placeholder while artwork is deferred. On
+            // Unix that parses as a file URI, but is not evidence of a cached image.
+            if (!Uri.TryCreate(DefaultIconUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) return;
             if (!string.IsNullOrEmpty(_cachedDefaultIconPath) && File.Exists(_cachedDefaultIconPath) || HasCustomIcon) return;
             await AsyncImageLoader.ImageLoader.AsyncImageLoader.ProvideImageAsync(DefaultIconUrl).WaitAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();

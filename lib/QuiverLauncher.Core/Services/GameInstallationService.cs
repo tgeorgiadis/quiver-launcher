@@ -504,6 +504,13 @@ public static class GameInstallationService
 
     internal static void ExtractZipToDirectory(string zipPath, string destinationDirectoryPath)
     {
+        // Validate before invoking system tools: unzip may silently rewrite traversal
+        // entries, whereas the managed extractor rejects them. Keep every host equal.
+        using (var archive = ZipFile.OpenRead(zipPath))
+        {
+            foreach (var entry in archive.Entries)
+                GetSafeExtractionPath(destinationDirectoryPath, entry.FullName);
+        }
         Directory.CreateDirectory(destinationDirectoryPath);
 
         if (!OperatingSystem.IsWindows() &&
@@ -903,8 +910,9 @@ public static class GameInstallationService
             .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var fullDestinationPath = Path.GetFullPath(Path.Combine(fullDestinationRoot, sanitizedArchivePath));
 
-        if (!fullDestinationPath.StartsWith(fullDestinationRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
-            !fullDestinationPath.Equals(fullDestinationRoot, StringComparison.OrdinalIgnoreCase))
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (!fullDestinationPath.StartsWith(fullDestinationRoot + Path.DirectorySeparatorChar, comparison) &&
+            !fullDestinationPath.Equals(fullDestinationRoot, comparison))
         {
             throw new InvalidDataException($"Archive entry escapes the destination directory: {archivePath}");
         }

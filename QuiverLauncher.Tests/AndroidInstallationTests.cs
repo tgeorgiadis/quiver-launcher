@@ -54,11 +54,14 @@ public sealed class AndroidInstallationTests : IDisposable
         await action.Should().ThrowAsync<InvalidDataException>().WithMessage(message);
     }
 
-    [Fact]
-    public async Task Archive_path_traversal_is_rejected()
+    [Theory]
+    [InlineData("../../outside.apk")]
+    [InlineData("..\\..\\outside.apk")]
+    [InlineData("nested/../../../outside.apk")]
+    public async Task Archive_path_traversal_is_rejected(string entry)
     {
-        var action = () => AndroidPackagePreparation.PrepareAsync(Archive("../../outside.apk"), "Android.zip", Path.Combine(_root, "staging"));
-        await action.Should().ThrowAsync<Exception>();
+        var action = () => AndroidPackagePreparation.PrepareAsync(Archive(entry), "Android.zip", Path.Combine(_root, "staging"));
+        await action.Should().ThrowAsync<InvalidDataException>();
         File.Exists(Path.Combine(_root, "outside.apk")).Should().BeFalse();
     }
 

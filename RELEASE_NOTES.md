@@ -10,4 +10,5 @@ This is a preview of Quiver Launcher 3.4.0. Enable preview updates in Settings t
 - Improve download selection. Ignore JSON metadata, provenance files, checksums, and debug symbols; recognise more platform labels so iOS, macOS, Linux AppImage, handheld, and Xbox packages are not mistaken for Windows downloads. A single matching build can install without an unnecessary file picker.
 - Improve keyboard, mouse, touch, and gamepad navigation across the library, catalog, Settings, menus, and dialogs. Fix text-field paste and focus handling, retain located install folders across restarts, and improve Android update button alignment.
 - Create desktop and Steam shortcuts that launch the selected app directly, using its saved executable, arguments, working folder, and configured Linux runner.
+- Fix deferred cover downloads on Linux and reject ZIP entries that escape the extraction folder before handing archives to system tools.
 - Rework the library, catalog, Settings, and mod screens into shared components, with better handling of navigation, background work, and shutdown. Preserve existing settings and library data.
