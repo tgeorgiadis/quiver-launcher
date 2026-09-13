@@ -1,6 +1,4 @@
-# Quiver Launcher 3.4.0-rc1
-
-This is a preview of Quiver Launcher 3.4.0. Enable preview updates in Settings to receive release candidates.
+# Quiver Launcher 3.4.0
 
 - Check installed app updates first. The top update button now shows progress and Cancel, updates badges as results arrive, and lets catalogs, artwork, mods, and automatic installations continue separately. Installed checks have a one-minute deadline, with incomplete checks clearly reported. Ordinary unpinned GitHub apps use one release request instead of two.
 - Show available app updates after a manual check even when automatic library update prompts are disabled. Apps assigned to automatic updates stay out of the manual update summary.

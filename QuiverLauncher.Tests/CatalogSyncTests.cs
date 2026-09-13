@@ -44,11 +44,11 @@ public class CatalogSyncTests
         try
         {
             var cachePath = Path.Combine(service.CatalogSourcesCacheFolder, $"{sourceId}.json");
-            await File.WriteAllTextAsync(cachePath, """
+            await File.WriteAllTextAsync(cachePath, $$"""
                 {
                   "version": "2.0.0",
                   "apps": [
-                    { "name": "App", "repository": "owner/app", "folderName": "AppFolder" }
+                    { "name": "App", "repository": "catalog-sync-tests/{{sourceId}}", "folderName": "AppFolder" }
                   ]
                 }
                 """);
@@ -224,11 +224,11 @@ public class CatalogSyncTests
         try
         {
             var cachePath = Path.Combine(service.CatalogSourcesCacheFolder, $"{sourceId}.json");
-            await File.WriteAllTextAsync(cachePath, """
+            await File.WriteAllTextAsync(cachePath, $$"""
                 {
                   "version": "1.0.0",
                   "apps": [
-                    { "name": "App", "repository": "owner/app", "folderName": "AppFolder" }
+                    { "name": "App", "repository": "catalog-sync-tests/{{sourceId}}", "folderName": "AppFolder" }
                   ]
                 }
                 """);
@@ -264,11 +264,11 @@ public class CatalogSyncTests
         try
         {
             var cachePath = Path.Combine(service.CatalogSourcesCacheFolder, $"{sourceId}.json");
-            await File.WriteAllTextAsync(cachePath, """
+            await File.WriteAllTextAsync(cachePath, $$"""
                 {
                   "version": "1.0.0",
                   "apps": [
-                    { "name": "App", "repository": "owner/app", "folderName": "AppFolder" }
+                    { "name": "App", "repository": "catalog-sync-tests/{{sourceId}}", "folderName": "AppFolder" }
                   ]
                 }
                 """);

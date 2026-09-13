@@ -1,5 +1,5 @@
 {
-  "id": "2026-09-08-333",
+  "id": "2026-09-13-340",
   "enabled": true,
-  "message": "3.3.3: Catalog platform filter, Linux AppImage and Windows Play fixes, and more reliable archive installs."
+  "message": "3.4.0: Improved App Catalog and platform detection, clearer GitHub token setup and warnings, a fix for Locate Existing Install, and more."
 }
