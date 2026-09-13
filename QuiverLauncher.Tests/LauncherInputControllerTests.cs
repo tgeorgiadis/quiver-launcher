@@ -7,8 +7,13 @@ using QuiverLauncher.ViewModels;
 
 namespace QuiverLauncher.Tests;
 
-public class LauncherInputControllerTests
+public class LauncherInputControllerTests : IDisposable
 {
+    // Other UI fixtures can leave the process-wide text editor active. This test
+    // exercises callback ownership with normal navigation, not Enter-to-end-edit.
+    public LauncherInputControllerTests() => GamepadTextInput.Reset();
+    public void Dispose() => GamepadTextInput.Reset();
+
     private sealed class Store : ISettingsStore
     {
         public AppSettings Current { get; } = new();
