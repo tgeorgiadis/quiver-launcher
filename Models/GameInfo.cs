@@ -409,6 +409,7 @@ namespace QuiverLauncher.Models
             }
         }
         private string? _cachedDefaultIconPath;
+        internal bool CachedArtworkOnly { get; set; }
         public bool HasCustomIcon => !string.IsNullOrEmpty(CustomIconPath) && File.Exists(CustomIconPath);
 
         public string IconUrl
@@ -428,6 +429,8 @@ namespace QuiverLauncher.Models
                 }
 
                 // Direct URL (will download)
+                if (CachedArtworkOnly && Uri.TryCreate(DefaultIconUrl, UriKind.Absolute, out var uri) &&
+                    uri.Scheme is "https" or "http") return "/Assets/DefaultGame.png";
                 return DefaultIconUrl;
             }
         }
@@ -539,7 +542,11 @@ namespace QuiverLauncher.Models
             }
         }
 
-        public bool HasMultipleDownloads => AvailableDownloads?.Count > 1;
+        internal Task CatalogPreparation { get; set; } = Task.CompletedTask;
+        internal DateTime LastPlayedSortTime { get; set; } = DateTime.MinValue;
+        internal DownloadAssetSelection? DownloadChoices { get; set; }
+        internal string? DownloadSelectionContext { get; set; }
+        public bool HasMultipleDownloads => DownloadChoices?.NeedsChoice ?? AvailableDownloads?.Count > 1;
 
         /// <summary>
         /// Clears a pending release-asset pick so the next NotInstalled install can re-prompt.
@@ -548,6 +555,7 @@ namespace QuiverLauncher.Models
         public void ClearDownloadSelection()
         {
             SelectedDownload = null;
+            DownloadSelectionContext = null;
         }
 
         public bool IsInstalled
@@ -936,8 +944,8 @@ namespace QuiverLauncher.Models
         static Task ShowMessageBoxAsync(string message, string title) =>
             GameDialogService.ShowMessageBoxAsync(message, title);
 
-        public Task CheckStatusAsync(HttpClient httpClient, string gamesFolder, bool forceUpdateCheck = false) =>
-            GameStatusService.CheckStatusAsync(this, httpClient, gamesFolder, forceUpdateCheck);
+        public Task CheckStatusAsync(HttpClient httpClient, string gamesFolder, bool forceUpdateCheck = false, bool checkRemoteVersion = true) =>
+            GameStatusService.CheckStatusAsync(this, httpClient, gamesFolder, forceUpdateCheck, checkRemoteVersion);
 
         public string GetInstallPath(string gamesFolder)
         {
@@ -1291,8 +1299,12 @@ namespace QuiverLauncher.Models
             }
         }
 
-        public async Task LoadAndCacheDefaultIconAsync(string cacheDirectory)
+        public async Task LoadAndCacheDefaultIconAsync(string cacheDirectory, string? githubToken = null, bool allowDownload = true, CancellationToken cancellationToken = default)
         {
+            using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LauncherSession.OperationCancellation);
+            cancellationToken = lifetime.Token;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (allowDownload) CachedArtworkOnly = false;
             if (string.IsNullOrEmpty(FolderName))
                 return;
 
@@ -1310,7 +1322,17 @@ namespace QuiverLauncher.Models
                     return;
                 }
 
-                // Create a safe filename from the URL
+                // Catalog thumbnails already use this URL-keyed disk cache. Reuse the
+                // actual file instead of downloading a second folder-specific copy.
+                var sharedPath = LauncherArtworkLoader.CachedPath(cacheDirectory, defaultUrl);
+                if (LauncherIconCache.IsValid(sharedPath))
+                {
+                    _cachedDefaultIconPath = sharedPath;
+                    DispatchPropertyChanged(nameof(IconUrl));
+                    return;
+                }
+
+                // Retain compatibility with older library-specific cached icons.
                 var urlHash = GetUrlHash(defaultUrl);
                 var extension = Path.GetExtension(defaultUrl);
 
@@ -1320,48 +1342,40 @@ namespace QuiverLauncher.Models
 
                 var cachedIconPath = Path.Combine(iconsDir, $"{FolderName}_{urlHash}{extension}");
 
-                // If cached icon exists and is valid, use it
-                if (File.Exists(cachedIconPath))
+                if (!LauncherIconCache.IsValid(cachedIconPath))
                 {
-                    try
-                    {
-                        // Verify the file is valid by checking its size
-                        var fileInfo = new FileInfo(cachedIconPath);
-                        if (fileInfo.Length > 0)
-                        {
-                            _cachedDefaultIconPath = cachedIconPath;
-                            OnPropertyChanged(nameof(IconUrl));
-                            System.Diagnostics.Debug.WriteLine($"Using cached icon for {Name}: {cachedIconPath}");
-                            return;
-                        }
-                    }
-                    catch
-                    {
-                        // If file is corrupted, delete it and re-download
-                        try { File.Delete(cachedIconPath); } catch { }
-                    }
+                    _cachedDefaultIconPath = null;
+                    if (!allowDownload) return;
+                    if (File.Exists(cachedIconPath)) File.Delete(cachedIconPath);
+                    using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+                    await LauncherIconCache.FetchAsync(httpClient, defaultUrl, cachedIconPath, githubToken,
+                        cancellationToken);
                 }
-
-                // Download icon if not cached
-                System.Diagnostics.Debug.WriteLine($"Downloading icon for {Name} from {defaultUrl}");
-
-                using var httpClient = new HttpClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(10);
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "Github-Launcher/1.0");
-
-                var iconData = await httpClient.GetByteArrayAsync(defaultUrl);
-
-                // Save to cache
-                await File.WriteAllBytesAsync(cachedIconPath, iconData);
+                cancellationToken.ThrowIfCancellationRequested();
                 _cachedDefaultIconPath = cachedIconPath;
                 OnPropertyChanged(nameof(IconUrl));
                 System.Diagnostics.Debug.WriteLine($"Icon cached for {Name}: {cachedIconPath}");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to cache icon for {Name}: {ex.Message}");
                 // Fallback to direct URL
             }
+        }
+
+        internal async Task CompleteCatalogArtworkAsync(CancellationToken cancellationToken)
+        {
+            if (!CachedArtworkOnly) return;
+            // The shared loader reuses catalog memory/disk entries and downloads only
+            // on a cache miss. Keep ownership of its shared bitmap with the loader.
+            if (Uri.TryCreate(IconUrl, UriKind.Absolute, out var existing) && existing.IsFile ||
+                !Uri.TryCreate(DefaultIconUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) return;
+            if (!string.IsNullOrEmpty(_cachedDefaultIconPath) && File.Exists(_cachedDefaultIconPath) || HasCustomIcon) return;
+            await AsyncImageLoader.ImageLoader.AsyncImageLoader.ProvideImageAsync(DefaultIconUrl).WaitAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            CachedArtworkOnly = false;
+            DispatchPropertyChanged(nameof(IconUrl));
         }
 
         private static string GetUrlHash(string url)
@@ -1527,7 +1541,18 @@ namespace QuiverLauncher.Models
             _cachedRelease = release;
         }
 
-        internal async Task CheckLatestVersionAsync(HttpClient httpClient, bool forceCheck = false)
+        internal void ApplyCatalogVersionHint(string version, string? preferredVersion)
+        {
+            // Browsing metadata is a label, not an authoritative release payload.
+            // In particular it must not clear a pinned release or fabricate assets.
+            _latestVersion = version;
+            _preferredVersion = preferredVersion;
+            DispatchPropertyChanged(nameof(LatestVersion));
+            DispatchPropertyChanged(nameof(StatusText));
+            DispatchPropertyChanged(nameof(LatestVersionLabel));
+        }
+
+        internal async Task CheckLatestVersionAsync(HttpClient httpClient, bool forceCheck = false, CancellationToken cancellationToken = default)
         {
             if (IsManuallyManaged || string.IsNullOrEmpty(Repository))
             {
@@ -1553,8 +1578,9 @@ namespace QuiverLauncher.Models
                     RepositorySource,
                     Repository,
                     GetReleaseApiToken(),
-                    forceCheck ? null : GitHubApiCache.GetETag(RepositorySource, Repository)).ConfigureAwait(false);
+                      forceCheck ? null : GitHubApiCache.GetETag(RepositorySource, Repository), cancellationToken: cancellationToken).ConfigureAwait(false);
 
+                result.EnsureSuccess();
                 if (result.IsNotModified)
                 {
                     if (GitHubApiCache.TryGetCachedVersion(RepositorySource, Repository, out var existingCache) && existingCache != null)
@@ -1677,7 +1703,7 @@ namespace QuiverLauncher.Models
         }
         public async Task InstallReleaseAsync(HttpClient httpClient, string gamesFolder, AppSettings settings, GitHubRelease release, GitHubAsset selectedAsset)
         {
-            SelectedDownload = selectedAsset;
+            GameDownloadService.SelectExplicit(this, release, settings, selectedAsset);
             await GameDownloadInstallService.DownloadAndInstallAsync(
                 this, httpClient, gamesFolder, release, settings, Status);
         }
@@ -1691,7 +1717,7 @@ namespace QuiverLauncher.Models
                 System.Text.RegularExpressions.Regex.IsMatch(assetNameLower, @"[_-]win[_-]|[_-]win\d|^win[_-]"))
             {
                 // Exclude false positives
-                if (!HasAnyOf(assetNameLower, "linux", "macos", "darwin", ".deb", ".rpm", ".appimage", ".dmg"))
+                if (!HasAnyOf(assetNameLower, "linux", "macos", "darwin", ".deb", ".rpm", "appimage", ".dmg"))
                 {
                     return "avares://QuiverLauncher/Assets/Icons/platform_win.png";
                 }
@@ -1709,7 +1735,7 @@ namespace QuiverLauncher.Models
             }
 
             // Check for Linux
-            if (HasAnyOf(assetNameLower, "linux", ".appimage", ".deb", ".rpm", "tar.gz", "tar.xz"))
+            if (HasAnyOf(assetNameLower, "linux", "appimage", ".deb", ".rpm", "tar.gz", "tar.xz"))
             {
                 // Exclude false positives
                 if (!HasAnyOf(assetNameLower, "windows", "win32", "win64", "macos", "osx", "darwin", ".exe", ".dmg"))

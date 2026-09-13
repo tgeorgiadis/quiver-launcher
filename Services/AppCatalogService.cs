@@ -36,6 +36,11 @@ namespace QuiverLauncher.Services
         public string AppsConfigPath => _appsConfigPath;
         public string CatalogSourcesCacheFolder => _catalogSourcesCacheFolder;
 
+        // A mutation must never interpret an unreadable/corrupt library as an empty one.
+        public Task<List<GameInfo>> LoadLocalAppsForMutationAsync() => File.Exists(_appsConfigPath)
+            ? LoadAppsFromFileAsync(_appsConfigPath, throwOnError: true)
+            : LoadLocalAppsAsync();
+
         public async Task<List<GameInfo>> LoadLocalAppsAsync()
         {
             if (!File.Exists(_appsConfigPath))
@@ -95,15 +100,15 @@ namespace QuiverLauncher.Services
             }
         }
 
-        public async Task RefreshAllSourcesAsync(HttpClient httpClient, AppSettings settings)
+        public async Task RefreshAllSourcesAsync(HttpClient httpClient, AppSettings settings, CancellationToken cancellationToken = default)
         {
             settings.EnsureInitialized();
 
             var bootstrap = new CommunityCatalogBootstrap(_locationReader);
-            await bootstrap.SyncCommunitySourcesFromIndexAsync(httpClient, settings).ConfigureAwait(false);
+            await bootstrap.SyncCommunitySourcesFromIndexAsync(httpClient, settings, cancellationToken, forcePlatformRefresh: true).ConfigureAwait(false);
 
             foreach (var source in settings.AppCatalogSources.Where(s => s.Enabled))
-                await FetchSourceAsync(httpClient, source).ConfigureAwait(false);
+                await FetchSourceAsync(httpClient, source, cancellationToken).ConfigureAwait(false);
         }
 
         public bool HasSourceCache(string sourceId) =>
@@ -153,7 +158,7 @@ namespace QuiverLauncher.Services
             }
         }
 
-        public async Task<bool> FetchSourceAsync(HttpClient httpClient, AppCatalogSource source)
+        public async Task<bool> FetchSourceAsync(HttpClient httpClient, AppCatalogSource source, CancellationToken cancellationToken = default)
         {
             var cachePath = GetSourceCachePath(source.Id);
             var locations = GetFetchLocationCandidates(source);
@@ -163,8 +168,9 @@ namespace QuiverLauncher.Services
             {
                 try
                 {
-                    var json = await _locationReader.ReadAsync(httpClient, location).ConfigureAwait(false);
-                    await File.WriteAllTextAsync(cachePath, json).ConfigureAwait(false);
+                    var json = await _locationReader.ReadAsync(httpClient, location, cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await File.WriteAllTextAsync(cachePath, json, cancellationToken).ConfigureAwait(false);
 
                     using var document = JsonDocument.Parse(json);
                     var root = document.RootElement;
@@ -179,6 +185,7 @@ namespace QuiverLauncher.Services
 
                     return true;
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                 catch (Exception ex)
                 {
                     lastError = ex;
@@ -291,13 +298,25 @@ namespace QuiverLauncher.Services
 
         public async Task RefreshAllSourcesUsageStatsAsync(AppSettings settings)
         {
+            using var timing = QuiverLauncher.Core.Services.CatalogPerformance.Measure("sources-usage", settings.AppCatalogSources.Count);
             settings.EnsureInitialized();
-            var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
-            foreach (var source in settings.AppCatalogSources)
+            var localApps = await LoadLocalAppsForMutationAsync().ConfigureAwait(false);
+            foreach (var source in settings.AppCatalogSources.ToArray())
             {
-                var externalApps = await LoadCachedAppsAsync(source.Id).ConfigureAwait(false);
-                (source.LibraryAppCount, source.ListAppCount) =
-                    CatalogCompareService.ComputeLibraryUsageStats(localApps, externalApps);
+                // Membership and review status must describe the same saved snapshot.
+                // A missing/unreadable cache is not evidence that review is complete.
+                var path = GetSourceCachePath(source.Id);
+                if (!File.Exists(path)) continue;
+                try
+                {
+                    var externalApps = await LoadAppsFromFileAsync(path, throwOnError: true).ConfigureAwait(false);
+                    RefreshUpdateAvailable(source, localApps, externalApps);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+                {
+                    // One damaged source must not suppress every subsequent summary.
+                    System.Diagnostics.Debug.WriteLine($"Catalog usage refresh skipped an unreadable source ({ex.GetType().Name}).");
+                }
             }
         }
 
@@ -317,11 +336,7 @@ namespace QuiverLauncher.Services
                 CatalogCompareService.ComputeLibraryUsageStats(localApps, externalApps);
 
             var rows = CatalogCompareService.BuildCompareRows(localApps, externalApps);
-            source.PendingReviewCount = rows.Count(r => CatalogCompareService.IsActionableRow(r, source));
-            if (TryAutoAcknowledgeIfReviewComplete(source, source.PendingReviewCount))
-                return;
-
-            source.UpdateAvailable = source.PendingReviewCount > 0;
+            CatalogReviewEligibility.Reconcile(source, rows, _gameManager?.CurrentSettings);
         }
 
         /// <summary>
@@ -353,7 +368,8 @@ namespace QuiverLauncher.Services
                 {
                     if (row.Status != CatalogSyncStatus.Changed)
                         continue;
-                    if (!CatalogCompareService.IsActionableRow(row, source))
+                    if (!CatalogReviewEligibility.IsPending(row, source, [CatalogPlatformSupport.DetectRuntimePlatform()],
+                            (row.External ?? row.Local)?.GetReleaseApiToken(settings)))
                         continue;
                     if (string.IsNullOrWhiteSpace(row.IdentityKey))
                         continue;
@@ -386,7 +402,8 @@ namespace QuiverLauncher.Services
                 var rows = CatalogCompareService.BuildCompareRows(localApps, externalApps);
                 var match = rows.FirstOrDefault(row =>
                     row.Status == CatalogSyncStatus.Changed &&
-                    CatalogCompareService.IsActionableRow(row, source) &&
+                    CatalogReviewEligibility.IsPending(row, source, [CatalogPlatformSupport.DetectRuntimePlatform()],
+                        (row.External ?? row.Local)?.GetReleaseApiToken(settings)) &&
                     string.Equals(row.IdentityKey, instanceKey, StringComparison.OrdinalIgnoreCase));
                 if (match != null)
                     return source.Id;
@@ -711,6 +728,11 @@ namespace QuiverLauncher.Services
 
         public static void ApplyListMetadata(AppCatalogSource source, JsonElement root)
         {
+            source.IconUrl = root.TryGetProperty("iconUrl", out var iconElement) &&
+                iconElement.ValueKind == JsonValueKind.String
+                    ? CatalogListMetadata.NormalizeIconUrl(iconElement.GetString())
+                    : null;
+
             if (root.TryGetProperty("name", out var nameElement) &&
                 nameElement.ValueKind == JsonValueKind.String)
             {
@@ -777,7 +799,21 @@ namespace QuiverLauncher.Services
             };
 
             var options = new JsonSerializerOptions { WriteIndented = true };
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(data, options)).ConfigureAwait(false);
+            var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                await using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    65536, FileOptions.Asynchronous))
+                {
+                    await JsonSerializer.SerializeAsync(stream, data, options).ConfigureAwait(false);
+                    await stream.FlushAsync().ConfigureAwait(false);
+                    stream.Flush(flushToDisk: true);
+                }
+                // Same-directory replacement is atomic; a failed write/replacement leaves the old file intact.
+                if (File.Exists(path)) File.Replace(temporary, path, null);
+                else File.Move(temporary, path);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
 
         public void SaveLocalApps(List<GameInfo> apps)
@@ -826,8 +862,9 @@ namespace QuiverLauncher.Services
         private string GetLegacyAcceptedCachePath(string sourceId) =>
             Path.Combine(_catalogSourcesCacheFolder, $"{sourceId}.accepted.json");
 
-        private async Task<List<GameInfo>> LoadAppsFromFileAsync(string path)
+        private async Task<List<GameInfo>> LoadAppsFromFileAsync(string path, bool throwOnError = false)
         {
+            using var timing = QuiverLauncher.Core.Services.CatalogPerformance.Measure("catalog-read");
             try
             {
                 string json = await File.ReadAllTextAsync(path).ConfigureAwait(false);
@@ -838,7 +875,7 @@ namespace QuiverLauncher.Services
 
                 return apps;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!throwOnError)
             {
                 System.Diagnostics.Debug.WriteLine($"Error reading {Path.GetFileName(path)}: {ex.Message}");
                 return [];
@@ -1106,7 +1143,7 @@ namespace QuiverLauncher.Services
             return normalized == GameModsConfig.LayoutFlat ? null : normalized;
         }
 
-        private static object SerializeApp(GameInfo app)
+        internal static object SerializeApp(GameInfo app)
         {
             var payload = new Dictionary<string, object?>
             {

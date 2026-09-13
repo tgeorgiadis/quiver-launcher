@@ -9,6 +9,9 @@ namespace QuiverLauncher.Services;
 
 public sealed class GamepadModalDialogNavigation
 {
+    // Auxiliary actions such as opening documentation should not dismiss the prompt.
+    public static readonly AttachedProperty<bool> KeepDialogOpenProperty =
+        AvaloniaProperty.RegisterAttached<Button, bool>("KeepDialogOpen", typeof(GamepadModalDialogNavigation));
     private static GamepadModalDialogNavigation? _instance;
 
     private readonly List<Window> _dialogStack = [];
@@ -54,6 +57,11 @@ public sealed class GamepadModalDialogNavigation
     public void Configure(InputService inputService)
     {
         _inputService = inputService;
+    }
+
+    public void Unconfigure(InputService inputService)
+    {
+        if (ReferenceEquals(_inputService, inputService)) _inputService = null;
     }
 
     /// <summary>
@@ -220,6 +228,9 @@ public sealed class GamepadModalDialogNavigation
     /// <summary>
     /// Handles a keyboard binding against the active modal dialog.
     /// </summary>
+    private bool IsEditingActiveDialog => ActiveDialog != null && GamepadTextInput.IsEditing &&
+        GamepadTextInput.Active is { } text && ReferenceEquals(TopLevel.GetTopLevel(text), ActiveDialog);
+
     internal bool TryHandleDialogKeyDown(Key key, KeyModifiers modifiers)
     {
         if (ActiveDialog == null)
@@ -232,7 +243,7 @@ public sealed class GamepadModalDialogNavigation
 
         // While typing: Enter/A and Escape/B leave edit so D-pad can move again.
         // A second Escape/B then cancels the dialog. Highlight-only TextBoxes are not editing.
-        if (GamepadTextInput.IsEditing)
+        if (IsEditingActiveDialog)
         {
             if (key is Key.Escape or Key.Enter)
                 return GamepadTextInput.TryEndEdit();
@@ -288,7 +299,7 @@ public sealed class GamepadModalDialogNavigation
     /// </summary>
     internal bool TryExitTextBoxEditMode()
     {
-        if (!GamepadTextInput.IsEditing || ActiveDialog == null)
+        if (!IsEditingActiveDialog)
             return false;
 
         var textBox = GamepadTextInput.Active;
@@ -316,7 +327,7 @@ public sealed class GamepadModalDialogNavigation
     private bool TryHandleOpenComboBoxKey(Key key, KeyModifiers modifiers)
     {
         var comboNav = GamepadComboBoxNavigation.Instance;
-        if (!comboNav.HasActiveComboBox)
+        if (!comboNav.IsActiveFor(ActiveDialog))
             return false;
 
         if (key == Key.Escape)
@@ -362,7 +373,7 @@ public sealed class GamepadModalDialogNavigation
             return false;
 
         // Prefer open ComboBox item navigation over moving between dialog fields.
-        if (GamepadComboBoxNavigation.Instance.TryHandleNavigation(direction))
+        if (GamepadComboBoxNavigation.Instance.IsActiveFor(ActiveDialog) && GamepadComboBoxNavigation.Instance.TryHandleNavigation(direction))
             return true;
 
         EnsureDialogControls();
@@ -479,7 +490,7 @@ public sealed class GamepadModalDialogNavigation
         if (activeDialog == null)
             return false;
 
-        if (GamepadComboBoxNavigation.Instance.TryHandleConfirm())
+        if (GamepadComboBoxNavigation.Instance.IsActiveFor(activeDialog) && GamepadComboBoxNavigation.Instance.TryHandleConfirm())
             return true;
 
         EnsureDialogControls();
@@ -548,7 +559,7 @@ public sealed class GamepadModalDialogNavigation
         if (activeDialog == null)
             return false;
 
-        if (GamepadComboBoxNavigation.Instance.TryHandleCancel())
+        if (GamepadComboBoxNavigation.Instance.IsActiveFor(activeDialog) && GamepadComboBoxNavigation.Instance.TryHandleCancel())
             return true;
 
         // Escape / B while typing: leave the field first; second press cancels the dialog.
@@ -598,7 +609,7 @@ public sealed class GamepadModalDialogNavigation
             return;
 
         GamepadControlActivation.ActivateButton(button);
-        if (dialog.IsVisible)
+        if (dialog.IsVisible && !button.GetValue(KeepDialogOpenProperty))
             dialog.Close();
     }
 

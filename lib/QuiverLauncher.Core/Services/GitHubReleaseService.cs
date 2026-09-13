@@ -5,7 +5,7 @@ using QuiverLauncher.Core.Models;
 
 namespace QuiverLauncher.Core.Services
 {
-    public sealed class GitHubReleaseFetchResult
+    public sealed record GitHubReleaseFetchResult
     {
         public HttpStatusCode StatusCode { get; init; }
         public IReadOnlyList<GitHubRelease> Releases { get; init; } = [];
@@ -13,171 +13,69 @@ namespace QuiverLauncher.Core.Services
         public string? LatestTag { get; init; }
         public string? ErrorMessage { get; init; }
         public bool IsRateLimited { get; init; }
+        public string Provider { get; init; } = "github";
+        public bool IsAuthenticated { get; init; }
+        public ReleaseRateLimitKind RateLimitKind { get; init; }
+        public long? Limit { get; init; }
+        public long? Remaining { get; init; }
+        public DateTimeOffset? ResetAt { get; init; }
+        public DateTimeOffset? RetryAt { get; init; }
+        public bool WasNotModified { get; init; }
+        public void EnsureSuccess()
+        {
+            if ((int)StatusCode >= 400) throw new ReleaseFetchException(this);
+        }
         public bool IsNotModified => StatusCode == HttpStatusCode.NotModified;
     }
 
     public static class GitHubReleaseService
     {
         public static async Task<GitHubReleaseFetchResult> FetchReleasesAsync(
-            HttpClient httpClient,
-            string repository,
-            string? token = null,
-            string? etag = null)
+            HttpClient httpClient, string repository, string? token = null, string? etag = null,
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(repository))
+            if (string.IsNullOrWhiteSpace(repository)) return new() { StatusCode = HttpStatusCode.BadRequest };
+            var result = await FetchReleaseListAsync(httpClient, repository, token, cancellationToken).ConfigureAwait(false);
+            if (result.StatusCode != HttpStatusCode.OK) return result;
+            var latest = await FetchLatestReleaseIndexAsync(httpClient, repository, token,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (latest.IsRateLimited || latest.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                return latest;
+            return result with
             {
-                return new GitHubReleaseFetchResult
-                {
-                    StatusCode = HttpStatusCode.BadRequest
-                };
-            }
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{repository}/releases");
-
-            if (!string.IsNullOrWhiteSpace(etag))
-            {
-                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
-            }
-
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            using var response = await httpClient.SendAsync(request).ConfigureAwait(false);
-
-            if (response.StatusCode == HttpStatusCode.NotModified)
-            {
-                return new GitHubReleaseFetchResult
-                {
-                    StatusCode = response.StatusCode,
-                    ETag = response.Headers.ETag?.Tag
-                };
-            }
-
-            response.EnsureSuccessStatusCode();
-
-            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var releases = JsonSerializer.Deserialize<List<GitHubRelease>>(responseContent) ?? [];
-            var latest = await FetchLatestReleaseAsync(httpClient, repository, token).ConfigureAwait(false);
-            var merged = MergeLatestRelease(releases, latest);
-
-            return new GitHubReleaseFetchResult
-            {
-                StatusCode = response.StatusCode,
-                Releases = merged,
-                ETag = response.Headers.ETag?.Tag,
-                LatestTag = string.IsNullOrWhiteSpace(latest?.tag_name) ? null : latest.tag_name
+                Releases = MergeLatestRelease(result.Releases, latest.Releases.FirstOrDefault()),
+                LatestTag = latest.LatestTag
             };
         }
 
-        /// <summary>
-        /// Latest GitHub release for catalog platform indexing. One HTTP call; does not
-        /// download the full <c>/releases</c> list. 404 means prerelease-only (no GitHub Latest).
-        /// </summary>
+        public static Task<GitHubReleaseFetchResult> FetchReleaseListAsync(HttpClient client, string repository,
+            string? token = null, CancellationToken cancellationToken = default) =>
+            ReleaseRequestCoordinator.For(client).FetchAsync(client,
+                new Uri($"https://api.github.com/repos/{repository}/releases"), "github", token,
+                body => JsonSerializer.Deserialize<List<GitHubRelease>>(body) ?? [], cancellationToken);
+
+        /// <summary>Legacy ETags are ignored; endpoint validators always travel with their own payload.</summary>
         public static async Task<GitHubReleaseFetchResult> FetchLatestReleaseIndexAsync(
-            HttpClient httpClient,
-            string repository,
-            string? token = null,
-            string? etag = null)
+            HttpClient httpClient, string repository, string? token = null, string? etag = null,
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(repository))
-            {
-                return new GitHubReleaseFetchResult
-                {
-                    StatusCode = HttpStatusCode.BadRequest
-                };
-            }
-
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                $"https://api.github.com/repos/{repository}/releases/latest");
-
-            if (!string.IsNullOrWhiteSpace(etag))
-                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
-
-            if (!string.IsNullOrWhiteSpace(token))
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            using var response = await httpClient.SendAsync(request).ConfigureAwait(false);
-            var responseEtag = response.Headers.ETag?.Tag;
-
-            if (response.StatusCode == HttpStatusCode.NotModified)
-            {
-                return new GitHubReleaseFetchResult
-                {
-                    StatusCode = response.StatusCode,
-                    ETag = responseEtag
-                };
-            }
-
-            if (response.StatusCode is HttpStatusCode.NotFound
-                or HttpStatusCode.Forbidden
-                or HttpStatusCode.Unauthorized
-                or HttpStatusCode.TooManyRequests
-                || !response.IsSuccessStatusCode)
-            {
-                var errorBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return new GitHubReleaseFetchResult
-                {
-                    StatusCode = response.StatusCode,
-                    ETag = responseEtag,
-                    ErrorMessage = string.IsNullOrWhiteSpace(errorBody) ? null : errorBody,
-                    IsRateLimited = IsRateLimitResponse(response.StatusCode, response.Headers, errorBody)
-                };
-            }
-
-            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var latest = JsonSerializer.Deserialize<GitHubRelease>(content);
-
-            return new GitHubReleaseFetchResult
-            {
-                StatusCode = response.StatusCode,
-                Releases = latest == null ? [] : [latest],
-                ETag = responseEtag,
-                LatestTag = string.IsNullOrWhiteSpace(latest?.tag_name) ? null : latest.tag_name
-            };
+            if (string.IsNullOrWhiteSpace(repository)) return new() { StatusCode = HttpStatusCode.BadRequest };
+            var result = await ReleaseRequestCoordinator.For(httpClient).FetchAsync(httpClient,
+                new Uri($"https://api.github.com/repos/{repository}/releases/latest"), "github", token,
+                body => JsonSerializer.Deserialize<GitHubRelease>(body) is { } release ? [release] : [],
+                cancellationToken).ConfigureAwait(false);
+            return result with { LatestTag = result.Releases.FirstOrDefault()?.tag_name };
         }
 
-        /// <summary>
-        /// GitHub's Latest release, or null on 404 / failure (prerelease-only repos).
-        /// </summary>
         public static async Task<GitHubRelease?> FetchLatestReleaseAsync(
-            HttpClient httpClient,
-            string repository,
-            string? token = null,
-            string? etag = null)
+            HttpClient httpClient, string repository, string? token = null, string? etag = null,
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(repository))
-                return null;
-
-            try
-            {
-                using var request = new HttpRequestMessage(
-                    HttpMethod.Get,
-                    $"https://api.github.com/repos/{repository}/releases/latest");
-
-                if (!string.IsNullOrWhiteSpace(etag))
-                    request.Headers.TryAddWithoutValidation("If-None-Match", etag);
-
-                if (!string.IsNullOrWhiteSpace(token))
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-                using var response = await httpClient.SendAsync(request).ConfigureAwait(false);
-                if (response.StatusCode == HttpStatusCode.NotModified ||
-                    response.StatusCode == HttpStatusCode.NotFound ||
-                    !response.IsSuccessStatusCode)
-                {
-                    return null;
-                }
-
-                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return JsonSerializer.Deserialize<GitHubRelease>(content);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            if (string.IsNullOrWhiteSpace(repository)) return null;
+            var result = await FetchLatestReleaseIndexAsync(httpClient, repository, token, etag, cancellationToken).ConfigureAwait(false);
+            if (result.StatusCode == HttpStatusCode.NotFound) return null;
+            result.EnsureSuccess();
+            return result.Releases.FirstOrDefault();
         }
 
         /// <summary>
@@ -204,24 +102,18 @@ namespace QuiverLauncher.Core.Services
         public static async Task<GitHubReleaseFetchResult> FetchReleasesWithAssetsAsync(
             HttpClient httpClient,
             string repository,
-            string? token = null)
+            string? token = null, CancellationToken cancellationToken = default)
         {
-            var result = await FetchReleasesAsync(httpClient, repository, token).ConfigureAwait(false);
-            return new GitHubReleaseFetchResult
-            {
-                StatusCode = result.StatusCode,
-                Releases = result.Releases
-                    .Where(release => release.assets != null && release.assets.Length > 0)
-                    .ToList(),
-                ETag = result.ETag,
-                LatestTag = result.LatestTag
-            };
+            var result = await FetchReleasesAsync(httpClient, repository, token, cancellationToken: cancellationToken).ConfigureAwait(false);
+            result.EnsureSuccess();
+            return result with { Releases = result.Releases.Where(release => release.assets is { Length: > 0 }).ToList() };
         }
 
         public static List<GitHubAsset> GetDownloadableAssets(GitHubRelease release, string? releaseAssetFilter = null)
         {
             var assets = (release.assets ?? [])
-                .Where(asset => !asset.name.Contains("flatpak", StringComparison.OrdinalIgnoreCase));
+                .Where(asset => !asset.name.Contains("flatpak", StringComparison.OrdinalIgnoreCase) &&
+                    !DownloadAssetPolicy.IsAuxiliary(asset.name));
 
             var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(releaseAssetFilter);
             if (filter != null)

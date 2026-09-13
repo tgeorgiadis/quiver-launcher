@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
+             x:Class="QuiverLauncher.Views.InputBindingsView" x:DataType="vm:InputBindingsViewModel" x:CompileBindings="True">
+<StackPanel Margin="16,12,16,16" Spacing="4">
+
+										<TextBlock Text="ENABLE"
+												   FontSize="10" FontWeight="Bold"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   LetterSpacing="1"
+												   Margin="0,0,0,4"/>
+
+										<StackPanel Spacing="2">
+											<CheckBox x:Name="EnableGamepadCheckBox"
+													  Content="Enable Gamepad Input"
+													  Foreground="{DynamicResource ThemeText}"
+													  FontSize="13" FontWeight="SemiBold"
+													  IsChecked="{Binding Settings.EnableGamepadInput, Mode=TwoWay}"/>
+											<TextBlock Text="Navigate with the bound controls. The selected app is highlighted."
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   Margin="20,0,0,0"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
+										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
+
+										<TextBlock Text="CONNECTED CONTROLLERS"
+												   FontSize="10" FontWeight="Bold"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   LetterSpacing="1"
+												   Margin="0,0,0,4"/>
+
+										<TextBlock x:Name="ConnectedGamepadsText"
+												   Text="{Binding Controllers}"
+												   FontSize="12"
+												   Foreground="{DynamicResource ThemeText}"
+												   TextWrapping="Wrap"
+												   Margin="0,0,0,4"/>
+
+										<TextBlock Text="All connected controllers are used. No exclusive selection."
+												   FontSize="11"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   TextWrapping="Wrap"
+												   Margin="0,0,0,4"/>
+
+										<Button Classes="options"
+												Content="Refresh Controllers"
+												HorizontalAlignment="Stretch"
+												Click="RefreshConnectedGamepads_Click"
+												FontSize="12"/>
+
+										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
+
+										<TextBlock Text="BINDINGS"
+												   FontSize="10" FontWeight="Bold"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   LetterSpacing="1"
+												   Margin="0,0,0,4"/>
+
+										<TextBlock x:Name="GamepadRebindStatusText"
+												   FontSize="11"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   TextWrapping="Wrap"
+												   Margin="0,0,0,4"
+												   IsVisible="{Binding IsListening}" Text="{Binding Status}"/>
+
+										<ItemsControl ItemsSource="{Binding Rows}">
+    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="10"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:InputBindingRow">
+            <Border BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1" Padding="0,0,0,10">
+                <Grid ColumnDefinitions="64,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+                    <TextBlock Grid.ColumnSpan="3" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                               Margin="0,0,0,2" Foreground="{DynamicResource ThemeText}"/>
+                    <TextBlock Grid.Row="1" Text="Gamepad:" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{DynamicResource ThemeTextSecondary}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GamepadLabel}" FontSize="12"
+                               VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource ThemeText}"/>
+                    <Button Grid.Row="1" Grid.Column="2" Classes="options" FontSize="11" Width="80" MinHeight="28" Padding="8,3"
+                            Content="{Binding GamepadButtonLabel}" IsEnabled="{Binding CanRebindGamepad}" Click="GamepadRebindButton_Click"/>
+                    <TextBlock Grid.Row="2" Text="Keyboard:" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{DynamicResource ThemeTextSecondary}"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding KeyboardLabel}" FontSize="12"
+                               VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource ThemeText}"/>
+                    <Button Grid.Row="2" Grid.Column="2" Classes="options" FontSize="11" Width="80" MinHeight="28" Padding="8,3"
+                            Content="{Binding KeyboardButtonLabel}" IsEnabled="{Binding CanRebindKeyboard}" Click="KeyboardRebindButton_Click"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </ItemsControl.ItemTemplate>
+</ItemsControl>
+
+										<Button Classes="options"
+												Content="Reset Bindings to Defaults"
+												HorizontalAlignment="Stretch"
+												Click="ResetGamepadBindings_Click"
+												FontSize="12"
+												Margin="0,8,0,0"/>
+
+									</StackPanel>
+</UserControl>

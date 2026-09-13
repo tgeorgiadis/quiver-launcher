@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:services="using:QuiverLauncher.Services" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia">
+<local:BooleanToStretchConverter x:Key="BooleanToStretchConverter"/>
+<local:ThicknessConverter x:Key="ThicknessConverter"/>
+<local:DoubleScaleConverter x:Key="DoubleScaleConverter"/>
+<DataTemplate x:Key="CatalogFieldDiffTemplate" DataType="services:CatalogSyncFieldDiffItem">
+			<Grid ColumnDefinitions="52,*" Margin="0,0,0,2">
+				<TextBlock Grid.Column="0"
+						   Text="{Binding FieldLabel}"
+						   FontSize="10"
+						   FontWeight="SemiBold"
+						   Foreground="{DynamicResource ThemeTextSecondary}"
+						   VerticalAlignment="Top"
+						   Margin="0,1,6,0"/>
+				<StackPanel Grid.Column="1" Spacing="1">
+					<!-- Text: local → external on one row -->
+					<WrapPanel IsVisible="{Binding IsTextValueDiff}" Orientation="Horizontal">
+						<TextBlock Text="{Binding LocalValue}"
+								   FontSize="10"
+								   Foreground="#F0A080"
+								   TextDecorations="Strikethrough"
+								   TextWrapping="Wrap"
+								   Margin="0,0,6,0"
+								   IsVisible="{Binding HasLocalValue}"/>
+						<TextBlock Text="(empty)"
+								   FontSize="10"
+								   Foreground="#F0A080"
+								   FontStyle="Italic"
+								   Margin="0,0,6,0"
+								   IsVisible="{Binding ShowEmptyLocal}"/>
+						<TextBlock Text="→"
+								   FontSize="10"
+								   Foreground="{DynamicResource ThemeTextSecondary}"
+								   Margin="0,0,6,0"
+								   VerticalAlignment="Center"
+								   IsVisible="{Binding ShowArrow}"/>
+						<TextBlock Text="{Binding ExternalValue}"
+								   FontSize="10"
+								   Foreground="#6EE7A0"
+								   TextWrapping="Wrap"
+								   IsVisible="{Binding ShowIncomingValue}"/>
+						<TextBlock Text="{Binding ExternalValue}"
+								   FontSize="10"
+								   Foreground="{DynamicResource ThemeText}"
+								   TextWrapping="Wrap"
+								   IsVisible="{Binding IsSnapshot}"/>
+						<TextBlock Text="(empty)"
+								   FontSize="10"
+								   Foreground="#6EE7A0"
+								   FontStyle="Italic"
+								   IsVisible="{Binding ShowEmptyExternal}"/>
+					</WrapPanel>
+					<!-- Icon: compact side-by-side, URLs in tooltips only -->
+					<StackPanel IsVisible="{Binding IsIconDiff}" Orientation="Horizontal" Spacing="6">
+						<Border BorderBrush="#F0A080" BorderThickness="1" CornerRadius="3" Padding="1"
+								Background="#1A1A1A" IsVisible="{Binding HasLocalValue}"
+								ToolTip.Tip="{Binding LocalValue}">
+							<asyncImageLoader:AdvancedImage Source="{Binding LocalValue}" Width="24" Height="24" Stretch="Uniform"/>
+						</Border>
+						<TextBlock Text="→" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+								   VerticalAlignment="Center" IsVisible="{Binding ShowArrow}"/>
+						<Border BorderBrush="#6EE7A0" BorderThickness="1" CornerRadius="3" Padding="1"
+								Background="#1A1A1A" IsVisible="{Binding HasExternalValue}"
+								ToolTip.Tip="{Binding ExternalValue}">
+							<asyncImageLoader:AdvancedImage Source="{Binding ExternalValue}" Width="24" Height="24" Stretch="Uniform"/>
+						</Border>
+					</StackPanel>
+					<ItemsControl IsVisible="{Binding IsTagDiff}" ItemsSource="{Binding TagDiffs}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel Orientation="Horizontal"/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate DataType="services:CatalogSyncTagDiffItem">
+								<Border Background="{Binding BackgroundBrush}" CornerRadius="3" Padding="4,1" Margin="0,0,3,2" ToolTip.Tip="{Binding Tooltip}">
+									<TextBlock Text="{Binding Tag}" FontSize="9" Foreground="{Binding ForegroundBrush}"/>
+								</Border>
+							</DataTemplate>
+</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</StackPanel>
+			</Grid>
+		</DataTemplate>
+</ResourceDictionary>

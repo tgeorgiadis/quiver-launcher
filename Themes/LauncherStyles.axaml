@@ -1,0 +1,1672 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:services="using:QuiverLauncher.Services" xmlns:mods="using:QuiverLauncher.Services.Mods" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia">
+	<Style Selector="Button.modern">
+		<Setter Property="Background" Value="{Binding ButtonColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="20,10"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						CornerRadius="6"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<!-- ComboBox Style -->
+	<Style Selector="ComboBox">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="4"/>
+		<Setter Property="Padding" Value="12,8"/>
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+
+	<Style Selector="ComboBox:pointerover /template/ Border#Background">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+	</Style>
+
+	<Style Selector="ComboBox:focus /template/ Border#Background">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome ComboBox.gamepad-focused /template/ Border#Background">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="ComboBoxItem">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		<Setter Property="Padding" Value="12,8"/>
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+
+	<Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+	</Style>
+
+	<Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="ComboBoxItem:focus /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+	</Style>
+
+	<Style Selector="Button.modern:pointerover">
+		<Setter Property="Opacity" Value="0.85"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.modern:pointerover">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.modern.gamepad-focused:pointerover">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<Style Selector="Button.modern:pressed">
+		<Setter Property="Opacity" Value="0.7"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.modern /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.modern:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.modern:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<!-- Modern Icon Button Style for Grid View -->
+	<Style Selector="Button.modern-icon">
+		<Setter Property="Background" Value="{Binding ButtonColor}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="8"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.modern-icon:pointerover">
+		<Setter Property="Opacity" Value="0.85"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.modern-icon:pointerover">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.modern-icon.gamepad-focused:pointerover">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<Style Selector="Button.modern-icon:pressed">
+		<Setter Property="Opacity" Value="0.7"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.modern-icon /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.modern-icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.modern-icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.options">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+		<Setter Property="Padding" Value="10"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="6"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						HorizontalContentAlignment="Center"
+						VerticalContentAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.options:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.options:pressed">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.options:disabled">
+		<Setter Property="Opacity" Value="1"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="#3A3A3E"/>
+		<Setter Property="Foreground" Value="#666666"/>
+		<Setter Property="Cursor" Value="Arrow"/>
+	</Style>
+
+	<Style Selector="Button.options:disabled /template/ Border">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="#3A3A3E"/>
+		<Setter Property="Opacity" Value="0.55"/>
+	</Style>
+
+	<Style Selector="Button.options:disabled /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="#888888"/>
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<Style Selector="Button.options /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.options:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.options:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<!-- Grid Options Button Style -->
+	<Style Selector="Button.options-grid">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Width" Value="40"/>
+		<Setter Property="Height" Value="40"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Opacity" Value="0"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="8"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						HorizontalContentAlignment="Center"
+						VerticalContentAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="UserControl.mobile Button.options-grid">
+		<Setter Property="Opacity" Value="1"/>
+		<Setter Property="Width" Value="44"/>
+		<Setter Property="Height" Value="44"/>
+		<Setter Property="MinHeight" Value="44"/>
+	</Style>
+
+	<Style Selector="Border.gamecardgrid:pointerover Button.options-grid">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<Style Selector="Border.gamecardcompact:pointerover Button.options-grid">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<Style Selector="Button.options-grid:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.options-grid:pressed">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.options-grid /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.options-grid:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.options-grid:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.settings.selected">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.catalog-filter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="12"/>
+		<Setter Property="Padding" Value="10,0"/>
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="FontSize" Value="11"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						HorizontalContentAlignment="Center"
+						VerticalContentAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.catalog-filter:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.catalog-filter.selected">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		<Setter Property="BorderBrush" Value="#3A3A3E"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="4"/>
+		<Setter Property="Padding" Value="8,0"/>
+		<Setter Property="MinHeight" Value="24"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="FontWeight" Value="Normal"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						Background="Transparent"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						HorizontalContentAlignment="Center"
+						VerticalContentAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip.selected">
+		<Setter Property="Background" Value="#152a15"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeSuccess}"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip.selected:pointerover">
+		<Setter Property="Background" Value="#1a3a1a"/>
+		<Setter Property="Foreground" Value="#16a34a"/>
+		<Setter Property="BorderBrush" Value="#16a34a"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip.excluded">
+		<Setter Property="Background" Value="#2a1515"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeError}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeError}"/>
+	</Style>
+
+	<Style Selector="Button.catalog-tag-chip.excluded:pointerover">
+		<Setter Property="Background" Value="#3a1818"/>
+		<Setter Property="Foreground" Value="#f87171"/>
+		<Setter Property="BorderBrush" Value="#f87171"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.catalog-tag-chip.gamepad-focused">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.catalog-filter.gamepad-focused">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="Button.catalog-review-pending">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+	</Style>
+
+	<Style Selector="Button.catalog-review-pending:pointerover">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="Opacity" Value="0.9"/>
+	</Style>
+
+	<Style Selector="Button.catalog-review-pending:pressed">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="Opacity" Value="0.8"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-remove-from-library">
+		<Setter Property="BorderBrush" Value="#b45454"/>
+		<Setter Property="Foreground" Value="#b45454"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-remove-from-library:pointerover">
+		<Setter Property="Background" Value="#2a1515"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeError}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeError}"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-remove-from-library:pressed">
+		<Setter Property="Background" Value="#3a1818"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeError}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeError}"/>
+	</Style>
+
+	<Style Selector="Border.catalog-all-reviewed-chip">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="10"/>
+		<Setter Property="Padding" Value="6,2"/>
+	</Style>
+
+	<Style Selector="TextBlock.catalog-all-reviewed">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="FontSize" Value="11"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Border.catalog-source-meta">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="6"/>
+		<Setter Property="Padding" Value="8,6"/>
+	</Style>
+
+	<Style Selector="TextBlock.catalog-usage-full">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>
+	</Style>
+
+    <Style Selector="TextBlock.catalog-review-status">
+        <Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+    </Style>
+	<Style Selector="TextBlock.catalog-review-status-pending">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
+	</Style>
+
+    <Style Selector="TextBlock.catalog-review-status-reviewed">
+        <Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>
+    </Style>
+
+	<Style Selector="TextBlock.catalog-status-warning">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeWarning}"/>
+	</Style>
+
+	<Style Selector="TextBlock.catalog-status-error">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeError}"/>
+	</Style>
+
+	<Style Selector="TextBlock.catalog-version-unreviewed">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeWarning}"/>
+	</Style>
+
+	<Style Selector="TextBlock.catalog-review-version-unreviewed">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Border.catalog-review-version-banner">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="6"/>
+		<Setter Property="Padding" Value="10,8"/>
+	</Style>
+
+	<!-- Sky blue announcement strip — distinct from the focus ring and green success. -->
+	<Style Selector="Border.announcement-banner">
+		<Setter Property="Background" Value="#0ea5e9"/>
+		<Setter Property="BorderBrush" Value="#0284c7"/>
+		<Setter Property="BorderThickness" Value="0,0,0,1"/>
+	</Style>
+
+	<Style Selector="Border.announcement-banner TextBlock">
+		<Setter Property="Foreground" Value="#0f172a"/>
+	</Style>
+
+	<Style Selector="Button.announcement-banner-close">
+		<Setter Property="Background" Value="#0284c7"/>
+		<Setter Property="Foreground" Value="#f8fafc"/>
+		<Setter Property="BorderBrush" Value="#0369a1"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="4"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+						VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+						HorizontalContentAlignment="Center"
+						VerticalContentAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.announcement-banner-close:pointerover">
+		<Setter Property="Background" Value="#0369a1"/>
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
+	<Style Selector="Button.announcement-banner-close:pressed">
+		<Setter Property="Background" Value="#075985"/>
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
+	<!-- GitHub token warning strip — same slot as the announcement; announcement wins. -->
+	<Style Selector="Border.github-token-banner">
+		<Setter Property="Background" Value="#7f1d1d"/>
+		<Setter Property="BorderBrush" Value="#991b1b"/>
+		<Setter Property="BorderThickness" Value="0,0,0,1"/>
+	</Style>
+
+	<Style Selector="Border.github-token-banner TextBlock">
+		<Setter Property="Foreground" Value="#fef2f2"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-link">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="#fecaca"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="12,6"/>
+		<Setter Property="Margin" Value="0,0,4,0"/>
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="HorizontalContentAlignment" Value="Left"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="FontSize" Value="13"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-link:pointerover">
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-link TextBlock">
+		<Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}"/>
+		<Setter Property="TextDecorations" Value="Underline"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-close">
+		<Setter Property="Background" Value="#991b1b"/>
+		<Setter Property="Foreground" Value="#fef2f2"/>
+		<Setter Property="BorderBrush" Value="#7f1d1d"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="4"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+						VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+						HorizontalContentAlignment="Center"
+						VerticalContentAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-close:pointerover">
+		<Setter Property="Background" Value="#b91c1c"/>
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
+	<Style Selector="Button.github-token-banner-close:pressed">
+		<Setter Property="Background" Value="#7f1d1d"/>
+		<Setter Property="Foreground" Value="#ffffff"/>
+	</Style>
+
+	<Style Selector="Button.settings">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="12,10"/>
+		<Setter Property="HorizontalContentAlignment" Value="Left"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="FontWeight" Value="Medium"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+						VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.settings:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<!-- Steam's virtual mouse still fires :pointerover in Gaming Mode. Don't let that
+	     look like the gamepad cursor while chrome is on. -->
+	<Style Selector="UserControl.gamepad-chrome Button.settings:pointerover">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.settings.selected:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.settings.gamepad-focused:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.settings:pressed">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.settings /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.settings:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.settings:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.catalog-filter /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.catalog-filter:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.catalog-filter:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-overflow">
+		<Setter Property="Opacity" Value="0"/>
+		<Setter Property="IsHitTestVisible" Value="False"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-row:pointerover Button.display-filter-overflow, Button.display-filter-row:focus-within Button.display-filter-overflow, Button.display-filter-row.dragging Button.display-filter-overflow, Button.display-filter-row.gamepad-focused Button.display-filter-overflow">
+		<Setter Property="Opacity" Value="1"/>
+		<Setter Property="IsHitTestVisible" Value="True"/>
+	</Style>
+
+	<Style Selector="Border.display-filter-reorder">
+		<Setter Property="Opacity" Value="0"/>
+		<Setter Property="IsHitTestVisible" Value="False"/>
+		<Setter Property="Cursor" Value="SizeAll"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="ToolTip.Tip" Value="Drag to reorder"/>
+		<Setter Property="ToolTip.ShowDelay" Value="1000"/>
+		<Setter Property="ToolTip.BetweenShowDelay" Value="-1"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-row:pointerover Border.display-filter-reorder, Button.display-filter-row:focus-within Border.display-filter-reorder, Button.display-filter-row.dragging Border.display-filter-reorder, Button.display-filter-row.gamepad-focused Border.display-filter-reorder">
+		<Setter Property="Opacity" Value="1"/>
+		<Setter Property="IsHitTestVisible" Value="True"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-row.dragging Border.display-filter-reorder">
+		<Setter Property="ToolTip.Tip" Value="{x:Null}"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-row.dragging">
+		<Setter Property="Opacity" Value="1"/>
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="Button.tag-filter-add">
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-row">
+		<Setter Property="ToolTip.Tip" Value="Click to apply tag filter"/>
+		<Setter Property="ToolTip.ShowDelay" Value="1000"/>
+		<Setter Property="ToolTip.BetweenShowDelay" Value="-1"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-row.selected">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="ToolTip.Tip" Value="Click again to clear"/>
+	</Style>
+
+	<Style Selector="Button.display-filter-row.dragging">
+		<Setter Property="ToolTip.Tip" Value="{x:Null}"/>
+	</Style>
+
+	<Style Selector="Button.scope-filter.selected">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		<Setter Property="Opacity" Value="0.95"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.scope-filter.gamepad-focused">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.scope-filter.selected.gamepad-focused">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="Button.iconbutton">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="8"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.iconbutton:pointerover">
+		<Setter Property="Opacity" Value="0.7"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.iconbutton:pointerover">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button.iconbutton.gamepad-focused:pointerover">
+		<Setter Property="Opacity" Value="1"/>
+	</Style>
+
+	<Style Selector="Button.iconbutton:pressed">
+		<Setter Property="Opacity" Value="0.5"/>
+	</Style>
+
+	<Style Selector="Border.gamecard">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="CornerRadius" Value="14"/>
+		<Setter Property="Margin" Value="0,0,0,12"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="InputElement.IsHoldingEnabled" Value="True"/>
+	</Style>
+
+	<Style Selector="Border.gamecardgrid">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="CornerRadius" Value="14"/>
+		<Setter Property="Margin" Value="10"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="InputElement.IsHoldingEnabled" Value="True"/>
+	</Style>
+
+	<Style Selector="Border.gamecardcompact">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="CornerRadius" Value="14"/>
+		<Setter Property="Margin" Value="6"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="InputElement.IsHoldingEnabled" Value="True"/>
+	</Style>
+
+	<Style Selector="StackPanel.library-grid-item">
+		<Setter Property="InputElement.IsHoldingEnabled" Value="True"/>
+	</Style>
+
+	<!-- Catalog/review cards: keep BorderBrush/Background in styles so gamepad-focused can override. -->
+	<Style Selector="Border.catalog-source-card">
+		<Setter Property="Width" Value="340"/>
+		<Setter Property="Margin" Value="0,0,16,16"/>
+	</Style>
+
+	<Style Selector="Border.catalog-focus-card">
+		<Setter Property="Background" Value="{DynamicResource ThemeBase}"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+
+	<!-- Installed badge: solid green + border so it reads on thumbnails. -->
+	<Style Selector="Border.mod-status-chip">
+		<Setter Property="Background" Value="#E622c55e"/>
+		<Setter Property="BorderBrush" Value="#166534"/>
+		<Setter Property="BorderThickness" Value="1.5"/>
+	</Style>
+
+	<Style Selector="Border.mod-status-chip TextBlock">
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<!-- Update available: same family, outlined so it stays distinct from Installed. -->
+	<Style Selector="Border.mod-status-chip.mod-update-available">
+		<Setter Property="Background" Value="#E616a34a"/>
+		<Setter Property="BorderBrush" Value="#BBF7D0"/>
+		<Setter Property="BorderThickness" Value="1.5"/>
+	</Style>
+
+	<Style Selector="Border.mod-status-chip.catalog-status-changed">
+		<Setter Property="Background" Value="#E6f59e0b"/>
+		<Setter Property="BorderBrush" Value="#FDE68A"/>
+		<Setter Property="BorderThickness" Value="1.5"/>
+	</Style>
+
+	<Style Selector="Border.mod-status-chip.mod-update-available TextBlock">
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Button.options.mod-update">
+		<Setter Property="Background" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="Foreground" Value="#18181b"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Button.options.mod-update:pointerover">
+		<Setter Property="Background" Value="#16a34a"/>
+		<Setter Property="BorderBrush" Value="#16a34a"/>
+		<Setter Property="Foreground" Value="#18181b"/>
+	</Style>
+
+	<Style Selector="Button.options.mod-update:pressed">
+		<Setter Property="Background" Value="#15803d"/>
+		<Setter Property="BorderBrush" Value="#15803d"/>
+		<Setter Property="Foreground" Value="#18181b"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-review-add">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-review-add:pointerover">
+		<Setter Property="Background" Value="#152a15"/>
+		<Setter Property="BorderBrush" Value="#16a34a"/>
+		<Setter Property="Foreground" Value="#16a34a"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-review-add:pressed">
+		<Setter Property="Background" Value="#1a3a1a"/>
+		<Setter Property="BorderBrush" Value="#16a34a"/>
+		<Setter Property="Foreground" Value="#16a34a"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-review-merge">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeWarning}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeWarning}"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-review-merge:pointerover">
+		<Setter Property="Background" Value="#2a1f10"/>
+		<Setter Property="BorderBrush" Value="#d97706"/>
+		<Setter Property="Foreground" Value="#d97706"/>
+	</Style>
+
+	<Style Selector="Button.options.catalog-review-merge:pressed">
+		<Setter Property="Background" Value="#3a2a14"/>
+		<Setter Property="BorderBrush" Value="#d97706"/>
+		<Setter Property="Foreground" Value="#d97706"/>
+	</Style>
+
+	<!-- Library card update badge (corner overlay on app icons).
+	     Solid dark green so it reads on charcoal cards; custom template so Fluent
+	     pointerover chrome does not replace the fill with a grey wash. -->
+	<Style Selector="Border.library-update-badge">
+		<Setter Property="Background" Value="#166534"/>
+		<Setter Property="BorderBrush" Value="#86EFAC"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="8"/>
+		<Setter Property="Padding" Value="5,2"/>
+		<Setter Property="MinWidth" Value="18"/>
+		<Setter Property="MinHeight" Value="18"/>
+	</Style>
+
+	<Style Selector="Border.library-update-badge TextBlock">
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge">
+		<Setter Property="Background" Value="#166534"/>
+		<Setter Property="BorderBrush" Value="#86EFAC"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="CornerRadius" Value="8"/>
+		<Setter Property="Padding" Value="5,2"/>
+		<Setter Property="MinWidth" Value="18"/>
+		<Setter Property="MinHeight" Value="18"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<Border Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="{TemplateBinding CornerRadius}"
+						Padding="{TemplateBinding Padding}">
+					<ContentPresenter
+						Name="PART_ContentPresenter"
+						Content="{TemplateBinding Content}"
+						ContentTemplate="{TemplateBinding ContentTemplate}"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"
+						Foreground="{TemplateBinding Foreground}"
+						FontSize="{TemplateBinding FontSize}"
+						FontWeight="{TemplateBinding FontWeight}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="Button.library-update-badge TextBlock">
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pointerover">
+		<Setter Property="Background" Value="#15803D"/>
+		<Setter Property="BorderBrush" Value="#BBF7D0"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pressed">
+		<Setter Property="Background" Value="#14532D"/>
+		<Setter Property="BorderBrush" Value="#86EFAC"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+	</Style>
+
+	<Style Selector="Button.library-update-badge:pressed /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="#FFFFFF"/>
+	</Style>
+
+	<!-- Card cursor is IsGamepadFocused on the Border. Do not require UserControl.gamepad-chrome:
+	     DataTemplate items often fail that ancestor match after Avalonia 12. -->
+	<Style Selector="Border.gamecard.gamepad-focused,
+	                 Border.gamecardgrid.gamepad-focused,
+	                 Border.gamecardcompact.gamepad-focused,
+	                 Border.catalog-focus-card.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+	</Style>
+
+	<!-- Sidebar / top-bar / settings: same ancestor-free workaround. Gamescope Steam
+	     mouse still fires :pointerover; the ring must not depend on UserControl.gamepad-chrome. -->
+	<Style Selector="Button.gamepad-focused,
+	                 Button.settings.gamepad-focused,
+	                 Button.iconbutton.gamepad-focused,
+	                 Button.modern.gamepad-focused,
+	                 Button.modern-icon.gamepad-focused,
+	                 Button.options.gamepad-focused,
+	                 Button.catalog-filter.gamepad-focused,
+	                 Button.github-token-banner-link.gamepad-focused,
+	                 Button.github-token-banner-close.gamepad-focused,
+	                 Button.announcement-banner-close.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+	<Style Selector="Button.settings.gamepad-focused,
+	                 Button.catalog-filter.gamepad-focused">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+	</Style>
+	<Style Selector="Button.gamepad-focused /template/ Border,
+	                 Button.settings.gamepad-focused /template/ Border,
+	                 Button.iconbutton.gamepad-focused /template/ Border,
+	                 Button.modern.gamepad-focused /template/ Border,
+	                 Button.modern-icon.gamepad-focused /template/ Border,
+	                 Button.options.gamepad-focused /template/ Border,
+	                 Button.catalog-filter.gamepad-focused /template/ Border,
+	                 Button.github-token-banner-close.gamepad-focused /template/ Border,
+	                 Button.announcement-banner-close.gamepad-focused /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+	<Style Selector="TextBox.gamepad-focused /template/ Border#PART_BorderElement">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+	<Style Selector="ComboBox.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+	<Style Selector="ComboBox.gamepad-focused /template/ Border#Background">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+	<Style Selector="CheckBox.gamepad-focused /template/ Border#NormalRectangle">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Border.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+	</Style>
+
+	<!-- Play / badge buttons on cards must not take XYFocus (cards use IsGamepadFocused). -->
+	<Style Selector="Border.gamecard Button,
+	                 Border.gamecardgrid Button,
+	                 Border.gamecardcompact Button,
+	                 StackPanel.library-grid-item Button">
+		<Setter Property="Focusable" Value="False"/>
+	</Style>
+
+	<!-- Focus Visual Styles: orange :focus only under nav chrome; :focus-visible for Tab. -->
+	<Style Selector="UserControl.gamepad-chrome Button,
+	                 UserControl.gamepad-chrome TextBox,
+	                 UserControl.gamepad-chrome CheckBox,
+	                 UserControl.gamepad-chrome ComboBox">
+		<Setter Property="FocusAdorner" Value="{x:Null}"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button:focus">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome ListBox.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome ListBox:focus">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="ListBox.catalog-review-list,
+	                 ListBox.catalog-review-grid">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Focusable" Value="False"/>
+		<Setter Property="AutoScrollToSelectedItem" Value="False"/>
+		<Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+		<Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="False"/>
+		<Setter Property="ScrollViewer.IsScrollInertiaEnabled" Value="True"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome ListBox.catalog-review-list,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-list:focus,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-list.gamepad-focused,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-grid,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-grid:focus,
+	                 UserControl.gamepad-chrome ListBox.catalog-review-grid.gamepad-focused">
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="0"/>
+	</Style>
+
+	<Style Selector="ListBox.catalog-review-list ListBoxItem:pointerover,
+	                 ListBox.catalog-review-list ListBoxItem:pressed,
+	                 ListBox.catalog-review-list ListBoxItem:selected,
+	                 ListBox.catalog-review-list ListBoxItem:focus,
+	                 ListBox.catalog-review-grid ListBoxItem:pointerover,
+	                 ListBox.catalog-review-grid ListBoxItem:pressed,
+	                 ListBox.catalog-review-grid ListBoxItem:selected,
+	                 ListBox.catalog-review-grid ListBoxItem:focus">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="0"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button:focus /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.modern:focus /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Margin" Value="-1"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.modern-icon:focus,
+	                 UserControl.gamepad-chrome Button.modern-icon.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.modern-icon:focus /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Margin" Value="-1"/>
+	</Style>
+
+	<Style Selector="Button.modern-icon:focus-visible /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Margin" Value="-1"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.modern-icon.gamepad-focused /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Margin" Value="-1"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.options:focus /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.options.gamepad-focused /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="Button.options-grid:focus-visible /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+
+	<Style Selector="Button.options-grid:focus-visible">
+		<Setter Property="Opacity" Value="1"/>
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+	</Style>
+
+	<Style Selector="Button.settings:focus">
+		<!-- Without nav chrome, Tab focus is a quiet fill — not an orange ring. -->
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.settings:focus,
+	                 UserControl.gamepad-chrome Button.settings.gamepad-focused">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.settings:focus /template/ Border,
+	                 UserControl.gamepad-chrome Button.settings.gamepad-focused /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.iconbutton:focus,
+	                 UserControl.gamepad-chrome Button.iconbutton.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Button.iconbutton:focus /template/ Border,
+	                 UserControl.gamepad-chrome Button.iconbutton.gamepad-focused /template/ Border">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="CheckBox:focus /template/ Border#NormalRectangle">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome CheckBox.gamepad-focused">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome Slider.gamepad-focused /template/ Thumb">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+
+	<Style Selector="UserControl.gamepad-chrome ComboBox.gamepad-focused">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="Slider:focus /template/ Thumb">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="3"/>
+	</Style>
+
+	<Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+
+	<Style Selector="TextBox#LibrarySearchTextBox /template/ TextBlock#PART_Watermark">
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<!-- Theme-aware text styles -->
+	<Style Selector="TextBlock.theme-text">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="TextBlock.theme-text-secondary">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+	</Style>
+
+	<Style Selector="TextBlock.theme-text-muted">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		<Setter Property="Opacity" Value="0.7"/>
+	</Style>
+
+	<Style Selector="TabItem">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		<Setter Property="Padding" Value="14,4"/>
+		<Setter Property="Margin" Value="4,8,4,0"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="CornerRadius" Value="6"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="MinHeight" Value="42"/>
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+
+	<!-- Keep all five settings tabs on one row -->
+	<Style Selector="TabControl#SettingsTabControl">
+		<Setter Property="Padding" Value="4,4,4,0"/>
+	</Style>
+	<Style Selector="TabControl#SettingsTabControl TabItem">
+		<Setter Property="Padding" Value="8,4"/>
+		<Setter Property="Margin" Value="1,8,1,0"/>
+		<Setter Property="FontSize" Value="11"/>
+		<Setter Property="MinHeight" Value="36"/>
+	</Style>
+
+	<Style Selector="TabItem:selected">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+	</Style>
+
+	<Style Selector="UserControl.mobile Grid#CatalogContentPanel">
+		<Setter Property="Margin" Value="16,8,16,12"/>
+	</Style>
+	<Style Selector="UserControl.mobile StackPanel#CatalogSourcesStack">
+		<Setter Property="Margin" Value="0"/>
+	</Style>
+	<Style Selector="UserControl.mobile ScrollViewer#LibraryContentPanel">
+		<Setter Property="Margin" Value="8,8,8,8"/>
+		<Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+	</Style>
+	<Style Selector="UserControl.mobile Grid#LibraryItemsHost">
+		<Setter Property="Margin" Value="0"/>
+		<Setter Property="VerticalAlignment" Value="Top"/>
+	</Style>
+	<Style Selector="UserControl.mobile ItemsControl#ClassicGridViewControl">
+		<Setter Property="VerticalAlignment" Value="Top"/>
+	</Style>
+	<Style Selector="UserControl.mobile ItemsControl#CompactGridViewControl">
+		<Setter Property="VerticalAlignment" Value="Top"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.gamecardgrid">
+		<Setter Property="Margin" Value="4"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.gamecardcompact">
+		<Setter Property="Margin" Value="4"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="UserControl.mobile StackPanel.library-grid-item">
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="UserControl.mobile StackPanel#EmptyLibraryPanel">
+		<Setter Property="Margin" Value="16,12,16,16"/>
+	</Style>
+	<Style Selector="UserControl.mobile StackPanel#LibrarySearchNoMatchesPanel">
+		<Setter Property="Margin" Value="16,12,16,16"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border#SettingsPanel">
+		<Setter Property="Width" Value="NaN"/>
+		<Setter Property="MaxWidth" Value="520"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="UserControl.mobile Button.options">
+		<Setter Property="MinHeight" Value="44"/>
+	</Style>
+	<Style Selector="Border.catalog-review-grid-card">
+		<Setter Property="Width" Value="196"/>
+		<Setter Property="Margin" Value="0,0,12,12"/>
+	</Style>
+	<Style Selector="Border.catalog-review-grid-card Border.catalog-review-icon">
+		<Setter Property="Height" Value="148"/>
+	</Style>
+	<Style Selector="Border.catalog-review-grid-card StackPanel.catalog-review-grid-body">
+		<Setter Property="Margin" Value="10,8,10,10"/>
+	</Style>
+	<Style Selector="Border.catalog-review-grid-card services|HoverScrollText.catalog-review-title">
+		<Setter Property="FontSize" Value="14"/>
+	</Style>
+	<Style Selector="Border.catalog-review-grid-card Button.options">
+		<Setter Property="Padding" Value="5,3"/>
+		<Setter Property="MinWidth" Value="0"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="Border.catalog-review-grid-card ItemsControl.catalog-review-grid-actions Button.options">
+		<Setter Property="Margin" Value="0,0,4,0"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.catalog-review-grid-card">
+		<Setter Property="MinWidth" Value="0"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+		<Setter Property="Margin" Value="4"/>
+	</Style>
+	<Style Selector="UserControl.mobile ListBox#CatalogReviewGridItemsControl ListBoxItem">
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+		<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.catalog-review-grid-card Border.catalog-review-icon">
+		<Setter Property="Height" Value="80"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.catalog-review-grid-card StackPanel.catalog-review-grid-body">
+		<Setter Property="Margin" Value="8,6,8,8"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.catalog-review-grid-card services|HoverScrollText.catalog-review-title">
+		<Setter Property="FontSize" Value="13"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.catalog-review-grid-card Button.options">
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="MinWidth" Value="0"/>
+		<Setter Property="Padding" Value="6,3"/>
+	</Style>
+	<Style Selector="UserControl.mobile ListBox#CatalogReviewGridItemsControl">
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+		<Setter Property="ClipToBounds" Value="True"/>
+		<Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+	</Style>
+	<Style Selector="UserControl.mobile Grid#CatalogReviewItemsHost">
+		<Setter Property="ClipToBounds" Value="True"/>
+	</Style>
+	<Style Selector="StackPanel.catalog-review-actions">
+		<Setter Property="Orientation" Value="Horizontal"/>
+	</Style>
+	<Style Selector="ScrollViewer#CatalogReviewStatusScroller">
+		<Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+		<Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="MinHeight" Value="40"/>
+		<Setter Property="Padding" Value="0,0,0,10"/>
+		<Setter Property="VerticalAlignment" Value="Top"/>
+	</Style>
+	<Style Selector="UserControl.mobile ScrollViewer#CatalogReviewStatusScroller">
+		<Setter Property="HorizontalScrollBarVisibility" Value="Hidden"/>
+		<Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="ScrollViewer.IsScrollInertiaEnabled" Value="True"/>
+	</Style>
+	<Style Selector="UserControl.mobile StackPanel#CatalogReviewStatusChips Button.catalog-filter">
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="Margin" Value="0,0,6,0"/>
+	</Style>
+	<Style Selector="UserControl.mobile Grid#CatalogReviewMobileChromeRow Button">
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+	<Style Selector="UserControl.mobile Button#CatalogReviewBulkButton">
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="Padding" Value="8,4"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border#CatalogReviewDetailsHeaderChrome">
+		<Setter Property="Padding" Value="12,8,12,8"/>
+	</Style>
+	<Style Selector="UserControl.mobile ScrollViewer#CatalogReviewDetailsScrollViewer">
+		<Setter Property="Margin" Value="12,8,12,12"/>
+	</Style>
+	<Style Selector="UserControl.mobile ScrollViewer#CatalogReviewDetailsHeroExpanded">
+		<Setter Property="MaxHeight" Value="200"/>
+	</Style>
+	<Style Selector="UserControl.mobile-landscape ScrollViewer#CatalogReviewDetailsHeroExpanded">
+		<Setter Property="MaxHeight" Value="140"/>
+	</Style>
+	<Style Selector="UserControl.mobile Grid#CatalogReviewDetailsCompactBar Button">
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="Padding" Value="8,4"/>
+	</Style>
+	<Style Selector="Border#EntryFormDialogPanel">
+		<Setter Property="Margin" Value="24"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border#EntryFormDialogPanel">
+		<Setter Property="Margin" Value="16"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+		<Setter Property="VerticalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="UserControl.mobile ScrollViewer#EntryFormFieldsScroll">
+		<Setter Property="MaxHeight" Value="NaN"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border#EntryFormDialogPanel TextBox">
+		<Setter Property="MinHeight" Value="44"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border#EntryFormDialogPanel ComboBox">
+		<Setter Property="MinHeight" Value="44"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border#EntryFormDialogPanel CheckBox">
+		<Setter Property="MinHeight" Value="44"/>
+	</Style>
+	<Style Selector="UserControl.mobile Button.message-prompt">
+		<Setter Property="MinHeight" Value="44"/>
+		<Setter Property="MinWidth" Value="88"/>
+	</Style>
+	<Style Selector="UserControl.mobile Button.catalog-filter">
+		<Setter Property="MinHeight" Value="40"/>
+	</Style>
+	<Style Selector=".mobile Border.catalog-source-card">
+		<Setter Property="Width" Value="NaN"/>
+		<Setter Property="MinWidth" Value="0"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+		<Setter Property="Margin" Value="0"/>
+	</Style>
+	<Style Selector="UserControl.mobile Grid#LibrarySearchHost">
+		<Setter Property="Width" Value="NaN"/>
+		<Setter Property="MinWidth" Value="0"/>
+		<Setter Property="Margin" Value="0"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="UserControl.mobile TextBox#CatalogSearchTextBox">
+		<Setter Property="Width" Value="NaN"/>
+		<Setter Property="MinWidth" Value="160"/>
+		<Setter Property="HorizontalAlignment" Value="Stretch"/>
+	</Style>
+	<Style Selector="Border.header-inner">
+		<Setter Property="Padding" Value="0,8,0,8"/>
+	</Style>
+	<Style Selector="Button#AddNewEntryButton /template/ Border">
+		<Setter Property="CornerRadius" Value="4"/>
+	</Style>
+	<Style Selector="Button#AddNewEntryButton">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+	</Style>
+	<Style Selector="Button#AddNewEntryButton:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button#AddNewEntryButton:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+	</Style>
+	<Style Selector="UserControl.gamepad-chrome Button#AddNewEntryButton.gamepad-focused:pointerover">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+	</Style>
+	<Style Selector="Button#AddNewEntryButton:pressed">
+		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+	</Style>
+	<Style Selector="UserControl.mobile Border.header-inner">
+		<Setter Property="Padding" Value="0"/>
+	</Style>
+	<Style Selector="UserControl.mobile TextBlock#HeaderTitleText">
+		<Setter Property="FontSize" Value="18"/>
+		<Setter Property="Margin" Value="0"/>
+	</Style>
+	<Style Selector="UserControl.mobile services|HoverScrollText#CatalogReviewHeaderTitleScroll">
+		<Setter Property="FontSize" Value="18"/>
+		<Setter Property="Margin" Value="0"/>
+	</Style>
+	<Style Selector="MenuItem.catalog-bulk-item">
+		<Setter Property="MinHeight" Value="44"/>
+		<Setter Property="Padding" Value="16,12"/>
+		<Setter Property="FontSize" Value="14"/>
+	</Style>
+	<Style Selector="MenuItem.catalog-bulk-item.catalog-review-add">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>
+	</Style>
+	<Style Selector="MenuItem.catalog-bulk-item.catalog-review-merge">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeWarning}"/>
+	</Style>
+	<Style Selector="Separator.catalog-bulk-separator">
+		<Setter Property="Margin" Value="8,10"/>
+		<Setter Property="Height" Value="12"/>
+	</Style>
+	<Style Selector="UserControl.mobile TextBox#LibrarySearchTextBox">
+		<Setter Property="MinHeight" Value="32"/>
+		<Setter Property="FontSize" Value="14"/>
+	</Style>
+	<Style Selector="UserControl.mobile Button.modern-icon.mobile-header-icon">
+		<Setter Property="Width" Value="28"/>
+		<Setter Property="Height" Value="28"/>
+		<Setter Property="MinHeight" Value="28"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Margin" Value="8,0,0,0"/>
+		<Setter Property="FontSize" Value="16"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="White"/>
+	</Style>
+	<Style Selector="StackPanel#SidebarLogoPanel">
+		<Setter Property="Margin" Value="20"/>
+	</Style>
+	<Style Selector="Image#SidebarLogoImage">
+		<Setter Property="Width" Value="45.75"/>
+		<Setter Property="Height" Value="95.25"/>
+	</Style>
+	<Style Selector="Button#ContinueButton">
+		<Setter Property="Height" Value="64"/>
+	</Style>
+	<Style Selector="UserControl.mobile StackPanel#SidebarLogoPanel">
+		<Setter Property="Margin" Value="8"/>
+	</Style>
+	<Style Selector="UserControl.mobile Image#SidebarLogoImage">
+		<Setter Property="Width" Value="19.2"/>
+		<Setter Property="Height" Value="40"/>
+	</Style>
+	<Style Selector="UserControl.mobile-landscape StackPanel#SidebarLogoPanel">
+		<Setter Property="Margin" Value="8,4"/>
+	</Style>
+	<Style Selector="UserControl.mobile-landscape Image#SidebarLogoImage">
+		<Setter Property="Width" Value="15.36"/>
+		<Setter Property="Height" Value="32"/>
+	</Style>
+	<Style Selector="UserControl.mobile-landscape Button#ContinueButton">
+		<Setter Property="Height" Value="40"/>
+		<Setter Property="MinHeight" Value="40"/>
+	</Style>
+	<Style Selector="UserControl.mobile ScrollViewer#SidebarBodyScroller">
+		<Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+		<Setter Property="VerticalScrollBarVisibility" Value="Hidden"/>
+		<Setter Property="ScrollViewer.IsScrollInertiaEnabled" Value="True"/>
+	</Style>
+
+</Styles>

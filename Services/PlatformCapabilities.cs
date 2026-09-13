@@ -9,6 +9,8 @@ public static class PlatformCapabilities
 
     public static bool IsDesktop => !IsMobile;
 
+    public static string InstalledAppRemovalLabel => IsMobile ? "Uninstall" : "Delete";
+
     public static bool SupportsTray => !IsMobile;
 
     public static bool SupportsVelopack => !IsMobile;

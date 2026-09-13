@@ -17,6 +17,30 @@ namespace QuiverLauncher.Core.Services
     /// </summary>
     public static class CatalogPlatformSupport
     {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, CatalogPlatformFlags> AssetPlatforms = new(StringComparer.Ordinal);
+        public static long ClassificationCount => System.Threading.Interlocked.Read(ref _classificationCount);
+        private static long _classificationCount;
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<CatalogPlatformEntry,
+            System.Collections.Concurrent.ConcurrentDictionary<string, CatalogPlatformFlags>> MetadataPlatforms = new();
+
+        public static CatalogPlatformFlags FromMetadata(CatalogPlatformEntry metadata, string? assetFilter)
+        {
+            // Each successful refresh creates a new entry, including empty releases.
+            // Weak keys retire classifications with their metadata; filters stay app-specific.
+            var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(assetFilter) ?? "";
+            var cache = MetadataPlatforms.GetOrCreateValue(metadata);
+            return cache.GetOrAdd(filter, value => FromAssetNames(FilterAssetNames(metadata.AssetNames, value)));
+        }
+        private static CatalogPlatformFlags Classify(string name)
+        {
+            System.Threading.Interlocked.Increment(ref _classificationCount);
+            var flags = CatalogPlatformFlags.None;
+            if (PlatformAssetMatcher.MatchesPlatform(name, "Windows")) flags |= CatalogPlatformFlags.Windows;
+            if (IsAnyLinuxAsset(name)) flags |= CatalogPlatformFlags.Linux;
+            if (PlatformAssetMatcher.MatchesPlatform(name, "macOS")) flags |= CatalogPlatformFlags.Mac;
+            if (PlatformAssetMatcher.MatchesPlatform(name, "Android")) flags |= CatalogPlatformFlags.Android;
+            return flags;
+        }
         public const string Windows = "Windows";
         public const string Linux = "Linux";
         public const string Mac = "Mac";
@@ -36,14 +60,13 @@ namespace QuiverLauncher.Core.Services
                 if (string.IsNullOrWhiteSpace(name))
                     continue;
 
-                if (PlatformAssetMatcher.MatchesPlatform(name, "Windows"))
-                    flags |= CatalogPlatformFlags.Windows;
-                if (IsAnyLinuxAsset(name))
-                    flags |= CatalogPlatformFlags.Linux;
-                if (PlatformAssetMatcher.MatchesPlatform(name, "macOS"))
-                    flags |= CatalogPlatformFlags.Mac;
-                if (PlatformAssetMatcher.MatchesPlatform(name, "Android"))
-                    flags |= CatalogPlatformFlags.Android;
+                // Classification is a pure function of a filename. Bound the session cache.
+                if (!AssetPlatforms.TryGetValue(name, out var classified))
+                {
+                    if (AssetPlatforms.Count > 16384) AssetPlatforms.Clear();
+                    classified = AssetPlatforms.GetOrAdd(name, Classify);
+                }
+                flags |= classified;
             }
 
             return flags;
@@ -92,26 +115,25 @@ namespace QuiverLauncher.Core.Services
         }
 
         /// <summary>
-        /// Unknown apps (no repository or no cached asset names) stay visible.
+        /// Unknown apps stay visible only when no platform filter is selected.
         /// Known latest-release assets must intersect the selected platforms.
         /// </summary>
         public static bool AppMatches(
             string? repositorySource,
             string? repository,
             string? releaseAssetFilter,
-            IEnumerable<string>? selectedFilters)
+            IEnumerable<string>? selectedFilters, string? preferredVersion = null, string? token = null)
         {
             if (IsAll(selectedFilters))
                 return true;
 
             if (string.IsNullOrWhiteSpace(repository))
-                return true;
+                return false;
 
-            if (!GitHubApiCache.TryGetAssetNames(repositorySource, repository, out var assetNames))
-                return true;
+            if (!CatalogPlatformIndex.TryGet(repositorySource, repository, preferredVersion, token, out var entry))
+                return false;
 
-            var filtered = FilterAssetNames(assetNames, releaseAssetFilter);
-            var supported = FromAssetNames(filtered);
+            var supported = FromMetadata(entry!, releaseAssetFilter);
             return Matches(supported, ParseFilters(selectedFilters));
         }
 

@@ -34,12 +34,62 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
     }
 
     [Fact]
+    public async Task Progress_counts_distinct_pending_repositories_and_hides_cached_only_batches()
+    {
+        var repo = UniqueRepo("progress");
+        var cached = UniqueRepo("cached");
+        SeedCache("github", cached, "v1", "etag", Release("v1", "app.zip"), persist: false);
+        var reports = new List<CatalogReleaseWarmupProgress>();
+        using var client = new HttpClient(LatestHandler(_ => LatestJson("app.zip")));
+        Task Report(CatalogReleaseWarmupProgress p) { reports.Add(p); return Task.CompletedTask; }
+        await CatalogReleaseIndexWarmup.WarmAsync(client, [Row(repo), Row(repo), Row(cached)], null, CancellationToken.None, onProgress: Report);
+        reports.First().Completed.Should().Be(1);
+        reports.Last().Should().Be(new CatalogReleaseWarmupProgress(2, 2, CatalogReleaseWarmupOutcome.Completed, Attempted: 1));
+        reports.Clear();
+        await CatalogReleaseIndexWarmup.WarmAsync(client, [Row(repo)], null, CancellationToken.None, onProgress: Report);
+        reports.Should().Equal(new CatalogReleaseWarmupProgress(1, 1, CatalogReleaseWarmupOutcome.Completed));
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError, CatalogReleaseWarmupOutcome.Failed)]
+    [InlineData(HttpStatusCode.TooManyRequests, CatalogReleaseWarmupOutcome.RateLimited)]
+    public async Task Progress_counts_failed_attempts_but_not_skipped_requests(HttpStatusCode status, CatalogReleaseWarmupOutcome outcome)
+    {
+        var reports = new List<CatalogReleaseWarmupProgress>();
+        var requests = 0;
+        using var client = new HttpClient(new RecordingHandler(_ =>
+        {
+            requests++;
+            return new HttpResponseMessage(status) { Content = new StringContent("failure") };
+        }));
+        await CatalogReleaseIndexWarmup.WarmAsync(client, Enumerable.Range(0, 5).Select(_ => Row(UniqueRepo("failed"))), null,
+            CancellationToken.None, onProgress: p => { reports.Add(p); return Task.CompletedTask; });
+        reports.Last().Outcome.Should().Be(outcome);
+        reports.Last().Total.Should().Be(5);
+        reports.Last().Completed.Should().Be(0);
+        reports.Last().Attempted.Should().Be(requests);
+        if (outcome == CatalogReleaseWarmupOutcome.RateLimited) requests.Should().BeLessThan(5);
+        else requests.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task Cancelled_batches_do_not_publish_a_completed_status()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var reports = new List<CatalogReleaseWarmupProgress>();
+        using var client = new HttpClient(LatestHandler(_ => LatestJson("app.zip")));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CatalogReleaseIndexWarmup.WarmAsync(client, [Row(UniqueRepo("cancel"))], null, cancellation.Token,
+            onProgress: p => { reports.Add(p); cancellation.Cancel(); return Task.CompletedTask; }));
+        reports.Should().ContainSingle().Which.Outcome.Should().Be(CatalogReleaseWarmupOutcome.Running);
+    }
+
+    [Fact]
     public void SetCache_persist_false_does_not_write_until_flush()
     {
         var repo = UniqueRepo("persist");
         var cacheFile = Path.Combine(_cacheDir, "version_cache.json");
 
-        GitHubApiCache.SetCache("github", repo, "v1", "etag", Release("v1", "app.apk"), persist: false);
+        SeedCache("github", repo, "v1", "etag", Release("v1", "app.apk"), persist: false);
 
         File.Exists(cacheFile).Should().BeFalse();
         GitHubApiCache.TryGetAssetNames("github", repo, out var names).Should().BeTrue();
@@ -71,7 +121,7 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
 
         updates.Should().Be(1);
         foreach (var repo in repos)
-            GitHubApiCache.TryGetAssetNames("github", repo, out _).Should().BeTrue();
+            IndexNames("github", repo, out _).Should().BeTrue();
     }
 
     [Fact]
@@ -117,7 +167,7 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
 
         paths.Should().ContainSingle(path => path.EndsWith("/releases/latest", StringComparison.OrdinalIgnoreCase));
         paths.Should().NotContain(path => path.EndsWith("/releases", StringComparison.OrdinalIgnoreCase));
-        GitHubApiCache.TryGetAssetNames("github", repo, out var names).Should().BeTrue();
+        IndexNames("github", repo, out var names).Should().BeTrue();
         names.Should().Contain("game-android.apk");
     }
 
@@ -144,7 +194,7 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
             CancellationToken.None);
 
         paths.Should().Contain(path => path.EndsWith("/releases", StringComparison.OrdinalIgnoreCase));
-        GitHubApiCache.TryGetAssetNames("github", repo, out _).Should().BeTrue();
+        CatalogPlatformIndex.TryGet("github", repo, "v1.2.0", null, out _).Should().BeTrue();
     }
 
     [Fact]
@@ -171,7 +221,7 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
 
         paths.Should().Contain(path => path.EndsWith("/releases/latest", StringComparison.OrdinalIgnoreCase));
         paths.Should().Contain(path => path.EndsWith("/releases", StringComparison.OrdinalIgnoreCase));
-        GitHubApiCache.TryGetAssetNames("github", repo, out var names).Should().BeTrue();
+        IndexNames("github", repo, out var names).Should().BeTrue();
         names.Should().Contain("game-android.apk");
     }
 
@@ -179,7 +229,7 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
     public async Task WarmAsync_flushes_asset_index_to_disk()
     {
         var repo = UniqueRepo("disk");
-        var cacheFile = Path.Combine(_cacheDir, "version_cache.json");
+        var cacheFile = Path.Combine(_cacheDir, "catalog_platform_index_v1.json");
         using var client = new HttpClient(LatestHandler(_ => LatestJson("app.apk")));
 
         await CatalogReleaseIndexWarmup.WarmAsync(
@@ -196,8 +246,10 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
     public async Task WarmAsync_records_empty_index_when_latest_has_no_usable_release()
     {
         var repo = UniqueRepo("empty-latest");
-        using var client = new HttpClient(new RecordingHandler(_ =>
-            JsonOk("""{"tag_name":"v1.0.0","prerelease":false,"assets":[]}""")));
+        using var client = new HttpClient(new RecordingHandler(request =>
+            JsonOk(request.RequestUri!.AbsolutePath.EndsWith("/latest")
+                ? """{"tag_name":"v1.0.0","prerelease":false,"assets":[]}"""
+                : """[{"tag_name":"v1.0.0","prerelease":false,"assets":[]}]""")));
 
         await CatalogReleaseIndexWarmup.WarmAsync(
             client,
@@ -205,8 +257,8 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
             getApiToken: null,
             CancellationToken.None);
 
-        GitHubApiCache.HasFreshAssetIndex("github", repo).Should().BeTrue();
-        GitHubApiCache.TryGetAssetNames("github", repo, out var names).Should().BeTrue();
+        CatalogPlatformIndex.IsFresh("github", repo).Should().BeTrue();
+        IndexNames("github", repo, out var names).Should().BeTrue();
         names.Should().BeEmpty();
         CatalogPlatformSupport.AppMatches("github", repo, null, ["Android"]).Should().BeFalse();
     }
@@ -230,8 +282,8 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
             getApiToken: null,
             CancellationToken.None);
 
-        GitHubApiCache.HasFreshAssetIndex("github", repo).Should().BeTrue();
-        GitHubApiCache.TryGetAssetNames("github", repo, out var names).Should().BeTrue();
+        CatalogPlatformIndex.IsFresh("github", repo).Should().BeTrue();
+        IndexNames("github", repo, out var names).Should().BeTrue();
         names.Should().BeEmpty();
         CatalogPlatformSupport.AppMatches("github", repo, null, ["Android"]).Should().BeFalse();
     }
@@ -262,13 +314,13 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
             getApiToken: null,
             CancellationToken.None);
 
-        GitHubApiCache.TryGetAssetNames("github", denied, out var deniedNames).Should().BeTrue();
+        IndexNames("github", denied, out var deniedNames).Should().BeFalse();
         deniedNames.Should().BeEmpty();
         CatalogPlatformSupport.AppMatches("github", denied, null, ["Android"]).Should().BeFalse();
 
-        GitHubApiCache.TryGetAssetNames("github", ok1, out var ok1Names).Should().BeTrue();
+        IndexNames("github", ok1, out var ok1Names).Should().BeTrue();
         ok1Names.Should().Contain("game-android.apk");
-        GitHubApiCache.TryGetAssetNames("github", ok2, out var ok2Names).Should().BeTrue();
+        IndexNames("github", ok2, out var ok2Names).Should().BeTrue();
         ok2Names.Should().Contain("game-android.apk");
     }
 
@@ -288,9 +340,9 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
             getApiToken: null,
             CancellationToken.None);
 
-        GitHubApiCache.HasFreshAssetIndex("github", limited).Should().BeFalse();
-        GitHubApiCache.TryGetAssetNames("github", limited, out _).Should().BeFalse();
-        CatalogPlatformSupport.AppMatches("github", limited, null, ["Android"]).Should().BeTrue();
+        CatalogPlatformIndex.IsFresh("github", limited).Should().BeFalse();
+        IndexNames("github", limited, out _).Should().BeFalse();
+        CatalogPlatformSupport.AppMatches("github", limited, null, ["Android"]).Should().BeFalse();
     }
 
     private static CatalogSyncRowItem Row(string repository, string? preferredVersion = null) =>
@@ -305,6 +357,80 @@ public class CatalogReleaseIndexWarmupTests : IDisposable
                 PreferredVersion = preferredVersion,
             },
         };
+
+    [Fact]
+    public async Task GitHub_limit_does_not_stop_GitLab_platform_checks()
+    {
+        var github = Row(UniqueRepo("github-paused"));
+        var gitlab = Row(UniqueRepo("gitlab-ok"));
+        gitlab.External!.RepositorySource = "gitlab";
+        var hosts = new List<string>();
+        using var client = new HttpClient(new RecordingHandler(request =>
+        {
+            hosts.Add(request.RequestUri!.Host);
+            return request.RequestUri.Host == "api.github.com"
+                ? new HttpResponseMessage(HttpStatusCode.TooManyRequests) : JsonOk("[]");
+        }));
+        await CatalogReleaseIndexWarmup.WarmAsync(client, [github, gitlab], null, CancellationToken.None);
+        hosts.Should().Equal("api.github.com", "gitlab.com");
+        CatalogPlatformIndex.IsFresh("gitlab", gitlab.Repository).Should().BeTrue();
+        CatalogPlatformIndex.IsFresh("github", github.Repository).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task Failed_refresh_preserves_previously_verified_assets(HttpStatusCode status)
+    {
+        var repo = UniqueRepo("preserve");
+        SeedCache("github", repo, "v1", "legacy", Release("v1", "app.apk"));
+        using var client = new HttpClient(new RecordingHandler(_ => new HttpResponseMessage(status)));
+        await Assert.ThrowsAsync<ReleaseFetchException>(() => CatalogReleaseIndexWarmup.WarmOneAsync(client,
+            new("github", repo, null, () => "test"), "test", CancellationToken.None));
+        IndexNames("github", repo, out var assets).Should().BeTrue();
+        assets.Should().Equal("app.apk");
+    }
+
+    [Fact]
+    public async Task Successful_empty_release_replaces_old_platform_support()
+    {
+        var repo = UniqueRepo("no-longer-android");
+        SeedCache("github", repo, "v1", "legacy", Release("v1", "app.apk"));
+        using var client = new HttpClient(new RecordingHandler(request => JsonOk(request.RequestUri!.AbsolutePath.EndsWith("/latest")
+            ? """{"tag_name":"v2","assets":[]}""" : """[{"tag_name":"v2","assets":[]}]""")));
+        await CatalogReleaseIndexWarmup.WarmOneAsync(client, new("github", repo, null, () => ""), null, CancellationToken.None);
+        IndexNames("github", repo, out var assets).Should().BeTrue();
+        assets.Should().BeEmpty();
+        CatalogPlatformSupport.AppMatches("github", repo, null, ["Android"]).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Legacy_cache_keeps_stale_platforms_but_discards_unscoped_validators()
+    {
+        var repo = UniqueRepo("legacy-stale");
+        File.WriteAllText(Path.Combine(_cacheDir, "version_cache.json"), System.Text.Json.JsonSerializer.Serialize(
+            new Dictionary<string, GameVersionCache> { [repo] = new() { Version = "v1", ETag = "legacy-etag",
+                LastChecked = DateTime.UtcNow.AddDays(-3), CachedRelease = Release("v1", "app.apk") } }));
+        GitHubApiCache.Initialize(_cacheDir);
+        GitHubApiCache.GetETag("github", repo).Should().BeEmpty();
+        CatalogPlatformIndex.IsFresh("github", repo).Should().BeFalse();
+        CatalogPlatformSupport.AppMatches("github", repo, null, ["Android"]).Should().BeTrue();
+    }
+
+    private static bool IndexNames(string provider, string repo, out IReadOnlyList<string> names)
+    {
+        var found = CatalogPlatformIndex.TryGet(provider, repo, null, null, out var entry);
+        names = entry?.AssetNames ?? [];
+        return found;
+    }
+
+    private static void SeedCache(string provider, string repo, string version, string etag, GitHubRelease? release = null, bool persist = true, bool replaceAssetNames = false)
+    {
+        GitHubApiCache.SetCache(provider, repo, version, etag, release, persist, replaceAssetNames);
+        CatalogPlatformIndex.Set(provider, repo, null, null, release);
+    }
 
     private static string UniqueRepo(string suffix) =>
         $"owner/{suffix}-{Guid.NewGuid():N}";

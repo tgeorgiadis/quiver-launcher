@@ -1,0 +1,679 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:services="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:views="using:QuiverLauncher.Views" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.CatalogReviewView" x:DataType="vm:CatalogSyncViewModel" x:CompileBindings="True">
+<UserControl.Resources>
+<DataTemplate x:Key="CatalogReviewCardTemplate" x:DataType="services:CatalogSyncRowItem">
+			<Border Classes="catalog-focus-card"
+					CornerRadius="6"
+					Padding="8,5"
+					Margin="0,0,0,4"
+					Classes.gamepad-focused="{Binding IsGamepadFocused}"
+					Tapped="CatalogReviewCard_Tapped">
+				<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+					<Border Grid.Column="0"
+							Classes="catalog-review-icon"
+							Background="{DynamicResource ThemeLighter}"
+							CornerRadius="8"
+							ClipToBounds="True"
+							Width="64"
+							Height="64"
+							VerticalAlignment="Center"
+							HorizontalAlignment="Left">
+						<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+														Width="64"
+														Height="64"
+														Stretch="UniformToFill"
+														HorizontalAlignment="Stretch"
+														VerticalAlignment="Stretch"/>
+					</Border>
+
+					<Grid Grid.Column="1" IsSharedSizeScope="True">
+						<StackPanel Spacing="2">
+							<Grid ColumnSpacing="8">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto" SharedSizeGroup="CatalogReviewActions"/>
+								</Grid.ColumnDefinitions>
+								<StackPanel Grid.Column="0" Spacing="2">
+									<WrapPanel Orientation="Horizontal">
+										<TextBlock Classes="catalog-review-title"
+												   Text="{Binding DisplayName}"
+												   FontSize="13"
+												   FontWeight="SemiBold"
+												   Foreground="{DynamicResource ThemeText}"
+												   TextWrapping="Wrap"
+												   TextTrimming="CharacterEllipsis"
+												   MaxLines="2"
+												   VerticalAlignment="Center"
+												   Margin="0,0,6,0"/>
+										<Border Background="{DynamicResource ThemeLighter}"
+												CornerRadius="3"
+												Padding="4,1"
+												VerticalAlignment="Center">
+											<TextBlock Text="{Binding StatusShortLabel}" FontSize="9" Foreground="{DynamicResource ThemeTextSecondary}"/>
+										</Border>
+									</WrapPanel>
+									<TextBlock Text="{Binding CompatibilityText}" ToolTip.Tip="{Binding CompatibilityText}"
+                                        FontSize="11" Height="16" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource ThemeTextSecondary}"/>
+                                    <TextBlock Text="{Binding Subtitle}"
+											   FontSize="10"
+											   Foreground="{DynamicResource ThemeTextSecondary}"
+											   TextWrapping="Wrap"
+											   TextTrimming="CharacterEllipsis"
+											   MaxLines="2"/>
+								</StackPanel>
+							</Grid>
+							<StackPanel Classes="catalog-review-actions"
+										Orientation="Horizontal"
+										Spacing="4"
+										IsVisible="{x:Static services:PlatformCapabilities.IsMobile}">
+								<Button Classes="options catalog-review-add" Content="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding ShowAddButton}"/>
+								<Button Classes="options catalog-review-merge" Content="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding CanMerge}"/>
+								<Button Classes="options" Content="Details" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch"/>
+								<Button Classes="options" Content="Replace" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding CanReplace}"/>
+								<Button Classes="options" Content="Ignore" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding CanIgnore}"/>
+								<Button Classes="options" Content="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch"
+										ToolTip.Tip="Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden."
+										IsVisible="{Binding ShowCardHideButton}"/>
+								<Button Classes="options" Content="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding ShowUnhideButton}"/>
+								<Button Classes="options catalog-remove-from-library"
+										Content="Remove"
+										Tag="{Binding IdentityKey}"
+										Click="CatalogSyncRowRemoveFromLibrary_Click"
+										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch"
+										ToolTip.Tip="Remove from Library"
+										IsVisible="{Binding ShowRemoveFromLibrary}"/>
+							</StackPanel>
+							<StackPanel Spacing="3"
+										IsVisible="{Binding HasReviewCardFooter}">
+								<TextBlock Text="{Binding AddBlockedReason}"
+										   IsVisible="{Binding HasAddBlockedReason}"
+										   FontSize="10"
+										   Foreground="{DynamicResource ThemeTextSecondary}"
+										   TextWrapping="Wrap"/>
+								<Border IsVisible="{Binding HasInlineDiff}"
+										BorderBrush="{DynamicResource ThemeBorder}"
+										BorderThickness="0,1,0,0"
+										Padding="0,3,0,0">
+									<ItemsControl ItemsSource="{Binding FieldDiffs}">
+										<ItemsControl.ItemTemplate>
+											<StaticResource ResourceKey="CatalogFieldDiffTemplate"/>
+										</ItemsControl.ItemTemplate>
+									</ItemsControl>
+								</Border>
+							</StackPanel>
+						</StackPanel>
+
+						<Grid HorizontalAlignment="Right" VerticalAlignment="Top">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="Auto" SharedSizeGroup="CatalogReviewActions"/>
+							</Grid.ColumnDefinitions>
+							<StackPanel Classes="catalog-review-actions"
+									   Orientation="Horizontal"
+									   Spacing="4"
+									   IsVisible="{x:Static services:PlatformCapabilities.IsDesktop}">
+								<Button Classes="options catalog-review-add" Content="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+										FontSize="10" Padding="8,4" IsVisible="{Binding ShowAddButton}"/>
+								<Button Classes="options catalog-review-merge" Content="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+										FontSize="10" Padding="8,4" IsVisible="{Binding CanMerge}"/>
+								<Button Classes="options" Content="Details" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
+										FontSize="10" Padding="8,4"/>
+								<Button Classes="options" Content="Replace" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
+										FontSize="10" Padding="8,4" IsVisible="{Binding CanReplace}"/>
+								<Button Classes="options" Content="Ignore" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
+										FontSize="10" Padding="8,4" IsVisible="{Binding CanIgnore}"/>
+								<Button Classes="options" Content="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+										FontSize="10" Padding="8,4"
+										ToolTip.Tip="Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden."
+										IsVisible="{Binding ShowCardHideButton}"/>
+								<Button Classes="options" Content="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+										FontSize="10" Padding="8,4" IsVisible="{Binding ShowUnhideButton}"/>
+								<Button Classes="options catalog-remove-from-library"
+										Content="Remove"
+										Tag="{Binding IdentityKey}"
+										Click="CatalogSyncRowRemoveFromLibrary_Click"
+										FontSize="10" Padding="8,4"
+										ToolTip.Tip="Remove from Library"
+										IsVisible="{Binding ShowRemoveFromLibrary}"/>
+							</StackPanel>
+						</Grid>
+					</Grid>
+				</Grid>
+			</Border>
+		</DataTemplate>
+<DataTemplate x:Key="CatalogReviewGridCardTemplate" x:DataType="services:CatalogSyncRowItem">
+			<Border Classes="catalog-focus-card catalog-review-grid-card"
+					CornerRadius="8"
+					Padding="0"
+					ClipToBounds="True"
+					PlatformFeedback.FeedbackType="Auto"
+					Classes.gamepad-focused="{Binding IsGamepadFocused}"
+					PointerEntered="CatalogReviewGridCard_PointerEntered"
+					PointerExited="CatalogReviewGridCard_PointerExited"
+					Tapped="CatalogReviewCard_Tapped">
+				<Border.Width>
+					<Binding RelativeSource="{RelativeSource AncestorType=views:CatalogReviewView}" Path="Model.CardPixelSize"/>
+				</Border.Width>
+				<StackPanel>
+					<Panel>
+						<Border Classes="catalog-review-icon"
+								Background="{DynamicResource ThemeLighter}"
+								CornerRadius="8,8,0,0"
+								ClipToBounds="True"
+								HorizontalAlignment="Stretch">
+							<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+															Stretch="Uniform"
+															HorizontalAlignment="Center"
+															VerticalAlignment="Center"/>
+						</Border>
+						<Border Classes="mod-status-chip"
+								Classes.catalog-status-changed="{Binding IsChangedBadge}"
+								CornerRadius="3"
+								Padding="5,2"
+								Margin="8"
+								HorizontalAlignment="Right"
+								VerticalAlignment="Top"
+								IsVisible="{Binding HasStatusBadge}">
+							<TextBlock Text="{Binding StatusShortLabel}" FontSize="9"/>
+						</Border>
+						<!-- Overlay status on the fixed artwork area so background checks never
+						     reserve empty body space or move the card's actions. -->
+						<Border Classes="catalog-review-compatibility"
+								IsVisible="{Binding HasCompatibilityText}"
+								VerticalAlignment="Bottom"
+								Background="{DynamicResource ThemeDarker}"
+								Padding="6,4">
+							<TextBlock Text="{Binding CompatibilityText}" ToolTip.Tip="{Binding CompatibilityText}"
+									   FontSize="11" TextWrapping="Wrap" MaxLines="2"
+									   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource ThemeText}"/>
+						</Border>
+					</Panel>
+					<StackPanel Classes="catalog-review-grid-body" Spacing="2">
+						<services:HoverScrollText Classes="catalog-review-title"
+												  Text="{Binding TitleName}"
+												  IsActive="{Binding ShouldScrollTitle}"
+												  FontWeight="Bold"
+												  Foreground="{DynamicResource ThemeText}"/>
+						<services:HoverScrollText Text="{Binding ProjectSubtitle}"
+												  IsActive="{Binding ShouldScrollTitle}"
+												  FontSize="11"
+												  Foreground="{DynamicResource ThemeTextSecondary}"
+												  IsVisible="{Binding HasProjectSubtitle}"/>
+                        <ItemsControl Classes="catalog-review-grid-actions"
+									  ItemsSource="{Binding GridCardDesktopChrome}"
+									  Margin="0,6,0,0"
+									  IsVisible="{x:Static services:PlatformCapabilities.IsDesktop}">
+							<ItemsControl.ItemsPanel>
+								<ItemsPanelTemplate>
+									<UniformGrid Rows="1"/>
+								</ItemsPanelTemplate>
+							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Panel HorizontalAlignment="Stretch">
+										<Button Classes="options"
+												Classes.catalog-review-add="{Binding IsAddStyle}"
+												Classes.catalog-review-merge="{Binding IsMergeStyle}"
+												Classes.catalog-remove-from-library="{Binding IsRemoveStyle}"
+												Content="{Binding Label}"
+												Tag="{Binding IdentityKey}"
+												FontSize="10"
+												HorizontalAlignment="Stretch"
+												IsVisible="{Binding !IsMore}"
+												Click="CatalogReviewGridChrome_Click"/>
+										<Button Classes="options catalog-review-more"
+												Content="More"
+												Tag="{Binding IdentityKey}"
+												FontSize="10"
+												HorizontalAlignment="Stretch"
+												IsVisible="{Binding IsMore}">
+											<Button.Flyout>
+												<MenuFlyout Placement="BottomEdgeAlignedLeft">
+													<MenuItem Header="Details" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
+															  IsVisible="{Binding MenuDetails}"/>
+													<MenuItem Header="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+															  IsVisible="{Binding MenuHide}"/>
+													<MenuItem Header="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+															  IsVisible="{Binding MenuUnhide}"/>
+													<MenuItem Header="Remove" Tag="{Binding IdentityKey}" Click="CatalogSyncRowRemoveFromLibrary_Click"
+															  IsVisible="{Binding MenuRemove}"/>
+													<MenuItem Header="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+															  IsVisible="{Binding MenuAdd}"/>
+													<MenuItem Header="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+															  IsVisible="{Binding MenuMerge}"/>
+												</MenuFlyout>
+											</Button.Flyout>
+										</Button>
+									</Panel>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+						<views:MobileActionRow Classes="catalog-review-more-row" Margin="0,6,0,4" IsVisible="{x:Static services:PlatformCapabilities.IsMobile}" Actions="{Binding GridCardMobileActions}" ActionInvoked="CatalogReviewGridChrome_Click"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+		</DataTemplate>
+</UserControl.Resources>
+<Grid x:Name="Surface"
+						  XYFocus.NavigationModes="Gamepad,Remote"
+						  XYFocus.UpNavigationStrategy="Projection"
+						  XYFocus.DownNavigationStrategy="Projection"
+						  XYFocus.LeftNavigationStrategy="Projection"
+						  XYFocus.RightNavigationStrategy="Projection"
+						  IsVisible="True" RowDefinitions="Auto,*">
+						<StackPanel Grid.Row="0" Spacing="8">
+						<Grid ColumnDefinitions="*,Auto" MinHeight="40">
+							<DockPanel LastChildFill="True">
+								<Button x:Name="CatalogReviewTagsToggle"
+										DockPanel.Dock="Right"
+										Classes="catalog-filter"
+										Content="Tags"
+										Click="CatalogReviewFiltersToggle_Click"
+										FontSize="11"
+										MinHeight="32"
+										Padding="10,0"
+										VerticalAlignment="Top"
+										Margin="8,0,0,0"
+										ToolTip.Tip="Filter by tag: off → include → exclude"/>
+								<TextBox x:Name="CatalogSearchTextBox"
+										 DockPanel.Dock="Right"
+										 Watermark="Search this list"
+										 Width="200"
+										 MinHeight="32"
+										 FontSize="12"
+										 VerticalAlignment="Top"
+										 VerticalContentAlignment="Center"
+										 Margin="12,0,0,0"
+										 TextChanged="CatalogSearch_TextChanged"/>
+								<ScrollViewer x:Name="CatalogReviewStatusScroller"
+											  VerticalAlignment="Top"
+											  VerticalScrollBarVisibility="Disabled"
+											  HorizontalScrollBarVisibility="Auto">
+									<StackPanel x:Name="CatalogReviewStatusChips" Orientation="Horizontal">
+										<Button x:Name="CatalogFilterAllButton" Classes="catalog-filter selected" Content="All"
+												Tag="All" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
+												VerticalAlignment="Center"
+												ToolTip.Tip="Every app in this list"/>
+										<Button x:Name="CatalogFilterNeedsReviewButton" Classes="catalog-filter" Content="Needs review"
+												Tag="NeedsReview" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
+												VerticalAlignment="Center"
+												ToolTip.Tip="New and changed apps that still need action"/>
+										<Button x:Name="CatalogFilterNotInLibraryButton" Classes="catalog-filter" Content="Not in library"
+												Tag="NotInLibrary" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
+												VerticalAlignment="Center"
+												ToolTip.Tip="Catalog entries you have not added, including ignored"/>
+										<Button x:Name="CatalogFilterChangedButton" Classes="catalog-filter" Content="Changed"
+												Tag="Changed" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
+												VerticalAlignment="Center"
+												ToolTip.Tip="In your library, but catalog name, tags, or other fields differ"/>
+										<Button x:Name="CatalogFilterUpToDateButton" Classes="catalog-filter" Content="Up to date"
+												Tag="UpToDate" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
+												VerticalAlignment="Center"
+												ToolTip.Tip="In your library and matching this list"/>
+										<Button x:Name="CatalogFilterHiddenButton" Classes="catalog-filter" Content="Hidden"
+												Tag="Hidden" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
+												VerticalAlignment="Center"
+												ToolTip.Tip="Hidden from review until you unhide them"/>
+									</StackPanel>
+								</ScrollViewer>
+							</DockPanel>
+							<StackPanel x:Name="CatalogReviewDesktopToolsRow"
+										Grid.Column="1"
+										Orientation="Horizontal"
+										VerticalAlignment="Top"
+										Margin="12,0,0,0">
+								<Button x:Name="CatalogReviewPlatformButton"
+										Classes="catalog-filter"
+										Content="All platforms"
+										FontSize="11"
+										MinHeight="32"
+										VerticalAlignment="Center"
+										Margin="0,0,8,0"
+										ToolTip.Tip="Filter apps by platforms in the latest release">
+									<Button.Flyout>
+										<MenuFlyout Placement="BottomEdgeAlignedRight"
+													Opening="CatalogReviewPlatformFlyout_Opening">
+											<MenuItem Header="All platforms" Tag="All" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Windows" Tag="Windows" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Linux" Tag="Linux" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Mac" Tag="Mac" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="Android" Tag="Android" Click="CatalogReviewPlatformItem_Click"/>
+										</MenuFlyout>
+									</Button.Flyout>
+								</Button>
+								<ComboBox x:Name="CatalogReviewSortByComboBox"
+										  Foreground="{DynamicResource ThemeText}"
+										  Background="{DynamicResource ThemeDarker}"
+										  BorderBrush="{DynamicResource ThemeBorder}"
+										  MinHeight="32"
+										  VerticalAlignment="Center"
+										  VerticalContentAlignment="Center"
+										  Margin="0,0,8,0"
+										  SelectionChanged="CatalogReviewSortByComboBox_SelectionChanged">
+									<ComboBoxItem Content="Name (A-Z)" Tag="Name"/>
+									<ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
+									<ComboBoxItem Content="Repository (A-Z)" Tag="Repository"/>
+									<ComboBoxItem Content="Status" Tag="Status"/>
+								</ComboBox>
+								<Button x:Name="CatalogReviewListViewButton"
+										Classes="catalog-filter selected"
+										Content="List"
+										Tag="list"
+										FontSize="11"
+										MinHeight="32"
+										VerticalAlignment="Center"
+										Margin="0,0,6,0"
+										Click="CatalogReviewLayout_Click"/>
+								<Button x:Name="CatalogReviewGridViewButton"
+										Classes="catalog-filter"
+										Content="Grid"
+										Tag="grid"
+										FontSize="11"
+										MinHeight="32"
+										VerticalAlignment="Center"
+										Click="CatalogReviewLayout_Click"/>
+							</StackPanel>
+						</Grid>
+						<StackPanel x:Name="CatalogReviewFiltersExtra" Spacing="6" IsVisible="False">
+							<ItemsControl x:Name="CatalogTagChipsItemsControl"
+										  ItemsSource="{Binding TagChips}"
+										  IsVisible="{Binding HasTagChips}">
+								<ItemsControl.ItemsPanel>
+									<ItemsPanelTemplate>
+										<WrapPanel Orientation="Horizontal"/>
+									</ItemsPanelTemplate>
+								</ItemsControl.ItemsPanel>
+								<ItemsControl.ItemTemplate>
+									<DataTemplate>
+										<Button Classes="catalog-tag-chip"
+												Content="{Binding StateLabel}"
+												Tag="{Binding Tag}"
+												Click="CatalogTagChip_Click"
+												Margin="0,0,6,4"
+												Classes.selected="{Binding IsInclude}"
+												Classes.excluded="{Binding IsExclude}"
+												ToolTip.Tip="Off → include → exclude"/>
+									</DataTemplate>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
+							<TextBlock x:Name="CatalogReviewHelpStatusText"
+									   IsVisible="False"
+									   FontSize="10"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   Opacity="0.85"/>
+							<TextBlock x:Name="CatalogReviewHelpTagColorsText"
+									   IsVisible="False"
+									   FontSize="10"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   Opacity="0.85"/>
+						</StackPanel>
+						<WrapPanel x:Name="CatalogReviewActionBar" Orientation="Horizontal"><WrapPanel x:Name="CatalogReviewBulkPanel" Orientation="Horizontal" VerticalAlignment="Center">
+							<Button x:Name="CatalogSyncAddAllButton" Classes="options catalog-review-add" Content="Add all new"
+									Click="CatalogSyncAddAll_Click" FontSize="11" MinHeight="32" Margin="0,0,8,0" IsVisible="False"/>
+							<Button x:Name="CatalogSyncReplaceAllButton" Classes="options catalog-review-merge" Content="Merge all changed"
+									Click="CatalogSyncReplaceAll_Click" FontSize="11" MinHeight="32" Margin="0,0,8,0" IsVisible="False"/>
+							<Button x:Name="CatalogSyncAcknowledgeButton" Classes="options" Content="Skip &amp; mark reviewed"
+									Click="CatalogSyncAcknowledge_Click" FontSize="11" MinHeight="32" Margin="0,0,8,0" IsVisible="False"/>
+						</WrapPanel><WrapPanel x:Name="CatalogPlatformCheckStatus" IsVisible="{Binding ShowCompatibilityStatus}" VerticalAlignment="Center">
+    <TextBlock Text="{Binding PlatformCheckText}" IsVisible="{Binding ShowPlatformCheck}" FontSize="12"
+               Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,8,4"/>
+    <Button x:Name="CatalogPlatformRetryButton" Classes="options" Content="Retry" IsVisible="{Binding ShowPlatformRetry}"
+            MinHeight="28" Padding="8,3" FontSize="12" Margin="0,2,6,2" GotFocus="CatalogPlatformTokenSettings_GotFocus" Click="CatalogPlatformRetry_Click"/>
+    <Button x:Name="CatalogPlatformDetailsButton" Classes="options" Content="Details" IsVisible="{Binding ShowPlatformCheck}"
+            MinHeight="28" Padding="8,3" FontSize="12" Margin="0,2,10,2" GotFocus="CatalogPlatformTokenSettings_GotFocus">
+        <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                <MenuItem IsEnabled="False"><MenuItem.Header>
+                <StackPanel MaxWidth="260" Spacing="8">
+                    <TextBlock Text="Compatibility checks" FontWeight="SemiBold" FontSize="13"/>
+                    <TextBlock x:Name="CatalogPlatformCheckExplanation" Text="{Binding PlatformCheckExplanation}"
+                               IsVisible="{Binding ShowPlatformExplanation}" FontSize="12" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding UnverifiedPlatformText}" FontSize="12" TextWrapping="Wrap"/>
+                </StackPanel></MenuItem.Header></MenuItem>
+                    <MenuItem x:Name="CatalogPlatformTokenSettingsButton" Header="{Binding PlatformTokenButtonText}"
+                            IsVisible="{Binding ShowPlatformTokenShortcut}"
+                            FontSize="12" Click="CatalogPlatformTokenSettings_Click"/>
+            </MenuFlyout>
+        </Button.Flyout>
+    </Button>
+    <TextBlock Text="{Binding HiddenPendingReviewsText}" IsVisible="{Binding ShowHiddenPendingReviews}" FontSize="12"
+               Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,8,4"/>
+    <Button x:Name="CatalogShowAllPendingButton" Content="Show" IsVisible="{Binding ShowHiddenPendingReviews}"
+            ToolTip.Tip="Show all pending reviews" Classes="options" MinHeight="28" Padding="8,3" FontSize="12" Margin="0,2,0,2"
+            GotFocus="CatalogPlatformTokenSettings_GotFocus" Click="CatalogShowAllPending_Click"/>
+</WrapPanel></WrapPanel>
+						<Border x:Name="CatalogReviewVersionBanner"
+								Classes="catalog-review-version-banner"
+								IsVisible="False"
+								Margin="0,0,0,0">
+							<TextBlock x:Name="CatalogReviewVersionText"
+									   FontSize="13"
+									   Foreground="{DynamicResource ThemeText}"
+									   TextWrapping="Wrap"/>
+						</Border>
+						<Grid x:Name="CatalogReviewMobileChromeRow"
+							  ColumnDefinitions="*,Auto,Auto,Auto"
+							  ColumnSpacing="8"
+							  IsVisible="False">
+							<Button x:Name="CatalogReviewBulkButton"
+									Grid.Column="1"
+									Classes="catalog-filter"
+									Content="Bulk"
+									FontSize="11"
+									Padding="10,4"
+									ToolTip.Tip="Bulk add, merge, and skip">
+								<Button.Flyout>
+									<MenuFlyout Placement="BottomEdgeAlignedRight"
+												Opening="MobileCatalogBulkFlyout_Opening">
+										<MenuItem x:Name="CatalogReviewBulkAddItem"
+												  Classes="catalog-bulk-item catalog-review-add"
+												  Header="Add all"
+												  Click="CatalogSyncAddAll_Click"/>
+										<Separator x:Name="CatalogReviewBulkAddSeparator"
+												   Classes="catalog-bulk-separator"/>
+										<MenuItem x:Name="CatalogReviewBulkMergeItem"
+												  Classes="catalog-bulk-item catalog-review-merge"
+												  Header="Merge all changed"
+												  Click="CatalogSyncReplaceAll_Click"/>
+										<Separator x:Name="CatalogReviewBulkSkipSeparator"
+												   Classes="catalog-bulk-separator"/>
+										<MenuItem x:Name="CatalogReviewBulkSkipItem"
+												  Classes="catalog-bulk-item"
+												  Header="Skip &amp; mark reviewed"
+												  Click="CatalogSyncAcknowledge_Click"/>
+									</MenuFlyout>
+								</Button.Flyout>
+							</Button>
+							<Button x:Name="CatalogReviewFiltersToggle"
+									Grid.Column="3"
+									Classes="catalog-filter"
+									Content="More"
+									FontSize="11"
+									Padding="10,4"
+									ToolTip.Tip="View and platform filters">
+								<Button.Flyout>
+									<MenuFlyout Placement="BottomEdgeAlignedRight"
+												Opening="MobileCatalogMoreFlyout_Opening">
+										<MenuItem Header="List" Tag="view:list" Click="MobileCatalogViewItem_Click"/>
+										<MenuItem Header="Grid" Tag="view:grid" Click="MobileCatalogViewItem_Click"/>
+										<Separator/>
+										<MenuItem Header="All platforms" Tag="platform:All" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Windows" Tag="platform:Windows" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Linux" Tag="platform:Linux" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Mac" Tag="platform:Mac" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="Android" Tag="platform:Android" Click="CatalogReviewPlatformItem_Click"/>
+									</MenuFlyout>
+								</Button.Flyout>
+							</Button>
+						</Grid>
+								<StackPanel x:Name="CatalogSyncNeedsReviewEmptyPanel"
+											Spacing="12"
+											Margin="0,8,0,0"
+											IsVisible="False">
+									<TextBlock Text="{Binding NeedsReviewCompleteText}"
+											   FontSize="12"
+											   Foreground="{DynamicResource ThemeTextSecondary}"
+											   TextWrapping="Wrap"/>
+									<WrapPanel>
+										<Button x:Name="CatalogSyncBackToLibraryButton"
+												Classes="options"
+												Content="Back to Library"
+												FontSize="11"
+												Margin="0,0,8,8"
+												Click="CatalogSyncBackToLibrary_Click"/>
+										<Button x:Name="CatalogSyncBackToSourcesButton"
+												Classes="options"
+												Content="Back to sources"
+												FontSize="11"
+												Margin="0,0,8,8"
+												Click="CatalogSyncBackToSources_Click"/>
+									</WrapPanel>
+								</StackPanel>
+								<TextBlock x:Name="CatalogSyncEmptyText"
+										   Text="No apps match this filter."
+										   FontSize="12"
+										   Foreground="{DynamicResource ThemeTextSecondary}"
+										   TextWrapping="Wrap"
+										   IsVisible="False"
+										   Margin="0,8,0,0"/>
+						<Border x:Name="CatalogReviewListDivider"
+								Height="1"
+								Background="{DynamicResource ThemeBorder}"
+								Opacity="0.7"
+								Margin="0,8,0,8"
+								IsHitTestVisible="False"/>
+						</StackPanel>
+						<Grid x:Name="CatalogReviewItemsHost" Grid.Row="1">
+						<ListBox x:Name="CatalogSyncRowsItemsControl"
+								 Classes="catalog-review-list"
+								 ItemsSource="{Binding Rows}"
+								 SelectionMode="Single"
+								 SelectionChanged="CatalogReviewList_SelectionChanged">
+							<ListBox.ItemContainerTheme>
+								<ControlTheme TargetType="ListBoxItem">
+									<Setter Property="Padding" Value="0"/>
+									<Setter Property="Margin" Value="0"/>
+									<Setter Property="HorizontalAlignment" Value="Stretch"/>
+									<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+									<Setter Property="Background" Value="Transparent"/>
+									<Setter Property="BorderBrush" Value="Transparent"/>
+									<Setter Property="BorderThickness" Value="0"/>
+									<Setter Property="Focusable" Value="False"/>
+									<Setter Property="PlatformFeedback.FeedbackType" Value="None"/>
+									<Setter Property="Template">
+										<ControlTemplate TargetType="ListBoxItem">
+											<ContentPresenter Name="PART_ContentPresenter"
+															  Background="Transparent"
+															  BorderBrush="Transparent"
+															  BorderThickness="0"
+															  Content="{TemplateBinding Content}"
+															  ContentTemplate="{TemplateBinding ContentTemplate}"
+															  Padding="{TemplateBinding Padding}"
+															  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+															  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+										</ControlTemplate>
+									</Setter>
+									<Style Selector="^:pointerover">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:pressed">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:selected">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:focus">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+								</ControlTheme>
+							</ListBox.ItemContainerTheme>
+							<ListBox.ItemsPanel>
+								<ItemsPanelTemplate>
+									<VirtualizingStackPanel CacheLength="2"/>
+								</ItemsPanelTemplate>
+							</ListBox.ItemsPanel>
+							<ListBox.ItemTemplate>
+								<StaticResource ResourceKey="CatalogReviewCardTemplate"/>
+							</ListBox.ItemTemplate>
+						</ListBox>
+						<ListBox x:Name="CatalogReviewGridItemsControl"
+								 Classes="catalog-review-grid"
+								 IsVisible="False"
+								 ItemsSource="{Binding Rows}"
+								 SelectionMode="Single"
+								 Background="Transparent"
+								 BorderThickness="0"
+								 SelectionChanged="CatalogReviewList_SelectionChanged"
+								 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+								 ScrollViewer.VerticalScrollBarVisibility="Auto">
+							<ListBox.ItemContainerTheme>
+								<ControlTheme TargetType="ListBoxItem">
+									<Setter Property="Padding" Value="0"/>
+									<Setter Property="Margin" Value="0"/>
+									<Setter Property="HorizontalAlignment" Value="Left"/>
+									<Setter Property="HorizontalContentAlignment" Value="Left"/>
+									<Setter Property="Background" Value="Transparent"/>
+									<Setter Property="BorderBrush" Value="Transparent"/>
+									<Setter Property="BorderThickness" Value="0"/>
+									<Setter Property="Focusable" Value="False"/>
+									<Setter Property="PlatformFeedback.FeedbackType" Value="None"/>
+									<Setter Property="Template">
+										<ControlTemplate TargetType="ListBoxItem">
+											<ContentPresenter Name="PART_ContentPresenter"
+															  Background="Transparent"
+															  BorderBrush="Transparent"
+															  BorderThickness="0"
+															  Content="{TemplateBinding Content}"
+															  ContentTemplate="{TemplateBinding ContentTemplate}"
+															  Padding="{TemplateBinding Padding}"
+															  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+															  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+										</ControlTemplate>
+									</Setter>
+									<Style Selector="^:pointerover">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:pressed">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:selected">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+									<Style Selector="^:focus">
+										<Setter Property="Background" Value="Transparent"/>
+										<Setter Property="BorderBrush" Value="Transparent"/>
+										<Setter Property="BorderThickness" Value="0"/>
+									</Style>
+								</ControlTheme>
+							</ListBox.ItemContainerTheme>
+							<ListBox.ItemsPanel>
+								<ItemsPanelTemplate>
+									<local:CatalogReviewVirtualizingGridPanel/>
+								</ItemsPanelTemplate>
+							</ListBox.ItemsPanel>
+							<ListBox.ItemTemplate>
+								<StaticResource ResourceKey="CatalogReviewGridCardTemplate"/>
+							</ListBox.ItemTemplate>
+						</ListBox>
+						</Grid>
+					</Grid>
+</UserControl>

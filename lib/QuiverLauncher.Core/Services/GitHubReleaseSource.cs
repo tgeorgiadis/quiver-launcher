@@ -9,7 +9,7 @@ namespace QuiverLauncher.Core.Services
             HttpClient httpClient,
             string repository,
             string? token = null,
-            string? etag = null) =>
-            GitHubReleaseService.FetchReleasesAsync(httpClient, repository, token, etag);
+            string? etag = null, CancellationToken cancellationToken = default) =>
+            GitHubReleaseService.FetchReleasesAsync(httpClient, repository, token, etag, cancellationToken);
     }
 }

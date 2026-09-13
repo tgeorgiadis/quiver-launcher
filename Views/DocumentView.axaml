@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
+             x:Class="QuiverLauncher.Views.DocumentView"
+             x:DataType="vm:DocumentViewModel" x:CompileBindings="True">
+<Border
+
+						Background="{DynamicResource ThemeBase}"
+
+						>
+					<Grid RowDefinitions="Auto,*">
+						<Border Grid.Row="0"
+								Background="{DynamicResource ThemeDarker}"
+								BorderBrush="{DynamicResource ThemeBorder}"
+								BorderThickness="0,0,0,1"
+								Padding="40,16,40,16">
+							<Grid ColumnDefinitions="*,Auto">
+								<TextBlock x:Name="ChangelogTitle"
+										   Grid.Column="0"
+										   Text="{Binding Title}"
+										   FontSize="28"
+										   FontWeight="Bold"
+										   Foreground="{DynamicResource ThemeText}"
+										   VerticalAlignment="Center"/>
+								<Button x:Name="CloseChangelogButton"
+										Grid.Column="1"
+										Classes="options"
+										Content="Close"
+										Width="100"
+										Click="CloseChangelog_Click"/>
+							</Grid>
+						</Border>
+						<ScrollViewer x:Name="ChangelogScrollViewer"
+									  Grid.Row="1"
+									  VerticalScrollBarVisibility="Auto"
+									  Margin="40,20,40,40">
+							<StackPanel MaxWidth="900">
+								<ItemsControl x:Name="ChangelogContent"
+											  >
+									<ItemsControl.ItemTemplate>
+										<DataTemplate x:CompileBindings="False">
+											<ContentControl Content="{Binding}"/>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</StackPanel>
+						</ScrollViewer>
+					</Grid>
+				</Border>
+</UserControl>

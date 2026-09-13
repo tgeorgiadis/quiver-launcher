@@ -131,7 +131,8 @@ public static class GamepadBindingDefaults
         var defaults = Create();
         foreach (var action in Enum.GetValues<GamepadAction>())
         {
-            if (!bindings.TryGetValue(action, out var list) || list == null || list.Count == 0)
+            // An empty list is an intentional unbind after exclusive reassignment.
+            if (!bindings.TryGetValue(action, out var list) || list == null)
                 bindings[action] = defaults[action]
                     .Select(b => new GamepadBinding(b.Kind, b.SdlCode))
                     .ToList();

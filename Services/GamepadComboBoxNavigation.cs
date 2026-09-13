@@ -15,6 +15,8 @@ public sealed class GamepadComboBoxNavigation
     public static GamepadComboBoxNavigation Instance => _instance ??= new GamepadComboBoxNavigation();
 
     public bool HasActiveComboBox => _activeComboBox != null;
+    public bool IsActiveFor(TopLevel? owner) => owner != null && _activeComboBox != null &&
+        ReferenceEquals(TopLevel.GetTopLevel(_activeComboBox), owner);
 
     public static void Attach(ComboBox comboBox)
     {

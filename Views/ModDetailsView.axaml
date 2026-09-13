@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:QuiverLauncher.ViewModels" x:DataType="vm:ModDetailsViewModel" x:CompileBindings="True" x:Class="QuiverLauncher.Views.ModDetailsView">
+<Border
+						XYFocus.NavigationModes="Gamepad,Remote"
+						XYFocus.UpNavigationStrategy="Projection"
+						XYFocus.DownNavigationStrategy="Projection"
+						XYFocus.LeftNavigationStrategy="Projection"
+						XYFocus.RightNavigationStrategy="Projection"
+
+						Background="{DynamicResource ThemeBase}"
+
+						>
+					<Grid RowDefinitions="Auto,Auto,*">
+						<Border Grid.Row="0"
+								Background="{DynamicResource ThemeDarker}"
+								BorderBrush="{DynamicResource ThemeBorder}"
+								BorderThickness="0,0,0,1"
+								Padding="40,16,40,16">
+							<Grid ColumnDefinitions="*,Auto">
+								<TextBlock x:Name="ModDetailsTitle"
+										   Grid.Column="0"
+										   Text="{Binding Title}"
+										   FontSize="24"
+										   FontWeight="Bold"
+										   Foreground="{DynamicResource ThemeText}"
+										   VerticalAlignment="Center"
+										   TextTrimming="CharacterEllipsis"
+										   Margin="0,0,16,0"/>
+								<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+									<Button x:Name="ModDetailsOpenPageButton"
+											Classes="options"
+											Content="Open Page" IsVisible="{Binding HasPage}"
+											Click="ModDetailsOpenPage_Click"/>
+									<Button x:Name="CloseModDetailsButton"
+											Classes="options"
+											Content="Close"
+											Width="100"
+											Click="CloseModDetails_Click"/>
+								</StackPanel>
+							</Grid>
+						</Border>
+						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="40,16,40,0">
+							<Button x:Name="ModDetailsTabDetailsButton"
+									Classes="catalog-filter selected"
+									Content="Details"
+									Tag="Details"
+									FontSize="11"
+									Click="ModDetailsTab_Click"/>
+							<Button x:Name="ModDetailsTabChangelogButton"
+									Classes="catalog-filter"
+									Content="Changelog"
+									Tag="Changelog"
+									FontSize="11"
+									Click="ModDetailsTab_Click"/>
+						</StackPanel>
+						<ScrollViewer x:Name="ModDetailsScrollViewer"
+									  Grid.Row="2"
+									  VerticalScrollBarVisibility="Auto"
+									  Margin="40,16,40,40">
+							<StackPanel MaxWidth="900" HorizontalAlignment="Stretch">
+								<ItemsControl x:Name="ModDetailsContent" HorizontalAlignment="Stretch">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<StackPanel HorizontalAlignment="Stretch"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate x:DataType="Control">
+											<ContentControl Content="{Binding}"
+															HorizontalAlignment="Stretch"
+															HorizontalContentAlignment="Stretch"/>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</StackPanel>
+						</ScrollViewer>
+					</Grid>
+				</Border>
+</UserControl>

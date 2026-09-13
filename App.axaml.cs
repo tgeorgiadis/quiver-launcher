@@ -61,8 +61,7 @@ public partial class App : Application, INotifyPropertyChanged
     /// <summary>
     /// Headless tests set this so OnFrameworkInitializationCompleted does not construct
     /// MainWindow or start a Velopack self-update check. Those side effects leave
-    /// GameManager.UiThreadInvoker posted to a dispatcher that is only pumped during
-    /// AvaloniaFact, hanging later Fact tests.
+    /// async service work that outlives the test which created the window.
     /// </summary>
     internal static bool SuppressDesktopHost { get; set; }
 
@@ -71,6 +70,7 @@ public partial class App : Application, INotifyPropertyChanged
 
     private MainView CreateHostedMainView()
     {
+        TryGetHostedMainView()?.HandleClosed();
         var view = new MainView { _app = this };
         CurrentHostedMainView = new WeakReference<MainView>(view);
         return view;
@@ -80,6 +80,7 @@ public partial class App : Application, INotifyPropertyChanged
 
     public override void Initialize()
     {
+        DesktopInterfaceScaling.InitializePopups();
         AvaloniaXamlLoader.Load(this);
     }
 
@@ -275,7 +276,7 @@ public partial class App : Application, INotifyPropertyChanged
             Directory.CreateDirectory(imagesCache);
 
             var previous = ImageLoader.AsyncImageLoader;
-            ImageLoader.AsyncImageLoader = new DiskCachedWebImageLoader(imagesCache);
+            ImageLoader.AsyncImageLoader = new LauncherArtworkLoader(imagesCache);
             if (!ReferenceEquals(previous, ImageLoader.AsyncImageLoader))
                 previous?.Dispose();
         }

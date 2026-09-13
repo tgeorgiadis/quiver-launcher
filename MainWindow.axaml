@@ -7,8 +7,6 @@
         MinWidth="750" MinHeight="490"
         Background="{Binding WindowBackground}"
         WindowState="Normal"
-        WindowStartupLocation="CenterScreen"
-        WindowDecorations="{Binding WindowChrome}"
-        ExtendClientAreaToDecorationsHint="{Binding ExtendClientAreaEnabled}">
+        WindowStartupLocation="CenterScreen">
 	<local:MainView x:Name="RootView"/>
 </Window>

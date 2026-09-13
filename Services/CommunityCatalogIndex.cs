@@ -6,6 +6,7 @@ namespace QuiverLauncher.Services;
 public sealed class CommunityCatalogIndex
 {
     public int Version { get; set; }
+    public string? PlatformMetadataUrl { get; set; }
 
     public List<CommunityCatalogListEntry> Lists { get; set; } = [];
 

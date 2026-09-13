@@ -80,7 +80,7 @@ public class GameGridViewModel
                 var content = File.ReadAllText(lastPlayedPath).Trim();
                 if (DateTime.TryParseExact(content, "yyyy-MM-dd HH:mm:ss", null,
                         System.Globalization.DateTimeStyles.None, out var lastPlayed))
-                    return lastPlayed;
+                    return game.LastPlayedSortTime = lastPlayed;
             }
         }
         catch (Exception ex)
@@ -88,6 +88,24 @@ public class GameGridViewModel
             System.Diagnostics.Debug.WriteLine($"Failed to read LastPlayed for {game.Name}: {ex.Message}");
         }
 
-        return DateTime.MinValue;
+        return game.LastPlayedSortTime = DateTime.MinValue;
+    }
+
+    public static int CompareForInsertion(GameInfo left, GameInfo right, string mode, bool ignoreArticles)
+    {
+        string Name(GameInfo g)
+        {
+            var name = string.IsNullOrWhiteSpace(g.CustomDisplayName) ? g.Name ?? "" : g.CustomDisplayName.Trim();
+            return ignoreArticles ? NameSortHelper.GetAlphabeticalSortKey(name) : name;
+        }
+        var primary = mode switch
+        {
+            "Installed" => right.IsInstalled.CompareTo(left.IsInstalled),
+            "NotInstalled" => left.IsInstalled.CompareTo(right.IsInstalled),
+            "LastPlayed" => right.LastPlayedSortTime.CompareTo(left.LastPlayedSortTime),
+            _ => 0,
+        };
+        return primary != 0 ? primary : (mode == "NameDesc" ? -1 : 1) *
+            StringComparer.OrdinalIgnoreCase.Compare(Name(left), Name(right));
     }
 }

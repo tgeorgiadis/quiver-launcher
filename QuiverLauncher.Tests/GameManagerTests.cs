@@ -48,11 +48,9 @@ public class GameManagerTests
     [Fact]
     public async Task ReloadLibraryFromDiskAsync_does_not_fetch_catalog_sources()
     {
-        var previousInvoker = GameManager.UiThreadInvoker;
         var previousRoot = QuiverLauncherPaths.OverrideUserDataRoot;
         var tempDir = Path.Combine(Path.GetTempPath(), "QuiverLauncher.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
-        GameManager.UiThreadInvoker = null;
         QuiverLauncherPaths.OverrideUserDataRoot = tempDir;
 
         try
@@ -91,7 +89,6 @@ public class GameManagerTests
         }
         finally
         {
-            GameManager.UiThreadInvoker = previousInvoker;
             QuiverLauncherPaths.OverrideUserDataRoot = previousRoot;
             if (Directory.Exists(tempDir))
                 Directory.Delete(tempDir, true);

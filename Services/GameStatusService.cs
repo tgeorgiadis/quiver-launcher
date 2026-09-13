@@ -14,7 +14,9 @@ public static class GameStatusService
         GameInfo game,
         HttpClient httpClient,
         string gamesFolder,
-        bool forceUpdateCheck = false)
+        bool forceUpdateCheck = false,
+        bool checkRemoteVersion = true,
+        bool applyCachedRelease = true)
     {
         if (string.IsNullOrEmpty(game.FolderName))
         {
@@ -40,7 +42,7 @@ public static class GameStatusService
 
             if (androidPackageInstalled)
             {
-                game.InstalledVersion = AppInstallLaunch.Current.GetInstalledVersion(game) ?? game.InstalledVersion;
+                game.InstalledVersion = AppInstallLaunch.Current.GetInstalledVersion(game, gamePath) ?? game.InstalledVersion;
                 game.Status = GameStatus.Installed;
             }
 
@@ -99,7 +101,12 @@ public static class GameStatusService
                 game.InstalledVersion = "";
             }
 
-            if (forceUpdateCheck)
+            if (!checkRemoteVersion)
+            {
+                if (applyCachedRelease && GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null)
+                    game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+            }
+            else if (forceUpdateCheck)
                 await game.CheckLatestVersionAsync(httpClient, forceCheck: true).ConfigureAwait(false);
             else if (isInstalled)
             {

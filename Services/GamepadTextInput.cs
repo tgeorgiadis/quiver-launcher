@@ -26,6 +26,13 @@ internal static class GamepadTextInput
     static GamepadTextInput()
     {
         EngageOnConfirmProperty.Changed.AddClassHandler<TextBox>(OnEngageOnConfirmChanged);
+        // Tab content can unload and return without its attached property changing.
+        // A class handler restores interaction without retaining unloaded controls.
+        Control.LoadedEvent.AddClassHandler<TextBox>((box, _) =>
+        {
+            if (GetEngageOnConfirm(box))
+                Attach(box);
+        });
     }
 
     public static bool GetEngageOnConfirm(TextBox box) =>
@@ -74,6 +81,11 @@ internal static class GamepadTextInput
             return;
 
         if (_applying)
+            return;
+
+        // Focus recovery may select the current field again. Only an explicit
+        // end-edit transition should remove its caret and selection.
+        if (IsEditing && ReferenceEquals(Active, textBox))
             return;
 
         _applying = true;
@@ -175,31 +187,28 @@ internal static class GamepadTextInput
 
     private static void OnEngageOnConfirmChanged(TextBox box, AvaloniaPropertyChangedEventArgs args)
     {
-        var enabled = args.GetNewValue<bool>();
+        if (args.GetNewValue<bool>())
+            Attach(box);
+        else if (States.TryGetValue(box, out var state))
+            Detach(box, state);
+    }
+
+    private static void Attach(TextBox box)
+    {
         var state = GetState(box);
-        if (enabled == state.Attached)
+        if (state.Attached)
             return;
 
-        if (enabled)
-        {
-            box.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
-            box.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
-            box.GotFocus += OnGotFocus;
-            box.LostFocus += OnLostFocus;
-            box.Unloaded += OnUnloaded;
-            state.Attached = true;
-        }
-        else
-        {
-            Detach(box, state);
-        }
+        box.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
+        box.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+        box.GotFocus += OnGotFocus;
+        box.LostFocus += OnLostFocus;
+        box.Unloaded += OnUnloaded;
+        state.Attached = true;
     }
 
     private static void Detach(TextBox box, FieldState state)
     {
-        if (!state.Attached)
-            return;
-
         box.RemoveHandler(InputElement.PointerPressedEvent, OnPointerPressed);
         box.RemoveHandler(InputElement.KeyDownEvent, OnKeyDown);
         box.GotFocus -= OnGotFocus;
@@ -316,8 +325,8 @@ internal static class GamepadTextInput
 
     private static void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        if (sender is TextBox box)
-            Detach(box, GetState(box));
+        if (sender is TextBox box && States.TryGetValue(box, out var state))
+            Detach(box, state);
     }
 
     private static void ApplyHighlightVisuals(TextBox box)

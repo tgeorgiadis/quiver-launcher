@@ -21,14 +21,53 @@ namespace QuiverLauncher.Services
         Retarget,
     }
 
+    public enum CatalogCompatibilityState { Unverified, Checking, Available, Unavailable }
+
     public class CatalogSyncRowItem : INotifyPropertyChanged
     {
+        public CatalogCompatibilityState CompatibilityState { get; private set; }
+        public string CompatibilityText { get; private set; } = "";
+        public bool HasCompatibilityText => !string.IsNullOrWhiteSpace(CompatibilityText);
+        public void SetCompatibility(CatalogCompatibilityState state, string text)
+        {
+            if (CompatibilityState == state && CompatibilityText == text) return;
+            CompatibilityState = state;
+            CompatibilityText = text;
+            PropertyChanged?.Invoke(this, new(nameof(CompatibilityState)));
+            PropertyChanged?.Invoke(this, new(nameof(CompatibilityText)));
+            PropertyChanged?.Invoke(this, new(nameof(HasCompatibilityText)));
+        }
+
         private bool _isGamepadFocused;
         private bool _isHovered;
+        private bool _isAddPending;
+        private bool _wasAdded;
+        private CatalogReviewGridCardActions.Layout? _desktopLayout;
+        private readonly ResettableObservableCollection<CatalogReviewGridCardActions.ChromeItem> _desktopChrome = new();
+        public bool IsAddPending => _isAddPending;
+        public bool ShowAddButton => CanAdd;
+        public void SetAddPending(bool pending, bool saved = false)
+        {
+            _isAddPending = pending;
+            _wasAdded = saved;
+            // Let the view move focus before removing the Add control.
+            PropertyChanged?.Invoke(this, new(nameof(IsAddPending)));
+            _desktopLayout = null;
+            PropertyChanged?.Invoke(this, new(null));
+        }
+
+        public void UpdateComparison(CatalogSyncRowItem row)
+        {
+            Status = row.Status; Local = row.Local; AddBlockedReason = row.AddBlockedReason;
+            ChangedFields = row.ChangedFields; FieldDiffs = row.FieldDiffs;
+            DetailsFields = row.DetailsFields; IdentityChangeKind = row.IdentityChangeKind;
+            _desktopLayout = null;
+            PropertyChanged?.Invoke(this, new(null));
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public CatalogSyncStatus Status { get; init; }
+        public CatalogSyncStatus Status { get; set; }
         public string Repository { get; init; } = "";
         public string IdentityKey { get; init; } = "";
         public string ReviewKey =>
@@ -87,13 +126,13 @@ namespace QuiverLauncher.Services
         }
 
         public bool ShouldScrollTitle => _isHovered || _isGamepadFocused;
-        public GameInfo? Local { get; init; }
+        public GameInfo? Local { get; set; }
         public GameInfo? External { get; init; }
-        public IReadOnlyList<string> ChangedFields { get; init; } = [];
-        public IReadOnlyList<CatalogSyncFieldDiffItem> FieldDiffs { get; init; } = [];
-        public IReadOnlyList<CatalogSyncFieldDiffItem> DetailsFields { get; init; } = [];
-        public CatalogIdentityChangeKind IdentityChangeKind { get; init; }
-        public string AddBlockedReason { get; init; } = "";
+        public IReadOnlyList<string> ChangedFields { get; set; } = [];
+        public IReadOnlyList<CatalogSyncFieldDiffItem> FieldDiffs { get; set; } = [];
+        public IReadOnlyList<CatalogSyncFieldDiffItem> DetailsFields { get; set; } = [];
+        public CatalogIdentityChangeKind IdentityChangeKind { get; set; }
+        public string AddBlockedReason { get; set; } = "";
 
         public bool HasInlineDiff => FieldDiffs.Count > 0;
         public bool HasDetailsFields => DetailsFields.Count > 0;
@@ -135,24 +174,32 @@ namespace QuiverLauncher.Services
             _ => "",
         };
 
-        public bool CanAdd => Status == CatalogSyncStatus.InExternalOnly && !HasAddBlockedReason;
+        public bool CanAdd => !_isAddPending && !_wasAdded && Status == CatalogSyncStatus.InExternalOnly && !HasAddBlockedReason;
         public bool CanReplace => Status == CatalogSyncStatus.Changed;
         public bool CanMerge => Status == CatalogSyncStatus.Changed;
         public bool CanIgnore => Status is CatalogSyncStatus.Changed or CatalogSyncStatus.InExternalOnly;
         public bool CanRemoveFromLibrary => Local != null;
-        public bool ShowGridCardPrimaryAdd => CanAdd;
+        public bool ShowGridCardPrimaryAdd => ShowAddButton;
         public bool ShowGridCardPrimaryMerge => CanMerge && !CanAdd;
         public bool ShowMenuAdd => CanAdd && !ShowGridCardPrimaryAdd;
         public bool ShowMenuMerge => CanMerge && !ShowGridCardPrimaryMerge;
 
-        public bool ShowHideButton { get; set; }
-        public bool ShowCardHideButton { get; set; }
-        public bool ShowUnhideButton { get; set; }
-        public bool ShowRemoveFromLibrary { get; set; }
+        private bool _showHideButton, _showCardHideButton, _showUnhideButton, _showRemoveFromLibrary;
+        public bool ShowHideButton { get => _showHideButton; set => SetActionVisibility(ref _showHideButton, value); }
+        public bool ShowCardHideButton { get => _showCardHideButton; set => SetActionVisibility(ref _showCardHideButton, value); }
+        public bool ShowUnhideButton { get => _showUnhideButton; set => SetActionVisibility(ref _showUnhideButton, value); }
+        public bool ShowRemoveFromLibrary { get => _showRemoveFromLibrary; set => SetActionVisibility(ref _showRemoveFromLibrary, value); }
+        private void SetActionVisibility(ref bool field, bool value)
+        {
+            if (field == value) return;
+            field = value;
+            _desktopLayout = null;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
+        }
 
         public CatalogReviewGridCardActions.Layout GridCardDesktopLayout =>
-            CatalogReviewGridCardActions.ForDesktop(
-                CanAdd,
+            _desktopLayout ??= CatalogReviewGridCardActions.ForDesktop(
+                ShowAddButton,
                 CanMerge,
                 ShowCardHideButton,
                 ShowUnhideButton,
@@ -160,7 +207,23 @@ namespace QuiverLauncher.Services
                 IdentityKey);
 
         public IReadOnlyList<CatalogReviewGridCardActions.ChromeItem> GridCardDesktopChrome =>
-            GridCardDesktopLayout.Chrome;
+            GetDesktopChrome();
+
+        public IReadOnlyList<CatalogReviewGridCardActions.ChromeItem> GridCardMobileActions =>
+            GridCardDesktopLayout.Inline.Concat(GridCardDesktopLayout.Menu)
+                .Select(action => new CatalogReviewGridCardActions.ChromeItem(
+                    CatalogReviewGridCardActions.ToChrome(action), IdentityKey)).ToArray();
+
+        private IReadOnlyList<CatalogReviewGridCardActions.ChromeItem> GetDesktopChrome()
+        {
+            var chrome = GridCardDesktopLayout.Chrome;
+            var next = chrome.Select(item => _desktopChrome.FirstOrDefault(old =>
+                old.Kind == item.Kind && old.IdentityKey == item.IdentityKey &&
+                old.MenuAdd == item.MenuAdd && old.MenuMerge == item.MenuMerge && old.MenuDetails == item.MenuDetails &&
+                old.MenuHide == item.MenuHide && old.MenuUnhide == item.MenuUnhide && old.MenuRemove == item.MenuRemove) ?? item).ToList();
+            _desktopChrome.UpdateWith(next);
+            return _desktopChrome;
+        }
 
         public int GridCardDesktopColumnCount => GridCardDesktopLayout.ColumnCount;
 
@@ -277,7 +340,8 @@ namespace QuiverLauncher.Services
 
         public static IReadOnlyList<CatalogSyncRowItem> BuildCompareRows(
             List<GameInfo> localApps,
-            List<GameInfo> externalApps)
+            List<GameInfo> externalApps,
+            IReadOnlyDictionary<string, CatalogSyncRowItem>? unchangedDefinitions = null)
         {
             var localByInstance = IndexByInstanceKey(localApps);
             var localByIdentity = localApps
@@ -327,7 +391,16 @@ namespace QuiverLauncher.Services
                     folderOccupiedBy = occupying;
                 }
 
-                rows.Add(CreateCompareRow(external.Repository ?? "", local, external, folderOccupiedBy));
+                // Single additions do not change existing definitions. Still run the matching
+                // pass (folder/repository matches can affect other rows), but only build diffs
+                // and detail snapshots for rows whose actual match/conflict changed.
+                if (unchangedDefinitions != null && unchangedDefinitions.TryGetValue(instanceKey, out var previous) &&
+                    previous.Local?.InstanceKey == local?.InstanceKey &&
+                    (local == null || previous.Local != null && IsLibrarySyncedWithCatalog(previous.Local, local) &&
+                        IsLibrarySyncedWithCatalog(local, previous.Local)) &&
+                    previous.AddBlockedReason == (local == null ? FormatAddBlockedReason(external, folderOccupiedBy) : ""))
+                    rows.Add(previous);
+                else rows.Add(CreateCompareRow(external.Repository ?? "", local, external, folderOccupiedBy));
             }
 
             return rows;

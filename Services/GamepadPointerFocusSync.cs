@@ -10,6 +10,28 @@ namespace QuiverLauncher.Services;
 /// </summary>
 internal static class GamepadPointerFocusSync
 {
+    public static bool Hit(GamepadNavigationService navigation, IReadOnlyList<Control> controls,
+        GamepadNavigationZone zone, int currentIndex, Action<int> apply, object? source)
+    {
+        var index = GamepadControlActivation.IndexOfControlContainingFocus(controls, source);
+        if (index < 0) return false;
+        if (navigation.ActiveZone == zone && currentIndex == index) return true;
+        if (controls[index] is not TextBox) GamepadTextInput.Reset();
+        apply(index);
+        return true;
+    }
+
+    public static bool Card<T>(GamepadNavigationService navigation, IReadOnlyList<T> items,
+        GamepadNavigationZone zone, int currentIndex, Action<int> apply, object? source) where T : class
+    {
+        var index = IndexOfDataContext(items, source as Visual);
+        if (index < 0) return false;
+        if (navigation.ActiveZone == zone && currentIndex == index) return true;
+        GamepadTextInput.Reset();
+        apply(index);
+        return true;
+    }
+
     public static T? FindDataContextInAncestors<T>(Visual? source) where T : class
     {
         for (var visual = source; visual != null; visual = visual.GetVisualParent())

@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.DisplayFilterEditorView" x:DataType="vm:DisplayFilterEditorViewModel" x:CompileBindings="True">
+<Border x:Name="Surface"
+						XYFocus.NavigationModes="Gamepad,Remote"
+						XYFocus.UpNavigationStrategy="Projection"
+						XYFocus.DownNavigationStrategy="Projection"
+						XYFocus.LeftNavigationStrategy="Projection"
+						XYFocus.RightNavigationStrategy="Projection"
+
+						Background="#CC000000"
+
+						>
+					<Border Background="{DynamicResource ThemeDarker}"
+							BorderBrush="{DynamicResource ThemeBorder}"
+							BorderThickness="1"
+							CornerRadius="8"
+							Padding="20"
+							MaxWidth="480"
+							HorizontalAlignment="Center"
+							VerticalAlignment="Center">
+						<StackPanel Spacing="12">
+							<TextBlock x:Name="DisplayFilterOverlayTitle"
+									   Text="{Binding Title}"
+									   FontSize="18"
+									   FontWeight="Bold"
+									   Foreground="{DynamicResource ThemeText}"/>
+							<TextBox x:Name="DisplayFilterNameTextBox" Text="{Binding Name, Mode=TwoWay}"
+									 Watermark="Filter name"
+									 Foreground="{DynamicResource ThemeText}"
+									 Background="{DynamicResource ThemeBase}"
+									 BorderBrush="{DynamicResource ThemeBorder}"
+									 BorderThickness="1"
+									 CornerRadius="4"
+									 Padding="8"/>
+							<TextBlock Text="Include tags"
+									   FontSize="13"
+									   FontWeight="SemiBold"
+									   Foreground="{DynamicResource ThemeText}"/>
+							<TextBox x:Name="DisplayFilterTagsTextBox" Text="{Binding Tags, Mode=TwoWay}"
+									 Watermark="Tags (comma-separated, e.g. n64, favorites)"
+									 Foreground="{DynamicResource ThemeText}"
+									 Background="{DynamicResource ThemeBase}"
+									 BorderBrush="{DynamicResource ThemeBorder}"
+									 BorderThickness="1"
+									 CornerRadius="4"
+									 Padding="8"
+									 AcceptsReturn="False"
+									 TextWrapping="Wrap"
+									 MinHeight="56"/>
+							<TextBlock Text="Include match mode"
+									   FontSize="13"
+									   FontWeight="SemiBold"
+									   Foreground="{DynamicResource ThemeText}"/>
+							<ComboBox x:Name="DisplayFilterMatchModeComboBox"
+									  SelectedIndex="{Binding MatchModeIndex, Mode=TwoWay}">
+								<ComboBoxItem Content="Any tag"/>
+								<ComboBoxItem Content="All tags"/>
+							</ComboBox>
+							<TextBlock x:Name="DisplayFilterMatchModeHelpText" Text="{Binding MatchModeHelp}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"/>
+							<TextBlock Text="Exclude tags"
+									   FontSize="13"
+									   FontWeight="SemiBold"
+									   Foreground="{DynamicResource ThemeText}"/>
+							<TextBox x:Name="DisplayFilterExcludeTagsTextBox" Text="{Binding ExcludeTags, Mode=TwoWay}"
+									 Watermark="Tags to hide (comma-separated, optional, e.g. ai)"
+									 Foreground="{DynamicResource ThemeText}"
+									 Background="{DynamicResource ThemeBase}"
+									 BorderBrush="{DynamicResource ThemeBorder}"
+									 BorderThickness="1"
+									 CornerRadius="4"
+									 Padding="8"
+									 AcceptsReturn="False"
+									 TextWrapping="Wrap"
+									 MinHeight="56"/>
+							<TextBlock Text="Exclude match mode"
+									   FontSize="13"
+									   FontWeight="SemiBold"
+									   Foreground="{DynamicResource ThemeText}"/>
+							<ComboBox x:Name="DisplayFilterExcludeMatchModeComboBox"
+									  SelectedIndex="{Binding ExcludeMatchModeIndex, Mode=TwoWay}">
+								<ComboBoxItem Content="Any tag"/>
+								<ComboBoxItem Content="All tags"/>
+							</ComboBox>
+							<TextBlock x:Name="DisplayFilterExcludeMatchModeHelpText" Text="{Binding ExcludeMatchModeHelp}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"/>
+							<StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+								<Button x:Name="CancelDisplayFilterButton"
+										Classes="options"
+										Content="Cancel"
+										Width="100"
+										Click="CancelDisplayFilterEdit_Click"/>
+								<Button x:Name="SaveDisplayFilterButton"
+										Classes="options"
+										Content="Save"
+										Width="100"
+										Click="SaveDisplayFilter_Click"/>
+							</StackPanel>
+						</StackPanel>
+					</Border>
+				</Border>
+</UserControl>

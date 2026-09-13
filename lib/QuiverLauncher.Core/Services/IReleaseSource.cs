@@ -11,6 +11,6 @@ namespace QuiverLauncher.Core.Services
             HttpClient httpClient,
             string repository,
             string? token = null,
-            string? etag = null);
+            string? etag = null, CancellationToken cancellationToken = default);
     }
 }

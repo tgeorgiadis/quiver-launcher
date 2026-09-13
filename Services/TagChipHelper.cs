@@ -13,7 +13,7 @@ public enum TagChipState
 public static class TagChipHelper
 {
     public const int DefaultMaxChips = 12;
-    public const int DefaultLibraryCardTagMaxLines = 2;
+    public const int DefaultLibraryCardTagMaxLines = 1;
     /// <summary>Stored value for “No limit” on library card tag lines. 0 means hidden.</summary>
     public const int UnlimitedLibraryCardTagMaxLines = 99;
     /// <summary>

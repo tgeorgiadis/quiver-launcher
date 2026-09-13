@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Core.Services;
 using QuiverLauncher.Models;
@@ -6,40 +7,37 @@ namespace QuiverLauncher.Services;
 
 public static class GameDownloadService
 {
+    public static string Context(GameInfo game, GitHubRelease release, AppSettings settings) =>
+        JsonSerializer.Serialize(new { game.IdentityKey, release.tag_name, Platform = GameInfo.GetPlatformIdentifier(settings), game.ReleaseAssetFilter });
+
+    public static DownloadAssetSelection Prepare(GameInfo game, GitHubRelease release, AppSettings settings)
+    {
+        var result = DownloadAssetPolicy.Select(release, GameInfo.GetPlatformIdentifier(settings), game.ReleaseAssetFilter);
+        var context = Context(game, release, settings);
+        var selected = result.Eligible.Concat(result.Uncertain).FirstOrDefault(a =>
+            a.name == game.SelectedDownload?.name && a.browser_download_url == game.SelectedDownload?.browser_download_url);
+        if (game.DownloadSelectionContext != context || selected == null) game.ClearDownloadSelection();
+        else game.SelectedDownload = selected;
+        game.DownloadSelectionContext = context;
+        game.DownloadChoices = result;
+        game.AvailableDownloads = result.Eligible.ToList();
+        return result;
+    }
+
     public static bool TrySelectPlatformDownload(GameInfo game, GitHubRelease? release, AppSettings settings)
     {
-        if (release == null)
-            return false;
+        game.ClearDownloadSelection();
+        if (release == null) return false;
+        var result = Prepare(game, release, settings);
+        game.SelectedDownload = result.Automatic;
+        return game.SelectedDownload != null;
+    }
 
-        var assets = GitHubReleaseService.GetDownloadableAssets(release, game.ReleaseAssetFilter);
-        if (assets.Count == 0)
-            return false;
-
-        game.AvailableDownloads = assets;
-
-        var platformIdentifier = GameInfo.GetPlatformIdentifier(settings);
-        var matchingAsset = assets.FirstOrDefault(asset =>
-            GameInfo.MatchesPlatform(asset.name, platformIdentifier));
-
-        if (string.Equals(platformIdentifier, "Android", StringComparison.OrdinalIgnoreCase))
-        {
-            if (matchingAsset == null)
-            {
-                game.SelectedDownload = null;
-                return false;
-            }
-
-            game.SelectedDownload = matchingAsset;
-            return true;
-        }
-
-        if (assets.Count == 1)
-        {
-            game.SelectedDownload = assets[0];
-            return true;
-        }
-
-        game.SelectedDownload = matchingAsset ?? assets[0];
-        return true;
+    public static void SelectExplicit(GameInfo game, GitHubRelease release, AppSettings settings, GitHubAsset asset)
+    {
+        var result = Prepare(game, release, settings);
+        game.SelectedDownload = result.Eligible.Concat(result.Uncertain).FirstOrDefault(a =>
+            a.name == asset.name && a.browser_download_url == asset.browser_download_url);
+        if (game.SelectedDownload == null) throw new InvalidOperationException("This download is no longer available for the selected platform and release.");
     }
 }

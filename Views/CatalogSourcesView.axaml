@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" xmlns:converters="using:Avalonia.Data.Converters" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:services="using:QuiverLauncher.Services" x:Class="QuiverLauncher.Views.CatalogSourcesView" x:DataType="vm:CatalogViewModel" x:CompileBindings="True">
+<UserControl.Resources>
+<DataTemplate x:Key="CatalogSourceCardTemplate" x:DataType="services:CatalogSourceListItem">
+			<Border Classes="catalog-focus-card catalog-source-card"
+					CornerRadius="8"
+					Padding="10"
+					VerticalAlignment="Top"
+					PlatformFeedback.FeedbackType="Auto"
+					Classes.gamepad-focused="{Binding IsGamepadFocused}">
+				<Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                    <Grid Grid.Row="0" ColumnDefinitions="48,*" ColumnSpacing="10" MinHeight="56">
+                        <Border Width="48" Height="48" CornerRadius="6" Background="{DynamicResource ThemeLighter}"
+                                ClipToBounds="True" VerticalAlignment="Top">
+                            <Grid>
+                                <Path x:Name="CatalogIconFallback" Width="26" Height="26" Stretch="Uniform"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Stroke="{DynamicResource ThemeTextSecondary}" StrokeThickness="1.5"
+                                      Data="M 3,3 L 10,3 L 10,10 L 3,10 Z M 14,3 L 21,3 L 21,10 L 14,10 Z M 3,14 L 10,14 L 10,21 L 3,21 Z M 14,14 L 21,14 L 21,21 L 14,21 Z"
+                                      IsVisible="{Binding #CatalogArtwork.Source, Converter={x:Static converters:ObjectConverters.IsNull}}"/>
+                                <Image x:Name="CatalogArtwork" Width="48" Height="48" Stretch="Uniform"
+                                       asyncImageLoader:ImageLoader.Source="{Binding IconUrl}"/>
+                            </Grid>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="3">
+                            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource ThemeText}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                       ToolTip.Tip="{Binding TitleToolTip}"/>
+                            <TextBlock Text="{Binding Description}" FontSize="12"
+                                       Foreground="{DynamicResource ThemeTextSecondary}"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxLines="2"
+                                       ToolTip.Tip="{Binding Description}" IsVisible="{Binding DescriptionVisible}"/>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Row="1" Spacing="4" VerticalAlignment="Top">
+                        <TextBlock Text="{Binding ReviewStatusText}" FontSize="13" FontWeight="SemiBold"
+                                   Classes="catalog-review-status" TextWrapping="Wrap" ToolTip.Tip="{Binding ReviewStatusToolTip}"
+                                   Classes.catalog-review-status-pending="{Binding ShowReviewPendingStyle}"
+                                   Classes.catalog-review-status-reviewed="{Binding AllReviewedVisible}"
+                                   IsVisible="{Binding ReviewStatusVisible}"/>
+                        <TextBlock Text="{Binding UsageStatsShort}" FontSize="12"
+                                   Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"
+                                   IsVisible="{Binding UsageStatsVisible}"/>
+                        <TextBlock Text="{Binding FetchStatusText}" FontSize="11"
+                                   Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"
+                                   IsVisible="{Binding FetchStatusVisible}"/>
+                        <TextBlock Text="{Binding StatusWarningText}" FontSize="12" Classes="catalog-status-error"
+                                   TextWrapping="Wrap" IsVisible="{Binding StatusWarningVisible}"/>
+                    </StackPanel>
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+						<CheckBox Grid.Column="0" Content="Enabled" IsChecked="{Binding Enabled, Mode=OneWay}" Foreground="{DynamicResource ThemeText}"
+								  Tag="{Binding SourceId}" IsCheckedChanged="CatalogSourceEnabled_Changed"/>
+						<Button Grid.Column="1" Classes="options" Classes.catalog-review-pending="{Binding ShowReviewPendingStyle}"
+								Content="{Binding ReviewButtonText}" HorizontalAlignment="Stretch"
+								Tag="{Binding SourceId}" Click="ReviewCatalogSource_Click" FontSize="12" Padding="10,4"/>
+						<Button Grid.Column="2" Classes="options" Content="Remove" Tag="{Binding SourceId}"
+								Click="RemoveCatalogSource_Click" FontSize="11" Padding="8,4"/>
+					</Grid>
+				</Grid>
+			</Border>
+		</DataTemplate>
+</UserControl.Resources>
+<ScrollViewer x:Name="Surface" VerticalScrollBarVisibility="Auto">
+							<StackPanel x:Name="CatalogSourcesStack" Spacing="12" Margin="0,0,30,0">
+							<TextBlock Text="Browse app lists and choose what to add to your library. Review new apps and changes here."
+									   FontSize="12"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"/>
+							<WrapPanel Orientation="Horizontal">
+								<Button x:Name="AddCatalogSourceButton" Classes="options" Content="Add list" Click="AddCatalogSource_Click" FontSize="12" Margin="0,0,8,8"/>
+								<Button x:Name="RefreshCatalogSourcesButton" Classes="options" Content="Refresh lists" Click="RefreshCatalogSources_Click" FontSize="12" Margin="0,0,8,8"/>
+							</WrapPanel>
+							<WrapPanel Orientation="Horizontal">
+								<Button x:Name="CatalogSourceFilterAllButton" Classes="catalog-filter" Content="All"
+										Tag="All" Click="CatalogSourceListFilter_Click" Margin="0,0,6,6"/>
+								<Button x:Name="CatalogSourceFilterEnabledButton" Classes="catalog-filter selected" Content="Enabled"
+										Tag="Enabled" Click="CatalogSourceListFilter_Click" Margin="0,0,6,6"/>
+								<Button x:Name="CatalogSourceFilterDisabledButton" Classes="catalog-filter" Content="Disabled"
+										Tag="Disabled" Click="CatalogSourceListFilter_Click" Margin="0,0,6,6"/>
+							</WrapPanel>
+							<ItemsControl x:Name="CatalogSourcesItemsControl" ItemsSource="{Binding Sources}">
+								<ItemsControl.ItemsPanel>
+									<ItemsPanelTemplate>
+										<WrapPanel Orientation="Horizontal"/>
+									</ItemsPanelTemplate>
+								</ItemsControl.ItemsPanel>
+								<ItemsControl.ItemTemplate>
+									<StaticResource ResourceKey="CatalogSourceCardTemplate"/>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
+							<TextBlock x:Name="CatalogSourcesEmptyText"
+									   Text="{Binding EmptyMessage}"
+									   FontSize="12"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"
+									   IsVisible="{Binding IsEmpty}"/>
+						</StackPanel>
+					</ScrollViewer>
+</UserControl>

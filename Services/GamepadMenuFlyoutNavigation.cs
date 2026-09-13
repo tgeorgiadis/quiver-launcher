@@ -53,6 +53,7 @@ public sealed class GamepadMenuFlyoutNavigation
 
     public void RegisterOpen(MenuFlyout flyout)
     {
+        MenuSubmenuOverlap.SetFlyoutHost(flyout, flyout.Target is { } target ? TopLevel.GetTopLevel(target) : null);
         _activeFlyout = flyout;
         _items = CollectNavigableItems(flyout);
         _focusedItemIndex = FindPreferredItemIndex(_items);
@@ -62,6 +63,7 @@ public sealed class GamepadMenuFlyoutNavigation
 
     public void Close(MenuFlyout flyout)
     {
+        MenuSubmenuOverlap.SetFlyoutHost(flyout, null);
         if (!ReferenceEquals(_activeFlyout, flyout))
             return;
 
@@ -146,6 +148,7 @@ public sealed class GamepadMenuFlyoutNavigation
         if (focused == null)
             return;
 
+        MenuSubmenuHover.CancelPointerDeadlines(focused);
         focused.Classes.Set("gamepad-focused", true);
         focused.Focus();
     }

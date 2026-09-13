@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:QuiverLauncher.Models"
+             xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             x:Class="QuiverLauncher.Views.AppUpdateReviewView"
+             x:DataType="vm:AppUpdateReviewViewModel" x:CompileBindings="True">
+    <UserControl.Resources>
+<DataTemplate x:Key="AppUpdateReviewCardTemplate" x:DataType="models:GameInfo">
+			<Border Classes="catalog-focus-card"
+					CornerRadius="6"
+					Padding="8,6"
+					Margin="0,0,0,6"
+					Classes.gamepad-focused="{Binding IsGamepadFocused}">
+				<Grid RowDefinitions="Auto,Auto">
+					<Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+						<Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Width="44" Height="44" Margin="0,0,10,0">
+							<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}" Width="44" Height="44" Stretch="Uniform"/>
+						</Border>
+						<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+							<TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
+									   Foreground="{DynamicResource ThemeText}"
+									   TextTrimming="CharacterEllipsis"/>
+							<TextBlock FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}">
+								<Run Text="{Binding InstalledVersion}"/>
+								<Run Text=" → "/>
+								<Run Text="{Binding LatestVersion}"/>
+							</TextBlock>
+						</StackPanel>
+						<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+							<Button Classes="options" Content="Update" FontSize="10" Padding="6,2"
+									IsEnabled="{Binding CanUpdate}"
+									Click="AppUpdateReviewRowUpdate_Click"/>
+							<Button Classes="options" Content="Skip" FontSize="10" Padding="6,2"
+									IsEnabled="{Binding CanSkipUpdate}"
+									Click="AppUpdateReviewRowSkip_Click"/>
+							<Button Classes="options" Content="Versions" FontSize="10" Padding="6,2"
+									IsEnabled="{Binding CanVersionOptions}"
+									Click="AppUpdateReviewRowVersions_Click"/>
+						</StackPanel>
+					</Grid>
+					<StackPanel Grid.Row="1"
+								Spacing="4"
+								Margin="54,8,0,0"
+								IsVisible="{Binding IsDownloading}">
+						<TextBlock FontSize="11"
+								   Foreground="{DynamicResource ThemeTextSecondary}">
+							<Run Text="{Binding StatusText}"/>
+							<Run Text=" ("/>
+							<Run Text="{Binding DownloadProgress, StringFormat={}{0:F0}}"/>
+							<Run Text="%)"/>
+						</TextBlock>
+						<ProgressBar Value="{Binding DownloadProgress}"
+									 Minimum="0"
+									 Maximum="100"
+									 Height="4"
+									 Background="{DynamicResource ThemeBorder}"
+									 Foreground="{Binding ProgressBarColor}"
+									 BorderThickness="0"/>
+					</StackPanel>
+				</Grid>
+			</Border>
+		</DataTemplate>
+    </UserControl.Resources>
+<Grid
+
+						  RowDefinitions="Auto,Auto,*">
+						<TextBlock x:Name="AppUpdatesReviewHeaderText" Text="{Binding Header}"
+								   Grid.Row="0"
+								   FontSize="15"
+								   FontWeight="SemiBold"
+								   Foreground="{DynamicResource ThemeText}"
+								   TextWrapping="Wrap"
+								   Margin="0,0,30,12"/>
+						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,30,12">
+							<Button x:Name="AppUpdatesUpdateAllButton" IsEnabled="{Binding CanApply}"
+									Classes="options"
+									Content="Update All"
+									FontSize="11"
+									Click="AppUpdatesUpdateAll_Click"/>
+							<Button x:Name="AppUpdatesSkipAllButton" IsEnabled="{Binding CanApply}"
+									Classes="options"
+									Content="Skip all"
+									FontSize="11"
+									Click="AppUpdatesSkipAll_Click"/>
+							<Button x:Name="AppUpdatesBackToLibraryButton"
+									Classes="options"
+									Content="Back to Library"
+									FontSize="11"
+									Click="AppUpdatesBackToLibrary_Click"/>
+						</StackPanel>
+						<ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+							<StackPanel Margin="0,0,30,0">
+								<TextBlock x:Name="AppUpdatesReviewEmptyText" IsVisible="{Binding IsEmpty}"
+										   Text="No app updates pending."
+										   FontSize="12"
+										   Foreground="{DynamicResource ThemeTextSecondary}"
+
+										   Margin="0,8,0,0"/>
+								<ItemsControl x:Name="AppUpdatesReviewItemsControl"
+											  ItemsSource="{Binding Rows}">
+									<ItemsControl.ItemTemplate>
+										<StaticResource ResourceKey="AppUpdateReviewCardTemplate"/>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</StackPanel>
+						</ScrollViewer>
+					</Grid>
+</UserControl>

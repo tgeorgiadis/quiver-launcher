@@ -16,7 +16,7 @@ public class CatalogSourceCardActionIndexTests
             new Button { Content = "Remove" },
         };
 
-        MainWindow.GetDefaultCatalogSourceCardActionIndex(controls).Should().Be(1);
+        QuiverLauncher.Views.CatalogSourcesNavigation.GetDefaultCatalogSourceCardActionIndex(controls).Should().Be(1);
     }
 
     [AvaloniaFact]
@@ -27,12 +27,12 @@ public class CatalogSourceCardActionIndexTests
             new CheckBox { Content = "Enabled" },
         };
 
-        MainWindow.GetDefaultCatalogSourceCardActionIndex(controls).Should().Be(0);
+        QuiverLauncher.Views.CatalogSourcesNavigation.GetDefaultCatalogSourceCardActionIndex(controls).Should().Be(0);
     }
 
     [Fact]
     public void GetDefaultCatalogSourceCardActionIndex_empty_returns_negative()
     {
-        MainWindow.GetDefaultCatalogSourceCardActionIndex([]).Should().Be(-1);
+        QuiverLauncher.Views.CatalogSourcesNavigation.GetDefaultCatalogSourceCardActionIndex([]).Should().Be(-1);
     }
 }

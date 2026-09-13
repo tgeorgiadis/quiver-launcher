@@ -14,7 +14,7 @@ public class CommunityCatalogDefaultsTests
     {
         CommunityCatalogDefaults.FirstRunWelcomeTitle.Should().Be("Welcome to Quiver Launcher");
         CommunityCatalogDefaults.FirstRunWelcomeMessage.Should().NotBeNullOrWhiteSpace();
-        CommunityCatalogDefaults.FirstRunWelcomeMessage.Should().Contain("community app catalog lists");
+        CommunityCatalogDefaults.FirstRunWelcomeMessage.Should().Contain("app catalog");
         CommunityCatalogDefaults.FirstRunWelcomeMessage.Should().Contain("internet connection");
     }
 

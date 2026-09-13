@@ -18,9 +18,8 @@ public class HeadlessSmokeTests
     // Smoke test only: validates MainWindow visual tree and ctor wiring.
     // Does not exercise music playback, async icon loading, or catalog refresh.
     [AvaloniaFact]
-    public void MainWindow_can_be_created_in_headless_mode()
+    public async Task MainWindow_can_be_created_in_headless_mode()
     {
-        var previousInvoker = GameManager.UiThreadInvoker;
         var window = new MainWindow();
         try
         {
@@ -31,7 +30,7 @@ public class HeadlessSmokeTests
         {
             window.RequestExit();
             window.Close();
-            GameManager.UiThreadInvoker = previousInvoker;
+            await window.View.ShutdownAsync();
         }
     }
 }

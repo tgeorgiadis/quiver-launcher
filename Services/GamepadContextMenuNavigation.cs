@@ -44,6 +44,11 @@ public sealed class GamepadContextMenuNavigation
         _inputService = inputService;
     }
 
+    public void Unconfigure(InputService inputService)
+    {
+        if (ReferenceEquals(_inputService, inputService)) _inputService = null;
+    }
+
     public static void Attach(ContextMenu menu)
     {
         Instance.PrepareMenu(menu);
@@ -384,7 +389,11 @@ public sealed class GamepadContextMenuNavigation
 
     private void FocusCurrentItem()
     {
-        GetFocusedItem()?.Focus();
+        if (GetFocusedItem() is { } item)
+        {
+            MenuSubmenuHover.CancelPointerDeadlines(item);
+            item.Focus();
+        }
     }
 
     private MenuItem? GetFocusedItem()

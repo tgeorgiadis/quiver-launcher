@@ -140,15 +140,26 @@ public class GitHubReleaseServiceTests
     }
 
     [Fact]
-    public async Task FetchLatestReleaseIndexAsync_returns_not_modified()
+    public async Task FetchLatestReleaseIndexAsync_revalidates_its_own_cached_payload()
     {
-        using var client = new HttpClient(new StubHttpMessageHandler(_ =>
-            new HttpResponseMessage(HttpStatusCode.NotModified)));
-
-        var result = await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo", etag: "\"abc\"");
-
-        result.IsNotModified.Should().BeTrue();
-        result.Releases.Should().BeEmpty();
+        var calls = 0;
+        using var client = new HttpClient(new StubHttpMessageHandler(request =>
+        {
+            if (++calls == 1)
+            {
+                request.Headers.IfNoneMatch.Should().BeEmpty("legacy ETags have unknown endpoint identity");
+                var response = JsonOk("""{"tag_name":"v1","assets":[]}""");
+                response.Headers.ETag = new("\"abc\"");
+                return response;
+            }
+            request.Headers.IfNoneMatch.Single().Tag.Should().Be("\"abc\"");
+            return new HttpResponseMessage(HttpStatusCode.NotModified);
+        }));
+        await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo", etag: "\"legacy\"");
+        var result = await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, "owner/repo");
+        result.WasNotModified.Should().BeTrue();
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Releases.Should().ContainSingle();
     }
 
     [Fact]

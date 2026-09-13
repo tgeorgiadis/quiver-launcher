@@ -102,7 +102,8 @@ public static class KeyboardBindingDefaults
         var defaults = Create();
         foreach (var action in Enum.GetValues<GamepadAction>())
         {
-            if (!bindings.TryGetValue(action, out var list) || list == null || list.Count == 0)
+            // Keep explicitly unbound actions empty when saving or reloading settings.
+            if (!bindings.TryGetValue(action, out var list) || list == null)
             {
                 bindings[action] = defaults[action]
                     .Select(b => new KeyboardBinding(b.Key, b.Modifiers))

@@ -20,11 +20,13 @@ public sealed class CatalogReviewVirtualizingGridPanel : VirtualizingPanel
         AvaloniaProperty.RegisterAttached<CatalogReviewVirtualizingGridPanel, Control, object?>("RecycleKey");
 
     private readonly Dictionary<int, Control> _realized = [];
+    private readonly Dictionary<Control, object?> _containerItems = [];
     private readonly Dictionary<object, Stack<Control>> _recyclePool = [];
     private Size _itemSize = new(172, 240);
     private Rect _viewport;
     private int _columns = 1;
     private bool _isInLayout;
+    private bool _continuationQueued;
 
     public CatalogReviewVirtualizingGridPanel()
     {
@@ -40,6 +42,7 @@ public sealed class CatalogReviewVirtualizingGridPanel : VirtualizingPanel
 
     protected override Size MeasureOverride(Size availableSize)
     {
+        using var timing = QuiverLauncher.Core.Services.CatalogPerformance.Measure("grid-measure", _realized.Count);
         var items = Items;
         var count = items.Count;
         if (count == 0)
@@ -49,6 +52,7 @@ public sealed class CatalogReviewVirtualizingGridPanel : VirtualizingPanel
         }
 
         _isInLayout = true;
+        var layoutStart = System.Diagnostics.Stopwatch.GetTimestamp();
         try
         {
             var width = availableSize.Width;
@@ -89,6 +93,22 @@ public sealed class CatalogReviewVirtualizingGridPanel : VirtualizingPanel
             RecycleOutside(first, last);
             for (var i = first; i <= last; i++)
             {
+                // Cold mobile templates are expensive. Yield between new cards so
+                // input can be processed while the nearby viewport is realized.
+                if (PlatformCapabilities.IsMobile && !_realized.ContainsKey(i) &&
+                    System.Diagnostics.Stopwatch.GetElapsedTime(layoutStart).TotalMilliseconds >= 40)
+                {
+                    if (!_continuationQueued)
+                    {
+                        _continuationQueued = true;
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            _continuationQueued = false;
+                            InvalidateMeasure();
+                        }, Avalonia.Threading.DispatcherPriority.Background);
+                    }
+                    break;
+                }
                 var child = GetOrCreate(i);
                 if (PlatformCapabilities.IsMobile)
                     child.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -194,7 +214,29 @@ public sealed class CatalogReviewVirtualizingGridPanel : VirtualizingPanel
 
     protected override void OnItemsChanged(IReadOnlyList<object?> items, NotifyCollectionChangedEventArgs e)
     {
-        RecycleOutside(0, -1);
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+            RecycleOutside(0, -1);
+        else
+        {
+            // A single catalog action must not clear/rebind every visible card.
+            var indices = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
+            for (var i = 0; i < items.Count; i++)
+                if (items[i] is { } item) indices.TryAdd(item, i);
+            var retained = new List<(int OldIndex, int Index, Control Control)>();
+            foreach (var (oldIndex, control) in _realized.ToArray())
+            {
+                if (_containerItems.TryGetValue(control, out var item) && item != null && indices.TryGetValue(item, out var index))
+                    retained.Add((oldIndex, index, control));
+                else
+                    Recycle(oldIndex);
+            }
+            _realized.Clear();
+            foreach (var (oldIndex, index, control) in retained)
+            {
+                _realized[index] = control;
+                if (oldIndex != index) ItemContainerGenerator?.ItemContainerIndexChanged(control, oldIndex, index);
+            }
+        }
         InvalidateMeasure();
     }
 
@@ -239,6 +281,7 @@ public sealed class CatalogReviewVirtualizingGridPanel : VirtualizingPanel
         }
 
         _realized[index] = container;
+        _containerItems[container] = item;
         if (PlatformCapabilities.IsMobile)
         {
             container.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -268,20 +311,26 @@ public sealed class CatalogReviewVirtualizingGridPanel : VirtualizingPanel
             return;
 
         foreach (var index in stale)
+            Recycle(index);
+    }
+
+    private void Recycle(int index)
+    {
+        var generator = ItemContainerGenerator;
+        if (generator == null) return;
+        if (!_realized.Remove(index, out var element))
+            return;
+
+        _containerItems.Remove(element);
+        var recycleKey = element.GetValue(RecycleKeyProperty);
+        generator.ClearItemContainer(element);
+        if (recycleKey != null && !ReferenceEquals(recycleKey, this))
         {
-            if (!_realized.Remove(index, out var element))
-                continue;
-
-            var recycleKey = element.GetValue(RecycleKeyProperty);
-            generator.ClearItemContainer(element);
-            if (recycleKey != null && !ReferenceEquals(recycleKey, this))
-            {
-                if (!_recyclePool.TryGetValue(recycleKey, out var pool))
-                    _recyclePool[recycleKey] = pool = new Stack<Control>();
-                pool.Push(element);
-            }
-
-            element.IsVisible = false;
+            if (!_recyclePool.TryGetValue(recycleKey, out var pool))
+                _recyclePool[recycleKey] = pool = new Stack<Control>();
+            pool.Push(element);
         }
+
+        element.IsVisible = false;
     }
 }

@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.UpdateCheckStatusView"
+             x:DataType="vm:ShellViewModel" x:CompileBindings="True">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="12,4" IsVisible="{Binding ShowUpdateCheckStatus}">
+        <TextBlock Text="{Binding UpdateCheckStatus}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+        <Button Grid.Column="1" Classes="options" Content="Cancel" IsVisible="{Binding IsCheckingUpdates}"
+                MinHeight="44" Padding="10,6" FontSize="12" VerticalContentAlignment="Center" Click="Cancel_Click"/>
+        <Button Grid.Column="1" Classes="options" Content="Retry" IsVisible="{Binding !IsCheckingUpdates}"
+                MinHeight="44" Padding="10,6" FontSize="12" VerticalContentAlignment="Center" Click="Retry_Click"/>
+    </Grid>
+</UserControl>

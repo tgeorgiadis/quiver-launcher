@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
+             x:Class="QuiverLauncher.Views.MetadataEditorView" x:DataType="vm:MetadataEditorViewModel" x:CompileBindings="True">
+<Border x:Name="Surface"
+						XYFocus.NavigationModes="Gamepad,Remote"
+						XYFocus.UpNavigationStrategy="Projection"
+						XYFocus.DownNavigationStrategy="Projection"
+						XYFocus.LeftNavigationStrategy="Projection"
+						XYFocus.RightNavigationStrategy="Projection"
+						Grid.RowSpan="2"
+						Background="#CC000000"
+						IsVisible="True"
+						ZIndex="110">
+					<Border x:Name="TagEditDialogPanel"
+							Background="{DynamicResource ThemeDarker}"
+							BorderBrush="{DynamicResource ThemeBorder}"
+							BorderThickness="1"
+							CornerRadius="8"
+							Padding="20"
+							MaxWidth="480"
+							HorizontalAlignment="Center"
+							VerticalAlignment="Center">
+						<StackPanel Spacing="12">
+							<TextBlock x:Name="TagEditTitleText"
+									   Text="{Binding Title}"
+									   FontSize="18"
+									   FontWeight="Bold"
+									   Foreground="{DynamicResource ThemeText}"/>
+							<TextBlock x:Name="TagEditAppNameText" Text="{Binding AppName}"
+									   FontSize="13"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"/>
+							<TextBox x:Name="TagEditTextBox"
+									 PlaceholderText="{Binding Placeholder}" Text="{Binding Text, Mode=TwoWay}"
+									 Foreground="{DynamicResource ThemeText}"
+									 Background="{DynamicResource ThemeBase}"
+									 BorderBrush="{DynamicResource ThemeBorder}"
+									 BorderThickness="1"
+									 CornerRadius="4"
+									 Padding="8"
+									 AcceptsReturn="False"
+									 TextWrapping="Wrap"
+									 MinHeight="56"/>
+							<StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+								<Button x:Name="TagEditCancelButton"
+										Classes="options"
+										Content="Cancel"
+										Width="100"
+										Click="CancelTagEdit_Click"/>
+								<Button x:Name="TagEditSaveButton" IsEnabled="{Binding CanSave}"
+										Classes="options"
+										Content="Save"
+										Width="100"
+										Click="SaveTagEdit_Click"/>
+							</StackPanel>
+						</StackPanel>
+					</Border>
+				</Border>
+</UserControl>

@@ -52,9 +52,11 @@ namespace QuiverLauncher
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Name { get; set; } = "";
         public string Description { get; set; } = "";
+        public string? IconUrl { get; set; }
         public string Location { get; set; } = "";
         public string? RemoteLocation { get; set; }
         public bool IsCommunityManaged { get; set; }
+        public string? PlatformMetadataUrl { get; set; }
         public bool Enabled { get; set; } = true;
         public DateTime? LastFetchedUtc { get; set; }
         public string? LastError { get; set; }
@@ -80,6 +82,9 @@ namespace QuiverLauncher
 
         [JsonIgnore]
         public int PendingReviewCount { get; set; }
+
+        [JsonIgnore]
+        public int PlatformExcludedReviewCount { get; set; }
 
         [JsonIgnore]
         public int LibraryAppCount { get; set; }
@@ -109,8 +114,10 @@ namespace QuiverLauncher
         public int IconMargin { get; set; } = 0;
         public int SlotTextMargin { get; set; } = 0;
         public int SlotSize { get; set; } = 180;
+        public int? ListRowHeight { get; set; }
         public int ActionButtonSize { get; set; } = 36;
         public bool ShowOSTopBar { get; set; } = false;
+        public int InterfaceScalePercent { get; set; } = 100;
         public string PrimaryColor { get; set; } = "#18181b";
         public string SecondaryColor { get; set; } = "#404040";
         public TargetOS Platform { get; set; } = TargetOS.Auto;
@@ -192,6 +199,8 @@ namespace QuiverLauncher
 
         public void EnsureInitialized()
         {
+            InterfaceScalePercent = InterfaceScale.Normalize(InterfaceScalePercent);
+            ListRowHeight = Math.Clamp(ListRowHeight ?? (UseGridView ? 96 : SlotSize), 72, 400);
             AppCatalogSources ??= new List<AppCatalogSource>();
             HiddenApps ??= new List<string>();
             ManuallyHiddenApps ??= new List<string>();
@@ -248,4 +257,3 @@ namespace QuiverLauncher
         public static void Save(AppSettings settings) => SettingsStoreProvider.Default.Save(settings);
     }
 }
-

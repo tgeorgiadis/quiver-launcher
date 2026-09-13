@@ -86,23 +86,21 @@ namespace QuiverLauncher.Services
             return resolved;
         }
 
-        public static async Task CreateGameShortcutAsync(GameInfo game, string launcherPath, string? cacheDirectory)
+        public static async Task CreateGameShortcutAsync(GameInfo game, GameShortcutTarget target, string? cacheDirectory, string? desktopDirectory = null)
         {
             if (string.IsNullOrWhiteSpace(game?.Name))
                 throw new ArgumentException("Game name is required.", nameof(game));
 
-            launcherPath = RequireLauncherPath(launcherPath);
-
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string desktopPath = desktopDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string? iconPath = await PrepareIconAsync(game, cacheDirectory).ConfigureAwait(false);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                CreateWindowsShortcut(desktopPath, launcherPath, game, iconPath);
+                CreateWindowsShortcut(desktopPath, target, game, iconPath);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                CreateLinuxDesktopFile(desktopPath, launcherPath, game, iconPath);
+                CreateLinuxDesktopFile(desktopPath, target, game, iconPath);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -110,17 +108,10 @@ namespace QuiverLauncher.Services
             }
         }
 
-        public static void CreateGameShortcut(GameInfo game, string launcherPath, string? cacheDirectory)
-        {
-            CreateGameShortcutAsync(game, launcherPath, cacheDirectory).GetAwaiter().GetResult();
-        }
-
-        public static string AddGameToSteam(GameInfo game, string launcherPath, string? cacheDirectory)
+        public static string AddGameToSteam(GameInfo game, GameShortcutTarget target, string? cacheDirectory)
         {
             if (string.IsNullOrWhiteSpace(game?.Name))
                 throw new ArgumentException("Game name is required.", nameof(game));
-
-            launcherPath = RequireLauncherPath(launcherPath);
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
                 !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -131,7 +122,7 @@ namespace QuiverLauncher.Services
             if (IsSteamRunning())
                 throw new InvalidOperationException("Steam is still running.");
 
-            return AddGameToSteamInternalAsync(game, launcherPath, cacheDirectory).GetAwaiter().GetResult();
+            return AddGameToSteamInternalAsync(game, target, cacheDirectory).GetAwaiter().GetResult();
         }
 
         public static string QueueGameAddToSteam(GameInfo game, string launcherPath)
@@ -144,6 +135,15 @@ namespace QuiverLauncher.Services
             if (IsRunningUnderSteam())
                 throw new InvalidOperationException("Steam is running this launcher, so the shortcut worker would keep Steam from seeing the launcher as closed. Close Steam and run the launcher outside Steam to add shortcuts.");
 
+            var startInfo = CreateSteamShortcutWorkerStartInfo(game, launcherPath);
+            using var process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Could not start the Steam shortcut worker.");
+
+            return $"Queued {game.Name} for Steam. Restart Steam once and the shortcut will be written after Steam fully closes.";
+        }
+
+        internal static ProcessStartInfo CreateSteamShortcutWorkerStartInfo(GameInfo game, string launcherPath)
+        {
             var startInfo = new ProcessStartInfo
             {
                 FileName = launcherPath,
@@ -153,15 +153,13 @@ namespace QuiverLauncher.Services
 
             startInfo.ArgumentList.Add("--add-steam-shortcut");
             startInfo.ArgumentList.Add(game.Name);
+            startInfo.ArgumentList.Add("--app-identity");
+            startInfo.ArgumentList.Add(game.IdentityKey);
             startInfo.ArgumentList.Add("--wait-for-steam-exit");
-
-            using var process = Process.Start(startInfo)
-                ?? throw new InvalidOperationException("Could not start the Steam shortcut worker.");
-
-            return $"Queued {game.Name} for Steam. Restart Steam once and the shortcut will be written after Steam fully closes.";
+            return startInfo;
         }
 
-        public static async Task<string> AddGameToSteamFromCliAsync(GameInfo game, string launcherPath, string? cacheDirectory, bool waitForSteamExit)
+        public static async Task<string> AddGameToSteamFromCliAsync(GameInfo game, string gamesFolder, AppSettings settings, string? cacheDirectory, bool waitForSteamExit)
         {
             if (waitForSteamExit)
             {
@@ -172,13 +170,12 @@ namespace QuiverLauncher.Services
                 throw new InvalidOperationException("Steam must be closed before modifying shortcuts.vdf.");
             }
 
-            return await AddGameToSteamInternalAsync(game, launcherPath, cacheDirectory).ConfigureAwait(false);
+            var target = await GameShortcutLaunch.PrepareAsync(game, gamesFolder, settings).ConfigureAwait(false);
+            return await AddGameToSteamInternalAsync(game, target!, cacheDirectory).ConfigureAwait(false);
         }
 
-        private static async Task<string> AddGameToSteamInternalAsync(GameInfo game, string launcherPath, string? cacheDirectory)
+        private static async Task<string> AddGameToSteamInternalAsync(GameInfo game, GameShortcutTarget target, string? cacheDirectory)
         {
-            launcherPath = RequireLauncherPath(launcherPath);
-
             string? configDirectory = FindSteamConfigDirectory();
             if (string.IsNullOrWhiteSpace(configDirectory))
             {
@@ -189,41 +186,54 @@ namespace QuiverLauncher.Services
 
             string shortcutsPath = Path.Combine(configDirectory, "shortcuts.vdf");
             string? iconPath = await PrepareIconAsync(game, cacheDirectory).ConfigureAwait(false);
+            WriteGameToSteamFile(shortcutsPath, game, target, iconPath, out var updated);
+            return updated
+                ? "Updated the Steam shortcut to launch the game directly. Restart Steam or return to Game Mode to refresh your library."
+                : "Added the game to Steam. Restart Steam or return to Game Mode to refresh your library.";
+        }
+
+        internal static void WriteGameToSteamFile(string shortcutsPath, GameInfo game, GameShortcutTarget target, string? iconPath, out bool updated)
+        {
             var root = File.Exists(shortcutsPath)
                 ? ReadSteamShortcuts(shortcutsPath)
                 : CreateEmptySteamShortcutsRoot();
 
             var shortcutsObject = EnsureObject(root, "shortcuts");
-            string launchOptions = BuildSteamLaunchOptions(game.Name!);
-            string quotedLauncherPath = QuoteSteamPath(launcherPath);
-            string startDir = Path.GetDirectoryName(launcherPath) ?? AppContext.BaseDirectory;
-            int appId = CalculateSteamShortcutAppId(quotedLauncherPath, game.Name!);
+            string launchOptions = string.Join(" ", target.Arguments.Select(QuoteCommandArgument));
+            string quotedTargetPath = QuoteCommandArgument(target.FileName);
+            int appId = CalculateSteamShortcutAppId(quotedTargetPath, game.Name!);
 
-            var existingEntry = FindMatchingSteamEntry(shortcutsObject, game.Name!, launchOptions);
-            bool updated = existingEntry != null;
+            var existingEntry = FindMatchingSteamEntry(shortcutsObject, game.Name!, quotedTargetPath);
+            updated = existingEntry != null;
 
             var shortcutEntry = existingEntry ?? new SteamObject();
-            SetShortcutInt(shortcutEntry, "appid", appId);
+            // Retain Steam's identity when replacing a launcher-based shortcut so
+            // artwork and per-game controller/compatibility settings remain attached.
+            if (existingEntry?.Properties.FirstOrDefault(p => p.Key == "appid").Value is not SteamInt)
+                SetShortcutInt(shortcutEntry, "appid", appId);
             SetShortcutString(shortcutEntry, "appname", game.Name!);
-            SetShortcutString(shortcutEntry, "exe", quotedLauncherPath);
-            SetShortcutString(shortcutEntry, "StartDir", startDir);
-            SetShortcutString(shortcutEntry, "icon", iconPath ?? string.Empty);
-            SetShortcutString(shortcutEntry, "ShortcutPath", string.Empty);
+            SetShortcutString(shortcutEntry, "exe", quotedTargetPath);
+            SetShortcutString(shortcutEntry, "StartDir", QuoteCommandArgument(target.WorkingDirectory));
+            if (iconPath != null || !updated) SetShortcutString(shortcutEntry, "icon", iconPath ?? string.Empty);
             SetShortcutString(shortcutEntry, "LaunchOptions", launchOptions);
-            SetShortcutInt(shortcutEntry, "IsHidden", 0);
-            SetShortcutInt(shortcutEntry, "AllowDesktopConfig", 1);
-            SetShortcutInt(shortcutEntry, "AllowOverlay", 1);
-            SetShortcutInt(shortcutEntry, "OpenVR", 0);
-            SetShortcutInt(shortcutEntry, "Devkit", 0);
-            SetShortcutString(shortcutEntry, "DevkitGameID", string.Empty);
-            SetShortcutInt(shortcutEntry, "DevkitOverrideAppID", 0);
-            SetShortcutInt(shortcutEntry, "LastPlayTime", 0);
-            SetShortcutString(shortcutEntry, "FlatpakAppID", string.Empty);
-            SetShortcutString(shortcutEntry, "sortas", string.Empty);
+            if (!updated)
+            {
+                SetShortcutString(shortcutEntry, "ShortcutPath", string.Empty);
+                SetShortcutInt(shortcutEntry, "IsHidden", 0);
+                SetShortcutInt(shortcutEntry, "AllowDesktopConfig", 1);
+                SetShortcutInt(shortcutEntry, "AllowOverlay", 1);
+                SetShortcutInt(shortcutEntry, "OpenVR", 0);
+                SetShortcutInt(shortcutEntry, "Devkit", 0);
+                SetShortcutString(shortcutEntry, "DevkitGameID", string.Empty);
+                SetShortcutInt(shortcutEntry, "DevkitOverrideAppID", 0);
+                SetShortcutInt(shortcutEntry, "LastPlayTime", 0);
+                SetShortcutString(shortcutEntry, "FlatpakAppID", string.Empty);
+                SetShortcutString(shortcutEntry, "sortas", string.Empty);
+            }
 
             var tags = EnsureObject(shortcutEntry, "tags");
-            tags.Properties.Clear();
-            tags.Properties.Add(new KeyValuePair<string, SteamValue>("0", new SteamString(LauncherSteamTag)));
+            if (!tags.Properties.Any(p => p.Value is SteamString value && value.Value == LauncherSteamTag))
+                tags.Properties.Add(new KeyValuePair<string, SteamValue>(GetNextShortcutIndex(tags).ToString(), new SteamString(LauncherSteamTag)));
 
             if (!updated)
             {
@@ -235,9 +245,6 @@ namespace QuiverLauncher.Services
             NormalizeShortcutIndices(shortcutsObject);
             WriteSteamShortcuts(shortcutsPath, root);
 
-            return updated
-                ? "Updated the Steam shortcut. Restart Steam or return to Game Mode to refresh your library."
-                : "Added the game to Steam. Restart Steam or return to Game Mode to refresh your library.";
         }
 
         private static async Task<string?> PrepareIconAsync(GameInfo game, string? cacheDirectory)
@@ -344,65 +351,67 @@ namespace QuiverLauncher.Services
 #endif
 
         [SupportedOSPlatform("windows")]
-        private static void CreateWindowsShortcut(string desktopPath, string launcherPath, GameInfo game, string? iconPath)
+        private static void CreateWindowsShortcut(string desktopPath, GameShortcutTarget target, GameInfo game, string? iconPath)
         {
-            // Escape game name for command line
-            string gameName = game.Name!.Replace("\"", "");
-            string shortcutPath = Path.Combine(desktopPath, $"{SanitizeFileName(game.Name!)}.lnk");
-
-            string psScript = $@"
-                $WshShell = New-Object -ComObject WScript.Shell
-                $Shortcut = $WshShell.CreateShortcut('{shortcutPath}')
-                $Shortcut.TargetPath = '{launcherPath}'
-                $Shortcut.Arguments = '--run {gameName}'
-                $Shortcut.WorkingDirectory = '{Path.GetDirectoryName(launcherPath)}'
-                $Shortcut.Description = 'Launch {gameName} via Quiver Launcher'
-                {(iconPath != null ? $"$Shortcut.IconLocation = '{iconPath},0'" : "")}
-                $Shortcut.Save()
-                ";
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript.Replace("\"", "`\"")}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            using var process = Process.Start(psi);
-            process?.WaitForExit();
-        }
-
-        private static void CreateLinuxDesktopFile(string desktopPath, string launcherPath, GameInfo game, string? iconPath)
-        {
-            string safeGameName = game.Name!;
-            string desktopFileName = $"{SanitizeFileName(safeGameName)}.desktop";
-            string desktopFilePath = Path.Combine(desktopPath, desktopFileName);
-            string escapedGameName = safeGameName.Replace("\"", "\\\"");
-
-            string desktopFileContent = $@"[Desktop Entry]
-                Type=Application
-                Name={safeGameName}
-                Exec=""{launcherPath}"" --run ""{escapedGameName}""
-                Icon={iconPath ?? ""}
-                Terminal=false
-                Categories=Game;
-                Comment=Launch {safeGameName} via Quiver Launcher
-                ";
-
-            File.WriteAllText(desktopFilePath, desktopFileContent);
-
-            // Make executable
+            var shortcutPath = Path.Combine(desktopPath, $"{SanitizeFileName(game.Name!)}.lnk");
+            // COM properties accept literal paths; no shell interpolation of app names,
+            // apostrophes, arguments, or installation folders is needed.
+            object? shell = null;
+            object? shortcut = null;
             try
             {
-                var chmod = Process.Start("chmod", $"+x \"{desktopFilePath}\"");
-                chmod?.WaitForExit();
+                var shellType = Type.GetTypeFromProgID("WScript.Shell")
+                    ?? throw new InvalidOperationException("Windows shortcut support is unavailable.");
+                shell = Activator.CreateInstance(shellType)!;
+                dynamic link = ((dynamic)shell).CreateShortcut(shortcutPath);
+                shortcut = link;
+                link.TargetPath = target.FileName;
+                link.Arguments = string.Join(" ", target.Arguments.Select(QuoteCommandArgument));
+                link.WorkingDirectory = target.WorkingDirectory;
+                link.Description = $"Launch {game.Name}";
+                link.IconLocation = iconPath != null ? iconPath + ",0" : target.FileName + ",0";
+                link.Save();
             }
-            catch { }
+            finally
+            {
+                if (shortcut != null) Marshal.FinalReleaseComObject(shortcut);
+                if (shell != null) Marshal.FinalReleaseComObject(shell);
+            }
         }
 
+        private static void CreateLinuxDesktopFile(string desktopPath, GameShortcutTarget target, GameInfo game, string? iconPath)
+        {
+            var desktopFilePath = Path.Combine(desktopPath, $"{SanitizeFileName(game.Name!)}.desktop");
+            File.WriteAllText(desktopFilePath, BuildLinuxDesktopFile(game.Name!, target, iconPath));
+            if (OperatingSystem.IsLinux())
+                File.SetUnixFileMode(desktopFilePath, File.GetUnixFileMode(desktopFilePath) | UnixFileMode.UserExecute);
+        }
+
+        internal static string BuildLinuxDesktopFile(string name, GameShortcutTarget target, string? iconPath)
+        {
+            var command = string.Join(" ", new[] { target.FileName }.Concat(target.Arguments)
+                .Select(value => EscapeDesktopValue(QuoteUnixArgument(value).Replace("%", "%%"))));
+            return $"[Desktop Entry]\nType=Application\nName={EscapeDesktopValue(name)}\nExec={command}\nPath={EscapeDesktopValue(target.WorkingDirectory)}\nIcon={EscapeDesktopValue(iconPath ?? "")}\nTerminal=false\nCategories=Game;\nComment={EscapeDesktopValue($"Launch {name}")}\n";
+        }
+
+        private static string EscapeDesktopValue(string value) => value.Replace("\\", "\\\\").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+        private static string QuoteUnixArgument(string value) => "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("$", "\\$").Replace("`", "\\`") + "\"";
+
+        internal static string QuoteCommandArgument(string value)
+        {
+            if (!OperatingSystem.IsWindows()) return QuoteUnixArgument(value);
+            // Windows CommandLineToArgvW / CRT quoting, including trailing backslashes.
+            var result = new StringBuilder("\"");
+            var slashes = 0;
+            foreach (var character in value)
+            {
+                if (character == '\\') { slashes++; continue; }
+                result.Append('\\', character == '"' ? slashes * 2 + 1 : slashes);
+                result.Append(character);
+                slashes = 0;
+            }
+            return result.Append('\\', slashes * 2).Append('"').ToString();
+        }
         private static string SanitizeFileName(string name)
         {
             string invalid = new string(Path.GetInvalidFileNameChars());
@@ -411,12 +420,6 @@ namespace QuiverLauncher.Services
                 name = name.Replace(c.ToString(), "");
             }
             return name;
-        }
-
-        private static string BuildSteamLaunchOptions(string gameName)
-        {
-            string escapedGameName = gameName.Replace("\"", string.Empty);
-            return $"--run \"{escapedGameName}\"";
         }
 
         private static int CalculateSteamShortcutAppId(string quotedLauncherPath, string gameName)
@@ -451,11 +454,6 @@ namespace QuiverLauncher.Services
             }
 
             return ~crc;
-        }
-
-        private static string QuoteSteamPath(string path)
-        {
-            return $"\"{path.Replace("\"", string.Empty)}\"";
         }
 
         public static bool IsSteamRunning()
@@ -615,10 +613,19 @@ namespace QuiverLauncher.Services
 
         private static void WriteSteamShortcuts(string shortcutsPath, SteamObject rootValue)
         {
-            using var stream = new FileStream(shortcutsPath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
-            WriteSteamObject(writer, rootValue);
-            writer.Flush();
+            var temporary = shortcutsPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+                {
+                    WriteSteamObject(writer, rootValue);
+                    writer.Flush();
+                    stream.Flush(flushToDisk: true);
+                }
+                File.Move(temporary, shortcutsPath, overwrite: true);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
 
         private static void WriteSteamObject(BinaryWriter writer, SteamObject value)
@@ -656,7 +663,7 @@ namespace QuiverLauncher.Services
             writer.Write((byte)0x00);
         }
 
-        private static SteamObject? FindMatchingSteamEntry(SteamObject shortcutsObject, string gameName, string launchOptions)
+        private static SteamObject? FindMatchingSteamEntry(SteamObject shortcutsObject, string gameName, string quotedTargetPath)
         {
             foreach (var property in shortcutsObject.Properties)
             {
@@ -664,12 +671,12 @@ namespace QuiverLauncher.Services
                     continue;
 
                 string? existingName = GetShortcutString(shortcut, "appname");
-                string? existingOptions = GetShortcutString(shortcut, "LaunchOptions");
+                string? existingTarget = GetShortcutString(shortcut, "exe");
                 var tags = TryGetObject(shortcut, "tags");
                 bool hasLauncherTag = tags?.Properties.Any(p => p.Value is SteamString tag && string.Equals(tag.Value, LauncherSteamTag, StringComparison.Ordinal)) == true;
 
                 if (string.Equals(existingName, gameName, StringComparison.Ordinal) &&
-                    (string.Equals(existingOptions, launchOptions, StringComparison.Ordinal) || hasLauncherTag))
+                    (string.Equals(existingTarget, quotedTargetPath, StringComparison.Ordinal) || hasLauncherTag))
                 {
                     return shortcut;
                 }

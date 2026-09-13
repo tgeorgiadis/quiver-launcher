@@ -20,6 +20,13 @@ public static class GameDownloadInstallService
     {
         dialogs ??= AvaloniaGameDownloadDialogs.Instance;
 
+        try { await game.CatalogPreparation; }
+        catch (Exception ex)
+        {
+            await dialogs.ShowErrorAsync($"This app was saved, but its files could not be prepared: {ex.Message}", "Preparation Error");
+            return;
+        }
+
         if (string.IsNullOrEmpty(game.FolderName))
         {
             await dialogs.ShowErrorAsync("App configuration is invalid (missing folder name).", "Configuration Error");
@@ -58,10 +65,13 @@ public static class GameDownloadInstallService
                         game.Repository,
                         apiToken).ConfigureAwait(false);
 
+                    // An unsuccessful request has no releases too; it is not evidence
+                    // that the repository has no downloads (for any platform).
+                    releaseResult.EnsureSuccess();
                     if (releaseResult.Releases.Count == 0)
                     {
-                        await dialogs.ShowErrorAsync($"No releases found for {game.Name}.", "No Releases");
                         ResetNotInstalled(game);
+                        await dialogs.ShowErrorAsync($"No releases found for {game.Name}.", "No Releases");
                         return;
                     }
 
@@ -73,8 +83,8 @@ public static class GameDownloadInstallService
 
                     if (latestRelease == null)
                     {
-                        await dialogs.ShowErrorAsync($"No valid releases found for {game.Name}.", "No Releases");
                         ResetNotInstalled(game);
+                        await dialogs.ShowErrorAsync($"No valid releases found for {game.Name}.", "No Releases");
                         return;
                     }
 
@@ -102,53 +112,18 @@ public static class GameDownloadInstallService
                 }
             }
 
-            var allAssets = GitHubReleaseService.GetDownloadableAssets(latestRelease);
-            var availableAssets = GitHubReleaseService.GetDownloadableAssets(latestRelease, game.ReleaseAssetFilter);
-
-            if (allAssets.Count == 0)
+            game.ApplyCachedRelease(latestRelease.tag_name, latestRelease);
+            var choices = GameDownloadService.Prepare(game, latestRelease, settings);
+            var asset = game.SelectedDownload ?? choices.Automatic;
+            if (asset == null)
             {
-                await dialogs.ShowErrorAsync($"No download files found for {game.Name}.", "No Assets");
-                ResetNotInstalled(game);
-                return;
-            }
-
-            if (availableAssets.Count == 0)
-            {
-                var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(game.ReleaseAssetFilter);
-                await dialogs.ShowErrorAsync(
-                    $"No download files matched the release asset filter \"{filter}\" for {game.Name}.",
-                    "No Matching Assets");
-                ResetNotInstalled(game);
-                return;
-            }
-
-            if (OperatingSystem.IsAndroid())
-            {
-                availableAssets = availableAssets
-                    .Where(asset => PlatformAssetMatcher.MatchesPlatform(asset.name, "Android"))
-                    .ToList();
-
-                if (availableAssets.Count == 0)
-                {
-                    await dialogs.ShowErrorAsync(
-                        $"{game.Name} has no Android build in this release.",
-                        "No Android Build");
-                    ResetNotInstalled(game);
-                    return;
-                }
-            }
-
-            game.AvailableDownloads = availableAssets;
-
-            if (availableAssets.Count > 1 && game.SelectedDownload == null)
-            {
-                game.NotifyMultipleDownloadsChanged();
-                game.Status = GameStatus.NotInstalled;
+                if (!choices.NeedsChoice)
+                    await dialogs.ShowErrorAsync(choices.EmptyReason ?? "No eligible downloads.", "No Matching Assets");
+                game.Status = triggerStatus == GameStatus.UpdateAvailable ? GameStatus.UpdateAvailable : GameStatus.NotInstalled;
                 game.DownloadProgress = 0;
+                game.NotifyMultipleDownloadsChanged();
                 return;
             }
-
-            var asset = game.SelectedDownload ?? availableAssets[0];
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
                 !OperatingSystem.IsAndroid() &&
@@ -234,18 +209,23 @@ public static class GameDownloadInstallService
                 game.DownloadProgress = 90;
                 game.Status = GameStatus.Installing;
 
-                if (OperatingSystem.IsAndroid() && GameInstallationService.IsAndroidPackageAsset(effectiveAssetName))
+                if (OperatingSystem.IsAndroid())
                 {
+                    var packagePath = await AndroidPackagePreparation.PrepareAsync(
+                        downloadPath, effectiveAssetName, stagingDir!).ConfigureAwait(false);
                     var installed = await AppInstallLaunch.Current.InstallAsync(
                         game,
-                        downloadPath,
-                        latestRelease.tag_name).ConfigureAwait(false);
+                        packagePath,
+                        latestRelease.tag_name,
+                        gamePath).ConfigureAwait(false);
                     if (!installed)
                     {
                         await dialogs.ShowErrorAsync(
-                            $"Could not start the Android installer for {game.Name}.",
-                            "Install Failed");
-                        ResetNotInstalled(game);
+                            $"Android did not complete the installation of {game.Name}. The installation may have been cancelled or rejected.",
+                            "Installation Not Completed");
+                        await GameStatusService.CheckStatusAsync(game, httpClient, gamesFolder, checkRemoteVersion: false).ConfigureAwait(false);
+                        game.DownloadProgress = 0;
+                        game.ClearDownloadSelection();
                         return;
                     }
 
@@ -332,6 +312,8 @@ public static class GameDownloadInstallService
         }
         catch (HttpRequestException ex)
         {
+            // Stop the card's downloading indicator while the error dialog is open.
+            ResetNotInstalled(game);
             if (GameDialogService.IsRateLimitError(ex))
             {
                 if (RepositorySourceHelper.IsGitLab(game.RepositorySource))
@@ -346,7 +328,6 @@ public static class GameDownloadInstallService
                     "Network Error");
             }
 
-            ResetNotInstalled(game);
         }
         catch (UnauthorizedAccessException ex)
         {

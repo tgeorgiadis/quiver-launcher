@@ -2,6 +2,12 @@ namespace QuiverLauncher.Services;
 
 public static class CatalogListMetadata
 {
+    public static string? NormalizeIconUrl(string? value) =>
+        Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? uri.AbsoluteUri
+            : null;
+
     public static string DeriveDisplayNameFromLocation(string location)
     {
         if (string.IsNullOrWhiteSpace(location))

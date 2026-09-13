@@ -80,6 +80,12 @@ public partial class App
 
     public async Task<ManualLauncherCheckResult> CheckForAppUpdatesManually()
     {
+        if (AndroidLauncherUpdater.Current is {} android)
+        {
+            await android.CheckAsync(true);
+            return BuildManualLauncherResult(android.Installer.Installed.VersionName, !android.HasError,
+                android.Error, android.HasUpdate, android.AvailableVersion);
+        }
         if (!PlatformCapabilities.SupportsVelopack)
         {
             return BuildManualLauncherResult(
@@ -264,6 +270,7 @@ public partial class App
                     desktop.MainWindow != null)
                 {
                     progressWindow = new ProgressWindow();
+                    DesktopInterfaceScaling.PrepareDialog(progressWindow, desktop.MainWindow);
                     _ = progressWindow.ShowDialog(desktop.MainWindow);
                 }
             });
@@ -378,6 +385,8 @@ public partial class App
                 messageBox.Tag = accepted;
             });
 
+            DesktopInterfaceScaling.PrepareDialog(messageBox, desktop.MainWindow);
+
             await messageBox.ShowDialog(desktop.MainWindow);
             if (messageBox.Tag is bool tagResult)
                 return tagResult;
@@ -413,6 +422,7 @@ public partial class App
                 okButton.Click += (_, _) => messageBox.Close();
 
             GamepadModalDialogNavigation.Attach(messageBox);
+            DesktopInterfaceScaling.PrepareDialog(messageBox, desktop.MainWindow);
             await messageBox.ShowDialog(desktop.MainWindow);
         }
     }

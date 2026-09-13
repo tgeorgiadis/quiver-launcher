@@ -1,0 +1,286 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:services="using:QuiverLauncher.Services" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.CatalogDetailsView" x:DataType="services:CatalogSyncRowItem" x:CompileBindings="True">
+<Border x:Name="Surface"
+						XYFocus.NavigationModes="Gamepad,Remote"
+						XYFocus.UpNavigationStrategy="Projection"
+						XYFocus.DownNavigationStrategy="Projection"
+						XYFocus.LeftNavigationStrategy="Projection"
+						XYFocus.RightNavigationStrategy="Projection"
+						Grid.RowSpan="2"
+						Background="{DynamicResource ThemeBase}"
+						IsVisible="True"
+						ZIndex="110">
+					<Grid RowDefinitions="Auto,*">
+						<Border x:Name="CatalogReviewDetailsHeaderChrome"
+								Grid.Row="0"
+								Background="{DynamicResource ThemeDarker}"
+								BorderBrush="{DynamicResource ThemeBorder}"
+								BorderThickness="0,0,0,1"
+								Padding="24,12,24,12">
+							<StackPanel Spacing="8">
+							<Grid x:Name="CatalogReviewDetailsCompactBar"
+								  ColumnDefinitions="Auto,*,Auto,Auto"
+								  IsVisible="{x:Static services:PlatformCapabilities.IsMobile}">
+								<Panel Width="48"
+									   Height="48"
+									   Margin="0,0,8,0"
+									   VerticalAlignment="Center">
+									<Border CornerRadius="6"
+											ClipToBounds="True"
+											Background="{DynamicResource ThemeLighter}">
+										<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+																		Stretch="Uniform"
+																		HorizontalAlignment="Center"
+																		VerticalAlignment="Center"/>
+									</Border>
+									<Border Classes="mod-status-chip"
+											Classes.catalog-status-changed="{Binding IsChangedBadge}"
+											CornerRadius="3"
+											Padding="3,1"
+											Margin="2"
+											HorizontalAlignment="Right"
+											VerticalAlignment="Top"
+											IsVisible="{Binding HasStatusBadge}">
+										<TextBlock Text="{Binding StatusShortLabel}" FontSize="8"/>
+									</Border>
+								</Panel>
+								<StackPanel Grid.Column="1"
+											Spacing="1"
+											Margin="0,0,8,0"
+											VerticalAlignment="Center"
+											MinWidth="0">
+									<TextBlock Text="{Binding TitleName}"
+											   FontSize="16"
+											   FontWeight="Bold"
+											   Foreground="{DynamicResource ThemeText}"
+											   TextWrapping="NoWrap"
+											   TextTrimming="CharacterEllipsis"
+											   MaxLines="1"/>
+									<TextBlock Text="{Binding Subtitle}"
+											   FontSize="11"
+											   Foreground="{DynamicResource ThemeTextSecondary}"
+											   TextWrapping="NoWrap"
+											   TextTrimming="CharacterEllipsis"
+											   MaxLines="1"/>
+								</StackPanel>
+								<Button x:Name="CatalogReviewDetailsAboutButton"
+										Grid.Column="2"
+										Classes="options"
+										Content="About"
+										Margin="0,0,6,0"
+										VerticalAlignment="Center"
+										Click="CatalogReviewDetailsAbout_Click"/>
+								<Button x:Name="CatalogReviewDetailsCloseMobileButton"
+										Grid.Column="3"
+										Classes="options"
+										Content="Close"
+										VerticalAlignment="Center"
+										Click="CloseCatalogReviewDetails_Click"/>
+							</Grid>
+							<DockPanel x:Name="CatalogReviewDetailsHero"
+									   LastChildFill="True"
+									   IsVisible="{x:Static services:PlatformCapabilities.IsDesktop}">
+								<Panel x:Name="CatalogReviewDetailsIconHost"
+									   DockPanel.Dock="Left"
+									   Width="160"
+									   Height="160"
+									   Margin="0,0,16,0"
+									   VerticalAlignment="Top">
+									<Border CornerRadius="8"
+											ClipToBounds="True"
+											Background="{DynamicResource ThemeLighter}">
+										<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+																		Stretch="Uniform"
+																		HorizontalAlignment="Center"
+																		VerticalAlignment="Center"/>
+									</Border>
+									<Border Classes="mod-status-chip"
+											Classes.catalog-status-changed="{Binding IsChangedBadge}"
+											CornerRadius="3"
+											Padding="5,2"
+											Margin="8"
+											HorizontalAlignment="Right"
+											VerticalAlignment="Top"
+											IsVisible="{Binding HasStatusBadge}">
+										<TextBlock Text="{Binding StatusShortLabel}" FontSize="9"/>
+									</Border>
+								</Panel>
+								<Grid MinWidth="0" MinHeight="160" VerticalAlignment="Stretch">
+									<Grid.RowDefinitions>
+										<RowDefinition Height="Auto"/>
+										<RowDefinition Height="*"/>
+										<RowDefinition Height="Auto"/>
+									</Grid.RowDefinitions>
+									<Grid ColumnDefinitions="*,Auto">
+										<StackPanel Grid.Column="0" Spacing="2" Margin="0,0,12,0">
+											<TextBlock x:Name="CatalogReviewDetailsTitle"
+													   Text="App details"
+													   FontSize="22"
+													   FontWeight="Bold"
+													   Foreground="{DynamicResource ThemeText}"
+													   TextWrapping="Wrap"
+													   TextTrimming="CharacterEllipsis"
+													   MaxLines="2"/>
+											<TextBlock x:Name="CatalogReviewDetailsSubtitle"
+													   FontSize="12"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   TextTrimming="CharacterEllipsis"/>
+										</StackPanel>
+										<StackPanel Grid.Column="1"
+													Orientation="Horizontal"
+													Spacing="8"
+													VerticalAlignment="Top">
+											<Button x:Name="CatalogReviewDetailsOpenRepoButton"
+													Classes="options"
+													Content="Open Repo"
+													Click="CatalogReviewDetailsOpenRepo_Click"/>
+											<Button x:Name="CloseCatalogReviewDetailsButton"
+													Classes="options"
+													Content="Close"
+													Width="100"
+													Click="CloseCatalogReviewDetails_Click"/>
+										</StackPanel>
+									</Grid>
+									<StackPanel x:Name="CatalogReviewDetailsDiffsHost"
+												Grid.Row="1"
+												Spacing="4"
+												Margin="0,8,0,8"
+												VerticalAlignment="Top"
+												IsVisible="False">
+										<ItemsControl x:Name="CatalogReviewDetailsDiffs">
+											<ItemsControl.ItemTemplate>
+												<StaticResource ResourceKey="CatalogFieldDiffTemplate"/>
+											</ItemsControl.ItemTemplate>
+										</ItemsControl>
+									</StackPanel>
+									<StackPanel Grid.Row="2" Spacing="8">
+										<TextBlock x:Name="CatalogReviewDetailsBlockedReason"
+												   FontSize="12"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   TextWrapping="Wrap"
+												   IsVisible="False"/>
+										<WrapPanel x:Name="CatalogReviewDetailsActions"
+												   Orientation="Horizontal">
+											<Button Classes="options catalog-review-add" Content="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+													FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanAdd}"/>
+											<Button Classes="options catalog-review-merge" Content="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+													FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanMerge}"/>
+											<Button Classes="options" Content="Replace" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
+													FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanReplace}"/>
+											<Button Classes="options" Content="Ignore" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
+													FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanIgnore}"/>
+											<Button Classes="options" Content="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+													FontSize="11" Padding="10,6" Margin="0,0,8,4"
+													ToolTip.Tip="Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden."
+													IsVisible="{Binding ShowHideButton}"/>
+											<Button Classes="options" Content="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+													FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding ShowUnhideButton}"/>
+											<Button Classes="options catalog-remove-from-library"
+													Content="Remove"
+													Tag="{Binding IdentityKey}"
+													Click="CatalogSyncRowRemoveFromLibrary_Click"
+													FontSize="11" Padding="10,6" Margin="0,0,8,4"
+													ToolTip.Tip="Remove from Library"
+													IsVisible="{Binding ShowRemoveFromLibrary}"/>
+										</WrapPanel>
+									</StackPanel>
+								</Grid>
+							</DockPanel>
+							<ScrollViewer x:Name="CatalogReviewDetailsHeroExpanded"
+										  MaxHeight="200"
+										  VerticalScrollBarVisibility="Auto"
+										  HorizontalScrollBarVisibility="Disabled"
+										  IsVisible="False">
+								<StackPanel Spacing="8">
+									<Button x:Name="CatalogReviewDetailsOpenRepoMobileButton"
+											Classes="options"
+											Content="Open Repo"
+											HorizontalAlignment="Left"
+											Click="CatalogReviewDetailsOpenRepo_Click"/>
+									<ItemsControl ItemsSource="{Binding DetailsFields}">
+										<ItemsControl.ItemTemplate>
+											<StaticResource ResourceKey="CatalogFieldDiffTemplate"/>
+										</ItemsControl.ItemTemplate>
+									</ItemsControl>
+								</StackPanel>
+							</ScrollViewer>
+							<StackPanel x:Name="CatalogReviewDetailsMobileActionsHost"
+										Spacing="8"
+										IsVisible="{x:Static services:PlatformCapabilities.IsMobile}">
+								<TextBlock Text="{Binding AddBlockedReason}"
+										   FontSize="12"
+										   Foreground="{DynamicResource ThemeTextSecondary}"
+										   TextWrapping="Wrap"
+										   IsVisible="{Binding HasAddBlockedReason}"/>
+								<WrapPanel x:Name="CatalogReviewDetailsActionsMobile"
+										   Orientation="Horizontal">
+									<Button Classes="options catalog-review-add" Content="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+											FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanAdd}"/>
+									<Button Classes="options catalog-review-merge" Content="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+											FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanMerge}"/>
+									<Button Classes="options" Content="Replace" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
+											FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanReplace}"/>
+									<Button Classes="options" Content="Ignore" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
+											FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding CanIgnore}"/>
+									<Button Classes="options" Content="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+											FontSize="11" Padding="10,6" Margin="0,0,8,4"
+											ToolTip.Tip="Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden."
+											IsVisible="{Binding ShowHideButton}"/>
+									<Button Classes="options" Content="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+											FontSize="11" Padding="10,6" Margin="0,0,8,4" IsVisible="{Binding ShowUnhideButton}"/>
+									<Button Classes="options catalog-remove-from-library"
+											Content="Remove"
+											Tag="{Binding IdentityKey}"
+											Click="CatalogSyncRowRemoveFromLibrary_Click"
+											FontSize="11" Padding="10,6" Margin="0,0,8,4"
+											ToolTip.Tip="Remove from Library"
+											IsVisible="{Binding ShowRemoveFromLibrary}"/>
+								</WrapPanel>
+							</StackPanel>
+							</StackPanel>
+						</Border>
+						<ScrollViewer x:Name="CatalogReviewDetailsScrollViewer"
+									  Grid.Row="1"
+									  VerticalScrollBarVisibility="Auto"
+									  Margin="24,12,24,24">
+							<StackPanel MaxWidth="900" Spacing="4" HorizontalAlignment="Stretch">
+								<TextBlock x:Name="CatalogReviewDetailsReadmeHeading"
+										   Text="README"
+										   FontSize="16"
+										   FontWeight="SemiBold"
+										   Foreground="{DynamicResource ThemeText}"
+										   IsVisible="False"/>
+								<StackPanel x:Name="CatalogReviewDetailsReadmeLoading"
+											Spacing="8"
+											IsVisible="False">
+									<ProgressBar Width="120"
+												 Height="4"
+												 HorizontalAlignment="Left"
+												 Minimum="0"
+												 Maximum="100"
+												 BorderThickness="0"
+												 Background="Transparent"
+												 IsIndeterminate="True"/>
+									<TextBlock Text="Loading README…"
+											   FontSize="12"
+											   Foreground="{DynamicResource ThemeTextSecondary}"/>
+								</StackPanel>
+								<ItemsControl x:Name="CatalogReviewDetailsReadmeContent"
+											  HorizontalAlignment="Stretch">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<StackPanel HorizontalAlignment="Stretch"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<ContentControl Content="{Binding}"
+															HorizontalAlignment="Stretch"
+															HorizontalContentAlignment="Stretch"/>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</StackPanel>
+						</ScrollViewer>
+					</Grid>
+				</Border>
+</UserControl>

@@ -15,7 +15,7 @@ public sealed class CommunityCatalogBootstrap
     public async Task<CommunityCatalogSyncResult> SyncCommunitySourcesFromIndexAsync(
         HttpClient httpClient,
         AppSettings settings,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool forcePlatformRefresh = false)
     {
         settings.EnsureInitialized();
         MigrateLegacyDefaultSource(settings);
@@ -32,6 +32,7 @@ public sealed class CommunityCatalogBootstrap
                 ? "Community catalog index was empty or invalid."
                 : null;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             index = null;
@@ -62,6 +63,7 @@ public sealed class CommunityCatalogBootstrap
             if (existing == null)
             {
                 var created = CreateSourceFromEntry(entry, remoteLocation);
+                created.PlatformMetadataUrl = index.PlatformMetadataUrl;
                 settings.AppCatalogSources.Add(created);
                 addedNames.Add(created.Name);
                 continue;
@@ -70,6 +72,7 @@ public sealed class CommunityCatalogBootstrap
             if (!existing.IsCommunityManaged)
                 continue;
 
+            existing.PlatformMetadataUrl = index.PlatformMetadataUrl;
             MigrateBundledCommunitySourceLocation(existing);
             if (UpdateSourceFromEntry(existing, entry, remoteLocation))
                 updatedCount++;
@@ -79,6 +82,8 @@ public sealed class CommunityCatalogBootstrap
 
         foreach (var source in settings.AppCatalogSources.Where(s => s.IsCommunityManaged))
             MigrateBundledCommunitySourceLocation(source);
+
+        await QuiverLauncher.Core.Services.PublishedPlatformCache.RefreshAsync(httpClient, index.PlatformMetadataUrl, forcePlatformRefresh, cancellationToken).ConfigureAwait(false);
 
         return new CommunityCatalogSyncResult
         {

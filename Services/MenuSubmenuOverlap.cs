@@ -24,6 +24,15 @@ public static class MenuSubmenuOverlap
         AvaloniaProperty.RegisterAttached<MenuItem, bool>("Enable", typeof(MenuSubmenuOverlap));
 
     private static readonly ConditionalWeakTable<MenuItem, PopupHook> Hooks = new();
+    private static readonly AttachedProperty<TopLevel?> HostProperty =
+        AvaloniaProperty.RegisterAttached<MenuItem, TopLevel?>("Host", typeof(MenuSubmenuOverlap), inherits: true);
+
+    internal static void SetFlyoutHost(MenuFlyout flyout, TopLevel? host)
+    {
+        foreach (var item in flyout.Items.OfType<MenuItem>())
+            if (host == null) item.ClearValue(HostProperty);
+            else item.SetValue(HostProperty, host);
+    }
 
     static MenuSubmenuOverlap()
     {
@@ -55,6 +64,15 @@ public static class MenuSubmenuOverlap
     public static bool ShouldOpenToTheLeft(double itemRight, double popupWidth, double windowRight) =>
         itemRight + popupWidth > windowRight;
 
+    internal static double CorrectHorizontalOffset(double currentOffset, double parentLeft, double parentRight,
+        double popupLeft, double popupRight, double scale)
+    {
+        var left = (popupLeft + popupRight) / 2 < (parentLeft + parentRight) / 2;
+        var correction = left ? parentLeft + OverlapPixels * scale - popupRight
+            : parentRight - OverlapPixels * scale - popupLeft;
+        return currentOffset + correction / scale;
+    }
+
     private static void OnEnableChanged(MenuItem item, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.GetNewValue<bool>())
@@ -65,6 +83,10 @@ public static class MenuSubmenuOverlap
 
     private static void Attach(MenuItem item)
     {
+        item.AttachedToVisualTree -= OnAttached;
+        item.AttachedToVisualTree += OnAttached;
+        item.DetachedFromVisualTree -= OnDetached;
+        item.DetachedFromVisualTree += OnDetached;
         item.TemplateApplied -= OnTemplateApplied;
         item.TemplateApplied += OnTemplateApplied;
         HookPopup(item, FindSubmenuPopup(item));
@@ -72,9 +94,20 @@ public static class MenuSubmenuOverlap
 
     private static void Detach(MenuItem item)
     {
+        item.AttachedToVisualTree -= OnAttached;
+        item.DetachedFromVisualTree -= OnDetached;
         item.TemplateApplied -= OnTemplateApplied;
         if (Hooks.TryGetValue(item, out var hook))
             hook.Unhook();
+    }
+
+    private static void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is MenuItem item && GetEnable(item)) HookPopup(item, FindSubmenuPopup(item));
+    }
+    private static void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is MenuItem item && Hooks.TryGetValue(item, out var hook)) hook.Unhook();
     }
 
     private static void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
@@ -87,7 +120,7 @@ public static class MenuSubmenuOverlap
 
     private static void HookPopup(MenuItem item, Popup? popup)
     {
-        var hook = Hooks.GetValue(item, _ => new PopupHook());
+        var hook = Hooks.GetValue(item, _ => new PopupHook(item));
         hook.Replace(popup, (_, _) => SchedulePlacementAndOverlap(item, popup));
     }
 
@@ -99,7 +132,8 @@ public static class MenuSubmenuOverlap
         if (popup == null)
             return;
 
-        Dispatcher.UIThread.Post(() => ApplyPlacementAndOverlap(item, popup), DispatcherPriority.Loaded);
+        if (Hooks.TryGetValue(item, out var hook))
+            hook.Schedule(() => ApplyPlacementAndOverlap(item, popup));
     }
 
     private static void ApplyPlacementAndOverlap(MenuItem item, Popup popup)
@@ -109,7 +143,7 @@ public static class MenuSubmenuOverlap
 
         if (ApplyWindowConstrainedPlacement(item, popup))
         {
-            Dispatcher.UIThread.Post(() => ApplyOverlap(item, popup), DispatcherPriority.Loaded);
+            if (Hooks.TryGetValue(item, out var hook)) hook.Schedule(() => ApplyOverlap(item, popup));
             return;
         }
 
@@ -135,7 +169,8 @@ public static class MenuSubmenuOverlap
             return false;
         }
 
-        var popupWidth = MeasurePopupWidth(popup);
+        var scale = host.RenderScaling;
+        var popupWidth = MeasurePopupWidth(popup, scale);
         var desired = ShouldOpenToTheLeft(itemRight.X, popupWidth, windowRight.X)
             ? PlacementMode.LeftEdgeAlignedTop
             : PlacementMode.RightEdgeAlignedTop;
@@ -147,7 +182,7 @@ public static class MenuSubmenuOverlap
         return true;
     }
 
-    private static double MeasurePopupWidth(Popup popup)
+    private static double MeasurePopupWidth(Popup popup, double scale)
     {
         if (popup.Child is Visual child && child.Bounds.Width > 0)
         {
@@ -158,15 +193,16 @@ public static class MenuSubmenuOverlap
             }
             catch (InvalidOperationException)
             {
-                return child.Bounds.Width;
+                return child.Bounds.Width * scale;
             }
         }
 
-        return FallbackSubmenuWidth;
+        return FallbackSubmenuWidth * scale;
     }
 
     private static TopLevel? GetApplicationTopLevel(MenuItem item)
     {
+        if (item.GetValue(HostProperty) is { } suppliedHost) return suppliedHost;
         var contextMenu = item.FindLogicalAncestorOfType<ContextMenu>()
             ?? item.GetVisualAncestors().OfType<ContextMenu>().FirstOrDefault();
         if (contextMenu?.PlacementTarget is Control target)
@@ -176,7 +212,11 @@ public static class MenuSubmenuOverlap
                 return fromTarget;
         }
 
-        return TopLevel.GetTopLevel(item);
+        // Follow logical popup placement targets for hosted flyout presenters.
+        foreach (var owner in item.GetLogicalAncestors().OfType<Popup>().Reverse())
+            if (owner.PlacementTarget is Control placementTarget && TopLevel.GetTopLevel(placementTarget) is Window window)
+                return window;
+        return TopLevel.GetTopLevel(item) is Window host ? host : null;
     }
 
     private static void ApplyOverlap(MenuItem item, Popup popup)
@@ -204,21 +244,59 @@ public static class MenuSubmenuOverlap
             return;
         }
 
-        var offset = ChooseHorizontalOffset(
+        var offset = CorrectHorizontalOffset(popup.HorizontalOffset,
             parentTopLeft.X,
             parentBottomRight.X,
             popupTopLeft.X,
             popupBottomRight.X,
-            OverlapPixels);
+            TopLevel.GetTopLevel(item)?.RenderScaling ?? 1);
 
         if (Math.Abs(popup.HorizontalOffset - offset) > 0.5)
             popup.HorizontalOffset = offset;
     }
 
-    private sealed class PopupHook
+    private sealed class PopupHook(MenuItem item)
     {
         private Popup? _popup;
         private EventHandler? _openedHandler;
+        private MenuSubmenuHover? _hover;
+        private TopLevel? _host;
+        private int _generation;
+        private bool _scheduled;
+
+        public void Schedule(Action action)
+        {
+            if (_scheduled) return;
+            _scheduled = true;
+            var generation = _generation;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (generation != _generation) return;
+                _scheduled = false;
+                if (_popup?.IsOpen == true && GetEnable(item)) action();
+            }, DispatcherPriority.Loaded);
+        }
+        private void Closed(object? sender, EventArgs e) { ++_generation; _scheduled = false; DetachHost(); }
+        private void Opened(object? sender, EventArgs e)
+        {
+            DetachHost();
+            _host = GetApplicationTopLevel(item);
+            if (_host != null) _host.PropertyChanged += HostChanged;
+            if (_host is WindowBase window) window.PositionChanged += PositionChanged;
+        }
+        private void PositionChanged(object? sender, PixelPointEventArgs e) => SchedulePlacementAndOverlap(item, _popup);
+        private void HostChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property.Name is "Bounds" or "ClientSize" or "RenderScaling" or "Position")
+                SchedulePlacementAndOverlap(item, _popup);
+        }
+        private void ChildSizeChanged(object? sender, SizeChangedEventArgs e) => SchedulePlacementAndOverlap(item, _popup);
+        private void DetachHost()
+        {
+            if (_host != null) _host.PropertyChanged -= HostChanged;
+            if (_host is WindowBase window) window.PositionChanged -= PositionChanged;
+            _host = null;
+        }
 
         public void Replace(Popup? popup, EventHandler openedHandler)
         {
@@ -229,11 +307,28 @@ public static class MenuSubmenuOverlap
             _popup = popup;
             _openedHandler = openedHandler;
             if (_popup != null)
+            {
+                _hover = new MenuSubmenuHover(item, _popup);
                 _popup.Opened += _openedHandler;
+                _popup.Opened += Opened;
+                _popup.Closed += Closed;
+                if (_popup.Child != null) _popup.Child.SizeChanged += ChildSizeChanged;
+            }
         }
 
         public void Unhook()
         {
+            ++_generation;
+            _scheduled = false;
+            _hover?.Dispose();
+            _hover = null;
+            DetachHost();
+            if (_popup != null)
+            {
+                _popup.Opened -= Opened;
+                _popup.Closed -= Closed;
+                if (_popup.Child != null) _popup.Child.SizeChanged -= ChildSizeChanged;
+            }
             if (_popup != null && _openedHandler != null)
                 _popup.Opened -= _openedHandler;
 

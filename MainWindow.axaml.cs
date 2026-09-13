@@ -20,26 +20,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = View;
 
-        if (View._settings.StartFullscreen)
-            WindowState = SteamDeckEnvironment.DesktopFullscreenWindowState();
-
-        Opened += (_, _) => View.HandleOpened();
-        Closing += (_, e) => View.HandleClosing(e);
-        Closed += (_, _) => View.HandleClosed();
-        Activated += (_, _) => View.HandleActivated();
-        Deactivated += (_, _) => View.HandleDeactivated();
-    }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-
-        if (change.Property != WindowStateProperty)
-            return;
-
-        View.HandleHostWindowStateChanged(
-            change.GetOldValue<WindowState>(),
-            change.GetNewValue<WindowState>());
+        _ = new DesktopHostController(this, View);
     }
 
     public void RestoreFromTray() => View.RestoreFromTray();
@@ -55,28 +36,4 @@ public partial class MainWindow : Window
 
     public void OpenGitLabApiTokenSettings() => View.OpenGitLabApiTokenSettings();
 
-    internal static int GetDefaultCatalogSourceCardActionIndex(IReadOnlyList<Control> controls)
-        => MainView.GetDefaultCatalogSourceCardActionIndex(controls);
-
-    internal static string FormatModsLoadedStatus(
-        int loaded,
-        bool isSearch,
-        bool canLoadMore,
-        int? totalCountHint)
-        => MainView.FormatModsLoadedStatus(loaded, isSearch, canLoadMore, totalCountHint);
-
-    internal static bool ShouldShowModsListLoading(bool isLoading, int rowCount)
-        => MainView.ShouldShowModsListLoading(isLoading, rowCount);
-
-    internal static bool ShouldShowCatalogReviewGrid(bool useGridView)
-        => MainView.ShouldShowCatalogReviewGrid(useGridView);
-
-    internal static bool ShouldShowCatalogReviewList(bool useGridView)
-        => MainView.ShouldShowCatalogReviewList(useGridView);
-
-    internal static bool ShouldShowCatalogReviewHelpLines(bool useGridView)
-        => MainView.ShouldShowCatalogReviewHelpLines(useGridView);
-
-    internal static bool ShouldShowCatalogReviewOpenRepo(string? repository)
-        => MainView.ShouldShowCatalogReviewOpenRepo(repository);
 }

@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.MessagePromptView" x:DataType="vm:MessagePromptViewModel" x:CompileBindings="True" IsVisible="{Binding IsOpen}">
+<Grid x:Name="Surface"
+
+			  >
+			<Border Background="#CC000000"
+					PointerPressed="MessagePromptDimmer_PointerPressed"/>
+			<Border x:Name="MessagePromptCard"
+					Background="{DynamicResource ThemeDarker}"
+					BorderBrush="{DynamicResource ThemeBorder}"
+					BorderThickness="1"
+					CornerRadius="8"
+					Padding="20"
+					MaxWidth="480"
+					Margin="24"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center">
+				<StackPanel Spacing="12">
+					<TextBlock x:Name="MessagePromptTitleText" Text="{Binding Title}"
+							   FontSize="18"
+							   FontWeight="Bold"
+							   Foreground="{DynamicResource ThemeText}"
+							   TextWrapping="Wrap"/>
+					<ScrollViewer MaxHeight="360"
+								  VerticalScrollBarVisibility="Auto">
+						<TextBlock x:Name="MessagePromptBodyText" Text="{Binding Body}"
+								   FontSize="13"
+								   Foreground="{DynamicResource ThemeText}"
+								   TextWrapping="Wrap"/>
+					</ScrollViewer>
+					<StackPanel Orientation="Horizontal"
+								Spacing="8"
+								HorizontalAlignment="Right">
+						<Button x:Name="MessagePromptYesButton" IsVisible="{Binding IsQuestion}"
+								Classes="options message-prompt"
+								Content="Yes"
+								MinWidth="100"
+								Click="MessagePromptYesButton_Click"/>
+						<Button x:Name="MessagePromptNoButton" IsVisible="{Binding IsQuestion}"
+								Classes="options message-prompt"
+								Content="No"
+								MinWidth="100"
+								Click="MessagePromptNoButton_Click"/>
+						<Button x:Name="MessagePromptCancelButton" IsVisible="{Binding IncludeCancel}"
+								Classes="options message-prompt"
+								Content="Cancel"
+								MinWidth="100"
+
+								Click="MessagePromptCancelButton_Click"/>
+						<Button x:Name="MessagePromptOkButton" IsVisible="{Binding !IsQuestion}"
+								Classes="options message-prompt"
+								Content="OK"
+								MinWidth="100"
+								Click="MessagePromptOkButton_Click"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+		</Grid>
+</UserControl>

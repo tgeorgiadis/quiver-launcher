@@ -17,6 +17,9 @@ public static class GameDialogService
 
     public static bool IsRateLimitError(Exception ex)
     {
+        if (ex is QuiverLauncher.Core.Services.ReleaseFetchException releaseError)
+            return releaseError.Result.IsRateLimited;
+
         var message = ex.Message;
         return message.Contains("403", StringComparison.OrdinalIgnoreCase)
             || message.Contains("429", StringComparison.OrdinalIgnoreCase)
@@ -48,11 +51,16 @@ public static class GameDialogService
         };
     }
 
-    public static async Task ShowWindowAsync(Window dialog)
+    public static async Task ShowWindowAsync(Window dialog, CancellationToken cancellationToken = default)
     {
+        if (!cancellationToken.CanBeCanceled) cancellationToken = LauncherSession.OperationCancellation;
+        cancellationToken.ThrowIfCancellationRequested();
+        using var cancellation = cancellationToken.Register(() => Dispatcher.UIThread.Post(() => dialog.Close()));
         if (TryGetDesktopMainWindow() is Window owner)
         {
+            DesktopInterfaceScaling.PrepareDialog(dialog, owner);
             await dialog.ShowDialog(owner);
+            cancellationToken.ThrowIfCancellationRequested();
             return;
         }
 
@@ -60,6 +68,7 @@ public static class GameDialogService
         dialog.Closed += (_, _) => closed.TrySetResult();
         dialog.Show();
         await closed.Task;
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     private static void WriteConsoleError(string title, string message)
@@ -80,8 +89,10 @@ public static class GameDialogService
             return;
         }
 
+        var operationToken = LauncherSession.OperationCancellation;
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
+            operationToken.ThrowIfCancellationRequested();
             if (TryGetDesktopMainWindow() is null && TryGetMainView() is MainView view)
             {
                 await view.ShowOverlayPromptAsync(message, title, isQuestion: false);
@@ -139,7 +150,7 @@ public static class GameDialogService
 
             GamepadModalDialogNavigation.Attach(messageBox);
 
-            await ShowWindowAsync(messageBox);
+            await ShowWindowAsync(messageBox, operationToken);
         });
     }
 
@@ -150,6 +161,7 @@ public static class GameDialogService
 
         var userChoice = false;
 
+        var operationToken = LauncherSession.OperationCancellation;
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var messageBox = new Window
@@ -211,7 +223,7 @@ public static class GameDialogService
                 messageBox.Tag = accepted;
             });
 
-            await ShowWindowAsync(messageBox);
+            await ShowWindowAsync(messageBox, operationToken);
             if (messageBox.Tag is bool tagResult)
                 userChoice = tagResult;
         });
@@ -226,8 +238,9 @@ public static class GameDialogService
     public static async Task<LinuxWindowsRunnerConfig?> ShowLinuxWindowsRunnerDialogAsync(
         string gamePath,
         LinuxWindowsRunnerConfig? existing = null,
-        bool isInstall = true)
+        bool isInstall = true, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (TryGetDesktopMainWindow() is not Window mainWindow)
         {
             var kind = existing?.Kind ?? WindowsRunnerService.GetPreferredDefaultKind();
@@ -243,8 +256,10 @@ public static class GameDialogService
 
         LinuxWindowsRunnerConfig? result = null;
 
+        var operationToken = LauncherSession.OperationCancellation;
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var protons = WindowsRunnerService.ListDetectedProtonInstallations();
             var wineAvailable = WindowsRunnerService.IsWineAvailable();
             var initial = existing ?? new LinuxWindowsRunnerConfig
@@ -500,7 +515,9 @@ public static class GameDialogService
                 }
             });
 
-            await ShowWindowAsync(messageBox);
+            using var cancellation = cancellationToken.Register(() => Dispatcher.UIThread.Post(() => { result = null; messageBox.Close(); }));
+            cancellationToken.ThrowIfCancellationRequested();
+            await ShowWindowAsync(messageBox, operationToken);
         });
 
         return result;
@@ -511,118 +528,19 @@ public static class GameDialogService
         if (!HasInteractiveUi())
             return;
 
+        var operationToken = LauncherSession.OperationCancellation;
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
-            var hyperlinkText = new TextBlock
-            {
-                Text = "https://github.com/settings/tokens",
-                Foreground = new SolidColorBrush(Color.FromRgb(0, 122, 255)),
-                Cursor = new Cursor(StandardCursorType.Hand),
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(10, 0, 0, 0),
-            };
-
-            hyperlinkText.PointerPressed += (_, _) =>
-            {
-                try
+            var messageBox = new Views.GitHubRateLimitDialog(
+                () => TryGetMainView()?.OpenGitHubApiTokenSettings(),
+                () =>
                 {
-                    UrlLauncher.Open("https://github.com/settings/tokens");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Failed to open URL: {ex.Message}");
-                }
-            };
-
-            var openSettingsButton = new Button
-            {
-                Content = "Open Settings",
-                MinWidth = 120,
-            };
-
-            var closeButton = new Button
-            {
-                Content = "Close",
-                MinWidth = 100,
-            };
-
-            var messageBox = new Window
-            {
-                Title = "Rate Limit Exceeded",
-                Width = 600,
-                Height = 450,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Content = new ScrollViewer
-                {
-                    Content = new StackPanel
-                    {
-                        Margin = new Thickness(20),
-                        Spacing = 15,
-                        Children =
-                        {
-                            new TextBlock
-                            {
-                                Text = "GitHub API rate limit exceeded.",
-                                FontWeight = FontWeight.Bold,
-                                FontSize = 16,
-                                TextWrapping = TextWrapping.Wrap,
-                            },
-                            new TextBlock
-                            {
-                                Text = "GitHub limits anonymous requests to 60 per hour. The limit resets one hour after depletion.",
-                                TextWrapping = TextWrapping.Wrap,
-                            },
-                            new TextBlock
-                            {
-                                Text = "To avoid this, add a GitHub API token in Settings → Advanced:",
-                                FontWeight = FontWeight.SemiBold,
-                                TextWrapping = TextWrapping.Wrap,
-                                Margin = new Thickness(0, 10, 0, 0),
-                            },
-                            new TextBlock
-                            {
-                                Text = "1. Click the link below to create a token:",
-                                TextWrapping = TextWrapping.Wrap,
-                            },
-                            hyperlinkText,
-                            new TextBlock { Text = "2. Click 'Generate new token (classic)'", TextWrapping = TextWrapping.Wrap },
-                            new TextBlock { Text = "3. Give it a name (no special permissions needed)", TextWrapping = TextWrapping.Wrap },
-                            new TextBlock { Text = "4. Click 'Generate token' at the bottom", TextWrapping = TextWrapping.Wrap },
-                            new TextBlock { Text = "5. Copy the token and paste it in Settings → Advanced → GitHub API Token", TextWrapping = TextWrapping.Wrap },
-                            new TextBlock
-                            {
-                                Text = "Do not share your token with anyone!",
-                                Foreground = new SolidColorBrush(Color.FromRgb(255, 149, 0)),
-                                FontWeight = FontWeight.Bold,
-                                TextWrapping = TextWrapping.Wrap,
-                                Margin = new Thickness(0, 10, 0, 0),
-                            },
-                            new StackPanel
-                            {
-                                Orientation = Orientation.Horizontal,
-                                HorizontalAlignment = HorizontalAlignment.Center,
-                                Spacing = 10,
-                                Margin = new Thickness(0, 10, 0, 0),
-                                Children = { openSettingsButton, closeButton },
-                            },
-                        },
-                    },
-                },
-            };
-
-            openSettingsButton.Click += (_, _) =>
-            {
-                messageBox.Close();
-                TryGetMainView()?.OpenGitHubApiTokenSettings();
-            };
-            closeButton.Click += (_, _) => messageBox.Close();
-
-            GamepadModalDialogNavigation.Attach(messageBox);
-
-            await ShowWindowAsync(messageBox);
+                    try { UrlLauncher.Open(GitHubTokenSetupGuide.CreateTokenUrl); }
+                    catch (Exception ex) { Debug.WriteLine($"Failed to open GitHub token page: {ex.Message}"); }
+                });
+            await ShowWindowAsync(messageBox, operationToken);
         });
     }
-
     public static async Task ShowGitLabRateLimitErrorAsync()
     {
         if (!HasInteractiveUi())
@@ -633,6 +551,7 @@ public static class GameDialogService
             return;
         }
 
+        var operationToken = LauncherSession.OperationCancellation;
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var hyperlinkText = new TextBlock
@@ -739,7 +658,9 @@ public static class GameDialogService
 
             GamepadModalDialogNavigation.Attach(messageBox);
 
-            await ShowWindowAsync(messageBox);
+
+
+            await ShowWindowAsync(messageBox, operationToken);
         });
     }
 }

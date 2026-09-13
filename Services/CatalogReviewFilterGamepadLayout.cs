@@ -2,7 +2,7 @@ namespace QuiverLauncher.Services;
 
 /// <summary>
 /// Index layout for catalog-review gamepad focus:
-/// [status chips][tag chips][bulk actions].
+/// [status chips][tag chips][bulk actions][platform notice actions].
 /// </summary>
 public static class CatalogReviewFilterGamepadLayout
 {
@@ -11,22 +11,26 @@ public static class CatalogReviewFilterGamepadLayout
         Status,
         Tags,
         Bulk,
+        Notice,
     }
 
-    public readonly record struct Ranges(int StatusCount, int TagCount, int BulkCount)
+    public readonly record struct Ranges(int StatusCount, int TagCount, int BulkCount, int NoticeCount = 0)
     {
         public int StatusStart => 0;
         public int TagStart => StatusCount;
         public int BulkStart => StatusCount + TagCount;
-        public int Total => StatusCount + TagCount + BulkCount;
+        public int NoticeStart => StatusCount + TagCount + BulkCount;
+        public int Total => NoticeStart + NoticeCount;
 
         public bool HasStatus => StatusCount > 0;
         public bool HasTags => TagCount > 0;
         public bool HasBulk => BulkCount > 0;
+        public bool HasNotice => NoticeCount > 0;
 
         /// <summary>Index to focus when moving Up from the review list into the filter strip.</summary>
         public int PreferredIndexFromList =>
-            HasBulk ? BulkStart
+            HasNotice ? NoticeStart
+            : HasBulk ? BulkStart
             : HasTags ? TagStart
             : HasStatus ? StatusStart
             : -1;
@@ -34,8 +38,10 @@ public static class CatalogReviewFilterGamepadLayout
         public Row ResolveRow(int index)
         {
             if (index < 0 || Total <= 0)
-                return HasStatus ? Row.Status : HasTags ? Row.Tags : Row.Bulk;
+                return HasStatus ? Row.Status : HasTags ? Row.Tags : HasBulk ? Row.Bulk : HasNotice ? Row.Notice : Row.Bulk;
 
+            if (HasNotice && index >= NoticeStart)
+                return Row.Notice;
             if (HasBulk && index >= BulkStart)
                 return Row.Bulk;
             if (HasTags && index >= TagStart)
@@ -46,6 +52,7 @@ public static class CatalogReviewFilterGamepadLayout
         public int LocalIndex(int absoluteIndex) =>
             ResolveRow(absoluteIndex) switch
             {
+                Row.Notice => Math.Max(0, absoluteIndex - NoticeStart),
                 Row.Bulk => Math.Max(0, absoluteIndex - BulkStart),
                 Row.Tags => Math.Max(0, absoluteIndex - TagStart),
                 _ => Math.Max(0, absoluteIndex - StatusStart),
@@ -54,6 +61,7 @@ public static class CatalogReviewFilterGamepadLayout
         public int AbsoluteIndex(Row row, int localIndex) =>
             row switch
             {
+                Row.Notice => NoticeStart + localIndex,
                 Row.Bulk => BulkStart + localIndex,
                 Row.Tags => TagStart + localIndex,
                 _ => StatusStart + localIndex,
@@ -62,17 +70,19 @@ public static class CatalogReviewFilterGamepadLayout
         public int RowCount(Row row) =>
             row switch
             {
+                Row.Notice => NoticeCount,
                 Row.Bulk => BulkCount,
                 Row.Tags => TagCount,
                 _ => StatusCount,
             };
     }
 
-    public static Ranges FromCounts(int statusCount, int tagCount, int bulkCount) =>
+    public static Ranges FromCounts(int statusCount, int tagCount, int bulkCount, int noticeCount = 0) =>
         new(
             Math.Max(0, statusCount),
             Math.Max(0, tagCount),
-            Math.Max(0, bulkCount));
+            Math.Max(0, bulkCount),
+            Math.Max(0, noticeCount));
 
     /// <summary>
     /// Horizontal move that clamps at both ends (no wrap). Used for the tag chip row.

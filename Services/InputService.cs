@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace QuiverLauncher.Services
 {
-    public class InputService : IDisposable
+    public class InputService : IDisposable, IInputBindingSource
     {
         private readonly Control _mainWindow;
         private DispatcherTimer? _gamepadTimer;
@@ -811,6 +811,9 @@ namespace QuiverLauncher.Services
         {
             if (!_disposed)
             {
+                _modalDialogNavigation.Unconfigure(this);
+                _contextMenuNavigation.Unconfigure(this);
+                NavigationInterceptor = null;
                 _gamepadTimer?.Stop();
                 _gamepadTimer = null;
 

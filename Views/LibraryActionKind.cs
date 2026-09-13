@@ -1,0 +1,33 @@
+using QuiverLauncher.Models;
+namespace QuiverLauncher.Views;
+public enum LibraryActionKind
+{
+    AddToSteam,
+    AutoUpdateMenu,
+    ChangeVersion,
+    ConfigureWindowsRunner,
+    CreateShortcut,
+    DeleteGameFromLibrary,
+    EditCustomDisplayNameMenu,
+    EditGameEntry,
+    EditTagsMenu,
+    EmptyLibraryAddApp,
+    EmptyLibraryBrowseCatalog,
+    ForceUpdate,
+    HideGame,
+    LaunchGameMenu,
+    LibrarySearchClear,
+    LocateExistingInstall,
+    OpenFolder,
+    OpenGitHubPage,
+    OpenMods,
+    RemoveCustomIcon,
+    RemoveGameEntry,
+    ReviewCatalogChanges,
+    SelectDifferentExecutable,
+    SetCustomIcon,
+    ShowChangelog,
+    ShowReadme,
+    SkipUpdate,
+    UpdateNowMenu,
+}

@@ -1,0 +1,242 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
+             x:Class="QuiverLauncher.Views.AppEntryEditorView" x:DataType="vm:AppEntryEditorViewModel" x:CompileBindings="True">
+<Border x:Name="Surface"
+						XYFocus.NavigationModes="Gamepad,Remote"
+						XYFocus.UpNavigationStrategy="Projection"
+						XYFocus.DownNavigationStrategy="Projection"
+						XYFocus.LeftNavigationStrategy="Projection"
+						XYFocus.RightNavigationStrategy="Projection"
+						Grid.RowSpan="2"
+						Background="#CC000000"
+						IsVisible="True"
+						ZIndex="100">
+					<Border x:Name="EntryFormDialogPanel"
+							Background="{DynamicResource ThemeDarker}"
+							BorderBrush="{DynamicResource ThemeBorder}"
+							BorderThickness="1"
+							CornerRadius="8"
+							Padding="20"
+							MaxWidth="480">
+						<DockPanel>
+							<TextBlock x:Name="FormTitleText"
+									   DockPanel.Dock="Top"
+									   Text="{Binding Title}"
+									   FontSize="18"
+									   FontWeight="Bold"
+									   Foreground="{DynamicResource ThemeText}"
+									   Margin="0,0,0,12"/>
+							<StackPanel DockPanel.Dock="Bottom" Spacing="12" Margin="0,16,0,0">
+								<Border x:Name="ValidationStatusBorder"
+										Background="{DynamicResource ThemeBase}"
+										BorderBrush="{DynamicResource ThemeBorder}"
+										BorderThickness="1"
+										CornerRadius="4"
+										Padding="12"
+										IsVisible="{Binding HasValidation}">
+									<TextBlock x:Name="ValidationStatusText" Text="{Binding Validation}"
+											   Foreground="{DynamicResource ThemeText}"
+											   FontSize="12"
+											   TextWrapping="Wrap"/>
+								</Border>
+								<StackPanel Orientation="Horizontal"
+											Spacing="8"
+											HorizontalAlignment="Right">
+									<Button x:Name="CancelButton"
+											Classes="options"
+											Content="Cancel"
+											Width="100"
+											Click="CancelForm_Click"/>
+									<Button x:Name="CreateEditButton"
+											Classes="options"
+											Content="{Binding SaveLabel}" IsEnabled="{Binding CanSave}"
+											Width="120"
+											Click="CreateNewEntry_Click"/>
+								</StackPanel>
+							</StackPanel>
+							<ScrollViewer x:Name="EntryFormFieldsScroll"
+										  Padding="0,0,4,0"
+										  VerticalScrollBarVisibility="Auto"
+										  HorizontalScrollBarVisibility="Disabled">
+								<StackPanel Spacing="12" Margin="0,0,16,0">
+									<TextBlock Text="Name"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameNameTextBox" Text="{Binding Name, Mode=TwoWay}"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<TextBlock Text="Project"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameProjectTextBox" Text="{Binding Project, Mode=TwoWay}"
+											 Watermark="Team / project / author (optional)"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<TextBlock Text="Custom Name"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameCustomDisplayNameTextBox" Text="{Binding CustomDisplayName, Mode=TwoWay}"
+											 Watermark="Overrides library name style when set"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<CheckBox x:Name="NewGameManuallyManagedCheckBox"
+											  Content="Manually managed (no repository or updates)"
+											  Foreground="{DynamicResource ThemeText}"
+											  VerticalAlignment="Center"
+											  IsChecked="{Binding ManuallyManaged, Mode=TwoWay}"/>
+
+									<TextBlock x:Name="NewGameRepositorySourceLabel" IsVisible="{Binding ShowRepository}"
+											   Text="Repository Source"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<ComboBox x:Name="NewGameRepositorySourceComboBox" SelectionChanged="RepositorySource_SelectionChanged" IsVisible="{Binding ShowRepository}"
+											  Foreground="{DynamicResource ThemeText}"
+											  Background="{DynamicResource ThemeBase}"
+											  BorderBrush="{DynamicResource ThemeBorder}"
+											  BorderThickness="1"
+											  CornerRadius="4"
+											  Padding="8"
+											  HorizontalAlignment="Stretch"
+											  SelectedIndex="0">
+										<ComboBoxItem Content="GitHub" Tag="github"/>
+										<ComboBoxItem Content="GitLab" Tag="gitlab"/>
+									</ComboBox>
+
+									<TextBlock x:Name="NewGameRepositoryLabel" IsVisible="{Binding ShowRepository}"
+											   Text="Repository"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameRepoTextBox" IsVisible="{Binding ShowRepository}" Text="{Binding Repository, Mode=TwoWay}"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<TextBlock x:Name="NewGameReleaseAssetFilterLabel" IsVisible="{Binding ShowRepository}"
+											   Text="Release asset filter"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameReleaseAssetFilterTextBox" IsVisible="{Binding ShowRepository}" Text="{Binding ReleaseAssetFilter, Mode=TwoWay}"
+											 Watermark="If this repo ships more than one game, text that appears only in this game’s filenames (e.g. EXIT1)"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<TextBlock Text="Folder Name"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameFolderTextBox" Text="{Binding FolderName, Mode=TwoWay}"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<TextBlock Text="Tags"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameTagsTextBox" Text="{Binding Tags, Mode=TwoWay}"
+											 Watermark="e.g. n64, recomp"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"
+											 AcceptsReturn="False"
+											 TextWrapping="Wrap"
+											 MinHeight="56"/>
+
+									<TextBlock Text="Icon URL"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameIconTextBox" Text="{Binding IconUrl, Mode=TwoWay}"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<TextBlock Text="Files To Add"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameFilesToAddTextBox" Text="{Binding FilesToAdd, Mode=TwoWay}"
+											 Watermark="e.g. portable.txt"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<TextBlock Text="Mods Path"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameModsPathTextBox" Text="{Binding ModsPath, Mode=TwoWay}"
+											 Watermark="e.g. mods"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"/>
+
+									<CheckBox x:Name="NewGameModsFolderPerModCheckBox" IsChecked="{Binding ModsFolderPerMod, Mode=TwoWay}"
+											  Content="Install each mod into its own folder"
+											  Foreground="{DynamicResource ThemeText}"
+											  VerticalAlignment="Center"/>
+
+									<TextBlock Text="Mod Sources"
+											   FontSize="13"
+											   FontWeight="SemiBold"
+											   Foreground="{DynamicResource ThemeText}"/>
+									<TextBox x:Name="NewGameModsSourcesTextBox" Text="{Binding ModsSources, Mode=TwoWay}"
+											 Watermark="Thunderstore URL/slug or GameBanana mods/games/{id} (one per line)"
+											 Foreground="{DynamicResource ThemeText}"
+											 Background="{DynamicResource ThemeBase}"
+											 BorderBrush="{DynamicResource ThemeBorder}"
+											 BorderThickness="1"
+											 CornerRadius="4"
+											 Padding="8"
+											 AcceptsReturn="True"
+											 TextWrapping="Wrap"
+											 MinHeight="72"/>
+								</StackPanel>
+							</ScrollViewer>
+						</DockPanel>
+					</Border>
+				</Border>
+</UserControl>

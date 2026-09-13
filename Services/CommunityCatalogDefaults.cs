@@ -20,13 +20,11 @@ public static class CommunityCatalogDefaults
 
     public const string FirstRunWelcomeMessage =
         """
-        Welcome to Quiver Launcher!
+        Discover community apps and manage downloads and updates in one place.
 
-        Quiver Launcher is an app manager for downloading releases from GitHub repositories.
+        Browse the app catalog, choose what you'd like to add, then download it from your library.
 
-        To get started, browse the community app catalog lists and choose which apps to add to your library. An internet connection is required the first time to load the catalog lists. Once added, you can download apps from your library.
-
-        Let's open the catalog now.
+        You'll need an internet connection to load the catalog and download apps.
         """;
 
     public static bool IsLegacyDefaultSource(AppCatalogSource source) =>

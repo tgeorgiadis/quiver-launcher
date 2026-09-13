@@ -130,18 +130,19 @@ public class CatalogPlatformSupportTests : IDisposable
     }
 
     [Fact]
-    public void AppMatches_unknown_cache_stays_visible()
+    public void AppMatches_unknown_cache_is_excluded_from_specific_platforms()
     {
         var repo = UniqueRepo("unknown");
         CatalogPlatformSupport.AppMatches("github", repo, null, ["Windows"])
-            .Should().BeTrue();
+            .Should().BeFalse();
+        CatalogPlatformSupport.AppMatches("github", repo, null, []).Should().BeTrue();
     }
 
     [Fact]
     public void AppMatches_empty_asset_index_is_hidden_on_android()
     {
         var repo = UniqueRepo("empty-index");
-        GitHubApiCache.SetCache(
+        SeedCache(
             "github",
             repo,
             version: string.Empty,
@@ -158,17 +159,18 @@ public class CatalogPlatformSupportTests : IDisposable
     }
 
     [Fact]
-    public void AppMatches_no_repository_stays_visible()
+    public void AppMatches_no_repository_is_excluded_from_specific_platforms()
     {
         CatalogPlatformSupport.AppMatches("github", null, null, ["Android"])
-            .Should().BeTrue();
+            .Should().BeFalse();
+        CatalogPlatformSupport.AppMatches("github", null, null, []).Should().BeTrue();
     }
 
     [Fact]
     public void AppMatches_known_mismatch_is_hidden()
     {
         var repo = UniqueRepo("mac-only");
-        GitHubApiCache.SetCache("github", repo, "v1.0.0", "etag", Release("v1.0.0", "game-macos.dmg"));
+        SeedCache("github", repo, "v1.0.0", "etag", Release("v1.0.0", "game-macos.dmg"));
 
         CatalogPlatformSupport.AppMatches("github", repo, null, ["Windows"])
             .Should().BeFalse();
@@ -180,7 +182,7 @@ public class CatalogPlatformSupportTests : IDisposable
     public void AppMatches_release_asset_filter_limits_platforms()
     {
         var repo = UniqueRepo("shared");
-        GitHubApiCache.SetCache(
+        SeedCache(
             "github",
             repo,
             "v2.0.0",
@@ -196,7 +198,7 @@ public class CatalogPlatformSupportTests : IDisposable
     public void SetCache_writes_asset_names()
     {
         var repo = UniqueRepo("named");
-        GitHubApiCache.SetCache(
+        SeedCache(
             "github",
             repo,
             "v3.0.0",
@@ -272,13 +274,13 @@ public class CatalogPlatformSupportTests : IDisposable
     }
 
     [Fact]
-    public void GetFilteredRows_applies_platform_filter_with_unknown_visible()
+    public void GetFilteredRows_includes_labeled_unknown_platforms_but_bulk_requires_verification()
     {
         var windowsRepo = UniqueRepo("win-app");
         var macRepo = UniqueRepo("mac-app");
         var unknownRepo = UniqueRepo("pending");
-        GitHubApiCache.SetCache("github", windowsRepo, "v1", "e", Release("v1", "game-win.exe"));
-        GitHubApiCache.SetCache("github", macRepo, "v1", "e", Release("v1", "game-macos.dmg"));
+        SeedCache("github", windowsRepo, "v1", "e", Release("v1", "game-win.exe"));
+        SeedCache("github", macRepo, "v1", "e", Release("v1", "game-macos.dmg"));
 
         var viewModel = new CatalogSyncViewModel
         {
@@ -299,6 +301,36 @@ public class CatalogPlatformSupportTests : IDisposable
             .Select(row => row.DisplayName)
             .Should()
             .BeEquivalentTo("Win Game", "Pending", "Manual");
+        viewModel.UnverifiedPlatformCount.Should().Be(2);
+        viewModel.GetFilteredBulkAddRows().Select(row => row.DisplayName).Should().BeEquivalentTo("Win Game");
+        viewModel.PlatformFilters = [];
+        viewModel.GetFilteredRows().Should().HaveCount(4);
+    }
+
+    [Theory]
+    [InlineData("mac")]
+    [InlineData("unknown")]
+    [InlineData("manual")]
+    public void Pending_review_can_be_revealed_without_changing_saved_platforms(string kind)
+    {
+        var repo = kind == "manual" ? "" : UniqueRepo(kind);
+        if (kind == "mac") SeedCache("github", repo, "v1", "e", Release("v1", "app.dmg"));
+        var settings = new AppSettings { CatalogPlatformFilters = ["Windows"] };
+        var source = new AppCatalogSource { CachedListVersion = "1" };
+        var model = new CatalogSyncViewModel { PlatformFilters = settings.CatalogPlatformFilters, ReviewFilter = CatalogReviewFilter.NeedsReview };
+        model.Refresh(source, [], [new() { Repository = repo, Name = "Pending", FolderName = "Pending" }]);
+        model.GetFilteredRows().Should().HaveCount(kind == "mac" ? 0 : 1);
+        model.NeedsReviewCount.Should().Be(kind == "mac" ? 0 : 1);
+        if (kind != "mac") model.GetFilteredBulkAddRows().Should().BeEmpty();
+        model.ShowHiddenPendingReviews.Should().BeFalse();
+        model.ShowNeedsReviewCompleteState.Should().Be(kind == "mac");
+        model.RevealAllPendingReviews();
+        model.GetFilteredRows().Should().ContainSingle();
+        model.ShowHiddenPendingReviews.Should().BeFalse();
+        settings.CatalogPlatformFilters.Should().Equal("Windows");
+        CatalogCompareService.IgnoreChangesForCurrentVersion(source, model.AllRows.Single().ReviewKey);
+        model.NeedsReviewCount.Should().Be(0);
+        model.ShowNeedsReviewCompleteState.Should().BeTrue();
     }
 
     [Fact]
@@ -306,7 +338,7 @@ public class CatalogPlatformSupportTests : IDisposable
     {
         var cachedRepo = UniqueRepo("cached");
         var pendingRepo = UniqueRepo("needs-fetch");
-        GitHubApiCache.SetCache("github", cachedRepo, "v1", "e", Release("v1", "game-win.exe"));
+        SeedCache("github", cachedRepo, "v1", "e", Release("v1", "game-win.exe"));
 
         var rows = new List<CatalogSyncRowItem>
         {
@@ -324,6 +356,12 @@ public class CatalogPlatformSupportTests : IDisposable
 
         var pending = CatalogReleaseIndexWarmup.CollectPending(rows);
         pending.Select(target => target.Repository).Should().Equal(pendingRepo);
+    }
+
+    private static void SeedCache(string provider, string repo, string version, string etag, GitHubRelease? release = null, bool persist = true, bool replaceAssetNames = false)
+    {
+        GitHubApiCache.SetCache(provider, repo, version, etag, release, persist, replaceAssetNames);
+        CatalogPlatformIndex.Set(provider, repo, null, null, release);
     }
 
     private static string UniqueRepo(string suffix) =>

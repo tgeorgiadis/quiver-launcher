@@ -15,7 +15,7 @@ namespace QuiverLauncher.Core.Services
             HttpClient httpClient,
             string repository,
             string? token = null,
-            string? etag = null)
+            string? etag = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(repository))
             {
@@ -26,42 +26,9 @@ namespace QuiverLauncher.Core.Services
             }
 
             var encodedProject = Uri.EscapeDataString(repository.Trim());
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                $"{ApiBaseUrl}/projects/{encodedProject}/releases");
-
-            if (!string.IsNullOrWhiteSpace(etag))
-            {
-                request.Headers.TryAddWithoutValidation("If-None-Match", etag);
-            }
-
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                request.Headers.TryAddWithoutValidation("PRIVATE-TOKEN", token);
-            }
-
-            var response = await httpClient.SendAsync(request).ConfigureAwait(false);
-
-            if (response.StatusCode == HttpStatusCode.NotModified)
-            {
-                return new GitHubReleaseFetchResult
-                {
-                    StatusCode = response.StatusCode,
-                    ETag = response.Headers.ETag?.Tag
-                };
-            }
-
-            response.EnsureSuccessStatusCode();
-
-            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var releases = MapReleasesFromJson(responseContent);
-
-            return new GitHubReleaseFetchResult
-            {
-                StatusCode = response.StatusCode,
-                Releases = releases,
-                ETag = response.Headers.ETag?.Tag
-            };
+            return await ReleaseRequestCoordinator.For(httpClient).FetchAsync(httpClient,
+                new Uri($"{ApiBaseUrl}/projects/{encodedProject}/releases"), "gitlab", token,
+                MapReleasesFromJson, cancellationToken).ConfigureAwait(false);
         }
 
         public static List<GitHubRelease> MapReleasesFromJson(string json)

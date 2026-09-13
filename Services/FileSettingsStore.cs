@@ -21,7 +21,30 @@ public class FileSettingsStore : ISettingsStore
 
     public AppSettings Load()
     {
-        _current = ReadFromDisk();
+        var loaded = ReadFromDisk();
+        // These summaries are intentionally not serialized. Reloading preferences
+        // must not erase already computed catalog membership and review counts.
+        var previous = _current;
+        foreach (var source in loaded.AppCatalogSources)
+        {
+            var old = previous.AppCatalogSources.FirstOrDefault(s => s.Id == source.Id);
+            if (old == null || old.Location != source.Location ||
+                old.CachedListVersion != source.CachedListVersion || old.LastFetchedUtc != source.LastFetchedUtc)
+                continue;
+            source.LibraryAppCount = old.LibraryAppCount;
+            source.ListAppCount = old.ListAppCount;
+            if (old.AcknowledgedListVersion == source.AcknowledgedListVersion &&
+                old.UpdateAvailable == source.UpdateAvailable &&
+                previous.GitHubApiToken == loaded.GitHubApiToken && previous.GitLabApiToken == loaded.GitLabApiToken &&
+                old.HiddenFromReviewRepositories.SequenceEqual(source.HiddenFromReviewRepositories) &&
+                old.IgnoredChangesAtVersion.Count == source.IgnoredChangesAtVersion.Count &&
+                old.IgnoredChangesAtVersion.All(pair => source.IgnoredChangesAtVersion.TryGetValue(pair.Key, out var value) && value == pair.Value))
+            {
+                source.PendingReviewCount = old.PendingReviewCount;
+                source.PlatformExcludedReviewCount = old.PlatformExcludedReviewCount;
+            }
+        }
+        _current = loaded;
         return _current;
     }
 

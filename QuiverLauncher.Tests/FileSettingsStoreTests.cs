@@ -35,7 +35,7 @@ public class FileSettingsStoreTests : IDisposable
         store.Current.SlotSize.Should().Be(180);
         store.Current.IconSize.Should().Be(124);
         store.Current.ActionButtonSize.Should().Be(36);
-        store.Current.LibraryCardTagMaxLines.Should().Be(2);
+        store.Current.LibraryCardTagMaxLines.Should().Be(1);
         store.Current.LibraryCardTagZeroMeansHidden.Should().BeTrue();
         store.Current.IconMargin.Should().Be(0);
         store.Current.SlotTextMargin.Should().Be(0);
@@ -123,6 +123,47 @@ public class FileSettingsStoreTests : IDisposable
         store.Save(settings);
 
         store.Current.LocalFirstCatalogMigrationComplete.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Reload_preserves_session_catalog_counts_without_persisting_them()
+    {
+        var store = new FileSettingsStore(_settingsPath);
+        var source = new AppCatalogSource { Id = "nintendo", Location = "catalog.json", CachedListVersion = "1" };
+        store.Current.AppCatalogSources = [source];
+        store.Save(store.Current);
+        source.LibraryAppCount = 12;
+        source.ListAppCount = 62;
+        source.PendingReviewCount = 48;
+        source.PlatformExcludedReviewCount = 2;
+
+        var reloaded = store.Load().AppCatalogSources.Single();
+        reloaded.LibraryAppCount.Should().Be(12);
+        reloaded.ListAppCount.Should().Be(62);
+        reloaded.PendingReviewCount.Should().Be(48);
+        reloaded.PlatformExcludedReviewCount.Should().Be(2);
+        new FileSettingsStore(_settingsPath).Current.AppCatalogSources.Single().ListAppCount.Should().Be(0,
+            "derived counts are session state, not settings or a schema change");
+    }
+
+    [Theory]
+    [InlineData("location")]
+    [InlineData("version")]
+    [InlineData("fetched")]
+    public void Reload_does_not_reuse_counts_for_a_changed_catalog(string change)
+    {
+        var store = new FileSettingsStore(_settingsPath);
+        store.Current.AppCatalogSources = [new() { Id = "source", Location = "old.json", CachedListVersion = "1" }];
+        store.Save(store.Current);
+        store.Current.AppCatalogSources[0].ListAppCount = 62;
+        var other = new FileSettingsStore(_settingsPath);
+        var changed = other.Current.AppCatalogSources[0];
+        if (change == "location") changed.Location = "new.json";
+        if (change == "version") changed.CachedListVersion = "2";
+        if (change == "fetched") changed.LastFetchedUtc = DateTime.UtcNow;
+        other.Save(other.Current);
+
+        store.Load().AppCatalogSources[0].ListAppCount.Should().Be(0);
     }
 
     [Fact]

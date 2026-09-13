@@ -83,7 +83,7 @@ public class GamepadBindingsTests
     }
 
     [Fact]
-    public void EnsureInitialized_restores_defaults_for_null_or_empty_maps()
+    public void EnsureInitialized_restores_missing_defaults_but_preserves_explicit_unbinding()
     {
         var settings = new AppSettings
         {
@@ -98,7 +98,7 @@ public class GamepadBindingsTests
             [GamepadAction.Confirm] = [],
         };
         settings.EnsureInitialized();
-        settings.GamepadBindings[GamepadAction.Confirm].Should().NotBeEmpty();
+        settings.GamepadBindings[GamepadAction.Confirm].Should().BeEmpty();
         settings.GamepadBindings.Should().ContainKey(GamepadAction.NavRight);
     }
 }

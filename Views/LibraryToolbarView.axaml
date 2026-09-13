@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.LibraryToolbarView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
+<Grid x:Name="Surface" ColumnSpacing="12">
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="220"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+							<Grid x:Name="LibrarySearchHost" MaxWidth="220" MinWidth="120" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+							<TextBox x:Name="LibrarySearchTextBox"
+									 Watermark="Search this list"
+									 MinHeight="32"
+									 FontSize="12"
+									 Padding="8,0,28,0"
+									 VerticalAlignment="Center"
+									 VerticalContentAlignment="Center"
+									 TextChanged="LibrarySearch_TextChanged"
+									 />
+							<Button x:Name="LibrarySearchClearButton"
+									Classes="options"
+									Content="×"
+									FontSize="14"
+									Padding="6,0"
+									MinHeight="24"
+									MinWidth="24"
+									HorizontalAlignment="Right"
+									VerticalAlignment="Center"
+									Margin="0,0,4,0"
+									IsVisible="False"
+									ToolTip.Tip="Clear search"
+									Click="LibrarySearchClear_Click"/>
+							</Grid>
+							<Button x:Name="AddNewEntryButton" Grid.Column="1"
+									Classes="options"
+									Content="+ Add"
+									ToolTip.Tip="Add New Entry"
+									FontSize="14"
+									FontWeight="Normal"
+									Foreground="{DynamicResource ThemeText}"
+									Padding="12,8"
+									MinHeight="32"
+									VerticalAlignment="Center"
+									Margin="0"
+									Click="AddNewEntryButton_Click"/>
+
+							<ComboBox x:Name="SortByComboBox" Grid.Column="2"
+									  MaxWidth="200"
+									  ToolTip.Tip="{Binding SelectedItem.Content, RelativeSource={RelativeSource Self}, x:CompileBindings=False}"
+									  Foreground="{DynamicResource ThemeText}"
+									  Background="{DynamicResource ThemeDarker}"
+									  BorderBrush="{DynamicResource ThemeBorder}"
+									  MinHeight="32"
+									  VerticalAlignment="Center"
+									  Margin="0"
+									  SelectionChanged="SortByComboBox_SelectionChanged">
+								<ComboBoxItem Content="Name (A-Z)" Tag="Name"/>
+								<ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
+								<ComboBoxItem Content="Installed First" Tag="Installed"/>
+								<ComboBoxItem Content="Not Installed First" Tag="NotInstalled"/>
+								<ComboBoxItem Content="Last Played" Tag="LastPlayed"/>
+							</ComboBox>
+							</Grid>
+</UserControl>

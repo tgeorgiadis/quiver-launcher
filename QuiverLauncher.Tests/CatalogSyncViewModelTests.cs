@@ -8,13 +8,36 @@ namespace QuiverLauncher.Tests;
 
 public class CatalogSyncViewModelTests
 {
-    private static GameInfo CreateApp(string repository, string name = "Test App", string folderName = "TestFolder") =>
-        new()
+    [Fact]
+    public void Hidden_pending_count_respects_search_tags_and_partial_results()
+    {
+        var model = new CatalogSyncViewModel { ReviewFilter = CatalogReviewFilter.NeedsReview };
+        model.Refresh(new() { CachedListVersion = "1" }, [], [
+            new() { Name = "Alpha", Repository = "test/alpha", FolderName = "Alpha", Tags = ["alpha"] },
+            new() { Name = "Beta", Repository = "test/beta", FolderName = "Beta", Tags = ["beta"] }]);
+        model.SearchText = "Alpha";
+        model.VisiblePendingReviewCount.Should().Be(1);
+        model.FilteredOutPendingReviewCount.Should().Be(1);
+        model.CycleTagChip("beta");
+        model.VisiblePendingReviewCount.Should().Be(0);
+        model.HiddenPendingReviewsText.Should().Be("2 reviews hidden by filters");
+        model.ReviewFilter = CatalogReviewFilter.All;
+        model.ShowHiddenPendingReviews.Should().BeFalse();
+        model.RevealAllPendingReviews();
+        model.ActiveTagChipCount.Should().Be(0);
+        model.SearchText.Should().BeEmpty();
+        model.GetFilteredRows().Should().HaveCount(2);
+    }
+    private static GameInfo CreateApp(string repository, string name = "Test App", string folderName = "TestFolder")
+    {
+        QuiverLauncher.Core.Services.CatalogPlatformIndex.Set("github", repository, null, null, new() { tag_name = "v1", assets = [new() { name = "app-Windows.zip" }] });
+        return new()
         {
             Repository = repository,
             Name = name,
             FolderName = folderName,
         };
+    }
 
     [Fact]
     public void ShowNeedsReviewCompleteState_true_when_needs_review_filter_and_no_actionable_rows()
@@ -405,15 +428,15 @@ public class CatalogSyncViewModelTests
     [Fact]
     public void CatalogReviewLayout_shows_grid_or_list_from_setting()
     {
-        MainWindow.ShouldShowCatalogReviewGrid(true).Should().BeTrue();
-        MainWindow.ShouldShowCatalogReviewList(true).Should().BeFalse();
-        MainWindow.ShouldShowCatalogReviewGrid(false).Should().BeFalse();
-        MainWindow.ShouldShowCatalogReviewList(false).Should().BeTrue();
-        MainWindow.ShouldShowCatalogReviewHelpLines(true).Should().BeFalse();
-        MainWindow.ShouldShowCatalogReviewHelpLines(false).Should().BeFalse();
-        MainWindow.ShouldShowCatalogReviewOpenRepo("owner/repo").Should().BeTrue();
-        MainWindow.ShouldShowCatalogReviewOpenRepo("").Should().BeFalse();
-        MainWindow.ShouldShowCatalogReviewOpenRepo(null).Should().BeFalse();
+        QuiverLauncher.Views.CatalogReviewView.ShouldShowCatalogReviewGrid(true).Should().BeTrue();
+        QuiverLauncher.Views.CatalogReviewView.ShouldShowCatalogReviewList(true).Should().BeFalse();
+        QuiverLauncher.Views.CatalogReviewView.ShouldShowCatalogReviewGrid(false).Should().BeFalse();
+        QuiverLauncher.Views.CatalogReviewView.ShouldShowCatalogReviewList(false).Should().BeTrue();
+        QuiverLauncher.Views.CatalogReviewView.ShouldShowCatalogReviewHelpLines(true).Should().BeFalse();
+        QuiverLauncher.Views.CatalogReviewView.ShouldShowCatalogReviewHelpLines(false).Should().BeFalse();
+        QuiverLauncher.Views.CatalogDetailsView.ShouldShowCatalogReviewOpenRepo("owner/repo").Should().BeTrue();
+        QuiverLauncher.Views.CatalogDetailsView.ShouldShowCatalogReviewOpenRepo("").Should().BeFalse();
+        QuiverLauncher.Views.CatalogDetailsView.ShouldShowCatalogReviewOpenRepo(null).Should().BeFalse();
     }
 
     [Fact]

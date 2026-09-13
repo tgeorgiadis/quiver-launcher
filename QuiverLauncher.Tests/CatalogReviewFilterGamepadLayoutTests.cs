@@ -5,6 +5,25 @@ namespace QuiverLauncher.Tests;
 
 public class CatalogReviewFilterGamepadLayoutTests
 {
+    [Theory]
+    [InlineData(7, 4, 2)]
+    [InlineData(7, 0, 2)]
+    [InlineData(7, 4, 0)]
+    [InlineData(7, 0, 0)]
+    [InlineData(0, 0, 0)]
+    public void Notice_is_a_separate_last_row_and_first_stop_from_apps(int status, int tags, int bulk)
+    {
+        var ranges = CatalogReviewFilterGamepadLayout.FromCounts(status, tags, bulk, 1);
+        ranges.PreferredIndexFromList.Should().Be(ranges.NoticeStart);
+        ranges.ResolveRow(ranges.NoticeStart).Should().Be(CatalogReviewFilterGamepadLayout.Row.Notice);
+        ranges.LocalIndex(ranges.NoticeStart).Should().Be(0);
+        ranges.RowCount(CatalogReviewFilterGamepadLayout.Row.Notice).Should().Be(1);
+        ranges.AbsoluteIndex(CatalogReviewFilterGamepadLayout.Row.Notice, 0).Should().Be(status + tags + bulk);
+        var withoutNotice = CatalogReviewFilterGamepadLayout.FromCounts(status, tags, bulk);
+        withoutNotice.HasNotice.Should().BeFalse();
+        withoutNotice.Total.Should().Be(ranges.Total - 1);
+    }
+
     [Fact]
     public void Ranges_preferred_index_from_list_prefers_bulk()
     {

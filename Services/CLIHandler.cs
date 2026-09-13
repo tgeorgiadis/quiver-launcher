@@ -262,21 +262,22 @@ namespace QuiverLauncher
             if (string.IsNullOrWhiteSpace(gameName))
                 return PrintError("No game name was provided for --add-steam-shortcut.");
 
-            var game = _gameManager.Games
-                .FirstOrDefault(g => string.Equals(g?.Name, gameName, StringComparison.Ordinal));
+            var identityIndex = Array.FindIndex(args, arg => arg == "--app-identity");
+            if (identityIndex >= 0 && identityIndex + 1 >= args.Length)
+                return PrintError("No app identity was provided for --app-identity.");
+            var game = _gameManager.Games.FirstOrDefault(g => identityIndex >= 0
+                ? string.Equals(g?.IdentityKey, args[identityIndex + 1], StringComparison.Ordinal)
+                : string.Equals(g?.Name, gameName, StringComparison.Ordinal));
 
             if (game == null)
                 return PrintError($"Could not find a game named '{gameName}'.");
 
             try
             {
-                string launcherPath = ShortcutHelper.ResolveLauncherPath() ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(launcherPath))
-                    return PrintError("Could not determine launcher location.");
-
                 await ShortcutHelper.AddGameToSteamFromCliAsync(
                     game,
-                    launcherPath,
+                    _gameManager.GamesFolder,
+                    AppSettings.Load(),
                     _gameManager.CacheFolder,
                     waitForSteamExit);
 
@@ -603,6 +604,14 @@ namespace QuiverLauncher
                     WriteColor($"→ Selected: {game.SelectedDownload.name}", ColorSuccess);
                     Console.WriteLine();
                     Console.WriteLine();
+                }
+
+                if (game.SelectedDownload == null)
+                {
+                    WriteColor(game.DownloadChoices?.NeedsChoice == true
+                        ? "Download selection is required. Open Quiver to choose a file."
+                        : game.DownloadChoices?.EmptyReason ?? "No eligible download was found.", ColorError);
+                    return 1;
                 }
 
                 var downloadTask = game.PerformActionAsync(

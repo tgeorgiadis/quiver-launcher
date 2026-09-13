@@ -31,7 +31,7 @@ public static class CatalogReviewGridCardActions
         More,
     }
 
-    public readonly record struct ChromeItem(
+    public sealed record ChromeItem(
         ChromeKind Kind,
         string IdentityKey,
         bool MenuAdd = false,
@@ -134,7 +134,7 @@ public static class CatalogReviewGridCardActions
         return new Layout(inline, menu, chrome);
     }
 
-    private static ChromeKind ToChrome(Action action) => action switch
+    internal static ChromeKind ToChrome(Action action) => action switch
     {
         Action.Add => ChromeKind.Add,
         Action.Merge => ChromeKind.Merge,

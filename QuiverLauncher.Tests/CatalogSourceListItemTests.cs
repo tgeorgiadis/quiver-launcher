@@ -14,7 +14,7 @@ public class CatalogSourceListItemTests
 
     [Fact]
 
-    public void GetStatusText_returns_update_available_when_flag_set()
+    public void GetStatusText_returns_pending_review_when_counts_are_not_loaded()
 
     {
 
@@ -32,7 +32,7 @@ public class CatalogSourceListItemTests
 
 
 
-        CatalogSourceListItem.GetStatusText(source).Should().Be("Update available");
+        CatalogSourceListItem.GetStatusText(source).Should().Be("Review pending");
 
     }
 
@@ -58,7 +58,7 @@ public class CatalogSourceListItemTests
 
 
 
-        CatalogSourceListItem.GetStatusText(source).Should().Be("Update available");
+        CatalogSourceListItem.GetStatusText(source).Should().Be("Review pending");
 
         CatalogSourceListItem.GetStatusText(source).Should().NotContain("List version");
 
@@ -104,7 +104,7 @@ public class CatalogSourceListItemTests
 
     [Fact]
 
-    public void GetStatusText_returns_updated_timestamp_when_fetched_successfully()
+    public void GetStatusText_returns_last_checked_timestamp_when_fetched_successfully()
 
     {
 
@@ -114,7 +114,7 @@ public class CatalogSourceListItemTests
 
 
 
-        CatalogSourceListItem.GetStatusText(source).Should().Be($"Updated {fetchedAt.ToLocalTime():g}");
+        CatalogSourceListItem.GetStatusText(source).Should().Be($"Last checked {fetchedAt.ToLocalTime():g}");
 
     }
 
@@ -122,7 +122,7 @@ public class CatalogSourceListItemTests
 
     [Fact]
 
-    public void GetReviewButtonText_shows_count_when_pending()
+    public void GetReviewButtonText_uses_review_apps_when_pending()
 
     {
 
@@ -130,7 +130,7 @@ public class CatalogSourceListItemTests
 
 
 
-        CatalogSourceListItem.GetReviewButtonText(source).Should().Be("Review (3)");
+        CatalogSourceListItem.GetReviewButtonText(source).Should().Be("Review apps");
 
     }
 
@@ -138,11 +138,11 @@ public class CatalogSourceListItemTests
 
     [Fact]
 
-    public void GetReviewButtonText_without_pending_uses_view_label()
+    public void GetReviewButtonText_without_pending_uses_browse_apps_label()
 
     {
 
-        CatalogSourceListItem.GetReviewButtonText(new AppCatalogSource()).Should().Be("View");
+        CatalogSourceListItem.GetReviewButtonText(new AppCatalogSource()).Should().Be("Browse apps");
 
     }
 
@@ -216,7 +216,7 @@ public class CatalogSourceListItemTests
 
         item.PendingReviewCount.Should().Be(5);
 
-        item.ReviewButtonText.Should().Be("Review (5)");
+        item.ReviewButtonText.Should().Be("Review apps");
 
         item.PendingReviewBadgeVisible.Should().BeTrue();
 
@@ -359,11 +359,11 @@ public class CatalogSourceListItemTests
     }
 
     [Fact]
-    public void FormatUsageStatsShort_uses_compact_label()
+    public void FormatLibraryMembership_uses_clear_label()
     {
-        CatalogSourceListItem.FormatUsageStatsShort(5, 5).Should().Be("5/5 apps in library");
-        CatalogSourceListItem.FormatUsageStatsShort(1, 1).Should().Be("1/1 app in library");
-        CatalogSourceListItem.FormatUsageStatsShort(0, 0).Should().BeEmpty();
+        CatalogSourceListItem.FormatLibraryMembership(5, 5).Should().Be("5 of 5 apps in your library");
+        CatalogSourceListItem.FormatLibraryMembership(1, 1).Should().Be("1 of 1 app in your library");
+        CatalogSourceListItem.FormatLibraryMembership(0, 0).Should().BeEmpty();
     }
 
     [Fact]
@@ -372,11 +372,11 @@ public class CatalogSourceListItemTests
         var fetchedAt = new DateTime(2026, 7, 4, 10, 3, 0, DateTimeKind.Utc);
         var source = new AppCatalogSource { LastFetchedUtc = fetchedAt };
 
-        CatalogSourceListItem.GetFetchStatusText(source).Should().Be($"Updated {fetchedAt.ToLocalTime():g}");
+        CatalogSourceListItem.GetFetchStatusText(source).Should().Be($"Last checked {fetchedAt.ToLocalTime():g}");
     }
 
     [Fact]
-    public void GetStatusWarningText_prioritizes_update_over_error_and_fetch()
+    public void GetStatusWarningText_shows_errors_even_when_reviews_are_pending()
     {
         var source = new AppCatalogSource
         {
@@ -387,8 +387,8 @@ public class CatalogSourceListItemTests
 
         var warning = CatalogSourceListItem.GetStatusWarningText(source);
         warning.Should().NotBeNull();
-        warning!.Value.Text.Should().Be("Update available");
-        warning.Value.IsError.Should().BeFalse();
+        warning!.Value.Text.Should().Be("Network timeout");
+        warning.Value.IsError.Should().BeTrue();
     }
 
     [Fact]
@@ -405,7 +405,7 @@ public class CatalogSourceListItemTests
     }
 
     [Fact]
-    public void FromSource_splits_warning_and_fetch_status()
+    public void FromSource_keeps_fetch_status_separate_from_review_status()
     {
         var fetchedAt = new DateTime(2026, 7, 4, 10, 3, 0, DateTimeKind.Utc);
         var source = new AppCatalogSource
@@ -418,11 +418,12 @@ public class CatalogSourceListItemTests
 
         var item = CatalogSourceListItem.FromSource(source);
 
-        item.StatusWarningText.Should().Be("Update available");
-        item.StatusWarningVisible.Should().BeTrue();
-        item.StatusWarningIsWarning.Should().BeTrue();
-        item.FetchStatusText.Should().BeEmpty();
-        item.FetchStatusVisible.Should().BeFalse();
+        item.ReviewStatusText.Should().Be("Review pending");
+        item.StatusWarningText.Should().BeEmpty();
+        item.StatusWarningVisible.Should().BeFalse();
+        item.StatusWarningIsWarning.Should().BeFalse();
+        item.FetchStatusText.Should().Be($"Last checked {fetchedAt.ToLocalTime():g}");
+        item.FetchStatusVisible.Should().BeTrue();
     }
 
     [Fact]
@@ -438,7 +439,7 @@ public class CatalogSourceListItemTests
 
         var item = CatalogSourceListItem.FromSource(source);
 
-        item.UsageStatsShort.Should().Be("5/5 apps in library");
+        item.UsageStatsShort.Should().Be("5 of 5 apps in your library");
         item.UsageStatsFullLibrary.Should().BeTrue();
     }
 
@@ -470,7 +471,7 @@ public class CatalogSourceListItemTests
 
         var item = CatalogSourceListItem.FromSource(source);
 
-        item.VersionLineText.Should().Be("List v1.0.0 · Reviewed not yet");
+        item.VersionLineText.Should().Be("List v1.0.0 · Not reviewed yet");
         item.VersionLineUnreviewed.Should().BeTrue();
     }
 

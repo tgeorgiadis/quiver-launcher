@@ -1,0 +1,930 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:models="using:QuiverLauncher.Models" xmlns:services="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:views="using:QuiverLauncher.Views" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.LibraryView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
+<UserControl.Resources>
+<DataTemplate x:Key="ListViewTemplate" x:DataType="models:GameInfo">
+			<Border Classes="gamecard" Classes.gamepad-focused="{Binding IsGamepadFocused}"
+					Height="{Binding $parent[views:LibraryView].Model.Settings.ListRowHeight}" Margin="0,0,0,8"
+					PlatformFeedback.FeedbackType="Auto"
+					InputElement.IsHoldingEnabled="True"
+					PointerEntered="LibraryCard_PointerEntered"
+					PointerExited="LibraryCard_PointerExited"
+					PointerPressed="GameCard_PointerPressed"
+					PointerMoved="GameCard_PointerMoved"
+					PointerReleased="GameCard_PointerReleased"
+					PointerCaptureLost="GameCard_PointerCaptureLost"
+					Tapped="GameCard_Tapped"
+					Holding="GameCard_Holding"
+					ContextRequested="GameCard_ContextRequested">
+				<views:LibraryListRowLayout Settings="{Binding $parent[views:LibraryView].Model.Settings}">
+    <Border views:LibraryListRowLayout.Role="Thumbnail" CornerRadius="8" ClipToBounds="True">
+        <asyncImageLoader:AdvancedImage Source="{Binding IconUrl}" Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
+            Stretch="{Binding $parent[views:LibraryView].Model.Settings.IconFill, Converter={StaticResource BooleanToStretchConverter}}"/>
+    </Border>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Title" Text="{Binding DisplayName}" IsActive="{Binding ShouldScrollTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Subtitle" Text="{Binding ProjectSubtitle}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Status" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Latest" Text="{Binding LatestVersionLabel}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Preferred" Text="{Binding PreferredVersionLabel}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <Border views:LibraryListRowLayout.Role="Tags" ClipToBounds="True">
+        <ItemsControl ItemsSource="{Binding LibraryCardTags}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate><DataTemplate><Border Background="{DynamicResource ThemeLighter}" CornerRadius="3" Padding="5,0" Margin="0,0,4,2" Height="16"><TextBlock Text="{Binding}" FontSize="9" Foreground="{DynamicResource ThemeTextSecondary}"/></Border></DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Border>
+    <StackPanel views:LibraryListRowLayout.Role="Actions" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Classes="modern" Content="{Binding ButtonText}" FontSize="14" Padding="8,0" IsEnabled="{Binding !IsLoading}" PlatformFeedback.FeedbackType="Auto" Click="GameButton_Click" Tag="{Binding}"/>
+        <Button Classes="options options-listview" Padding="0" ToolTip.Tip="App options" AutomationProperties.Name="App options"
+                IsEnabled="{Binding !IsLoading}" Click="OptionsButton_Click" Tag="{Binding}">
+            <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
+                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
+                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
+            </StackPanel><Button.ContextMenu>
+									<ContextMenu>
+										<MenuItem Header="Launch"
+												  Click="LaunchGameMenu_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding CanLaunch}"/>
+										<MenuItem Header="Download"
+												  Click="LaunchGameMenu_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding CanDownload}"/>
+										<MenuItem Header="Locate Existing Install"
+												  Click="LocateExistingInstall_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding CanLocateInstall}"/>
+										<MenuItem Header="Update Now"
+												  Click="UpdateNowMenu_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding CanUpdate}"/>
+										<MenuItem Header="Review Catalog Changes"
+												  Click="ReviewCatalogChanges_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding ShowUpdateBadge}"/>
+										<MenuItem Header="Auto Update"
+												  ToggleType="CheckBox"
+												  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
+												  IsVisible="{Binding CanToggleAutoUpdate}"
+												  Click="AutoUpdateMenu_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Open Folder"
+												  Click="OpenFolder_Click"
+												  IsVisible="{Binding CanOpenFolder}"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Versions"
+												  IsVisible="{Binding CanVersionOptions}">
+											<MenuItem Header="Change Version"
+													  Click="ChangeVersion_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding CanChangeVersion}"/>
+											<MenuItem Header="Skip Update"
+													  Click="SkipUpdate_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding CanSkipUpdate}"/>
+											<MenuItem Header="Force Update"
+													  Click="ForceUpdate_Click"
+													  IsVisible="{Binding IsInstalled}"
+													  CommandParameter="{Binding}"/>
+										</MenuItem>
+											<MenuItem Header="Launch Options"
+												  IsVisible="{Binding CanLaunchOptions}">
+											<MenuItem Header="Select Different Executable"
+													  CommandParameter="{Binding}"
+													  Click="SelectDifferentExecutable_Click"
+													  IsVisible="{Binding HasExecutableChoice}"/>
+											<MenuItem Header="Windows Runner…"
+													  Click="ConfigureWindowsRunner_Click"
+													  IsVisible="{Binding ShowWindowsRunnerOptions}"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Create Desktop Shortcut"
+													  Click="CreateShortcut_Click"
+													  IsVisible="{Binding ShowDesktopOnlyActions}"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Add to Steam"
+													  Click="AddToSteam_Click"
+													  IsVisible="{Binding CanAddToSteam}"
+													  CommandParameter="{Binding}"/>
+										</MenuItem>
+										<MenuItem Header="Mods"
+												  Click="OpenMods_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding CanOpenMods}"/>
+										<MenuItem Header="Customize">
+											<MenuItem Header="Edit Entry"
+													  Click="EditGameEntry_Click"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Edit Tags"
+													  Click="EditTagsMenu_Click"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Custom Display Name"
+													  Click="EditCustomDisplayNameMenu_Click"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Add Custom Image"
+													  Click="SetCustomIcon_Click"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Remove Custom Image"
+													  Click="RemoveCustomIcon_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding HasCustomIcon}"/>
+											<MenuItem Header="Hide App"
+													  Click="HideGame_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding !IsManuallyHidden}"/>
+											<MenuItem Header="Unhide App"
+													  Click="HideGame_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding IsManuallyHidden}"/>
+											<MenuItem Header="Remove from List"
+													  Click="RemoveGameEntry_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding IsInLocalAppsJson}"/>
+										</MenuItem>
+										<MenuItem Header="About"
+												  IsVisible="{Binding CanInfoOptions}">
+											<MenuItem Header="View README"
+													  Click="ShowReadme_Click"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Show Changelog"
+													  Click="ShowChangelog_Click"
+													  CommandParameter="{Binding}"/>
+											<MenuItem Header="Open Repository"
+													  Click="OpenGitHubPage_Click"
+													  CommandParameter="{Binding}"/>
+										</MenuItem>
+										<MenuItem Header="{x:Static services:PlatformCapabilities.InstalledAppRemovalLabel}"
+												  Click="DeleteGameFromLibrary_Click"
+												  IsVisible="{Binding IsInstalled}"
+												  CommandParameter="{Binding}"/>
+									</ContextMenu>
+								</Button.ContextMenu>        </Button>
+    </StackPanel>
+    <Button views:LibraryListRowLayout.Role="Badge" Classes="library-update-badge" ToolTip.Tip="Catalog update available — click for details" CommandParameter="{Binding}" Click="ReviewCatalogChanges_Click"><TextBlock Text="↑"/></Button>
+    <Border views:LibraryListRowLayout.Role="Progress" ClipToBounds="True" CornerRadius="0,0,12,12">
+        <ProgressBar Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="4" Background="Transparent" Foreground="{Binding ProgressBarColor}" BorderThickness="0"/>
+    </Border>
+</views:LibraryListRowLayout>
+</Border>
+</DataTemplate><DataTemplate x:Key="GridViewTemplate" x:DataType="models:GameInfo">
+			<StackPanel Classes="library-grid-item"
+						Background="Transparent"
+						PlatformFeedback.FeedbackType="Auto"
+						InputElement.IsHoldingEnabled="True"
+						PointerEntered="LibraryCard_PointerEntered"
+						PointerExited="LibraryCard_PointerExited"
+						PointerPressed="GameCard_PointerPressed"
+						PointerMoved="GameCard_PointerMoved"
+						PointerReleased="GameCard_PointerReleased"
+						PointerCaptureLost="GameCard_PointerCaptureLost"
+						Tapped="GameCard_Tapped"
+						Holding="GameCard_Holding"
+						ContextRequested="GameCard_ContextRequested">
+				<Border Classes="gamecardgrid" Classes.gamepad-focused="{Binding IsGamepadFocused}">
+					<Border.Width>
+						<Binding RelativeSource="{RelativeSource AncestorType=views:LibraryView}" Path="Model.CardPixelSize"/>
+					</Border.Width>
+					<Grid ClipToBounds="True">
+						<!-- Background Image -->
+						<Panel ClipToBounds="True"
+							Margin="{Binding $parent[views:LibraryView].Model.Settings.IconMargin}"
+							VerticalAlignment="Top"
+							HorizontalAlignment="Center">
+							<Border CornerRadius="12" ClipToBounds="True">
+								<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+								ClipToBounds="True"
+								VerticalAlignment="Center"
+								Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
+								Height="{Binding $parent[views:LibraryView].Model.Settings.IconSize}"
+								Stretch="{Binding $parent[views:LibraryView].Model.Settings.IconFill, Converter={StaticResource BooleanToStretchConverter}}" />
+							</Border>
+							<Button Classes="library-update-badge"
+									IsVisible="{Binding ShowUpdateBadge}"
+									ToolTip.Tip="Catalog update available — click for details"
+									HorizontalAlignment="Right"
+									VerticalAlignment="Bottom"
+									Margin="0,0,4,4"
+									ZIndex="10"
+									Cursor="Hand"
+									CommandParameter="{Binding}"
+									Click="ReviewCatalogChanges_Click">
+								<TextBlock Text="↑"/>
+							</Button>
+						</Panel>
+
+						<!-- Options Button - Top Right -->
+						<Button Classes="options-grid"
+								FontSize="18"
+								VerticalAlignment="Top"
+								HorizontalAlignment="Right"
+								Margin="12"
+								IsEnabled="{Binding !IsLoading}"
+								Click="OptionsButton_Click"
+								Tag="{Binding}">
+							<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
+							<Button.ContextMenu>
+								<ContextMenu>
+									<MenuItem Header="Launch"
+											  Click="LaunchGameMenu_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding CanLaunch}"/>
+									<MenuItem Header="Download"
+											  Click="LaunchGameMenu_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding CanDownload}"/>
+									<MenuItem Header="Locate Existing Install"
+											  Click="LocateExistingInstall_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding CanLocateInstall}"/>
+									<MenuItem Header="Update Now"
+											  Click="UpdateNowMenu_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding CanUpdate}"/>
+									<MenuItem Header="Review Catalog Changes"
+											  Click="ReviewCatalogChanges_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding ShowUpdateBadge}"/>
+									<MenuItem Header="Auto Update"
+											  ToggleType="CheckBox"
+											  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
+											  IsVisible="{Binding CanToggleAutoUpdate}"
+											  Click="AutoUpdateMenu_Click"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Open Folder"
+											  Click="OpenFolder_Click"
+											  IsVisible="{Binding CanOpenFolder}"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Versions"
+											  IsVisible="{Binding CanVersionOptions}">
+										<MenuItem Header="Change Version"
+												  Click="ChangeVersion_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding CanChangeVersion}"/>
+										<MenuItem Header="Skip Update"
+												  Click="SkipUpdate_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding CanSkipUpdate}"/>
+										<MenuItem Header="Force Update"
+												  Click="ForceUpdate_Click"
+												  IsVisible="{Binding IsInstalled}"
+												  CommandParameter="{Binding}"/>
+									</MenuItem>
+									<MenuItem Header="Launch Options"
+											  IsVisible="{Binding CanLaunchOptions}">
+										<MenuItem Header="Select Different Executable"
+												  CommandParameter="{Binding}"
+												  Click="SelectDifferentExecutable_Click"
+												  IsVisible="{Binding HasExecutableChoice}"/>
+										<MenuItem Header="Windows Runner…"
+												  Click="ConfigureWindowsRunner_Click"
+												  IsVisible="{Binding ShowWindowsRunnerOptions}"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Create Desktop Shortcut"
+												  Click="CreateShortcut_Click"
+												  IsVisible="{Binding ShowDesktopOnlyActions}"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Add to Steam"
+												  Click="AddToSteam_Click"
+												  IsVisible="{Binding CanAddToSteam}"
+												  CommandParameter="{Binding}"/>
+									</MenuItem>
+									<MenuItem Header="Mods"
+											  Click="OpenMods_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding CanOpenMods}"/>
+									<MenuItem Header="Customize">
+										<MenuItem Header="Edit Entry"
+												  Click="EditGameEntry_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Edit Tags"
+												  Click="EditTagsMenu_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Custom Display Name"
+												  Click="EditCustomDisplayNameMenu_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Add Custom Image"
+												  Click="SetCustomIcon_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Remove Custom Image"
+												  Click="RemoveCustomIcon_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding HasCustomIcon}"/>
+										<MenuItem Header="Hide App"
+												  Click="HideGame_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding !IsManuallyHidden}"/>
+										<MenuItem Header="Unhide App"
+												  Click="HideGame_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding IsManuallyHidden}"/>
+										<MenuItem Header="Remove from List"
+												  Click="RemoveGameEntry_Click"
+												  CommandParameter="{Binding}"
+												  IsVisible="{Binding IsInLocalAppsJson}"/>
+									</MenuItem>
+									<MenuItem Header="About"
+											  IsVisible="{Binding CanInfoOptions}">
+										<MenuItem Header="View README"
+												  Click="ShowReadme_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Show Changelog"
+												  Click="ShowChangelog_Click"
+												  CommandParameter="{Binding}"/>
+										<MenuItem Header="Open Repository"
+												  Click="OpenGitHubPage_Click"
+												  CommandParameter="{Binding}"/>
+									</MenuItem>
+									<MenuItem Header="{x:Static services:PlatformCapabilities.InstalledAppRemovalLabel}"
+											  Click="DeleteGameFromLibrary_Click"
+											  IsVisible="{Binding IsInstalled}"
+											  CommandParameter="{Binding}"/>
+								</ContextMenu>
+							</Button.ContextMenu>
+						</Button>
+
+						<!-- Progress Bar -->
+						<Border VerticalAlignment="Bottom"
+								Height="4"
+								CornerRadius="0,0,12,12"
+								ClipToBounds="True"
+								IsVisible="{Binding IsDownloading}">
+							<ProgressBar Value="{Binding DownloadProgress}"
+										 Minimum="0"
+										 Maximum="100"
+										 Height="4"
+										 Background="Transparent"
+										 Foreground="{Binding ProgressBarColor}"
+										 BorderThickness="0"/>
+						</Border>
+					</Grid>
+				</Border>
+
+				<!-- Info Bar Below Card -->
+				<Grid>
+					<Grid.Width>
+						<Binding RelativeSource="{RelativeSource AncestorType=views:LibraryView}" Path="Model.CardPixelSize"/>
+					</Grid.Width>
+					<Grid Margin="10,0,10,20">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<!-- App name (full width) -->
+						<StackPanel Grid.Row="0"
+									Grid.ColumnSpan="2"
+									Margin="0,0,0,4">
+							<TextBlock Text="{Binding DisplayName}"
+									   FontSize="14"
+									   FontWeight="Bold"
+									   Foreground="{DynamicResource ThemeText}"
+									   TextAlignment="Left"
+									   TextWrapping="Wrap"
+									   IsVisible="{Binding !TruncateLibraryCardTitles}"/>
+							<services:HoverScrollText Text="{Binding DisplayName}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="14"
+													  FontWeight="Bold"
+													  Foreground="{DynamicResource ThemeText}"
+													  IsVisible="{Binding TruncateLibraryCardTitles}"/>
+							<TextBlock Text="{Binding ProjectSubtitle}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   IsVisible="{Binding ShowWrappedProjectSubtitle}"
+									   Margin="0,2,0,0"
+									   TextWrapping="Wrap"/>
+							<services:HoverScrollText Text="{Binding ProjectSubtitle}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="11"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  IsVisible="{Binding ShowTruncatedProjectSubtitle}"
+													  Margin="0,2,0,0"/>
+							<Border IsVisible="{Binding HasLibraryCardTags}"
+									MaxHeight="{Binding LibraryCardTagsMaxHeight}"
+									ClipToBounds="True"
+									Margin="0,4,0,0">
+								<ItemsControl ItemsSource="{Binding LibraryCardTags}">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<WrapPanel Orientation="Horizontal"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<Border Background="{DynamicResource ThemeLighter}"
+													CornerRadius="3"
+													Padding="5,1"
+													Margin="0,0,4,3">
+												<TextBlock Text="{Binding}"
+														   FontSize="9"
+														   Foreground="{DynamicResource ThemeTextSecondary}"/>
+											</Border>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</Border>
+						</StackPanel>
+
+						<!-- Download/Launch Button -->
+						<Button Grid.Row="1"
+							Grid.Column="0"
+							Classes="modern-icon"
+							VerticalAlignment="Top"
+							Width="{Binding $parent[views:LibraryView].Model.Settings.ActionButtonSize}"
+							Height="{Binding $parent[views:LibraryView].Model.Settings.ActionButtonSize}"
+							Margin="0,0,12,0"
+							IsEnabled="{Binding !IsLoading}"
+							PlatformFeedback.FeedbackType="Auto"
+							Click="GameButton_Click"
+							Tag="{Binding}">
+							<Image Width="{Binding $parent[views:LibraryView].Model.Settings.ActionButtonSize}"
+								   Source="{Binding ButtonImage}"/>
+						</Button>
+
+						<!-- Status and versions -->
+						<StackPanel Grid.Row="1"
+									Grid.Column="1"
+									VerticalAlignment="Center">
+							<TextBlock Text="{Binding StatusText}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextAlignment="Left"
+									   TextWrapping="Wrap"
+									   Margin="0,0,0,2"
+									   IsVisible="{Binding !TruncateLibraryCardTitles}"/>
+							<services:HoverScrollText Text="{Binding StatusText}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="11"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  Margin="0,0,0,2"
+													  IsVisible="{Binding TruncateLibraryCardTitles}"/>
+
+							<TextBlock FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap" TextAlignment="Left"
+									   IsVisible="{Binding ShowWrappedReleaseVersion}">
+								<Run Text="Latest: "/>
+								<Run Text="{Binding LatestVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
+							</TextBlock>
+							<services:HoverScrollText Text="{Binding LatestVersionLabel}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="10"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  IsVisible="{Binding ShowTruncatedReleaseVersion}"/>
+							<TextBlock FontSize="10"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"
+									   TextAlignment="Left"
+									   IsVisible="{Binding ShowWrappedPreferredVersion}">
+								<Run Text="Preferred: "/>
+								<Run Text="{Binding PreferredVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
+							</TextBlock>
+							<services:HoverScrollText Text="{Binding PreferredVersionLabel}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="10"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  IsVisible="{Binding ShowTruncatedPreferredVersion}"/>
+							<TextBlock Text="Mod updates available"
+									   FontSize="10"
+									   Foreground="#E8A838"
+									   IsVisible="{Binding HasModUpdates}"/>
+						</StackPanel>
+					</Grid>
+				</Grid>
+			</StackPanel>
+		</DataTemplate>
+<DataTemplate x:Key="CompactGridViewTemplate" x:DataType="models:GameInfo">
+			<Border Classes="gamecardcompact" Classes.gamepad-focused="{Binding IsGamepadFocused}"
+					ClipToBounds="True"
+					PlatformFeedback.FeedbackType="Auto"
+					InputElement.IsHoldingEnabled="True"
+					PointerEntered="LibraryCard_PointerEntered"
+					PointerExited="LibraryCard_PointerExited"
+					PointerPressed="GameCard_PointerPressed"
+					PointerMoved="GameCard_PointerMoved"
+					PointerReleased="GameCard_PointerReleased"
+					PointerCaptureLost="GameCard_PointerCaptureLost"
+					Tapped="GameCard_Tapped"
+					Holding="GameCard_Holding"
+					ContextRequested="GameCard_ContextRequested">
+				<Border.Width>
+					<Binding RelativeSource="{RelativeSource AncestorType=views:LibraryView}" Path="Model.CardPixelSize"/>
+				</Border.Width>
+				<Border.MinHeight>
+					<Binding RelativeSource="{RelativeSource AncestorType=views:LibraryView}" Path="Model.CardPixelSize"/>
+				</Border.MinHeight>
+				<Grid ClipToBounds="True">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+
+					<!-- Image well: full-width ThemeLighter band (mod/catalog poster) -->
+					<Border Grid.Row="0"
+							Background="{DynamicResource ThemeLighter}"
+							CornerRadius="14,14,0,0"
+							ClipToBounds="True"
+							HorizontalAlignment="Stretch">
+						<Panel ClipToBounds="True"
+							   Margin="{Binding $parent[views:LibraryView].Model.Settings.IconMargin}">
+							<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+								ClipToBounds="True"
+								VerticalAlignment="Center"
+								HorizontalAlignment="Center"
+								Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
+								Height="{Binding $parent[views:LibraryView].Model.Settings.IconSize}"
+								Stretch="{Binding $parent[views:LibraryView].Model.Settings.IconFill, Converter={StaticResource BooleanToStretchConverter}}" />
+							<Button Classes="library-update-badge"
+									IsVisible="{Binding ShowUpdateBadge}"
+									ToolTip.Tip="Catalog update available — click for details"
+									HorizontalAlignment="Right"
+									VerticalAlignment="Bottom"
+									Margin="0,0,4,4"
+									ZIndex="10"
+									Cursor="Hand"
+									CommandParameter="{Binding}"
+									Click="ReviewCatalogChanges_Click">
+								<TextBlock Text="↑"/>
+							</Button>
+						</Panel>
+					</Border>
+
+					<!-- Options Button - Top Right -->
+					<Button Grid.Row="0"
+							Classes="options-grid"
+							ZIndex="11"
+							FontSize="18"
+							VerticalAlignment="Top"
+							HorizontalAlignment="Right"
+							Margin="12"
+							IsEnabled="{Binding !IsLoading}"
+							Click="OptionsButton_Click"
+							Tag="{Binding}">
+						<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
+						<Button.ContextMenu>
+							<ContextMenu>
+								<MenuItem Header="Launch"
+										  Click="LaunchGameMenu_Click"
+										  CommandParameter="{Binding}"
+										  IsVisible="{Binding CanLaunch}"/>
+								<MenuItem Header="Download"
+										  Click="LaunchGameMenu_Click"
+										  CommandParameter="{Binding}"
+										  IsVisible="{Binding CanDownload}"/>
+								<MenuItem Header="Locate Existing Install"
+										  Click="LocateExistingInstall_Click"
+										  CommandParameter="{Binding}"
+										  IsVisible="{Binding CanLocateInstall}"/>
+								<MenuItem Header="Update Now"
+										  Click="UpdateNowMenu_Click"
+										  CommandParameter="{Binding}"
+										  IsVisible="{Binding CanUpdate}"/>
+								<MenuItem Header="Review Catalog Changes"
+										  Click="ReviewCatalogChanges_Click"
+										  CommandParameter="{Binding}"
+										  IsVisible="{Binding ShowUpdateBadge}"/>
+								<MenuItem Header="Auto Update"
+										  ToggleType="CheckBox"
+										  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
+										  IsVisible="{Binding CanToggleAutoUpdate}"
+										  Click="AutoUpdateMenu_Click"
+										  CommandParameter="{Binding}"/>
+								<MenuItem Header="Open Folder"
+										  Click="OpenFolder_Click"
+										  IsVisible="{Binding CanOpenFolder}"
+										  CommandParameter="{Binding}"/>
+								<MenuItem Header="Versions"
+										  IsVisible="{Binding CanVersionOptions}">
+									<MenuItem Header="Change Version"
+											  Click="ChangeVersion_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding CanChangeVersion}"/>
+									<MenuItem Header="Skip Update"
+											  Click="SkipUpdate_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding CanSkipUpdate}"/>
+									<MenuItem Header="Force Update"
+											  Click="ForceUpdate_Click"
+											  IsVisible="{Binding IsInstalled}"
+											  CommandParameter="{Binding}"/>
+								</MenuItem>
+								<MenuItem Header="Launch Options"
+										  IsVisible="{Binding CanLaunchOptions}">
+									<MenuItem Header="Select Different Executable"
+											  CommandParameter="{Binding}"
+											  Click="SelectDifferentExecutable_Click"
+											  IsVisible="{Binding HasExecutableChoice}"/>
+									<MenuItem Header="Windows Runner…"
+											  Click="ConfigureWindowsRunner_Click"
+											  IsVisible="{Binding ShowWindowsRunnerOptions}"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Create Desktop Shortcut"
+											  Click="CreateShortcut_Click"
+											  IsVisible="{Binding ShowDesktopOnlyActions}"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Add to Steam"
+											  Click="AddToSteam_Click"
+											  IsVisible="{Binding CanAddToSteam}"
+											  CommandParameter="{Binding}"/>
+								</MenuItem>
+								<MenuItem Header="Mods"
+										  Click="OpenMods_Click"
+										  CommandParameter="{Binding}"
+										  IsVisible="{Binding CanOpenMods}"/>
+								<MenuItem Header="Customize">
+									<MenuItem Header="Edit Entry"
+											  Click="EditGameEntry_Click"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Edit Tags"
+											  Click="EditTagsMenu_Click"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Custom Display Name"
+											  Click="EditCustomDisplayNameMenu_Click"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Add Custom Image"
+											  Click="SetCustomIcon_Click"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Remove Custom Image"
+											  Click="RemoveCustomIcon_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding HasCustomIcon}"/>
+									<MenuItem Header="Hide App"
+											  Click="HideGame_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding !IsManuallyHidden}"/>
+									<MenuItem Header="Unhide App"
+											  Click="HideGame_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding IsManuallyHidden}"/>
+									<MenuItem Header="Remove from List"
+											  Click="RemoveGameEntry_Click"
+											  CommandParameter="{Binding}"
+											  IsVisible="{Binding IsInLocalAppsJson}"/>
+								</MenuItem>
+								<MenuItem Header="About"
+										  IsVisible="{Binding CanInfoOptions}">
+									<MenuItem Header="View README"
+											  Click="ShowReadme_Click"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Show Changelog"
+											  Click="ShowChangelog_Click"
+											  CommandParameter="{Binding}"/>
+									<MenuItem Header="Open Repository"
+											  Click="OpenGitHubPage_Click"
+											  CommandParameter="{Binding}"/>
+								</MenuItem>
+								<MenuItem Header="{x:Static services:PlatformCapabilities.InstalledAppRemovalLabel}"
+										  Click="DeleteGameFromLibrary_Click"
+										  IsVisible="{Binding IsInstalled}"
+										  CommandParameter="{Binding}"/>
+							</ContextMenu>
+						</Button.ContextMenu>
+					</Button>
+
+					<!-- App name, status, and action button -->
+					<Grid Grid.Row="1"
+						  Background="{DynamicResource ThemeBase}"
+						  Margin="10,8,10,10">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+
+						<StackPanel Grid.Row="0"
+									Grid.ColumnSpan="2"
+									Margin="0,0,0,4">
+							<TextBlock Text="{Binding DisplayName}"
+									   FontSize="14"
+									   FontWeight="Bold"
+									   Foreground="{DynamicResource ThemeText}"
+									   TextWrapping="Wrap"
+									   IsVisible="{Binding !TruncateLibraryCardTitles}"/>
+							<services:HoverScrollText Text="{Binding DisplayName}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="14"
+													  FontWeight="Bold"
+													  Foreground="{DynamicResource ThemeText}"
+													  IsVisible="{Binding TruncateLibraryCardTitles}"/>
+							<TextBlock Text="{Binding ProjectSubtitle}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   IsVisible="{Binding ShowWrappedProjectSubtitle}"
+									   Margin="0,2,0,0"
+									   TextWrapping="Wrap"/>
+							<services:HoverScrollText Text="{Binding ProjectSubtitle}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="11"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  IsVisible="{Binding ShowTruncatedProjectSubtitle}"
+													  Margin="0,2,0,0"/>
+							<Border IsVisible="{Binding HasLibraryCardTags}"
+									MaxHeight="{Binding LibraryCardTagsMaxHeight}"
+									ClipToBounds="True"
+									Margin="0,4,0,0">
+								<ItemsControl ItemsSource="{Binding LibraryCardTags}">
+									<ItemsControl.ItemsPanel>
+										<ItemsPanelTemplate>
+											<WrapPanel Orientation="Horizontal"/>
+										</ItemsPanelTemplate>
+									</ItemsControl.ItemsPanel>
+									<ItemsControl.ItemTemplate>
+										<DataTemplate>
+											<Border Background="{DynamicResource ThemeLighter}"
+													CornerRadius="3"
+													Padding="5,1"
+													Margin="0,0,4,3">
+												<TextBlock Text="{Binding}"
+														   FontSize="9"
+														   Foreground="{DynamicResource ThemeTextSecondary}"/>
+											</Border>
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+							</Border>
+						</StackPanel>
+
+						<Button Grid.Row="1"
+								Grid.Column="0"
+								Classes="modern-icon"
+								VerticalAlignment="Top"
+								Width="{Binding $parent[views:LibraryView].Model.Settings.ActionButtonSize}"
+								Height="{Binding $parent[views:LibraryView].Model.Settings.ActionButtonSize}"
+								Margin="0,0,12,0"
+								IsEnabled="{Binding !IsLoading}"
+								PlatformFeedback.FeedbackType="Auto"
+								Click="GameButton_Click"
+								Tag="{Binding}">
+							<Image Width="{Binding $parent[views:LibraryView].Model.Settings.ActionButtonSize}"
+								   Source="{Binding ButtonImage}"/>
+						</Button>
+
+						<StackPanel Grid.Row="1"
+									Grid.Column="1"
+									VerticalAlignment="Center">
+							<TextBlock Text="{Binding StatusText}"
+									   FontSize="11"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"
+									   Margin="0,0,0,2"
+									   IsVisible="{Binding !TruncateLibraryCardTitles}"/>
+							<services:HoverScrollText Text="{Binding StatusText}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="11"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  Margin="0,0,0,2"
+													  IsVisible="{Binding TruncateLibraryCardTitles}"/>
+
+							<TextBlock FontSize="10"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"
+									   IsVisible="{Binding ShowWrappedReleaseVersion}">
+								<Run Text="Latest: "/>
+								<Run Text="{Binding LatestVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
+							</TextBlock>
+							<services:HoverScrollText Text="{Binding LatestVersionLabel}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="10"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  IsVisible="{Binding ShowTruncatedReleaseVersion}"/>
+							<TextBlock FontSize="10"
+									   Foreground="{DynamicResource ThemeTextSecondary}"
+									   TextWrapping="Wrap"
+									   IsVisible="{Binding ShowWrappedPreferredVersion}">
+								<Run Text="Preferred: "/>
+								<Run Text="{Binding PreferredVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
+							</TextBlock>
+							<services:HoverScrollText Text="{Binding PreferredVersionLabel}"
+													  IsActive="{Binding ShouldScrollTitle}"
+													  FontSize="10"
+													  Foreground="{DynamicResource ThemeTextSecondary}"
+													  IsVisible="{Binding ShowTruncatedPreferredVersion}"/>
+							<TextBlock Text="Mod updates available"
+									   FontSize="10"
+									   Foreground="#E8A838"
+									   IsVisible="{Binding HasModUpdates}"/>
+						</StackPanel>
+					</Grid>
+
+					<!-- Progress Bar -->
+					<Border Grid.Row="1"
+							VerticalAlignment="Bottom"
+							Height="4"
+							CornerRadius="0,0,12,12"
+							ClipToBounds="True"
+							ZIndex="12"
+							IsVisible="{Binding IsDownloading}">
+						<ProgressBar Value="{Binding DownloadProgress}"
+									 Minimum="0"
+									 Maximum="100"
+									 Height="4"
+									 Background="Transparent"
+									 Foreground="{Binding ProgressBarColor}"
+									 BorderThickness="0"/>
+					</Border>
+				</Grid>
+			</Border>
+		</DataTemplate>
+</UserControl.Resources>
+<Grid x:Name="Surface">
+					<ScrollViewer x:Name="LibraryContentPanel" VerticalScrollBarVisibility="Auto" Margin="30,20,6,30">
+						<Grid x:Name="LibraryItemsHost" Margin="0,0,30,0">
+							<ItemsControl ItemsSource="{Binding Games}" x:Name="ListViewControl"
+										  IsVisible="{Binding !Settings.UseGridView}">
+								<ItemsControl.ItemTemplate>
+									<StaticResource ResourceKey="ListViewTemplate"/>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
+
+							<ItemsControl ItemsSource="{Binding Games}" x:Name="ClassicGridViewControl"
+										  IsVisible="False">
+								<ItemsControl.ItemsPanel>
+									<ItemsPanelTemplate>
+										<WrapPanel Orientation="Horizontal" />
+									</ItemsPanelTemplate>
+								</ItemsControl.ItemsPanel>
+								<ItemsControl.ItemTemplate>
+									<StaticResource ResourceKey="GridViewTemplate"/>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
+
+							<ItemsControl ItemsSource="{Binding Games}" x:Name="CompactGridViewControl"
+										  IsVisible="False">
+								<ItemsControl.ItemsPanel>
+									<ItemsPanelTemplate>
+										<WrapPanel Orientation="Horizontal" />
+									</ItemsPanelTemplate>
+								</ItemsControl.ItemsPanel>
+								<ItemsControl.ItemTemplate>
+									<StaticResource ResourceKey="CompactGridViewTemplate"/>
+								</ItemsControl.ItemTemplate>
+							</ItemsControl>
+						</Grid>
+					</ScrollViewer>
+
+					<StackPanel x:Name="EmptyLibraryPanel"
+								HorizontalAlignment="Center"
+								VerticalAlignment="Center"
+								Spacing="16"
+								MaxWidth="520"
+								Margin="30,20,30,30"
+								IsVisible="False">
+						<TextBlock Text="Your library is empty"
+								   FontSize="24"
+								   FontWeight="Bold"
+								   Foreground="{DynamicResource ThemeText}"
+								   HorizontalAlignment="Center"
+								   TextAlignment="Center"/>
+						<TextBlock Text="Get started by adding an app yourself, or browse the Quiver Community App Catalog to add apps from the community."
+								   FontSize="14"
+								   Foreground="{DynamicResource ThemeTextSecondary}"
+								   TextWrapping="Wrap"
+								   TextAlignment="Center"/>
+						<StackPanel Orientation="Horizontal"
+									Spacing="12"
+									HorizontalAlignment="Center"
+									Margin="0,8,0,0">
+							<Button x:Name="EmptyLibraryAddButton" Classes="options" Focusable="True" GotFocus="EmptyLibraryAction_GotFocus"
+									Content="Add App Manually"
+									FontSize="13"
+									Click="EmptyLibraryAddApp_Click"/>
+							<Button x:Name="EmptyLibraryBrowseButton" Classes="options" Focusable="True" GotFocus="EmptyLibraryAction_GotFocus"
+									Content="Browse Community Catalog"
+									FontSize="13"
+									Click="EmptyLibraryBrowseCatalog_Click"/>
+						</StackPanel>
+					</StackPanel>
+
+					<StackPanel x:Name="LibrarySearchNoMatchesPanel"
+								HorizontalAlignment="Center"
+								VerticalAlignment="Center"
+								Spacing="16"
+								MaxWidth="520"
+								Margin="30,20,30,30"
+								IsVisible="False">
+						<TextBlock Text="No apps match this search"
+								   FontSize="24"
+								   FontWeight="Bold"
+								   Foreground="{DynamicResource ThemeText}"
+								   HorizontalAlignment="Center"
+								   TextAlignment="Center"/>
+						<TextBlock Text="Try a different search, or clear it to show your library again."
+								   FontSize="14"
+								   Foreground="{DynamicResource ThemeTextSecondary}"
+								   TextWrapping="Wrap"
+								   TextAlignment="Center"/>
+						<Button Classes="options"
+								Content="Clear search"
+								FontSize="13"
+								HorizontalAlignment="Center"
+								Click="LibrarySearchClear_Click"/>
+					</StackPanel>
+
+					<!-- App updates review (in-window, replaces modal) -->
+
+                    <!-- Mods browser (in-window overlay on Library) -->
+
+                </Grid>
+</UserControl>

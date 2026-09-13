@@ -7,6 +7,35 @@ namespace QuiverLauncher.Tests;
 public class CatalogSyncTests
 {
     [Fact]
+    public async Task Ignoring_revealed_final_review_clears_pending_notification_after_reload()
+    {
+        var (service, tempDir) = TestFixtures.CreateIsolatedCatalogService();
+        try
+        {
+            var source = new AppCatalogSource { Id = Guid.NewGuid().ToString(), CachedListVersion = "1", AcknowledgedListVersion = "0", Enabled = true };
+            await File.WriteAllTextAsync(Path.Combine(service.CatalogSourcesCacheFolder, source.Id + ".json"),
+                """{"version":"1","apps":[{"name":"Pending","repository":"","folderName":"Pending"}]}""");
+            await service.RefreshUpdateAvailableAsync(source);
+            source.PendingReviewCount.Should().Be(1);
+            var model = new QuiverLauncher.ViewModels.CatalogSyncViewModel
+                { ReviewFilter = CatalogReviewFilter.NeedsReview, PlatformFilters = ["Windows"] };
+            model.Refresh(source, [], await service.LoadCachedAppsAsync(source.Id));
+            model.ShowHiddenPendingReviews.Should().BeFalse();
+            model.RevealAllPendingReviews();
+            CatalogCompareService.IgnoreChangesForCurrentVersion(source, model.GetFilteredRows().Single().ReviewKey);
+            await service.RefreshUpdateAvailableAsync(source);
+            var settingsPath = Path.Combine(tempDir, "review-settings.json");
+            await File.WriteAllTextAsync(settingsPath, System.Text.Json.JsonSerializer.Serialize(source));
+            var restored = System.Text.Json.JsonSerializer.Deserialize<AppCatalogSource>(await File.ReadAllTextAsync(settingsPath))!;
+            await service.RefreshUpdateAvailableAsync(restored);
+            restored.PendingReviewCount.Should().Be(0);
+            restored.UpdateAvailable.Should().BeFalse();
+            restored.AcknowledgedListVersion.Should().Be("1");
+        }
+        finally { TestFixtures.CleanupDirectory(tempDir); }
+    }
+
+    [Fact]
     public async Task FetchSourceAsync_sets_UpdateAvailable_when_version_differs()
     {
         var sourceId = Guid.NewGuid().ToString();

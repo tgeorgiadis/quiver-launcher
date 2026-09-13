@@ -161,7 +161,7 @@ public class ModsSystemTests
     public void FormatModsLoadedStatus_exhausted_paging_hides_api_total_gap()
     {
         // API TotalCountHint can include paid/unmapped records never added to the catalog.
-        MainWindow.FormatModsLoadedStatus(
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.FormatModsLoadedStatus(
                 loaded: 94,
                 isSearch: false,
                 canLoadMore: false,
@@ -172,7 +172,7 @@ public class ModsSystemTests
     [Fact]
     public void FormatModsLoadedStatus_with_pages_remaining_shows_n_of_m()
     {
-        MainWindow.FormatModsLoadedStatus(
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.FormatModsLoadedStatus(
                 loaded: 94,
                 isSearch: false,
                 canLoadMore: true,
@@ -183,7 +183,7 @@ public class ModsSystemTests
     [Fact]
     public void FormatModsLoadedStatus_with_pages_remaining_without_hint_shows_more_available()
     {
-        MainWindow.FormatModsLoadedStatus(
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.FormatModsLoadedStatus(
                 loaded: 30,
                 isSearch: false,
                 canLoadMore: true,
@@ -194,7 +194,7 @@ public class ModsSystemTests
     [Fact]
     public void FormatModsLoadedStatus_search_exhausted_omits_more_available()
     {
-        MainWindow.FormatModsLoadedStatus(
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.FormatModsLoadedStatus(
                 loaded: 12,
                 isSearch: true,
                 canLoadMore: false,
@@ -205,7 +205,7 @@ public class ModsSystemTests
     [Fact]
     public void FormatModsLoadedStatus_search_with_pages_remaining()
     {
-        MainWindow.FormatModsLoadedStatus(
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.FormatModsLoadedStatus(
                 loaded: 12,
                 isSearch: true,
                 canLoadMore: true,
@@ -216,10 +216,10 @@ public class ModsSystemTests
     [Fact]
     public void ShouldShowModsListLoading_only_when_loading_and_empty()
     {
-        MainWindow.ShouldShowModsListLoading(isLoading: true, rowCount: 0).Should().BeTrue();
-        MainWindow.ShouldShowModsListLoading(isLoading: true, rowCount: 3).Should().BeFalse();
-        MainWindow.ShouldShowModsListLoading(isLoading: false, rowCount: 0).Should().BeFalse();
-        MainWindow.ShouldShowModsListLoading(isLoading: false, rowCount: 3).Should().BeFalse();
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.ShouldShowModsListLoading(isLoading: true, rowCount: 0).Should().BeTrue();
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.ShouldShowModsListLoading(isLoading: true, rowCount: 3).Should().BeFalse();
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.ShouldShowModsListLoading(isLoading: false, rowCount: 0).Should().BeFalse();
+        QuiverLauncher.Services.Mods.ModsCatalogWorkspace.ShouldShowModsListLoading(isLoading: false, rowCount: 3).Should().BeFalse();
     }
 
     [Fact]

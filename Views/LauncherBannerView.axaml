@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="QuiverLauncher.Views.LauncherBannerView" x:CompileBindings="True">
+<StackPanel>
+			<Border x:Name="AnnouncementBanner"
+					Classes="announcement-banner"
+					IsVisible="False">
+				<Grid ColumnDefinitions="*,Auto" Margin="12,8">
+					<TextBlock x:Name="AnnouncementBannerText"
+							   Grid.Column="0"
+							   TextWrapping="Wrap"
+							   VerticalAlignment="Center"
+							   FontSize="13"
+							   FontWeight="SemiBold"
+							   Margin="0,0,12,0"/>
+					<Button x:Name="AnnouncementBannerCloseButton"
+							Grid.Column="1"
+							Classes="announcement-banner-close"
+							Content="✕"
+							Width="32"
+							Height="28"
+							FontSize="14"
+							FontWeight="Bold"
+							VerticalAlignment="Center"
+							ToolTip.Tip="Dismiss"
+							Click="AnnouncementBannerClose_Click"/>
+				</Grid>
+			</Border>
+			<Border x:Name="GitHubTokenBanner"
+					Classes="github-token-banner"
+					IsVisible="False">
+				<Grid ColumnDefinitions="*,Auto" Margin="12,8">
+					<StackPanel Grid.Column="0" Margin="0,0,12,0" Spacing="2">
+						<TextBlock x:Name="GitHubTokenBannerText"
+								   Text="GitHub rate-limits unauthenticated use, so catalog refresh and downloads can fail or stall."
+								   TextWrapping="Wrap"
+								   VerticalAlignment="Center"
+								   FontSize="13"
+								   FontWeight="SemiBold"/>
+						<WrapPanel Orientation="Horizontal">
+							<Button x:Name="GitHubTokenBannerSettingsButton"
+									Classes="github-token-banner-link"
+									Click="GitHubTokenBannerSettings_Click">
+								<TextBlock Text="Set a GitHub token"/>
+							</Button>
+							<Button x:Name="GitHubTokenBannerDontShowAgainButton"
+									Classes="github-token-banner-link"
+									Click="GitHubTokenBannerDontShowAgain_Click">
+								<TextBlock Text="Don't show this again"/>
+							</Button>
+						</WrapPanel>
+					</StackPanel>
+					<Button x:Name="GitHubTokenBannerCloseButton"
+							Grid.Column="1"
+							Classes="github-token-banner-close"
+							Content="✕"
+							Width="32"
+							Height="28"
+							FontSize="14"
+							FontWeight="Bold"
+							VerticalAlignment="Center"
+							ToolTip.Tip="Dismiss for a week"
+							Click="GitHubTokenBannerClose_Click"/>
+				</Grid>
+			</Border>
+			</StackPanel>
+</UserControl>
