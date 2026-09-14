@@ -118,6 +118,7 @@ namespace QuiverLauncher
         public int ActionButtonSize { get; set; } = 36;
         public bool ShowOSTopBar { get; set; } = false;
         public int InterfaceScalePercent { get; set; } = 100;
+        public bool DesktopSidebarCollapsed { get; set; }
         public string PrimaryColor { get; set; } = "#18181b";
         public string SecondaryColor { get; set; } = "#404040";
         public TargetOS Platform { get; set; } = TargetOS.Auto;
@@ -162,6 +163,9 @@ namespace QuiverLauncher
         /// <summary>User-pinned tags preferred for quick-filter chips when present in the current set.</summary>
         public List<string> PinnedFilterTags { get; set; } = new List<string>();
         public bool StartFullscreen { get; set; } = false;
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public DesktopWindowPlacement? DesktopWindowPlacement { get; set; }
         public bool CloseAfterLaunch {  get; set; } = false;
         public bool CloseToTray { get; set; }
         public bool BackgroundUpdateCheckEnabled { get; set; }

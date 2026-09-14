@@ -10,6 +10,8 @@ namespace QuiverLauncher.Core.Services;
 
 public static class GameInstallationService
 {
+    public const string IncompleteInstallFileName = "install-incomplete.txt";
+
     /// <summary>
     /// True for single-file release binaries: .exe, .appimage, or extensionless (e.g. CrashBandicoot_Linux).
     /// </summary>
@@ -61,12 +63,15 @@ public static class GameInstallationService
                assetName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".appimage", StringComparison.OrdinalIgnoreCase) ||
-               assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
+               assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase) || IsFlatpakAsset(assetName);
     }
 
     public static bool IsAndroidPackageAsset(string? assetName)
         => !string.IsNullOrWhiteSpace(assetName)
            && assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsFlatpakAsset(string? assetName) =>
+        !string.IsNullOrWhiteSpace(assetName) && assetName.EndsWith(".flatpak", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsAppImageAsset(string? assetName)
         => !string.IsNullOrWhiteSpace(assetName)
@@ -335,6 +340,14 @@ public static class GameInstallationService
         SearchOption searchOption,
         GameInstallationOptions? options,
         out bool needsWine)
+        => FindExecutableCandidates(path, searchOption, options, out needsWine, CurrentDesktopPlatform);
+
+    internal static List<string> FindExecutableCandidates(
+        string path,
+        SearchOption searchOption,
+        GameInstallationOptions? options,
+        out bool needsWine,
+        OSPlatform platform)
     {
         _ = options;
         needsWine = false;
@@ -344,18 +357,18 @@ public static class GameInstallationService
 
         var executables = new List<string>();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (platform == OSPlatform.Windows)
         {
             executables.AddRange(Directory.GetFiles(path, "*.exe", searchOption));
             executables.AddRange(Directory.GetFiles(path, "*.bat", searchOption));
             executables.AddRange(Directory.GetFiles(path, "*.cmd", searchOption));
             executables.AddRange(Directory.GetFiles(path, "launch.bat", searchOption));
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        else if (platform == OSPlatform.OSX)
         {
             executables.AddRange(Directory.GetDirectories(path, "*.app", searchOption));
             executables.AddRange(Directory.GetFiles(path, "*", searchOption)
-                .Where(IsLikelyExtensionlessExecutable));
+                .Where(file => IsLikelyExtensionlessExecutable(file, platform)));
         }
         else
         {
@@ -383,7 +396,7 @@ public static class GameInstallationService
                     return false;
                 }
 
-                return IsLikelyExtensionlessExecutable(f);
+                return IsLikelyExtensionlessExecutable(f, platform);
             }));
 
             if (executables.Count == 0)
@@ -412,8 +425,11 @@ public static class GameInstallationService
 
         var fileName = Path.GetFileName(path);
         return fileName.Equals("version.txt", StringComparison.OrdinalIgnoreCase) ||
+               fileName.Equals(IncompleteInstallFileName, StringComparison.OrdinalIgnoreCase) ||
                fileName.Equals("LastPlayed.txt", StringComparison.OrdinalIgnoreCase) ||
                fileName.Equals("selected_executable.txt", StringComparison.OrdinalIgnoreCase) ||
+               fileName.Equals("flatpak-install.json", StringComparison.OrdinalIgnoreCase) ||
+               fileName.Equals("flatpak-install.pending.json", StringComparison.OrdinalIgnoreCase) ||
                options.AdditionalMetadataFileNames.Any(name => fileName.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -1021,11 +1037,45 @@ public static class GameInstallationService
         return FindExecutableCandidates(path, SearchOption.TopDirectoryOnly, options, out _).Count > 0;
     }
 
-    static bool IsLikelyExtensionlessExecutable(string path)
+    private static OSPlatform CurrentDesktopPlatform => OperatingSystem.IsWindows() ? OSPlatform.Windows :
+        OperatingSystem.IsMacOS() ? OSPlatform.OSX : OSPlatform.Linux;
+
+    internal static bool IsValidSavedExecutable(string? path, OSPlatform? platform = null)
+    {
+        if (!File.Exists(path)) return false;
+        var target = platform ?? CurrentDesktopPlatform;
+        return target == OSPlatform.Windows || Path.HasExtension(path) || IsLikelyExtensionlessExecutable(path, target);
+    }
+
+    // ZIP permissions and file sizes are not evidence that an extensionless file is a program.
+    // In particular LICENSE/COPYING used to hide every Windows .exe in Linux installs.
+    static bool IsLikelyExtensionlessExecutable(string path, OSPlatform platform)
     {
         try
         {
-            return !Path.HasExtension(path) && new FileInfo(path).Length > 1024;
+            if (Path.HasExtension(path)) return false;
+            using var stream = File.OpenRead(path);
+            Span<byte> header = stackalloc byte[64];
+            var length = stream.ReadAtLeast(header, header.Length, throwOnEndOfStream: false);
+            if (length >= 3 && header[0] == '#' && header[1] == '!' &&
+                System.Text.Encoding.UTF8.GetString(header[2..length]).TrimStart(' ', '\t').StartsWith('/'))
+                return true;
+
+            if (platform == OSPlatform.OSX)
+            {
+                if (length < 4) return false;
+                var magic = System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(header);
+                return magic is 0xFEEDFACE or 0xCEFAEDFE or 0xFEEDFACF or 0xCFFAEDFE or 0xCAFEBABE or 0xBEBAFECA or 0xCAFEBABF or 0xBFBAFECA;
+            }
+
+            if (length < 52 || !header[..4].SequenceEqual(new byte[] { 0x7f, (byte)'E', (byte)'L', (byte)'F' }) ||
+                header[4] is not (1 or 2) || header[5] is not (1 or 2) || header[6] != 1 ||
+                header[4] == 2 && length < 64) return false;
+            var type = header[5] == 1
+                ? System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(header[16..])
+                : System.Buffers.Binary.BinaryPrimitives.ReadUInt16BigEndian(header[16..]);
+            // ET_EXEC or PIE (ET_DYN), with an entry point. Shared libraries without one are not launch targets.
+            return type is 2 or 3 && header.Slice(24, header[4] == 1 ? 4 : 8).ContainsAnyExcept((byte)0);
         }
         catch
         {

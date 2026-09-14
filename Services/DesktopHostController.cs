@@ -13,6 +13,7 @@ public sealed class DesktopHostController : IDisposable
     private bool _rewritingState;
     private bool _disposed;
     private readonly DesktopInterfaceScaling _scaling;
+    private readonly DesktopWindowPlacementController _placement;
     public Window Window { get; }
 
     public DesktopHostController(Window window, MainView view)
@@ -28,8 +29,9 @@ public sealed class DesktopHostController : IDisposable
         window.PropertyChanged += OnPropertyChanged;
         view.SettingsModel.PropertyChanged += OnSettingsChanged;
         ApplyWindowChrome();
-        if (view.SettingsModel.Current.StartFullscreen) window.WindowState = SteamDeckEnvironment.DesktopFullscreenWindowState();
+        _placement = new DesktopWindowPlacementController(window, view.SettingsModel);
         _scaling = new DesktopInterfaceScaling(window, view.SettingsModel);
+        _placement.ApplyStartupState();
     }
 
     private void OnOpened(object? sender, EventArgs e) => _view.HandleOpened();
@@ -77,6 +79,7 @@ public sealed class DesktopHostController : IDisposable
 
     public void HandleClosing(WindowClosingEventArgs e)
     {
+        _placement.Flush();
         if (!_forceExit && _view.SettingsModel.Current.CloseToTray)
         {
             e.Cancel = true;
@@ -89,6 +92,7 @@ public sealed class DesktopHostController : IDisposable
 
     public void HideToTray()
     {
+        _placement.Suspend();
         _view.DismissInputForHost();
         Window.Hide();
         _view._app?.SetTrayVisible(true);
@@ -98,7 +102,8 @@ public sealed class DesktopHostController : IDisposable
     public void RestoreFromTray()
     {
         Window.Show();
-        Window.WindowState = WindowState.Normal;
+        if (Window.WindowState == WindowState.Minimized) Window.WindowState = WindowState.Normal;
+        _placement.Resume();
         Window.Activate();
         ApplyTraySettings();
         _view.RefreshHostUpdateStatus();
@@ -110,7 +115,6 @@ public sealed class DesktopHostController : IDisposable
     public void RequestExit()
     {
         _forceExit = true;
-        if (!Window.IsVisible) Window.Show();
         Window.Close();
     }
 
@@ -119,6 +123,7 @@ public sealed class DesktopHostController : IDisposable
         if (!launched || !_view.SettingsModel.Current.CloseAfterLaunch) return;
         _view.DismissInputForHost();
         if (_view.SettingsModel.Current.CloseToTray) { HideToTray(); return; }
+        _placement.Suspend();
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Window.Hide();
         Window.Close();
     }
@@ -127,6 +132,7 @@ public sealed class DesktopHostController : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _placement.Dispose();
         _scaling.Dispose();
         Window.Opened -= OnOpened;
         Window.Closing -= OnClosing;

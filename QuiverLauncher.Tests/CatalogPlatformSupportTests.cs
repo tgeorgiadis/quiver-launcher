@@ -206,7 +206,7 @@ public class CatalogPlatformSupportTests : IDisposable
             Release("v3.0.0", "app-win.zip", "app.flatpak"));
 
         GitHubApiCache.TryGetAssetNames("github", repo, out var names).Should().BeTrue();
-        names.Should().Equal("app-win.zip");
+        names.Should().Equal("app-win.zip", "app.flatpak");
     }
 
     [Fact]

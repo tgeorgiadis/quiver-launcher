@@ -231,6 +231,14 @@
 				<Border Classes="header-inner">
 					<Grid RowDefinitions="Auto,Auto">
 						<Grid x:Name="HeaderLayoutGrid" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto" VerticalAlignment="Top">
+						<Button x:Name="DesktopSidebarToggleButton" Grid.Column="0"
+								Classes="modern-icon" Width="32" Height="32" Margin="8,0,0,0" Padding="6"
+								VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+								IsVisible="{Binding IsDesktopPlatform}" Focusable="True"
+								AutomationProperties.Name="Hide sidebar" ToolTip.Tip="Hide sidebar">
+							<Path Width="20" Height="20" Stretch="Uniform" Stroke="{DynamicResource ThemeText}"
+								  StrokeThickness="1.5" Data="M3,3 L21,3 L21,21 L3,21 Z M9,3 L9,21 M16,8 L12,12 L16,16"/>
+						</Button>
 						<Button x:Name="MobileNavButton"
 								Grid.Column="0"
 								Classes="modern-icon mobile-header-icon"
@@ -599,7 +607,7 @@
 			</Grid>
 			<!-- Top strip: announcement always wins over the GitHub token warning. -->
 			<StackPanel Grid.Row="1" ZIndex="1">
-                <views:UpdateCheckStatusView x:Name="UpdateCheckStatus" DataContext="{Binding Shell}" CancelRequested="CancelUpdateCheck_Click" RetryRequested="RetryUpdateCheck_Click"/>
+                <views:UpdateCheckStatusView x:Name="UpdateCheckStatus" DataContext="{Binding Shell}" CancelRequested="CancelUpdateCheck_Click" RetryRequested="RetryUpdateCheck_Click" DismissRequested="DismissUpdateCheck_Click"/>
                 <views:AndroidLauncherUpdateView x:Name="AndroidUpdateBanner" DataContext="{Binding AndroidUpdates}" IsBanner="True" IsVisible="{Binding ShowBanner, FallbackValue=False}"/>
                 <views:LauncherBannerView x:Name="Banners"/>
             </StackPanel>
@@ -621,7 +629,7 @@
 				<!-- Background Image -->
 				<Border Background="{DynamicResource ThemeDarker}"/>
 				<Image x:Name="StaticBackgroundImage"
-					Source="{Binding Shell.BackgroundImageUri}"
+					asyncImageLoader:ImageLoader.Source="{Binding Shell.BackgroundImageUri}"
 					Stretch="Fill"
 					Opacity="{Binding Shell.BackgroundOpacity}"/>
 

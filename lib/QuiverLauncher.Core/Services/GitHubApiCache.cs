@@ -11,7 +11,7 @@ namespace QuiverLauncher.Core.Services
         public string ETag { get; set; } = string.Empty;
         public GitHubRelease? CachedRelease { get; set; }
         public DateTime LastUpdateCheck { get; set; }
-        /// <summary>Downloadable asset names from the cached latest release (flatpak excluded).</summary>
+        /// <summary>Downloadable asset names from the cached latest release.</summary>
         public List<string> AssetNames { get; set; } = [];
     }
 
@@ -47,6 +47,10 @@ namespace QuiverLauncher.Core.Services
                     foreach (var kvp in diskCache)
                     {
                         kvp.Value.ETag = string.Empty; // Legacy validators have no endpoint identity.
+                        if (kvp.Value.CachedRelease != null)
+                            kvp.Value.AssetNames = ExtractAssetNames(kvp.Value.CachedRelease);
+                        else
+                            kvp.Value.LastChecked = DateTime.MinValue;
                         _cache.TryAdd(kvp.Key, kvp.Value);
                     }
                 }
@@ -246,6 +250,9 @@ namespace QuiverLauncher.Core.Services
 
             if (!TryResolveCacheEntry(repositorySource, repository, out _, out var cache) || cache == null)
                 return false;
+
+            if (cache.CachedRelease != null)
+                cache.AssetNames = ExtractAssetNames(cache.CachedRelease);
 
             if (cache.AssetNames is { Count: > 0 })
             {

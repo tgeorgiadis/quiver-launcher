@@ -23,7 +23,11 @@ public class DesktopInterfaceScalingTests
     [InlineData(225, 1280, 720, 125)]
     [InlineData(125, 1920, 1080, 125)]
     [InlineData(225, 750, 490, 100)]
-    [InlineData(175, 600, 400, 100)]
+    [InlineData(175, 600, 400, 75)]
+    [InlineData(75, 1920, 1080, 75)]
+    [InlineData(50, 1920, 1080, 50)]
+    [InlineData(75, 400, 300, 50)]
+    [InlineData(50, 300, 200, 50)]
     [InlineData(123, 3840, 2160, 100)]
     public void Scale_fits_both_dimensions_without_exceeding_requested(int requested, double width, double height, int expected)
         => InterfaceScale.Fit(requested, new Size(width, height)).Should().Be(expected);
@@ -40,7 +44,7 @@ public class DesktopInterfaceScalingTests
             store.Saves.Should().Be(0);
             var gridSize = store.Current.SlotSize;
             var rowHeight = store.Current.ListRowHeight;
-            model.InterfaceScaleIndex = 5;
+            model.InterfaceScaleIndex = model.InterfaceScaleOptions.ToList().IndexOf(225);
             store.Saves.Should().Be(1);
             JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(store.Current))!.InterfaceScalePercent.Should().Be(225);
             store.Current.SlotSize.Should().Be(gridSize);
@@ -69,8 +73,9 @@ public class DesktopInterfaceScalingTests
         finally { window.Close(); }
     }
 
-    [Fact]
-    public void File_store_load_is_read_only_and_persists_the_requested_scale()
+    [Theory]
+    [InlineData(50)] [InlineData(75)] [InlineData(175)]
+    public void File_store_load_is_read_only_and_persists_the_requested_scale(int percent)
     {
         var path = Path.Combine(Path.GetTempPath(), $"quiver-scale-{Guid.NewGuid():N}.json");
         try
@@ -80,8 +85,8 @@ public class DesktopInterfaceScalingTests
             var store = new FileSettingsStore(path);
             store.Current.InterfaceScalePercent.Should().Be(100);
             File.ReadAllText(path).Should().Be(original);
-            new SettingsViewModel(store).InterfaceScalePercent = 175;
-            new FileSettingsStore(path).Current.InterfaceScalePercent.Should().Be(175);
+            new SettingsViewModel(store).InterfaceScalePercent = percent;
+            new FileSettingsStore(path).Current.InterfaceScalePercent.Should().Be(percent);
         }
         finally { File.Delete(path); }
     }
@@ -123,6 +128,7 @@ public class DesktopInterfaceScalingTests
     }
 
     [AvaloniaTheory]
+    [InlineData(50)] [InlineData(75)]
     [InlineData(100)] [InlineData(125)] [InlineData(150)]
     [InlineData(175)] [InlineData(200)] [InlineData(225)]
     public async Task Real_shell_reflows_and_preserves_search_editing_at_each_scale(int percent)
@@ -146,7 +152,7 @@ public class DesktopInterfaceScalingTests
             GamepadTextInput.IsEditing.Should().BeTrue();
             search.SelectedText.Should().Be("mmy q");
             view.Library.SortBy.Should().Be("NameDesc");
-            view.Bounds.Width.Should().BeApproximately(750, 1);
+            view.Bounds.Width.Should().BeApproximately(750 / Math.Min(1, percent / 100d), 1);
             foreach (var name in new[] { "MinimizeButton", "ToggleMaximizeButton", "CloseLauncherButton" })
             {
                 var button = view.FindControl<Button>(name)!;

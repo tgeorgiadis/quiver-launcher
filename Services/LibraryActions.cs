@@ -71,6 +71,12 @@ public sealed class LibraryActions
             if (game.IsManuallyManaged)
                 ManualAppFolderService.EnsurePrepared(game, _gameManager.GamesFolder);
             var folderPath = game.GetInstallPath(_gameManager.GamesFolder);
+            if (FlatpakService.HasReceipt(folderPath))
+            {
+                var receipt = FlatpakService.ReadReceipt(folderPath) ?? FlatpakService.ReadReceipt(folderPath, pending: true);
+                if (receipt != null && Directory.Exists(FlatpakService.DataDirectory(receipt)))
+                    folderPath = FlatpakService.DataDirectory(receipt);
+            }
             if (string.IsNullOrWhiteSpace(folderPath))
             {
                 _ = _session.RunAsync(() => ShowMessageBoxAsync("Unable to identify the game folder.", "Action Error"));
@@ -186,6 +192,22 @@ public sealed class LibraryActions
         {
             if (game == null)
                 return;
+            var flatpakPath = game.GetInstallPath(_gameManager.GamesFolder);
+            if (FlatpakService.HasReceipt(flatpakPath))
+            {
+                if (!await ShowMessageBoxAsync($"Uninstall {game.Name}?\n\nYour saves and application data will be preserved.",
+                    "Uninstall Flatpak", isQuestion: true, preferCancelDefault: true) || _session.IsClosed) return;
+                game.IsLoading = true;
+                try { await FlatpakService.Current.UninstallAsync(flatpakPath); }
+                catch (Exception ex) { await ShowMessageBoxAsync($"Could not uninstall {game.Name}: {ex.Message}", "Uninstall Failed"); }
+                finally
+                {
+                    await game.CheckStatusAsync(_gameManager.HttpClient, _gameManager.GamesFolder, checkRemoteVersion: false);
+                    game.IsLoading = false;
+                    Changed();
+                }
+                return;
+            }
             if (game.Status == GameStatus.NotInstalled)
             {
                 _ = _session.RunAsync(() => ShowMessageBoxAsync($"{game.Name} is not installed.", "Nothing to Delete"));

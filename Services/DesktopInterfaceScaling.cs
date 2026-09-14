@@ -106,7 +106,7 @@ internal sealed class DesktopInterfaceScaling : IDisposable
         var screen = window.Screens.ScreenFromWindow(window) ?? window.Screens.Primary;
         if (screen == null) return new Size(750, 490);
         var pixels = window.WindowState == WindowState.FullScreen ? screen.Bounds : screen.WorkingArea;
-        var dpi = window.RenderScaling;
+        var dpi = window.IsVisible ? window.RenderScaling : screen.Scaling;
         var frame = window.FrameSize ?? window.ClientSize;
         return new Size(Math.Max(0, pixels.Width / dpi - Math.Max(0, frame.Width - window.ClientSize.Width)),
             Math.Max(0, pixels.Height / dpi - Math.Max(0, frame.Height - window.ClientSize.Height)));

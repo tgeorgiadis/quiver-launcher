@@ -19,6 +19,9 @@ public static class GameLaunchService
         {
             var gamePath = game.GetInstallPath(gamesFolder);
 
+            if (FlatpakService.HasReceipt(gamePath))
+                return await LaunchFlatpakAsync(game, gamePath);
+
             if (!Directory.Exists(gamePath))
             {
                 await GameDialogService.ShowMessageBoxAsync($"App directory not found: {gamePath}", "Directory Not Found");
@@ -52,15 +55,6 @@ public static class GameLaunchService
 
             var settings = AppSettings.Load();
 
-            if (needsWine && !WindowsRunnerService.IsWindowsRunnerAvailable(settings, game))
-            {
-                await GameDialogService.ShowMessageBoxAsync(
-                    "Only a Windows executable was found, but no Linux Windows-runner is configured or detected.\n\n" +
-                    "Install Wine/Proton, or open this app’s menu (⋯) → Launch Options → Windows Runner to pick a runner or custom command.",
-                    "Windows Runner Not Found");
-                return false;
-            }
-
             game.AvailableExecutables = executables;
 
             if (string.IsNullOrEmpty(game.SelectedExecutable))
@@ -78,6 +72,18 @@ public static class GameLaunchService
                                  executables.Contains(game.SelectedExecutable)
                 ? game.SelectedExecutable
                 : executables[0];
+
+            // A mixed release can contain both .exe files and shell launchers.
+            // Runner selection belongs to the chosen file, not the candidate list.
+            needsWine = OperatingSystem.IsLinux() && executablePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+            if (needsWine && !WindowsRunnerService.IsWindowsRunnerAvailable(settings, game))
+            {
+                await GameDialogService.ShowMessageBoxAsync(
+                    "The selected Windows executable needs a Linux Windows-runner, but none is configured or detected.\n\n" +
+                    "Install Wine/Proton, or open this app’s menu (⋯) → Launch Options → Windows Runner to pick a runner or custom command.",
+                    "Windows Runner Not Found");
+                return false;
+            }
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
                 !executablePath.EndsWith(".app") &&
@@ -197,6 +203,32 @@ public static class GameLaunchService
 
             return false;
         }
+    }
+
+    private static async Task<bool> LaunchFlatpakAsync(GameInfo game, string gamePath)
+    {
+        if (!OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
+            throw new PlatformNotSupportedException("Flatpak apps can only be launched on Linux desktops.");
+        // Resume on the caller's UI context before changing bound state or raising
+        // launch/library events. Flatpak's process and metadata work remains async.
+        var state = await FlatpakService.Current.GetStateAsync(gamePath);
+        if (state?.Installed != true)
+            throw new InvalidOperationException("This Flatpak app is no longer installed. Install it again from Quiver.");
+        game.IsFlatpak = true;
+        var startInfo = FlatpakService.StartInfo(FlatpakService.LaunchArguments(state.Receipt), capture: false);
+        var before = LaunchDebugReport.SnapshotProcessEnvironment();
+        var after = LaunchDebugReport.SnapshotStartInfoEnvironment(startInfo);
+        var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not launch Flatpak.");
+        game.UpdateLastPlayedTime(gamePath);
+        var name = game.Name ?? game.FolderName ?? state.Receipt.ApplicationId;
+        WriteLaunchReport(name, gamePath, state.Receipt.Reference, [], null, startInfo, before, after,
+            process.Id, LaunchDebugReport.TryReadProcEnviron(process.Id));
+        ScheduleLaunchExitFollowUp(name, gamePath, state.Receipt.Reference, [], null, startInfo,
+            before, after, process, null);
+        game.RaiseGameProcessStarted(process);
+        if (game.GameManager != null && Avalonia.Application.Current != null)
+            game.GameManager.OnPropertyChanged(nameof(GameManager.Games));
+        return true;
     }
 
     private static async Task MakeExecutableAsync(string executablePath)

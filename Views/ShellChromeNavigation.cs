@@ -319,6 +319,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
     internal List<Control> CollectSidebarFocusableControls()
     {
         var controls = new List<Control>();
+        if (!SidebarPanel.IsEnabled) return controls;
         void Add(Control? control)
         {
             if (control != null && control.IsVisible && control.IsEnabled)
@@ -344,6 +345,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
                 controls.Add(control);
         }
 
+        if (!PlatformCapabilities.IsMobile) Add(_root.FindControl<Button>("DesktopSidebarToggleButton"));
         if (Shell.Mode == MainViewMode.Library && !Shell.AppUpdatesOpen && !Shell.ModsOpen)
         {
             if (PlatformCapabilities.IsMobile)
@@ -420,6 +422,11 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
 
     internal void ApplySidebarGamepadSelection(int index)
     {
+        if (!SidebarPanel.IsEnabled)
+        {
+            ApplyTopBarGamepadSelection(0);
+            return;
+        }
         var controls = CollectSidebarFocusableControls();
         index = _gamepadNavigation.ClampIndex(index, controls.Count);
         _gamepadNavigation.SidebarSelectedIndex = index;

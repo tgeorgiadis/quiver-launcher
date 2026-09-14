@@ -48,7 +48,7 @@ namespace QuiverLauncher.Core.Services
         private static readonly string[] NonWindowsPlatformMarkers =
         [
             "linux", "macos", "osx", "darwin", "apple",
-            ".deb", ".rpm", "appimage", ".dmg", ".pkg",
+            ".deb", ".rpm", "appimage", "flatpak", ".dmg", ".pkg",
             "android", "arm64-v8a", ".apk", "switch"
         ];
 
@@ -73,6 +73,9 @@ namespace QuiverLauncher.Core.Services
 
             var assetNameLower = assetName.ToLowerInvariant();
             var platformLower = platformIdentifier.ToLowerInvariant();
+
+            if (GameInstallationService.IsFlatpakAsset(assetName) && !platformLower.StartsWith("linux"))
+                return false;
 
             // Symbol archives are downloadable, but are not runnable platform builds.
             if (IsIosAsset(assetNameLower) || IsDedicatedDeviceAsset(assetNameLower) || DownloadAssetPolicy.IsAuxiliary(assetNameLower) || IsDebugSymbolPackage(assetNameLower))
@@ -114,7 +117,7 @@ namespace QuiverLauncher.Core.Services
                     return false;
                 }
 
-                bool hasLinux = HasAnyOf(assetNameLower, "linux", "appimage", ".deb", ".rpm", "tar.gz", "tar.xz");
+                bool hasLinux = HasAnyOf(assetNameLower, "linux", "appimage", ".flatpak", ".deb", ".rpm", "tar.gz", "tar.xz");
 
                 if (!hasLinux)
                 {

@@ -48,7 +48,8 @@ internal sealed class DesktopHeaderLayout : IDisposable
             _tools.Width = double.NaN;
             _tools.Measure(unconstrained);
             var toolsWidth = _preferredToolsWidth();
-            var required = _actions.DesiredSize.Width + Math.Min(240, _title.DesiredSize.Width) + toolsWidth + (toolsWidth > 0 ? 12 : 0);
+            var required = _header.ColumnDefinitions[0].ActualWidth + _actions.DesiredSize.Width
+                + Math.Min(240, _title.DesiredSize.Width) + toolsWidth + (toolsWidth > 0 ? 12 : 0);
             var secondRow = toolsWidth > 0 && _header.Bounds.Width < required + (_secondRow ? 16 : 0);
             _secondRow = secondRow;
             Grid.SetRow(_tools, secondRow ? 1 : 0);

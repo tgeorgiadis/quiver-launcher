@@ -2,6 +2,11 @@
 
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/github/license/tgeorgiadis/quiver-launcher)](https://github.com/tgeorgiadis/quiver-launcher/blob/main/LICENSE)
+[![Windows](https://img.shields.io/badge/Windows-0078D4)](https://github.com/tgeorgiadis/quiver-launcher/releases/latest/download/QuiverLauncher-win-Portable.zip)
+[![Linux](https://img.shields.io/badge/Linux-333333)](https://github.com/tgeorgiadis/quiver-launcher/releases/latest)
+[![Android](https://img.shields.io/badge/Android-3A7D44)](https://github.com/tgeorgiadis/quiver-launcher/releases/latest/download/QuiverLauncher-android.apk)
+[![Join the community on Discord](https://img.shields.io/badge/Join_the_community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/5XRThpWHGk)
+[![Support the project on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-B8394A?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/J1I2265MN5)
 
 > **About** - **Quiver Launcher** is a fork of [GithubLauncher](https://github.com/SirDiabo/GithubLauncher), extended with the features I wanted: **tag filters**, **library management with App Catalog**, **mod management support**, **UI improvements** and more. It was rebranded from GithubLauncher to avoid using the GitHub trademark.
 

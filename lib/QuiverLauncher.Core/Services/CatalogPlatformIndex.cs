@@ -45,7 +45,7 @@ public static class CatalogPlatformIndex
                         var split = entry.Key.IndexOf(':');
                         var provider = split < 0 ? "github" : entry.Key[..split];
                         var repo = split < 0 ? entry.Key : entry.Key[(split + 1)..];
-                        var names = entry.Value.AssetNames.Count > 0 ? entry.Value.AssetNames : GitHubApiCache.ExtractAssetNames(entry.Value.CachedRelease);
+                        var names = entry.Value.CachedRelease != null ? GitHubApiCache.ExtractAssetNames(entry.Value.CachedRelease) : entry.Value.AssetNames;
                         if (names.Count > 0 || entry.Value.CachedRelease != null)
                             Legacy[Key(provider, repo)] = new(entry.Value.Version, names.ToArray(), DateTimeOffset.MinValue);
                     }
@@ -69,13 +69,13 @@ public static class CatalogPlatformIndex
     }
     public static bool IsFresh(string? provider, string repository, string? preferredVersion = null, string? token = null) =>
         TryGet(provider, repository, preferredVersion, token, out var entry) &&
-        (entry!.AssetNames.Length > 0 || entry.SelectionRevision >= 1) &&
+        entry!.SelectionRevision >= 2 &&
         DateTimeOffset.UtcNow - entry.ValidatedAt < TimeSpan.FromHours(24);
 
     public static void Set(string? provider, string repository, string? preferredVersion, string? token, GitHubRelease? release)
     {
         Entries[Key(provider, repository, preferredVersion, token)] = new(release?.tag_name ?? "",
-            GitHubApiCache.ExtractAssetNames(release).ToArray(), DateTimeOffset.UtcNow, SelectionRevision: 1);
+            GitHubApiCache.ExtractAssetNames(release).ToArray(), DateTimeOffset.UtcNow, SelectionRevision: 2);
     }
     public static void Flush()
     {

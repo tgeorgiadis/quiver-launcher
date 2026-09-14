@@ -70,7 +70,7 @@ public sealed class CatalogReviewService(GameManager manager, SettingsViewModel 
 
     public static CatalogAddCommit PlanAdd(List<GameInfo> local, GameInfo external, bool autoUpdate)
     {
-        var existing = local.FirstOrDefault(a => string.Equals(a.InstanceKey, external.InstanceKey, StringComparison.OrdinalIgnoreCase));
+        var existing = CatalogCompareService.FindExistingCatalogEntry(local, external);
         if (existing != null) return new(CatalogAddOutcome.AlreadyAdded, existing, local);
         var occupant = local.FirstOrDefault(a => !string.IsNullOrWhiteSpace(external.FolderName) &&
             string.Equals(a.FolderName?.Trim(), external.FolderName.Trim(), StringComparison.OrdinalIgnoreCase));

@@ -22,6 +22,8 @@ public partial class LibraryView : UserControl
     private AppSettings _settings => Model.Settings.Current;
     public LibraryViewModel Model { get; private set; } = null!;
     public LibraryNavigation Navigation { get; internal set; } = null!;
+    private Thickness _contentInsets;
+    private bool _updateStatusVisible;
 
     public event Action<LibraryActionKind, GameInfo?>? NavigationRequested;
     private LibraryActions _actions = null!;
@@ -39,6 +41,7 @@ public partial class LibraryView : UserControl
     public LibraryView()
     {
         InitializeComponent();
+        _contentInsets = LibraryContentPanel.Margin;
     }
 
     public void Configure(LibraryViewModel model, LauncherSession session, LibraryLaunchController launch, Action<Control, ContextMenu> openMenu)
@@ -64,10 +67,21 @@ public partial class LibraryView : UserControl
 
     public void ApplyContentInsets(Thickness margin)
     {
-        LibraryContentPanel.Margin = margin;
+        _contentInsets = margin;
+        ApplyLibraryContentInsets();
         EmptyLibraryPanel.Margin = new Thickness(16);
         LibrarySearchNoMatchesPanel.Margin = new Thickness(16);
     }
+
+    internal void SetUpdateStatusVisible(bool visible)
+    {
+        _updateStatusVisible = visible;
+        ApplyLibraryContentInsets();
+    }
+
+    private void ApplyLibraryContentInsets() => LibraryContentPanel.Margin =
+        new Thickness(_contentInsets.Left, _updateStatusVisible ? 0 : _contentInsets.Top,
+            _contentInsets.Right, _contentInsets.Bottom);
 
     public void UpdateEmptyState(bool showLibrary)
     {

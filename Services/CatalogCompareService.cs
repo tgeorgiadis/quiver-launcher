@@ -338,6 +338,24 @@ namespace QuiverLauncher.Services
                 .GroupBy(a => a.FolderName!.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
+        // Catalog variants survive a Merge that deliberately retains the installed folder.
+        // This is not the library instance key: users can still keep separate local installs.
+        internal static string? GetCatalogVariantKey(GameInfo app)
+        {
+            var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(app.ReleaseAssetFilter);
+            return app.IsManuallyManaged || filter == null ? null : $"{app.IdentityKey}\n{filter}";
+        }
+
+        internal static GameInfo? FindExistingCatalogEntry(IEnumerable<GameInfo> localApps, GameInfo external)
+        {
+            var apps = localApps as IList<GameInfo> ?? localApps.ToList();
+            var exact = apps.FirstOrDefault(a => string.Equals(a.InstanceKey, external.InstanceKey, StringComparison.OrdinalIgnoreCase));
+            if (exact != null) return exact;
+            var variant = GetCatalogVariantKey(external);
+            return variant == null ? null : apps.FirstOrDefault(a =>
+                string.Equals(GetCatalogVariantKey(a), variant, StringComparison.OrdinalIgnoreCase));
+        }
+
         public static IReadOnlyList<CatalogSyncRowItem> BuildCompareRows(
             List<GameInfo> localApps,
             List<GameInfo> externalApps,
@@ -350,38 +368,53 @@ namespace QuiverLauncher.Services
                 .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
             var localByFolder = IndexByFolderName(localApps);
 
-            var rows = new List<CatalogSyncRowItem>();
-            var seenInstanceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var definitions = externalApps
+                .Where(a => !string.IsNullOrWhiteSpace(a.Repository) || !string.IsNullOrWhiteSpace(a.FolderName))
+                .DistinctBy(a => a.InstanceKey, StringComparer.OrdinalIgnoreCase).ToList();
+            var matches = new Dictionary<string, GameInfo>(StringComparer.OrdinalIgnoreCase);
             var matchedLocalInstanceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var external in externalApps)
+            void Match(GameInfo external, GameInfo local)
             {
-                if (string.IsNullOrWhiteSpace(external.Repository) &&
-                    string.IsNullOrWhiteSpace(external.FolderName))
-                    continue;
+                if (!matches.ContainsKey(external.InstanceKey) && matchedLocalInstanceKeys.Add(local.InstanceKey))
+                    matches.Add(external.InstanceKey, local);
+            }
 
-                var instanceKey = external.InstanceKey;
-                if (string.IsNullOrWhiteSpace(instanceKey) || !seenInstanceKeys.Add(instanceKey))
-                    continue;
-
-                GameInfo? local = null;
-                if (localByInstance.TryGetValue(instanceKey, out var byInstance) &&
-                    matchedLocalInstanceKeys.Add(byInstance.InstanceKey))
-                {
-                    local = byInstance;
-                }
-                else if (localByIdentity.TryGetValue(external.IdentityKey, out var sameRepoLocals) &&
-                         sameRepoLocals.Count == 1 &&
-                         matchedLocalInstanceKeys.Add(sameRepoLocals[0].InstanceKey))
-                {
-                    local = sameRepoLocals[0];
-                }
-                else if (!string.IsNullOrWhiteSpace(external.FolderName) &&
+            // Reserve strong matches across the whole catalog before fallback matching.
+            // Otherwise an earlier sibling can consume the later entry's exact match.
+            foreach (var external in definitions)
+                if (localByInstance.TryGetValue(external.InstanceKey, out var byInstance)) Match(external, byInstance);
+            foreach (var external in definitions.Where(e => !matches.ContainsKey(e.InstanceKey)))
+                if (!string.IsNullOrWhiteSpace(external.FolderName) &&
                          localByFolder.TryGetValue(external.FolderName.Trim(), out var byFolder) &&
-                         matchedLocalInstanceKeys.Add(byFolder.InstanceKey))
-                {
-                    local = byFolder;
-                }
+                         !matchedLocalInstanceKeys.Contains(byFolder.InstanceKey)) Match(external, byFolder);
+
+            var localVariants = localByInstance.Values.Where(a => !matchedLocalInstanceKeys.Contains(a.InstanceKey) && GetCatalogVariantKey(a) != null)
+                .GroupBy(a => GetCatalogVariantKey(a)!, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+            foreach (var group in definitions.Where(e => !matches.ContainsKey(e.InstanceKey) && GetCatalogVariantKey(e) != null)
+                .GroupBy(e => GetCatalogVariantKey(e)!, StringComparer.OrdinalIgnoreCase))
+            {
+                if (group.Count() == 1 && localVariants.TryGetValue(group.Key, out var candidates) && candidates.Count == 1)
+                    Match(group.Single(), candidates[0]);
+            }
+
+            foreach (var external in definitions.Where(e => !matches.ContainsKey(e.InstanceKey)))
+            {
+                if (!localByIdentity.TryGetValue(external.IdentityKey, out var sameRepoLocals)) continue;
+                var remaining = sameRepoLocals.Where(a => !matchedLocalInstanceKeys.Contains(a.InstanceKey)).ToList();
+                if (remaining.Count != 1) continue;
+                var local = remaining[0];
+                // A filtered game must not become another filtered sibling through a repository fallback.
+                if (GetCatalogVariantKey(local) != null && GetCatalogVariantKey(external) != null &&
+                    !string.Equals(GetCatalogVariantKey(local), GetCatalogVariantKey(external), StringComparison.OrdinalIgnoreCase)) continue;
+                Match(external, local);
+            }
+
+            var rows = new List<CatalogSyncRowItem>();
+            foreach (var external in definitions)
+            {
+                var instanceKey = external.InstanceKey;
+                matches.TryGetValue(instanceKey, out var local);
 
                 GameInfo? folderOccupiedBy = null;
                 if (local == null &&
@@ -755,10 +788,13 @@ namespace QuiverLauncher.Services
             var localFolders = new HashSet<string>(
                 result.Where(a => !string.IsNullOrWhiteSpace(a.FolderName)).Select(a => a.FolderName!),
                 StringComparer.OrdinalIgnoreCase);
+            var localVariants = new HashSet<string>(result.Select(GetCatalogVariantKey).OfType<string>(), StringComparer.OrdinalIgnoreCase);
 
             foreach (var row in rows.Where(r => r.CanAdd && r.External != null))
             {
                 var folderName = row.External!.FolderName;
+                var variant = GetCatalogVariantKey(row.External);
+                if (variant != null && localVariants.Contains(variant)) continue;
                 if (!string.IsNullOrWhiteSpace(folderName) && localFolders.Contains(folderName))
                     continue;
 
@@ -766,6 +802,7 @@ namespace QuiverLauncher.Services
                     continue;
 
                 result.Add(CloneForLocal(row.External, autoUpdateNewlyAdded));
+                if (variant != null) localVariants.Add(variant);
                 if (!string.IsNullOrWhiteSpace(folderName))
                     localFolders.Add(folderName);
             }
@@ -815,7 +852,7 @@ namespace QuiverLauncher.Services
             if (row.External == null || !row.CanAdd)
                 return localApps;
 
-            var exists = localApps.Any(a =>
+            var exists = FindExistingCatalogEntry(localApps, row.External) != null || localApps.Any(a =>
                 string.Equals(a.InstanceKey, row.IdentityKey, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrWhiteSpace(row.External.FolderName) &&
                  string.Equals(a.FolderName, row.External.FolderName, StringComparison.OrdinalIgnoreCase)));

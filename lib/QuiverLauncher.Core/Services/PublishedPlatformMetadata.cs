@@ -11,7 +11,7 @@ public sealed record PublishedPlatformTarget(string Provider, string Repository,
 }
 
 public sealed record PublishedPlatformRecord(string Provider, string Repository, string? PreferredRelease,
-    string ReleaseTag, string[] AssetNames, DateTimeOffset ValidatedAt, int SelectionRevision = 1)
+    string ReleaseTag, string[] AssetNames, DateTimeOffset ValidatedAt, int SelectionRevision = 2)
 {
     [JsonIgnore]
     public string Key => CatalogPlatformIndex.Key(Provider, Repository, PreferredRelease);
@@ -37,7 +37,7 @@ public sealed class PublishedPlatformDocument
         var keys = new HashSet<string>(StringComparer.Ordinal);
         foreach (var entry in document.Entries)
         {
-            if (entry == null || entry.SelectionRevision != CurrentRevision ||
+            if (entry == null || entry.SelectionRevision is not (1 or 2) ||
                 entry.Provider is not ("github" or "gitlab") || string.IsNullOrWhiteSpace(entry.Repository) ||
                 entry.ReleaseTag == null || entry.AssetNames == null || entry.AssetNames.Length > 10000 ||
                 entry.AssetNames.Any(n => n == null || n.Length > 2048) || entry.ValidatedAt == default ||

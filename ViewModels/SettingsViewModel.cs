@@ -160,6 +160,13 @@ public class SettingsViewModel : ObservableViewModel
     // Catalog bookkeeping does not change display settings or credentials.
     public void SaveCatalogState() => _settingsStore.Save(Current);
 
+    // Window movement must not refresh bindings or reapply interface scaling.
+    internal void SaveWindowPlacement(DesktopWindowPlacement placement)
+    {
+        Current.DesktopWindowPlacement = placement;
+        _settingsStore.Save(Current);
+    }
+
     public void ApplyCardLayout(CardLayoutPreset preset, bool persist = true)
     {
         var settings = Current;
@@ -254,6 +261,16 @@ public class SettingsViewModel : ObservableViewModel
     {
         get => Current.ShowOSTopBar;
         set => Change(Current.ShowOSTopBar, value, s => s.ShowOSTopBar = value, SettingsChange.Presentation);
+    }
+
+    public bool DesktopSidebarCollapsed
+    {
+        get => Current.DesktopSidebarCollapsed;
+        set
+        {
+            Change(Current.DesktopSidebarCollapsed, value, s => s.DesktopSidebarCollapsed = value, SettingsChange.Presentation);
+            Notify();
+        }
     }
 
     public IReadOnlyList<int> InterfaceScaleOptions => InterfaceScale.Percentages;

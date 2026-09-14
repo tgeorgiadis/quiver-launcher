@@ -16,7 +16,8 @@ public static class GameStatusService
         string gamesFolder,
         bool forceUpdateCheck = false,
         bool checkRemoteVersion = true,
-        bool applyCachedRelease = true)
+        bool applyCachedRelease = true,
+        FlatpakService? flatpakService = null)
     {
         if (string.IsNullOrEmpty(game.FolderName))
         {
@@ -25,6 +26,7 @@ public static class GameStatusService
             return;
         }
 
+        var statusBeforeCheck = game.Status;
         game.IsLoading = true;
 
         try
@@ -34,6 +36,10 @@ public static class GameStatusService
 
             var directoryExists = Directory.Exists(gamePath);
             var versionFileExists = File.Exists(versionFile);
+            var hasFlatpakReceipt = FlatpakService.HasReceipt(gamePath);
+            game.IsFlatpak = hasFlatpakReceipt;
+            var flatpak = hasFlatpakReceipt && (flatpakService != null || OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid())
+                ? await (flatpakService ?? FlatpakService.Current).GetStateAsync(gamePath).ConfigureAwait(false) : null;
 
             if (OperatingSystem.IsAndroid())
                 TryRestoreAndroidPackageName(game, gamePath);
@@ -64,12 +70,23 @@ public static class GameStatusService
             }
 
             var isInstalled = androidPackageInstalled;
-            if (!isInstalled && OperatingSystem.IsAndroid())
+            if (hasFlatpakReceipt)
+            {
+                isInstalled = flatpak?.Installed == true;
+                game.InstalledVersion = flatpak?.Version ?? "";
+                game.Status = isInstalled ? GameStatus.Installed : GameStatus.NotInstalled;
+            }
+            else if (!isInstalled && OperatingSystem.IsAndroid())
             {
                 game.Status = GameStatus.NotInstalled;
                 game.InstalledVersion = "";
             }
-            else if (!isInstalled && directoryExists)
+            // Metadata and leftover data can survive failed installs or antivirus
+            // quarantine. Neither a folder nor version.txt proves the app exists.
+            else if (!isInstalled && directoryExists &&
+                !File.Exists(Path.Combine(gamePath, GameInstallationService.IncompleteInstallFileName)) &&
+                GameInstallationService.FindExecutableCandidates(gamePath, SearchOption.AllDirectories,
+                    game.GetInstallationOptions(), out _).Count > 0)
             {
                 if (versionFileExists)
                 {
@@ -136,7 +153,8 @@ public static class GameStatusService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error checking status for {game.Name}: {ex.Message}");
-            game.Status = GameStatus.NotInstalled;
+            game.Status = game.IsFlatpak && statusBeforeCheck is GameStatus.Installed or GameStatus.UpdateAvailable
+                ? statusBeforeCheck : GameStatus.NotInstalled;
         }
         finally
         {

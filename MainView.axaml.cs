@@ -161,6 +161,17 @@ namespace QuiverLauncher
             _appearance = new Views.ShellAppearance(this, Shell, _mobileLayout, _catalogSyncViewModel, () => _catalogReview?.ActiveSource, () => _desktopHeader?.Refresh());
             _session.OnShutdown(_mobileLayout.Dispose);
             _chromeNavigation = new Views.ShellChromeNavigation(this, _session, this, Shell, () => _mobileLayout.IsSearchOpen, WireChromeXyFocusEdges);
+            if (IsDesktopPlatform)
+            {
+                var sidebarController = new Views.DesktopSidebarController(MainSplitView, SidebarPanel, DesktopSidebarToggleButton,
+                    _settingsViewModel, () =>
+                    {
+                        if (IsGamepadFocusActive) _chromeNavigation.ApplyTopBarGamepadSelection(0);
+                        else DesktopSidebarToggleButton.Focus();
+                        WireChromeXyFocusEdges();
+                    });
+                _session.OnShutdown(sidebarController.Dispose);
+            }
             _navigationRouter = new ShellNavigationRouter(Shell, _gamepadNavigation, new Dictionary<GamepadNavigationZone, Func<IFeatureNavigationHandler>> { [GamepadNavigationZone.Sidebar] = () => _chromeNavigation, [GamepadNavigationZone.TopBar] = () => _chromeNavigation, [GamepadNavigationZone.AnnouncementBanner] = () => Banners, [GamepadNavigationZone.Library] = () => LibraryPanel.Navigation, [GamepadNavigationZone.CatalogSources] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogSourcesToolbar] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogSourcesFilters] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogSourceCardActions] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogReviewFilters] = () => CatalogReviewPanel.Navigation, [GamepadNavigationZone.CatalogReviewList] = () => CatalogReviewPanel.Navigation, [GamepadNavigationZone.CatalogReviewRowActions] = () => CatalogReviewPanel.Navigation, [GamepadNavigationZone.CatalogReviewDetailsOverlay] = () => CatalogReviewDetailsPanel, [GamepadNavigationZone.AppUpdatesReviewToolbar] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewList] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewRowActions] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.ModsOverlayToolbar] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlaySourceFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayList] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayRowActions] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsDetailsOverlay] = () => ModsPanel.Details, [GamepadNavigationZone.DisplayFilterOverlay] = () => DisplayFilterOverlay.Navigation, [GamepadNavigationZone.EntryFormOverlay] = () => EntryFormOverlay.Navigation, [GamepadNavigationZone.TagEditOverlay] = () => TagEditOverlay.Navigation, [GamepadNavigationZone.Settings] = () => SettingsPanel.Navigation, [GamepadNavigationZone.ChangelogOverlay] = () => ChangelogPanel, }, () => IsDisplayFilterOverlayOpen, () =>
             {
                 _chromeNavigation.ClearSidebarGamepadFocus();
@@ -704,6 +715,8 @@ namespace QuiverLauncher
                 UpdateThemeColors();
             if (e.PropertyName is nameof(ShellViewModel.PendingUpdatesCount) or nameof(ShellViewModel.IsCheckingUpdates))
                 _app?.UpdateTrayTooltip(Shell.PendingUpdatesCount, Shell.IsCheckingUpdates);
+            if (e.PropertyName == nameof(ShellViewModel.ShowUpdateCheckStatus))
+                LibraryPanel.SetUpdateStatusVisible(Shell.ShowUpdateCheckStatus);
         }
 
         private void OnGameManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -1443,6 +1456,11 @@ namespace QuiverLauncher
 
         private async void CheckforUpdates_Click(object sender, RoutedEventArgs e) => await RunUpdateCheckAsync(promptForReview: true, isManualCheck: true);
         private void CancelUpdateCheck_Click(object? sender, EventArgs e) { CheckForUpdatesButton.Focus(); _updateChecks.Cancel(); }
+        private void DismissUpdateCheck_Click(object? sender, EventArgs e)
+        {
+            CheckForUpdatesButton.Focus();
+            Shell.DismissUpdateCheckStatus();
+        }
         private async void RetryUpdateCheck_Click(object? sender, EventArgs e) => await RunUpdateCheckAsync(true, true);
         /// <summary>
         /// Shared update check used by the toolbar button, tray menu, and background timer.
@@ -1608,7 +1626,10 @@ namespace QuiverLauncher
                 XyFocusNavigation.EnableOn(topBarRoot);
             var sidebar = _chromeNavigation.CollectSidebarFocusableControls();
             var topBar = _chromeNavigation.CollectTopBarControls();
-            if (sidebar.Count == 0 || topBar.Count == 0)
+            if (topBar.Count == 0)
+                return;
+            XYFocus.SetLeft(topBar[0], null);
+            if (sidebar.Count == 0)
                 return;
             // Declared Focusable neighbors. Library/catalog cards stay non-Focusable;
             // zone exits call Focus() on these controls instead.

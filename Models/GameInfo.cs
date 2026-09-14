@@ -501,11 +501,12 @@ namespace QuiverLauncher.Models
             }
         }
 
-        public bool HasMultipleExecutables => AvailableExecutables?.Count > 1;
+        public bool HasMultipleExecutables => !IsFlatpak && AvailableExecutables?.Count > 1;
         public bool HasExecutableChoice
         {
             get
             {
+                if (IsFlatpak) return false;
                 if (HasMultipleExecutables)
                     return true;
 
@@ -572,26 +573,48 @@ namespace QuiverLauncher.Models
         public bool CanLocateInstall => Status == GameStatus.NotInstalled;
         public bool CanUpdate => Status == GameStatus.UpdateAvailable;
         public bool CanSkipUpdate => Status == GameStatus.UpdateAvailable;
-        public bool CanChangeVersion => IsInstalled && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
+        public bool CanChangeVersion => !IsFlatpak && IsInstalled && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
         public bool CanVersionOptions => !IsManuallyManaged && (CanSkipUpdate || CanChangeVersion || IsInstalled);
         public bool CanLaunchOptions =>
-            !PlatformCapabilities.IsMobile && (HasExecutableChoice || IsInstalled);
+            !IsFlatpak && !PlatformCapabilities.IsMobile && (HasExecutableChoice || IsInstalled);
         public bool CanToggleAutoUpdate => !IsManuallyManaged;
         public bool CanOpenFolder =>
             !PlatformCapabilities.IsMobile && (IsManuallyManaged || IsInstalled);
         public bool CanAddToSteam => PlatformCapabilities.SupportsSteamShortcuts && IsInstalled;
-        public bool CanManageMods => PlatformCapabilities.SupportsModsFolder && IsInstalled;
+        public bool CanManageMods => !IsFlatpak && PlatformCapabilities.SupportsModsFolder && IsInstalled;
         public bool ShowDesktopOnlyActions => !PlatformCapabilities.IsMobile;
         public bool ShowReleaseVersionInfo => !IsManuallyManaged;
         public bool IsWaitingForFiles => IsManuallyManaged && Status == GameStatus.NotInstalled;
 
         /// <summary>Linux-only: configure Wine/Proton runner and prefix for Windows-only installs.</summary>
         public bool ShowWindowsRunnerOptions =>
-            PlatformCapabilities.SupportsWine
+            !IsFlatpak && PlatformCapabilities.SupportsWine
             && TryFindExecutableCandidates(out _, out var needsWine)
             && needsWine;
         public bool CanInfoOptions => !string.IsNullOrWhiteSpace(Repository);
         public bool HasPreferredVersion => !string.IsNullOrWhiteSpace(PreferredVersion);
+
+        private bool _isFlatpak;
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsFlatpak
+        {
+            get => _isFlatpak;
+            set
+            {
+                if (_isFlatpak == value) return;
+                _isFlatpak = value;
+                foreach (var property in new[] { nameof(IsFlatpak), nameof(CanChangeVersion), nameof(CanLaunchOptions),
+                    nameof(HasExecutableChoice), nameof(HasMultipleExecutables), nameof(CanManageMods), nameof(ShowWindowsRunnerOptions), nameof(InstalledAppRemovalLabel) })
+                    DispatchPropertyChanged(property);
+            }
+        }
+        public string InstalledAppRemovalLabel => IsFlatpak ? "Uninstall" : PlatformCapabilities.InstalledAppRemovalLabel;
+        private bool _isInstallIndeterminate;
+        public bool IsInstallIndeterminate
+        {
+            get => _isInstallIndeterminate;
+            set { _isInstallIndeterminate = value; DispatchPropertyChanged(); }
+        }
 
         public string? LatestVersion
         {
@@ -981,6 +1004,7 @@ namespace QuiverLauncher.Models
 
         private bool ShouldSuggestUpdate()
         {
+            if (IsFlatpak && InstalledVersion == "Unknown") return false;
             if (IsManuallyManaged)
                 return false;
 
@@ -1254,14 +1278,14 @@ namespace QuiverLauncher.Models
                 if (File.Exists(selectedExePath))
                 {
                     var savedPath = File.ReadAllText(selectedExePath).Trim();
-                    if (File.Exists(savedPath))
+                    if (GameInstallationService.IsValidSavedExecutable(savedPath))
                     {
                         System.Diagnostics.Debug.WriteLine($"Loaded selected executable for {Name}: {savedPath}");
                         return savedPath;
                     }
                     else
                     {
-                        // File no longer exists, delete the preference
+                        // Missing or previously misclassified file: ask for an executable again.
                         File.Delete(selectedExePath);
                     }
                 }
@@ -1711,6 +1735,8 @@ namespace QuiverLauncher.Models
 
         public static string? GetPlatformIcon(string assetName)
         {
+            if (GameInstallationService.IsFlatpakAsset(assetName))
+                return "avares://QuiverLauncher/Assets/Icons/platform_lin.png";
             var assetNameLower = assetName.ToLowerInvariant();
 
             // Check for Windows

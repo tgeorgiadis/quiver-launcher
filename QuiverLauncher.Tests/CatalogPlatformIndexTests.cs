@@ -59,7 +59,7 @@ public class CatalogPlatformIndexTests : IDisposable
     }
 
     [Fact]
-    public void Old_empty_index_is_rechecked_without_invalidating_successful_assets()
+    public void Old_indexes_are_rechecked_to_discover_previously_excluded_flatpaks()
     {
         File.WriteAllText(Path.Combine(_directory, "catalog_platform_index_v1.json"), JsonSerializer.Serialize(
             new Dictionary<string, CatalogPlatformEntry> {
@@ -67,7 +67,7 @@ public class CatalogPlatformIndexTests : IDisposable
                 [CatalogPlatformIndex.Key("github", Repo)] = new("1.0.2", ["app-Windows.zip"], DateTimeOffset.UtcNow) }));
         CatalogPlatformIndex.Initialize(_directory);
         CatalogPlatformIndex.IsFresh("github", "test/empty").Should().BeFalse();
-        CatalogPlatformIndex.IsFresh("github", Repo).Should().BeTrue();
+        CatalogPlatformIndex.IsFresh("github", Repo).Should().BeFalse();
         CatalogPlatformIndex.Set("github", "test/empty", null, null, new() { assets = [] });
         CatalogPlatformIndex.IsFresh("github", "test/empty").Should().BeTrue();
     }

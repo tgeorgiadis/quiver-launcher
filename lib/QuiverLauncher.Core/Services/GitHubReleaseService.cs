@@ -112,7 +112,8 @@ namespace QuiverLauncher.Core.Services
         public static List<GitHubAsset> GetDownloadableAssets(GitHubRelease release, string? releaseAssetFilter = null)
         {
             var assets = (release.assets ?? [])
-                .Where(asset => !asset.name.Contains("flatpak", StringComparison.OrdinalIgnoreCase) &&
+                .Where(asset => (!asset.name.Contains("flatpak", StringComparison.OrdinalIgnoreCase) ||
+                    GameInstallationService.IsFlatpakAsset(asset.name)) &&
                     !DownloadAssetPolicy.IsAuxiliary(asset.name));
 
             var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(releaseAssetFilter);

@@ -150,7 +150,7 @@
 													  Click="OpenGitHubPage_Click"
 													  CommandParameter="{Binding}"/>
 										</MenuItem>
-										<MenuItem Header="{x:Static services:PlatformCapabilities.InstalledAppRemovalLabel}"
+										<MenuItem Header="{Binding InstalledAppRemovalLabel}"
 												  Click="DeleteGameFromLibrary_Click"
 												  IsVisible="{Binding IsInstalled}"
 												  CommandParameter="{Binding}"/>
@@ -159,7 +159,7 @@
     </StackPanel>
     <Button views:LibraryListRowLayout.Role="Badge" Classes="library-update-badge" ToolTip.Tip="Catalog update available — click for details" CommandParameter="{Binding}" Click="ReviewCatalogChanges_Click"><TextBlock Text="↑"/></Button>
     <Border views:LibraryListRowLayout.Role="Progress" ClipToBounds="True" CornerRadius="0,0,12,12">
-        <ProgressBar Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="4" Background="Transparent" Foreground="{Binding ProgressBarColor}" BorderThickness="0"/>
+        <ProgressBar IsIndeterminate="{Binding IsInstallIndeterminate}" Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="4" Background="Transparent" Foreground="{Binding ProgressBarColor}" BorderThickness="0"/>
     </Border>
 </views:LibraryListRowLayout>
 </Border>
@@ -331,7 +331,7 @@
 												  Click="OpenGitHubPage_Click"
 												  CommandParameter="{Binding}"/>
 									</MenuItem>
-									<MenuItem Header="{x:Static services:PlatformCapabilities.InstalledAppRemovalLabel}"
+									<MenuItem Header="{Binding InstalledAppRemovalLabel}"
 											  Click="DeleteGameFromLibrary_Click"
 											  IsVisible="{Binding IsInstalled}"
 											  CommandParameter="{Binding}"/>
@@ -345,7 +345,7 @@
 								CornerRadius="0,0,12,12"
 								ClipToBounds="True"
 								IsVisible="{Binding IsDownloading}">
-							<ProgressBar Value="{Binding DownloadProgress}"
+							<ProgressBar IsIndeterminate="{Binding IsInstallIndeterminate}" Value="{Binding DownloadProgress}"
 										 Minimum="0"
 										 Maximum="100"
 										 Height="4"
@@ -672,7 +672,7 @@
 											  Click="OpenGitHubPage_Click"
 											  CommandParameter="{Binding}"/>
 								</MenuItem>
-								<MenuItem Header="{x:Static services:PlatformCapabilities.InstalledAppRemovalLabel}"
+								<MenuItem Header="{Binding InstalledAppRemovalLabel}"
 										  Click="DeleteGameFromLibrary_Click"
 										  IsVisible="{Binding IsInstalled}"
 										  CommandParameter="{Binding}"/>
@@ -816,7 +816,7 @@
 							ClipToBounds="True"
 							ZIndex="12"
 							IsVisible="{Binding IsDownloading}">
-						<ProgressBar Value="{Binding DownloadProgress}"
+						<ProgressBar IsIndeterminate="{Binding IsInstallIndeterminate}" Value="{Binding DownloadProgress}"
 									 Minimum="0"
 									 Maximum="100"
 									 Height="4"

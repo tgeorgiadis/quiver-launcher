@@ -379,7 +379,7 @@ namespace QuiverLauncher
             // Check if need to select executable
             var storedExe = game.LoadSelectedExecutable(gamesFolder);
 
-            if (string.IsNullOrEmpty(storedExe))
+            if (string.IsNullOrEmpty(storedExe) && !FlatpakService.HasReceipt(game.GetInstallPath(gamesFolder)))
             {
                 // Check if there are multiple executables
                 var gamePath = game.GetInstallPath(gamesFolder);
@@ -614,6 +614,8 @@ namespace QuiverLauncher
                     return 1;
                 }
 
+                var isFlatpakDownload = GameInstallationService.IsFlatpakAsset(game.SelectedDownload.name);
+                var expectedVersion = game.LatestVersion;
                 var downloadTask = game.PerformActionAsync(
                     _gameManager.HttpClient,
                     _gameManager.GamesFolder,
@@ -624,16 +626,17 @@ namespace QuiverLauncher
                 int timeout = 600; // 10 minutes
                 int waited = 0;
 
-                while (waited < timeout)
+                while (waited < timeout || isFlatpakDownload)
                 {
+                    if (downloadTask.IsCompleted) break;
                     // Check if installation completed
-                    if (game.Status == GameStatus.Installed)
+                    if (!isFlatpakDownload && game.Status == GameStatus.Installed)
                     {
                         break;
                     }
 
                     // Check if version changed (installation complete)
-                    if (!string.IsNullOrEmpty(game.InstalledVersion) &&
+                    if (!isFlatpakDownload && !string.IsNullOrEmpty(game.InstalledVersion) &&
                         game.InstalledVersion != initialVersion &&
                         game.InstalledVersion != "Unknown")
                     {
@@ -653,15 +656,16 @@ namespace QuiverLauncher
                 Console.WriteLine();
                 Console.WriteLine();
 
-                if (waited >= timeout)
+                if (waited >= timeout && !isFlatpakDownload)
                 {
                     return PrintError("Download timed out.");
                 }
 
                 // Verify installation
+                await downloadTask;
                 await game.CheckStatusAsync(_gameManager.HttpClient, _gameManager.GamesFolder, forceUpdateCheck: true);
 
-                if (game.Status == GameStatus.Installed)
+                if (game.Status == GameStatus.Installed && (!isFlatpakDownload || game.InstalledVersion == expectedVersion))
                 {
                     WriteColor($"✓ {game.Name} ", ColorSuccess);
                     Console.WriteLine($"{(isUpdate ? "updated" : "installed")} successfully ({CleanVersion(game.InstalledVersion)})");
@@ -849,6 +853,14 @@ namespace QuiverLauncher
                 }
 
                 var gamePath = game.GetInstallPath(_gameManager.GamesFolder);
+
+                if (FlatpakService.HasReceipt(gamePath))
+                {
+                    await FlatpakService.Current.UninstallAsync(gamePath);
+                    await game.CheckStatusAsync(_gameManager.HttpClient, _gameManager.GamesFolder, checkRemoteVersion: false);
+                    Console.WriteLine("Flatpak app uninstalled. Saves and application data were preserved.");
+                    return 0;
+                }
 
                 if (Directory.Exists(gamePath))
                 {

@@ -45,6 +45,8 @@ public class CatalogAddPerformanceTests
             var installed = Path.Combine(manager.GamesFolder, "App0");
             Directory.CreateDirectory(installed);
             await File.WriteAllTextAsync(Path.Combine(installed, "version.txt"), "1.2.3");
+            await File.WriteAllTextAsync(Path.Combine(installed, OperatingSystem.IsMacOS() ? "app" : "app.exe"),
+                "#!/bin/sh\nexit 0\n", TestContext.Current.CancellationToken);
             var model = new CatalogSyncViewModel();
             var settings = new SettingsViewModel(store);
             var refreshes = 0;

@@ -44,13 +44,19 @@ public class InstalledUpdateCheckTests
             {
                 new GameInfo { Name = "Visible", FolderName = "visible", Repository = "fixture/visible" },
                 new GameInfo { Name = "Hidden", FolderName = "hidden", Repository = "fixture/hidden" },
-                new GameInfo { Name = "Not installed", FolderName = "absent", Repository = "fixture/absent" }
+                new GameInfo { Name = "Not installed", FolderName = "absent", Repository = "fixture/absent" },
+                new GameInfo { Name = "Removed executable", FolderName = "blocked", Repository = "fixture/blocked" }
             };
             foreach (var game in source.Take(2))
             {
                 Directory.CreateDirectory(game.GetInstallPath(store.Current.AppsPath));
                 await File.WriteAllTextAsync(Path.Combine(game.GetInstallPath(store.Current.AppsPath), "version.txt"), "1.0", TestContext.Current.CancellationToken);
+                await File.WriteAllTextAsync(Path.Combine(game.GetInstallPath(store.Current.AppsPath),
+                    OperatingSystem.IsMacOS() ? "app" : "app.exe"), "#!/bin/sh\nexit 0\n", TestContext.Current.CancellationToken);
             }
+            var blockedPath = source[3].GetInstallPath(store.Current.AppsPath);
+            Directory.CreateDirectory(blockedPath);
+            await File.WriteAllTextAsync(Path.Combine(blockedPath, "version.txt"), "1.0", TestContext.Current.CancellationToken);
             await manager.CatalogService.SaveLocalAppsAsync(source.ToList());
             await manager.ReloadLibraryFromDiskAsync(allowNetwork: false);
             var originals = manager.LibraryApps.ToArray();
@@ -64,8 +70,58 @@ public class InstalledUpdateCheckTests
             manager.Games.Should().BeSameAs(visibleCollection).And.ContainSingle();
             originals.Single(a => a.Name == "Hidden").Status.Should().Be(GameStatus.UpdateAvailable);
             originals.Single(a => a.Name == "Not installed").LatestVersion.Should().BeNullOrEmpty();
+            originals.Single(a => a.Name == "Removed executable").Status.Should().Be(GameStatus.NotInstalled);
+            originals.Single(a => a.Name == "Removed executable").LatestVersion.Should().BeNullOrEmpty();
         }
         finally { QuiverLauncherPaths.OverrideUserDataRoot = previous; Directory.Delete(root, true); }
+    }
+
+    [AvaloniaFact]
+    public async Task Dismissing_incomplete_status_hides_strip_but_preserves_result_until_next_check()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"quiver-dismiss-status-{Guid.NewGuid():N}.json");
+        var store = new FileSettingsStore(path);
+        store.Current.FirstStartup = false;
+        store.Current.EnableGamepadInput = false;
+        var view = new MainView(new() { SettingsStore = store, InitializeOnOpen = false, EnableInput = false, EnableMusic = false });
+        var window = new Window { Content = view, Width = 1280, Height = 720 };
+        try
+        {
+            window.Show();
+            view.Shell.IsCheckingUpdates = true;
+            view.Shell.LastUpdateCheckTime = DateTime.Now;
+            view.Shell.LastLauncherCheckNote = "Update check incomplete · Some checks did not finish";
+            view.Shell.UpdateCheckStatus = view.Shell.LastLauncherCheckNote;
+            view.Shell.IsCheckingUpdates = false;
+            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+            var strip = view.FindControl<UpdateCheckStatusView>("UpdateCheckStatus")!;
+            var dismiss = strip.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "×"));
+            var library = view.FindControl<LibraryView>("LibraryPanel")!.FindControl<ScrollViewer>("LibraryContentPanel")!;
+            dismiss.IsEffectivelyVisible.Should().BeTrue();
+            library.Margin.Top.Should().Be(0);
+            dismiss.Focus();
+            dismiss.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+            view.Shell.ShowUpdateCheckStatus.Should().BeFalse();
+            dismiss.IsEffectivelyVisible.Should().BeFalse();
+            strip.Bounds.Height.Should().Be(0);
+            library.Margin.Top.Should().Be(20);
+            view.FindControl<Button>("CheckForUpdatesButton")!.IsFocused.Should().BeTrue();
+            view.Shell.CheckForUpdatesToolTip.Should().Contain("Some checks did not finish");
+            view.Shell.UpdatesUpToDateBadgeVisible.Should().BeFalse();
+            view.Shell.NotifyUpdateCheckUiProperties();
+            view.Shell.ShowUpdateCheckStatus.Should().BeFalse("ordinary refresh must not reopen a dismissed status");
+            view.Shell.IsCheckingUpdates = true;
+            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+            view.Shell.ShowUpdateCheckStatus.Should().BeTrue();
+            dismiss.IsEffectivelyVisible.Should().BeFalse("active checks offer Cancel instead");
+            view.Shell.DismissUpdateCheckStatus();
+            view.Shell.ShowUpdateCheckStatus.Should().BeTrue();
+            view.Shell.IsCheckingUpdates = false;
+            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+            dismiss.IsEffectivelyVisible.Should().BeTrue("a new incomplete check can be dismissed again");
+        }
+        finally { window.Close(); await view.ShutdownAsync(); File.Delete(path); }
     }
 
     [AvaloniaTheory]

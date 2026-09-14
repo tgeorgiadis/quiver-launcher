@@ -191,7 +191,7 @@ public sealed class LibraryLaunchController
                 await HandleChangeVersionAsync(anchor, game);
             });
         };
-        contextMenu.Items.Add(changeVersionItem);
+        if (!game.IsFlatpak) contextMenu.Items.Add(changeVersionItem);
         contextMenu.Items.Add(new Separator());
         contextMenu.Items.Add(new MenuItem { Header = "Cancel" });
         OpenContextMenu(anchor, contextMenu);
@@ -327,6 +327,7 @@ public sealed class LibraryLaunchController
 
     private async Task HandleChangeVersionCoreAsync(Control anchor, GameInfo game)
     {
+        if (game.IsFlatpak) return;
         try
         {
             game.IsLoading = true;
@@ -352,6 +353,7 @@ public sealed class LibraryLaunchController
 
     public void ShowVersionSelectionMenu(Control anchor, GameInfo game, IReadOnlyList<GitHubRelease> releases)
     {
+        if (game.IsFlatpak) return;
         var contextMenu = new ContextMenu();
         contextMenu.Items.Add(new MenuItem { Header = $"Choose a version for {game.Name}:", IsEnabled = false, FontWeight = FontWeight.Bold });
         contextMenu.Items.Add(new Separator());

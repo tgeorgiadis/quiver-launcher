@@ -34,7 +34,16 @@ public sealed class ShellViewModel : ObservableViewModel
     private string? _lastLauncherCheckNote;
     private string _updateCheckStatus = "";
     public string UpdateCheckStatus { get => _updateCheckStatus; set => Set(ref _updateCheckStatus, value); }
-    public bool ShowUpdateCheckStatus => IsCheckingUpdates || !string.IsNullOrEmpty(LastLauncherCheckNote);
+    private bool _updateCheckStatusDismissed;
+    public bool ShowUpdateCheckStatus => IsCheckingUpdates ||
+        (!_updateCheckStatusDismissed && !string.IsNullOrEmpty(LastLauncherCheckNote));
+
+    public void DismissUpdateCheckStatus()
+    {
+        if (IsCheckingUpdates) return;
+        _updateCheckStatusDismissed = true;
+        Notify(nameof(ShowUpdateCheckStatus));
+    }
     public string? LastLauncherCheckNote
     {
         get => _lastLauncherCheckNote;
@@ -69,6 +78,7 @@ public sealed class ShellViewModel : ObservableViewModel
                     return;
 
                 _isCheckingUpdates = value;
+                if (value) _updateCheckStatusDismissed = false;
                 Notify(nameof(IsCheckingUpdates));
                 NotifyUpdateCheckUiProperties();
             }

@@ -35,5 +35,5 @@ public static class DownloadAssetPolicy
     private static bool HasKnownPlatform(string name) => PlatformAssetMatcher.IsIosAsset(name) ||
         PlatformAssetMatcher.IsDedicatedDeviceAsset(name) || PlatformAssetMatcher.IsWindowsAsset(name) ||
         PlatformAssetMatcher.MatchesPlatform(name, "macOS") ||
-        Regex.IsMatch(name, @"(?:linux|appimage|android|arm64-v8a|switch|\.apk$|\.deb$|\.rpm$|\.tar\.(?:gz|xz)$)", RegexOptions.IgnoreCase);
+        Regex.IsMatch(name, @"(?:linux|appimage|flatpak|android|arm64-v8a|switch|\.apk$|\.deb$|\.rpm$|\.tar\.(?:gz|xz)$)", RegexOptions.IgnoreCase);
 }

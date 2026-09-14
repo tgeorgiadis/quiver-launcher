@@ -13,12 +13,22 @@ public static class GameShortcutLaunch
     {
         await game.CatalogPreparation.WaitAsync(cancellationToken);
         var gamePath = game.GetInstallPath(gamesFolder);
+        if (FlatpakService.HasReceipt(gamePath))
+        {
+            if (!OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
+                throw new PlatformNotSupportedException("Flatpak shortcuts require Linux.");
+            var state = await FlatpakService.Current.GetStateAsync(gamePath, cancellationToken).ConfigureAwait(false);
+            if (state?.Installed != true)
+                throw new InvalidOperationException("Install this Flatpak app before creating a shortcut.");
+            return new(FlatpakService.StartInfo([], capture: false).FileName, FlatpakService.LaunchArguments(state.Receipt),
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        }
         if (!Directory.Exists(gamePath))
             throw new DirectoryNotFoundException($"Install {game.Name} before creating a shortcut. Its app folder was not found.");
 
         var executable = game.SelectedExecutable;
-        if (!File.Exists(executable)) executable = await Task.Run(() => game.LoadSelectedExecutable(gamesFolder), cancellationToken);
-        if (!File.Exists(executable))
+        if (!GameInstallationService.IsValidSavedExecutable(executable)) executable = await Task.Run(() => game.LoadSelectedExecutable(gamesFolder), cancellationToken);
+        if (!GameInstallationService.IsValidSavedExecutable(executable))
         {
             var candidates = await Task.Run(() =>
             {
