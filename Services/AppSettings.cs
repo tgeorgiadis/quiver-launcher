@@ -168,6 +168,7 @@ namespace QuiverLauncher
         public DesktopWindowPlacement? DesktopWindowPlacement { get; set; }
         public bool CloseAfterLaunch {  get; set; } = false;
         public bool CloseToTray { get; set; }
+        public int MouseWheelScrollSpeed { get; set; } = 1;
         public bool BackgroundUpdateCheckEnabled { get; set; }
         public int BackgroundUpdateCheckIntervalMinutes { get; set; } = BackgroundUpdateCheckIntervals.DefaultMinutes;
         /// <summary>When true, show modal prompts when catalog sources have reviewable updates.</summary>

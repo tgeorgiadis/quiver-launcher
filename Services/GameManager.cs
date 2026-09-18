@@ -144,9 +144,9 @@ namespace QuiverLauncher.Services
         }
 
         public async Task<LibraryCheckResult> CheckInstalledUpdatesAsync(bool manual,
-            IProgress<AppCheckProgress>? progress, CancellationToken token)
+            IProgress<AppCheckProgress>? progress, CancellationToken token, IReadOnlySet<string>? appKeys = null)
         {
-            var apps = LibraryApps.ToArray();
+            var apps = LibraryApps.Where(app => appKeys == null || appKeys.Contains(app.InstanceKey)).ToArray();
             foreach (var app in apps)
             {
                 token.ThrowIfCancellationRequested();
@@ -318,6 +318,10 @@ namespace QuiverLauncher.Services
                     continue;
 
                 app.IsInLocalAppsJson = true;
+                if (previousByKey.TryGetValue(app.InstanceKey, out var previousCheck) &&
+                    string.Equals(app.Repository, previousCheck.Repository, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(app.EffectiveRepositorySource, previousCheck.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase))
+                    app.RepositoryCheckError = previousCheck.RepositoryCheckError;
                 if (checkKeys == null)
                     continue;
                 if (checkKeys.Contains(app.InstanceKey))

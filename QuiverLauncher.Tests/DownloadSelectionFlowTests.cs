@@ -39,7 +39,14 @@ public class DownloadSelectionFlowTests
             (await fixture.Controller(session).HandleUpdateNowAsync(new Button(), game)).Should().BeTrue();
         }
         else
-            await fixture.Controller(session).ShowReleaseDownloadSelectionMenuAsync(new Button(), game, fixture.Handler.Release, "v1", null);
+        {
+            game.Status.Should().Be(GameStatus.NotInstalled);
+            game.CanChangeVersion.Should().BeTrue();
+            game.CanVersionOptions.Should().BeTrue();
+            game.LatestVersion = "v2";
+            await fixture.Controller(session).ShowReleaseDownloadSelectionMenuAsync(new Button(), game, fixture.Handler.Release, "v1", "v2");
+            game.PreferredVersion.Should().Be("v1");
+        }
         fixture.Handler.Downloads.Should().Be(1);
         game.Status.Should().Be(GameStatus.Installed);
         File.ReadAllText(Path.Combine(game.GetInstallPath(fixture.Manager.GamesFolder), "version.txt")).Trim().Should().Be("v1");

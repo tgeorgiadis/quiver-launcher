@@ -46,7 +46,8 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
     }
 
     public bool Options() => false;
-    public void RestoreFocus() => SyncCatalogReviewGamepadSelection();
+    public void RestoreFocus() => RestoreFocus(bringIntoView: true);
+    public void RestoreFocus(bool bringIntoView) => SyncCatalogReviewGamepadSelection(bringIntoView);
     internal bool HandleCatalogReviewGamepadNavigation(Services.NavigationDirection direction)
     {
         if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogReviewDetailsOverlay)
@@ -118,12 +119,6 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         var rowIndex = _gamepadNavigation.ClampIndex(_gamepadNavigation.CatalogReviewSelectedIndex, rows.Count);
         if (rowIndex < 0 || rowIndex >= rows.Count)
             return false;
-        var controls = CollectCatalogReviewRowActionControls(rows[rowIndex]);
-        if (controls.Count == 0)
-            return false;
-        var currentIndex = ResolveMobileActionFocus(controls,
-            _gamepadNavigation.ClampIndex(_gamepadNavigation.CatalogReviewRowActionIndex, controls.Count));
-        _gamepadNavigation.CatalogReviewRowActionIndex = currentIndex;
         // Leave the action strip back to the row list.
         if (direction is Services.NavigationDirection.Up or Services.NavigationDirection.Down)
         {
@@ -133,6 +128,15 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
             return true;
         }
 
+        var controls = CollectCatalogReviewRowActionControls(rows[rowIndex]);
+        if (controls.Count == 0)
+        {
+            DeferCatalogRowInput(rows[rowIndex], () => HandleCatalogReviewRowActionsNavigation(direction));
+            return true;
+        }
+        var currentIndex = ResolveMobileActionFocus(controls,
+            _gamepadNavigation.ClampIndex(_gamepadNavigation.CatalogReviewRowActionIndex, controls.Count));
+        _gamepadNavigation.CatalogReviewRowActionIndex = currentIndex;
         // Left from the first action returns to the row (do not wrap to the far-right button).
         if (direction == Services.NavigationDirection.Left && currentIndex <= 0)
         {
@@ -359,7 +363,13 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
     internal List<Control> CollectCatalogReviewRowActionControls(CatalogSyncRowItem row, bool realize = true)
     {
         if (realize)
+        {
             EnsureCatalogReviewRowRealized(row);
+            // After passive restoration the action row may still be virtualized.
+            // Explicit input needs its controls now, not on the next layout pass.
+            if (FindCatalogSyncRowBorder(row) == null)
+                GetActiveCatalogReviewItemsControl()?.UpdateLayout();
+        }
         var controls = new List<Control>();
         var border = FindCatalogSyncRowBorder(row);
         if (border == null)
@@ -383,7 +393,9 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         _gamepadNavigation.CatalogReviewRowActionIndex = -1;
     }
 
-    internal void ApplyCatalogReviewRowActionSelection(int index)
+    internal void ApplyCatalogReviewRowActionSelection(int index) => ApplyCatalogReviewRowActionSelection(index, bringIntoView: true);
+
+    internal void ApplyCatalogReviewRowActionSelection(int index, bool bringIntoView)
     {
         var rows = CatalogSyncRows.ToList();
         if (rows.Count == 0)
@@ -391,7 +403,7 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         var rowIndex = _gamepadNavigation.ClampIndex(_gamepadNavigation.CatalogReviewSelectedIndex, rows.Count);
         if (rowIndex < 0 || rowIndex >= rows.Count)
             return;
-        var controls = CollectCatalogReviewRowActionControls(rows[rowIndex]);
+        var controls = CollectCatalogReviewRowActionControls(rows[rowIndex], realize: bringIntoView);
         index = _gamepadNavigation.ClampIndex(index, controls.Count);
         _gamepadNavigation.ActiveZone = GamepadNavigationZone.CatalogReviewRowActions;
         // ClearGamepadFocus → ClearCatalogReviewRowActionsGamepadFocus resets action index to -1.
@@ -405,6 +417,12 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         rows[rowIndex].IsGamepadFocused = true;
         if (controls[index] is StyledElement styled)
             styled.Classes.Set("gamepad-focused", true);
+        if (!bringIntoView)
+        {
+            // Confirm uses the saved index; native focus must not reveal this control.
+            _host.FocusCard(true);
+            return;
+        }
         controls[index].Focus();
         Dispatcher.UIThread.Post(() =>
         {
@@ -413,7 +431,9 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         }, DispatcherPriority.Loaded);
     }
 
-    internal void ApplyCatalogReviewFilterSelection(int index)
+    internal void ApplyCatalogReviewFilterSelection(int index) => ApplyCatalogReviewFilterSelection(index, bringIntoView: true);
+
+    internal void ApplyCatalogReviewFilterSelection(int index, bool bringIntoView)
     {
         var controls = CollectCatalogReviewFilterControls();
         index = _gamepadNavigation.ClampIndex(index, controls.Count);
@@ -427,6 +447,12 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
             return;
         if (controls[index] is StyledElement styled)
             styled.Classes.Set("gamepad-focused", true);
+        if (!bringIntoView)
+        {
+            // Confirm uses the saved index; native focus must not reveal this control.
+            _host.FocusCard(true);
+            return;
+        }
         GamepadControlActivation.ApplyGamepadHighlightFocus(controls[index]);
         Dispatcher.UIThread.Post(() =>
         {
@@ -435,7 +461,9 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         }, DispatcherPriority.Loaded);
     }
 
-    internal void ApplyCatalogReviewEmptyActionSelection(int index)
+    internal void ApplyCatalogReviewEmptyActionSelection(int index) => ApplyCatalogReviewEmptyActionSelection(index, bringIntoView: true);
+
+    internal void ApplyCatalogReviewEmptyActionSelection(int index, bool bringIntoView)
     {
         var controls = CollectCatalogReviewEmptyActionControls();
         index = _gamepadNavigation.ClampIndex(index, controls.Count);
@@ -450,6 +478,12 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
             return;
         if (controls[index] is StyledElement styled)
             styled.Classes.Set("gamepad-focused", true);
+        if (!bringIntoView)
+        {
+            // Confirm uses the saved index; native focus must not reveal this control.
+            _host.FocusCard(true);
+            return;
+        }
         controls[index].Focus();
         Dispatcher.UIThread.Post(() =>
         {
@@ -472,7 +506,7 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         ClearFocusIfOnControls(controls);
     }
 
-    internal void ApplyCatalogReviewRowSelection(int index, bool stealFocus = true)
+    internal void ApplyCatalogReviewRowSelection(int index, bool stealFocus = true, bool bringIntoView = true)
     {
         var rows = CatalogSyncRows.ToList();
         index = _gamepadNavigation.ClampIndex(index, rows.Count);
@@ -488,6 +522,7 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         // arrow does not Tab to Continue.
         _host.FocusCard(stealFocus);
         rows[index].IsGamepadFocused = true;
+        if (!bringIntoView) return;
         Dispatcher.UIThread.Post(() =>
         {
             if (_view.IsActive)
@@ -521,7 +556,7 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         ApplyCatalogReviewRowSelection(_gamepadNavigation.CatalogReviewSelectedIndex < 0 ? 0 : _gamepadNavigation.CatalogReviewSelectedIndex);
     }
 
-    internal void SyncCatalogReviewGamepadSelection()
+    internal void SyncCatalogReviewGamepadSelection(bool bringIntoView = true)
     {
         if (!_host.IsFocusActive)
         {
@@ -542,12 +577,18 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
             var emptyActions = CollectCatalogReviewEmptyActionControls();
             if (emptyActions.Count > 0)
             {
-                ApplyCatalogReviewEmptyActionSelection(0);
+                ApplyCatalogReviewEmptyActionSelection(0, bringIntoView: bringIntoView);
                 return;
             }
 
             _gamepadNavigation.CatalogReviewSelectedIndex = -1;
-            ApplyCatalogReviewFilterSelection(0);
+            ApplyCatalogReviewFilterSelection(0, bringIntoView: bringIntoView);
+            return;
+        }
+
+        if (!bringIntoView && _gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogReviewFilters)
+        {
+            ApplyCatalogReviewFilterSelection(_gamepadNavigation.CatalogReviewFilterIndex, bringIntoView: false);
             return;
         }
 
@@ -558,6 +599,21 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         // next app) and restore either the row ring or the action-strip focus.
         if (wasInRowActions)
         {
+            if (!bringIntoView)
+            {
+                _gamepadNavigation.CatalogReviewSelectedIndex = clamped;
+                // Do not realize virtualized offscreen rows by scrolling to them.
+                if (CollectCatalogReviewRowActionControls(CatalogSyncRows[clamped], realize: false).Count > 0)
+                    ApplyCatalogReviewRowActionSelection(actionIndex, bringIntoView: false);
+                else
+                {
+                    _host.ClearFocus();
+                    _host.FocusCard(true);
+                    _gamepadNavigation.CatalogReviewRowActionIndex = actionIndex;
+                    CatalogSyncRows[clamped].IsGamepadFocused = true;
+                }
+                return;
+            }
             _gamepadNavigation.CatalogReviewSelectedIndex = clamped;
             _host.ClearFocus();
             _host.FocusCard(true);
@@ -578,17 +634,17 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
                 var controls = CollectCatalogReviewRowActionControls(CatalogSyncRows[rowIndex]);
                 if (controls.Count == 0)
                 {
-                    ApplyCatalogReviewRowSelection(rowIndex);
+                    ApplyCatalogReviewRowSelection(rowIndex, bringIntoView: bringIntoView);
                     return;
                 }
 
                 var nextAction = _gamepadNavigation.ClampIndex(actionIndex < 0 ? 0 : actionIndex, controls.Count);
-                ApplyCatalogReviewRowActionSelection(nextAction < 0 ? 0 : nextAction);
+                ApplyCatalogReviewRowActionSelection(nextAction < 0 ? 0 : nextAction, bringIntoView: bringIntoView);
             }, DispatcherPriority.Loaded);
             return;
         }
 
-        ApplyCatalogReviewRowSelection(clamped);
+        ApplyCatalogReviewRowSelection(clamped, bringIntoView: bringIntoView);
     }
 
     internal ItemsControl? GetActiveCatalogReviewItemsControl() => _settings.CatalogReviewUseGridView ? _view.CatalogReviewGridItemsControl : _view.CatalogSyncRowsItemsControl;
@@ -640,7 +696,10 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
             return;
         var controls = CollectCatalogReviewRowActionControls(rows[index]);
         if (controls.Count == 0)
+        {
+            DeferCatalogRowInput(rows[index], ActivateReviewRowSelection);
             return;
+        }
         // Enter the action strip; do not fire Add/Ignore/etc until Confirm again.
         ApplyCatalogReviewRowActionSelection(0);
     }
@@ -664,6 +723,11 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
         if (rowIndex < 0 || rowIndex >= rows.Count)
             return;
         var controls = CollectCatalogReviewRowActionControls(rows[rowIndex]);
+        if (controls.Count == 0)
+        {
+            DeferCatalogRowInput(rows[rowIndex], ActivateCatalogReviewRowActionSelection);
+            return;
+        }
         var index = ResolveMobileActionFocus(controls,
             _gamepadNavigation.ClampIndex(_gamepadNavigation.CatalogReviewRowActionIndex, controls.Count));
         _gamepadNavigation.CatalogReviewRowActionIndex = index;
@@ -671,6 +735,22 @@ public sealed class CatalogReviewNavigation(CatalogReviewView view, IFeatureNavi
             return;
         if (controls[index] is Button button)
             GamepadControlActivation.ActivateButton(button);
+    }
+
+    private void DeferCatalogRowInput(CatalogSyncRowItem row, Action input)
+    {
+        // ScrollIntoView may create a grid container whose template is not ready yet.
+        // Finish this explicit input after layout, only if the selection is still current.
+        var zone = _gamepadNavigation.ActiveZone;
+        var index = _gamepadNavigation.CatalogReviewSelectedIndex;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_host.IsFocusActive || !_view.IsActive || _gamepadNavigation.ActiveZone != zone ||
+                _gamepadNavigation.CatalogReviewSelectedIndex != index || index < 0 ||
+                index >= CatalogSyncRows.Count || !ReferenceEquals(CatalogSyncRows[index], row)) return;
+            if (CollectCatalogReviewRowActionControls(row, realize: false).Count > 0)
+                input();
+        }, DispatcherPriority.Loaded);
     }
 
     internal static int ResolveMobileActionFocus(IReadOnlyList<Control> controls, int fallback)

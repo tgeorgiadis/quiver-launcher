@@ -573,7 +573,7 @@ namespace QuiverLauncher.Models
         public bool CanLocateInstall => Status == GameStatus.NotInstalled;
         public bool CanUpdate => Status == GameStatus.UpdateAvailable;
         public bool CanSkipUpdate => Status == GameStatus.UpdateAvailable;
-        public bool CanChangeVersion => !IsFlatpak && IsInstalled && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
+        public bool CanChangeVersion => !IsFlatpak && (IsInstalled || Status == GameStatus.NotInstalled) && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
         public bool CanVersionOptions => !IsManuallyManaged && (CanSkipUpdate || CanChangeVersion || IsInstalled);
         public bool CanLaunchOptions =>
             !IsFlatpak && !PlatformCapabilities.IsMobile && (HasExecutableChoice || IsInstalled);
@@ -615,6 +615,22 @@ namespace QuiverLauncher.Models
             get => _isInstallIndeterminate;
             set { _isInstallIndeterminate = value; DispatchPropertyChanged(); }
         }
+
+        private string? _repositoryCheckError;
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string? RepositoryCheckError
+        {
+            get => _repositoryCheckError;
+            internal set
+            {
+                if (_repositoryCheckError == value) return;
+                _repositoryCheckError = value;
+                DispatchPropertyChanged();
+                DispatchPropertyChanged(nameof(HasRepositoryCheckError));
+            }
+        }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool HasRepositoryCheckError => !IsManuallyManaged && !string.IsNullOrWhiteSpace(RepositoryCheckError);
 
         public string? LatestVersion
         {
@@ -1608,6 +1624,7 @@ namespace QuiverLauncher.Models
                 result.EnsureSuccess();
                 if (result.IsNotModified)
                 {
+                    RepositoryCheckError = null;
                     if (GitHubApiCache.TryGetCachedVersion(RepositorySource, Repository, out var existingCache) && existingCache != null)
                     {
                         ApplyCachedRelease(existingCache.Version, existingCache.CachedRelease);
@@ -1627,6 +1644,7 @@ namespace QuiverLauncher.Models
                     result.Releases, PreferredVersion, InstalledVersion, result.LatestTag);
                 if (latestRelease != null && !string.IsNullOrWhiteSpace(latestRelease.tag_name))
                 {
+                    RepositoryCheckError = null;
                     ApplyCachedRelease(latestRelease.tag_name, latestRelease);
                     GitHubApiCache.SetCache(
                         RepositorySource,
@@ -1638,15 +1656,14 @@ namespace QuiverLauncher.Models
                 }
                 else
                 {
+                    RepositoryCheckError = LibraryUpdateChecker.NoEligibleReleaseReason(this);
                     System.Diagnostics.Debug.WriteLine($"No releases found for {IdentityKey}");
                 }
             }
-            catch (HttpRequestException ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Network error fetching latest version for {IdentityKey}: {ex.Message}");
-            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
+                RepositoryCheckError = LibraryUpdateChecker.DescribeFailure(ex);
                 System.Diagnostics.Debug.WriteLine($"Error fetching latest version for {IdentityKey}: {ex.Message}");
             }
         }

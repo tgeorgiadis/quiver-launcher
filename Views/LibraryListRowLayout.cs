@@ -59,7 +59,8 @@ public sealed class LibraryListRowLayout : Panel
         if (_game == null) return;
         var description = string.Join("\n", new[] { _game.DisplayName, _game.ProjectSubtitle, _game.StatusText,
             _game.ShowReleaseVersionInfo && !string.IsNullOrWhiteSpace(_game.LatestVersion) ? _game.LatestVersionLabel : "", _game.HasPreferredVersion ? _game.PreferredVersionLabel : "",
-            string.Join(", ", _game.LibraryCardTags), _game.HasModUpdates ? "Mod updates available" : "" }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            string.Join(", ", _game.LibraryCardTags), _game.HasModUpdates ? "Mod updates available" : "",
+            _game.HasRepositoryCheckError ? _game.RepositoryCheckError : "" }.Where(s => !string.IsNullOrWhiteSpace(s)));
         ToolTip.SetTip(this, description);
         AutomationProperties.SetHelpText(this, description);
     }

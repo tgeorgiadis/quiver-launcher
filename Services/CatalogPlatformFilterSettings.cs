@@ -5,7 +5,7 @@ namespace QuiverLauncher.Services;
 public static class CatalogPlatformFilterSettings
 {
     /// <summary>
-    /// On first catalog-review visit, default to the OS Quiver is running on and persist that choice.
+    /// On first catalog-review visit, default to the runtime OS, plus Windows on Linux for Wine/Proton.
     /// Later user changes are left as-is.
     /// </summary>
     public static bool EnsureDefault(AppSettings settings, string? runtimePlatform = null)
@@ -21,7 +21,7 @@ public static class CatalogPlatformFilterSettings
 
         var platform = CatalogPlatformSupport.Canonical(runtimePlatform)
                        ?? CatalogPlatformSupport.DetectRuntimePlatform();
-        settings.CatalogPlatformFilters = [platform];
+        settings.CatalogPlatformFilters = platform == "Linux" ? ["Linux", "Windows"] : [platform];
         settings.CatalogPlatformFilterChosen = true;
         return true;
     }

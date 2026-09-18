@@ -1,25 +1,23 @@
-# Quiver Launcher 3.4.1
+# Quiver Launcher 3.4.2
 
-## Desktop improvements
+## Library and App Catalog
 
-- Collapse the sidebar using the new icon beside the page title. The same button brings it back, with a short animation. Quiver remembers your choice between sessions, and the toggle supports keyboard and controller navigation.
-- Remember window size, position and maximized state between sessions. Start Fullscreen still takes priority, and saved placement adjusts when monitors or display scaling change.
-- Add 50% and 75% options under Settings → Appearance → Interface scale.
-- Fix custom background images not appearing after selection.
-- Make the update-check bar more compact and centre its text and controls. Incomplete or cancelled checks can now be dismissed while keeping Retry available.
+- Preserve your scroll position when returning to Quiver after using another window, even with a controller connected or keyboard navigation active. This applies to the Library, catalog sources, and catalog app lists and grids. Keyboard and controller navigation still bring the selected item into view.
+- Able to choose a release before installing a repository app using **Versions → Change Version**. Download the version you want without installing the latest release first.
+- Add a mouse-wheel scroll speed setting with 1×, 2×, 3× and 5× options for the Library and App Catalog.
 
-## Linux and Flatpak
+## Update checks
 
-- Download, install, launch, update and uninstall direct `.flatpak` release bundles, including TriAevum. Flatpak bundles now count as Linux assets in catalog platform detection, and older cached results are refreshed.
-- Use per-user Flatpak installations and keep saves when uninstalling. Quiver checks the installed application reference, detects external removal or changes, and prevents duplicate management of the same Flatpak application reference.
-- Launch Flatpak apps through the GUI, CLI, desktop shortcuts and Steam shortcuts. Fix the misleading thread-access error that could appear after a successful launch.
-- Recognise Linux executable files and launcher scripts correctly, instead of selecting documentation such as `LICENSE`.
-- Keep selected shell wrappers such as Open Nectar's `nectar-launcher`, their companion binaries and libraries together. Selecting a Linux script from a mixed Linux/Windows package now launches it natively instead of through Wine.
+- Make **Retry** recheck only apps whose checks failed, were rate limited, or did not finish. Successful results are retained, and each retry narrows to the remaining failures. Quiver's own update check is also skipped when it already succeeded; **Check for Updates** button still runs a full check.
+- Show app names and failure reasons in the update-check details, including unfinished checks. Add repository warning indicators to Library entries, with guidance for fixing repository and access problems.
+- Improve keyboard and controller navigation through the update-check controls and expandable details.
 
-Flatpak and its library must already be installed on your system. This release supports direct `.flatpak` bundles; `.flatpakref`, `.flatpakrepo`, bundles inside archives and Flatpak version rollback are not supported yet.
+## Android
 
-## Library and catalog fixes
+- Open the navigation drawer by swiping in from the left edge, with an opening animation and Android gesture handling to help the swipe reach Quiver.
 
-- Keep merged catalog entries matched when a combined entry is split into separate games using release-asset filters. Adding the sibling no longer makes the merged game appear as a new Add, and duplicate Adds are blocked.
-- Preserve existing installation folders and local preferences when merging split catalog entries.
-- Avoid treating failed or blocked portable installations as installed apps. Missing executables, including files removed by antivirus software, no longer leave misleading installed/update status.
+## Linux and installation fixes
+
+- Default new Linux catalog platform filters to both Linux and Windows so apps usable through Wine or Proton are included. Existing filter choices are preserved.
+- Avoid scanning Wine/Proton prefixes or following directory links while looking for game executables. Improve detection of native Linux executables and exclude launcher metadata and shared libraries.
+- Allow an incomplete installation to be downloaded again even when its saved version matches the requested release. Leftover version metadata no longer causes the download to be skipped when the application files are missing.

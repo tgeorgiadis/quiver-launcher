@@ -1,5 +1,5 @@
 {
-  "id": "2026-09-13-340",
+  "id": "2026-09-19-342",
   "enabled": true,
-  "message": "3.4.0: Improved App Catalog and platform detection, clearer GitHub token setup and warnings, a fix for Locate Existing Install, and more."
+  "message": "3.4.2: Linux install fixes, improved update checks, warning icons for apps with unavailable repositories, scroll-position fixes, release selection before installation, adjustable mouse-wheel speed, and Android edge-swipe navigation."
 }

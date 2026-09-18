@@ -335,6 +335,11 @@ public static class GameInstallationService
         }
     }
 
+    public static bool HasCompletePortableInstallation(string path, GameInstallationOptions? options = null) =>
+        Directory.Exists(path) &&
+        !File.Exists(Path.Combine(path, IncompleteInstallFileName)) &&
+        FindExecutableCandidates(path, SearchOption.AllDirectories, options, out _).Count > 0;
+
     public static List<string> FindExecutableCandidates(
         string path,
         SearchOption searchOption,
@@ -349,30 +354,54 @@ public static class GameInstallationService
         out bool needsWine,
         OSPlatform platform)
     {
-        _ = options;
         needsWine = false;
 
         if (!Directory.Exists(path))
             return [];
 
         var executables = new List<string>();
+        if (IsCompatibilityDirectory(path)) return [];
+        var enumeration = new EnumerationOptions
+        {
+            RecurseSubdirectories = searchOption == SearchOption.AllDirectories,
+            IgnoreInaccessible = true,
+            AttributesToSkip = 0,
+            MatchType = MatchType.Simple,
+        };
+        // Proton's dosdevices/z: points at /. Never follow directory links or
+        // inspect Wine/Proton prefixes as if they were part of the game payload.
+        string[] FindEntries(string pattern, bool directories = false)
+        {
+            var entries = new System.IO.Enumeration.FileSystemEnumerable<string>(path,
+                (ref System.IO.Enumeration.FileSystemEntry entry) => entry.ToFullPath(), enumeration)
+            {
+                ShouldRecursePredicate = (ref System.IO.Enumeration.FileSystemEntry entry) =>
+                    (entry.Attributes & FileAttributes.ReparsePoint) == 0 && !IsCompatibilityDirectory(entry.ToFullPath()),
+                ShouldIncludePredicate = (ref System.IO.Enumeration.FileSystemEntry entry) =>
+                    entry.IsDirectory == directories &&
+                    System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(pattern, entry.FileName,
+                        ignoreCase: OperatingSystem.IsWindows()),
+            };
+            return entries.ToArray();
+        }
 
         if (platform == OSPlatform.Windows)
         {
-            executables.AddRange(Directory.GetFiles(path, "*.exe", searchOption));
-            executables.AddRange(Directory.GetFiles(path, "*.bat", searchOption));
-            executables.AddRange(Directory.GetFiles(path, "*.cmd", searchOption));
-            executables.AddRange(Directory.GetFiles(path, "launch.bat", searchOption));
+            executables.AddRange(FindEntries("*.exe"));
+            executables.AddRange(FindEntries("*.bat"));
+            executables.AddRange(FindEntries("*.cmd"));
+            executables.AddRange(FindEntries("launch.bat"));
         }
         else if (platform == OSPlatform.OSX)
         {
-            executables.AddRange(Directory.GetDirectories(path, "*.app", searchOption));
-            executables.AddRange(Directory.GetFiles(path, "*", searchOption)
+            executables.AddRange(FindEntries("*.app", directories: true));
+            executables.AddRange(FindEntries("*")
                 .Where(file => IsLikelyExtensionlessExecutable(file, platform)));
         }
         else
         {
-            var allFiles = Directory.GetFiles(path, "*", searchOption);
+            var allFiles = FindEntries("*")
+                .Where(f => !IsLauncherMetadataFile(f, options)).ToArray();
 
             executables.AddRange(allFiles.Where(f =>
             {
@@ -390,13 +419,13 @@ public static class GameInstallationService
                 if (fileName.EndsWith(".appimage") || fileName.EndsWith(".x86_64") ||
                     fileName.EndsWith(".arm64") || fileName.EndsWith(".aarch64") ||
                     fileName.EndsWith(".txt") || fileName.EndsWith(".dll") ||
-                    fileName.EndsWith(".so") || fileName.EndsWith(".json") ||
+                    fileName.EndsWith(".so") || fileName.Contains(".so.") || fileName.EndsWith(".json") ||
                     fileName.EndsWith(".sh") || fileName.EndsWith(".exe"))
                 {
                     return false;
                 }
 
-                return IsLikelyExtensionlessExecutable(f, platform);
+                return IsLikelyNativeExecutable(f, platform);
             }));
 
             if (executables.Count == 0)
@@ -418,6 +447,10 @@ public static class GameInstallationService
             .ThenBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
+
+    private static bool IsCompatibilityDirectory(string path) =>
+        Path.GetFileName(Path.TrimEndingDirectorySeparator(path)) is ".steam-compat-data" or ".wine-prefix" ||
+        (Directory.Exists(Path.Combine(path, "dosdevices")) && Directory.Exists(Path.Combine(path, "drive_c")));
 
     public static bool IsLauncherMetadataFile(string path, GameInstallationOptions? options = null)
     {
@@ -1050,10 +1083,12 @@ public static class GameInstallationService
     // ZIP permissions and file sizes are not evidence that an extensionless file is a program.
     // In particular LICENSE/COPYING used to hide every Windows .exe in Linux installs.
     static bool IsLikelyExtensionlessExecutable(string path, OSPlatform platform)
+        => !Path.HasExtension(path) && IsLikelyNativeExecutable(path, platform);
+
+    static bool IsLikelyNativeExecutable(string path, OSPlatform platform)
     {
         try
         {
-            if (Path.HasExtension(path)) return false;
             using var stream = File.OpenRead(path);
             Span<byte> header = stackalloc byte[64];
             var length = stream.ReadAtLeast(header, header.Length, throwOnEndOfStream: false);

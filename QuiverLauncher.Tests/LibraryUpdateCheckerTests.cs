@@ -112,6 +112,9 @@ public class LibraryUpdateCheckerTests(ITestOutputHelper output)
     [Theory]
     [InlineData(503, AppCheckOutcome.Failed)]
     [InlineData(429, AppCheckOutcome.RateLimited)]
+    [InlineData(401, AppCheckOutcome.Failed)]
+    [InlineData(403, AppCheckOutcome.Failed)]
+    [InlineData(404, AppCheckOutcome.Failed)]
     public async Task Failures_keep_known_updates_and_do_not_claim_success(int code, AppCheckOutcome expected)
     {
         var handler = new Handler((_, _) => Task.FromResult(new HttpResponseMessage((HttpStatusCode)code)));
@@ -119,6 +122,11 @@ public class LibraryUpdateCheckerTests(ITestOutputHelper output)
         var app = App(); app.LatestVersion = "2.0"; app.Status = GameStatus.UpdateAvailable;
         var result = await new LibraryUpdateChecker(client, new()).CheckAsync([app], true, TimeSpan.Zero, null, TestContext.Current.CancellationToken);
         result.Apps.Single().Outcome.Should().Be(expected);
+        result.Apps.Single().AppName.Should().Be(app.DisplayName);
+        result.Apps.Single().Reason.Should().NotBeNullOrWhiteSpace();
+        result.Apps.Single().Reason.Should().Contain(code == 429 ? "rate limit" : $"HTTP {code}");
+        app.HasRepositoryCheckError.Should().BeTrue();
+        app.RepositoryCheckError.Should().Be(result.Apps.Single().Reason);
         app.LatestVersion.Should().Be("2.0"); app.Status.Should().Be(GameStatus.UpdateAvailable);
     }
 
@@ -151,9 +159,74 @@ public class LibraryUpdateCheckerTests(ITestOutputHelper output)
         var checker = new LibraryUpdateChecker(client, new());
         var results = await checker.CheckAsync([App("fixture/stall"), App("fixture/ok")], true, TimeSpan.Zero, null, TestContext.Current.CancellationToken);
         results.Failed.Should().Be(1); results.Successful.Should().Be(1);
+        results.Apps[0].Reason.Should().Contain("too long");
         using var cancel = new CancellationTokenSource();
         var running = checker.CheckAsync([App("fixture/stall"), App("fixture/never")], true, TimeSpan.Zero, null, cancel.Token);
         cancel.Cancel();
         (await running).Cancelled.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Empty_releases_explain_failure_and_snapshot_target_names()
+    {
+        using var client = new HttpClient(new Handler((_, _) => Task.FromResult(Ok("[]"))));
+        var app = App();
+        app.RepositorySource = "gitlab";
+        app.CustomDisplayName = "My renamed app";
+        AppCheckProgress? initial = null;
+        var result = await new LibraryUpdateChecker(client, new()).CheckAsync([app], true, TimeSpan.Zero,
+            new CaptureProgress(value => initial ??= value), TestContext.Current.CancellationToken);
+        result.Apps.Single().Reason.Should().Be("No eligible release was found.");
+        result.Apps.Single().AppName.Should().Be("My renamed app");
+        initial!.Targets!.Single().AppName.Should().Be("My renamed app");
+    }
+
+    private sealed class CaptureProgress(Action<AppCheckProgress> report) : IProgress<AppCheckProgress>
+    {
+        public void Report(AppCheckProgress value) => report(value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Uninstalled_app_warning_clears_after_successful_check(bool directCheck)
+    {
+        var fail = true;
+        using var client = new HttpClient(new Handler((_, _) => Task.FromResult(fail
+            ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : Ok("""[{"tag_name":"2.0","assets":{"links":[{"name":"app.zip","url":"https://gitlab.com/fixture/app/app.zip"}]}}]"""))));
+        var app = App("fixture/" + Guid.NewGuid().ToString("N"));
+        app.RepositorySource = "gitlab";
+        app.Status = GameStatus.NotInstalled;
+        app.InstalledVersion = null;
+        async Task Check()
+        {
+            if (directCheck) await app.CheckLatestVersionAsync(client, forceCheck: true);
+            else await new LibraryUpdateChecker(client, new()).CheckAsync([app], true, TimeSpan.Zero, null,
+                TestContext.Current.CancellationToken);
+        }
+        await Check();
+        app.HasRepositoryCheckError.Should().BeTrue();
+        app.RepositoryCheckError.Should().Contain("404");
+        app.Status.Should().Be(GameStatus.NotInstalled);
+        // Restoring old cached metadata is not evidence that the failed check recovered.
+        app.ApplyCachedRelease("1.0", null);
+        app.HasRepositoryCheckError.Should().BeTrue();
+        fail = false;
+        await Check();
+        app.HasRepositoryCheckError.Should().BeFalse();
+        app.LatestVersion.Should().Be("2.0");
+        app.Status.Should().Be(GameStatus.NotInstalled);
+    }
+
+    [Fact]
+    public async Task Cancelled_check_does_not_flag_an_unchecked_app()
+    {
+        using var client = new HttpClient(new Handler((_, _) => throw new InvalidOperationException("No request expected")));
+        var app = App();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await new LibraryUpdateChecker(client, new()).CheckAsync([app], true, TimeSpan.Zero, null, cancellation.Token);
+        app.HasRepositoryCheckError.Should().BeFalse();
     }
 }

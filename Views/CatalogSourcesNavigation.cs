@@ -77,7 +77,8 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
     }
 
     public bool Options() => false;
-    public void RestoreFocus() => SyncCatalogGamepadSelection();
+    public void RestoreFocus() => RestoreFocus(bringIntoView: true);
+    public void RestoreFocus(bool bringIntoView) => SyncCatalogGamepadSelection(bringIntoView);
     internal bool HandleCatalogSourcesCardNavigation(Services.NavigationDirection direction)
     {
         var currentIndex = _gamepadNavigation.CatalogSelectedIndex;
@@ -233,7 +234,9 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
         return controls.Count > 0 ? 0 : -1;
     }
 
-    internal void ApplyCatalogSourcesToolbarSelection(int index)
+    internal void ApplyCatalogSourcesToolbarSelection(int index) => ApplyCatalogSourcesToolbarSelection(index, bringIntoView: true);
+
+    internal void ApplyCatalogSourcesToolbarSelection(int index, bool bringIntoView)
     {
         var controls = CollectCatalogSourcesToolbarControls();
         index = _gamepadNavigation.ClampIndex(index, controls.Count);
@@ -245,6 +248,12 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
             return;
         if (controls[index] is StyledElement styled)
             styled.Classes.Set("gamepad-focused", true);
+        if (!bringIntoView)
+        {
+            // Confirm uses the saved index; native focus must not reveal this control.
+            _host.FocusCard(true);
+            return;
+        }
         controls[index].Focus();
         Dispatcher.UIThread.Post(() =>
         {
@@ -253,7 +262,9 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
         }, DispatcherPriority.Loaded);
     }
 
-    internal void ApplyCatalogSourcesFilterSelection(int index)
+    internal void ApplyCatalogSourcesFilterSelection(int index) => ApplyCatalogSourcesFilterSelection(index, bringIntoView: true);
+
+    internal void ApplyCatalogSourcesFilterSelection(int index, bool bringIntoView)
     {
         var controls = CollectCatalogSourcesFilterControls();
         index = _gamepadNavigation.ClampIndex(index, controls.Count);
@@ -265,6 +276,12 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
             return;
         if (controls[index] is StyledElement styled)
             styled.Classes.Set("gamepad-focused", true);
+        if (!bringIntoView)
+        {
+            // Confirm uses the saved index; native focus must not reveal this control.
+            _host.FocusCard(true);
+            return;
+        }
         controls[index].Focus();
         Dispatcher.UIThread.Post(() =>
         {
@@ -273,7 +290,9 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
         }, DispatcherPriority.Loaded);
     }
 
-    internal void ApplyCatalogSourceCardActionSelection(int index)
+    internal void ApplyCatalogSourceCardActionSelection(int index) => ApplyCatalogSourceCardActionSelection(index, bringIntoView: true);
+
+    internal void ApplyCatalogSourceCardActionSelection(int index, bool bringIntoView)
     {
         if (CatalogSources.Count == 0)
             return;
@@ -289,6 +308,12 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
         CatalogSources[cardIndex].IsGamepadFocused = true;
         if (controls[index] is StyledElement styled)
             styled.Classes.Set("gamepad-focused", true);
+        if (!bringIntoView)
+        {
+            // Confirm uses the saved index; native focus must not reveal this control.
+            _host.FocusCard(true);
+            return;
+        }
         controls[index].Focus();
         Dispatcher.UIThread.Post(() =>
         {
@@ -345,7 +370,7 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
         ApplyCatalogGamepadSelection(_gamepadNavigation.CatalogSelectedIndex < 0 ? 0 : _gamepadNavigation.CatalogSelectedIndex);
     }
 
-    internal void SyncCatalogGamepadSelection()
+    internal void SyncCatalogGamepadSelection(bool bringIntoView = true)
     {
         if (!_host.IsFocusActive)
         {
@@ -364,13 +389,13 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
             _gamepadNavigation.CatalogSourceCardActionIndex = -1;
             if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogSourcesToolbar)
             {
-                ApplyCatalogSourcesToolbarSelection(_gamepadNavigation.CatalogSourcesToolbarSelectedIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesToolbarSelectedIndex);
+                ApplyCatalogSourcesToolbarSelection(_gamepadNavigation.CatalogSourcesToolbarSelectedIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesToolbarSelectedIndex, bringIntoView: bringIntoView);
             }
             else
             {
                 // Empty filter (e.g. enabled last Disabled source) — re-home to filter chips
                 // so Confirm is not stuck in CatalogSourceCardActions with nothing to activate.
-                ApplyCatalogSourcesFilterSelection(_gamepadNavigation.CatalogSourcesFilterIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesFilterIndex);
+                ApplyCatalogSourcesFilterSelection(_gamepadNavigation.CatalogSourcesFilterIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesFilterIndex, bringIntoView: bringIntoView);
             }
 
             return;
@@ -380,21 +405,25 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
         // so focus does not jump to a source under a pending Yes/No prompt.
         if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogSourcesToolbar)
         {
-            ApplyCatalogSourcesToolbarSelection(_gamepadNavigation.CatalogSourcesToolbarSelectedIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesToolbarSelectedIndex);
+            ApplyCatalogSourcesToolbarSelection(_gamepadNavigation.CatalogSourcesToolbarSelectedIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesToolbarSelectedIndex, bringIntoView: bringIntoView);
             return;
         }
 
         if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogSourcesFilters)
         {
-            ApplyCatalogSourcesFilterSelection(_gamepadNavigation.CatalogSourcesFilterIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesFilterIndex);
+            ApplyCatalogSourcesFilterSelection(_gamepadNavigation.CatalogSourcesFilterIndex < 0 ? 0 : _gamepadNavigation.CatalogSourcesFilterIndex, bringIntoView: bringIntoView);
             return;
         }
 
         var clamped = _gamepadNavigation.ClampIndex(_gamepadNavigation.CatalogSelectedIndex, CatalogSources.Count);
-        ApplyCatalogGamepadSelection(clamped);
+        _gamepadNavigation.CatalogSelectedIndex = clamped;
+        if (!bringIntoView && _gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogSourceCardActions)
+            ApplyCatalogSourceCardActionSelection(_gamepadNavigation.CatalogSourceCardActionIndex, bringIntoView: false);
+        else
+            ApplyCatalogGamepadSelection(clamped, bringIntoView: bringIntoView);
     }
 
-    internal void ApplyCatalogGamepadSelection(int index, bool stealFocus = true)
+    internal void ApplyCatalogGamepadSelection(int index, bool stealFocus = true, bool bringIntoView = true)
     {
         if (CatalogSources.Count == 0)
         {
@@ -414,6 +443,7 @@ public sealed class CatalogSourcesNavigation(CatalogSourcesView view, IFeatureNa
             return;
         CatalogSources[index].IsGamepadFocused = true;
         var source = CatalogSources[index];
+        if (!bringIntoView) return;
         Dispatcher.UIThread.Post(() =>
         {
             if (_isActive() && CatalogSources.Contains(source))

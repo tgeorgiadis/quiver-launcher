@@ -63,6 +63,7 @@ public class FileSettingsStoreTests : IDisposable
         settings.GitHubApiToken = "test-token";
         settings.GitLabApiToken = "gitlab-token";
         settings.SortBy = "Name";
+        settings.MouseWheelScrollSpeed = 3;
         settings.CatalogReviewSortBy = "Repository";
         settings.CatalogReviewUseGridView = true;
         settings.CatalogPlatformFilters = ["Windows", "Linux"];
@@ -79,6 +80,7 @@ public class FileSettingsStoreTests : IDisposable
         reloaded.GitHubApiToken.Should().Be("test-token");
         reloaded.GitLabApiToken.Should().Be("gitlab-token");
         reloaded.SortBy.Should().Be("Name");
+        reloaded.MouseWheelScrollSpeed.Should().Be(3);
         reloaded.CatalogReviewSortBy.Should().Be("Repository");
         reloaded.CatalogReviewUseGridView.Should().BeTrue();
         reloaded.CatalogPlatformFilters.Should().Equal("Windows", "Linux");

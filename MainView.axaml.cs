@@ -47,6 +47,7 @@ namespace QuiverLauncher
         private readonly SettingsViewModel _settingsViewModel;
         private readonly LauncherSession _session = new();
         private readonly Views.MobileShellLayout _mobileLayout;
+        public bool CanOpenMobileNavigation => _mobileLayout?.CanOpenNavigation == true;
         private readonly Views.DesktopHeaderLayout? _desktopHeader;
         private readonly Views.ShellAppearance _appearance;
         private readonly Views.ShellChromeNavigation _chromeNavigation;
@@ -1461,7 +1462,8 @@ namespace QuiverLauncher
             CheckForUpdatesButton.Focus();
             Shell.DismissUpdateCheckStatus();
         }
-        private async void RetryUpdateCheck_Click(object? sender, EventArgs e) => await RunUpdateCheckAsync(true, true);
+        private async void RetryUpdateCheck_Click(object? sender, EventArgs e) =>
+            await _session.RunAsync(() => _updateChecks.RetryAsync(true, true, _session.Token));
         /// <summary>
         /// Shared update check used by the toolbar button, tray menu, and background timer.
         /// </summary>
@@ -1849,7 +1851,7 @@ namespace QuiverLauncher
                 return;
             UpdateGamepadChromeClass();
             if (IsGamepadFocusActive)
-                _navigationRouter.RestoreCurrentFocus();
+                _navigationRouter.RestoreCurrentFocus(bringIntoView: false);
         }
 
         private Task ShowChangelogAsync(GameInfo game) => ShowLibraryDocumentAsync(game, readme: false);

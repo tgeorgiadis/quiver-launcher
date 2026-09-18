@@ -7,6 +7,8 @@ public interface IFeatureNavigationHandler
     bool Cancel();
     bool Options();
     void RestoreFocus();
+    // Scrollable feature handlers override this for passive foreground restoration.
+    void RestoreFocus(bool bringIntoView) => RestoreFocus();
     bool SynchronizePointer(object? source) => false;
     bool EnterZone(GamepadZoneTransition transition) => false;
     void LeaveZone(GamepadNavigationZone nextZone) { }

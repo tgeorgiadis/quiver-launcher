@@ -83,10 +83,8 @@ public static class GameStatusService
             }
             // Metadata and leftover data can survive failed installs or antivirus
             // quarantine. Neither a folder nor version.txt proves the app exists.
-            else if (!isInstalled && directoryExists &&
-                !File.Exists(Path.Combine(gamePath, GameInstallationService.IncompleteInstallFileName)) &&
-                GameInstallationService.FindExecutableCandidates(gamePath, SearchOption.AllDirectories,
-                    game.GetInstallationOptions(), out _).Count > 0)
+            else if (!isInstalled && GameInstallationService.HasCompletePortableInstallation(
+                gamePath, game.GetInstallationOptions()))
             {
                 if (versionFileExists)
                 {

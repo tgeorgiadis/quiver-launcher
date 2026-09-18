@@ -202,6 +202,23 @@ public class SettingsViewModel : ObservableViewModel
         else Refresh();
     }
 
+    public int MouseWheelScrollSpeedIndex
+    {
+        get => MouseWheelScrollSpeed switch { 2 => 1, 3 => 2, 5 => 3, _ => 0 };
+        set { if (value is >= 0 and <= 3) MouseWheelScrollSpeed = value switch { 1 => 2, 2 => 3, 3 => 5, _ => 1 }; }
+    }
+    public int MouseWheelScrollSpeed
+    {
+        get => Current.MouseWheelScrollSpeed is 2 or 3 or 5 ? Current.MouseWheelScrollSpeed : 1;
+        set
+        {
+            var speed = value is 2 or 3 or 5 ? value : 1;
+            Change(Current.MouseWheelScrollSpeed, speed, s => s.MouseWheelScrollSpeed = speed, SettingsChange.Presentation);
+            Notify(nameof(MouseWheelScrollSpeed));
+            Notify(nameof(MouseWheelScrollSpeedIndex));
+        }
+    }
+
     public bool CloseAfterLaunch
     {
         get => Current.CloseAfterLaunch;

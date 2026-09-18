@@ -136,6 +136,56 @@ public sealed class IncompleteInstallationTests : IDisposable
         File.Exists(IncompletePath).Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task Same_version_install_and_restart_agree(bool hasExecutable, bool incomplete)
+    {
+        File.WriteAllText(VersionPath, "v2");
+        if (hasExecutable)
+            File.WriteAllText(Path.Combine(GamePath, ExecutableName), "#!/bin/sh\nexit 0\n");
+        if (incomplete) File.WriteAllText(IncompletePath, "v2");
+        var game = Game();
+        await Refresh(game);
+        game.IsInstalled.Should().Be(hasExecutable && !incomplete);
+
+        var dialogs = new Dialogs();
+        // A valid same-version install must not request this failing download.
+        using var client = hasExecutable && !incomplete
+            ? Client([], HttpStatusCode.InternalServerError)
+            : Client(Zip((ExecutableName, "#!/bin/sh\nexit 0\n")));
+        await Install(game, client, dialogs);
+        dialogs.Error.Should().BeNull();
+        game.IsInstalled.Should().BeTrue();
+        File.Exists(IncompletePath).Should().BeFalse();
+        File.Exists(Path.Combine(GamePath, ExecutableName)).Should().BeTrue();
+
+        var restarted = Game();
+        restarted.Name = "Renamed display title";
+        restarted.LatestVersion = "v3";
+        await Refresh(restarted);
+        restarted.IsInstalled.Should().BeTrue();
+        restarted.Status.Should().Be(GameStatus.UpdateAvailable);
+        restarted.CanUpdate.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Same_version_missing_executable_does_not_claim_success_when_repair_fails()
+    {
+        File.WriteAllText(VersionPath, "v2");
+        var game = Game();
+        await Refresh(game);
+        var dialogs = new Dialogs();
+        using var client = Client([], HttpStatusCode.InternalServerError);
+        await Install(game, client, dialogs);
+        dialogs.Error.Should().NotBeNull();
+        game.IsInstalled.Should().BeFalse();
+        await Refresh(game);
+        game.IsInstalled.Should().BeFalse();
+    }
+
     private Task Install(GameInfo game, HttpClient client, Dialogs dialogs) =>
         GameDownloadInstallService.DownloadAndInstallAsync(game, client, _root, Release, new(), GameStatus.NotInstalled, dialogs);
     private async Task Refresh(GameInfo game)

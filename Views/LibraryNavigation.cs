@@ -30,7 +30,7 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
         _gamepadNavigation.ActiveZone = GamepadNavigationZone.Library;
     }
 
-    private void SelectEmptyAction(int index)
+    private void SelectEmptyAction(int index, bool bringIntoView = true)
     {
         var buttons = EmptyActions;
         index = _gamepadNavigation.ClampIndex(index, buttons.Count);
@@ -41,6 +41,7 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
         _gamepadNavigation.ActiveZone = GamepadNavigationZone.Library;
         if (index < 0) return;
         buttons[index].Classes.Set("gamepad-focused", true);
+        if (!bringIntoView) { _host.FocusCard(true); return; }
         GamepadControlActivation.ApplyGamepadHighlightFocus(buttons[index]);
         buttons[index].BringIntoView();
     }
@@ -91,10 +92,12 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
         return true;
     }
 
-    public void RestoreFocus()
+    public void RestoreFocus() => RestoreFocus(bringIntoView: true);
+
+    public void RestoreFocus(bool bringIntoView)
     {
         if (!_session.IsClosed)
-            SyncGamepadLibrarySelection();
+            SyncGamepadLibrarySelection(bringIntoView);
     }
 
     private (double X, double Y)? GetControlCenter(Control? control)
@@ -160,7 +163,7 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
         ApplyLibraryGamepadSelection(_gamepadNavigation.LibrarySelectedIndex < 0 ? 0 : _gamepadNavigation.LibrarySelectedIndex);
     }
 
-    internal void SyncGamepadLibrarySelection()
+    internal void SyncGamepadLibrarySelection(bool bringIntoView = true)
     {
         if (!_host.IsFocusActive)
         {
@@ -179,14 +182,14 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
 
         if (Games.Count == 0)
         {
-            if (EmptyActions.Count > 0) { SelectEmptyAction(Math.Max(0, _gamepadNavigation.LibrarySelectedIndex)); return; }
+            if (EmptyActions.Count > 0) { SelectEmptyAction(Math.Max(0, _gamepadNavigation.LibrarySelectedIndex), bringIntoView); return; }
             _host.ClearFocus();
             _gamepadNavigation.LibrarySelectedIndex = -1;
             return;
         }
 
         var clamped = _gamepadNavigation.ClampIndex(_gamepadNavigation.LibrarySelectedIndex, Games.Count);
-        ApplyLibraryGamepadSelection(clamped);
+        ApplyLibraryGamepadSelection(clamped, bringIntoView: bringIntoView);
     }
 
     internal void ClearLibraryCardGamepadFocus()
@@ -197,7 +200,7 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
             game.IsGamepadFocused = false;
     }
 
-    internal void ApplyLibraryGamepadSelection(int index, bool stealFocus = true)
+    internal void ApplyLibraryGamepadSelection(int index, bool stealFocus = true, bool bringIntoView = true)
     {
         // Overlays sit above the library; never steal zone/focus while they are open.
         if (_session.IsClosed || !_canSelect())
@@ -205,7 +208,7 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
             return;
         }
 
-        if (EmptyActions.Count > 0) { SelectEmptyAction(Math.Max(0, index)); return; }
+        if (EmptyActions.Count > 0) { SelectEmptyAction(Math.Max(0, index), bringIntoView); return; }
         var games = Games.ToList();
         index = _gamepadNavigation.ClampIndex(index, games.Count);
         _gamepadNavigation.LibrarySelectedIndex = index;
@@ -221,6 +224,7 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
         if (index < 0 || index >= games.Count)
             return;
         games[index].IsGamepadFocused = true;
+        if (!bringIntoView) return;
         var selected = games[index];
         Dispatcher.UIThread.Post(() =>
         {

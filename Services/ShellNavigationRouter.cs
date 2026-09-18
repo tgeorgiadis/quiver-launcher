@@ -24,9 +24,29 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         For(navigation.ActiveZone)?.LeaveZone(transition.Zone);
         return For(transition.Zone)?.EnterZone(transition) ?? false;
     }
-    public void RestoreCurrentFocus()
+    public void RestoreCurrentFocus(bool bringIntoView = true)
     {
         var zone = navigation.ActiveZone;
+        if (!bringIntoView)
+        {
+            var overlay = displayFilterOpen() ? GamepadNavigationZone.DisplayFilterOverlay
+                : shell.DocumentOpen ? GamepadNavigationZone.ChangelogOverlay
+                : shell.EntryEditorOpen ? GamepadNavigationZone.EntryFormOverlay
+                : shell.TagEditorOpen ? GamepadNavigationZone.TagEditOverlay
+                : shell.SettingsOpen ? GamepadNavigationZone.Settings : (GamepadNavigationZone?)null;
+            if (overlay.HasValue)
+            {
+                For(overlay.Value)?.RestoreFocus(bringIntoView: false);
+                return;
+            }
+        }
+        // Activation restores selection without re-entering or scrolling the list.
+        if (!bringIntoView && !IsChrome(zone) &&
+            MainZone is GamepadNavigationZone.Library or GamepadNavigationZone.CatalogSources or GamepadNavigationZone.CatalogReviewList)
+        {
+            For(MainZone)?.RestoreFocus(bringIntoView: false);
+            return;
+        }
         if (IsChrome(zone) || zone is GamepadNavigationZone.ModsOverlayToolbar or GamepadNavigationZone.ModsOverlayFilters
             or GamepadNavigationZone.ModsOverlaySourceFilters or GamepadNavigationZone.ModsOverlayList
             or GamepadNavigationZone.ModsOverlayRowActions or GamepadNavigationZone.ModsDetailsOverlay

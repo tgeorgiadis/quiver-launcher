@@ -13,6 +13,56 @@ namespace QuiverLauncher.Tests;
 
 public class DesktopHeaderLayoutTests
 {
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Library_up_visits_details_then_retry_and_down_reverses_the_path(bool keyboard)
+    {
+        var view = CreateView();
+        var window = new Window { Content = view, Width = 1200, Height = 720 };
+        try
+        {
+            window.Show();
+            view.Shell.LastLauncherCheckNote = "Update check incomplete";
+            view.Shell.UpdateCheckDetails = "Example app: Repository not found.";
+            Settle(window);
+            GamepadFocusChrome.SetKeyboardNavigationActive(keyboard);
+            GamepadFocusChrome.SetActive(true, view);
+            var navigation = (ShellChromeNavigation)typeof(MainView).GetField("_chromeNavigation", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!;
+            var host = (IFeatureNavigationHost)view;
+            var strip = view.FindControl<UpdateCheckStatusView>("UpdateCheckStatus")!;
+            var details = strip.FindControl<Expander>("CheckDetailsExpander")!;
+            host.Navigation.ActiveZone = GamepadNavigationZone.Library;
+            navigation.EnterZone(new(GamepadNavigationZone.TopBar, null)).Should().BeTrue();
+            details.IsFocused.Should().BeTrue();
+            details.Classes.Should().Contain("gamepad-focused");
+            navigation.ActivateTopBarSelection();
+            details.IsExpanded.Should().BeTrue();
+            navigation.ActivateTopBarSelection();
+            details.IsExpanded.Should().BeFalse();
+            navigation.Navigate(Services.NavigationDirection.Up).Should().BeTrue();
+            var controls = navigation.CollectTopBarControls();
+            var retry = controls[host.Navigation.TopBarSelectedIndex];
+            retry.Should().BeOfType<Button>().Which.Content.Should().Be("Retry");
+            retry.IsFocused.Should().BeTrue();
+            navigation.Navigate(Services.NavigationDirection.Down).Should().BeTrue();
+            details.IsFocused.Should().BeTrue();
+            navigation.Navigate(Services.NavigationDirection.Down).Should().BeTrue();
+            host.Navigation.ActiveZone.Should().Be(GamepadNavigationZone.Library);
+            view.Shell.UpdateCheckDetails = "";
+            Settle(window);
+            navigation.EnterZone(new(GamepadNavigationZone.TopBar, null));
+            navigation.CollectTopBarControls().Should().NotContain(details);
+        }
+        finally
+        {
+            GamepadFocusChrome.SetKeyboardNavigationActive(false);
+            GamepadFocusChrome.SetActive(false, view);
+            window.Close();
+            await view.ShutdownAsync();
+        }
+    }
+
     [AvaloniaFact]
     public void Header_uses_hysteresis_and_ignores_queued_work_after_disposal()
     {

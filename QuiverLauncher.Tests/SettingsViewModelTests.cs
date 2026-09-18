@@ -93,4 +93,44 @@ public class SettingsViewModelTests
         Dispatcher.UIThread.RunJobs();
         store.Saves.Should().Be(1);
     }
+
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Scroll_speed_dropdown_navigation_selects_and_cancels_without_leaving_choices(bool nativeOpen)
+    {
+        var store = new Store();
+        store.Current.MouseWheelScrollSpeed = 3;
+        var model = new SettingsViewModel(store);
+        var view = new SettingsView { DataContext = model };
+        var window = new Window { Content = view, Width = 800, Height = 900 };
+        var combo = view.FindControl<ComboBox>("MouseWheelScrollSpeedComboBox")!;
+        var navigation = GamepadComboBoxNavigation.Instance;
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            combo.SelectedIndex.Should().Be(2);
+            if (nativeOpen) combo.IsDropDownOpen = true;
+            else GamepadComboBoxNavigation.Open(combo);
+            navigation.TryHandleNavigation(NavigationDirection.Down).Should().BeTrue();
+            ((ComboBoxItem)combo.Items[3]!).Classes.Should().Contain("gamepad-focused");
+            store.Saves.Should().Be(0);
+            navigation.TryHandleCancel().Should().BeTrue();
+            model.MouseWheelScrollSpeed.Should().Be(3);
+            GamepadComboBoxNavigation.Open(combo);
+            navigation.TryHandleNavigation(NavigationDirection.Down).Should().BeTrue();
+            navigation.TryHandleConfirm().Should().BeTrue();
+            Dispatcher.UIThread.RunJobs();
+            combo.IsDropDownOpen.Should().BeFalse();
+            model.MouseWheelScrollSpeed.Should().Be(5);
+            store.Saves.Should().Be(1);
+        }
+        finally
+        {
+            combo.IsDropDownOpen = false;
+            navigation.Close(combo);
+            window.Close();
+        }
+    }
 }

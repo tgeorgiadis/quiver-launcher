@@ -1,10 +1,13 @@
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using QuiverLauncher.Services;
 
@@ -42,6 +45,8 @@ public sealed class MobileShellLayout : IDisposable
     private readonly AppUpdateReviewView AppUpdatesReviewPanel;
     private readonly ModsView ModsPanel;
     private readonly Border _navDimmer;
+    private readonly MobileEdgeSwipe _edgeSwipe;
+    private readonly TranslateTransform _drawerTranslation = new();
     public MobileShellLayout(UserControl root, LauncherSession session, Action updateHeader)
     {
         _root = root;
@@ -80,7 +85,17 @@ public sealed class MobileShellLayout : IDisposable
         _toolbar.SearchLostFocus += LibrarySearchTextBox_LostFocus;
         _navDimmer = root.FindControl<Border>("MobileNavDimmer")!;
         _navDimmer.PointerPressed += MobileNavDimmer_PointerPressed;
+        ((Control)MobileNavDrawerHost.Parent!).RenderTransform = _drawerTranslation;
+        _edgeSwipe = new MobileEdgeSwipe(root, () => CanOpenNavigation,
+            () => IsMobileNavOpen = true);
     }
+
+    public bool CanOpenNavigation =>
+        PlatformCapabilities.IsMobile && !_disposed && !_session.IsClosed && !IsMobileNavOpen &&
+        !_root.FindControl<Control>("MessagePromptOverlay")!.IsVisible &&
+        !EntryFormOverlay.IsVisible &&
+        !_root.FindControl<Control>("TagEditOverlay")!.IsVisible &&
+        !_root.FindControl<Control>("DisplayFilterOverlay")!.IsVisible;
 
     public void Attach()
     {
@@ -89,6 +104,8 @@ public sealed class MobileShellLayout : IDisposable
         if (!_attached)
         {
             _root.SizeChanged += SizeChanged;
+            if (PlatformCapabilities.IsMobile)
+                _edgeSwipe.Attach();
             _attached = true;
             ++_attachment;
         }
@@ -110,6 +127,7 @@ public sealed class MobileShellLayout : IDisposable
         _attached = false;
         ++_attachment;
         _root.SizeChanged -= SizeChanged;
+        _edgeSwipe.Dispose();
         _insets.Detach();
     }
 
@@ -164,7 +182,22 @@ public sealed class MobileShellLayout : IDisposable
             if (MainSplitView != null)
                 MainSplitView.IsPaneOpen = false;
             if (MobileNavOverlay != null)
+            {
+                _drawerTranslation.Transitions = null;
+                _drawerTranslation.X = value ? -264 : 0;
                 MobileNavOverlay.IsVisible = value;
+                if (value)
+                    Post(() =>
+                    {
+                        if (!IsMobileNavOpen) return;
+                        _drawerTranslation.Transitions = new Transitions
+                        {
+                            new DoubleTransition { Property = TranslateTransform.XProperty,
+                                Duration = TimeSpan.FromMilliseconds(180), Easing = new CubicEaseOut() }
+                        };
+                        _drawerTranslation.X = 0;
+                    }, DispatcherPriority.Loaded);
+            }
         }
     }
 

@@ -205,19 +205,22 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
     private Task ShowFirstRunWelcomeAsync() => _prompts.ShowWelcomeMessageBoxAsync(CommunityCatalogDefaults.FirstRunWelcomeMessage, CommunityCatalogDefaults.FirstRunWelcomeTitle);
     bool IUpdateCheckWorkflow.CanPresentResults => _presentation.CanPresentResults && !_session.IsClosed;
 
-    Task<LibraryCheckResult> IUpdateCheckWorkflow.CheckAppsAsync(bool manual, IProgress<AppCheckProgress> progress, CancellationToken token) =>
-        _gameManager.CheckInstalledUpdatesAsync(manual, progress, token);
+    Task<LibraryCheckResult> IUpdateCheckWorkflow.CheckAppsAsync(bool manual, IProgress<AppCheckProgress> progress, CancellationToken token,
+        IReadOnlySet<string>? appKeys) =>
+        _gameManager.CheckInstalledUpdatesAsync(manual, progress, token, appKeys);
     void IUpdateCheckWorkflow.ApplyCheckResult(UpdateCheckResult result, DateTime checkedAt)
     {
         RefreshUpdateCheckStatus(checkedAt);
         Shell.LastLauncherCheckNote = result.Note;
+        Shell.UpdateCheckDetails = result.Details;
         Shell.UpdateCheckStatus = result.Note ?? "Installed apps checked";
         NotifyUpdateCheckUiProperties();
     }
 
-    void IUpdateCheckWorkflow.QueuePostCheckWork(UpdateCheckResult result)
+    void IUpdateCheckWorkflow.QueuePostCheckWork(UpdateCheckResult result, bool retry)
     {
         _ = _session.RunAsync(async () => { await Task.Yield(); await ApplyAutoUpdatesAsync(false); });
+        if (retry) return;
         if (_secondaryRefresh is { IsCompleted: false }) return;
         _secondaryRefresh = _session.RunAsync(async () =>
         {

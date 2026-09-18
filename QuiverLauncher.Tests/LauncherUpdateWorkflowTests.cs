@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
@@ -11,6 +12,40 @@ namespace QuiverLauncher.Tests;
 
 public class LauncherUpdateWorkflowTests
 {
+    [AvaloniaFact]
+    public void Update_status_details_can_be_expanded_and_hide_when_retry_starts()
+    {
+        var shell = new ShellViewModel
+        {
+            LastLauncherCheckNote = "Update check incomplete",
+            UpdateCheckStatus = "1 app could not be checked",
+            UpdateCheckDetails = "Ace Combat: Access denied (HTTP 403).",
+        };
+        var view = new UpdateCheckStatusView { DataContext = shell };
+        var window = new Window { Content = view, Width = 600, Height = 400 };
+        try
+        {
+            window.Show();
+            var details = view.GetVisualDescendants().OfType<Expander>().Single();
+            details.IsVisible.Should().BeTrue();
+            details.Classes.Add("gamepad-focused");
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var headerBorder = details.GetVisualDescendants().OfType<Border>()
+                .Single(border => border.Name == "ToggleButtonBackground");
+            headerBorder.IsEffectivelyVisible.Should().BeTrue();
+            headerBorder.BorderThickness.Should().Be(new Avalonia.Thickness(3));
+            details.IsExpanded = true;
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            headerBorder.IsEffectivelyVisible.Should().BeTrue();
+            headerBorder.BorderThickness.Should().Be(new Avalonia.Thickness(3));
+            view.GetVisualDescendants().OfType<SelectableTextBlock>().Single().Text
+                .Should().Be(shell.UpdateCheckDetails);
+            shell.IsCheckingUpdates = true;
+            details.IsVisible.Should().BeFalse();
+        }
+        finally { window.Close(); }
+    }
+
     private sealed class ReviewPresentation : IUpdatePresentation
     {
         public bool CanPresentResults => true;

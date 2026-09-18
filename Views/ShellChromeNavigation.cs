@@ -283,6 +283,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
             return false;
         var currentIndex = _gamepadNavigation.ClampIndex(_gamepadNavigation.TopBarSelectedIndex, controls.Count);
         var current = currentIndex >= 0 && currentIndex < controls.Count ? controls[currentIndex] : null;
+        if (TryMoveUpdateStatus(current, direction, controls)) return true;
         var skipXy = GamepadTextInput.ShouldSkipXyFocusOnHighlight(current);
         if (!PlatformCapabilities.IsMobile && current != null &&
             !((Shell.ModDetailsOpen || Shell.CatalogDetailsOpen) && direction == NavigationDirection.Down) &&
@@ -300,6 +301,13 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
             return true;
         }
 
+        if (direction == NavigationDirection.Down && !Shell.ModDetailsOpen && !Shell.CatalogDetailsOpen &&
+            _root.FindControl<UpdateCheckStatusView>("UpdateCheckStatus") is { } status &&
+            controls.FirstOrDefault(c => status.IsVisualAncestorOf(c)) is { } statusEntry)
+        {
+            ApplyTopBarGamepadSelection(controls.IndexOf(statusEntry));
+            return true;
+        }
         var zoneTransition = _gamepadNavigation.TryGetZoneTransition(direction, GamepadNavigationZone.TopBar, _host.MainContentZone, isListLayout: true, positions: null, _gamepadNavigation.TopBarSelectedIndex, controls.Count);
         if (zoneTransition.HasValue)
             return _host.ApplyTransition(zoneTransition.Value);
@@ -379,7 +387,11 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
 
         Add(CheckForUpdatesButton);
         if (_root.FindControl<UpdateCheckStatusView>("UpdateCheckStatus") is { } status)
-            foreach (var button in status.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible)) Add(button);
+        {
+            foreach (var button in status.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible &&
+                !b.GetVisualAncestors().OfType<Expander>().Any())) Add(button);
+            if (status.FindControl<Expander>("CheckDetailsExpander") is { IsEffectivelyVisible: true } details) Add(details);
+        }
         if (_root.FindControl<AndroidLauncherUpdateView>("AndroidUpdateBanner") is {} updates)
             foreach (var button in updates.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible)) Add(button);
         Add(SettingsButton);
@@ -387,6 +399,41 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         Add(ToggleMaximizeButton);
         Add(CloseLauncherButton);
         return controls;
+    }
+
+    private bool TryMoveUpdateStatus(Control? current, NavigationDirection direction, IReadOnlyList<Control> controls)
+    {
+        if (current == null ||
+            _root.FindControl<UpdateCheckStatusView>("UpdateCheckStatus") is not { } status) return false;
+        var rows = controls.Where(c => status.IsVisualAncestorOf(c)).ToList();
+        if (rows.Count == 0) return false;
+        var details = rows.OfType<Expander>().FirstOrDefault();
+        var actions = rows.Where(c => c is Button).ToList();
+        if (direction is NavigationDirection.Left or NavigationDirection.Right)
+        {
+            if (current == details) return true;
+            var index = actions.IndexOf(current);
+            if (index < 0) return false;
+            var next = Math.Clamp(index + (direction == NavigationDirection.Right ? 1 : -1), 0, actions.Count - 1);
+            ApplyTopBarGamepadSelection(controls.ToList().IndexOf(actions[next]));
+            return true;
+        }
+        Control? target = null;
+        if (current == details)
+        {
+            if (direction == NavigationDirection.Down)
+                return _host.ApplyTransition(new(_host.MainContentZone, null));
+            target = actions.FirstOrDefault();
+        }
+        else if (actions.Contains(current))
+        {
+            if (direction == NavigationDirection.Up) target = CheckForUpdatesButton;
+            else if (details != null) target = details;
+            else return _host.ApplyTransition(new(_host.MainContentZone, null));
+        }
+        if (target == null) return false;
+        ApplyTopBarGamepadSelection(controls.ToList().IndexOf(target));
+        return true;
     }
 
     internal Control? GetActiveTopBarRoot()
@@ -524,6 +571,11 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         if (index < 0 || index >= controls.Count)
             return;
         var control = controls[index];
+        if (control is Expander expander)
+        {
+            expander.IsExpanded = !expander.IsExpanded;
+            return;
+        }
         if (control is ComboBox comboBox)
         {
             comboBox.Focus();
@@ -582,6 +634,19 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
                 ApplySidebarGamepadSelection(_gamepadNavigation.SidebarSelectedIndex < 0 ? 0 : _gamepadNavigation.SidebarSelectedIndex);
                 return true;
             case GamepadNavigationZone.TopBar:
+                if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.Library)
+                {
+                    var controls = CollectTopBarControls();
+                    if (_root.FindControl<UpdateCheckStatusView>("UpdateCheckStatus") is { } status)
+                    {
+                        var entry = controls.LastOrDefault(c => status.IsVisualAncestorOf(c));
+                        if (entry != null)
+                        {
+                            ApplyTopBarGamepadSelection(controls.IndexOf(entry));
+                            return true;
+                        }
+                    }
+                }
                 // Coming up from content: stop on the banner first when it is visible.
                 if (_banners.IsAnnouncementBannerVisible && _gamepadNavigation.ActiveZone is not (GamepadNavigationZone.TopBar or GamepadNavigationZone.AnnouncementBanner))
                 {

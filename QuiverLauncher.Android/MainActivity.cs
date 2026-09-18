@@ -18,6 +18,7 @@ namespace QuiverLauncher.Android;
 public class MainActivity : AvaloniaMainActivity
 {
     private AndroidLauncherInstaller? _launcherInstaller;
+    private SidebarGestureExclusion? _sidebarGestureExclusion;
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         var filesDirectory = FilesDir?.AbsolutePath;
@@ -31,10 +32,32 @@ public class MainActivity : AvaloniaMainActivity
         else AndroidLauncherUpdater.Current.Installer = _launcherInstaller;
         QuiverLauncherPaths.EnsureUserDataRootExists();
         base.OnCreate(savedInstanceState);
+        if (OperatingSystem.IsAndroidVersionAtLeast(29) && Window?.DecorView is { } decor)
+        {
+            _sidebarGestureExclusion = new SidebarGestureExclusion(decor,
+                () => Content is MainView view && view.CanOpenMobileNavigation);
+            decor.ViewTreeObserver?.AddOnPreDrawListener(_sidebarGestureExclusion);
+            if (Content is MainView mainView)
+                mainView.LayoutUpdated += UpdateSidebarGestureExclusion;
+        }
+    }
+
+    private void UpdateSidebarGestureExclusion(object? sender, EventArgs e)
+    {
+        if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            _sidebarGestureExclusion?.OnPreDraw();
     }
 
     protected override void OnDestroy()
     {
+        if (Content is MainView mainView)
+            mainView.LayoutUpdated -= UpdateSidebarGestureExclusion;
+        if (OperatingSystem.IsAndroidVersionAtLeast(29) && _sidebarGestureExclusion != null)
+        {
+            Window?.DecorView?.ViewTreeObserver?.RemoveOnPreDrawListener(_sidebarGestureExclusion);
+            _sidebarGestureExclusion.Dispose();
+            _sidebarGestureExclusion = null;
+        }
         _launcherInstaller?.Detach();
         // Dispose only this activity's view; a replacement activity may already exist.
         if (Content is MainView view)

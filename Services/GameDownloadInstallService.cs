@@ -132,6 +132,8 @@ public static class GameDownloadInstallService
             if (flatpakDownload)
                 await flatpakService.CheckAvailableAsync().ConfigureAwait(false);
             else if (oldFlatpak == null && File.Exists(versionFile) &&
+                (OperatingSystem.IsAndroid() || GameInstallationService.HasCompletePortableInstallation(
+                    gamePath, game.GetInstallationOptions())) &&
                 (await File.ReadAllTextAsync(versionFile).ConfigureAwait(false)).Trim() == latestRelease.tag_name)
             {
                 game.Status = GameStatus.Installed;

@@ -550,6 +550,7 @@
 						</StackPanel>
 						<Grid x:Name="CatalogReviewItemsHost" Grid.Row="1">
 						<ListBox x:Name="CatalogSyncRowsItemsControl"
+                                 services:MouseWheelScroll.Multiplier="{Binding SettingsModel.MouseWheelScrollSpeed}"
 								 Classes="catalog-review-list"
 								 ItemsSource="{Binding Rows}"
 								 SelectionMode="Single"
@@ -610,6 +611,7 @@
 							</ListBox.ItemTemplate>
 						</ListBox>
 						<ListBox x:Name="CatalogReviewGridItemsControl"
+                                 services:MouseWheelScroll.Multiplier="{Binding SettingsModel.MouseWheelScrollSpeed}"
 								 Classes="catalog-review-grid"
 								 IsVisible="False"
 								 ItemsSource="{Binding Rows}"

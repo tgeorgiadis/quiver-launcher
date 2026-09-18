@@ -135,6 +135,7 @@
 												   LetterSpacing="1"
 												   Margin="0,0,0,4"/>
 
+
 										<StackPanel Spacing="2">
 											<CheckBox x:Name="CloseAfterLaunchCheckBox"
 													  Content="Close After Launch"
@@ -172,6 +173,20 @@
 													   Margin="20,0,0,0"
 													   TextWrapping="Wrap"/>
 										</StackPanel>
+
+                                        <StackPanel Spacing="2" Margin="0,8,0,8" IsVisible="{Binding IsDesktopPlatform}">
+                                            <TextBlock Text="Mouse wheel scroll speed" FontSize="13" FontWeight="SemiBold"/>
+                                            <ComboBox x:Name="MouseWheelScrollSpeedComboBox" HorizontalAlignment="Stretch"
+                                                      SelectedIndex="{Binding MouseWheelScrollSpeedIndex, Mode=TwoWay}"
+                                                      AutomationProperties.Name="Mouse wheel scroll speed">
+                                                <ComboBoxItem Content="1×"/>
+                                                <ComboBoxItem Content="2×"/>
+                                                <ComboBoxItem Content="3×"/>
+                                                <ComboBoxItem Content="5×"/>
+                                            </ComboBox>
+                                            <TextBlock Text="Scroll amount per wheel tick in the library and app catalog."
+                                                       FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+                                        </StackPanel>
 
 										<!-- Divider -->
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
