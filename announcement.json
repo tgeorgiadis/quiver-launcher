@@ -1,5 +1,5 @@
 {
-  "id": "2026-09-19-344",
+  "id": "2026-09-19-342",
   "enabled": true,
-  "message": "3.4.4: Safer apps.json recovery with verified backups, bounded backup storage, and automatic reuse of existing app installations."
+  "message": "3.4.2: Linux install fixes, improved update checks, warning icons for apps with unavailable repositories, scroll-position fixes, release selection before installation, adjustable mouse-wheel speed, and Android edge-swipe navigation."
 }
