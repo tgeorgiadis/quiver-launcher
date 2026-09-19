@@ -96,6 +96,11 @@ MyFolder/
 └── Cache/
 ```
 
+### Library data and recovery
+
+Quiver keeps verified library snapshots in `Backups/apps/` alongside `apps.json`
+on Windows, Linux, macOS, and Android. See [library protection and recovery](docs/library-recovery.md) for how to restore a snapshot if the library becomes damaged.
+
 ## Basic Usage
 
 1. Launch the application

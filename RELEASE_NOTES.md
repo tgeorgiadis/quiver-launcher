@@ -1,4 +1,11 @@
-# Quiver Launcher 3.4.2
+# Quiver Launcher 3.4.4
+
+## Library protection and recovery
+
+- Protect the critical `apps.json` library file with fail-closed reads: corrupt, incomplete, inaccessible, or malformed data is never treated as an empty library and is never overwritten during startup.
+- Keep immutable, verified library snapshots in `Backups/apps` before changes, with recovery instructions for restoring a saved library.
+- Bound library and update backup storage with automatic retention limits while always keeping the newest complete snapshot.
+- Back up `apps.json` and `settings.json` in a dated `Backups/updates` folder before desktop or Android launcher updates. Update handoff stops if either backup cannot be completed.
 
 ## Library and App Catalog
 

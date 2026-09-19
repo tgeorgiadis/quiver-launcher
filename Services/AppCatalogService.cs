@@ -18,6 +18,7 @@ namespace QuiverLauncher.Services
         private readonly string _catalogSourcesCacheFolder;
         private readonly GameManager? _gameManager;
         private readonly ICatalogLocationReader _locationReader;
+        private readonly LibraryFileStore _libraryStore;
 
         public AppCatalogService(
             GameManager? gameManager = null,
@@ -31,38 +32,42 @@ namespace QuiverLauncher.Services
             _legacyGamesConfigPath = Path.Combine(baseDir, "games.json");
             _catalogSourcesCacheFolder = Path.Combine(baseDir, "Cache", "CatalogSources");
             Directory.CreateDirectory(_catalogSourcesCacheFolder);
+            _libraryStore = new LibraryFileStore(_appsConfigPath, bytes => ParseLocalLibrary(bytes));
         }
 
         public string AppsConfigPath => _appsConfigPath;
         public string CatalogSourcesCacheFolder => _catalogSourcesCacheFolder;
+        public string LibraryBackupDirectory => _libraryStore.BackupDirectory;
 
         // A mutation must never interpret an unreadable/corrupt library as an empty one.
-        public Task<List<GameInfo>> LoadLocalAppsForMutationAsync() => File.Exists(_appsConfigPath)
-            ? LoadAppsFromFileAsync(_appsConfigPath, throwOnError: true)
-            : LoadLocalAppsAsync();
+        public Task<List<GameInfo>> LoadLocalAppsForMutationAsync() => LoadLocalAppsAsync();
 
         public async Task<List<GameInfo>> LoadLocalAppsAsync()
         {
-            if (!File.Exists(_appsConfigPath))
-            {
-                if (File.Exists(_legacyGamesConfigPath))
-                {
-                    var migratedApps = await LoadAppsFromFileAsync(_legacyGamesConfigPath).ConfigureAwait(false);
-                    await SaveLocalAppsAsync(migratedApps).ConfigureAwait(false);
-                    return migratedApps;
-                }
-
-                await SaveLocalAppsAsync([]).ConfigureAwait(false);
-                return [];
-            }
-
-            return await LoadAppsFromFileAsync(_appsConfigPath).ConfigureAwait(false);
+            var bytes = await _libraryStore.ReadAsync(_legacyGamesConfigPath).ConfigureAwait(false);
+            return bytes == null ? [] : ParseLocalLibrary(bytes);
         }
 
         public async Task ValidateAndFixLocalAppsJsonAsync()
         {
-            var apps = await LoadLocalAppsAsync().ConfigureAwait(false);
-            await SaveLocalAppsAsync(apps).ConfigureAwait(false);
+            // Validation must never rewrite the source, even to normalize formatting.
+            await LoadLocalAppsAsync().ConfigureAwait(false);
+        }
+
+        private List<GameInfo> ParseLocalLibrary(byte[] bytes)
+        {
+            try
+            {
+                using var reader = new StreamReader(new MemoryStream(bytes), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                using var document = JsonDocument.Parse(reader.ReadToEnd());
+                return ParseAppsFromRootStatic(document.RootElement, _gameManager, strict: true);
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+            {
+                throw new JsonException($"Quiver could not read the complete library. No library data has been overwritten. " +
+                    $"Close Quiver and check {_appsConfigPath} (or games.json during migration). " +
+                    $"Saved backups, if available, are in {LibraryBackupDirectory}. {ex.Message}", ex);
+            }
         }
 
         public async Task<List<GameInfo>> LoadLocalCatalogAsync(AppSettings settings)
@@ -614,12 +619,21 @@ namespace QuiverLauncher.Services
 
         public async Task SaveLocalAppsAsync(List<GameInfo> apps)
         {
-            await WriteAppsToFileAsync(_appsConfigPath, apps).ConfigureAwait(false);
+            ArgumentNullException.ThrowIfNull(apps);
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(new { apps = apps.Select(SerializeApp).ToList() },
+                new JsonSerializerOptions { WriteIndented = true });
+            await _libraryStore.SaveAsync(bytes).ConfigureAwait(false);
         }
 
         public async Task ExportLocalAppsToFileAsync(string exportPath, List<GameInfo>? apps = null)
         {
             apps ??= await LoadLocalAppsAsync().ConfigureAwait(false);
+            if (string.Equals(Path.GetFullPath(exportPath), Path.GetFullPath(_appsConfigPath),
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            {
+                await SaveLocalAppsAsync(apps).ConfigureAwait(false);
+                return;
+            }
             await WriteAppsToFileAsync(exportPath, apps).ConfigureAwait(false);
         }
 
@@ -818,22 +832,13 @@ namespace QuiverLauncher.Services
 
         public void SaveLocalApps(List<GameInfo> apps)
         {
-            WriteAppsToFileAsync(_appsConfigPath, apps).GetAwaiter().GetResult();
+            SaveLocalAppsAsync(apps).GetAwaiter().GetResult();
         }
 
         public List<GameInfo> ParseAppsFromDictionary(Dictionary<string, JsonElement> gamesData)
         {
-            var apps = new List<GameInfo>();
-            if (gamesData.TryGetValue("apps", out var appsArray))
-                apps.AddRange(ParseAppArray(appsArray));
-
-            foreach (var legacySection in new[] { "standard", "experimental", "custom" })
-            {
-                if (gamesData.TryGetValue(legacySection, out var legacyArray))
-                    apps.AddRange(ParseAppArray(legacyArray));
-            }
-
-            return DedupeByRepository(apps);
+            // This parser is used by library import, so partial results are unsafe.
+            return ParseLocalLibrary(JsonSerializer.SerializeToUtf8Bytes(gamesData));
         }
 
         public List<GameInfo> ParseAppsFromJson(string json)
@@ -885,23 +890,27 @@ namespace QuiverLauncher.Services
         private List<GameInfo> ParseAppsRoot(JsonElement root) =>
             ParseAppsFromRootStatic(root, _gameManager);
 
-        private static List<GameInfo> ParseAppsFromRootStatic(JsonElement root, GameManager? gameManager = null)
+        private static List<GameInfo> ParseAppsFromRootStatic(JsonElement root, GameManager? gameManager = null, bool strict = false)
         {
             var apps = new List<GameInfo>();
 
             if (root.ValueKind == JsonValueKind.Array)
             {
-                apps.AddRange(ParseAppArrayStatic(root, gameManager));
+                apps.AddRange(ParseAppArrayStatic(root, gameManager, strict));
                 return DedupeByRepository(apps);
             }
 
+            if (strict && (root.ValueKind != JsonValueKind.Object ||
+                !new[] { "apps", "standard", "experimental", "custom" }.Any(key => root.TryGetProperty(key, out _))))
+                throw new JsonException("Expected an apps array or a supported legacy library.");
+
             if (root.TryGetProperty("apps", out var appsArray))
-                apps.AddRange(ParseAppArrayStatic(appsArray, gameManager));
+                apps.AddRange(ParseAppArrayStatic(appsArray, gameManager, strict));
 
             foreach (var legacySection in new[] { "standard", "experimental", "custom" })
             {
                 if (root.TryGetProperty(legacySection, out var legacyArray))
-                    apps.AddRange(ParseAppArrayStatic(legacyArray, gameManager));
+                    apps.AddRange(ParseAppArrayStatic(legacyArray, gameManager, strict));
             }
 
             return DedupeByRepository(apps);
@@ -913,10 +922,7 @@ namespace QuiverLauncher.Services
                 .Select(group => group.First())
                 .ToList();
 
-        private List<GameInfo> ParseAppArray(JsonElement appsArray) =>
-            ParseAppArrayStatic(appsArray, _gameManager);
-
-        private static List<GameInfo> ParseAppArrayStatic(JsonElement appsArray, GameManager? gameManager)
+        private static List<GameInfo> ParseAppArrayStatic(JsonElement appsArray, GameManager? gameManager, bool strict = false)
         {
             var apps = new List<GameInfo>();
 
@@ -924,6 +930,7 @@ namespace QuiverLauncher.Services
             {
                 try
                 {
+                    if (strict) ValidateLocalAppShape(appElement);
                     var rawRepositorySource = appElement.TryGetProperty("repositorySource", out var repositorySourceElement)
                         ? repositorySourceElement.GetString()
                         : null;
@@ -1001,11 +1008,45 @@ namespace QuiverLauncher.Services
                 }
                 catch (Exception ex)
                 {
+                    if (strict) throw new JsonException("A library app entry could not be parsed.", ex);
                     System.Diagnostics.Debug.WriteLine($"Error parsing app: {ex.Message}");
                 }
             }
 
             return apps;
+        }
+
+        private static void ValidateLocalAppShape(JsonElement app)
+        {
+            if (app.ValueKind != JsonValueKind.Object)
+                throw new JsonException("Expected a library app object.");
+            foreach (var key in new[] { "tags", "filesToAdd" })
+            {
+                if (!app.TryGetProperty(key, out var value) || value.ValueKind == JsonValueKind.Null) continue;
+                if (value.ValueKind != JsonValueKind.Array || value.EnumerateArray().Any(item => item.ValueKind != JsonValueKind.String))
+                    throw new JsonException($"Invalid {key} in a library app.");
+            }
+            foreach (var key in new[] { "autoUpdate", "deferUpdateTracking" })
+            {
+                if (app.TryGetProperty(key, out var value) && value.ValueKind is not
+                    (JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null))
+                    throw new JsonException($"Invalid {key} in a library app.");
+            }
+            if (!app.TryGetProperty("mods", out var mods) || mods.ValueKind == JsonValueKind.Null) return;
+            if (mods.ValueKind != JsonValueKind.Object) throw new JsonException("Invalid mods in a library app.");
+            foreach (var key in new[] { "path", "layout" })
+                if (mods.TryGetProperty(key, out var value) && value.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
+                    throw new JsonException($"Invalid mods {key} in a library app.");
+            if (!mods.TryGetProperty("sources", out var sources) || sources.ValueKind == JsonValueKind.Null) return;
+            if (sources.ValueKind != JsonValueKind.Array) throw new JsonException("Invalid mod sources in a library app.");
+            foreach (var source in sources.EnumerateArray())
+            {
+                if (source.ValueKind != JsonValueKind.Object || !source.TryGetProperty("sourceUrl", out var url) ||
+                    url.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(url.GetString()))
+                    throw new JsonException("Invalid mod source in a library app.");
+                if (source.TryGetProperty("provider", out var provider) && provider.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
+                    throw new JsonException("Invalid mod provider in a library app.");
+            }
         }
 
         private static string? GetIconUrl(JsonElement appElement)

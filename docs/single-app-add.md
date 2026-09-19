@@ -4,6 +4,10 @@ Single Add updates the existing button to **Added** before entering the session'
 
 The single-app commit rereads the saved library inside the queue, validates instance/folder conflicts, then writes a same-directory temporary file, flushes it, and atomically replaces `apps.json`. A failure leaves the previous file intact. An unreadable or corrupt library fails the operation instead of being treated as empty. Bulk Add and other review mutations use the same queue.
 
+All local library saves also preserve immutable snapshots in `Backups/apps` before
+replacement. Failure to create or verify the backup stops the save. See
+[library protection and recovery](library-recovery.md).
+
 After persistence, the comparison matching pass reuses unchanged definitions and recomputes only changed matches/conflicts. Existing row objects and action controls survive. Membership filters and notification counts then reflect the saved state. Source bookkeeping is coalesced at the end of queued additions and saved without broadcasting a settings change.
 
 Only the new app receives filesystem preparation, a local status check and cached artwork loading. It is inserted into the existing library collection in sort order. Add does not wait for a library reload, unrelated artwork/status refresh, collection reset, or release/icon request. Preparation failures retain the saved app and are reported separately; downloads await required preparation.

@@ -9,6 +9,43 @@ namespace QuiverLauncher.Tests;
 
 public class LibraryStartupOfflineTests
 {
+    [AvaloniaFact]
+    public async Task Failed_startup_or_reload_preserves_disk_and_loaded_apps_and_allows_recovery()
+    {
+        var previous = QuiverLauncherPaths.OverrideUserDataRoot;
+        var root = Path.Combine(Path.GetTempPath(), "quiver-startup-safety-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        QuiverLauncherPaths.OverrideUserDataRoot = root;
+        try
+        {
+            var store = new FileSettingsStore();
+            store.Current.FirstStartup = false;
+            store.Current.AppCatalogSources = [];
+            using var manager = new GameManager(store);
+            var path = manager.CatalogService.AppsConfigPath;
+            await File.WriteAllTextAsync(path, "{truncated");
+            var load = () => manager.ReloadLibraryFromDiskAsync(allowNetwork: false);
+            await load.Should().ThrowAsync<System.Text.Json.JsonException>();
+            (await File.ReadAllTextAsync(path)).Should().Be("{truncated");
+
+            // A failed initialization must not poison the cached startup task.
+            var good = "{\"apps\":[{\"name\":\"Saved app\",\"repository\":\"fixture/saved\",\"folderName\":\"Saved\"}]}";
+            await File.WriteAllTextAsync(path, good);
+            await load();
+            var loaded = manager.Games.Should().ContainSingle().Subject;
+            (await File.ReadAllTextAsync(path)).Should().Be(good);
+            await File.WriteAllTextAsync(path, "{damaged after startup");
+            await load.Should().ThrowAsync<System.Text.Json.JsonException>();
+            manager.Games.Should().ContainSingle().Which.Should().BeSameAs(loaded);
+            (await File.ReadAllTextAsync(path)).Should().Be("{damaged after startup");
+        }
+        finally
+        {
+            QuiverLauncherPaths.OverrideUserDataRoot = previous;
+            Directory.Delete(root, true);
+        }
+    }
+
     private sealed class BlockedNetwork : HttpMessageHandler
     {
         public TaskCompletionSource Started = new(TaskCreationOptions.RunContinuationsAsynchronously);

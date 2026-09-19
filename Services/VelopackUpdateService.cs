@@ -159,15 +159,24 @@ public sealed class VelopackUpdateService
         CancellationToken cancellationToken = default)
     {
         _lastIncludePrerelease = includePrerelease;
-        var mgr = CreateManager(includePrerelease, gitHubToken);
-        await mgr.DownloadUpdatesAsync(updateInfo, progress).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        // Velopack can apply a staged download on the next startup, so protect data
+        // before staging as well as immediately before the explicit restart.
+        await LauncherUpdateBackup.BeforeUpdateAsync(async () =>
+        {
+            var mgr = CreateManager(includePrerelease, gitHubToken);
+            await mgr.DownloadUpdatesAsync(updateInfo, progress).ConfigureAwait(false);
+        }).ConfigureAwait(false);
     }
 
     public void ApplyUpdatesAndRestart(UpdateInfo updateInfo, bool includePrerelease = false)
     {
         _lastIncludePrerelease = includePrerelease;
-        var mgr = CreateManager(includePrerelease);
-        mgr.ApplyUpdatesAndRestart(updateInfo);
+        LauncherUpdateBackup.BeforeUpdate(() =>
+        {
+            var mgr = CreateManager(includePrerelease);
+            mgr.ApplyUpdatesAndRestart(updateInfo);
+        });
     }
 
     private static UpdateManager CreateManager(bool includePrerelease, string? gitHubToken = null)

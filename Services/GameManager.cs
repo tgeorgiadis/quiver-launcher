@@ -277,8 +277,8 @@ namespace QuiverLauncher.Services
             IEnumerable<string>? statusCheckIdentityKeys = null,
             bool allowNetwork = true)
         {
-            // Normalization writes apps.json. Finish it before reading the library,
-            // and keep it within the caller's awaited load/session lifetime.
+            // Validate and back up the existing library without rewriting it. Keep
+            // initialization within the caller's awaited load/session lifetime.
             Task initialization;
             lock (_catalogInitializationLock)
             {

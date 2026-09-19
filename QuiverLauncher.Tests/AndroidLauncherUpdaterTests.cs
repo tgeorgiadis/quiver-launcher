@@ -32,7 +32,8 @@ public class AndroidLauncherUpdaterTests : IDisposable
     }
     private AndroidLauncherUpdater Create(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handler)
     {
-        var updater = new AndroidLauncherUpdater(new HttpClient(new Handler(handler)), _root, _installer, () => _settings, now: () => _now);
+        var updater = new AndroidLauncherUpdater(new HttpClient(new Handler(handler)), _root, _installer, () => _settings,
+            now: () => _now, backupUserData: () => LauncherUpdateBackup.Create(_root));
         _updaters.Add(updater); return updater;
     }
     private AndroidLauncherUpdater Create(Func<HttpRequestMessage, HttpResponseMessage> handler) => Create((request, _) => Task.FromResult(handler(request)));
@@ -118,6 +119,62 @@ public class AndroidLauncherUpdaterTests : IDisposable
         var next = Create(_ => throw new Exception("No request expected"));
         await next.UpdateAsync(); _installer.Installs.Should().Be(2); next.HasError.Should().BeFalse();
     }
+    [Fact]
+    public async Task Each_installer_attempt_has_a_complete_snapshot_and_retry_preserves_the_previous_copy()
+    {
+        var downloads = 0;
+        var updater = Create(request =>
+        {
+            if (request.RequestUri!.Host == "api.github.com") return Releases(Release());
+            downloads++;
+            return Apk(request);
+        });
+        var appsPath = Path.Combine(_root, "apps.json");
+        var settingsPath = Path.Combine(_root, "settings.json");
+        File.WriteAllText(appsPath, "{\"apps\":[{\"name\":\"Saved app\"}]}");
+        File.WriteAllText(settingsPath, "{\"FirstStartup\":false}");
+        var apps = File.ReadAllBytes(appsPath);
+        var settings = File.ReadAllBytes(settingsPath);
+        _installer.Install = () =>
+        {
+            var snapshot = Directory.GetDirectories(Path.Combine(_root, "Backups", "updates")).Single();
+            File.ReadAllBytes(Path.Combine(snapshot, "apps.json")).Should().Equal(apps);
+            File.ReadAllBytes(Path.Combine(snapshot, "settings.json")).Should().Equal(settings);
+            File.Exists(Path.Combine(snapshot, "manifest.json")).Should().BeTrue();
+            throw new InvalidOperationException("Permission denied");
+        };
+        await updater.CheckAsync();
+        await updater.UpdateAsync();
+        updater.Error.Should().Be("Permission denied");
+        File.WriteAllText(settingsPath, "{\"FirstStartup\":false,\"MouseWheelScrollSpeed\":3}");
+        _installer.Install = () =>
+        {
+            var snapshots = Directory.GetDirectories(Path.Combine(_root, "Backups", "updates"));
+            snapshots.Should().HaveCount(2);
+            snapshots.Should().Contain(p => File.ReadAllBytes(Path.Combine(p, "settings.json")).SequenceEqual(settings));
+            snapshots.Should().Contain(p => File.ReadAllBytes(Path.Combine(p, "settings.json")).SequenceEqual(File.ReadAllBytes(settingsPath)));
+            snapshots.Should().OnlyContain(p => File.ReadAllBytes(Path.Combine(p, "apps.json")).SequenceEqual(apps));
+            return Task.CompletedTask;
+        };
+        await updater.UpdateAsync();
+        updater.HasError.Should().BeFalse();
+        _installer.Installs.Should().Be(2);
+        downloads.Should().Be(1);
+        File.ReadAllBytes(appsPath).Should().Equal(apps);
+    }
+
+    [Fact]
+    public async Task Backup_failure_blocks_installer_handoff()
+    {
+        var updater = Create(request => request.RequestUri!.AbsolutePath.EndsWith(".apk") ? Apk(request) : Releases(Release()));
+        File.WriteAllText(Path.Combine(_root, "Backups"), "not a directory");
+        await updater.CheckAsync();
+        await updater.UpdateAsync();
+        updater.Error.Should().Contain("update stopped");
+        _installer.Installs.Should().Be(0);
+        updater.ActionText.Should().Be("Install update");
+    }
+
     [Fact]
     public async Task Installer_handoff_is_persisted_before_launch_and_resume_does_not_start_a_check()
     {

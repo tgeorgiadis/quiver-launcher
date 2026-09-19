@@ -39,6 +39,7 @@ public sealed class AndroidLauncherUpdater : INotifyPropertyChanged, IDisposable
     private readonly Func<AppSettings> _settings;
     private readonly Func<DateTimeOffset> _now;
     private readonly Action<Action> _dispatch;
+    private readonly Action _backupUserData;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _saveGate = new();
     private CancellationTokenSource? _download;
@@ -79,8 +80,10 @@ public sealed class AndroidLauncherUpdater : INotifyPropertyChanged, IDisposable
     private bool HasStagedApk => _cache.StagedVersion == _cache.Release?.Version && _cache.StagedIdentity != null && File.Exists(ApkPath);
 
     public AndroidLauncherUpdater(HttpClient http, string directory, IAndroidLauncherInstaller installer,
-        Func<AppSettings> settings, Action<Action>? dispatch = null, Func<DateTimeOffset>? now = null)
+        Func<AppSettings> settings, Action<Action>? dispatch = null, Func<DateTimeOffset>? now = null,
+        Action? backupUserData = null)
     {
+        _backupUserData = backupUserData ?? (() => LauncherUpdateBackup.Create());
         _http = http; _directory = directory; Installer = installer; _settings = settings;
         _dispatch = dispatch ?? (action => action()); _now = now ?? (() => DateTimeOffset.UtcNow);
         Directory.CreateDirectory(directory);
@@ -244,6 +247,7 @@ public sealed class AndroidLauncherUpdater : INotifyPropertyChanged, IDisposable
             try { await Installer.ValidateAsync(ApkPath, release.Version).ConfigureAwait(false); }
             catch { ClearStaged(); throw; }
             _download?.Dispose(); _download = null;
+            _backupUserData();
             _cache.InstallationHandedOff = true; Save();
             State = AndroidLauncherUpdateState.AwaitingInstallation; Notify();
             await Installer.InstallAsync(ApkPath).ConfigureAwait(false);
