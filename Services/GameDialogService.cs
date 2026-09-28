@@ -168,7 +168,7 @@ public static class GameDialogService
             {
                 Title = "Windows Runner Not Found",
                 Width = 500,
-                Height = 220,
+                SizeToContent = SizeToContent.Height,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Content = new StackPanel
                 {
@@ -177,8 +177,7 @@ public static class GameDialogService
                     {
                         new TextBlock
                         {
-                            Text = "This game requires a Linux Windows-runner to launch, but none was detected.\n\n" +
-                                   "Install Wine/Proton, or after install open this app’s menu (⋯) → Launch Options → Windows Runner to pick a runner or custom command.\n\n" +
+                            Text = WindowsRunnerMessages.MissingBeforeInstall + "\n\n" +
                                    "Do you want to download anyway? The game will not launch without a configured runner.",
                             TextWrapping = TextWrapping.Wrap,
                             Margin = new Thickness(0, 0, 0, 20),
@@ -232,7 +231,7 @@ public static class GameDialogService
     }
 
     /// <summary>
-    /// Lets the user pick Wine/Proton/Custom and a prefix path for a Windows app on Linux.
+    /// Lets the user pick Wine/Proton (Linux) or Wine (macOS) or a custom command, and a prefix path.
     /// Returns null if cancelled.
     /// </summary>
     public static async Task<LinuxWindowsRunnerConfig?> ShowLinuxWindowsRunnerDialogAsync(
@@ -296,11 +295,22 @@ public static class GameDialogService
                 });
             }
 
-            AddRunnerItem("Auto (prefer Proton, then Wine)", LinuxWindowsRunnerKind.Auto);
+            AddRunnerItem(WindowsRunnerMessages.AutoDescription, LinuxWindowsRunnerKind.Auto);
             if (wineAvailable)
                 AddRunnerItem("System Wine", LinuxWindowsRunnerKind.Wine);
             foreach (var proton in protons)
                 AddRunnerItem($"Proton — {proton.DisplayName}", LinuxWindowsRunnerKind.Proton, proton.ProtonExecutable);
+            // CrossOver bottles are custom commands (Tag carries the command), shown and editable below.
+            if (WindowsRunnerService.FindCrossOverWine() is { } crossOverWine)
+            {
+                var bottles = WindowsRunnerService.ListCrossOverBottles();
+                if (!bottles.Contains(WindowsRunnerService.CrossOverBottleName))
+                    AddRunnerItem($"CrossOver — {WindowsRunnerService.CrossOverBottleName} (new bottle)", LinuxWindowsRunnerKind.Custom,
+                        WindowsRunnerService.BuildCrossOverCommandTemplate(crossOverWine, WindowsRunnerService.CrossOverBottleName));
+                foreach (var bottle in bottles)
+                    AddRunnerItem($"CrossOver — {bottle}", LinuxWindowsRunnerKind.Custom,
+                        WindowsRunnerService.BuildCrossOverCommandTemplate(crossOverWine, bottle));
+            }
             AddRunnerItem("Custom command", LinuxWindowsRunnerKind.Custom);
 
             ComboBoxItem? preferredItem = null;
@@ -311,6 +321,11 @@ public static class GameDialogService
 
                 var (kind, protonPath) = tag;
                 if (kind != initial.Kind)
+                    continue;
+
+                // A CrossOver entry only matches its own command; other commands use "Custom command".
+                if (kind == LinuxWindowsRunnerKind.Custom && protonPath != null &&
+                    !string.Equals(protonPath, initial.CustomLaunchCommand?.Trim(), StringComparison.Ordinal))
                     continue;
 
                 if (kind == LinuxWindowsRunnerKind.Proton &&
@@ -342,7 +357,7 @@ public static class GameDialogService
             var customBox = new TextBox
             {
                 Text = initial.CustomLaunchCommand ?? string.Empty,
-                Watermark = "Example: flatpak run com.usebottles.bottles -e {exe}",
+                Watermark = WindowsRunnerMessages.CustomCommandExample,
                 MinWidth = 360,
                 IsVisible = initial.Kind == LinuxWindowsRunnerKind.Custom,
             };
@@ -372,6 +387,8 @@ public static class GameDialogService
                     return;
 
                 var kind = tag.Item1;
+                if (kind == LinuxWindowsRunnerKind.Custom && tag.Item2 != null)
+                    customBox.Text = tag.Item2;
                 var customWasVisible = customBox.IsVisible;
                 customBox.IsVisible = kind == LinuxWindowsRunnerKind.Custom;
                 customLabel.IsVisible = customBox.IsVisible;
@@ -426,8 +443,12 @@ public static class GameDialogService
                         new TextBlock
                         {
                             Text = isInstall
-                                ? "This Windows app needs Wine or Proton on Linux. Choose a runner and an isolated prefix folder for this app."
-                                : "Choose the Wine/Proton runner and prefix used when launching this Windows app.",
+                                ? OperatingSystem.IsLinux()
+                                    ? "This Windows app needs Wine or Proton on Linux. Choose a runner and an isolated prefix folder for this app."
+                                    : "This Windows app needs Wine or CrossOver on macOS. Choose how to run it. CrossOver uses the chosen bottle instead of the prefix folder."
+                                : OperatingSystem.IsLinux()
+                                    ? "Choose the Wine/Proton runner and prefix used when launching this Windows app."
+                                    : "Choose the Wine runner and prefix used when launching this Windows app.",
                             TextWrapping = TextWrapping.Wrap,
                         },
                         new TextBlock { Text = "Runner", FontSize = 12, Opacity = 0.8 },

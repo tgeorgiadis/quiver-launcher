@@ -12,7 +12,12 @@ public static class GameDownloadService
 
     public static DownloadAssetSelection Prepare(GameInfo game, GitHubRelease release, AppSettings settings)
     {
-        var result = DownloadAssetPolicy.Select(release, GameInfo.GetPlatformIdentifier(settings), game.ReleaseAssetFilter);
+        var platform = GameInfo.GetPlatformIdentifier(settings);
+        var result = DownloadAssetPolicy.Select(release, platform, game.ReleaseAssetFilter);
+        // No Mac build: with Wine or another Windows runner set up, the Windows build can still run.
+        if (result.Eligible.Count == 0 && OperatingSystem.IsMacOS() && platform == "macOS" &&
+            WindowsRunnerService.IsWindowsRunnerAvailable(settings, game))
+            result = DownloadAssetPolicy.Select(release, platform, game.ReleaseAssetFilter, windowsBuildFallback: true);
         var context = Context(game, release, settings);
         var selected = result.Eligible.Concat(result.Uncertain).FirstOrDefault(a =>
             a.name == game.SelectedDownload?.name && a.browser_download_url == game.SelectedDownload?.browser_download_url);

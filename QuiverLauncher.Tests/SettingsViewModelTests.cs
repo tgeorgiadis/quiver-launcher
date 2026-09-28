@@ -94,6 +94,24 @@ public class SettingsViewModelTests
         store.Saves.Should().Be(1);
     }
 
+    [AvaloniaFact]
+    public void Windows_runner_settings_are_shown_on_macos()
+    {
+        if (!OperatingSystem.IsMacOS())
+            Assert.Skip("Checks the macOS runner settings.");
+
+        var store = new Store();
+        store.Current.Platform = QuiverLauncher.Core.Models.TargetOS.MacOS;
+        var model = new SettingsViewModel(store);
+        var view = new SettingsView { DataContext = model };
+        Dispatcher.UIThread.RunJobs();
+
+        var command = view.FindControl<TextBox>("LinuxWindowsLaunchCommandTextBox")!;
+        ((Control)command.Parent!).IsVisible.Should().BeTrue();
+        command.PlaceholderText.Should().Contain("CrossOver");
+        model.WindowsRunnerSettingsHelp.Should().Contain("CrossOver").And.Contain("Quiver Launcher").And.NotContain("Proton");
+    }
+
     [AvaloniaTheory]
     [InlineData(true)]
     [InlineData(false)]

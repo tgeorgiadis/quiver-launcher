@@ -60,6 +60,48 @@ public class FindExecutableCandidatesNeedsWineTests
     }
 
     [Fact]
+    public void FindExecutableCandidates_windows_exe_only_is_an_installed_app_on_macos()
+    {
+        var gamePath = CreateTempDir();
+        try
+        {
+            var executable = Path.Combine(gamePath, "game.exe");
+            File.WriteAllBytes(executable, [0x4d, 0x5a]);
+
+            var candidates = GameInstallationService.FindExecutableCandidates(
+                gamePath, SearchOption.AllDirectories, null, out var needsWine, OSPlatform.OSX);
+
+            candidates.Should().ContainSingle().Which.Should().Be(executable);
+            needsWine.Should().BeTrue();
+        }
+        finally
+        {
+            Directory.Delete(gamePath, true);
+        }
+    }
+
+    [Fact]
+    public void FindExecutableCandidates_app_bundle_hides_windows_exe_on_macos()
+    {
+        var gamePath = CreateTempDir();
+        try
+        {
+            var app = Directory.CreateDirectory(Path.Combine(gamePath, "Game.app")).FullName;
+            File.WriteAllBytes(Path.Combine(gamePath, "game.exe"), [0x4d, 0x5a]);
+
+            var candidates = GameInstallationService.FindExecutableCandidates(
+                gamePath, SearchOption.TopDirectoryOnly, null, out var needsWine, OSPlatform.OSX);
+
+            candidates.Should().ContainSingle().Which.Should().Be(app);
+            needsWine.Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(gamePath, true);
+        }
+    }
+
+    [Fact]
     public void FindExecutableCandidates_empty_dir_does_not_need_wine()
     {
         var gamePath = CreateTempDir();

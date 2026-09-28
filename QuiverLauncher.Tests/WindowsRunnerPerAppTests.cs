@@ -104,7 +104,8 @@ public class WindowsRunnerPerAppTests
                 game);
 
             command.Should().NotBeNull();
-            command!.FileName.Should().BeOneOf("wine", "wine64");
+            // A bare name from PATH, or a full path to a macOS install outside the GUI PATH.
+            Path.GetFileName(command!.FileName).Should().BeOneOf("wine", "wine64");
             command.EnvironmentVariables.Should().ContainKey("WINEPREFIX");
             command.EnvironmentVariables["WINEPREFIX"].Should().Be(prefix);
             Directory.Exists(prefix).Should().BeTrue();

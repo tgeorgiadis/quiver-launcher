@@ -20,13 +20,20 @@ public static class DownloadAssetPolicy
         Regex.IsMatch(name, @"(?:\.(?:sha(?:1|224|256|384|512)?|md5|sig|asc|minisig|signature|debug)(?:\.txt)?$)|(?:^|[._-])(?:checksums?|sha(?:1|224|256|384|512)?sums?|md5sums?|pdb|dsym|symbols|debugsymbols|debug[._-]symbols)(?:$|[._-])",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    public static DownloadAssetSelection Select(GitHubRelease release, string platform, string? filter = null)
+    /// <param name="windowsBuildFallback">
+    /// macOS with a Windows runner (Wine, CrossOver): offer a Windows build when the release has
+    /// no build for <paramref name="platform"/>. Linux always offers Windows builds after native ones.
+    /// </param>
+    public static DownloadAssetSelection Select(GitHubRelease release, string platform, string? filter = null,
+        bool windowsBuildFallback = false)
     {
         var all = GitHubReleaseService.GetDownloadableAssets(release);
         var filtered = GitHubReleaseService.GetDownloadableAssets(release, filter);
         var linux = platform.StartsWith("Linux", StringComparison.OrdinalIgnoreCase);
+        var allowWindows = linux ||
+            windowsBuildFallback && !filtered.Any(a => PlatformAssetMatcher.MatchesPlatform(a.name, platform));
         var eligible = filtered.Where(a => PlatformAssetMatcher.MatchesPlatform(a.name, platform) ||
-            linux && PlatformAssetMatcher.IsWindowsAsset(a.name))
+            allowWindows && PlatformAssetMatcher.IsWindowsAsset(a.name))
             .OrderByDescending(a => PlatformAssetMatcher.MatchesPlatform(a.name, platform)).ToList();
         var uncertain = filtered.Where(a => !HasKnownPlatform(a.name)).ToList();
         var reason = eligible.Count > 0 ? null : all.Count == 0 ? "This release has no installable download files." :

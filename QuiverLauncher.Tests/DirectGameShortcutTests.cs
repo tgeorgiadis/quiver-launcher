@@ -17,9 +17,11 @@ public class DirectGameShortcutTests : IDisposable
 
     private string Executable(string name = "game")
     {
-        var path = Path.Combine(GamePath, name + (OperatingSystem.IsWindows() ? ".exe" : ".AppImage"));
+        // macOS detects .app bundles and extensionless native/script executables, not AppImages.
+        var extension = OperatingSystem.IsWindows() ? ".exe" : OperatingSystem.IsMacOS() ? "" : ".AppImage";
+        var path = Path.Combine(GamePath, name + extension);
         File.WriteAllText(path, "#!/bin/sh\nexit 0\n");
-        if (OperatingSystem.IsLinux()) File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         return path;
     }
 
@@ -97,6 +99,13 @@ public class DirectGameShortcutTests : IDisposable
         var executable = Executable("game's $ spaced");
         _game.SelectedExecutable = executable;
         var target = await GameShortcutLaunch.PrepareAsync(_game, _root, new());
+        if (OperatingSystem.IsMacOS())
+        {
+            // Desktop shortcuts are not implemented on macOS yet.
+            var create = () => ShortcutHelper.CreateGameShortcutAsync(_game, target!, null, _root);
+            await create.Should().ThrowAsync<PlatformNotSupportedException>();
+            return;
+        }
         await ShortcutHelper.CreateGameShortcutAsync(_game, target!, null, _root);
         if (OperatingSystem.IsWindows()) AssertWindowsShortcut(executable);
         else if (OperatingSystem.IsLinux())

@@ -17,7 +17,8 @@ public static class PlatformCapabilities
 
     public static bool SupportsFolderInstall => !IsMobile;
 
-    public static bool SupportsWine => OperatingSystem.IsLinux() && !IsMobile;
+    /// <summary>Windows-only apps can run through Wine/Proton (Linux) or Wine/CrossOver (macOS).</summary>
+    public static bool SupportsWine => (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && !IsMobile;
 
     public static bool SupportsSteamShortcuts =>
         !IsMobile && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());

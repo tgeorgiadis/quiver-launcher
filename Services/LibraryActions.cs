@@ -127,9 +127,9 @@ public sealed class LibraryActions
                 return;
             }
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (!PlatformCapabilities.SupportsWine)
             {
-                await ShowMessageBoxAsync("Windows runner settings are only used on Linux.", "Windows Runner");
+                await ShowMessageBoxAsync("Windows runner settings are only used on Linux and macOS.", "Windows Runner");
                 return;
             }
 

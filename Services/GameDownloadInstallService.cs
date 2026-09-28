@@ -145,8 +145,7 @@ public static class GameDownloadInstallService
                 return;
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
-                !OperatingSystem.IsAndroid() &&
+            if (PlatformCapabilities.SupportsWine &&
                 PlatformAssetMatcher.IsWindowsAsset(asset.name))
             {
                 var gamePathForRunner = game.GetInstallPath(gamesFolder);

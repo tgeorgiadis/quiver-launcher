@@ -57,7 +57,7 @@ public class GameDownloadInstallServiceTests
                 client,
                 gamesFolder,
                 release,
-                new AppSettings(),
+                new AppSettings { Platform = TestPlatforms.ForWindowsPayload },
                 GameStatus.NotInstalled,
                 dialogs);
 
@@ -123,7 +123,7 @@ public class GameDownloadInstallServiceTests
                 client,
                 gamesFolder,
                 release,
-                new AppSettings(),
+                new AppSettings { Platform = TestPlatforms.ForWindowsPayload },
                 GameStatus.NotInstalled,
                 dialogs);
 

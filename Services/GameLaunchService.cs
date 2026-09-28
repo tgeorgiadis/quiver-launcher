@@ -75,13 +75,10 @@ public static class GameLaunchService
 
             // A mixed release can contain both .exe files and shell launchers.
             // Runner selection belongs to the chosen file, not the candidate list.
-            needsWine = OperatingSystem.IsLinux() && executablePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+            needsWine = PlatformCapabilities.SupportsWine && executablePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
             if (needsWine && !WindowsRunnerService.IsWindowsRunnerAvailable(settings, game))
             {
-                await GameDialogService.ShowMessageBoxAsync(
-                    "The selected Windows executable needs a Linux Windows-runner, but none is configured or detected.\n\n" +
-                    "Install Wine/Proton, or open this app’s menu (⋯) → Launch Options → Windows Runner to pick a runner or custom command.",
-                    "Windows Runner Not Found");
+                await GameDialogService.ShowMessageBoxAsync(WindowsRunnerMessages.NotFound, "Windows Runner Not Found");
                 return false;
             }
 
@@ -103,16 +100,18 @@ public static class GameLaunchService
                 startInfo.UseShellExecute = false;
                 startInfo.WorkingDirectory = gamePath;
             }
-            else if (needsWine && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (needsWine)
             {
                 var runnerCommand = WindowsRunnerService.GetWindowsRunnerCommand(settings, executablePath, gamePath, game);
                 if (runnerCommand == null)
                 {
                     await GameDialogService.ShowMessageBoxAsync(
-                        "A Linux Windows-runner was detected earlier but is no longer available.",
+                        "A Windows runner was detected earlier but is no longer available.",
                         "Windows Runner Error");
                     return false;
                 }
+
+                await WindowsRunnerService.EnsureCrossOverBottleAsync(runnerCommand.FileName, runnerCommand.Arguments);
 
                 startInfo.UseShellExecute = false;
                 startInfo.WorkingDirectory = gamePath;

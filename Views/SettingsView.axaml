@@ -343,8 +343,8 @@
 												Click="ClearIconCache_Click"
 												FontSize="12"/>
 
-										<StackPanel Spacing="2" IsVisible="{Binding IsLinuxPlatform}">
-											<TextBlock Text="LINUX WINDOWS RUNNER"
+										<StackPanel Spacing="2" IsVisible="{Binding ShowWindowsRunnerSettings}">
+											<TextBlock Text="WINDOWS RUNNER"
 													   FontSize="10" FontWeight="Bold"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   LetterSpacing="1"
@@ -356,10 +356,10 @@
 													 BorderThickness="1"
 													 Padding="12,10"
 													 CornerRadius="4"
-													 Watermark="Example: flatpak run com.usebottles.bottles -e {exe}"
+													 Watermark="{Binding WindowsRunnerCommandExample}"
 													 Text="{Binding Settings.LinuxWindowsLaunchCommand, Mode=TwoWay}"
 													 TextChanged="LinuxWindowsLaunchCommandTextBox_TextChanged"/>
-											<TextBlock Text="Global override for Windows-only apps on Linux when an app uses Auto. Use {exe}, {gamePath}, or {exeDir}. Per-app runner/prefix is under Launch Options → Windows Runner. Leave blank to auto-detect Proton then Wine."
+											<TextBlock Text="{Binding WindowsRunnerSettingsHelp}"
 													   FontSize="11"
 													   TextWrapping="Wrap"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
