@@ -979,6 +979,31 @@
 		<Setter Property="Foreground" Value="#18181b"/>
 	</Style>
 
+	<Style Selector="Button.options.token-ok">
+		<Setter Property="Background" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="Foreground" Value="#18181b"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeSuccess}"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Button.options.token-ok:pointerover">
+		<Setter Property="Background" Value="#16a34a"/>
+		<Setter Property="BorderBrush" Value="#16a34a"/>
+		<Setter Property="Foreground" Value="#18181b"/>
+	</Style>
+
+	<Style Selector="Button.options.token-check">
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+	</Style>
+
+	<Style Selector="Button.options.token-check:pointerover">
+		<Setter Property="Background" Value="#102a3a"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeFocusRing}"/>
+	</Style>
+
 	<Style Selector="Button.options.catalog-review-add">
 		<Setter Property="BorderBrush" Value="{DynamicResource ThemeSuccess}"/>
 		<Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}"/>

@@ -17,14 +17,13 @@ public class SettingsViewModel : ObservableViewModel
     public void SaveApiToken(string provider, string? draft)
     {
         var value = draft?.Trim() ?? "";
-        var github = provider == "github";
-        var previous = github ? Current.GitHubApiToken : Current.GitLabApiToken;
+        var previous = provider switch { "github" => Current.GitHubApiToken, "gitlab" => Current.GitLabApiToken, "codeberg" => Current.CodebergApiToken, _ => throw new ArgumentOutOfRangeException(nameof(provider)) };
         if (previous == value) return;
-        if (github) Current.GitHubApiToken = value; else Current.GitLabApiToken = value;
+        switch (provider) { case "github": Current.GitHubApiToken = value; break; case "gitlab": Current.GitLabApiToken = value; break; case "codeberg": Current.CodebergApiToken = value; break; }
         try { Save(Current); }
         catch (Exception ex)
         {
-            if (github) Current.GitHubApiToken = previous; else Current.GitLabApiToken = previous;
+            switch (provider) { case "github": Current.GitHubApiToken = previous; break; case "gitlab": Current.GitLabApiToken = previous; break; case "codeberg": Current.CodebergApiToken = previous; break; }
             SaveFailed?.Invoke(ex);
             return;
         }

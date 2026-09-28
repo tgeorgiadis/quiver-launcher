@@ -2,7 +2,7 @@ namespace QuiverLauncher.Services;
 
 public static class GitHubTokenSetupGuide
 {
-    public const string CreateTokenUrl = "https://github.com/settings/tokens/new?description=Github-Launcher+Token+for+increased+API+rate+limits";
+    public const string CreateTokenUrl = "https://github.com/settings/tokens/new?description=Quiver-Launcher+Token+for+increased+API+rate+limits";
     public const string Introduction = "For public apps:";
     public const string CreateStep = "1. Select Create token and sign in to GitHub.";
     public const string ExpirationStep = "2. Name the token and choose an expiration date.";

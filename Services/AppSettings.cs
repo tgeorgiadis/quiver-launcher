@@ -91,6 +91,7 @@ namespace QuiverLauncher
         public string AppsPath { get; set; } = string.Empty;
         public string GitHubApiToken { get; set; } = string.Empty;
         public string GitLabApiToken { get; set; } = string.Empty;
+        public string CodebergApiToken { get; set; } = string.Empty;
         public string SortBy { get; set; } = "LastPlayed";
         /// <summary>The player's own app list for Browse: a local JSON file or a URL, in the apps.json format.</summary>
         public string CustomAppListLocation { get; set; } = string.Empty;
@@ -105,6 +106,10 @@ namespace QuiverLauncher
         public bool GitHubTokenBannerPermanentlyDismissed { get; set; }
         /// <summary>UTC time until which the GitHub token warning stays hidden after the user closed it.</summary>
         public DateTimeOffset? GitHubTokenBannerSnoozedUntilUtc { get; set; }
+        /// <summary>When true, the GitLab token rate-limit warning never shows again.</summary>
+        public bool GitLabTokenBannerPermanentlyDismissed { get; set; }
+        /// <summary>UTC time until which the GitLab token warning stays hidden after the user closed it.</summary>
+        public DateTimeOffset? GitLabTokenBannerSnoozedUntilUtc { get; set; }
         public bool IgnoreArticlesWhenSorting { get; set; } = true;
         public LibraryNameStyle LibraryNameStyle { get; set; } = LibraryNameStyle.NameAndProject;
         /// <summary>When true, library card name and project ellipsize and marquee on hover or focus.</summary>

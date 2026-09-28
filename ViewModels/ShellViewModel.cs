@@ -143,8 +143,8 @@ public sealed class ShellViewModel : ObservableViewModel
                         ? "1 update available"
                         : $"{PendingUpdatesCount} updates available";
                     return string.IsNullOrEmpty(lastChecked)
-                        ? $"Check for Quiver Launcher and app updates · {updateLabel}"
-                        : $"Check for Quiver Launcher and app updates · {updateLabel} · {lastChecked}";
+                        ? $"View pending updates · {updateLabel}"
+                        : $"View pending updates · {updateLabel} · {lastChecked}";
                 }
 
                 if (!string.IsNullOrEmpty(_lastLauncherCheckNote))

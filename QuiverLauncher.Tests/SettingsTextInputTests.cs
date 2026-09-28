@@ -145,7 +145,7 @@ public class SettingsTextInputTests
     [AvaloniaTheory]
     [InlineData("github", false, false, true)]
     [InlineData("github", true, false, false)]
-    [InlineData("gitlab", false, false, false)]
+    [InlineData("gitlab", false, false, true)]
     [InlineData("github", false, true, false)]
     public async Task Actual_anonymous_github_limit_shows_dismissible_token_banner(string provider, bool authenticated, bool dismissed, bool expected)
     {
@@ -171,7 +171,8 @@ public class SettingsTextInputTests
             if (expected)
             {
                 banners.FindControl<TextBlock>("GitHubTokenBannerText")!.Text.Should().Contain("retry after");
-                store.Current.GitHubApiToken = "synthetic-saved-credential";
+                if (provider == "github") store.Current.GitHubApiToken = "synthetic-saved-credential";
+                else store.Current.GitLabApiToken = "synthetic-saved-credential";
                 banners.ApplyTopBanner();
                 banner.IsVisible.Should().BeFalse();
             }

@@ -191,7 +191,7 @@ namespace QuiverLauncher
             }
 
             _gameManager = dependencies.GameManager ?? new GameManager(dependencies.SettingsStore);
-            Banners.Configure(_session, _settingsViewModel, _gameManager.HttpClient, this, OpenGitHubApiTokenSettings);
+            Banners.Configure(_session, _settingsViewModel, _gameManager.HttpClient, this, provider => OpenAdvancedApiTokenSettings(provider == "gitlab"));
             Library = new LibraryViewModel(_gameManager, _settingsViewModel);
             if (_initializeOnOpen) Library.BeginInitialLoad();
             LibraryToolbar.Configure(Library, _session, OnSettingChanged);
@@ -988,7 +988,7 @@ namespace QuiverLauncher
 
         private async Task RefreshStartupMetadataAsync()
         {
-            try { await _gameManager.RefreshLoadedLibraryMetadataAsync(_session.Token); }
+            try { await _gameManager.RefreshLoadedLibraryMetadataAsync(_session.Token); SettingsPanel.RefreshApiRateLimits(); }
             catch (OperationCanceledException) when (_session.IsClosed) { }
             // An online refresh failure must not replace a successfully loaded library.
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Startup library refresh failed: {ex.GetType().Name}"); }
@@ -1575,6 +1575,7 @@ namespace QuiverLauncher
         {
             if (KioskLocked)
                 return;
+            if (Shell.PendingUpdatesCount > 0) { OpenAppUpdatesReview(); return; }
             await RunUpdateCheckAsync(promptForReview: true, isManualCheck: true);
         }
         private void CancelUpdateCheck_Click(object? sender, EventArgs e) { CheckForUpdatesButton.Focus(); _updateChecks.Cancel(); }
@@ -1591,7 +1592,9 @@ namespace QuiverLauncher
         public Task RunUpdateCheckAsync(bool promptForReview, bool isManualCheck) => _session.RunAsync(async () =>
         {
             await _updateChecks.CheckAsync(promptForReview, isManualCheck, _session.Token);
+            Dispatcher.UIThread.Post(SettingsPanel.RefreshApiRateLimits);
         });
+        Task IAppUpdateReviewActions.CheckForUpdatesAsync() => RunUpdateCheckAsync(promptForReview: false, isManualCheck: true);
         private void GithubButton_Click(object sender, RoutedEventArgs e)
         {
             if (KioskLocked)

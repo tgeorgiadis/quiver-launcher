@@ -18,6 +18,9 @@ namespace QuiverLauncher.Core.Services
             if (string.Equals(trimmed, RepositorySourceIds.GitLab, StringComparison.OrdinalIgnoreCase))
                 return RepositorySourceIds.GitLab;
 
+            if (string.Equals(trimmed, RepositorySourceIds.Codeberg, StringComparison.OrdinalIgnoreCase))
+                return RepositorySourceIds.Codeberg;
+
             wasUnsupported = true;
             return RepositorySourceIds.GitHub;
         }
@@ -30,6 +33,9 @@ namespace QuiverLauncher.Core.Services
 
         public static bool IsGitLab(string? repositorySource) =>
             string.Equals(Normalize(repositorySource), RepositorySourceIds.GitLab, StringComparison.OrdinalIgnoreCase);
+
+        public static bool IsCodeberg(string? repositorySource) =>
+            string.Equals(Normalize(repositorySource), RepositorySourceIds.Codeberg, StringComparison.OrdinalIgnoreCase);
 
         public static bool IsManuallyManaged(string? repository) =>
             string.IsNullOrWhiteSpace(repository);
@@ -95,12 +101,12 @@ namespace QuiverLauncher.Core.Services
             if (string.IsNullOrEmpty(repo))
                 return string.Empty;
 
-            return IsGitLab(repositorySource)
-                ? $"https://gitlab.com/{repo}"
+            return IsGitLab(repositorySource) ? $"https://gitlab.com/{repo}"
+                : IsCodeberg(repositorySource) ? $"https://codeberg.org/{repo}"
                 : $"https://github.com/{repo}";
         }
 
         public static string DisplayName(string? repositorySource) =>
-            IsGitLab(repositorySource) ? "GitLab" : "GitHub";
+            IsGitLab(repositorySource) ? "GitLab" : IsCodeberg(repositorySource) ? "Codeberg" : "GitHub";
     }
 }

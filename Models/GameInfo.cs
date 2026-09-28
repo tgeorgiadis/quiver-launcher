@@ -1587,10 +1587,25 @@ namespace QuiverLauncher.Models
             }
         }
 
+        private static string GetCodebergApiToken(AppSettings? settings = null)
+        {
+            if (settings != null)
+                return settings.CodebergApiToken ?? string.Empty;
+
+            try
+            {
+                return AppSettings.Load()?.CodebergApiToken ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
         public string GetReleaseApiToken(AppSettings? settings = null) =>
             RepositorySourceHelper.IsGitLab(RepositorySource)
                 ? GetGitLabApiToken(settings)
-                : GetGitHubApiToken(settings);
+                : RepositorySourceHelper.IsCodeberg(RepositorySource) ? GetCodebergApiToken(settings) : GetGitHubApiToken(settings);
 
         public async Task<bool> PerformActionAsync(
             HttpClient httpClient,

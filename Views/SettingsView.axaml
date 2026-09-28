@@ -922,6 +922,7 @@
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   TextWrapping="Wrap"
 												   Margin="0,0,0,6"/>
+										<TextBlock x:Name="GitHubRateLimitText" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource ThemeAccent}" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,6"/>
 
 										<TextBox x:Name="GitHubTokenTextBox"
 												 Foreground="{DynamicResource ThemeText}"
@@ -962,6 +963,15 @@
 <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button x:Name="SaveGitLabTokenButton" Grid.Column="0" Classes="options" Content="Save token" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveGitLabToken_Click" FontSize="12"/><Button  Grid.Column="1" Classes="options" Content="Clear token" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearGitLabToken_Click" FontSize="12"/></Grid>
 <TextBlock Text="Save to apply your token and resume waiting checks." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,2,0,8"/>
 <Button  Grid.Column="0" Classes="options" Content="Create token" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="CreateGitLabToken_Click" FontSize="12"/><TextBlock Text="Choose the read_api scope for release access." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,4,0,0"/>
+<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,12,0,8"/>
+
+										<!-- Codeberg API Token -->
+										<TextBlock Text="CODEBERG API TOKEN" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource ThemeTextSecondary}" LetterSpacing="1" Margin="0,0,0,4"/>
+										<TextBlock Text="Optional. Allows private codeberg.org projects." FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,6"/>
+										<TextBox x:Name="CodebergTokenTextBox" Foreground="{DynamicResource ThemeText}" Background="{DynamicResource ThemeBase}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" Padding="12,10" CornerRadius="4" TextChanged="CodebergTokenTextBox_TextChanged" PasswordChar="●"/>
+<Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button x:Name="SaveCodebergTokenButton" Grid.Column="0" Classes="options" Content="Save token" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveCodebergToken_Click" FontSize="12"/><Button Grid.Column="1" Classes="options" Content="Clear token" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearCodebergToken_Click" FontSize="12"/></Grid>
+<TextBlock Text="Save to apply your token and resume waiting checks." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,2,0,8"/>
+<Button Classes="options" Content="Create token" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="CreateCodebergToken_Click" FontSize="12"/><TextBlock Text="Select permissions: repository: Read and user: Read." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,4,0,0"/>
 <Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,12,0,8"/>
 
 										<!-- The player's own app list -->

@@ -60,6 +60,7 @@ public partial class AppUpdateReviewView : UserControl, IFeatureNavigationHandle
     public Control GetUpdateAnchor(GameInfo game) => FindActionButton(game, "Update") ?? (Control)AppUpdatesUpdateAllButton;
     public Control GetVersionsAnchor(GameInfo game) => FindActionButton(game, "Versions") ?? (Control)this;
     private void AppUpdatesBackToLibrary_Click(object? sender, RoutedEventArgs e) => Model.Back();
+    private async void AppUpdatesCheckAgain_Click(object? sender, RoutedEventArgs e) => await Model.CheckForUpdatesAsync();
     private async void AppUpdatesUpdateAll_Click(object? sender, RoutedEventArgs e) => await Model.UpdateAllAsync();
     private async void AppUpdatesSkipAll_Click(object? sender, RoutedEventArgs e) => await Model.SkipAllAsync();
     private async void AppUpdateReviewRowUpdate_Click(object? sender, RoutedEventArgs e)

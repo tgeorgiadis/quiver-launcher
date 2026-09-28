@@ -119,6 +119,7 @@
 											  SelectedIndex="0">
 										<ComboBoxItem Content="GitHub" Tag="github"/>
 										<ComboBoxItem Content="GitLab" Tag="gitlab"/>
+										<ComboBoxItem Content="Codeberg" Tag="codeberg"/>
 									</ComboBox>
 
 									<TextBlock x:Name="NewGameRepositoryLabel" IsVisible="{Binding ShowRepository}"

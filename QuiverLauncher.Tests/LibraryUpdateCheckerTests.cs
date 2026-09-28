@@ -49,6 +49,31 @@ public class LibraryUpdateCheckerTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task Checks_independent_repositories_in_parallel()
+    {
+        var active = 0;
+        var maximum = 0;
+        var handler = new Handler(async (_, ct) =>
+        {
+            maximum = Math.Max(maximum, Interlocked.Increment(ref active));
+            try
+            {
+                await Task.Delay(20, ct);
+                return Ok(Release());
+            }
+            finally { Interlocked.Decrement(ref active); }
+        });
+        using var client = new HttpClient(handler);
+        var apps = Enumerable.Range(0, 8).Select(i => App($"fixture/app{i}")).ToArray();
+
+        var result = await new LibraryUpdateChecker(client, new()).CheckAsync(apps, true, TimeSpan.Zero, null,
+            TestContext.Current.CancellationToken);
+
+        result.Successful.Should().Be(8);
+        maximum.Should().BeGreaterThan(1);
+    }
+
+    [Fact]
     public async Task Pins_and_duplicate_entries_share_raw_responses_and_keep_their_own_selection()
     {
         var handler = new Handler((r, _) => Task.FromResult(Ok(r.RequestUri!.AbsolutePath.EndsWith("/latest")
