@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:models="using:QuiverLauncher.Models" xmlns:services="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:views="using:QuiverLauncher.Views" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.LibraryView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services" xmlns:local="using:QuiverLauncher" xmlns:models="using:QuiverLauncher.Models" xmlns:services="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:views="using:QuiverLauncher.Views" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.LibraryView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
 <UserControl.Resources>
 <DataTemplate x:Key="ListViewTemplate" x:DataType="models:GameInfo">
 			<Border Classes="gamecard" Classes.gamepad-focused="{Binding IsGamepadFocused}"
@@ -35,7 +35,7 @@
     </Border>
     <StackPanel views:LibraryListRowLayout.Role="Actions" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <Button Classes="modern" Content="{Binding ButtonText}" FontSize="14" Padding="8,0" IsEnabled="{Binding !IsLoading}" PlatformFeedback.FeedbackType="Auto" Click="GameButton_Click" Tag="{Binding}"/>
-        <Button Classes="options options-listview" Padding="0" ToolTip.Tip="App options" AutomationProperties.Name="App options"
+        <Button Classes="options options-listview" Padding="0" ToolTip.Tip="{loc:Translate Text=&quot;App options&quot;}" AutomationProperties.Name="{loc:Translate Text=&quot;App options&quot;}"
                 IsEnabled="{Binding !IsLoading}" Click="OptionsButton_Click" Tag="{Binding}">
             <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
                 <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
@@ -43,113 +43,113 @@
                 <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
             </StackPanel><Button.ContextMenu>
 									<ContextMenu>
-										<MenuItem Header="Launch"
+										<MenuItem Header="{loc:Translate Text=&quot;Launch&quot;}"
 												  Click="LaunchGameMenu_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanLaunch}"/>
-										<MenuItem Header="Download"
+										<MenuItem Header="{loc:Translate Text=&quot;Download&quot;}"
 												  Click="LaunchGameMenu_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanDownload}"/>
-										<MenuItem Header="Locate Existing Install"
+										<MenuItem Header="{loc:Translate Text=&quot;Locate Existing Install&quot;}"
 												  Click="LocateExistingInstall_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanLocateInstall}"/>
-										<MenuItem Header="Update Now"
+										<MenuItem Header="{loc:Translate Text=&quot;Update Now&quot;}"
 												  Click="UpdateNowMenu_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanUpdate}"/>
-										<MenuItem Header="Review Catalog Changes"
+										<MenuItem Header="{loc:Translate Text=&quot;Review Catalog Changes&quot;}"
 												  Click="ReviewCatalogChanges_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding ShowUpdateBadge}"/>
-										<MenuItem Header="Auto Update"
+										<MenuItem Header="{loc:Translate Text=&quot;Auto Update&quot;}"
 												  ToggleType="CheckBox"
 												  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
 												  IsVisible="{Binding CanToggleAutoUpdate}"
 												  Click="AutoUpdateMenu_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Open Folder"
+										<MenuItem Header="{loc:Translate Text=&quot;Open Folder&quot;}"
 												  Click="OpenFolder_Click"
 												  IsVisible="{Binding CanOpenFolder}"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Versions"
+										<MenuItem Header="{loc:Translate Text=&quot;Versions&quot;}"
 												  IsVisible="{Binding CanVersionOptions}">
-											<MenuItem Header="Change Version"
+											<MenuItem Header="{loc:Translate Text=&quot;Change Version&quot;}"
 													  Click="ChangeVersion_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding CanChangeVersion}"/>
-											<MenuItem Header="Skip Update"
+											<MenuItem Header="{loc:Translate Text=&quot;Skip Update&quot;}"
 													  Click="SkipUpdate_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding CanSkipUpdate}"/>
-											<MenuItem Header="Force Update"
+											<MenuItem Header="{loc:Translate Text=&quot;Force Update&quot;}"
 													  Click="ForceUpdate_Click"
 													  IsVisible="{Binding IsInstalled}"
 													  CommandParameter="{Binding}"/>
 										</MenuItem>
-											<MenuItem Header="Launch Options"
+											<MenuItem Header="{loc:Translate Text=&quot;Launch Options&quot;}"
 												  IsVisible="{Binding CanLaunchOptions}">
-											<MenuItem Header="Select Different Executable"
+											<MenuItem Header="{loc:Translate Text=&quot;Select Different Executable&quot;}"
 													  CommandParameter="{Binding}"
 													  Click="SelectDifferentExecutable_Click"
 													  IsVisible="{Binding HasExecutableChoice}"/>
-											<MenuItem Header="Windows Runner…"
+											<MenuItem Header="{loc:Translate Text=&quot;Windows Runner…&quot;}"
 													  Click="ConfigureWindowsRunner_Click"
 													  IsVisible="{Binding ShowWindowsRunnerOptions}"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Create Desktop Shortcut"
+											<MenuItem Header="{loc:Translate Text=&quot;Create Desktop Shortcut&quot;}"
 													  Click="CreateShortcut_Click"
 													  IsVisible="{Binding ShowDesktopOnlyActions}"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Add to Steam"
+											<MenuItem Header="{loc:Translate Text=&quot;Add to Steam&quot;}"
 													  Click="AddToSteam_Click"
 													  IsVisible="{Binding CanAddToSteam}"
 													  CommandParameter="{Binding}"/>
 										</MenuItem>
-										<MenuItem Header="Mods"
+										<MenuItem Header="{loc:Translate Text=&quot;Mods&quot;}"
 												  Click="OpenMods_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanOpenMods}"/>
-										<MenuItem Header="Customize">
-											<MenuItem Header="Edit Entry"
+										<MenuItem Header="{loc:Translate Text=&quot;Customize&quot;}">
+											<MenuItem Header="{loc:Translate Text=&quot;Edit Entry&quot;}"
 													  Click="EditGameEntry_Click"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Edit Tags"
+											<MenuItem Header="{loc:Translate Text=&quot;Edit Tags&quot;}"
 													  Click="EditTagsMenu_Click"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Custom Display Name"
+											<MenuItem Header="{loc:Translate Text=&quot;Custom Display Name&quot;}"
 													  Click="EditCustomDisplayNameMenu_Click"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Add Custom Image"
+											<MenuItem Header="{loc:Translate Text=&quot;Add Custom Image&quot;}"
 													  Click="SetCustomIcon_Click"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Remove Custom Image"
+											<MenuItem Header="{loc:Translate Text=&quot;Remove Custom Image&quot;}"
 													  Click="RemoveCustomIcon_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding HasCustomIcon}"/>
-											<MenuItem Header="Hide App"
+											<MenuItem Header="{loc:Translate Text=&quot;Hide App&quot;}"
 													  Click="HideGame_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding !IsManuallyHidden}"/>
-											<MenuItem Header="Unhide App"
+											<MenuItem Header="{loc:Translate Text=&quot;Unhide App&quot;}"
 													  Click="HideGame_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding IsManuallyHidden}"/>
-											<MenuItem Header="Remove from List"
+											<MenuItem Header="{loc:Translate Text=&quot;Remove from List&quot;}"
 													  Click="RemoveGameEntry_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding IsInLocalAppsJson}"/>
 										</MenuItem>
-										<MenuItem Header="About"
+										<MenuItem Header="{loc:Translate Text=&quot;About&quot;}"
 												  IsVisible="{Binding CanInfoOptions}">
-											<MenuItem Header="View README"
+											<MenuItem Header="{loc:Translate Text=&quot;View README&quot;}"
 													  Click="ShowReadme_Click"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Show Changelog"
+											<MenuItem Header="{loc:Translate Text=&quot;Show Changelog&quot;}"
 													  Click="ShowChangelog_Click"
 													  CommandParameter="{Binding}"/>
-											<MenuItem Header="Open Repository"
+											<MenuItem Header="{loc:Translate Text=&quot;Open Repository&quot;}"
 													  Click="OpenGitHubPage_Click"
 													  CommandParameter="{Binding}"/>
 										</MenuItem>
@@ -160,7 +160,7 @@
 									</ContextMenu>
 								</Button.ContextMenu>        </Button>
     </StackPanel>
-    <Button views:LibraryListRowLayout.Role="Badge" Classes="library-update-badge" ToolTip.Tip="Catalog update available — click for details" CommandParameter="{Binding}" Click="ReviewCatalogChanges_Click"><TextBlock Text="↑"/></Button>
+    <Button views:LibraryListRowLayout.Role="Badge" Classes="library-update-badge" ToolTip.Tip="{loc:Translate Text=&quot;Catalog update available — click for details&quot;}" CommandParameter="{Binding}" Click="ReviewCatalogChanges_Click"><TextBlock Text="{loc:Translate Text=&quot;↑&quot;}"/></Button>
     <Border views:LibraryListRowLayout.Role="Progress" ClipToBounds="True" CornerRadius="0,0,12,12">
         <ProgressBar IsIndeterminate="{Binding IsInstallIndeterminate}" Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="4" Background="Transparent" Foreground="{Binding ProgressBarColor}" BorderThickness="0"/>
     </Border>
@@ -201,7 +201,7 @@
 							<views:RepositoryCheckWarning/>
 							<Button Classes="library-update-badge"
 									IsVisible="{Binding ShowUpdateBadge}"
-									ToolTip.Tip="Catalog update available — click for details"
+									ToolTip.Tip="{loc:Translate Text=&quot;Catalog update available — click for details&quot;}"
 									HorizontalAlignment="Right"
 									VerticalAlignment="Bottom"
 									Margin="0,0,4,4"
@@ -209,7 +209,7 @@
 									Cursor="Hand"
 									CommandParameter="{Binding}"
 									Click="ReviewCatalogChanges_Click">
-								<TextBlock Text="↑"/>
+								<TextBlock Text="{loc:Translate Text=&quot;↑&quot;}"/>
 							</Button>
 						</Panel>
 
@@ -222,116 +222,116 @@
 								IsEnabled="{Binding !IsLoading}"
 								Click="OptionsButton_Click"
 								Tag="{Binding}">
-							<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
+							<TextBlock Text="{loc:Translate Text=&quot;⋯&quot;}" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
 							<Button.ContextMenu>
 								<ContextMenu>
-									<MenuItem Header="Launch"
+									<MenuItem Header="{loc:Translate Text=&quot;Launch&quot;}"
 											  Click="LaunchGameMenu_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanLaunch}"/>
-									<MenuItem Header="Download"
+									<MenuItem Header="{loc:Translate Text=&quot;Download&quot;}"
 											  Click="LaunchGameMenu_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanDownload}"/>
-									<MenuItem Header="Locate Existing Install"
+									<MenuItem Header="{loc:Translate Text=&quot;Locate Existing Install&quot;}"
 											  Click="LocateExistingInstall_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanLocateInstall}"/>
-									<MenuItem Header="Update Now"
+									<MenuItem Header="{loc:Translate Text=&quot;Update Now&quot;}"
 											  Click="UpdateNowMenu_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanUpdate}"/>
-									<MenuItem Header="Review Catalog Changes"
+									<MenuItem Header="{loc:Translate Text=&quot;Review Catalog Changes&quot;}"
 											  Click="ReviewCatalogChanges_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding ShowUpdateBadge}"/>
-									<MenuItem Header="Auto Update"
+									<MenuItem Header="{loc:Translate Text=&quot;Auto Update&quot;}"
 											  ToggleType="CheckBox"
 											  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
 											  IsVisible="{Binding CanToggleAutoUpdate}"
 											  Click="AutoUpdateMenu_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Open Folder"
+									<MenuItem Header="{loc:Translate Text=&quot;Open Folder&quot;}"
 											  Click="OpenFolder_Click"
 											  IsVisible="{Binding CanOpenFolder}"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Versions"
+									<MenuItem Header="{loc:Translate Text=&quot;Versions&quot;}"
 											  IsVisible="{Binding CanVersionOptions}">
-										<MenuItem Header="Change Version"
+										<MenuItem Header="{loc:Translate Text=&quot;Change Version&quot;}"
 												  Click="ChangeVersion_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanChangeVersion}"/>
-										<MenuItem Header="Skip Update"
+										<MenuItem Header="{loc:Translate Text=&quot;Skip Update&quot;}"
 												  Click="SkipUpdate_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanSkipUpdate}"/>
-										<MenuItem Header="Force Update"
+										<MenuItem Header="{loc:Translate Text=&quot;Force Update&quot;}"
 												  Click="ForceUpdate_Click"
 												  IsVisible="{Binding IsInstalled}"
 												  CommandParameter="{Binding}"/>
 									</MenuItem>
-									<MenuItem Header="Launch Options"
+									<MenuItem Header="{loc:Translate Text=&quot;Launch Options&quot;}"
 											  IsVisible="{Binding CanLaunchOptions}">
-										<MenuItem Header="Select Different Executable"
+										<MenuItem Header="{loc:Translate Text=&quot;Select Different Executable&quot;}"
 												  CommandParameter="{Binding}"
 												  Click="SelectDifferentExecutable_Click"
 												  IsVisible="{Binding HasExecutableChoice}"/>
-										<MenuItem Header="Windows Runner…"
+										<MenuItem Header="{loc:Translate Text=&quot;Windows Runner…&quot;}"
 												  Click="ConfigureWindowsRunner_Click"
 												  IsVisible="{Binding ShowWindowsRunnerOptions}"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Create Desktop Shortcut"
+										<MenuItem Header="{loc:Translate Text=&quot;Create Desktop Shortcut&quot;}"
 												  Click="CreateShortcut_Click"
 												  IsVisible="{Binding ShowDesktopOnlyActions}"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Add to Steam"
+										<MenuItem Header="{loc:Translate Text=&quot;Add to Steam&quot;}"
 												  Click="AddToSteam_Click"
 												  IsVisible="{Binding CanAddToSteam}"
 												  CommandParameter="{Binding}"/>
 									</MenuItem>
-									<MenuItem Header="Mods"
+									<MenuItem Header="{loc:Translate Text=&quot;Mods&quot;}"
 											  Click="OpenMods_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanOpenMods}"/>
-									<MenuItem Header="Customize">
-										<MenuItem Header="Edit Entry"
+									<MenuItem Header="{loc:Translate Text=&quot;Customize&quot;}">
+										<MenuItem Header="{loc:Translate Text=&quot;Edit Entry&quot;}"
 												  Click="EditGameEntry_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Edit Tags"
+										<MenuItem Header="{loc:Translate Text=&quot;Edit Tags&quot;}"
 												  Click="EditTagsMenu_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Custom Display Name"
+										<MenuItem Header="{loc:Translate Text=&quot;Custom Display Name&quot;}"
 												  Click="EditCustomDisplayNameMenu_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Add Custom Image"
+										<MenuItem Header="{loc:Translate Text=&quot;Add Custom Image&quot;}"
 												  Click="SetCustomIcon_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Remove Custom Image"
+										<MenuItem Header="{loc:Translate Text=&quot;Remove Custom Image&quot;}"
 												  Click="RemoveCustomIcon_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding HasCustomIcon}"/>
-										<MenuItem Header="Hide App"
+										<MenuItem Header="{loc:Translate Text=&quot;Hide App&quot;}"
 												  Click="HideGame_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding !IsManuallyHidden}"/>
-										<MenuItem Header="Unhide App"
+										<MenuItem Header="{loc:Translate Text=&quot;Unhide App&quot;}"
 												  Click="HideGame_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding IsManuallyHidden}"/>
-										<MenuItem Header="Remove from List"
+										<MenuItem Header="{loc:Translate Text=&quot;Remove from List&quot;}"
 												  Click="RemoveGameEntry_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding IsInLocalAppsJson}"/>
 									</MenuItem>
-									<MenuItem Header="About"
+									<MenuItem Header="{loc:Translate Text=&quot;About&quot;}"
 											  IsVisible="{Binding CanInfoOptions}">
-										<MenuItem Header="View README"
+										<MenuItem Header="{loc:Translate Text=&quot;View README&quot;}"
 												  Click="ShowReadme_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Show Changelog"
+										<MenuItem Header="{loc:Translate Text=&quot;Show Changelog&quot;}"
 												  Click="ShowChangelog_Click"
 												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Open Repository"
+										<MenuItem Header="{loc:Translate Text=&quot;Open Repository&quot;}"
 												  Click="OpenGitHubPage_Click"
 												  CommandParameter="{Binding}"/>
 									</MenuItem>
@@ -466,7 +466,7 @@
 
 							<TextBlock FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap" TextAlignment="Left"
 									   IsVisible="{Binding ShowWrappedReleaseVersion}">
-								<Run Text="Latest: "/>
+								<Run Text="{loc:Translate Text=&quot;Latest: &quot;}"/>
 								<Run Text="{Binding LatestVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
 							</TextBlock>
 							<services:HoverScrollText Text="{Binding LatestVersionLabel}" ToolTip.Tip="{Binding LatestVersionToolTip}"
@@ -479,7 +479,7 @@
 									   TextWrapping="Wrap"
 									   TextAlignment="Left"
 									   IsVisible="{Binding ShowWrappedPreferredVersion}">
-								<Run Text="Preferred: "/>
+								<Run Text="{loc:Translate Text=&quot;Preferred: &quot;}"/>
 								<Run Text="{Binding PreferredVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
 							</TextBlock>
 							<services:HoverScrollText Text="{Binding PreferredVersionLabel}"
@@ -487,7 +487,7 @@
 													  FontSize="10"
 													  Foreground="{DynamicResource ThemeTextSecondary}"
 													  IsVisible="{Binding ShowTruncatedPreferredVersion}"/>
-							<TextBlock Text="Mod updates available"
+							<TextBlock Text="{loc:Translate Text=&quot;Mod updates available&quot;}"
 									   FontSize="10"
 									   Foreground="#E8A838"
 									   IsVisible="{Binding HasModUpdates}"/>
@@ -540,7 +540,7 @@
 							<views:RepositoryCheckWarning/>
 							<Button Classes="library-update-badge"
 									IsVisible="{Binding ShowUpdateBadge}"
-									ToolTip.Tip="Catalog update available — click for details"
+									ToolTip.Tip="{loc:Translate Text=&quot;Catalog update available — click for details&quot;}"
 									HorizontalAlignment="Right"
 									VerticalAlignment="Bottom"
 									Margin="0,0,4,4"
@@ -548,7 +548,7 @@
 									Cursor="Hand"
 									CommandParameter="{Binding}"
 									Click="ReviewCatalogChanges_Click">
-								<TextBlock Text="↑"/>
+								<TextBlock Text="{loc:Translate Text=&quot;↑&quot;}"/>
 							</Button>
 						</Panel>
 					</Border>
@@ -564,116 +564,116 @@
 							IsEnabled="{Binding !IsLoading}"
 							Click="OptionsButton_Click"
 							Tag="{Binding}">
-						<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
+						<TextBlock Text="{loc:Translate Text=&quot;⋯&quot;}" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
 						<Button.ContextMenu>
 							<ContextMenu>
-								<MenuItem Header="Launch"
+								<MenuItem Header="{loc:Translate Text=&quot;Launch&quot;}"
 										  Click="LaunchGameMenu_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanLaunch}"/>
-								<MenuItem Header="Download"
+								<MenuItem Header="{loc:Translate Text=&quot;Download&quot;}"
 										  Click="LaunchGameMenu_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanDownload}"/>
-								<MenuItem Header="Locate Existing Install"
+								<MenuItem Header="{loc:Translate Text=&quot;Locate Existing Install&quot;}"
 										  Click="LocateExistingInstall_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanLocateInstall}"/>
-								<MenuItem Header="Update Now"
+								<MenuItem Header="{loc:Translate Text=&quot;Update Now&quot;}"
 										  Click="UpdateNowMenu_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanUpdate}"/>
-								<MenuItem Header="Review Catalog Changes"
+								<MenuItem Header="{loc:Translate Text=&quot;Review Catalog Changes&quot;}"
 										  Click="ReviewCatalogChanges_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding ShowUpdateBadge}"/>
-								<MenuItem Header="Auto Update"
+								<MenuItem Header="{loc:Translate Text=&quot;Auto Update&quot;}"
 										  ToggleType="CheckBox"
 										  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
 										  IsVisible="{Binding CanToggleAutoUpdate}"
 										  Click="AutoUpdateMenu_Click"
 										  CommandParameter="{Binding}"/>
-								<MenuItem Header="Open Folder"
+								<MenuItem Header="{loc:Translate Text=&quot;Open Folder&quot;}"
 										  Click="OpenFolder_Click"
 										  IsVisible="{Binding CanOpenFolder}"
 										  CommandParameter="{Binding}"/>
-								<MenuItem Header="Versions"
+								<MenuItem Header="{loc:Translate Text=&quot;Versions&quot;}"
 										  IsVisible="{Binding CanVersionOptions}">
-									<MenuItem Header="Change Version"
+									<MenuItem Header="{loc:Translate Text=&quot;Change Version&quot;}"
 											  Click="ChangeVersion_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanChangeVersion}"/>
-									<MenuItem Header="Skip Update"
+									<MenuItem Header="{loc:Translate Text=&quot;Skip Update&quot;}"
 											  Click="SkipUpdate_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanSkipUpdate}"/>
-									<MenuItem Header="Force Update"
+									<MenuItem Header="{loc:Translate Text=&quot;Force Update&quot;}"
 											  Click="ForceUpdate_Click"
 											  IsVisible="{Binding IsInstalled}"
 											  CommandParameter="{Binding}"/>
 								</MenuItem>
-								<MenuItem Header="Launch Options"
+								<MenuItem Header="{loc:Translate Text=&quot;Launch Options&quot;}"
 										  IsVisible="{Binding CanLaunchOptions}">
-									<MenuItem Header="Select Different Executable"
+									<MenuItem Header="{loc:Translate Text=&quot;Select Different Executable&quot;}"
 											  CommandParameter="{Binding}"
 											  Click="SelectDifferentExecutable_Click"
 											  IsVisible="{Binding HasExecutableChoice}"/>
-									<MenuItem Header="Windows Runner…"
+									<MenuItem Header="{loc:Translate Text=&quot;Windows Runner…&quot;}"
 											  Click="ConfigureWindowsRunner_Click"
 											  IsVisible="{Binding ShowWindowsRunnerOptions}"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Create Desktop Shortcut"
+									<MenuItem Header="{loc:Translate Text=&quot;Create Desktop Shortcut&quot;}"
 											  Click="CreateShortcut_Click"
 											  IsVisible="{Binding ShowDesktopOnlyActions}"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Add to Steam"
+									<MenuItem Header="{loc:Translate Text=&quot;Add to Steam&quot;}"
 											  Click="AddToSteam_Click"
 											  IsVisible="{Binding CanAddToSteam}"
 											  CommandParameter="{Binding}"/>
 								</MenuItem>
-								<MenuItem Header="Mods"
+								<MenuItem Header="{loc:Translate Text=&quot;Mods&quot;}"
 										  Click="OpenMods_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanOpenMods}"/>
-								<MenuItem Header="Customize">
-									<MenuItem Header="Edit Entry"
+								<MenuItem Header="{loc:Translate Text=&quot;Customize&quot;}">
+									<MenuItem Header="{loc:Translate Text=&quot;Edit Entry&quot;}"
 											  Click="EditGameEntry_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Edit Tags"
+									<MenuItem Header="{loc:Translate Text=&quot;Edit Tags&quot;}"
 											  Click="EditTagsMenu_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Custom Display Name"
+									<MenuItem Header="{loc:Translate Text=&quot;Custom Display Name&quot;}"
 											  Click="EditCustomDisplayNameMenu_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Add Custom Image"
+									<MenuItem Header="{loc:Translate Text=&quot;Add Custom Image&quot;}"
 											  Click="SetCustomIcon_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Remove Custom Image"
+									<MenuItem Header="{loc:Translate Text=&quot;Remove Custom Image&quot;}"
 											  Click="RemoveCustomIcon_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding HasCustomIcon}"/>
-									<MenuItem Header="Hide App"
+									<MenuItem Header="{loc:Translate Text=&quot;Hide App&quot;}"
 											  Click="HideGame_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding !IsManuallyHidden}"/>
-									<MenuItem Header="Unhide App"
+									<MenuItem Header="{loc:Translate Text=&quot;Unhide App&quot;}"
 											  Click="HideGame_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding IsManuallyHidden}"/>
-									<MenuItem Header="Remove from List"
+									<MenuItem Header="{loc:Translate Text=&quot;Remove from List&quot;}"
 											  Click="RemoveGameEntry_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding IsInLocalAppsJson}"/>
 								</MenuItem>
-								<MenuItem Header="About"
+								<MenuItem Header="{loc:Translate Text=&quot;About&quot;}"
 										  IsVisible="{Binding CanInfoOptions}">
-									<MenuItem Header="View README"
+									<MenuItem Header="{loc:Translate Text=&quot;View README&quot;}"
 											  Click="ShowReadme_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Show Changelog"
+									<MenuItem Header="{loc:Translate Text=&quot;Show Changelog&quot;}"
 											  Click="ShowChangelog_Click"
 											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Open Repository"
+									<MenuItem Header="{loc:Translate Text=&quot;Open Repository&quot;}"
 											  Click="OpenGitHubPage_Click"
 											  CommandParameter="{Binding}"/>
 								</MenuItem>
@@ -786,7 +786,7 @@
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   TextWrapping="Wrap"
 									   IsVisible="{Binding ShowWrappedReleaseVersion}">
-								<Run Text="Latest: "/>
+								<Run Text="{loc:Translate Text=&quot;Latest: &quot;}"/>
 								<Run Text="{Binding LatestVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
 							</TextBlock>
 							<services:HoverScrollText Text="{Binding LatestVersionLabel}" ToolTip.Tip="{Binding LatestVersionToolTip}"
@@ -798,7 +798,7 @@
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   TextWrapping="Wrap"
 									   IsVisible="{Binding ShowWrappedPreferredVersion}">
-								<Run Text="Preferred: "/>
+								<Run Text="{loc:Translate Text=&quot;Preferred: &quot;}"/>
 								<Run Text="{Binding PreferredVersion}" Foreground="{DynamicResource ThemeTextSecondary}"/>
 							</TextBlock>
 							<services:HoverScrollText Text="{Binding PreferredVersionLabel}"
@@ -806,7 +806,7 @@
 													  FontSize="10"
 													  Foreground="{DynamicResource ThemeTextSecondary}"
 													  IsVisible="{Binding ShowTruncatedPreferredVersion}"/>
-							<TextBlock Text="Mod updates available"
+							<TextBlock Text="{loc:Translate Text=&quot;Mod updates available&quot;}"
 									   FontSize="10"
 									   Foreground="#E8A838"
 									   IsVisible="{Binding HasModUpdates}"/>
@@ -875,7 +875,7 @@
                                 Spacing="12" Margin="24" IsVisible="False" Focusable="False" IsHitTestVisible="False">
                         <views:LibraryLoadingBar x:Name="LoadingBar" Width="120" Height="4" Focusable="False"
                                                  Foreground="{DynamicResource SystemControlHighlightAccentBrush}"/>
-                        <TextBlock Text="Loading your library…" FontSize="16" Foreground="{DynamicResource ThemeTextSecondary}"
+                        <TextBlock Text="{loc:Translate Text=&quot;Loading your library…&quot;}" FontSize="16" Foreground="{DynamicResource ThemeTextSecondary}"
                                    TextAlignment="Center" TextWrapping="Wrap" Focusable="False"/>
                     </StackPanel>
 					<StackPanel x:Name="EmptyLibraryPanel"
@@ -885,13 +885,13 @@
 								MaxWidth="520"
 								Margin="30,20,30,30"
 								IsVisible="False">
-						<TextBlock Text="Your library is empty"
+						<TextBlock Text="{loc:Translate Text=&quot;Your library is empty&quot;}"
 								   FontSize="24"
 								   FontWeight="Bold"
 								   Foreground="{DynamicResource ThemeText}"
 								   HorizontalAlignment="Center"
 								   TextAlignment="Center"/>
-						<TextBlock Text="Get started by adding an app yourself, or browse the Quiver Community App Catalog to add apps from the community."
+						<TextBlock Text="{loc:Translate Text=&quot;Get started by adding an app yourself, or browse the Quiver Community App Catalog to add apps from the community.&quot;}"
 								   FontSize="14"
 								   Foreground="{DynamicResource ThemeTextSecondary}"
 								   TextWrapping="Wrap"
@@ -901,11 +901,11 @@
 									HorizontalAlignment="Center"
 									Margin="0,8,0,0">
 							<Button x:Name="EmptyLibraryAddButton" Classes="options" Focusable="True" GotFocus="EmptyLibraryAction_GotFocus"
-									Content="Add App Manually"
+									Content="{loc:Translate Text=&quot;Add App Manually&quot;}"
 									FontSize="13"
 									Click="EmptyLibraryAddApp_Click"/>
 							<Button x:Name="EmptyLibraryBrowseButton" Classes="options" Focusable="True" GotFocus="EmptyLibraryAction_GotFocus"
-									Content="Browse Community Catalog"
+									Content="{loc:Translate Text=&quot;Browse Community Catalog&quot;}"
 									FontSize="13"
 									Click="EmptyLibraryBrowseCatalog_Click"/>
 						</StackPanel>
@@ -918,19 +918,19 @@
 								MaxWidth="520"
 								Margin="30,20,30,30"
 								IsVisible="False">
-						<TextBlock Text="No apps match this search"
+						<TextBlock Text="{loc:Translate Text=&quot;No apps match this search&quot;}"
 								   FontSize="24"
 								   FontWeight="Bold"
 								   Foreground="{DynamicResource ThemeText}"
 								   HorizontalAlignment="Center"
 								   TextAlignment="Center"/>
-						<TextBlock Text="Try a different search, or clear it to show your library again."
+						<TextBlock Text="{loc:Translate Text=&quot;Try a different search, or clear it to show your library again.&quot;}"
 								   FontSize="14"
 								   Foreground="{DynamicResource ThemeTextSecondary}"
 								   TextWrapping="Wrap"
 								   TextAlignment="Center"/>
 						<Button Classes="options"
-								Content="Clear search"
+								Content="{loc:Translate Text=&quot;Clear search&quot;}"
 								FontSize="13"
 								HorizontalAlignment="Center"
 								Click="LibrarySearchClear_Click"/>

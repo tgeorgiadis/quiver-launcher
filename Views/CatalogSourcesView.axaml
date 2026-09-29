@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" xmlns:converters="using:Avalonia.Data.Converters" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:services="using:QuiverLauncher.Services" x:Class="QuiverLauncher.Views.CatalogSourcesView" x:DataType="vm:CatalogViewModel" x:CompileBindings="True">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" xmlns:converters="using:Avalonia.Data.Converters" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:services="using:QuiverLauncher.Services" x:Class="QuiverLauncher.Views.CatalogSourcesView" x:DataType="vm:CatalogViewModel" x:CompileBindings="True">
 <UserControl.Resources>
 <DataTemplate x:Key="CatalogSourceCardTemplate" x:DataType="services:CatalogSourceListItem">
 			<Border Classes="catalog-focus-card catalog-source-card"
@@ -47,12 +47,12 @@
                                    TextWrapping="Wrap" IsVisible="{Binding StatusWarningVisible}"/>
                     </StackPanel>
                     <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-						<CheckBox Grid.Column="0" Content="Enabled" IsChecked="{Binding Enabled, Mode=OneWay}" Foreground="{DynamicResource ThemeText}"
+						<CheckBox Grid.Column="0" Content="{loc:Translate Text=&quot;Enabled&quot;}" IsChecked="{Binding Enabled, Mode=OneWay}" Foreground="{DynamicResource ThemeText}"
 								  Tag="{Binding SourceId}" IsCheckedChanged="CatalogSourceEnabled_Changed"/>
 						<Button Grid.Column="1" Classes="options" Classes.catalog-review-pending="{Binding ShowReviewPendingStyle}"
 								Content="{Binding ReviewButtonText}" HorizontalAlignment="Stretch"
 								Tag="{Binding SourceId}" Click="ReviewCatalogSource_Click" FontSize="12" Padding="10,4"/>
-						<Button Grid.Column="2" Classes="options" Content="Remove" Tag="{Binding SourceId}"
+						<Button Grid.Column="2" Classes="options" Content="{loc:Translate Text=&quot;Remove&quot;}" Tag="{Binding SourceId}"
 								Click="RemoveCatalogSource_Click" FontSize="11" Padding="8,4"/>
 					</Grid>
 				</Grid>
@@ -61,20 +61,20 @@
 </UserControl.Resources>
 <ScrollViewer x:Name="Surface" VerticalScrollBarVisibility="Auto">
 							<StackPanel x:Name="CatalogSourcesStack" Spacing="12" Margin="0,0,30,0">
-							<TextBlock Text="Browse app lists and choose what to add to your library. Review new apps and changes here."
+							<TextBlock Text="{loc:Translate Text=&quot;Browse app lists and choose what to add to your library. Review new apps and changes here.&quot;}"
 									   FontSize="12"
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   TextWrapping="Wrap"/>
 							<WrapPanel Orientation="Horizontal">
-								<Button x:Name="AddCatalogSourceButton" Classes="options" Content="Add list" Click="AddCatalogSource_Click" FontSize="12" Margin="0,0,8,8"/>
-								<Button x:Name="RefreshCatalogSourcesButton" Classes="options" Content="Refresh lists" Click="RefreshCatalogSources_Click" FontSize="12" Margin="0,0,8,8"/>
+								<Button x:Name="AddCatalogSourceButton" Classes="options" Content="{loc:Translate Text=&quot;Add list&quot;}" Click="AddCatalogSource_Click" FontSize="12" Margin="0,0,8,8"/>
+								<Button x:Name="RefreshCatalogSourcesButton" Classes="options" Content="{loc:Translate Text=&quot;Refresh lists&quot;}" Click="RefreshCatalogSources_Click" FontSize="12" Margin="0,0,8,8"/>
 							</WrapPanel>
 							<WrapPanel Orientation="Horizontal">
-								<Button x:Name="CatalogSourceFilterAllButton" Classes="catalog-filter" Content="All"
+								<Button x:Name="CatalogSourceFilterAllButton" Classes="catalog-filter" Content="{loc:Translate Text=&quot;All&quot;}"
 										Tag="All" Click="CatalogSourceListFilter_Click" Margin="0,0,6,6"/>
-								<Button x:Name="CatalogSourceFilterEnabledButton" Classes="catalog-filter selected" Content="Enabled"
+								<Button x:Name="CatalogSourceFilterEnabledButton" Classes="catalog-filter selected" Content="{loc:Translate Text=&quot;Enabled&quot;}"
 										Tag="Enabled" Click="CatalogSourceListFilter_Click" Margin="0,0,6,6"/>
-								<Button x:Name="CatalogSourceFilterDisabledButton" Classes="catalog-filter" Content="Disabled"
+								<Button x:Name="CatalogSourceFilterDisabledButton" Classes="catalog-filter" Content="{loc:Translate Text=&quot;Disabled&quot;}"
 										Tag="Disabled" Click="CatalogSourceListFilter_Click" Margin="0,0,6,6"/>
 							</WrapPanel>
 							<ItemsControl x:Name="CatalogSourcesItemsControl" ItemsSource="{Binding Sources}">

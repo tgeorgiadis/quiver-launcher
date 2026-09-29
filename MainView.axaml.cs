@@ -144,7 +144,24 @@ namespace QuiverLauncher
             _menus = new LauncherMenuController(this, () => LibraryPanel.Navigation.PreserveLibraryGamepadFocusWhileOpeningMenu(), () => LibraryPanel.Navigation.RestoreLibraryGamepadFocusAfterMenu());
             _markdownRenderer = new MarkdownRenderer(OpenUrl);
             _themeEditor = new ThemeEditor(secondary => secondary ? Shell.SecondaryColorBrush.Color : Shell.ThemeColorBrush.Color, ApplyThemeColor, _dialogs);
+            AppSettings? loadedSettings = null;
+            Exception? settingsLoadError = null;
+            try
+            {
+                loadedSettings = _settingsViewModel.Load();
+                LocalizationService.SetLanguage(loadedSettings.Language);
+            }
+            catch (Exception ex)
+            {
+                settingsLoadError = ex;
+                loadedSettings = new AppSettings();
+                LocalizationService.SetLanguage(loadedSettings.Language);
+            }
+
             InitializeComponent();
+            _settings = loadedSettings;
+            if (settingsLoadError != null)
+                _ = _session.RunAsync(() => ShowMessageBoxAsync($"Failed to load settings: {settingsLoadError.Message}", "Settings Error"));
             if (IsDesktopPlatform)
             {
                 HeaderTitleColumn.ColumnDefinitions = new ColumnDefinitions("*,Auto");
@@ -190,16 +207,6 @@ namespace QuiverLauncher
             ChangelogPanel.CloseRequested += CloseChangelog;
             if (MinimizeButton != null)
                 MinimizeButton.IsVisible = !SteamDeckEnvironment.IsGamingMode();
-            try
-            {
-                _settings = _settingsViewModel.Load();
-            }
-            catch (Exception ex)
-            {
-                _ = _session.RunAsync(() => ShowMessageBoxAsync($"Failed to load settings: {ex.Message}", "Settings Error"));
-                _settings = new AppSettings();
-            }
-
             _gameManager = dependencies.GameManager ?? new GameManager(dependencies.SettingsStore);
             CatalogPerformance.Enabled = File.Exists(Path.Combine(QuiverLauncherPaths.UserDataRoot, "catalog-performance.enabled"));
             if (CatalogPerformance.Enabled)

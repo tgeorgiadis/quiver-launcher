@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services"
              xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
              x:Class="QuiverLauncher.Views.MetadataEditorView" x:DataType="vm:MetadataEditorViewModel" x:CompileBindings="True">
 <Border x:Name="Surface"
@@ -44,12 +44,12 @@
 							<StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
 								<Button x:Name="TagEditCancelButton"
 										Classes="options"
-										Content="Cancel"
+										Content="{loc:Translate Text=&quot;Cancel&quot;}"
 										Width="100"
 										Click="CancelTagEdit_Click"/>
 								<Button x:Name="TagEditSaveButton" IsEnabled="{Binding CanSave}"
 										Classes="options"
-										Content="Save"
+										Content="{loc:Translate Text=&quot;Save&quot;}"
 										Width="100"
 										Click="SaveTagEdit_Click"/>
 							</StackPanel>

@@ -106,6 +106,8 @@ namespace QuiverLauncher
     public class AppSettings
     {
         public bool FirstStartup { get; set; } = true;
+        /// <summary>UI language code: system, en, or pt-BR.</summary>
+        public string Language { get; set; } = LocalizationService.EnglishLanguage;
         public bool IconFill { get; set; } = false;
         public bool UseGridView { get; set; } = true;
         public bool GridCompactCards { get; set; } = false;
@@ -204,6 +206,8 @@ namespace QuiverLauncher
 
         public void EnsureInitialized()
         {
+            if (!LocalizationService.IsSupported(Language))
+                Language = LocalizationService.SystemLanguage;
             InterfaceScalePercent = InterfaceScale.Normalize(InterfaceScalePercent);
             ListRowHeight = Math.Clamp(ListRowHeight ?? (UseGridView ? 96 : SlotSize), 72, 400);
             AppCatalogSources ??= new List<AppCatalogSource>();

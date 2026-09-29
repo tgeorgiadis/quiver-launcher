@@ -1,8 +1,8 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:services="using:QuiverLauncher.Services" x:Class="QuiverLauncher.Views.LibraryFiltersView" x:DataType="vm:LibraryFiltersViewModel" x:CompileBindings="True">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:services="using:QuiverLauncher.Services" x:Class="QuiverLauncher.Views.LibraryFiltersView" x:DataType="vm:LibraryFiltersViewModel" x:CompileBindings="True">
 <Grid x:Name="Surface" RowDefinitions="Auto,*">
 				<StackPanel Grid.Row="0" Margin="0,4,0,8">
 					<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,0,0,8"/>
-					<TextBlock Text="SHOW"
+					<TextBlock Text="{loc:Translate Text=&quot;SHOW&quot;}"
 							   FontSize="10"
 							   FontWeight="Bold"
 							   Foreground="{DynamicResource ThemeTextSecondary}"
@@ -19,7 +19,7 @@
 									Width="216"
 									HorizontalAlignment="Left"
 									Click="UnhideAllGamesButton_Click">
-								<TextBlock Text="All Apps"/>
+								<TextBlock Text="{loc:Translate Text=&quot;All Apps&quot;}"/>
 							</Button>
 
 							<Button x:Name="HideNonInstalledButton"
@@ -27,7 +27,7 @@
 									Width="216"
 									HorizontalAlignment="Left"
 									Click="HideNonInstalledButton_Click">
-								<TextBlock Text="Installed Only"/>
+								<TextBlock Text="{loc:Translate Text=&quot;Installed Only&quot;}"/>
 							</Button>
 
 							<Button x:Name="ShowHiddenGamesButton"
@@ -35,7 +35,7 @@
 									Width="216"
 									HorizontalAlignment="Left"
 									Click="ShowHiddenGamesButton_Click">
-								<TextBlock Text="Hidden"/>
+								<TextBlock Text="{loc:Translate Text=&quot;Hidden&quot;}"/>
 							</Button>
 
 							<Border Height="1"
@@ -44,7 +44,7 @@
 
 							<Grid ColumnDefinitions="*,Auto" Margin="12,0,8,8">
 								<TextBlock Grid.Column="0"
-										   Text="TAG FILTERS"
+										   Text="{loc:Translate Text=&quot;TAG FILTERS&quot;}"
 										   FontSize="10"
 										   FontWeight="Bold"
 										   Foreground="{DynamicResource ThemeTextSecondary}"
@@ -54,7 +54,7 @@
 										Classes="iconbutton tag-filter-add"
 										Width="24"
 										Height="24"
-										ToolTip.Tip="Add tag filter"
+										ToolTip.Tip="{loc:Translate Text=&quot;Add tag filter&quot;}"
 										Click="AddDisplayFilter_Click">
 									<TextBlock Text="+"
 											   FontSize="16"
@@ -97,7 +97,7 @@
 													</Border>
 													<Button Grid.Column="2"
 															Classes="options options-listview display-filter-overflow"
-															Content="⋯"
+															Content="{loc:Translate Text=&quot;⋯&quot;}"
 															FontSize="18"
 															Width="28"
 															Height="28"
@@ -108,16 +108,16 @@
 															Tag="{Binding Id}">
 														<Button.ContextMenu>
 															<ContextMenu>
-																<MenuItem Header="Edit"
+																<MenuItem Header="{loc:Translate Text=&quot;Edit&quot;}"
 																		  Tag="{Binding Id}"
 																		  Click="EditTagDisplayFilter_Click"/>
-																<MenuItem Header="Move Up"
+																<MenuItem Header="{loc:Translate Text=&quot;Move Up&quot;}"
 																		  Tag="{Binding Id}"
 																		  Click="MoveTagDisplayFilterUp_Click"/>
-																<MenuItem Header="Move Down"
+																<MenuItem Header="{loc:Translate Text=&quot;Move Down&quot;}"
 																		  Tag="{Binding Id}"
 																		  Click="MoveTagDisplayFilterDown_Click"/>
-																<MenuItem Header="Delete"
+																<MenuItem Header="{loc:Translate Text=&quot;Delete&quot;}"
 																		  Tag="{Binding Id}"
 																		  Click="DeleteTagDisplayFilter_Click"/>
 															</ContextMenu>
@@ -130,7 +130,7 @@
 							</ItemsControl>
 
 							<Button Classes="options"
-									Content="Add Display Filter"
+									Content="{loc:Translate Text=&quot;Add Display Filter&quot;}"
 									HorizontalAlignment="Stretch"
 									Margin="0,8,0,0"
 									Click="AddDisplayFilter_Click"/>

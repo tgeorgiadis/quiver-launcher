@@ -7,6 +7,29 @@ namespace QuiverLauncher.ViewModels;
 
 public class SettingsViewModel : ObservableViewModel
 {
+    public IReadOnlyList<LanguageOption> Languages => LocalizationService.Languages;
+
+    public LanguageOption SelectedLanguage
+    {
+        get => Languages.FirstOrDefault(language => language.Code.Equals(Current.Language, StringComparison.OrdinalIgnoreCase)) ?? Languages[0];
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (string.Equals(Current.Language, value.Code, StringComparison.OrdinalIgnoreCase)) return;
+            var previous = Current.Language;
+            Current.Language = value.Code;
+            try { Save(Current); }
+            catch (Exception ex)
+            {
+                Current.Language = previous;
+                SaveFailed?.Invoke(ex);
+                return;
+            }
+            LocalizationService.SetLanguage(value.Code);
+            Notify();
+        }
+    }
+
     public AndroidLauncherUpdater? AndroidUpdates => AndroidLauncherUpdater.Current;
     public bool HasAndroidUpdates => AndroidUpdates != null;
     private readonly ISettingsStore _settingsStore;
