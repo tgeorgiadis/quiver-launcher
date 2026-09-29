@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:services="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:views="using:QuiverLauncher.Views" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.CatalogReviewView" x:DataType="vm:CatalogSyncViewModel" x:CompileBindings="True">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services" xmlns:local="using:QuiverLauncher" xmlns:services="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:views="using:QuiverLauncher.Views" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.CatalogReviewView" x:DataType="vm:CatalogSyncViewModel" x:CompileBindings="True">
 <UserControl.Resources>
 <DataTemplate x:Key="CatalogReviewCardTemplate" x:DataType="services:CatalogSyncRowItem">
 			<Border Classes="catalog-focus-card"
@@ -65,28 +65,28 @@
 										Orientation="Horizontal"
 										Spacing="4"
 										IsVisible="{x:Static services:PlatformCapabilities.IsMobile}">
-								<Button Classes="options catalog-review-add" Content="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+								<Button Classes="options catalog-review-add" Content="{loc:Translate Text=&quot;Add&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding ShowAddButton}"/>
-								<Button Classes="options catalog-review-merge" Content="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+								<Button Classes="options catalog-review-merge" Content="{loc:Translate Text=&quot;Merge&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding CanMerge}"/>
-								<Button Classes="options" Content="Details" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Details&quot;}" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch"/>
-								<Button Classes="options" Content="Replace" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Replace&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding CanReplace}"/>
-								<Button Classes="options" Content="Ignore" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Ignore&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding CanIgnore}"/>
-								<Button Classes="options" Content="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Hide&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch"
-										ToolTip.Tip="Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden."
+										ToolTip.Tip="{loc:Translate Text=&quot;Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden.&quot;}"
 										IsVisible="{Binding ShowCardHideButton}"/>
-								<Button Classes="options" Content="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Unhide&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch" IsVisible="{Binding ShowUnhideButton}"/>
 								<Button Classes="options catalog-remove-from-library"
-										Content="Remove"
+										Content="{loc:Translate Text=&quot;Remove&quot;}"
 										Tag="{Binding IdentityKey}"
 										Click="CatalogSyncRowRemoveFromLibrary_Click"
 										FontSize="10" Padding="8,4" MinHeight="32" HorizontalAlignment="Stretch"
-										ToolTip.Tip="Remove from Library"
+										ToolTip.Tip="{loc:Translate Text=&quot;Remove from Library&quot;}"
 										IsVisible="{Binding ShowRemoveFromLibrary}"/>
 							</StackPanel>
 							<StackPanel Spacing="3"
@@ -117,28 +117,28 @@
 									   Orientation="Horizontal"
 									   Spacing="4"
 									   IsVisible="{x:Static services:PlatformCapabilities.IsDesktop}">
-								<Button Classes="options catalog-review-add" Content="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+								<Button Classes="options catalog-review-add" Content="{loc:Translate Text=&quot;Add&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
 										FontSize="10" Padding="8,4" IsVisible="{Binding ShowAddButton}"/>
-								<Button Classes="options catalog-review-merge" Content="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+								<Button Classes="options catalog-review-merge" Content="{loc:Translate Text=&quot;Merge&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
 										FontSize="10" Padding="8,4" IsVisible="{Binding CanMerge}"/>
-								<Button Classes="options" Content="Details" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Details&quot;}" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
 										FontSize="10" Padding="8,4"/>
-								<Button Classes="options" Content="Replace" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Replace&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowReplace_Click"
 										FontSize="10" Padding="8,4" IsVisible="{Binding CanReplace}"/>
-								<Button Classes="options" Content="Ignore" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Ignore&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowIgnore_Click"
 										FontSize="10" Padding="8,4" IsVisible="{Binding CanIgnore}"/>
-								<Button Classes="options" Content="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Hide&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
 										FontSize="10" Padding="8,4"
-										ToolTip.Tip="Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden."
+										ToolTip.Tip="{loc:Translate Text=&quot;Hide this app from this catalog list. It will not appear in Needs Review or count as a catalog update until you Unhide it. Find it again under Hidden.&quot;}"
 										IsVisible="{Binding ShowCardHideButton}"/>
-								<Button Classes="options" Content="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+								<Button Classes="options" Content="{loc:Translate Text=&quot;Unhide&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
 										FontSize="10" Padding="8,4" IsVisible="{Binding ShowUnhideButton}"/>
 								<Button Classes="options catalog-remove-from-library"
-										Content="Remove"
+										Content="{loc:Translate Text=&quot;Remove&quot;}"
 										Tag="{Binding IdentityKey}"
 										Click="CatalogSyncRowRemoveFromLibrary_Click"
 										FontSize="10" Padding="8,4"
-										ToolTip.Tip="Remove from Library"
+										ToolTip.Tip="{loc:Translate Text=&quot;Remove from Library&quot;}"
 										IsVisible="{Binding ShowRemoveFromLibrary}"/>
 							</StackPanel>
 						</Grid>
@@ -227,24 +227,24 @@
 												IsVisible="{Binding !IsMore}"
 												Click="CatalogReviewGridChrome_Click"/>
 										<Button Classes="options catalog-review-more"
-												Content="More"
+												Content="{loc:Translate Text=&quot;More&quot;}"
 												Tag="{Binding IdentityKey}"
 												FontSize="10"
 												HorizontalAlignment="Stretch"
 												IsVisible="{Binding IsMore}">
 											<Button.Flyout>
 												<MenuFlyout Placement="BottomEdgeAlignedLeft">
-													<MenuItem Header="Details" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
+													<MenuItem Header="{loc:Translate Text=&quot;Details&quot;}" Tag="{Binding IdentityKey}" Click="CatalogReviewDetails_Click"
 															  IsVisible="{Binding MenuDetails}"/>
-													<MenuItem Header="Hide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
+													<MenuItem Header="{loc:Translate Text=&quot;Hide&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowHide_Click"
 															  IsVisible="{Binding MenuHide}"/>
-													<MenuItem Header="Unhide" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
+													<MenuItem Header="{loc:Translate Text=&quot;Unhide&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowUnhide_Click"
 															  IsVisible="{Binding MenuUnhide}"/>
-													<MenuItem Header="Remove" Tag="{Binding IdentityKey}" Click="CatalogSyncRowRemoveFromLibrary_Click"
+													<MenuItem Header="{loc:Translate Text=&quot;Remove&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowRemoveFromLibrary_Click"
 															  IsVisible="{Binding MenuRemove}"/>
-													<MenuItem Header="Add" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
+													<MenuItem Header="{loc:Translate Text=&quot;Add&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowAdd_Click"
 															  IsVisible="{Binding MenuAdd}"/>
-													<MenuItem Header="Merge" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
+													<MenuItem Header="{loc:Translate Text=&quot;Merge&quot;}" Tag="{Binding IdentityKey}" Click="CatalogSyncRowMerge_Click"
 															  IsVisible="{Binding MenuMerge}"/>
 												</MenuFlyout>
 											</Button.Flyout>
@@ -272,17 +272,17 @@
 								<Button x:Name="CatalogReviewTagsToggle"
 										DockPanel.Dock="Right"
 										Classes="catalog-filter"
-										Content="Tags"
+										Content="{loc:Translate Text=&quot;Tags&quot;}"
 										Click="CatalogReviewFiltersToggle_Click"
 										FontSize="11"
 										MinHeight="32"
 										Padding="10,0"
 										VerticalAlignment="Top"
 										Margin="8,0,0,0"
-										ToolTip.Tip="Filter by tag: off → include → exclude"/>
+										ToolTip.Tip="{loc:Translate Text=&quot;Filter by tag: off → include → exclude&quot;}"/>
 								<TextBox x:Name="CatalogSearchTextBox"
 										 DockPanel.Dock="Right"
-										 Watermark="Search this list"
+										 Watermark="{loc:Translate Text=&quot;Search this list&quot;}"
 										 Width="200"
 										 MinHeight="32"
 										 FontSize="12"
@@ -295,30 +295,30 @@
 											  VerticalScrollBarVisibility="Disabled"
 											  HorizontalScrollBarVisibility="Auto">
 									<StackPanel x:Name="CatalogReviewStatusChips" Orientation="Horizontal">
-										<Button x:Name="CatalogFilterAllButton" Classes="catalog-filter selected" Content="All"
+										<Button x:Name="CatalogFilterAllButton" Classes="catalog-filter selected" Content="{loc:Translate Text=&quot;All&quot;}"
 												Tag="All" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
 												VerticalAlignment="Center"
-												ToolTip.Tip="Every app in this list"/>
-										<Button x:Name="CatalogFilterNeedsReviewButton" Classes="catalog-filter" Content="Needs review"
+												ToolTip.Tip="{loc:Translate Text=&quot;Every app in this list&quot;}"/>
+										<Button x:Name="CatalogFilterNeedsReviewButton" Classes="catalog-filter" Content="{loc:Translate Text=&quot;Needs review&quot;}"
 												Tag="NeedsReview" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
 												VerticalAlignment="Center"
-												ToolTip.Tip="New and changed apps that still need action"/>
-										<Button x:Name="CatalogFilterNotInLibraryButton" Classes="catalog-filter" Content="Not in library"
+												ToolTip.Tip="{loc:Translate Text=&quot;New and changed apps that still need action&quot;}"/>
+										<Button x:Name="CatalogFilterNotInLibraryButton" Classes="catalog-filter" Content="{loc:Translate Text=&quot;Not in library&quot;}"
 												Tag="NotInLibrary" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
 												VerticalAlignment="Center"
-												ToolTip.Tip="Catalog entries you have not added, including ignored"/>
-										<Button x:Name="CatalogFilterChangedButton" Classes="catalog-filter" Content="Changed"
+												ToolTip.Tip="{loc:Translate Text=&quot;Catalog entries you have not added, including ignored&quot;}"/>
+										<Button x:Name="CatalogFilterChangedButton" Classes="catalog-filter" Content="{loc:Translate Text=&quot;Changed&quot;}"
 												Tag="Changed" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
 												VerticalAlignment="Center"
-												ToolTip.Tip="In your library, but catalog name, tags, or other fields differ"/>
-										<Button x:Name="CatalogFilterUpToDateButton" Classes="catalog-filter" Content="Up to date"
+												ToolTip.Tip="{loc:Translate Text=&quot;In your library, but catalog name, tags, or other fields differ&quot;}"/>
+										<Button x:Name="CatalogFilterUpToDateButton" Classes="catalog-filter" Content="{loc:Translate Text=&quot;Up to date&quot;}"
 												Tag="UpToDate" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
 												VerticalAlignment="Center"
-												ToolTip.Tip="In your library and matching this list"/>
-										<Button x:Name="CatalogFilterHiddenButton" Classes="catalog-filter" Content="Hidden"
+												ToolTip.Tip="{loc:Translate Text=&quot;In your library and matching this list&quot;}"/>
+										<Button x:Name="CatalogFilterHiddenButton" Classes="catalog-filter" Content="{loc:Translate Text=&quot;Hidden&quot;}"
 												Tag="Hidden" Click="CatalogReviewFilter_Click" MinHeight="32" Margin="0,0,6,0"
 												VerticalAlignment="Center"
-												ToolTip.Tip="Hidden from review until you unhide them"/>
+												ToolTip.Tip="{loc:Translate Text=&quot;Hidden from review until you unhide them&quot;}"/>
 									</StackPanel>
 								</ScrollViewer>
 							</DockPanel>
@@ -329,20 +329,20 @@
 										Margin="12,0,0,0">
 								<Button x:Name="CatalogReviewPlatformButton"
 										Classes="catalog-filter"
-										Content="All platforms"
+										Content="{loc:Translate Text=&quot;All platforms&quot;}"
 										FontSize="11"
 										MinHeight="32"
 										VerticalAlignment="Center"
 										Margin="0,0,8,0"
-										ToolTip.Tip="Filter apps by platforms in the latest release">
+										ToolTip.Tip="{loc:Translate Text=&quot;Filter apps by platforms in the latest release&quot;}">
 									<Button.Flyout>
 										<MenuFlyout Placement="BottomEdgeAlignedRight"
 													Opening="CatalogReviewPlatformFlyout_Opening">
-											<MenuItem Header="All platforms" Tag="All" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Windows" Tag="Windows" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Linux" Tag="Linux" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Mac" Tag="Mac" Click="CatalogReviewPlatformItem_Click"/>
-											<MenuItem Header="Android" Tag="Android" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;All platforms&quot;}" Tag="All" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Windows&quot;}" Tag="Windows" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Linux&quot;}" Tag="Linux" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Mac&quot;}" Tag="Mac" Click="CatalogReviewPlatformItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Android&quot;}" Tag="Android" Click="CatalogReviewPlatformItem_Click"/>
 										</MenuFlyout>
 									</Button.Flyout>
 								</Button>
@@ -355,14 +355,14 @@
 										  VerticalContentAlignment="Center"
 										  Margin="0,0,8,0"
 										  SelectionChanged="CatalogReviewSortByComboBox_SelectionChanged">
-									<ComboBoxItem Content="Name (A-Z)" Tag="Name"/>
-									<ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
-									<ComboBoxItem Content="Repository (A-Z)" Tag="Repository"/>
-									<ComboBoxItem Content="Status" Tag="Status"/>
+									<ComboBoxItem Content="{loc:Translate Text=&quot;Name (A-Z)&quot;}" Tag="Name"/>
+									<ComboBoxItem Content="{loc:Translate Text=&quot;Name (Z-A)&quot;}" Tag="NameDesc"/>
+									<ComboBoxItem Content="{loc:Translate Text=&quot;Repository (A-Z)&quot;}" Tag="Repository"/>
+									<ComboBoxItem Content="{loc:Translate Text=&quot;Status&quot;}" Tag="Status"/>
 								</ComboBox>
 								<Button x:Name="CatalogReviewListViewButton"
 										Classes="catalog-filter selected"
-										Content="List"
+										Content="{loc:Translate Text=&quot;List&quot;}"
 										Tag="list"
 										FontSize="11"
 										MinHeight="32"
@@ -371,7 +371,7 @@
 										Click="CatalogReviewLayout_Click"/>
 								<Button x:Name="CatalogReviewGridViewButton"
 										Classes="catalog-filter"
-										Content="Grid"
+										Content="{loc:Translate Text=&quot;Grid&quot;}"
 										Tag="grid"
 										FontSize="11"
 										MinHeight="32"
@@ -397,7 +397,7 @@
 												Margin="0,0,6,4"
 												Classes.selected="{Binding IsInclude}"
 												Classes.excluded="{Binding IsExclude}"
-												ToolTip.Tip="Off → include → exclude"/>
+												ToolTip.Tip="{loc:Translate Text=&quot;Off → include → exclude&quot;}"/>
 									</DataTemplate>
 								</ItemsControl.ItemTemplate>
 							</ItemsControl>
@@ -413,24 +413,24 @@
 									   Opacity="0.85"/>
 						</StackPanel>
 						<WrapPanel x:Name="CatalogReviewActionBar" Orientation="Horizontal"><WrapPanel x:Name="CatalogReviewBulkPanel" Orientation="Horizontal" VerticalAlignment="Center">
-							<Button x:Name="CatalogSyncAddAllButton" Classes="options catalog-review-add" Content="Add all new"
+							<Button x:Name="CatalogSyncAddAllButton" Classes="options catalog-review-add" Content="{loc:Translate Text=&quot;Add all new&quot;}"
 									Click="CatalogSyncAddAll_Click" FontSize="11" MinHeight="32" Margin="0,0,8,0" IsVisible="False"/>
-							<Button x:Name="CatalogSyncReplaceAllButton" Classes="options catalog-review-merge" Content="Merge all changed"
+							<Button x:Name="CatalogSyncReplaceAllButton" Classes="options catalog-review-merge" Content="{loc:Translate Text=&quot;Merge all changed&quot;}"
 									Click="CatalogSyncReplaceAll_Click" FontSize="11" MinHeight="32" Margin="0,0,8,0" IsVisible="False"/>
-							<Button x:Name="CatalogSyncAcknowledgeButton" Classes="options" Content="Skip &amp; mark reviewed"
+							<Button x:Name="CatalogSyncAcknowledgeButton" Classes="options" Content="{loc:Translate Text=&quot;Skip &amp;amp; mark reviewed&quot;}"
 									Click="CatalogSyncAcknowledge_Click" FontSize="11" MinHeight="32" Margin="0,0,8,0" IsVisible="False"/>
 						</WrapPanel><WrapPanel x:Name="CatalogPlatformCheckStatus" IsVisible="{Binding ShowCompatibilityStatus}" VerticalAlignment="Center">
     <TextBlock Text="{Binding PlatformCheckText}" IsVisible="{Binding ShowPlatformCheck}" FontSize="12"
                Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,8,4"/>
-    <Button x:Name="CatalogPlatformRetryButton" Classes="options" Content="Retry" IsVisible="{Binding ShowPlatformRetry}"
+    <Button x:Name="CatalogPlatformRetryButton" Classes="options" Content="{loc:Translate Text=&quot;Retry&quot;}" IsVisible="{Binding ShowPlatformRetry}"
             MinHeight="28" Padding="8,3" FontSize="12" Margin="0,2,6,2" GotFocus="CatalogPlatformTokenSettings_GotFocus" Click="CatalogPlatformRetry_Click"/>
-    <Button x:Name="CatalogPlatformDetailsButton" Classes="options" Content="Details" IsVisible="{Binding ShowPlatformCheck}"
+    <Button x:Name="CatalogPlatformDetailsButton" Classes="options" Content="{loc:Translate Text=&quot;Details&quot;}" IsVisible="{Binding ShowPlatformCheck}"
             MinHeight="28" Padding="8,3" FontSize="12" Margin="0,2,10,2" GotFocus="CatalogPlatformTokenSettings_GotFocus">
         <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedLeft">
                 <MenuItem IsEnabled="False"><MenuItem.Header>
                 <StackPanel MaxWidth="260" Spacing="8">
-                    <TextBlock Text="Compatibility checks" FontWeight="SemiBold" FontSize="13"/>
+                    <TextBlock Text="{loc:Translate Text=&quot;Compatibility checks&quot;}" FontWeight="SemiBold" FontSize="13"/>
                     <TextBlock x:Name="CatalogPlatformCheckExplanation" Text="{Binding PlatformCheckExplanation}"
                                IsVisible="{Binding ShowPlatformExplanation}" FontSize="12" TextWrapping="Wrap"/>
                     <TextBlock Text="{Binding UnverifiedPlatformText}" FontSize="12" TextWrapping="Wrap"/>
@@ -443,8 +443,8 @@
     </Button>
     <TextBlock Text="{Binding HiddenPendingReviewsText}" IsVisible="{Binding ShowHiddenPendingReviews}" FontSize="12"
                Foreground="{DynamicResource ThemeTextSecondary}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4,8,4"/>
-    <Button x:Name="CatalogShowAllPendingButton" Content="Show" IsVisible="{Binding ShowHiddenPendingReviews}"
-            ToolTip.Tip="Show all pending reviews" Classes="options" MinHeight="28" Padding="8,3" FontSize="12" Margin="0,2,0,2"
+    <Button x:Name="CatalogShowAllPendingButton" Content="{loc:Translate Text=&quot;Show&quot;}" IsVisible="{Binding ShowHiddenPendingReviews}"
+            ToolTip.Tip="{loc:Translate Text=&quot;Show all pending reviews&quot;}" Classes="options" MinHeight="28" Padding="8,3" FontSize="12" Margin="0,2,0,2"
             GotFocus="CatalogPlatformTokenSettings_GotFocus" Click="CatalogShowAllPending_Click"/>
 </WrapPanel></WrapPanel>
 						<Border x:Name="CatalogReviewVersionBanner"
@@ -463,28 +463,28 @@
 							<Button x:Name="CatalogReviewBulkButton"
 									Grid.Column="1"
 									Classes="catalog-filter"
-									Content="Bulk"
+									Content="{loc:Translate Text=&quot;Bulk&quot;}"
 									FontSize="11"
 									Padding="10,4"
-									ToolTip.Tip="Bulk add, merge, and skip">
+									ToolTip.Tip="{loc:Translate Text=&quot;Bulk add, merge, and skip&quot;}">
 								<Button.Flyout>
 									<MenuFlyout Placement="BottomEdgeAlignedRight"
 												Opening="MobileCatalogBulkFlyout_Opening">
 										<MenuItem x:Name="CatalogReviewBulkAddItem"
 												  Classes="catalog-bulk-item catalog-review-add"
-												  Header="Add all"
+												  Header="{loc:Translate Text=&quot;Add all&quot;}"
 												  Click="CatalogSyncAddAll_Click"/>
 										<Separator x:Name="CatalogReviewBulkAddSeparator"
 												   Classes="catalog-bulk-separator"/>
 										<MenuItem x:Name="CatalogReviewBulkMergeItem"
 												  Classes="catalog-bulk-item catalog-review-merge"
-												  Header="Merge all changed"
+												  Header="{loc:Translate Text=&quot;Merge all changed&quot;}"
 												  Click="CatalogSyncReplaceAll_Click"/>
 										<Separator x:Name="CatalogReviewBulkSkipSeparator"
 												   Classes="catalog-bulk-separator"/>
 										<MenuItem x:Name="CatalogReviewBulkSkipItem"
 												  Classes="catalog-bulk-item"
-												  Header="Skip &amp; mark reviewed"
+												  Header="{loc:Translate Text=&quot;Skip &amp;amp; mark reviewed&quot;}"
 												  Click="CatalogSyncAcknowledge_Click"/>
 									</MenuFlyout>
 								</Button.Flyout>
@@ -492,21 +492,21 @@
 							<Button x:Name="CatalogReviewFiltersToggle"
 									Grid.Column="3"
 									Classes="catalog-filter"
-									Content="More"
+									Content="{loc:Translate Text=&quot;More&quot;}"
 									FontSize="11"
 									Padding="10,4"
-									ToolTip.Tip="View and platform filters">
+									ToolTip.Tip="{loc:Translate Text=&quot;View and platform filters&quot;}">
 								<Button.Flyout>
 									<MenuFlyout Placement="BottomEdgeAlignedRight"
 												Opening="MobileCatalogMoreFlyout_Opening">
-										<MenuItem Header="List" Tag="view:list" Click="MobileCatalogViewItem_Click"/>
-										<MenuItem Header="Grid" Tag="view:grid" Click="MobileCatalogViewItem_Click"/>
+										<MenuItem Header="{loc:Translate Text=&quot;List&quot;}" Tag="view:list" Click="MobileCatalogViewItem_Click"/>
+										<MenuItem Header="{loc:Translate Text=&quot;Grid&quot;}" Tag="view:grid" Click="MobileCatalogViewItem_Click"/>
 										<Separator/>
-										<MenuItem Header="All platforms" Tag="platform:All" Click="CatalogReviewPlatformItem_Click"/>
-										<MenuItem Header="Windows" Tag="platform:Windows" Click="CatalogReviewPlatformItem_Click"/>
-										<MenuItem Header="Linux" Tag="platform:Linux" Click="CatalogReviewPlatformItem_Click"/>
-										<MenuItem Header="Mac" Tag="platform:Mac" Click="CatalogReviewPlatformItem_Click"/>
-										<MenuItem Header="Android" Tag="platform:Android" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="{loc:Translate Text=&quot;All platforms&quot;}" Tag="platform:All" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="{loc:Translate Text=&quot;Windows&quot;}" Tag="platform:Windows" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="{loc:Translate Text=&quot;Linux&quot;}" Tag="platform:Linux" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="{loc:Translate Text=&quot;Mac&quot;}" Tag="platform:Mac" Click="CatalogReviewPlatformItem_Click"/>
+										<MenuItem Header="{loc:Translate Text=&quot;Android&quot;}" Tag="platform:Android" Click="CatalogReviewPlatformItem_Click"/>
 									</MenuFlyout>
 								</Button.Flyout>
 							</Button>
@@ -522,20 +522,20 @@
 									<WrapPanel>
 										<Button x:Name="CatalogSyncBackToLibraryButton"
 												Classes="options"
-												Content="Back to Library"
+												Content="{loc:Translate Text=&quot;Back to Library&quot;}"
 												FontSize="11"
 												Margin="0,0,8,8"
 												Click="CatalogSyncBackToLibrary_Click"/>
 										<Button x:Name="CatalogSyncBackToSourcesButton"
 												Classes="options"
-												Content="Back to sources"
+												Content="{loc:Translate Text=&quot;Back to sources&quot;}"
 												FontSize="11"
 												Margin="0,0,8,8"
 												Click="CatalogSyncBackToSources_Click"/>
 									</WrapPanel>
 								</StackPanel>
 								<TextBlock x:Name="CatalogSyncEmptyText"
-										   Text="No apps match this filter."
+										   Text="{loc:Translate Text=&quot;No apps match this filter.&quot;}"
 										   FontSize="12"
 										   Foreground="{DynamicResource ThemeTextSecondary}"
 										   TextWrapping="Wrap"

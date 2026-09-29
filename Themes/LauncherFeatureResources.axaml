@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:services="using:QuiverLauncher.Services" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia">
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services" xmlns:local="using:QuiverLauncher" xmlns:services="using:QuiverLauncher.Services" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia">
 <local:BooleanToStretchConverter x:Key="BooleanToStretchConverter"/>
 <local:ThicknessConverter x:Key="ThicknessConverter"/>
 <local:DoubleScaleConverter x:Key="DoubleScaleConverter"/>
@@ -21,13 +21,13 @@
 								   TextWrapping="Wrap"
 								   Margin="0,0,6,0"
 								   IsVisible="{Binding HasLocalValue}"/>
-						<TextBlock Text="(empty)"
+						<TextBlock Text="{loc:Translate Text=&quot;(empty)&quot;}"
 								   FontSize="10"
 								   Foreground="#F0A080"
 								   FontStyle="Italic"
 								   Margin="0,0,6,0"
 								   IsVisible="{Binding ShowEmptyLocal}"/>
-						<TextBlock Text="→"
+						<TextBlock Text="{loc:Translate Text=&quot;→&quot;}"
 								   FontSize="10"
 								   Foreground="{DynamicResource ThemeTextSecondary}"
 								   Margin="0,0,6,0"
@@ -43,7 +43,7 @@
 								   Foreground="{DynamicResource ThemeText}"
 								   TextWrapping="Wrap"
 								   IsVisible="{Binding IsSnapshot}"/>
-						<TextBlock Text="(empty)"
+						<TextBlock Text="{loc:Translate Text=&quot;(empty)&quot;}"
 								   FontSize="10"
 								   Foreground="#6EE7A0"
 								   FontStyle="Italic"
@@ -56,7 +56,7 @@
 								ToolTip.Tip="{Binding LocalValue}">
 							<asyncImageLoader:AdvancedImage Source="{Binding LocalValue}" Width="24" Height="24" Stretch="Uniform"/>
 						</Border>
-						<TextBlock Text="→" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+						<TextBlock Text="{loc:Translate Text=&quot;→&quot;}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
 								   VerticalAlignment="Center" IsVisible="{Binding ShowArrow}"/>
 						<Border BorderBrush="#6EE7A0" BorderThickness="1" CornerRadius="3" Padding="1"
 								Background="#1A1A1A" IsVisible="{Binding HasExternalValue}"

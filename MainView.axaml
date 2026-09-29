@@ -1,6 +1,6 @@
 <UserControl x:Class="QuiverLauncher.MainView" x:Name="ShellRoot"
 		xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services"
 		xmlns:local="clr-namespace:QuiverLauncher"
         xmlns:views="clr-namespace:QuiverLauncher.Views"
 		xmlns:services="clr-namespace:QuiverLauncher.Services"
@@ -70,12 +70,12 @@
 								VerticalAlignment="Center"
 								Margin="20,0,0,0"
 								Spacing="2">
-						<TextBlock Text="QUIVER"
+						<TextBlock Text="{loc:Translate Text=&quot;QUIVER&quot;}"
 								   FontSize="18"
 								   FontWeight="Bold"
 								   Foreground="{DynamicResource ThemeText}"
 								   LetterSpacing="2"/>
-						<TextBlock Text="LAUNCHER"
+						<TextBlock Text="{loc:Translate Text=&quot;LAUNCHER&quot;}"
 								   FontSize="11"
 								   FontWeight="SemiBold"
 								   Foreground="{DynamicResource ThemeTextSecondary}"
@@ -102,7 +102,7 @@
 									<Image Width="32" Height="32"
 										   Source="avares://QuiverLauncher/Assets/Continue.png"
 										   Margin="0,0,12,0"/>
-									<TextBlock Text="Continue"
+									<TextBlock Text="{loc:Translate Text=&quot;Continue&quot;}"
 											  VerticalAlignment="Center"/>
 								</StackPanel>
 								<Border Grid.Column="1"
@@ -132,7 +132,7 @@
 								<Image Width="32" Height="32"
 									   Source="avares://QuiverLauncher/Assets/DefaultGame.png"
 									   Margin="0,0,12,0"/>
-								<TextBlock Text="Library" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" VerticalAlignment="Center"/>
+								<TextBlock Text="{loc:Translate Text=&quot;Library&quot;}" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" VerticalAlignment="Center"/>
 							</StackPanel>
 						</Button>
 
@@ -148,7 +148,7 @@
 								<Image Width="32" Height="32"
 									   Source="avares://QuiverLauncher/Assets/AppCatalog.png"
 									   Margin="0,0,2,0"/>
-								<TextBlock Text="App Catalog" VerticalAlignment="Center"/>
+								<TextBlock Text="{loc:Translate Text=&quot;App Catalog&quot;}" VerticalAlignment="Center"/>
 								<Border Background="{DynamicResource ThemeLighter}"
 										CornerRadius="10"
 										MinWidth="20"
@@ -185,7 +185,7 @@
 								Classes="iconbutton"
 								Width="44"
 								Height="44"
-								ToolTip.Tip="GitHub"
+								ToolTip.Tip="{loc:Translate Text=&quot;GitHub&quot;}"
 								Click="GithubButton_Click">
 							<Image Width="32" Height="32"
 								   Source="avares://QuiverLauncher/Assets/Github.png"/>
@@ -194,7 +194,7 @@
 								Classes="iconbutton"
 								Width="44"
 								Height="44"
-								ToolTip.Tip="Discord"
+								ToolTip.Tip="{loc:Translate Text=&quot;Discord&quot;}"
 								Click="DiscordButton_Click">
 							<Image Width="32" Height="32"
 								   Source="avares://QuiverLauncher/Assets/Discord.png"/>
@@ -203,7 +203,7 @@
 								Classes="iconbutton"
 								Width="44"
 								Height="44"
-								ToolTip.Tip="Ko-fi"
+								ToolTip.Tip="{loc:Translate Text=&quot;Ko-fi&quot;}"
 								Click="KofiButton_Click">
 							<Image Width="32" Height="32"
 								   Source="avares://QuiverLauncher/Assets/Kofi.png"/>
@@ -235,7 +235,7 @@
 								Classes="modern-icon" Width="32" Height="32" Margin="8,0,0,0" Padding="6"
 								VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
 								IsVisible="{Binding IsDesktopPlatform}" Focusable="True"
-								AutomationProperties.Name="Hide sidebar" ToolTip.Tip="Hide sidebar">
+								AutomationProperties.Name="{loc:Translate Text=&quot;Hide sidebar&quot;}" ToolTip.Tip="{loc:Translate Text=&quot;Hide sidebar&quot;}">
 							<Path Width="20" Height="20" Stretch="Uniform" Stroke="{DynamicResource ThemeText}"
 								  StrokeThickness="1.5" Data="M3,3 L21,3 L21,21 L3,21 Z M9,3 L9,21 M16,8 L12,12 L16,16"/>
 						</Button>
@@ -252,7 +252,7 @@
 								VerticalAlignment="Center"
 								IsVisible="{Binding IsMobile}"
 								PlatformFeedback.FeedbackType="Auto"
-								ToolTip.Tip="Menu"
+								ToolTip.Tip="{loc:Translate Text=&quot;Menu&quot;}"
 								>
 							<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
 								<TextBlock Text="☰"
@@ -269,7 +269,7 @@
 							  MinHeight="44"
 							  VerticalAlignment="Center">
 						<TextBlock x:Name="HeaderTitleText"
-								   Text="Library" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}"
+								   Text="{loc:Translate Text=&quot;Library&quot;}" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}"
 								   FontSize="24"
 								   Margin="12,0,8,0"
 								   FontWeight="Bold"
@@ -312,7 +312,7 @@
 
 							<Button x:Name="CatalogReviewBackButton"
 									Classes="options"
-									Content="← Back to sources"
+									Content="{loc:Translate Text=&quot;← Back to sources&quot;}"
 									FontSize="13"
 									Margin="0,0,16,0"
 									IsVisible="False"
@@ -337,7 +337,7 @@
 										VerticalContentAlignment="Stretch"
 										IsVisible="False"
 										PlatformFeedback.FeedbackType="Auto"
-										ToolTip.Tip="Search"
+										ToolTip.Tip="{loc:Translate Text=&quot;Search&quot;}"
 										>
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
 										<Viewbox Width="14" Height="14"
@@ -365,7 +365,7 @@
 										VerticalContentAlignment="Stretch"
 										IsVisible="False"
 										PlatformFeedback.FeedbackType="Auto"
-										ToolTip.Tip="Add New Entry"
+										ToolTip.Tip="{loc:Translate Text=&quot;Add New Entry&quot;}"
 										Click="AddNewEntryButton_Click">
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
 										<TextBlock Text="+"
@@ -387,15 +387,15 @@
 										VerticalContentAlignment="Stretch"
 										IsVisible="False"
 										PlatformFeedback.FeedbackType="Auto"
-										ToolTip.Tip="Sort">
+										ToolTip.Tip="{loc:Translate Text=&quot;Sort&quot;}">
 									<Button.Flyout>
 										<MenuFlyout Placement="BottomEdgeAlignedRight"
 													Opening="MobileLibrarySortFlyout_Opening">
-											<MenuItem Header="Name (A-Z)" Tag="Name" Click="MobileLibrarySortItem_Click"/>
-											<MenuItem Header="Name (Z-A)" Tag="NameDesc" Click="MobileLibrarySortItem_Click"/>
-											<MenuItem Header="Installed First" Tag="Installed" Click="MobileLibrarySortItem_Click"/>
-											<MenuItem Header="Not Installed First" Tag="NotInstalled" Click="MobileLibrarySortItem_Click"/>
-											<MenuItem Header="Last Played" Tag="LastPlayed" Click="MobileLibrarySortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Name (A-Z)&quot;}" Tag="Name" Click="MobileLibrarySortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Name (Z-A)&quot;}" Tag="NameDesc" Click="MobileLibrarySortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Installed First&quot;}" Tag="Installed" Click="MobileLibrarySortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Not Installed First&quot;}" Tag="NotInstalled" Click="MobileLibrarySortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Last Played&quot;}" Tag="LastPlayed" Click="MobileLibrarySortItem_Click"/>
 										</MenuFlyout>
 									</Button.Flyout>
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
@@ -417,7 +417,7 @@
 										VerticalContentAlignment="Stretch"
 										IsVisible="False"
 										PlatformFeedback.FeedbackType="Auto"
-										ToolTip.Tip="Back to sources"
+										ToolTip.Tip="{loc:Translate Text=&quot;Back to sources&quot;}"
 										Click="CatalogReviewBack_Click">
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
 										<TextBlock Text="←"
@@ -438,14 +438,14 @@
 										VerticalContentAlignment="Stretch"
 										IsVisible="False"
 										PlatformFeedback.FeedbackType="Auto"
-										ToolTip.Tip="Sort">
+										ToolTip.Tip="{loc:Translate Text=&quot;Sort&quot;}">
 									<Button.Flyout>
 										<MenuFlyout Placement="BottomEdgeAlignedRight"
 													Opening="MobileCatalogSortFlyout_Opening">
-											<MenuItem Header="Name (A-Z)" Tag="Name" Click="MobileCatalogSortItem_Click"/>
-											<MenuItem Header="Name (Z-A)" Tag="NameDesc" Click="MobileCatalogSortItem_Click"/>
-											<MenuItem Header="Repository (A-Z)" Tag="Repository" Click="MobileCatalogSortItem_Click"/>
-											<MenuItem Header="Status" Tag="Status" Click="MobileCatalogSortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Name (A-Z)&quot;}" Tag="Name" Click="MobileCatalogSortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Name (Z-A)&quot;}" Tag="NameDesc" Click="MobileCatalogSortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Repository (A-Z)&quot;}" Tag="Repository" Click="MobileCatalogSortItem_Click"/>
+											<MenuItem Header="{loc:Translate Text=&quot;Status&quot;}" Tag="Status" Click="MobileCatalogSortItem_Click"/>
 										</MenuFlyout>
 									</Button.Flyout>
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
@@ -536,7 +536,7 @@
 									Width="28"
 									Height="28"
 									Margin="8,0,0,0"
-									ToolTip.Tip="Settings"
+									ToolTip.Tip="{loc:Translate Text=&quot;Settings&quot;}"
 									Click="SettingsButton_Click">
 								<Image Width="28" Height="28"
 									   Source="avares://QuiverLauncher/Assets/Settings.png"/>

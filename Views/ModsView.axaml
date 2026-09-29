@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services"
              xmlns:mods="clr-namespace:QuiverLauncher.Services.Mods"
              xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
              xmlns:vm="clr-namespace:QuiverLauncher.ViewModels" x:DataType="vm:ModsViewModel" x:CompileBindings="True" x:Class="QuiverLauncher.Views.ModsView">
@@ -78,19 +78,19 @@
 							<WrapPanel Orientation="Horizontal" Margin="0,4,0,0" IsVisible="{Binding HasStatsRow}">
 								<StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,10,2"
 											IsVisible="{Binding HasDownloadCount}">
-									<TextBlock Text="↓" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+									<TextBlock Text="{loc:Translate Text=&quot;↓&quot;}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
 									<TextBlock Text="{Binding DownloadCountText}" FontSize="11"
 											   Foreground="{DynamicResource ThemeTextSecondary}"/>
 								</StackPanel>
 								<StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,10,2"
 											IsVisible="{Binding HasRatingScore}">
-									<TextBlock Text="★" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+									<TextBlock Text="{loc:Translate Text=&quot;★&quot;}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
 									<TextBlock Text="{Binding RatingText}" FontSize="11"
 											   Foreground="{DynamicResource ThemeTextSecondary}"/>
 								</StackPanel>
 								<StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,2"
 											IsVisible="{Binding HasUpdatedText}">
-									<TextBlock Text="⏱" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
+									<TextBlock Text="{loc:Translate Text=&quot;⏱&quot;}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
 									<TextBlock Text="{Binding UpdatedText}" FontSize="11"
 											   Foreground="{DynamicResource ThemeTextSecondary}"
 											   TextTrimming="CharacterEllipsis"/>
@@ -106,18 +106,18 @@
 									IsVisible="{Binding CanInstall}"
 									CommandParameter="{Binding}"
 									Click="ModRowInstall_Click"/>
-							<Button Classes="options mod-update" Content="Update" FontSize="10" Padding="6,2" Margin="0,0,4,4"
+							<Button Classes="options mod-update" Content="{loc:Translate Text=&quot;Update&quot;}" FontSize="10" Padding="6,2" Margin="0,0,4,4"
 									IsVisible="{Binding CanUpdate}"
 									CommandParameter="{Binding}"
 									Click="ModRowUpdate_Click"/>
-							<Button Classes="options" Content="Uninstall" FontSize="10" Padding="6,2" Margin="0,0,4,4"
+							<Button Classes="options" Content="{loc:Translate Text=&quot;Uninstall&quot;}" FontSize="10" Padding="6,2" Margin="0,0,4,4"
 									IsVisible="{Binding CanUninstall}"
 									CommandParameter="{Binding}"
 									Click="ModRowUninstall_Click"/>
-							<Button Classes="options" Content="Details" FontSize="10" Padding="6,2" Margin="0,0,4,4"
+							<Button Classes="options" Content="{loc:Translate Text=&quot;Details&quot;}" FontSize="10" Padding="6,2" Margin="0,0,4,4"
 									CommandParameter="{Binding}"
 									Click="ModRowDetails_Click"/>
-							<Button Classes="options" Content="Open" FontSize="10" Padding="6,2" Margin="0,0,0,4"
+							<Button Classes="options" Content="{loc:Translate Text=&quot;Open&quot;}" FontSize="10" Padding="6,2" Margin="0,0,0,4"
 									CommandParameter="{Binding}"
 									Click="ModRowOpenPage_Click"/>
 						</WrapPanel>
@@ -160,22 +160,22 @@
 						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,30,8">
 							<Button x:Name="ModsRefreshButton"
 									Classes="options"
-									Content="Refresh"
+									Content="{loc:Translate Text=&quot;Refresh&quot;}"
 									FontSize="11"
 									Click="ModsRefresh_Click"/>
 							<Button x:Name="ModsUpdateAllButton"
 									Classes="options"
-									Content="Update All"
+									Content="{loc:Translate Text=&quot;Update All&quot;}"
 									FontSize="11"
 									Click="ModsUpdateAll_Click"/>
 							<Button x:Name="ModsOpenFolderButton"
 									Classes="options"
-									Content="Open Mod Folder"
+									Content="{loc:Translate Text=&quot;Open Mod Folder&quot;}"
 									FontSize="11"
 									Click="ModsOpenFolder_Click"/>
 							<Button x:Name="ModsCloseButton"
 									Classes="options"
-									Content="Back to Library"
+									Content="{loc:Translate Text=&quot;Back to Library&quot;}"
 									FontSize="11"
 									Click="ModsClose_Click"/>
 							<TextBlock x:Name="ModsStatusText" Text="{Binding Status}"
@@ -187,23 +187,23 @@
 						<StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,30,8">
 							<Button x:Name="ModsTabBrowseButton"
 									Classes="catalog-filter selected"
-									Content="Browse"
+									Content="{loc:Translate Text=&quot;Browse&quot;}"
 									Tag="Browse"
 									FontSize="11"
 									Click="ModsTabFilter_Click"/>
 							<Button x:Name="ModsTabInstalledButton"
 									Classes="catalog-filter"
-									Content="Installed"
+									Content="{loc:Translate Text=&quot;Installed&quot;}"
 									Tag="Installed"
 									FontSize="11"
 									Click="ModsTabFilter_Click"/>
 							<TextBox x:Name="ModsSearchTextBox"
-									 Watermark="Search mods"
+									 Watermark="{loc:Translate Text=&quot;Search mods&quot;}"
 									 Width="220"
 									 FontSize="12"
 									 Margin="12,0,0,0"
 									 TextChanged="ModsSearch_TextChanged"/>
-							<TextBlock Text="Sort:"
+							<TextBlock Text="{loc:Translate Text=&quot;Sort:&quot;}"
 									   FontSize="11"
 									   Foreground="{DynamicResource ThemeTextSecondary}"
 									   VerticalAlignment="Center"
@@ -215,14 +215,14 @@
 									  Background="{DynamicResource ThemeDarker}"
 									  BorderBrush="{DynamicResource ThemeBorder}"
 									  SelectionChanged="ModsSortByComboBox_SelectionChanged">
-								<ComboBoxItem Content="Installed first" Tag="InstalledFirst"/>
-								<ComboBoxItem Content="Name (A-Z)" Tag="Name"/>
-								<ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
-								<ComboBoxItem Content="Updates first" Tag="UpdatesFirst"/>
-								<ComboBoxItem Content="Top rated" Tag="TopRated"/>
-								<ComboBoxItem Content="Newest" Tag="Newest"/>
-								<ComboBoxItem Content="Last updated" Tag="LastUpdated"/>
-								<ComboBoxItem Content="Most downloaded" Tag="MostDownloaded"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Installed first&quot;}" Tag="InstalledFirst"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Name (A-Z)&quot;}" Tag="Name"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Name (Z-A)&quot;}" Tag="NameDesc"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Updates first&quot;}" Tag="UpdatesFirst"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Top rated&quot;}" Tag="TopRated"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Newest&quot;}" Tag="Newest"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Last updated&quot;}" Tag="LastUpdated"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Most downloaded&quot;}" Tag="MostDownloaded"/>
 							</ComboBox>
 						</StackPanel>
 						<WrapPanel x:Name="ModsSourceFilterPanel"
@@ -252,7 +252,7 @@
 											   Foreground="{DynamicResource ThemeTextSecondary}"/>
 								</StackPanel>
 								<TextBlock x:Name="ModsEmptyText"
-										   Text="No mods found."
+										   Text="{loc:Translate Text=&quot;No mods found.&quot;}"
 										   FontSize="12"
 										   Foreground="{DynamicResource ThemeTextSecondary}"
 

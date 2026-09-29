@@ -3,6 +3,7 @@
              xmlns:views="clr-namespace:QuiverLauncher.Views" xmlns:local="clr-namespace:QuiverLauncher"
              xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
              xmlns:services="clr-namespace:QuiverLauncher.Services"
+             xmlns:loc="clr-namespace:QuiverLauncher.Services"
              x:Class="QuiverLauncher.Views.SettingsView"
              x:DataType="vm:SettingsViewModel" x:CompileBindings="True">
 <Border x:Name="SettingsSurface"
@@ -32,7 +33,7 @@
 										<ColumnDefinition Width="Auto"/>
 									</Grid.ColumnDefinitions>
 									<TextBlock Grid.Column="0"
-											   Text="Settings"
+											   Text="{loc:Translate Text=&quot;Settings&quot;}"
 											   FontSize="20"
 											   FontWeight="Bold"
 											   Foreground="{DynamicResource ThemeText}"
@@ -42,7 +43,7 @@
 											Classes="modern-icon"
 											Width="28"
 											Height="28"
-											ToolTip.Tip="Close settings"
+											ToolTip.Tip="{loc:Translate Text=&quot;Close settings&quot;}"
 											Click="CloseSettingsPanel_Click">
 										<Image Width="28"
 											   Height="28"
@@ -122,14 +123,28 @@
 								</TabControl.Styles>
 
 								<!-- General Tab -->
-								<TabItem Header="General"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+								<TabItem Header="{loc:Translate Text=&quot;General&quot;}"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 									<StackPanel Margin="16,12,16,16" Spacing="4">
                                         <Border IsVisible="{Binding HasAndroidUpdates}" Margin="0,0,0,12">
                                             <views:AndroidLauncherUpdateView DataContext="{Binding AndroidUpdates}"/>
                                         </Border>
 
+                                        <TextBlock Text="{loc:Translate Text=&quot;Language&quot;}"
+                                                   FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource ThemeText}"/>
+                                        <ComboBox ItemsSource="{Binding Languages}"
+                                                  SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"
+                                                  DisplayMemberBinding="{Binding DisplayName}"
+                                                  HorizontalAlignment="Stretch"
+                                                  Margin="0,0,0,8"/>
+                                        <TextBlock Text="{loc:Translate Text=&quot;Choose the language used by Quiver Launcher.&quot;}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource ThemeTextSecondary}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,4"/>
+
 										<!-- Behaviour -->
-										<TextBlock Text="BEHAVIOUR"
+										<TextBlock Text="{loc:Translate Text=&quot;BEHAVIOUR&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
@@ -138,11 +153,11 @@
 
 										<StackPanel Spacing="2">
 											<CheckBox x:Name="CloseAfterLaunchCheckBox"
-													  Content="Close After Launch"
+													  Content="{loc:Translate Text=&quot;Close After Launch&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding CloseAfterLaunch, Mode=TwoWay}"/>
-											<TextBlock Text="Close the launcher automatically after starting an app"
+											<TextBlock Text="{loc:Translate Text=&quot;Close the launcher automatically after starting an app&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"/>
@@ -150,11 +165,11 @@
 
 										<StackPanel Spacing="2" Margin="0,8,0,0" IsVisible="{Binding IsDesktopPlatform}">
 											<CheckBox x:Name="CloseToTrayCheckBox"
-													  Content="Close to system tray"
+													  Content="{loc:Translate Text=&quot;Close to system tray&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding CloseToTray, Mode=TwoWay}"/>
-											<TextBlock Text="Keep Quiver Launcher running in the notification area when the window is closed"
+											<TextBlock Text="{loc:Translate Text=&quot;Keep Quiver Launcher running in the notification area when the window is closed&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -163,11 +178,11 @@
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="IgnoreArticlesWhenSortingCheckBox"
-													  Content="Ignore The/A/An when sorting by name"
+													  Content="{loc:Translate Text=&quot;Ignore The/A/An when sorting by name&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding IgnoreArticlesWhenSorting, Mode=TwoWay}"/>
-											<TextBlock Text="Alphabetical sorts skip leading The, A, and An (e.g. The Legend of Zelda under L)"
+											<TextBlock Text="{loc:Translate Text=&quot;Alphabetical sorts skip leading The, A, and An (e.g. The Legend of Zelda under L)&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -175,16 +190,16 @@
 										</StackPanel>
 
                                         <StackPanel Spacing="2" Margin="0,8,0,8" IsVisible="{Binding IsDesktopPlatform}">
-                                            <TextBlock Text="Mouse wheel scroll speed" FontSize="13" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{loc:Translate Text=&quot;Mouse wheel scroll speed&quot;}" FontSize="13" FontWeight="SemiBold"/>
                                             <ComboBox x:Name="MouseWheelScrollSpeedComboBox" HorizontalAlignment="Stretch"
                                                       SelectedIndex="{Binding MouseWheelScrollSpeedIndex, Mode=TwoWay}"
-                                                      AutomationProperties.Name="Mouse wheel scroll speed">
+                                                      AutomationProperties.Name="{loc:Translate Text=&quot;Mouse wheel scroll speed&quot;}">
                                                 <ComboBoxItem Content="1×"/>
                                                 <ComboBoxItem Content="2×"/>
                                                 <ComboBoxItem Content="3×"/>
                                                 <ComboBoxItem Content="5×"/>
                                             </ComboBox>
-                                            <TextBlock Text="Scroll amount per wheel tick in the library and app catalog."
+                                            <TextBlock Text="{loc:Translate Text=&quot;Scroll amount per wheel tick in the library and app catalog.&quot;}"
                                                        FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
                                         </StackPanel>
 
@@ -193,11 +208,11 @@
 
 										<StackPanel Spacing="2" Margin="0,0,0,0">
 											<CheckBox x:Name="AutoUpdateNewlyAddedAppsCheckBox"
-													  Content="Enable Auto Update for newly added apps"
+													  Content="{loc:Translate Text=&quot;Enable Auto Update for newly added apps&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding AutoUpdateNewlyAddedApps, Mode=TwoWay}"/>
-											<TextBlock Text="New apps from the catalog or Add Entry start with Auto Update enabled"
+											<TextBlock Text="{loc:Translate Text=&quot;New apps from the catalog or Add Entry start with Auto Update enabled&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -206,11 +221,11 @@
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="BackgroundUpdateCheckCheckBox"
-													  Content="Check for app updates in the background"
+													  Content="{loc:Translate Text=&quot;Check for app updates in the background&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding BackgroundUpdateCheckEnabled, Mode=TwoWay}"/>
-											<TextBlock Text="Scan for updates on a schedule while Quiver Launcher is running (including in the tray)"
+											<TextBlock Text="{loc:Translate Text=&quot;Scan for updates on a schedule while Quiver Launcher is running (including in the tray)&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -218,30 +233,30 @@
 										</StackPanel>
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
-											<TextBlock Text="Background check interval"
+											<TextBlock Text="{loc:Translate Text=&quot;Background check interval&quot;}"
 													   FontSize="13" FontWeight="SemiBold"
 													   Foreground="{DynamicResource ThemeText}"/>
 											<ComboBox x:Name="BackgroundUpdateIntervalComboBox"
 													  HorizontalAlignment="Stretch"
 													  Margin="0,4,0,0"
 													  SelectionChanged="BackgroundUpdateIntervalComboBox_SelectionChanged">
-												<ComboBoxItem Content="Every 15 minutes" Tag="15"/>
-												<ComboBoxItem Content="Every 30 minutes" Tag="30"/>
-												<ComboBoxItem Content="Every hour" Tag="60"/>
-												<ComboBoxItem Content="Every 3 hours" Tag="180"/>
-												<ComboBoxItem Content="Every 6 hours" Tag="360"/>
-												<ComboBoxItem Content="Every 12 hours" Tag="720"/>
-												<ComboBoxItem Content="Every day" Tag="1440"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Every 15 minutes&quot;}" Tag="15"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Every 30 minutes&quot;}" Tag="30"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Every hour&quot;}" Tag="60"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Every 3 hours&quot;}" Tag="180"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Every 6 hours&quot;}" Tag="360"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Every 12 hours&quot;}" Tag="720"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Every day&quot;}" Tag="1440"/>
 											</ComboBox>
 										</StackPanel>
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="PromptCatalogUpdatesCheckBox"
-													  Content="Prompt when catalog updates are available"
+													  Content="{loc:Translate Text=&quot;Prompt when catalog updates are available&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding PromptCatalogUpdates, Mode=TwoWay}"/>
-											<TextBlock Text="Show a popup when catalog sources have changes to review (off by default; open App Catalog anytime)"
+											<TextBlock Text="{loc:Translate Text=&quot;Show a popup when catalog sources have changes to review (off by default; open App Catalog anytime)&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -250,11 +265,11 @@
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="PromptAppUpdateReviewsCheckBox"
-													  Content="Prompt when library apps have updates"
+													  Content="{loc:Translate Text=&quot;Prompt when library apps have updates&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding PromptAppUpdateReviews, Mode=TwoWay}"/>
-											<TextBlock Text="Show app update prompts automatically. Manual update checks still show available updates, and Quiver Launcher self-update prompts still appear."
+											<TextBlock Text="{loc:Translate Text=&quot;Show app update prompts automatically. Manual update checks still show available updates, and Quiver Launcher self-update prompts still appear.&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -267,13 +282,13 @@
 											<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
 
 											<!-- Install Path -->
-											<TextBlock Text="APP INSTALL PATH"
+											<TextBlock Text="{loc:Translate Text=&quot;APP INSTALL PATH&quot;}"
 													   FontSize="10" FontWeight="Bold"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   LetterSpacing="1"
 													   Margin="0,0,0,4"/>
 
-											<TextBlock Text="Leave blank to use the default location"
+											<TextBlock Text="{loc:Translate Text=&quot;Leave blank to use the default location&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="0,0,0,4"/>
@@ -298,7 +313,7 @@
 											</Panel>
 
 											<Button Classes="options"
-													Content="Reset to Default"
+													Content="{loc:Translate Text=&quot;Reset to Default&quot;}"
 													HorizontalAlignment="Stretch"
 													Click="ClearGamePath_Click"
 													FontSize="12"/>
@@ -308,7 +323,7 @@
 										</StackPanel>
 
 										<!-- Platform & Cache -->
-										<TextBlock Text="PLATFORM &amp; CACHE"
+										<TextBlock Text="{loc:Translate Text=&quot;PLATFORM &amp;amp; CACHE&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
@@ -320,31 +335,31 @@
 												   Margin="0,0,0,4"/>
 
 										<Button Classes="options"
-												Content="Change Platform"
+												Content="{loc:Translate Text=&quot;Change Platform&quot;}"
 												HorizontalAlignment="Stretch"
 												Click="OptionsButton_Click"
 												Tag="{Binding}"
 												FontSize="12">
 											<Button.ContextMenu>
 												<ContextMenu>
-													<MenuItem Header="Automatic"   Click="PlatformAuto_Click"/>
-													<MenuItem Header="Windows"     Click="PlatformWindows_Click"/>
-													<MenuItem Header="MacOS"       Click="PlatformMacOS_Click"/>
-													<MenuItem Header="Linux X64"   Click="PlatformLinuxX64_Click"/>
-													<MenuItem Header="Linux ARM64" Click="PlatformLinuxARM64_Click"/>
-													<MenuItem Header="Android"     Click="PlatformAndroid_Click"/>
+													<MenuItem Header="{loc:Translate Text=&quot;Automatic&quot;}"   Click="PlatformAuto_Click"/>
+													<MenuItem Header="{loc:Translate Text=&quot;Windows&quot;}"     Click="PlatformWindows_Click"/>
+													<MenuItem Header="{loc:Translate Text=&quot;MacOS&quot;}"       Click="PlatformMacOS_Click"/>
+													<MenuItem Header="{loc:Translate Text=&quot;Linux X64&quot;}"   Click="PlatformLinuxX64_Click"/>
+													<MenuItem Header="{loc:Translate Text=&quot;Linux ARM64&quot;}" Click="PlatformLinuxARM64_Click"/>
+													<MenuItem Header="{loc:Translate Text=&quot;Android&quot;}"     Click="PlatformAndroid_Click"/>
 												</ContextMenu>
 											</Button.ContextMenu>
 										</Button>
 
 										<Button Classes="options"
-												Content="Clear Icon Cache"
+												Content="{loc:Translate Text=&quot;Clear Icon Cache&quot;}"
 												HorizontalAlignment="Stretch"
 												Click="ClearIconCache_Click"
 												FontSize="12"/>
 
 										<StackPanel Spacing="2" IsVisible="{Binding IsLinuxPlatform}">
-											<TextBlock Text="LINUX WINDOWS RUNNER"
+											<TextBlock Text="{loc:Translate Text=&quot;LINUX WINDOWS RUNNER&quot;}"
 													   FontSize="10" FontWeight="Bold"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   LetterSpacing="1"
@@ -356,10 +371,10 @@
 													 BorderThickness="1"
 													 Padding="12,10"
 													 CornerRadius="4"
-													 Watermark="Example: flatpak run com.usebottles.bottles -e {exe}"
+													 Watermark="{loc:Translate Text=&quot;Example: flatpak run com.usebottles.bottles -e {exe}&quot;}"
 													 Text="{Binding Settings.LinuxWindowsLaunchCommand, Mode=TwoWay}"
 													 TextChanged="LinuxWindowsLaunchCommandTextBox_TextChanged"/>
-											<TextBlock Text="Global override for Windows-only apps on Linux when an app uses Auto. Use {exe}, {gamePath}, or {exeDir}. Per-app runner/prefix is under Launch Options → Windows Runner. Leave blank to auto-detect Proton then Wine."
+											<TextBlock Text="{loc:Translate Text=&quot;Global override for Windows-only apps on Linux when an app uses Auto. Use {exe}, {gamePath}, or {exeDir}. Per-app runner/prefix is under Launch Options → Windows Runner. Leave blank to auto-detect Proton then Wine.&quot;}"
 													   FontSize="11"
 													   TextWrapping="Wrap"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
@@ -370,17 +385,17 @@
 								</ScrollViewer></TabItem>
 
 								<!-- Controls Tab -->
-								<TabItem Header="Controls" IsVisible="{Binding IsDesktopPlatform}"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+								<TabItem Header="{loc:Translate Text=&quot;Controls&quot;}" IsVisible="{Binding IsDesktopPlatform}"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 									<views:InputBindingsView x:Name="BindingsView"/>
 </ScrollViewer></TabItem>
 
 								<!-- Appearance Tab -->
-								<TabItem Header="Appearance"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+								<TabItem Header="{loc:Translate Text=&quot;Appearance&quot;}"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 									<StackPanel Margin="16,12,16,16" Spacing="4">
 
 										<StackPanel Spacing="4" IsVisible="{Binding IsDesktopPlatform}">
 											<!-- Window -->
-											<TextBlock Text="WINDOW"
+											<TextBlock Text="{loc:Translate Text=&quot;WINDOW&quot;}"
 													   FontSize="10" FontWeight="Bold"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   LetterSpacing="1"
@@ -388,11 +403,11 @@
 
 											<StackPanel Spacing="2" IsVisible="{Binding ShowStartFullscreenSetting}">
 												<CheckBox x:Name="StartFullscreenCheckBox"
-														  Content="Start in Fullscreen"
+														  Content="{loc:Translate Text=&quot;Start in Fullscreen&quot;}"
 														  Foreground="{DynamicResource ThemeText}"
 														  FontSize="13" FontWeight="SemiBold"
 														  IsChecked="{Binding StartFullscreen, Mode=TwoWay}"/>
-												<TextBlock Text="Launch the application in fullscreen mode"
+												<TextBlock Text="{loc:Translate Text=&quot;Launch the application in fullscreen mode&quot;}"
 														   FontSize="11"
 														   Foreground="{DynamicResource ThemeTextSecondary}"
 														   Margin="20,0,0,0"/>
@@ -400,21 +415,21 @@
 
 											<StackPanel Spacing="2">
 												<CheckBox x:Name="ShowOSTopBarCheckBox"
-														  Content="Show OS Top Bar"
+														  Content="{loc:Translate Text=&quot;Show OS Top Bar&quot;}"
 														  Foreground="{DynamicResource ThemeText}"
 														  FontSize="13" FontWeight="SemiBold"
 														  IsChecked="{Binding ShowOSTopBar, Mode=TwoWay}"/>
-												<TextBlock Text="Display your operating system's title bar"
+												<TextBlock Text="{loc:Translate Text=&quot;Display your operating system's title bar&quot;}"
 														   FontSize="11"
 														   Foreground="{DynamicResource ThemeTextSecondary}"
 														   Margin="20,0,0,0"/>
 											</StackPanel>
 
 											<StackPanel Spacing="4" Margin="0,8,0,0">
-												<TextBlock Text="Interface scale" FontSize="13" FontWeight="SemiBold"/>
+												<TextBlock Text="{loc:Translate Text=&quot;Interface scale&quot;}" FontSize="13" FontWeight="SemiBold"/>
 												<ComboBox x:Name="InterfaceScaleComboBox" MinWidth="120" FontSize="13"
 													HorizontalAlignment="Left" Focusable="True"
-													AutomationProperties.Name="Interface scale"
+													AutomationProperties.Name="{loc:Translate Text=&quot;Interface scale&quot;}"
 													SelectedIndex="{Binding InterfaceScaleIndex, Mode=TwoWay}">
 													<ComboBoxItem Content="50%"/>
 													<ComboBoxItem Content="75%"/>
@@ -425,7 +440,7 @@
 													<ComboBoxItem Content="200%"/>
 													<ComboBoxItem Content="225%"/>
 												</ComboBox>
-												<TextBlock Text="Adjust the size of text and controls in Quiver. Applies immediately."
+												<TextBlock Text="{loc:Translate Text=&quot;Adjust the size of text and controls in Quiver. Applies immediately.&quot;}"
 													TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
 												<TextBlock Text="{Binding InterfaceScaleNotice}" IsVisible="{Binding ShowInterfaceScaleNotice}"
 													TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"/>
@@ -435,19 +450,19 @@
 										</StackPanel>
 
 										<!-- Theme Colors -->
-										<TextBlock Text="THEME COLORS"
+										<TextBlock Text="{loc:Translate Text=&quot;THEME COLORS&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
 												   Margin="0,0,0,4"/>
 
 										<Button Classes="options"
-												Content="Primary Color"
+												Content="{loc:Translate Text=&quot;Primary Color&quot;}"
 												HorizontalAlignment="Stretch"
 												Click="ThemeColorPicker_Click"
 												FontSize="12"/>
 										<Button Classes="options"
-												Content="Secondary Color"
+												Content="{loc:Translate Text=&quot;Secondary Color&quot;}"
 												HorizontalAlignment="Stretch"
 												Click="SecondaryColorPicker_Click"
 												FontSize="12"/>
@@ -456,24 +471,24 @@
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
 
 										<!-- Background Image -->
-										<TextBlock Text="BACKGROUND IMAGE"
+										<TextBlock Text="{loc:Translate Text=&quot;BACKGROUND IMAGE&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
 												   Margin="0,0,0,4"/>
 
-										<TextBlock Text="PNG, JPG, and GIF formats supported"
+										<TextBlock Text="{loc:Translate Text=&quot;PNG, JPG, and GIF formats supported&quot;}"
 												   FontSize="11"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   Margin="0,0,0,4"/>
 
 										<Button Classes="options"
-												Content="Select Image"
+												Content="{loc:Translate Text=&quot;Select Image&quot;}"
 												HorizontalAlignment="Stretch"
 												Click="SelectBackgroundImage_Click"
 												FontSize="12"/>
 										<Button Classes="options"
-												Content="Clear Background"
+												Content="{loc:Translate Text=&quot;Clear Background&quot;}"
 												HorizontalAlignment="Stretch"
 												Click="ClearBackgroundImage_Click"
 												IsEnabled="{Binding BackgroundImagePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -481,7 +496,7 @@
 
 										<StackPanel Spacing="4" Margin="0,4,0,0">
 											<StackPanel Orientation="Horizontal" Spacing="8">
-												<TextBlock Text="Opacity:"
+												<TextBlock Text="{loc:Translate Text=&quot;Opacity:&quot;}"
 														   FontSize="12"
 														   Foreground="{DynamicResource ThemeText}"
 														   VerticalAlignment="Center"/>
@@ -502,24 +517,24 @@
 											<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
 
 											<!-- Background Music -->
-											<TextBlock Text="BACKGROUND MUSIC"
+											<TextBlock Text="{loc:Translate Text=&quot;BACKGROUND MUSIC&quot;}"
 													   FontSize="10" FontWeight="Bold"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   LetterSpacing="1"
 													   Margin="0,0,0,4"/>
 
-											<TextBlock Text="MP3, WAV, and OGG formats supported"
+											<TextBlock Text="{loc:Translate Text=&quot;MP3, WAV, and OGG formats supported&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="0,0,0,4"/>
 
 											<Button Classes="options"
-													Content="Select Music"
+													Content="{loc:Translate Text=&quot;Select Music&quot;}"
 													HorizontalAlignment="Stretch"
 													Click="SelectLauncherMusic_Click"
 													FontSize="12"/>
 											<Button Classes="options"
-													Content="Clear Music"
+													Content="{loc:Translate Text=&quot;Clear Music&quot;}"
 													HorizontalAlignment="Stretch"
 													Click="ClearLauncherMusic_Click"
 													IsEnabled="{Binding LauncherMusicPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -527,7 +542,7 @@
 
 											<StackPanel Spacing="4" Margin="0,4,0,0">
 												<StackPanel Orientation="Horizontal" Spacing="8">
-													<TextBlock Text="Volume:"
+													<TextBlock Text="{loc:Translate Text=&quot;Volume:&quot;}"
 															   FontSize="12"
 															   Foreground="{DynamicResource ThemeText}"
 															   VerticalAlignment="Center"/>
@@ -548,11 +563,11 @@
 								</ScrollViewer></TabItem>
 
 								<!-- App Cards Tab -->
-								<TabItem Header="App Cards"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+								<TabItem Header="{loc:Translate Text=&quot;App Cards&quot;}"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 									<StackPanel Margin="16,12,16,16" Spacing="4">
 
 										<!-- Layout -->
-										<TextBlock Text="LAYOUT"
+										<TextBlock Text="{loc:Translate Text=&quot;LAYOUT&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
@@ -560,11 +575,11 @@
 
 										<StackPanel Spacing="2">
 											<CheckBox x:Name="UseGridViewCheckBox"
-													  Content="Grid View"
+													  Content="{loc:Translate Text=&quot;Grid View&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding UseGridView, Mode=TwoWay}"/>
-											<TextBlock Text="Display apps in a grid instead of a list"
+											<TextBlock Text="{loc:Translate Text=&quot;Display apps in a grid instead of a list&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"/>
@@ -572,45 +587,45 @@
 
 										<StackPanel Spacing="2" Margin="0,4,0,0">
 											<CheckBox x:Name="GridCompactCardsCheckBox"
-													  Content="Details in card"
+													  Content="{loc:Translate Text=&quot;Details in card&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsEnabled="{Binding ElementName=UseGridViewCheckBox, Path=IsChecked}"
 													  IsChecked="{Binding GridCompactCards, Mode=TwoWay}"/>
-											<TextBlock Text="Keep name, status, and buttons inside each grid card"
+											<TextBlock Text="{loc:Translate Text=&quot;Keep name, status, and buttons inside each grid card&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"/>
 										</StackPanel>
 
 										<StackPanel Spacing="6" Margin="0,4,0,0">
-											<TextBlock Text="Presets"
+											<TextBlock Text="{loc:Translate Text=&quot;Presets&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"/>
 											<StackPanel Orientation="Horizontal" Spacing="8">
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_Landscape_Click"
-														ToolTip.Tip="Landscape">
+														ToolTip.Tip="{loc:Translate Text=&quot;Landscape&quot;}">
 													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_landscape.png"/>
 												</Button>
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_Square_Click"
-														ToolTip.Tip="Square">
+														ToolTip.Tip="{loc:Translate Text=&quot;Square&quot;}">
 													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_square.png"/>
 												</Button>
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_SquareAlt_Click"
-														ToolTip.Tip="Square Alt">
+														ToolTip.Tip="{loc:Translate Text=&quot;Square Alt&quot;}">
 													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_square_alt.png"/>
 												</Button>
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_Portrait_Click"
-														ToolTip.Tip="Portrait">
+														ToolTip.Tip="{loc:Translate Text=&quot;Portrait&quot;}">
 													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_portrait.png"/>
 												</Button>
 												<Button Classes="modern-icon" Width="52" Height="52"
 														Click="LayoutPreset_List_Click"
-														ToolTip.Tip="List">
+														ToolTip.Tip="{loc:Translate Text=&quot;List&quot;}">
 													<Image Width="52" Height="52" Source="avares://QuiverLauncher/Assets/Icons/preset_list.png"/>
 												</Button>
 											</StackPanel>
@@ -620,14 +635,14 @@
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
 
 										<!-- Card Content -->
-										<TextBlock Text="CARD CONTENT"
+										<TextBlock Text="{loc:Translate Text=&quot;CARD CONTENT&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
 												   Margin="0,0,0,4"/>
 
 										<StackPanel Spacing="2" Margin="0,0,0,0">
-											<TextBlock Text="Library name style"
+											<TextBlock Text="{loc:Translate Text=&quot;Library name style&quot;}"
 													   FontSize="13"
 													   FontWeight="SemiBold"
 													   Foreground="{DynamicResource ThemeText}"/>
@@ -640,12 +655,12 @@
 													  Padding="8"
 													  Margin="0,4,0,0"
 													  SelectionChanged="LibraryNameStyleComboBox_SelectionChanged">
-												<ComboBoxItem Content="Name only" Tag="NameOnly"/>
-												<ComboBoxItem Content="Name + project below" Tag="NameAndProject"/>
-												<ComboBoxItem Content="Name (project) in title" Tag="NameAndProjectInTitle"/>
-												<ComboBoxItem Content="Project only" Tag="ProjectOnly"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Name only&quot;}" Tag="NameOnly"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Name + project below&quot;}" Tag="NameAndProject"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Name (project) in title&quot;}" Tag="NameAndProjectInTitle"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;Project only&quot;}" Tag="ProjectOnly"/>
 											</ComboBox>
-											<TextBlock Text="How names and projects appear in the Library. “Below” shows the project name under the title. Custom display names always win when set."
+											<TextBlock Text="{loc:Translate Text=&quot;How names and projects appear in the Library. “Below” shows the project name under the title. Custom display names always win when set.&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   TextWrapping="Wrap"/>
@@ -653,11 +668,11 @@
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="TruncateLibraryCardTitlesCheckBox"
-													  Content="Truncate name, project, and versions on library cards"
+													  Content="{loc:Translate Text=&quot;Truncate name, project, and versions on library cards&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding TruncateLibraryCardTitles, Mode=TwoWay}"/>
-											<TextBlock Text="Idle cards show an ellipsis. Hover or gamepad/keyboard focus slides the full name, project, and version text."
+											<TextBlock Text="{loc:Translate Text=&quot;Idle cards show an ellipsis. Hover or gamepad/keyboard focus slides the full name, project, and version text.&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -665,7 +680,7 @@
 										</StackPanel>
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
-											<TextBlock Text="Tag lines on library cards"
+											<TextBlock Text="{loc:Translate Text=&quot;Tag lines on library cards&quot;}"
 													   FontSize="13"
 													   FontWeight="SemiBold"
 													   Foreground="{DynamicResource ThemeText}"/>
@@ -678,14 +693,14 @@
 													  Padding="8"
 													  Margin="0,4,0,0"
 													  SelectionChanged="LibraryCardTagMaxLinesComboBox_SelectionChanged">
-												<ComboBoxItem Content="0 lines" Tag="0"/>
-												<ComboBoxItem Content="1 line" Tag="1"/>
-												<ComboBoxItem Content="2 lines" Tag="2"/>
-												<ComboBoxItem Content="3 lines" Tag="3"/>
-												<ComboBoxItem Content="4 lines" Tag="4"/>
-												<ComboBoxItem Content="No limit" Tag="99"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;0 lines&quot;}" Tag="0"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;1 line&quot;}" Tag="1"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;2 lines&quot;}" Tag="2"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;3 lines&quot;}" Tag="3"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;4 lines&quot;}" Tag="4"/>
+												<ComboBoxItem Content="{loc:Translate Text=&quot;No limit&quot;}" Tag="99"/>
 											</ComboBox>
-											<TextBlock Text="How many wrapped lines of tags each library card can show. 0 hides tags on cards; filters still work."
+											<TextBlock Text="{loc:Translate Text=&quot;How many wrapped lines of tags each library card can show. 0 hides tags on cards; filters still work.&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   TextWrapping="Wrap"/>
@@ -693,11 +708,11 @@
 
 										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="ShowLibraryAppUpdateBadgesCheckBox"
-													  Content="Show catalog update badges on library cards"
+													  Content="{loc:Translate Text=&quot;Show catalog update badges on library cards&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding ShowLibraryAppUpdateBadges, Mode=TwoWay}"/>
-											<TextBlock Text="Small badge when catalog metadata for an app has changes to review (app version updates use the orange update button)"
+											<TextBlock Text="{loc:Translate Text=&quot;Small badge when catalog metadata for an app has changes to review (app version updates use the orange update button)&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -716,7 +731,7 @@
 
 										<StackPanel Spacing="4">
 											<StackPanel Orientation="Horizontal" Spacing="8">
-												<TextBlock Text="Size:"
+												<TextBlock Text="{loc:Translate Text=&quot;Size:&quot;}"
 														   FontSize="12"
 														   Foreground="{DynamicResource ThemeText}"
 														   VerticalAlignment="Center"/>
@@ -736,7 +751,7 @@
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
 
 										<!-- Action Buttons -->
-										<TextBlock Text="ACTION BUTTONS"
+										<TextBlock Text="{loc:Translate Text=&quot;ACTION BUTTONS&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
@@ -744,7 +759,7 @@
 
 										<StackPanel Spacing="4">
 											<StackPanel Orientation="Horizontal" Spacing="8">
-												<TextBlock Text="Size:"
+												<TextBlock Text="{loc:Translate Text=&quot;Size:&quot;}"
 														   FontSize="12"
 														   Foreground="{DynamicResource ThemeText}"
 														   VerticalAlignment="Center"/>
@@ -757,7 +772,7 @@
 													TickFrequency="4"
 													IsSnapToTickEnabled="True"
 													Value="{Binding ActionButtonSize, Mode=TwoWay}"/>
-											<TextBlock Text="Size of Play, Download, and Update buttons"
+											<TextBlock Text="{loc:Translate Text=&quot;Size of Play, Download, and Update buttons&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"/>
 										</StackPanel>
@@ -766,7 +781,7 @@
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
 
 										<!-- App Images -->
-										<TextBlock Text="GAME IMAGES"
+										<TextBlock Text="{loc:Translate Text=&quot;GAME IMAGES&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
@@ -775,7 +790,7 @@
 										<!-- Size -->
 										<StackPanel Spacing="4">
 											<StackPanel Orientation="Horizontal" Spacing="8">
-												<TextBlock Text="Size:"
+												<TextBlock Text="{loc:Translate Text=&quot;Size:&quot;}"
 														   FontSize="12"
 														   Foreground="{DynamicResource ThemeText}"
 														   VerticalAlignment="Center"/>
@@ -793,7 +808,7 @@
 										<!-- Custom Image Fill -->
 										<StackPanel Spacing="2">
 											<CheckBox x:Name="IconFillCheckBox"
-													  Content="Fill Cards"
+													  Content="{loc:Translate Text=&quot;Fill Cards&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding IconFill, Mode=TwoWay}"/>
@@ -806,7 +821,7 @@
 										<!-- Image Opacity -->
 										<StackPanel Spacing="4">
 											<StackPanel Orientation="Horizontal" Spacing="8">
-												<TextBlock Text="Card Image Opacity:"
+												<TextBlock Text="{loc:Translate Text=&quot;Card Image Opacity:&quot;}"
 														   FontSize="12"
 														   Foreground="{DynamicResource ThemeText}"
 														   VerticalAlignment="Center"/>
@@ -819,7 +834,7 @@
 													TickFrequency="0.1"
 													IsSnapToTickEnabled="True"
 													Value="{Binding IconOpacity, Mode=TwoWay}"/>
-											<TextBlock Text="Control image transparency"
+											<TextBlock Text="{loc:Translate Text=&quot;Control image transparency&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"/>
 										</StackPanel>
@@ -827,7 +842,7 @@
 										<!-- Left Padding -->
 										<StackPanel Spacing="4" IsVisible="{Binding UseGridView}">
 											<StackPanel Orientation="Horizontal" Spacing="8">
-												<TextBlock Text="Left Padding:"
+												<TextBlock Text="{loc:Translate Text=&quot;Left Padding:&quot;}"
 														   FontSize="12"
 														   Foreground="{DynamicResource ThemeText}"
 														   VerticalAlignment="Center"/>
@@ -846,7 +861,7 @@
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>
 
 										<!-- Text -->
-										<TextBlock Text="TEXT" IsVisible="{Binding UseGridView}"
+										<TextBlock Text="{loc:Translate Text=&quot;TEXT&quot;}" IsVisible="{Binding UseGridView}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
@@ -854,7 +869,7 @@
 
 										<StackPanel Spacing="4" IsVisible="{Binding UseGridView}">
 											<StackPanel Orientation="Horizontal" Spacing="8">
-												<TextBlock Text="Text Padding:"
+												<TextBlock Text="{loc:Translate Text=&quot;Text Padding:&quot;}"
 														   FontSize="12"
 														   Foreground="{DynamicResource ThemeText}"
 														   VerticalAlignment="Center"/>
@@ -867,7 +882,7 @@
 													TickFrequency="8"
 													IsSnapToTickEnabled="True"
 													Value="{Binding SlotTextMargin, Mode=TwoWay}"/>
-											<TextBlock Text="Adjust the left spacing of text labels"
+											<TextBlock Text="{loc:Translate Text=&quot;Adjust the left spacing of text labels&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"/>
 										</StackPanel>
@@ -876,17 +891,17 @@
 								</ScrollViewer></TabItem>
 
 								<!-- Advanced Tab -->
-								<TabItem Header="Advanced"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+								<TabItem Header="{loc:Translate Text=&quot;Advanced&quot;}"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 									<StackPanel Margin="16,12,16,16" Spacing="4">
 
 										<!-- GitHub API Token -->
-										<TextBlock Text="GITHUB API TOKEN"
+										<TextBlock Text="{loc:Translate Text=&quot;GITHUB API TOKEN&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
 												   Margin="0,0,0,4"/>
 
-										<TextBlock Text="Increases API rate limits for faster and more reliable downloads"
+										<TextBlock Text="{loc:Translate Text=&quot;Increases API rate limits for faster and more reliable downloads&quot;}"
 												   FontSize="11"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   TextWrapping="Wrap"
@@ -901,19 +916,19 @@
 												 CornerRadius="4"
 												 TextChanged="GitHubTokenTextBox_TextChanged"
 												 PasswordChar="●"/>
-<Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button x:Name="SaveGitHubTokenButton" Grid.Column="0" Classes="options" Content="Save token" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveGitHubToken_Click" FontSize="12"/><Button  Grid.Column="1" Classes="options" Content="Clear token" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearGitHubToken_Click" FontSize="12"/></Grid>
-<TextBlock Text="Save to apply your token and resume waiting checks." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,2,0,8"/>
-<Grid ColumnDefinitions="*,*" ColumnSpacing="8"><Button  Grid.Column="0" Classes="options" Content="Create token" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="CreateGitHubToken_Click" FontSize="12"/><Button x:Name="GitHubTokenHelpButton" Grid.Column="1" Classes="options" Content="Setup guide" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="GitHubTokenHelp_Click" FontSize="12"/></Grid><StackPanel x:Name="GitHubTokenHelpText" IsVisible="False" Spacing="6" Margin="0,8,0,8"><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.Introduction}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.CreateStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.ExpirationStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.PermissionsStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.GenerateStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.SaveStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.Privacy}"/></StackPanel>
+<Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button x:Name="SaveGitHubTokenButton" Grid.Column="0" Classes="options" Content="{loc:Translate Text=&quot;Save token&quot;}" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveGitHubToken_Click" FontSize="12"/><Button  Grid.Column="1" Classes="options" Content="{loc:Translate Text=&quot;Clear token&quot;}" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearGitHubToken_Click" FontSize="12"/></Grid>
+<TextBlock Text="{loc:Translate Text=&quot;Save to apply your token and resume waiting checks.&quot;}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,2,0,8"/>
+<Grid ColumnDefinitions="*,*" ColumnSpacing="8"><Button  Grid.Column="0" Classes="options" Content="{loc:Translate Text=&quot;Create token&quot;}" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="CreateGitHubToken_Click" FontSize="12"/><Button x:Name="GitHubTokenHelpButton" Grid.Column="1" Classes="options" Content="{loc:Translate Text=&quot;Setup guide&quot;}" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="GitHubTokenHelp_Click" FontSize="12"/></Grid><StackPanel x:Name="GitHubTokenHelpText" IsVisible="False" Spacing="6" Margin="0,8,0,8"><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.Introduction}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.CreateStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.ExpirationStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.PermissionsStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.GenerateStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.SaveStep}"/><TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Text="{x:Static services:GitHubTokenSetupGuide.Privacy}"/></StackPanel>
 <Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,12,0,8"/>
 
 										<!-- GitLab API Token -->
-										<TextBlock Text="GITLAB API TOKEN"
+										<TextBlock Text="{loc:Translate Text=&quot;GITLAB API TOKEN&quot;}"
 												   FontSize="10" FontWeight="Bold"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
 												   Margin="0,0,0,4"/>
 
-										<TextBlock Text="Optional. Raises GitLab API rate limits and allows private gitlab.com projects"
+										<TextBlock Text="{loc:Translate Text=&quot;Optional. Raises GitLab API rate limits and allows private gitlab.com projects&quot;}"
 												   FontSize="11"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   TextWrapping="Wrap"
@@ -928,18 +943,18 @@
 												 CornerRadius="4"
 												 TextChanged="GitLabTokenTextBox_TextChanged"
 												 PasswordChar="●"/>
-<Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button x:Name="SaveGitLabTokenButton" Grid.Column="0" Classes="options" Content="Save token" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveGitLabToken_Click" FontSize="12"/><Button  Grid.Column="1" Classes="options" Content="Clear token" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearGitLabToken_Click" FontSize="12"/></Grid>
-<TextBlock Text="Save to apply your token and resume waiting checks." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,2,0,8"/>
-<Button  Grid.Column="0" Classes="options" Content="Create token" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="CreateGitLabToken_Click" FontSize="12"/><TextBlock Text="Choose the read_api scope for release access." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,4,0,0"/>
+<Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button x:Name="SaveGitLabTokenButton" Grid.Column="0" Classes="options" Content="{loc:Translate Text=&quot;Save token&quot;}" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveGitLabToken_Click" FontSize="12"/><Button  Grid.Column="1" Classes="options" Content="{loc:Translate Text=&quot;Clear token&quot;}" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearGitLabToken_Click" FontSize="12"/></Grid>
+<TextBlock Text="{loc:Translate Text=&quot;Save to apply your token and resume waiting checks.&quot;}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,2,0,8"/>
+<Button  Grid.Column="0" Classes="options" Content="{loc:Translate Text=&quot;Create token&quot;}" MinHeight="32" Padding="10,4" HorizontalAlignment="Stretch" Click="CreateGitLabToken_Click" FontSize="12"/><TextBlock Text="{loc:Translate Text=&quot;Choose the read_api scope for release access.&quot;}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,4,0,0"/>
 <Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,12,0,8"/>
 
 										<StackPanel Spacing="2">
 											<CheckBox x:Name="AllowPrereleaseLauncherUpdatesCheckBox"
-													  Content="Include preview updates"
+													  Content="{loc:Translate Text=&quot;Include preview updates&quot;}"
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding AllowPrereleaseLauncherUpdates, Mode=TwoWay}"/>
-											<TextBlock Text="Get early Quiver Launcher releases. Preview versions may be unstable."
+											<TextBlock Text="{loc:Translate Text=&quot;Get early Quiver Launcher releases. Preview versions may be unstable.&quot;}"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"

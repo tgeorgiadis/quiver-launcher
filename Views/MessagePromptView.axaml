@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.MessagePromptView" x:DataType="vm:MessagePromptViewModel" x:CompileBindings="True" IsVisible="{Binding IsOpen}">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.MessagePromptView" x:DataType="vm:MessagePromptViewModel" x:CompileBindings="True" IsVisible="{Binding IsOpen}">
 <Grid x:Name="Surface"
 
 			  >
@@ -32,23 +32,23 @@
 								HorizontalAlignment="Right">
 						<Button x:Name="MessagePromptYesButton" IsVisible="{Binding IsQuestion}"
 								Classes="options message-prompt"
-								Content="Yes"
+								Content="{loc:Translate Text=&quot;Yes&quot;}"
 								MinWidth="100"
 								Click="MessagePromptYesButton_Click"/>
 						<Button x:Name="MessagePromptNoButton" IsVisible="{Binding IsQuestion}"
 								Classes="options message-prompt"
-								Content="No"
+								Content="{loc:Translate Text=&quot;No&quot;}"
 								MinWidth="100"
 								Click="MessagePromptNoButton_Click"/>
 						<Button x:Name="MessagePromptCancelButton" IsVisible="{Binding IncludeCancel}"
 								Classes="options message-prompt"
-								Content="Cancel"
+								Content="{loc:Translate Text=&quot;Cancel&quot;}"
 								MinWidth="100"
 
 								Click="MessagePromptCancelButton_Click"/>
 						<Button x:Name="MessagePromptOkButton" IsVisible="{Binding !IsQuestion}"
 								Classes="options message-prompt"
-								Content="OK"
+								Content="{loc:Translate Text=&quot;OK&quot;}"
 								MinWidth="100"
 								Click="MessagePromptOkButton_Click"/>
 					</StackPanel>

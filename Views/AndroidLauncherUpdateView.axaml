@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services"
              xmlns:services="clr-namespace:QuiverLauncher.Services"
              x:Class="QuiverLauncher.Views.AndroidLauncherUpdateView"
              x:Name="UpdateRoot" x:DataType="services:AndroidLauncherUpdater" x:CompileBindings="True">
@@ -16,7 +16,7 @@
   <Border Padding="12,8" Background="{DynamicResource ThemeBase}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1">
     <StackPanel Spacing="6">
       <StackPanel Spacing="4" IsVisible="{Binding !IsBanner, ElementName=UpdateRoot}">
-        <TextBlock Text="Quiver updates" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"/>
+        <TextBlock Text="{loc:Translate Text=&quot;Quiver updates&quot;}" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"/>
         <TextBlock Text="{Binding InstalledText}" TextWrapping="Wrap" Foreground="{DynamicResource ThemeTextSecondary}"/>
         <TextBlock Text="{Binding LastCheckedText}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
       </StackPanel>
@@ -27,16 +27,16 @@
       <StackPanel Spacing="8" Margin="0,2,0,0">
         <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasUpdate}">
           <Button x:Name="UpdateButton" Classes="options catalog-review-pending" Content="{Binding ActionText}" IsEnabled="{Binding CanUpdate}" Click="Update_Click"/>
-          <Button Grid.Column="1" Classes="options" Content="Dismiss" IsVisible="{Binding IsBanner, ElementName=UpdateRoot}" Click="Dismiss_Click" Margin="8,0,0,0"/>
+          <Button Grid.Column="1" Classes="options" Content="{loc:Translate Text=&quot;Dismiss&quot;}" IsVisible="{Binding IsBanner, ElementName=UpdateRoot}" Click="Dismiss_Click" Margin="8,0,0,0"/>
         </Grid>
-        <Button Classes="options" Content="Cancel download" IsVisible="{Binding IsDownloading}" Click="Cancel_Click"/>
-        <Button Classes="options" Content="Retry" IsVisible="{Binding HasError}" IsEnabled="{Binding CanCheck}" Click="Retry_Click"/>
+        <Button Classes="options" Content="{loc:Translate Text=&quot;Cancel download&quot;}" IsVisible="{Binding IsDownloading}" Click="Cancel_Click"/>
+        <Button Classes="options" Content="{loc:Translate Text=&quot;Retry&quot;}" IsVisible="{Binding HasError}" IsEnabled="{Binding CanCheck}" Click="Retry_Click"/>
         <UniformGrid Rows="1" Margin="-4,0" IsVisible="{Binding !IsBanner, ElementName=UpdateRoot}">
           <Button Classes="options" IsEnabled="{Binding CanCheck}" Click="Check_Click" Margin="4,0">
-            <TextBlock Text="Check for updates" TextWrapping="Wrap" TextAlignment="Center"/>
+            <TextBlock Text="{loc:Translate Text=&quot;Check for updates&quot;}" TextWrapping="Wrap" TextAlignment="Center"/>
           </Button>
           <Button Classes="options" IsVisible="{Binding HasNotes}" Click="Notes_Click" Margin="4,0">
-            <TextBlock Text="Release notes" TextWrapping="Wrap" TextAlignment="Center"/>
+            <TextBlock Text="{loc:Translate Text=&quot;Release notes&quot;}" TextWrapping="Wrap" TextAlignment="Center"/>
           </Button>
         </UniformGrid>
       </StackPanel>

@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services"
              xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
              x:Class="QuiverLauncher.Views.DocumentView"
              x:DataType="vm:DocumentViewModel" x:CompileBindings="True">
@@ -25,7 +25,7 @@
 								<Button x:Name="CloseChangelogButton"
 										Grid.Column="1"
 										Classes="options"
-										Content="Close"
+										Content="{loc:Translate Text=&quot;Close&quot;}"
 										Width="100"
 										Click="CloseChangelog_Click"/>
 							</Grid>

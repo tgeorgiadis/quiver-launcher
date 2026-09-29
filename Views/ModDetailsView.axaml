@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services"
              xmlns:vm="using:QuiverLauncher.ViewModels" x:DataType="vm:ModDetailsViewModel" x:CompileBindings="True" x:Class="QuiverLauncher.Views.ModDetailsView">
 <Border
 						XYFocus.NavigationModes="Gamepad,Remote"
@@ -30,11 +30,11 @@
 								<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
 									<Button x:Name="ModDetailsOpenPageButton"
 											Classes="options"
-											Content="Open Page" IsVisible="{Binding HasPage}"
+											Content="{loc:Translate Text=&quot;Open Page&quot;}" IsVisible="{Binding HasPage}"
 											Click="ModDetailsOpenPage_Click"/>
 									<Button x:Name="CloseModDetailsButton"
 											Classes="options"
-											Content="Close"
+											Content="{loc:Translate Text=&quot;Close&quot;}"
 											Width="100"
 											Click="CloseModDetails_Click"/>
 								</StackPanel>
@@ -43,13 +43,13 @@
 						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="40,16,40,0">
 							<Button x:Name="ModDetailsTabDetailsButton"
 									Classes="catalog-filter selected"
-									Content="Details"
+									Content="{loc:Translate Text=&quot;Details&quot;}"
 									Tag="Details"
 									FontSize="11"
 									Click="ModDetailsTab_Click"/>
 							<Button x:Name="ModDetailsTabChangelogButton"
 									Classes="catalog-filter"
-									Content="Changelog"
+									Content="{loc:Translate Text=&quot;Changelog&quot;}"
 									Tag="Changelog"
 									FontSize="11"
 									Click="ModDetailsTab_Click"/>

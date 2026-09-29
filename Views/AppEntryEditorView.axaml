@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services"
              xmlns:vm="clr-namespace:QuiverLauncher.ViewModels"
              x:Class="QuiverLauncher.Views.AppEntryEditorView" x:DataType="vm:AppEntryEditorViewModel" x:CompileBindings="True">
 <Border x:Name="Surface"
@@ -44,7 +44,7 @@
 											HorizontalAlignment="Right">
 									<Button x:Name="CancelButton"
 											Classes="options"
-											Content="Cancel"
+											Content="{loc:Translate Text=&quot;Cancel&quot;}"
 											Width="100"
 											Click="CancelForm_Click"/>
 									<Button x:Name="CreateEditButton"
@@ -59,7 +59,7 @@
 										  VerticalScrollBarVisibility="Auto"
 										  HorizontalScrollBarVisibility="Disabled">
 								<StackPanel Spacing="12" Margin="0,0,16,0">
-									<TextBlock Text="Name"
+									<TextBlock Text="{loc:Translate Text=&quot;Name&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
@@ -71,12 +71,12 @@
 											 CornerRadius="4"
 											 Padding="8"/>
 
-									<TextBlock Text="Project"
+									<TextBlock Text="{loc:Translate Text=&quot;Project&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
 									<TextBox x:Name="NewGameProjectTextBox" Text="{Binding Project, Mode=TwoWay}"
-											 Watermark="Team / project / author (optional)"
+											 Watermark="{loc:Translate Text=&quot;Team / project / author (optional)&quot;}"
 											 Foreground="{DynamicResource ThemeText}"
 											 Background="{DynamicResource ThemeBase}"
 											 BorderBrush="{DynamicResource ThemeBorder}"
@@ -84,12 +84,12 @@
 											 CornerRadius="4"
 											 Padding="8"/>
 
-									<TextBlock Text="Custom Name"
+									<TextBlock Text="{loc:Translate Text=&quot;Custom Name&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
 									<TextBox x:Name="NewGameCustomDisplayNameTextBox" Text="{Binding CustomDisplayName, Mode=TwoWay}"
-											 Watermark="Overrides library name style when set"
+											 Watermark="{loc:Translate Text=&quot;Overrides library name style when set&quot;}"
 											 Foreground="{DynamicResource ThemeText}"
 											 Background="{DynamicResource ThemeBase}"
 											 BorderBrush="{DynamicResource ThemeBorder}"
@@ -98,13 +98,13 @@
 											 Padding="8"/>
 
 									<CheckBox x:Name="NewGameManuallyManagedCheckBox"
-											  Content="Manually managed (no repository or updates)"
+											  Content="{loc:Translate Text=&quot;Manually managed (no repository or updates)&quot;}"
 											  Foreground="{DynamicResource ThemeText}"
 											  VerticalAlignment="Center"
 											  IsChecked="{Binding ManuallyManaged, Mode=TwoWay}"/>
 
 									<TextBlock x:Name="NewGameRepositorySourceLabel" IsVisible="{Binding ShowRepository}"
-											   Text="Repository Source"
+											   Text="{loc:Translate Text=&quot;Repository Source&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
@@ -117,12 +117,12 @@
 											  Padding="8"
 											  HorizontalAlignment="Stretch"
 											  SelectedIndex="0">
-										<ComboBoxItem Content="GitHub" Tag="github"/>
-										<ComboBoxItem Content="GitLab" Tag="gitlab"/>
+										<ComboBoxItem Content="{loc:Translate Text=&quot;GitHub&quot;}" Tag="github"/>
+										<ComboBoxItem Content="{loc:Translate Text=&quot;GitLab&quot;}" Tag="gitlab"/>
 									</ComboBox>
 
 									<TextBlock x:Name="NewGameRepositoryLabel" IsVisible="{Binding ShowRepository}"
-											   Text="Repository"
+											   Text="{loc:Translate Text=&quot;Repository&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
@@ -135,12 +135,12 @@
 											 Padding="8"/>
 
 									<TextBlock x:Name="NewGameReleaseAssetFilterLabel" IsVisible="{Binding ShowRepository}"
-											   Text="Release asset filter"
+											   Text="{loc:Translate Text=&quot;Release asset filter&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
 									<TextBox x:Name="NewGameReleaseAssetFilterTextBox" IsVisible="{Binding ShowRepository}" Text="{Binding ReleaseAssetFilter, Mode=TwoWay}"
-											 Watermark="If this repo ships more than one game, text that appears only in this game’s filenames (e.g. EXIT1)"
+											 Watermark="{loc:Translate Text=&quot;If this repo ships more than one game, text that appears only in this game’s filenames (e.g. EXIT1)&quot;}"
 											 Foreground="{DynamicResource ThemeText}"
 											 Background="{DynamicResource ThemeBase}"
 											 BorderBrush="{DynamicResource ThemeBorder}"
@@ -148,7 +148,7 @@
 											 CornerRadius="4"
 											 Padding="8"/>
 
-									<TextBlock Text="Folder Name"
+									<TextBlock Text="{loc:Translate Text=&quot;Folder Name&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
@@ -160,12 +160,12 @@
 											 CornerRadius="4"
 											 Padding="8"/>
 
-									<TextBlock Text="Tags"
+									<TextBlock Text="{loc:Translate Text=&quot;Tags&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
 									<TextBox x:Name="NewGameTagsTextBox" Text="{Binding Tags, Mode=TwoWay}"
-											 Watermark="e.g. n64, recomp"
+											 Watermark="{loc:Translate Text=&quot;e.g. n64, recomp&quot;}"
 											 Foreground="{DynamicResource ThemeText}"
 											 Background="{DynamicResource ThemeBase}"
 											 BorderBrush="{DynamicResource ThemeBorder}"
@@ -176,7 +176,7 @@
 											 TextWrapping="Wrap"
 											 MinHeight="56"/>
 
-									<TextBlock Text="Icon URL"
+									<TextBlock Text="{loc:Translate Text=&quot;Icon URL&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
@@ -188,12 +188,12 @@
 											 CornerRadius="4"
 											 Padding="8"/>
 
-									<TextBlock Text="Files To Add"
+									<TextBlock Text="{loc:Translate Text=&quot;Files To Add&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
 									<TextBox x:Name="NewGameFilesToAddTextBox" Text="{Binding FilesToAdd, Mode=TwoWay}"
-											 Watermark="e.g. portable.txt"
+											 Watermark="{loc:Translate Text=&quot;e.g. portable.txt&quot;}"
 											 Foreground="{DynamicResource ThemeText}"
 											 Background="{DynamicResource ThemeBase}"
 											 BorderBrush="{DynamicResource ThemeBorder}"
@@ -201,12 +201,12 @@
 											 CornerRadius="4"
 											 Padding="8"/>
 
-									<TextBlock Text="Mods Path"
+									<TextBlock Text="{loc:Translate Text=&quot;Mods Path&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
 									<TextBox x:Name="NewGameModsPathTextBox" Text="{Binding ModsPath, Mode=TwoWay}"
-											 Watermark="e.g. mods"
+											 Watermark="{loc:Translate Text=&quot;e.g. mods&quot;}"
 											 Foreground="{DynamicResource ThemeText}"
 											 Background="{DynamicResource ThemeBase}"
 											 BorderBrush="{DynamicResource ThemeBorder}"
@@ -215,16 +215,16 @@
 											 Padding="8"/>
 
 									<CheckBox x:Name="NewGameModsFolderPerModCheckBox" IsChecked="{Binding ModsFolderPerMod, Mode=TwoWay}"
-											  Content="Install each mod into its own folder"
+											  Content="{loc:Translate Text=&quot;Install each mod into its own folder&quot;}"
 											  Foreground="{DynamicResource ThemeText}"
 											  VerticalAlignment="Center"/>
 
-									<TextBlock Text="Mod Sources"
+									<TextBlock Text="{loc:Translate Text=&quot;Mod Sources&quot;}"
 											   FontSize="13"
 											   FontWeight="SemiBold"
 											   Foreground="{DynamicResource ThemeText}"/>
 									<TextBox x:Name="NewGameModsSourcesTextBox" Text="{Binding ModsSources, Mode=TwoWay}"
-											 Watermark="Thunderstore URL/slug or GameBanana mods/games/{id} (one per line)"
+											 Watermark="{loc:Translate Text=&quot;Thunderstore URL/slug or GameBanana mods/games/{id} (one per line)&quot;}"
 											 Foreground="{DynamicResource ThemeText}"
 											 Background="{DynamicResource ThemeBase}"
 											 BorderBrush="{DynamicResource ThemeBorder}"

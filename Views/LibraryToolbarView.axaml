@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.LibraryToolbarView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.LibraryToolbarView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
 <Grid x:Name="Surface" ColumnSpacing="12">
     <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*" MaxWidth="220"/>
@@ -7,7 +7,7 @@
     </Grid.ColumnDefinitions>
 							<Grid x:Name="LibrarySearchHost" MaxWidth="220" MinWidth="120" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 							<TextBox x:Name="LibrarySearchTextBox"
-									 Watermark="Search this list"
+									 Watermark="{loc:Translate Text=&quot;Search this list&quot;}"
 									 MinHeight="32"
 									 FontSize="12"
 									 Padding="8,0,28,0"
@@ -26,13 +26,13 @@
 									VerticalAlignment="Center"
 									Margin="0,0,4,0"
 									IsVisible="False"
-									ToolTip.Tip="Clear search"
+									ToolTip.Tip="{loc:Translate Text=&quot;Clear search&quot;}"
 									Click="LibrarySearchClear_Click"/>
 							</Grid>
 							<Button x:Name="AddNewEntryButton" Grid.Column="1"
 									Classes="options"
-									Content="+ Add"
-									ToolTip.Tip="Add New Entry"
+									Content="{loc:Translate Text=&quot;+ Add&quot;}"
+									ToolTip.Tip="{loc:Translate Text=&quot;Add New Entry&quot;}"
 									FontSize="14"
 									FontWeight="Normal"
 									Foreground="{DynamicResource ThemeText}"
@@ -52,11 +52,11 @@
 									  VerticalAlignment="Center"
 									  Margin="0"
 									  SelectionChanged="SortByComboBox_SelectionChanged">
-								<ComboBoxItem Content="Name (A-Z)" Tag="Name"/>
-								<ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
-								<ComboBoxItem Content="Installed First" Tag="Installed"/>
-								<ComboBoxItem Content="Not Installed First" Tag="NotInstalled"/>
-								<ComboBoxItem Content="Last Played" Tag="LastPlayed"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Name (A-Z)&quot;}" Tag="Name"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Name (Z-A)&quot;}" Tag="NameDesc"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Installed First&quot;}" Tag="Installed"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Not Installed First&quot;}" Tag="NotInstalled"/>
+								<ComboBoxItem Content="{loc:Translate Text=&quot;Last Played&quot;}" Tag="LastPlayed"/>
 							</ComboBox>
 							</Grid>
 </UserControl>
