@@ -71,4 +71,21 @@ public class MarkdownRendererTests
         run.Text.Should().Be("Read more");
         run.TextDecorations.Should().Contain(TextDecorations.Underline.Single());
     }
+
+    [AvaloniaFact]
+    public void Rendered_text_uses_the_current_theme_colors()
+    {
+        var resources = new ResourceDictionary
+        {
+            ["ThemeText"] = new SolidColorBrush(Colors.Black),
+            ["ThemeTextSecondary"] = new SolidColorBrush(Colors.DarkSlateGray),
+        };
+        var renderer = new MarkdownRenderer(_ => { }, () => resources);
+
+        var paragraph = (SelectableTextBlock)renderer.Render("Body **bold**").Single();
+        var runs = paragraph.Inlines!.OfType<Run>().ToArray();
+
+        ((SolidColorBrush)runs[0].Foreground!).Color.Should().Be(Colors.DarkSlateGray);
+        ((SolidColorBrush)runs[1].Foreground!).Color.Should().Be(Colors.Black);
+    }
 }

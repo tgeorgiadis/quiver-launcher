@@ -451,6 +451,21 @@
 												HorizontalAlignment="Stretch"
 												Click="SecondaryColorPicker_Click"
 												FontSize="12"/>
+										<TextBlock Text="Text color"
+												   FontSize="12"
+												   Foreground="{DynamicResource ThemeText}"
+												   Margin="0,4,0,0"/>
+										<ComboBox x:Name="ThemeTextModeComboBox"
+												  HorizontalAlignment="Stretch"
+												  SelectedIndex="{Binding ThemeTextModeIndex, Mode=TwoWay}">
+												<ComboBoxItem Content="Automatic"/>
+												<ComboBoxItem Content="Light text"/>
+												<ComboBoxItem Content="Dark text"/>
+											</ComboBox>
+										<TextBlock Text="Choose light or dark text when custom theme colors reduce readability."
+												   FontSize="11"
+												   Foreground="{DynamicResource ThemeTextSecondary}"
+												   TextWrapping="Wrap"/>
 
 										<!-- Divider -->
 										<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,8,0,8"/>

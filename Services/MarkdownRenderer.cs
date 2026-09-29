@@ -15,11 +15,17 @@ namespace QuiverLauncher.Services;
 public sealed class MarkdownRenderer
 {
     private readonly Action<string> _openUrl;
+    private readonly Func<IResourceDictionary>? _resources;
 
-    public MarkdownRenderer(Action<string> openUrl)
+    public MarkdownRenderer(Action<string> openUrl, Func<IResourceDictionary>? resources = null)
     {
         _openUrl = openUrl ?? throw new ArgumentNullException(nameof(openUrl));
+        _resources = resources;
     }
+
+    private Color ThemeColor(string key, Color fallback) =>
+        _resources?.Invoke()[key] is SolidColorBrush brush ? brush.Color : fallback;
+
         public List<Control> Render(string markdown, string? imageBaseUrl = null)
         {
             var controls = new List<Control>();
@@ -28,7 +34,7 @@ public sealed class MarkdownRenderer
                 controls.Add(new SelectableTextBlock
                 {
                     Text = "No changelog available.",
-                    Foreground = new SolidColorBrush(Color.Parse("#B8B8B8")),
+                    Foreground = new SolidColorBrush(ThemeColor("ThemeTextSecondary", Color.Parse("#B8B8B8"))),
                     FontSize = 14
                 });
                 return controls;
@@ -52,8 +58,8 @@ public sealed class MarkdownRenderer
                         {
                             var codeBlock = new Border
                             {
-                                Background = new SolidColorBrush(Color.Parse("#1e1e1e")),
-                                BorderBrush = new SolidColorBrush(Color.Parse("#2d2d30")),
+                                Background = new SolidColorBrush(ThemeColor("ThemeDarker", Color.Parse("#1e1e1e"))),
+                                BorderBrush = new SolidColorBrush(ThemeColor("ThemeBorder", Color.Parse("#2d2d30"))),
                                 BorderThickness = new Thickness(1),
                                 CornerRadius = new CornerRadius(4),
                                 Padding = new Thickness(12),
@@ -64,7 +70,7 @@ public sealed class MarkdownRenderer
                                 Text = string.Join("\n", codeBlockLines),
                                 FontFamily = new FontFamily("Consolas,Courier New,monospace"),
                                 FontSize = 13,
-                                Foreground = new SolidColorBrush(Color.Parse("#d4d4d4"))
+                                Foreground = new SolidColorBrush(ThemeColor("ThemeTextSecondary", Color.Parse("#d4d4d4")))
                             };
                             controls.Add(codeBlock);
                             codeBlockLines.Clear();
@@ -137,14 +143,14 @@ public sealed class MarkdownRenderer
                     {
                         headerTextBlock.FontSize = fontSize;
                         headerTextBlock.FontWeight = fontWeight;
-                        headerTextBlock.Foreground = new SolidColorBrush(Colors.White);
+                        headerTextBlock.Foreground = new SolidColorBrush(ThemeColor("ThemeText", Colors.White));
                     }
 
                     if (level == 2)
                     {
                         controls.Add(new Border
                         {
-                            BorderBrush = new SolidColorBrush(Color.Parse("#3d444d")),
+                            BorderBrush = new SolidColorBrush(ThemeColor("ThemeBorder", Color.Parse("#3d444d"))),
                             BorderThickness = new Thickness(0, 0, 0, 1),
                             Padding = new Thickness(0, 0, 0, 8),
                             Margin = new Thickness(0, 16, 0, 8),
@@ -422,12 +428,13 @@ public sealed class MarkdownRenderer
         {
             text = MarkdownBlocks.StripHtmlComments(text);
             var blocks = new List<Control>();
-            var bodyColor = heading ? Colors.White : Color.Parse("#B8B8B8");
+            var textColor = ThemeColor("ThemeText", Colors.White);
+            var bodyColor = heading ? textColor : ThemeColor("ThemeTextSecondary", Color.Parse("#B8B8B8"));
             var paragraph = new SelectableTextBlock
             {
                 Inlines = new InlineCollection(),
                 FontSize = fontSize,
-                Foreground = new SolidColorBrush(heading ? Colors.White : bodyColor),
+                Foreground = new SolidColorBrush(bodyColor),
                 TextWrapping = TextWrapping.Wrap,
                 TextAlignment = center ? TextAlignment.Center : TextAlignment.Left,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -457,7 +464,7 @@ public sealed class MarkdownRenderer
                     FontWeight = bold || heading ? FontWeight.Bold : FontWeight.Normal,
                     FontStyle = italic ? FontStyle.Italic : FontStyle.Normal,
                     Foreground = new SolidColorBrush(
-                        isLink ? Color.Parse("#58a6ff") : bold || heading ? Colors.White : bodyColor),
+                        isLink ? Color.Parse("#58a6ff") : bold || heading ? textColor : bodyColor),
                     TextDecorations = isLink ? TextDecorations.Underline : null,
                 });
                 textPosition += decoded.Length;
@@ -480,8 +487,8 @@ public sealed class MarkdownRenderer
                     Text = "\u00A0" + code + "\u00A0",
                     FontFamily = new FontFamily("Consolas,Courier New,monospace"),
                     FontSize = Math.Max(12, fontSize - 1),
-                    Foreground = new SolidColorBrush(Color.Parse("#e6edf3")),
-                    Background = new SolidColorBrush(Color.Parse("#21262d")),
+                    Foreground = new SolidColorBrush(textColor),
+                    Background = new SolidColorBrush(ThemeColor("ThemeDarker", Color.Parse("#21262d"))),
                 });
                 textPosition += code.Length + 2;
             }
@@ -673,9 +680,9 @@ public sealed class MarkdownRenderer
 
         private Control CreateMarkdownTable(MarkdownTableModel table, string? imageBaseUrl)
         {
-            var borderColor = Color.Parse("#3d444d");
-            var headerBg = Color.Parse("#161b22");
-            var altRowBg = Color.Parse("#0d1117");
+            var borderColor = ThemeColor("ThemeBorder", Color.Parse("#3d444d"));
+            var headerBg = ThemeColor("ThemeDarker", Color.Parse("#161b22"));
+            var altRowBg = ThemeColor("ThemeBase", Color.Parse("#0d1117"));
             var columns = table.Headers.Count;
             var grid = new Grid();
             for (var c = 0; c < columns; c++)
@@ -702,7 +709,7 @@ public sealed class MarkdownRenderer
                     if (header)
                     {
                         text.FontWeight = FontWeight.SemiBold;
-                        text.Foreground = new SolidColorBrush(Colors.White);
+                        text.Foreground = new SolidColorBrush(ThemeColor("ThemeText", Colors.White));
                     }
                 }
 
@@ -780,7 +787,7 @@ public sealed class MarkdownRenderer
                     FontSize = 14,
                     MinWidth = 0,
                     Padding = new Thickness(0),
-                    Foreground = new SolidColorBrush(Colors.White),
+                    Foreground = new SolidColorBrush(ThemeColor("ThemeText", Colors.White)),
                     VerticalAlignment = VerticalAlignment.Top,
                     Margin = new Thickness(0, 0, 8, 0),
                 });

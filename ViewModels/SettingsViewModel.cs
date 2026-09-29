@@ -290,6 +290,19 @@ public class SettingsViewModel : ObservableViewModel
         }
     }
 
+    public int ThemeTextModeIndex
+    {
+        get => Enum.IsDefined(Current.ThemeTextMode) ? (int)Current.ThemeTextMode : (int)ThemeTextMode.Automatic;
+        set
+        {
+            var mode = Enum.IsDefined(typeof(ThemeTextMode), value)
+                ? (ThemeTextMode)value
+                : ThemeTextMode.Automatic;
+            Change(Current.ThemeTextMode, mode, s => s.ThemeTextMode = mode, SettingsChange.Presentation);
+            Notify(nameof(ThemeTextModeIndex));
+        }
+    }
+
     public IReadOnlyList<int> InterfaceScaleOptions => InterfaceScale.Percentages;
     public int InterfaceScalePercent
     {
