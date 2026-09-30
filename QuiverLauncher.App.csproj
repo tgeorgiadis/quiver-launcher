@@ -37,6 +37,7 @@
 		<PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
 		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
 		<PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
+		<PackageReference Include="sdl2.nuget" Version="2.30.0" />
 		<PackageReference Include="SharpCompress" Version="0.50.1" />
 		<PackageReference Include="System.Text.Json" Version="10.0.3" />
 		<PackageReference Include="System.Drawing.Common" Version="10.0.3" Condition="'$(QuiverExcludeWindowsDrawing)' != 'true'" />
