@@ -172,13 +172,18 @@ function mockAccount(entries) {
         items: [...user.items.values()].map((i) => ({ ...i, slug: entries.find((e) => e.id === i.entryId).slug })),
       });
     if (path === "/library/save") {
+      // As on the site: an add fills only empty fields, an edit sets what it names.
       for (const c of body.changes) {
-        const item = user.items.get(c.entryId) ?? { entryId: c.entryId };
-        if (!user.items.has(c.entryId) && c.removed) continue;
-        for (const key of ["name", "artwork", "tags"]) if (key in c) item[key] = c[key] ?? undefined;
-        user.items.set(c.entryId, { ...item, removed: c.removed ?? false, updatedAt: Date.now() });
+        const row = user.items.get(c.entryId);
+        if (!row && !c.add) continue;
+        const item = row ?? { entryId: c.entryId, removed: false };
+        for (const key of ["name", "artUrl", "tags"])
+          if (key in c && !(c.add && item[key] !== undefined)) item[key] = c[key] ?? undefined;
+        if (c.add) item.removed = false;
+        if (c.removed) item.removed = true;
+        user.items.set(c.entryId, { ...item, updatedAt: Date.now() });
       }
-      return send(res, null);
+      return send(res, []);
     }
     if (path === "/reviews") {
       reviews.push({ ...body, user: name });

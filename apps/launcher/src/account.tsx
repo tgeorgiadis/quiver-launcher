@@ -33,7 +33,8 @@ export type Account = {
   /** Signs in with GitHub or Discord in the system browser; same result as signIn. */
   signInWith: (provider: Provider) => Promise<string | null>;
   signOut: () => Promise<void>;
-  save: (changes: Change[]) => Promise<void>;
+  /** Saves changes; the ones refused come back. */
+  save: (changes: Change[]) => Promise<{ entryId: string; error: string }[]>;
   review: (review: ReviewInput) => Promise<void>;
 };
 
@@ -140,7 +141,7 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
       return null;
     },
     signOut: async () => void (await signOut()),
-    save: async (changes) => void (await save({ changes })),
+    save: (changes) => save({ changes }),
     review: async (r) => void (await review(r)),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;

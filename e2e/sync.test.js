@@ -9,7 +9,7 @@ import { startMockApi } from "./mock-api.js";
 let api, a, b;
 const titles = async (s) => {
   await (await s.app.$("button*=Library")).click();
-  return s.app.execute(() => [...document.querySelectorAll("article")].map((e) => e.dataset.slug).sort());
+  return s.app.execute(() => [...document.querySelectorAll("article")].filter((e) => !e.closest(".loose")).map((e) => e.dataset.slug).sort());
 };
 const signIn = async (s, create) => {
   await (await s.app.$("button=Sign in")).click();
@@ -51,7 +51,7 @@ test("signing in on two computers combines their libraries on both", async () =>
   assert.deepEqual(await titles(b), ["tampered-port", "test-port"]);
 });
 
-test("removing an app on one computer removes it on the other, sparing installed copies", async () => {
+test("removing an app on one computer removes it on the other, keeping installed files", async () => {
   // B installs test-port; A then removes both apps.
   await (await (await b.card("test-port")).$("button=Get")).click();
   await (await (await b.card("test-port")).$("button*=Play")).waitForDisplayed({ timeout: 30000 });
@@ -59,11 +59,10 @@ test("removing an app on one computer removes it on the other, sparing installed
     await (await (await a.card(slug)).$(".card-open")).click();
     await (await a.app.$(`button=${slug === "test-port" ? "Uninstall and remove" : "Remove from library"}`)).click();
   }
-  await b.until(async () => !(await titles(b)).includes("tampered-port"));
-  const kept = await b.card("test-port");
-  await (await kept.$("p=Removed on another device")).waitForDisplayed({ timeout: 10000 });
+  await b.until(async () => (await titles(b)).length === 0);
+  await (await b.app.$("h2=Installed, not in your library")).waitForDisplayed();
   assert.ok(existsSync(join(b.apps, "test-port")), "sync never deletes files");
-  await (await kept.$("button=Keep")).click();
+  await (await (await b.card("test-port")).$("button=Add")).click();
   await a.until(async () => (await titles(a)).includes("test-port"));
 });
 
@@ -84,17 +83,21 @@ test("a signed-in player reviews the release they installed", async () => {
   await b.app.keys("Escape");
 });
 
-test("signing out keeps the library, and reviewing asks to sign in", async () => {
+test("signing out takes the library along, and signing back in brings it back", async () => {
   await (await b.app.$("button=Sign out")).click();
-  assert.deepEqual(await titles(b), ["test-port"]);
+  await (await b.app.$("h2=Installed, not in your library")).waitForDisplayed();
+  assert.ok(existsSync(join(b.apps, "test-port")), "installed files stay");
   await (await (await b.card("test-port")).$(".card-open")).click();
   await (await b.app.$("button=Sign in to review")).waitForDisplayed();
+  await b.app.keys("Escape");
+  await signIn(b, false);
+  await b.until(async () => (await titles(b)).includes("test-port"));
+  await (await (await b.card("test-port")).$("button*=Play")).waitForDisplayed();
+  await (await b.app.$("button=Sign out")).click();
 });
 
 test("signing in with GitHub happens in the browser and comes back to the app", async () => {
-  await b.app.keys("Escape");
   await (await b.app.$("button=Sign in")).click();
   await (await b.app.$("button=Continue with GitHub")).click();
   await (await b.app.$("span=octocat")).waitForDisplayed({ timeout: 10000 });
-  await b.until(async () => (await titles(b)).includes("test-port"));
 });

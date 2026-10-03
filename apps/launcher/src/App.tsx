@@ -82,10 +82,12 @@ function OldLibrary({ onDone }: { onDone: () => void }) {
 }
 
 function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrowse: () => void }) {
-  const { library, catalog, installs, jobs, get } = useLauncher();
+  const { library, catalog, installs, jobs, get, add, remove } = useLauncher();
   const updates = library.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
   const items = library.flatMap((i) => (catalog[i.id] ? [{ ...catalog[i.id], ...withOverrides(i.overrides) }] : []));
-  if (!items.length)
+  // Removed from the library (here, elsewhere or by signing out) but its files are still here.
+  const loose = Object.keys(installs).flatMap((id) => (catalog[id] && !library.some((i) => i.id === id) ? [catalog[id]] : []));
+  if (!items.length && !loose.length)
     return (
       <div className="empty">
         <Library size={40} strokeWidth={1.2} />
@@ -110,6 +112,28 @@ function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrows
           <EntryCard key={entry.id} entry={entry} onOpen={() => onOpen(entry)} action={<Action entry={entry} />} />
         ))}
       </div>
+      {loose.length > 0 && (
+        <section className="loose">
+          <h2>Installed, not in your library</h2>
+          <div className="catalog-grid">
+            {loose.map((entry) => (
+              <EntryCard
+                key={entry.id}
+                entry={entry}
+                onOpen={() => onOpen(entry)}
+                action={
+                  <div className="row">
+                    <button className="primary" onClick={() => add(entry)}>
+                      Add
+                    </button>
+                    <button onClick={() => remove(entry.id)}>Uninstall</button>
+                  </div>
+                }
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }
@@ -203,19 +227,9 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
 
 /** The one button a card needs: Get, progress, Play or Update. */
 function Action({ entry }: { entry: Entry }) {
-  const { config, installs, jobs, catalog, library, get, play, dismiss, keep, remove } = useLauncher();
+  const { config, installs, jobs, catalog, get, play, dismiss } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
-  if (library.find((i) => i.id === entry.id)?.removedElsewhere)
-    return (
-      <div className="job-error" role="alert">
-        <p>Removed on another device</p>
-        <div className="row">
-          <button onClick={() => keep(entry.id)}>Keep</button>
-          <button onClick={() => remove(entry.id)}>Uninstall</button>
-        </div>
-      </div>
-    );
   if (job && "error" in job)
     return (
       <div className="job-error" role="alert">
@@ -380,14 +394,19 @@ function Review({ entry, onSignIn }: { entry: Entry; onSignIn: () => void }) {
 }
 
 function AccountButton({ onSignIn }: { onSignIn: () => void }) {
-  const { ready, user, signOut } = useAccount();
+  const { ready, user } = useAccount();
+  const { unsynced, signOut } = useLauncher();
+  const [asked, setAsked] = useState(false);
   if (!ready) return null;
   return (
     <div className="account">
       {user ? (
         <>
-          <span className="muted">{user.name}</span>
-          <button onClick={() => signOut()}>Sign out</button>
+          <span className="muted">{asked ? `${unsynced} ${unsynced === 1 ? "change hasn't" : "changes haven't"} synced yet.` : user.name}</span>
+          <button onClick={() => (unsynced && !asked ? setAsked(true) : signOut().then(() => setAsked(false)))}>
+            {asked ? "Sign out anyway" : "Sign out"}
+          </button>
+          {asked && <button onClick={() => setAsked(false)}>Stay signed in</button>}
         </>
       ) : (
         <button onClick={onSignIn}>Sign in</button>

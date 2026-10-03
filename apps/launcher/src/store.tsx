@@ -25,8 +25,6 @@ export type LibraryItem = {
   account?: string;
   /** Removed here; kept until the removal reaches its account. */
   removed?: boolean;
-  /** Removed on another device while installed here. */
-  removedElsewhere?: boolean;
 };
 /** Catalog data for a library app, with releases pulled since. */
 export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
@@ -53,9 +51,14 @@ type Launcher = {
   /** Adds the app to the library and installs it. */
   get: (entry: Entry) => Promise<void>;
   play: (id: string) => Promise<void>;
+  /** Uninstalls the app and takes it out of the library. */
   remove: (id: string) => Promise<void>;
-  /** Keeps an app another device removed, adding it back to the account. */
-  keep: (id: string) => void;
+  /** Adds an app without installing it, such as one installed but not in the library. */
+  add: (entry: Entry) => void;
+  /** Changes made here that the account doesn't have yet. */
+  unsynced: number;
+  /** Signs out, taking the library along: installs stay, the library starts empty. */
+  signOut: () => Promise<void>;
   /** A short note for the player, such as what signing in brought over. */
   notice: string | null;
   setNotice: (notice: string | null) => void;
@@ -153,8 +156,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const server = account.items;
     setLibrary((local) => {
       const joined = joinAccount(local, userId);
-      const next = applyServer(joined, server, userId, (id) => Boolean(installs[id]));
-      const fromDevice = joined.filter((i) => i.pending?.added && !local.find((l) => l.id === i.id)?.account).length;
+      const next = applyServer(joined, server, userId);
+      const fromDevice = local.filter((i) => !i.account).length;
       const fromAccount = next.filter((i) => !local.some((l) => l.id === i.id)).length;
       if (fromDevice || fromAccount)
         setNotice(`Library synced: ${fromDevice} ${fromDevice === 1 ? "app" : "apps"} from this computer, ${fromAccount} from your account.`);
@@ -170,10 +173,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     pushing.current = true;
     const sent = new Set(allItems.filter((i) => i.pending && i.account === userId));
     (async () => {
+      // Refused changes come back; they can't succeed by retrying, so they count as done too.
       for (let i = 0; i < changes.length; i += 100) await account.save(changes.slice(i, i + 100));
     })()
       .then(() =>
-        // Untouched since sending: saved. A removal that reached its account is done.
+        // Untouched since sending: done. A removal that reached its account is gone.
         setLibrary((l) => l.flatMap((i) => (!sent.has(i) ? [i] : i.removed ? [] : [{ ...i, pending: undefined }]))),
       )
       .catch(() => {})
@@ -239,8 +243,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     library,
     notice,
     setNotice,
-    keep: (id) =>
-      setLibrary((l) => l.map((i) => (i.id === id ? { ...i, removedElsewhere: undefined, pending: { ...i.pending, added: true } } : i))),
+    add,
+    unsynced: userId ? changesFrom(allItems, userId).length : 0,
+    async signOut() {
+      await account.signOut();
+      setLibrary([]);
+    },
     installs,
     catalog,
     jobs,
@@ -267,7 +275,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>
         l.flatMap((i) =>
-          i.id !== id ? [i] : i.account && !i.removedElsewhere ? [{ ...i, removed: true, pending: { removed: true } }] : [],
+          i.id !== id ? [i] : i.account ? [{ ...i, removed: true, pending: { removed: true } }] : [],
         ),
       );
       setJobs(({ [id]: _, ...rest }) => rest);
