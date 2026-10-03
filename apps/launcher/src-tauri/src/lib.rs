@@ -192,6 +192,19 @@ async fn browser_sign_in(url: String) -> Result<browser::Callback, String> {
     tauri::async_runtime::spawn_blocking(move || browser::sign_in(&url)).await.map_err(|e| e.to_string())?
 }
 
+fn append_log(path: &Path, line: &str) {
+    use std::io::Write;
+    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+        let _ = writeln!(file, "{stamp} {line}");
+    }
+}
+
+#[tauri::command]
+fn log_error(data: State<Data>, message: String) {
+    append_log(&data.0.join("quiver.log"), &message.chars().take(4000).collect::<String>());
+}
+
 #[tauri::command]
 fn find_v3_library() -> Vec<v3::OldApp> {
     v3::find()
@@ -210,6 +223,13 @@ pub fn run() {
                 .map(PathBuf::from)
                 .or(portable)
                 .unwrap_or(app.path().app_data_dir()?);
+            // Crashes and UI errors go to quiver.log in the data folder, for bug reports.
+            let log = dir.join("quiver.log");
+            let previous = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |info| {
+                append_log(&log, &format!("crash: {info}"));
+                previous(info);
+            }));
             app.manage(Data(dir));
             gamepad::start(app.handle().clone());
             Ok(())
@@ -224,7 +244,8 @@ pub fn run() {
             find_v3_library,
             secret_get,
             secret_set,
-            browser_sign_in
+            browser_sign_in,
+            log_error
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quiver Launcher");

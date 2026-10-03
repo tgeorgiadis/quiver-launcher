@@ -122,8 +122,12 @@ async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress))
         .get(&req.url)
         .send()
         .await
-        .and_then(|r| r.error_for_status())
-        .map_err(|e| format!("The download failed: {e}"))?;
+        .map_err(|_| "The download failed. Check your connection and try again.".to_string())?;
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        // Usually a rolling release whose files were replaced after the site checked them.
+        return Err("This release's file was removed from where it was published, so it can't be installed right now.".into());
+    }
+    let response = response.error_for_status().map_err(|e| format!("The download failed: {e}"))?;
     let total = response.content_length();
     let mut file = tokio::fs::File::create(to).await.map_err(text)?;
     let mut hasher = Sha256::new();
@@ -174,7 +178,18 @@ fn extract(file: &Path, name: &str, out: &Path) -> Result<(), String> {
     } else if lower.ends_with(".7z") {
         sevenz_rust2::decompress_file(file, out).map_err(text)
     } else if lower.ends_with(".rar") {
-        Err("RAR downloads aren't supported yet.".into())
+        let mut archive = unrar::Archive::new(file).open_for_processing().map_err(text)?;
+        while let Some(header) = archive.read_header().map_err(text)? {
+            let entry = header.entry();
+            // Same rule as zip's enclosed_name: nothing outside `out`.
+            let inside = entry.filename.components().all(|c| matches!(c, std::path::Component::Normal(_)));
+            archive = if entry.is_file() && inside {
+                header.extract_with_base(out).map_err(text)?
+            } else {
+                header.skip().map_err(text)?
+            };
+        }
+        Ok(())
     } else {
         // A single program: an .exe, an AppImage or a bare binary.
         let path = out.join(name);

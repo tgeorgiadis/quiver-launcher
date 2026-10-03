@@ -31,6 +31,7 @@ export const native = {
   secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),
   /** Opens a sign-in page in the browser; resolves once it returns to the launcher. */
   browserSignIn: (url: string) => invoke<{ code: string } | { error: string }>("browser_sign_in", { url }),
+  logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<OldApp[]>("find_v3_library"),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),
 };

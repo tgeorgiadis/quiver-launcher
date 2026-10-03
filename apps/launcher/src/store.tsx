@@ -140,8 +140,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("installs", installs);
   usePersist("catalog", catalog);
 
-  // Catalog data for library apps: refreshed once per start, fetched for apps another device added.
+  // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
   const fetched = useRef(new Set<string>());
+  // Every half hour, look again for new releases.
+  const [round, setRound] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => (fetched.current.clear(), setRound((r) => r + 1)), 30 * 60_000);
+    return () => clearInterval(timer);
+  }, []);
   useEffect(() => {
     for (const item of library) {
       if (fetched.current.has(item.id)) continue;
@@ -151,7 +157,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         () => {},
       );
     }
-  }, [library, client]);
+  }, [library, client, round]);
 
   // Signed in: fold the account's library in, live.
   const userId = account.user?.id;
