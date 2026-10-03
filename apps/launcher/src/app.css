@@ -72,3 +72,38 @@ p.job-error { color: #e38c87; font-size: 13px; }
 .settings { display: grid; gap: 14px; }
 .add-repo { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .add-repo input { min-width: 260px; } .add-repo p { flex-basis: 100%; }
 .options { margin: 12px 0; align-items: center; }
+.filters { gap: 10px; margin-top: -8px; }
+.toolbar select, .detail-body select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.shelves { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.shelves button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; }
+.shelves button.active, .shelves button:hover { color: #fff; border-color: var(--accent); background: #0ea5e91a; }
+.console-section { margin-bottom: 28px; } .console-section h2 { font-size: 1rem; margin-bottom: 12px; color: #c9cbd0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chips .muted { margin-right: 4px; }
+.chip { padding: 3px 10px; border-radius: 999px; border: 1px solid #3c516c; font-size: 12px; color: #b7c0cc; }
+.chip.on { background: #243044; color: #f4f6f8; }
+.chips input { padding: 4px 10px; font-size: 12px; min-width: 120px; }
+.tags { display: grid; gap: 8px; margin: 4px 0; }
+.repo-link { display: inline-flex; align-items: center; gap: 5px; color: #7dd3fc; text-decoration: none; }
+.repo-link:hover { text-decoration: underline; }
+.readme { border-top: 1px solid var(--line); padding-top: 16px; }
+.readme h3, .versions h3, .controls h3 { font-size: 15px; margin-bottom: 10px; }
+.readme-body { position: relative; overflow: hidden; }
+.readme-body.clipped { max-height: 360px; }
+.readme-body.clipped::after { content: ""; position: absolute; inset: auto 0 0; height: 120px; background: linear-gradient(transparent, #141518); pointer-events: none; }
+.readme-toggle { display: flex; margin: 12px auto 0; padding: 7px 14px; border-radius: 7px; background: #26272b; font-size: 13px; }
+.versions { display: grid; gap: 8px; }
+.versions ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
+.versions li { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 7px; background: var(--panel); font-size: 13px; }
+.versions li > :last-child { margin-left: auto; }
+.versions li button, .versions > button, .shortcuts button { padding: 6px 12px; border-radius: 7px; background: #26272b; font-size: 13px; }
+.installed { color: var(--green); }
+.shortcuts { display: grid; gap: 6px; }
+.controls { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.pads { margin: 0; padding-left: 20px; font-size: 13px; }
+.bindings { border-collapse: collapse; font-size: 13px; }
+.bindings td, .bindings th { padding: 4px 6px; text-align: left; }
+.bindings th { color: var(--muted); font-weight: 500; }
+.bindings button { width: 100%; padding: 5px 10px; border-radius: 6px; background: #26272b; font-size: 12px; }
+.bindings button.chosen { background: var(--accent); color: #04121b; }
+.detail.choose:has(.controls) { width: min(620px, 100%); }

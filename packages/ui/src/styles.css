@@ -25,47 +25,207 @@ h1, h2, h3, p { margin: 0; }
   gap: 19px;
 }
 .entry-card {
-  border: 1px solid #2b2c31;
-  border-radius: 9px;
-  overflow: hidden;
-  background: #191a1d;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.16s, border-color 0.16s;
+  border: 1px solid #2b2c31; border-radius: 9px; overflow: hidden; background: #191a1d;
+  display: flex; flex-direction: column; transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
 }
-.entry-card:hover, .entry-card:focus-within { transform: translateY(-4px); border-color: var(--accent); }
+.entry-card:hover, .entry-card:focus-within { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 15px 30px #0002; }
 .card-open { display: block; width: 100%; padding: 0; text-align: left; }
 .card-cover {
-  height: 150px;
-  position: relative;
-  overflow: hidden;
+  height: 173px; position: relative; overflow: hidden;
   background: radial-gradient(ellipse at 50% 90%, #0ea5e922, transparent 75%), linear-gradient(135deg, #27272c, #1c1c21);
 }
+.entry-card:nth-child(4n + 2) .card-cover { background: radial-gradient(ellipse at 40% 90%, #5073843d, transparent 70%), #1c232a; }
+.entry-card:nth-child(4n + 3) .card-cover { background: radial-gradient(ellipse at 40% 90%, #6278552e, transparent 70%), #212620; }
+.entry-card:nth-child(4n + 4) .card-cover { background: radial-gradient(ellipse at 40% 90%, #8363913b, transparent 70%), #25212b; }
 .artwork { display: flex; align-items: center; justify-content: center; color: #92949b; overflow: hidden; }
-.card-cover .artwork { height: 100%; padding: 26px 30px 20px; }
+.card-cover .artwork { height: 100%; padding: 30px 34px 24px; }
 .card-cover .artwork.cover-photo { padding: 0; }
 .artwork img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 10px #0005); }
 .artwork.cover-photo img { object-fit: cover; filter: none; }
-.cover-badge {
-  position: absolute; top: 10px; right: 10px; padding: 3px 7px; border-radius: 4px;
-  background: #0ea5e9; color: #04121b; font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+.card-arrow {
+  position: absolute; right: 10px; bottom: 10px; display: flex; border: 1px solid #ffffff12;
+  padding: 4px; border-radius: 50%; background: #0002; color: #aaa;
 }
-.card-body { padding: 14px 15px 12px; }
-.card-tags { display: flex; gap: 6px; font-size: 9px; color: #94a3b8; letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 6px; min-height: 13px; }
-.card-kind { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.platform-icons { display: flex; align-items: center; gap: 7px; color: #b7c0cc; font-size: 13px; margin-left: auto; }
-.card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cover-badge {
+  position: absolute; top: 12px; right: 12px; padding: 3px 7px; border-radius: 4px;
+  background: #0ea5e9; color: #04121b; font-size: 8px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+}
+.card-body { padding: 17px 15px 13px; }
+.card-tags {
+  display: flex; gap: 6px; font-size: 8px; color: #94a3b8; letter-spacing: 0.7px; text-transform: uppercase;
+  margin-bottom: 7px; min-height: 12px;
+}
+.platform-icons { display: flex; align-items: center; gap: 7px; color: #b7c0cc; font-size: 13px; }
+.card-tags > .card-kind { flex: 0 1 auto; min-width: 0; }
+.card-tags .platform-icons { margin-left: auto; padding-left: 8px; }
+.card-tags > span + span:before { content: "·"; margin-right: 6px; color: #666; }
+.ai-chip { align-self: center; padding: 1px 6px; border: 1px solid #3a4250; border-radius: 999px; color: #b7c0cc; white-space: nowrap; }
+.card-tags > .ai-chip { margin-left: auto; }
+.card-tags > .ai-chip:before { content: none; }
+.card-tags > .ai-chip + .platform-icons { margin-left: 0; }
+.card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+.scrolling-text { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.scrolling-text.active { text-overflow: clip; }
+.scrolling-text.active > span { display: inline-block; }
+.based-on { display: flex; flex-wrap: nowrap; overflow: hidden; align-items: center; gap: 6px; margin-top: 8px; }
+.based-on > * { flex-shrink: 0; }
+.based-on > .game-chip { flex-shrink: 1; min-width: 0; }
+.based-on > .game-chip-row { flex: 1 1 auto; min-width: 0; }
+.game-chip-row .scrolling-text { text-overflow: clip; }
+.game-chip-row .scrolling-text.overflows:not(.active) { mask-image: linear-gradient(to right, #000 80%, transparent); }
+.game-chip-row .scrolling-text > span { display: inline-flex; gap: 6px; vertical-align: top; }
+.game-chip-row .game-chip { flex-shrink: 0; max-width: none; }
+.based-on-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8d919a; }
+.game-chip {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1.4;
+  color: #f4f6f8; background: #243044; border: 1px solid #3c516c; border-radius: 999px; padding: 3px 9px;
+}
 .card-bottom {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  border-top: 1px solid #292a2e; margin-top: 12px; padding-top: 10px; font-size: 12px; color: #8d919a;
+  border-top: 1px solid #292a2e; margin-top: 15px; padding-top: 12px; font-size: 12px; color: #8d919a;
 }
-.score { font-size: 11px; color: var(--green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.score { color: var(--green); font-size: 11px; }
+.score.positive { color: #8ac3a2; }
 .score.caution { color: #d7b56a; }
 .score.negative { color: #e38c87; }
-.score.muted { color: #8d919a; }
+.score.muted { color: #91959f; }
+.card-bottom .score { font-size: 12px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.card-bottom .score small { font-size: 11px; }
+.card-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.release-age { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.release-age.stale { color: #d7b56a; }
+.release-age.none { color: #6f727a; }
 .card-action { padding: 0 15px 14px; margin-top: auto; }
 .spinner {
   border: 2px solid #37383d; border-top-color: var(--accent); width: 20px; height: 20px;
   border-radius: 100%; animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Rendered markdown (READMEs and release notes), as on the site. */
+.markdown {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #d2d4d9;
+  overflow-wrap: anywhere;
+}
+.markdown > :first-child {
+  margin-top: 0;
+}
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+.markdown :is(h1, h2, h3, h4, h5, h6) {
+  color: #f1f2f4;
+  line-height: 1.3;
+  margin: 1.4em 0 0.6em;
+  font-weight: 600;
+}
+.markdown .md-h1 {
+  font-size: 1.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--line);
+}
+.markdown .md-h2 {
+  font-size: 1.3em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--line);
+}
+.markdown .md-h3 {
+  font-size: 1.1em;
+}
+.markdown :is(.md-h4, .md-h5, .md-h6) {
+  font-size: 1em;
+}
+.markdown :is(p, ul, ol, pre, table, blockquote) {
+  margin: 0 0 1em;
+}
+.markdown :is(ul, ol) {
+  padding-left: 1.6em;
+}
+.markdown ul {
+  list-style: disc;
+}
+.markdown ol {
+  list-style: decimal;
+}
+.markdown li + li {
+  margin-top: 0.25em;
+}
+.markdown a {
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-decoration-color: #7dd3fc66;
+  text-underline-offset: 2px;
+}
+.markdown a:hover {
+  text-decoration-color: currentColor;
+}
+.markdown img {
+  display: inline-block;
+  height: auto;
+  /* READMEs often ask for huge banners and logos (1360×768, 1254×1254);
+     keep them a sensible size, in proportion, beside the rest of the page. */
+  max-width: min(100%, 640px);
+  max-height: min(400px, 60vh);
+  object-fit: contain;
+  vertical-align: middle;
+}
+.markdown [align="center"] {
+  text-align: center;
+}
+/* An image on its own in a paragraph (Markdown.tsx rehypeCentreLoneImages). */
+.markdown .md-lone-image {
+  text-align: center;
+}
+.markdown code {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.88em;
+  background: #25272c;
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+}
+.markdown pre {
+  background: #111215;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.markdown pre code {
+  background: none;
+  padding: 0;
+  overflow-wrap: normal;
+}
+.markdown blockquote {
+  border-left: 3px solid #3b3d44;
+  padding-left: 14px;
+  color: #a9acb4;
+}
+.markdown table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.markdown :is(th, td) {
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+}
+.markdown th {
+  background: #1f2024;
+}
+.markdown hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 1.5em 0;
+}
+.markdown details {
+  margin: 0 0 1em;
+}
+.markdown summary {
+  cursor: pointer;
+}
+.release-notes.markdown {
+  font-size: 13px;
+}
+.download-list {

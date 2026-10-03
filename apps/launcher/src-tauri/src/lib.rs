@@ -1,6 +1,8 @@
 mod browser;
 mod gamepad;
 mod install;
+mod shortcut;
+mod steam;
 mod v3;
 
 use serde::Serialize;
@@ -67,7 +69,7 @@ fn config(data: State<Data>) -> Config {
 /// The launcher's own JSON files: the library, installs and the catalog cache.
 fn state_file(data: &Data, name: &str) -> Result<PathBuf, String> {
     match name {
-        "library" | "installs" | "catalog" | "settings" => Ok(data.0.join(format!("{name}.json"))),
+        "library" | "installs" | "catalog" | "settings" | "collections" => Ok(data.0.join(format!("{name}.json"))),
         _ => Err(format!("Unknown state file {name}")),
     }
 }
@@ -107,29 +109,33 @@ fn app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<PathBuf, St
     }
 }
 
+/// What starts an installed app: its program, or Wine (on Linux) or `open` (a macOS .app) with it.
+fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], wine: bool) -> Result<shortcut::Target, String> {
+    let dir = app_dir(data, folder, dir)?;
+    let exe = install::find_executable(&dir, preferred, if wine { "windows" } else { OS })
+        .ok_or("Couldn't find a program to start in this app's folder.")?;
+    let (program, args) = if wine {
+        (PathBuf::from("wine"), vec![exe.to_string_lossy().into_owned()])
+    } else if OS == "macos" && exe.extension().is_some_and(|e| e == "app") {
+        (PathBuf::from("open"), vec![exe.to_string_lossy().into_owned()])
+    } else {
+        (exe.clone(), vec![])
+    };
+    // Many distros no longer ship FUSE 2, which AppImages mount themselves with.
+    let extract_appimage = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("appimage")) && !has_fuse2();
+    Ok(shortcut::Target { dir: exe.parent().unwrap_or(&dir).to_path_buf(), exe, program, args, extract_appimage })
+}
+
 #[tauri::command]
 fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Result<(), String> {
-    let dir = app_dir(&data, &folder, dir)?;
-    let exe = install::find_executable(&dir, &preferred, if wine { "windows" } else { OS })
-        .ok_or("Couldn't find a program to start in this app's folder.")?;
-    let mut command = if wine {
-        let mut wine = Command::new("wine");
-        wine.arg(&exe);
-        wine
-    } else if OS == "macos" && exe.extension().is_some_and(|e| e == "app") {
-        let mut open = Command::new("open");
-        open.arg(&exe);
-        open
-    } else {
-        let mut run = Command::new(&exe);
-        // Many distros no longer ship FUSE 2, which AppImages mount themselves with.
-        if exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("appimage")) && !has_fuse2() {
-            run.env("APPIMAGE_EXTRACT_AND_RUN", "1");
-        }
-        run
-    };
+    let target = target(&data, &folder, dir, &preferred, wine)?;
+    let mut command = Command::new(&target.program);
+    command.args(&target.args);
+    if target.extract_appimage {
+        command.env("APPIMAGE_EXTRACT_AND_RUN", "1");
+    }
     command
-        .current_dir(exe.parent().unwrap_or(Path::new(&dir)))
+        .current_dir(&target.dir)
         // The game outlives the launcher's console; it shouldn't hold it open.
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
@@ -138,8 +144,75 @@ fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec
         .map(|_| ())
         .map_err(|e| match wine {
             true if e.kind() == std::io::ErrorKind::NotFound => "This is a Windows app. Install Wine to play it on Linux.".into(),
-            _ => format!("Couldn't start {}: {e}", exe.display()),
+            _ => format!("Couldn't start {}: {e}", target.exe.display()),
         })
+}
+
+/// The app's icon, saved for shortcuts; none if it can't be fetched.
+async fn shortcut_icon(data: &Data, request: &shortcut::ShortcutRequest) -> Option<PathBuf> {
+    let url = request.art.icon.as_deref()?;
+    shortcut::save_icon(url, &data.0.join("icons").join(install::plain_name(&request.folder).ok()?)).await.ok()
+}
+
+/// Puts a shortcut that starts the game on the desktop.
+#[tauri::command]
+async fn create_shortcut(app: tauri::AppHandle, request: shortcut::ShortcutRequest) -> Result<String, String> {
+    let data = app.state::<Data>();
+    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine)?;
+    let icon = shortcut_icon(&data, &request).await;
+    let path = shortcut::desktop(&target, &request.name, icon.as_deref())?;
+    Ok(format!("{} is on your desktop.", path.file_name().unwrap_or_default().to_string_lossy()))
+}
+
+/// Adds the game to Steam as a non-Steam game, with its artwork; says what happened.
+#[tauri::command]
+async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest) -> Result<String, String> {
+    let data = app.state::<Data>();
+    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine)?;
+    steam::account()?;
+    let icon = shortcut_icon(&data, &request).await;
+    let mut shortcut = steam::Shortcut::new(&request.name, &target, icon.as_deref());
+    let folder = install::plain_name(&request.folder)?;
+    let art = [("", &request.art.header), ("p", &request.art.capsule), ("_hero", &request.art.hero), ("_logo", &request.art.logo)];
+    for (suffix, url) in art {
+        let Some(url) = url else { continue };
+        let path = data.0.join("steam-art").join(format!("{folder}{suffix}.png"));
+        if let Ok(image) = shortcut::download_image(url).await {
+            if std::fs::create_dir_all(path.parent().unwrap()).is_ok() && image.save(&path).is_ok() {
+                shortcut.art.push((suffix.into(), path));
+            }
+        }
+    }
+    let proton = if shortcut.proton { " It's set to run with Proton." } else { "" };
+    if !steam::running() {
+        steam::apply(&shortcut)?;
+        return Ok(format!("{} is in Steam.{proton} Start Steam to see it.", request.name));
+    }
+    // Steam overwrites its shortcuts as it closes, so a waiting copy writes them after.
+    if std::env::var_os("SteamGameId").is_some() {
+        return Err("Steam is running Quiver, so it can't add games now. Switch to Desktop Mode (or close Steam) and add it from there.".into());
+    }
+    let queued = data.0.join(format!("steam-{folder}.json"));
+    std::fs::write(&queued, serde_json::to_vec(&shortcut).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    let exe = std::env::var_os("APPIMAGE").map(PathBuf::from).or_else(|| std::env::current_exe().ok()).ok_or("Couldn't find Quiver Launcher's program.")?;
+    Command::new(exe)
+        .arg("--add-to-steam")
+        .arg(&queued)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(format!("{} will be added to Steam when Steam closes.{proton} Restart Steam to see it.", request.name))
+}
+
+/// Opens a web page in the browser.
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    if !url.starts_with("https://") && !url.starts_with("http://") {
+        return Err("Only web addresses can be opened.".into());
+    }
+    open::that_detached(&url).map_err(|e| e.to_string())
 }
 
 fn has_fuse2() -> bool {
@@ -256,6 +329,12 @@ fn main_window(app: &tauri::App, dir: &Path) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let args: Vec<String> = std::env::args().collect();
+    if let [_, flag, file] = args.as_slice() {
+        if flag == "--add-to-steam" {
+            return steam::wait_and_apply(Path::new(file));
+        }
+    }
     tauri::Builder::default()
         .setup(|app| {
             let portable = std::env::current_exe()
@@ -285,6 +364,7 @@ pub fn run() {
                 }
             }
             app.manage(Data(dir));
+            app.manage(gamepad::Pads::default());
             gamepad::start(app.handle().clone());
             Ok(())
         })
@@ -300,7 +380,11 @@ pub fn run() {
             secret_set,
             browser_sign_in,
             log_error,
-            set_fullscreen
+            set_fullscreen,
+            create_shortcut,
+            add_to_steam,
+            open_url,
+            gamepad::controllers
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quiver Launcher");

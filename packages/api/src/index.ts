@@ -33,6 +33,8 @@ export type Entry = {
   description: string;
   projectName: string;
   games: { id: string; slug: string; title: string }[];
+  /** Original consoles of the games it's based on, as console ids (see facets). */
+  consoles?: string[];
   libraryArt?: LibraryArt;
   artwork?: string;
   tags: string[];
@@ -44,7 +46,10 @@ export type Entry = {
   reportIssues: number;
   reportBroken: number;
   addedAt: number;
+  /** The newest release upstream, approved or not. */
+  lastReleaseAt?: number;
   lastReleaseVersion?: string;
+  aiLevel?: "none" | "assisted" | "generated";
   verified?: Verified;
 };
 
@@ -84,7 +89,24 @@ export type ReleaseStatus = { id: string; slug: string; provider: string; reposi
 
 export type Page<T> = { items: T[]; nextCursor: string | null; isDone: boolean };
 
-export type AppQuery = { search?: string; os?: Os; projectType?: ProjectType; cursor?: string | null; limit?: number };
+export type Sort = "added" | "updated" | "rating" | "name";
+export type AppQuery = {
+  search?: string;
+  os?: Os;
+  projectType?: ProjectType;
+  /** A console id, or "maker:Nintendo" for every console a maker made. */
+  console?: string;
+  sort?: Sort;
+  ai?: "no-generated" | "no-ai";
+  cursor?: string | null;
+  limit?: number;
+};
+
+export type Console = { id: string; name: string; brand: string };
+export type Facets = { total: number; consoles: Console[] };
+
+/** A README in Markdown, and what its relative images and links resolve against. */
+export type Readme = { markdown: string; rawBase?: string; htmlBase?: string };
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string) {
@@ -110,14 +132,25 @@ export function createClient(base: string = DEFAULT_API) {
       if (q.search?.trim()) params.set("search", q.search.trim());
       if (q.os) params.set("os", q.os);
       if (q.projectType) params.set("projectType", q.projectType);
+      if (q.console?.startsWith("maker:")) params.set("maker", q.console.slice(6));
+      else if (q.console) params.set("console", q.console);
+      if (q.sort) params.set("sort", q.sort);
+      if (q.ai) params.set("ai", q.ai);
       if (q.cursor) params.set("cursor", q.cursor);
       return get<Page<Entry>>(`/apps?${params}`);
     },
     app: (slug: string) => get<Detail>(app(slug)),
+    facets: () => get<Facets>("/facets"),
+    /** Null when the site has no README for the app. */
+    readme: (slug: string) =>
+      get<Readme>(`${app(slug)}/readme`).catch((e) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      }),
     releaseStatus: (cursor?: string | null) =>
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     /** Approved releases, newest first: the first is what a player gets. */
-    releases: (slug: string) => get<Page<Release>>(`${app(slug)}/releases?limit=5`),
+    releases: (slug: string, limit = 5) => get<Page<Release>>(`${app(slug)}/releases?limit=${limit}`),
   };
 }
 
@@ -164,8 +197,9 @@ export function githubRepository(input: string): string | null {
  */
 export function createGithub(base = "https://api.github.com") {
   return {
-    async releases(repository: string): Promise<Release[]> {
-      const response = await fetch(`${base}/repos/${repository}/releases?per_page=10`, {
+    /** Every release, newest first, except drafts; up to `count` of them. */
+    async releases(repository: string, count = 10): Promise<Release[]> {
+      const response = await fetch(`${base}/repos/${repository}/releases?per_page=${count}`, {
         headers: { Accept: "application/vnd.github+json" },
       });
       if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitHub.");
@@ -181,6 +215,7 @@ export function createGithub(base = "https://api.github.com") {
       const raw: Raw[] = await response.json();
       return raw
         .filter((r) => !r.draft && r.tag_name)
+        // Stable releases first: the first one is what a player gets.
         .sort((a, b) => Number(a.prerelease) - Number(b.prerelease))
         .map((r) => ({
           id: r.tag_name,
@@ -199,7 +234,51 @@ export function createGithub(base = "https://api.github.com") {
           })),
         }));
     },
+    /** The repository's README, or null when it has none. */
+    async readme(repository: string): Promise<Readme | null> {
+      const response = await fetch(`${base}/repos/${repository}/readme`, { headers: { Accept: "application/vnd.github.raw" } });
+      if (response.status === 404) return null;
+      if (!response.ok) throw new ApiError(response.status, `GitHub answered ${response.status}. Try again later.`);
+      return {
+        markdown: await response.text(),
+        rawBase: `https://raw.githubusercontent.com/${repository}/HEAD/`,
+        htmlBase: `https://github.com/${repository}/blob/HEAD/`,
+      };
+    },
   };
 }
 
 export type Github = ReturnType<typeof createGithub>;
+
+/** Releases on GitLab, for catalog apps hosted there. GitLab gives no checksums. */
+export function createGitlab(base = "https://gitlab.com/api/v4") {
+  return {
+    async releases(repository: string, count = 30): Promise<Release[]> {
+      const response = await fetch(`${base}/projects/${encodeURIComponent(repository)}/releases?per_page=${count}`);
+      if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitLab.");
+      if (!response.ok) throw new ApiError(response.status, `GitLab answered ${response.status}. Try again later.`);
+      type Raw = {
+        tag_name: string;
+        released_at: string;
+        upcoming_release?: boolean;
+        description?: string;
+        assets?: { links?: { id: number; name: string; url: string; direct_asset_url?: string }[] };
+      };
+      const raw: Raw[] = await response.json();
+      return raw.map((r) => ({
+        id: r.tag_name,
+        version: r.tag_name,
+        releasedAt: Date.parse(r.released_at) || 0,
+        prerelease: Boolean(r.upcoming_release),
+        notes: r.description,
+        assets: (r.assets?.links ?? []).map((a) => ({
+          id: String(a.id),
+          url: a.direct_asset_url ?? a.url,
+          filename: a.name,
+          ...inferPlatform(a.name),
+          format: a.name.split(".").pop() ?? "unknown",
+        })),
+      }));
+    },
+  };
+}

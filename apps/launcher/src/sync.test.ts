@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { LibraryItem } from "./store";
-import { applyServer, changesFrom, joinAccount, type ServerItem } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, inCollection, joinAccount, type ServerItem } from "./sync";
 
 const item = (id: string, extra: Partial<LibraryItem> = {}): LibraryItem => ({ id, slug: id, addedAt: 1, ...extra });
 const server = (key: string, extra: Partial<ServerItem> = {}): ServerItem => ({
@@ -28,4 +28,22 @@ test("the account's values win except unsaved changes, and removals leave the li
   expect(byId.gone).toBeUndefined();
   expect(byId.new.account).toBe("me");
   expect(changesFrom(result, "me")).toEqual([{ key: "renamed", name: "Here" }]);
+});
+
+test("collections: this device's join the account, the account's win unless changed here", () => {
+  const shelf = { name: "Fav", tags: ["fav"], consoles: [], order: 0 };
+  const result = applyServerCollections(
+    [{ key: "guest", ...shelf }, { key: "edited", ...shelf, name: "Mine", account: "me", pending: true }, { key: "theirs", ...shelf, account: "other" }],
+    [{ key: "edited", ...shelf, removed: false, updatedAt: 1 }, { key: "gone", ...shelf, removed: true, updatedAt: 1 }, { key: "new", ...shelf, removed: false, updatedAt: 1 }],
+    "me",
+  );
+  expect(result.map((c) => [c.key, c.name, c.pending ?? false])).toEqual([["guest", "Fav", true], ["edited", "Mine", true], ["new", "Fav", false]]);
+});
+
+test("a collection matches every part it sets", () => {
+  const app = { tags: ["Fav", "port"], consoles: ["n64"], installed: true };
+  expect(inCollection({ tags: ["fav"], consoles: [] }, app)).toBe(true);
+  expect(inCollection({ tags: [], consoles: ["n64", "snes"], installed: "yes" }, app)).toBe(true);
+  expect(inCollection({ tags: ["fav"], consoles: ["snes"] }, app)).toBe(false);
+  expect(inCollection({ tags: [], consoles: [], installed: "no" }, app)).toBe(false);
 });

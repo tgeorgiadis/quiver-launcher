@@ -6,14 +6,15 @@
  * last catalog data seen is cached so the library shows instantly offline.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createClient, createGithub, githubRepository, type Asset, type Client, type Entry, type Withdrawn } from "@quiver/api";
+import { createClient, createGithub, createGitlab, githubRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
 import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, changesFrom, joinAccount } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, joinAccount, type Collection } from "./sync";
+import { setBindings, type Bindings } from "./spatial";
 import { customEntry, customKey, isCustom, type CustomApp } from "./custom";
 
-export type { CustomApp };
+export type { CustomApp, Collection };
 
 export type LibraryItem = {
   /** The catalog entry's id, or "github:owner/repo" for a custom app. */
@@ -48,6 +49,11 @@ export type Choice = { entry: Entry; version: string; assets: Asset[]; resolve: 
 type Launcher = {
   config: Config;
   client: Client;
+  github: Github;
+  gitlab: ReturnType<typeof createGitlab>;
+  /** The catalog's consoles, and their names by id. */
+  consoles: Console[];
+  consoleNames: Record<string, string>;
   library: LibraryItem[];
   installs: Record<string, Install>;
   catalog: Record<string, CatalogEntry>;
@@ -57,8 +63,8 @@ type Launcher = {
   oldApps: OldApp[];
   importOld: () => Promise<string[]>;
   remember: (entries: Entry[]) => void;
-  /** Adds the app to the library and installs it. */
-  get: (entry: Entry) => Promise<void>;
+  /** Adds the app to the library and installs it: its newest release, or the one given. */
+  get: (entry: Entry, release?: Release) => Promise<void>;
   play: (id: string) => Promise<void>;
   /** Uninstalls the app and takes it out of the library. */
   remove: (id: string) => Promise<void>;
@@ -69,6 +75,12 @@ type Launcher = {
   setUpdates: (id: string, updates: Install["updates"]) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string }) => void;
+  /** The player's own tags on an app; hand-picked collections are tags. */
+  setTags: (id: string, tags: string[]) => void;
+  /** Saved library filters, in order. */
+  collections: Collection[];
+  /** Adds or changes a collection; `removed` deletes it. */
+  saveCollection: (collection: Collection) => void;
   /** Changes made here that the account doesn't have yet. */
   unsynced: number;
   /** Signs out, taking the library along: installs stay, the library starts empty. */
@@ -104,7 +116,19 @@ export function hasUpdate(entry: Entry | undefined, install: Install | undefined
 }
 
 /** This computer's preferences; they don't sync. */
-export type Settings = { fullscreen?: boolean; scale?: number; /** Apps hidden from the library here. */ hidden?: string[] };
+export type Settings = {
+  fullscreen?: boolean;
+  scale?: number;
+  /** Apps hidden from the library here. */
+  hidden?: string[];
+  /** Keyboard and controller bindings; unset uses the defaults. */
+  keys?: Bindings;
+  pad?: Bindings;
+  /** Controllers don't move around the launcher. */
+  padOff?: boolean;
+  /** The library in sections by original console. */
+  byConsole?: boolean;
+};
 
 type Saved = {
   settings: Settings;
@@ -112,6 +136,7 @@ type Saved = {
   library: LibraryItem[];
   installs: Record<string, Install>;
   catalog: Record<string, CatalogEntry>;
+  collections: Collection[];
 };
 
 export function LauncherProvider({ children }: { children: ReactNode }) {
@@ -123,8 +148,9 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       native.readState<Record<string, Install>>("installs"),
       native.readState<Record<string, CatalogEntry>>("catalog"),
       native.readState<Settings>("settings"),
-    ]).then(([config, library, installs, catalog, settings]) =>
-      setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {} }),
+      native.readState<Collection[]>("collections"),
+    ]).then(([config, library, installs, catalog, settings, collections]) =>
+      setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [] }),
     );
   }, []);
   if (!saved) return null;
@@ -148,6 +174,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
   const client = useMemo(() => createClient(config.api), [config.api]);
   const github = useMemo(() => createGithub(config.githubApi), [config.githubApi]);
+  const gitlab = useMemo(() => createGitlab(), []);
+  const [consoles, setConsoles] = useState<Console[]>([]);
+  useEffect(() => void client.facets().then((f) => setConsoles(f.consoles), () => {}), [client]);
+  const consoleNames = useMemo(() => Object.fromEntries(consoles.map((c) => [c.id, c.name])), [consoles]);
+  const [allCollections, setCollections] = useState(saved.collections);
+  const collections = useMemo(() => allCollections.filter((c) => !c.removed).sort((a, b) => a.order - b.order), [allCollections]);
+  usePersist("collections", allCollections);
 
   useEffect(() => {
     if (!saved.library.length) native.findV3Library().then(setOldApps);
@@ -161,6 +194,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
   useEffect(() => void document.documentElement.style.setProperty("zoom", String(settings.scale ?? 1)), [settings.scale]);
+  useEffect(() => setBindings(settings), [settings]);
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
   const fetched = useRef(new Set<string>());
@@ -224,6 +258,29 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       .finally(() => (pushing.current = false));
   }, [allItems, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Signed in: collections follow the account, and changes made here are saved to it.
+  useEffect(() => {
+    if (!userId || !account.collections) return;
+    const server = account.collections;
+    setCollections((local) => {
+      const next = applyServerCollections(local, server, userId);
+      return JSON.stringify(next) === JSON.stringify(local) ? local : next;
+    });
+  }, [userId, account.collections]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pushingCollections = useRef(false);
+  useEffect(() => {
+    const changed = allCollections.filter((c) => c.pending && c.account === userId);
+    // Until the site has collections, they stay on this device.
+    if (!userId || !account.collections || !changed.length || pushingCollections.current) return;
+    pushingCollections.current = true;
+    const sent = new Set(changed);
+    account
+      .saveCollections(changed)
+      .then(() => setCollections((all) => all.flatMap((c) => (!sent.has(c) ? [c] : c.removed ? [] : [{ ...c, pending: undefined }]))))
+      .catch(() => {})
+      .finally(() => (pushingCollections.current = false));
+  }, [allCollections, userId, account.collections]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Apps set to update by themselves.
   useEffect(() => {
     for (const item of library) {
@@ -235,16 +292,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const fail = (id: string, error: unknown) =>
     setJobs((j) => ({ ...j, [id]: { error: error instanceof Error ? error.message : String(error) } }));
 
-  async function installEntry(entry: Entry) {
+  async function installEntry(entry: Entry, chosen?: Release) {
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
     try {
       // GitHub doesn't mind the key's lower case.
       const custom = isCustom(entry.id) ? entry.id.slice("github:".length) : null;
-      const release = custom
-        ? (await github.releases(custom))[0]
-        : (await client.releases(entry.slug).catch(() => {
-            throw new Error("Couldn't reach quiverlauncher.com. Check your connection and try again.");
-          })).items[0];
+      const release =
+        chosen ??
+        (custom
+          ? (await github.releases(custom))[0]
+          : (await client.releases(entry.slug).catch(() => {
+              throw new Error("Couldn't reach quiverlauncher.com. Check your connection and try again.");
+            })).items[0]);
       if (!release) throw new Error(custom ? "This repository has no releases yet." : "This app has no approved release yet.");
       const settings = release.installationOverride ?? entry.launcher;
       let [asset, ...others] = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter);
@@ -273,7 +332,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       });
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
-      setInstalls((i) => ({ ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
+      // Picking another version keeps the app on it until the player says otherwise.
+      const updates = chosen ? "pinned" : installs[entry.id]?.updates;
+      setInstalls((i) => ({ ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(updates ? { updates } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
       setJobs(({ [entry.id]: _, ...rest }) => rest);
     } catch (error) {
       fail(entry.id, error);
@@ -313,6 +374,21 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const value: Launcher = {
     config,
     client,
+    github,
+    gitlab,
+    consoles,
+    consoleNames,
+    collections,
+    saveCollection: (c) =>
+      setCollections((all) => {
+        const synced = c.account ?? userId;
+        const next = { ...c, account: synced, pending: synced ? true : undefined };
+        // Never synced: a removal just deletes it.
+        const keep = c.removed && !synced ? [] : [next];
+        return all.some((x) => x.key === c.key) ? all.flatMap((x) => (x.key === c.key ? keep : [x])) : [...all, ...keep];
+      }),
+    setTags: (id, tags) =>
+      setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, tags: tags.length ? tags : undefined }, pending: i.account ? { ...i.pending, tags: true } : i.pending }))),
     library,
     notice,
     setNotice,
@@ -349,6 +425,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     async signOut() {
       await account.signOut();
       setLibrary([]);
+      setCollections([]);
     },
     installs,
     catalog,
@@ -359,11 +436,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const fresh = entries.filter((e) => known.has(e.id));
       if (fresh.length) setCatalog((c) => ({ ...c, ...Object.fromEntries(fresh.map((e) => [e.id, { ...c[e.id], ...e }])) }));
     },
-    async get(entry) {
+    async get(entry, release) {
       if (jobs[entry.id] && !("error" in jobs[entry.id])) return;
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry);
+      await installEntry(entry, release);
     },
     async play(id) {
       const install = installs[id];
@@ -423,7 +500,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 }
 
 /** Saves a state file whenever it changes after the first render. */
-function usePersist(name: "library" | "installs" | "catalog" | "settings", value: unknown) {
+function usePersist(name: "library" | "installs" | "catalog" | "settings" | "collections", value: unknown) {
   const first = useRef(true);
   useEffect(() => {
     if (first.current) first.current = false;

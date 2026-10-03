@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { Download, Library, Play, Search, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
-import type { Entry, Page } from "@quiver/api";
+import { Download, Play, Search, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
+import type { AppQuery, Entry, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score, coverOf } from "@quiver/ui";
-import { availableOn, hasUpdate, useLauncher, type LibraryItem } from "./store";
+import { availableOn, hasUpdate, useLauncher } from "./store";
+import { LibraryPage, withOverrides } from "./library";
+import { Readme, RepositoryLink, Shortcuts, Tags, Versions, useSource } from "./detail";
+import { ControlSettings } from "./controls";
 import { useAccount } from "./account";
 import { native } from "./native";
 import { isCustom } from "./custom";
@@ -37,7 +40,7 @@ export function App() {
         <Notice />
         <OldLibrary onDone={() => setTab("library")} />
         {tab === "library" ? (
-          <LibraryPage onOpen={setOpen} onBrowse={() => setTab("browse")} />
+          <LibraryPage onOpen={setOpen} onBrowse={() => setTab("browse")} action={(entry) => <Action entry={entry} />} />
         ) : (
           <BrowsePage onOpen={setOpen} />
         )}
@@ -88,103 +91,6 @@ function OldLibrary({ onDone }: { onDone: () => void }) {
   );
 }
 
-function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrowse: () => void }) {
-  const { library: all, catalog, installs, jobs, get, add, remove, settings } = useLauncher();
-  const [showHidden, setShowHidden] = useState(false);
-  const hidden = new Set(settings.hidden);
-  const library = all.filter((i) => hidden.has(i.id) === showHidden);
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"played" | "name" | "added">("played");
-  const updates = library.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
-  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
-  const order = {
-    played: (i: LibraryItem) => -(installs[i.id]?.lastPlayed ?? 0),
-    added: (i: LibraryItem) => -i.addedAt,
-    name: () => 0,
-  }[sort];
-  const items = library
-    .flatMap((i) => (catalog[i.id] ? [{ item: i, entry: withOverrides(catalog[i.id], i.overrides) }] : []))
-    .filter(({ entry, item }) => {
-      const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item.overrides?.tags ?? [])].join(" ").toLowerCase();
-      return words.every((w) => text.includes(w));
-    })
-    .sort((a, b) => order(a.item) - order(b.item) || a.entry.projectName.localeCompare(b.entry.projectName))
-    .map(({ entry }) => entry);
-  // Removed from the library (here, elsewhere or by signing out) but its files are still here.
-  const loose = Object.keys(installs).flatMap((id) => (catalog[id] && !all.some((i) => i.id === id) ? [catalog[id]] : []));
-  if (!all.length && !loose.length)
-    return (
-      <div className="empty">
-        <Library size={40} strokeWidth={1.2} />
-        <h2>Your library is empty</h2>
-        <p>Find a port in the catalog and press Get. It's added here and downloads straight away.</p>
-        <button className="primary" onClick={onBrowse}>
-          Browse the catalog
-        </button>
-      </div>
-    );
-  return (
-    <>
-      <div className="toolbar">
-        <label className="search">
-          <Search size={16} />
-          <input placeholder="Search your library" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </label>
-        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-          <option value="played">Recently played</option>
-          <option value="added">Recently added</option>
-          <option value="name">Name</option>
-        </select>
-        {(hidden.size > 0 || showHidden) && (
-          <label className="toggle">
-            <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
-            Show hidden apps ({hidden.size})
-          </label>
-        )}
-        {updates.length > 0 && (
-          <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
-            Update all ({updates.length})
-          </button>
-        )}
-      </div>
-      <div className="catalog-grid">
-        {items.map((entry) => (
-          <EntryCard key={entry.id} entry={entry} onOpen={() => onOpen(entry)} action={<Action entry={entry} />} />
-        ))}
-      </div>
-      {loose.length > 0 && (
-        <section className="loose">
-          <h2>Installed, not in your library</h2>
-          <div className="catalog-grid">
-            {loose.map((entry) => (
-              <EntryCard
-                key={entry.id}
-                entry={entry}
-                onOpen={() => onOpen(entry)}
-                action={
-                  <div className="row">
-                    <button className="primary" onClick={() => add(entry)}>
-                      Add
-                    </button>
-                    <button onClick={() => remove(entry.id)}>Uninstall</button>
-                  </div>
-                }
-              />
-            ))}
-          </div>
-        </section>
-      )}
-    </>
-  );
-}
-
-/** The catalog entry as this player named and pictured it. */
-const withOverrides = (entry: Entry, o?: { name?: string; cover?: string }): Entry => ({
-  ...entry,
-  ...(o?.name ? { projectName: o.name } : {}),
-  ...(o?.cover ? { libraryArt: { ...entry.libraryArt, header: o.cover, hero: o.cover } } : {}),
-});
-
 /** An app the catalog doesn't list, straight from its GitHub repository. */
 function AddRepository({ onOpen }: { onOpen: (e: Entry) => void }) {
   const { addRepository } = useLauncher();
@@ -222,20 +128,22 @@ function AddRepository({ onOpen }: { onOpen: (e: Entry) => void }) {
 }
 
 function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
-  const { client, config, library, remember } = useLauncher();
+  const { client, config, library, remember, consoles, consoleNames } = useLauncher();
   const [search, setSearch] = useState("");
-  const [allPlatforms, setAllPlatforms] = useState(false);
+  // The site's catalog filters; the platform starts at this computer's.
+  const [filters, setFilters] = useState<Omit<AppQuery, "search" | "cursor" | "limit">>({ os: config.os, sort: "added" });
   const [pages, setPages] = useState<Page<Entry>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const query = useDebounced(search, 250);
-  const os = allPlatforms ? undefined : config.os;
+  const searching = Boolean(query.trim());
 
   function load(cursor?: string | null) {
     setLoading(true);
     setError(null);
     client
-      .apps({ search: query, os, cursor })
+      // A search orders by relevance.
+      .apps({ ...filters, search: query, sort: searching ? undefined : filters.sort, cursor })
       .then((page) => {
         remember(page.items);
         setPages((p) => (cursor ? [...p, page] : [page]));
@@ -243,7 +151,9 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
       .catch(() => setError("Couldn't reach quiverlauncher.com. Check your connection and try again."))
       .finally(() => setLoading(false));
   }
-  useEffect(() => load(), [query, os, client]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => load(), [query, JSON.stringify(filters), client]); // eslint-disable-line react-hooks/exhaustive-deps
+  const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
+  const brands = [...new Set(consoles.map((c) => c.brand))];
 
   const inLibrary = new Set(library.map((i) => i.id));
   const entries = pages.flatMap((p) => p.items);
@@ -260,11 +170,52 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </label>
-        <label className="toggle">
-          <input type="checkbox" checked={allPlatforms} onChange={(e) => setAllPlatforms(e.target.checked)} />
-          Show apps for other platforms
-        </label>
         <AddRepository onOpen={onOpen} />
+      </div>
+      <div className="toolbar filters">
+        <select aria-label="Sort" value={searching ? "" : (filters.sort ?? "added")} disabled={searching} onChange={set("sort")}>
+          {searching && <option value="">Most relevant</option>}
+          <option value="added">Recently added</option>
+          <option value="updated">Recently updated</option>
+          <option value="rating">Top rated</option>
+          <option value="name">Name A–Z</option>
+        </select>
+        <select aria-label="Project type" value={filters.projectType ?? ""} onChange={set("projectType")}>
+          <option value="">All project types</option>
+          <option value="port">Port</option>
+          <option value="tool">Tool</option>
+          <option value="emulator">Emulator</option>
+          <option value="game">Standalone game</option>
+        </select>
+        <select aria-label="Platform" value={filters.os ?? ""} onChange={set("os")}>
+          <option value="">All platforms</option>
+          {Object.entries(OS_NAMES).map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+              {id === config.os ? " (this computer)" : ""}
+            </option>
+          ))}
+        </select>
+        <select aria-label="Console" value={filters.console ?? ""} onChange={set("console")}>
+          <option value="">All consoles</option>
+          {brands.map((brand) => (
+            <optgroup key={brand} label={brand === "OtherPlatforms" ? "Other platforms" : brand}>
+              <option value={`maker:${brand}`}>{brand === "OtherPlatforms" ? "All other platforms" : `All ${brand}`}</option>
+              {consoles
+                .filter((c) => c.brand === brand)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+        <select aria-label="AI use" value={filters.ai ?? ""} onChange={set("ai")}>
+          <option value="">Show all apps</option>
+          <option value="no-generated">Hide mostly AI-generated apps</option>
+          <option value="no-ai">Hide apps with any AI use</option>
+        </select>
       </div>
       {error ? (
         <div className="empty">
@@ -280,13 +231,14 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
               <EntryCard
                 key={entry.id}
                 entry={entry}
+                consoleNames={consoleNames}
                 onOpen={() => onOpen(entry)}
                 badge={inLibrary.has(entry.id) ? "In library" : undefined}
                 action={<Action entry={entry} />}
               />
             ))}
           </div>
-          {!loading && !entries.length && <p className="empty">Nothing matches that search.</p>}
+          {!loading && !entries.length && <p className="empty">Nothing matches that search and those filters.</p>}
           {loading ? (
             <div className="more">
               <span className="spinner" />
@@ -373,6 +325,7 @@ function Detail({ entry: opened, onClose, onSignIn }: { entry: Entry; onClose: (
   // The player's own name and artwork, live as they change them.
   const entry = withOverrides(catalog[opened.id] ?? opened, item?.overrides);
   const install = installs[entry.id];
+  const source = useSource(entry);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -399,7 +352,8 @@ function Detail({ entry: opened, onClose, onSignIn }: { entry: Entry; onClose: (
                 {entry.verified.pinned ? `v${entry.verified.version} · verified` : `v${entry.verified.version} · files can't be verified`}
               </span>
             )}
-            {install && <span className="muted">Installed v{install.version}</span>}
+            {install && <span className="muted">Installed {/^v/i.test(install.version) ? "" : "v"}{install.version}</span>}
+            {source && <RepositoryLink source={source} />}
           </div>
           <p className="description">{entry.description}</p>
           <div className="row">
@@ -416,9 +370,13 @@ function Detail({ entry: opened, onClose, onSignIn }: { entry: Entry; onClose: (
               </button>
             )}
           </div>
+          <Shortcuts entry={entry} />
           {item && <AppOptions id={item.id} />}
+          {item && <Versions entry={entry} source={source} />}
+          {item && <Tags id={item.id} />}
           {item && <Customize id={item.id} />}
           {!isCustom(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
+          <Readme entry={entry} source={source} />
         </div>
       </section>
     </div>
@@ -661,6 +619,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
             </select>
           </label>
           <p className="muted">Apps are installed in {config.appsDir}</p>
+          <ControlSettings />
           <button className="primary" onClick={onClose}>
             Done
           </button>

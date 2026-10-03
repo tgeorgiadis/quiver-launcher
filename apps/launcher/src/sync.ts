@@ -94,3 +94,48 @@ export function changesFrom(local: LibraryItem[], account: string): Change[] {
       return change;
     });
 }
+
+/**
+ * A saved library filter (Library shelves). It shows apps that match every
+ * part it sets: any of its tags (the player's or the catalog's), any of its
+ * consoles, and installed or not. A hand-picked collection is one tag.
+ */
+export type Collection = {
+  /** Made here, kept once it syncs. */
+  key: string;
+  name: string;
+  tags: string[];
+  consoles: string[];
+  installed?: "yes" | "no";
+  order: number;
+  removed?: boolean;
+  /** Changed here and not yet saved to the account. */
+  pending?: boolean;
+  /** The account this collection last synced with. */
+  account?: string;
+};
+/** A collection in the account (libraryCollections.list on the site). */
+export type ServerCollection = Omit<Collection, "pending" | "account"> & { removed: boolean; updatedAt: number };
+
+/** Signing in brings this device's collections along; the account's win unless changed here. */
+export function applyServerCollections(local: Collection[], server: ServerCollection[], account: string): Collection[] {
+  const mine = new Map(
+    local.flatMap((c) => (!c.account ? [{ ...c, account, pending: true }] : c.account === account ? [c] : [])).map((c) => [c.key, c]),
+  );
+  for (const { updatedAt: _, ...s } of server) {
+    if (mine.get(s.key)?.pending) continue;
+    if (s.removed) mine.delete(s.key);
+    else mine.set(s.key, { ...s, removed: undefined, account });
+  }
+  return [...mine.values()];
+}
+
+/** Whether an app belongs on a collection's shelf. */
+export function inCollection(c: Pick<Collection, "tags" | "consoles" | "installed">, app: { tags: string[]; consoles: string[]; installed: boolean }) {
+  const tags = new Set(app.tags.map((t) => t.toLowerCase()));
+  return (
+    (!c.tags.length || c.tags.some((t) => tags.has(t.toLowerCase()))) &&
+    (!c.consoles.length || c.consoles.some((t) => app.consoles.includes(t))) &&
+    (!c.installed || (c.installed === "yes") === app.installed)
+  );
+}

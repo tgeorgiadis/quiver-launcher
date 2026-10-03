@@ -10,7 +10,7 @@ import { ConvexAuthProvider, useAuthActions, type TokenStorage } from "@convex-d
 import { useSignInWithPassword, useSignUpWithPassword } from "@convex-dev/auth/providers/password/react";
 import type { Os } from "@quiver/api";
 import { native, type Config } from "./native";
-import type { Change, ServerItem } from "./sync";
+import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
 
 export type ReviewInput = {
   entryId: string;
@@ -33,6 +33,10 @@ export type Account = {
   /** Signs in with GitHub or Discord in the system browser; same result as signIn. */
   signInWith: (provider: Provider) => Promise<string | null>;
   signOut: () => Promise<void>;
+  /** The account's library collections, live; undefined while signed out, loading or not on the site yet. */
+  collections: ServerCollection[] | undefined;
+  /** Saves whole collections; the ones refused come back. */
+  saveCollections: (collections: Collection[]) => Promise<{ key: string; error: string }[]>;
   /** Saves changes; the ones refused come back. */
   save: (changes: Change[]) => Promise<{ key: string; error: string }[]>;
   review: (review: ReviewInput) => Promise<void>;
@@ -63,6 +67,8 @@ const fns = {
   me: ref("query", "users:me"),
   list: ref("query", "library:list"),
   save: ref("mutation", "library:save"),
+  collections: ref("query", "libraryCollections:list"),
+  saveCollections: ref("mutation", "libraryCollections:save"),
   review: ref("mutation", "reviews:save"),
   github: [ref("mutation", "auth:startSignInGithub"), ref("mutation", "auth:completeSignInGithub")],
   discord: [ref("mutation", "auth:startSignInDiscord"), ref("mutation", "auth:completeSignInDiscord")],
@@ -113,7 +119,9 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
   const { isAuthenticated, isLoading } = useConvexAuth();
   const me = useQuery(fns.me, isAuthenticated ? {} : "skip") as { _id: string; displayName: string } | null | undefined;
   const items = useQuery(fns.list, isAuthenticated ? {} : "skip") as ServerItem[] | undefined;
+  const collections = useOptionalQuery<ServerCollection[]>(client, fns.collections, isAuthenticated);
   const save = useMutation(fns.save);
+  const saveCollections = useMutation(fns.saveCollections);
   const review = useMutation(fns.review);
   const login = useSignInWithPassword(fns.signIn as never);
   const register = useSignUpWithPassword(fns.signUp as never);
@@ -122,6 +130,8 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     ready: !isLoading,
     user: me ? { id: me._id, name: me.displayName } : null,
     items: me ? items : undefined,
+    collections: me ? collections : undefined,
+    saveCollections: (list) => saveCollections({ collections: list.map(toServer) }),
     async signIn(username, password, create) {
       const result = await (create ? register.signUp : login.signIn)({ username, password });
       return result.status === "complete" ? null : messageOf(result);
@@ -145,6 +155,33 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     review: async (r) => void (await review(r)),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
+}
+
+/** What the site stores of a collection. */
+const toServer = ({ key, name, tags, consoles, installed, order, removed }: Collection) => ({
+  key, name, tags, consoles, ...(installed ? { installed } : {}), order, removed: Boolean(removed),
+});
+
+/**
+ * A live query that may not exist on the site yet (a newer launcher against
+ * an older site): undefined instead of an error.
+ */
+function useOptionalQuery<T>(client: ConvexReactClient, query: FunctionReference<"query">, on: boolean): T | undefined {
+  const [value, setValue] = useState<T>();
+  useEffect(() => {
+    if (!on) return setValue(undefined);
+    const watch = client.watchQuery(query, {});
+    const read = () => {
+      try {
+        setValue(watch.localQueryResult() as T | undefined);
+      } catch {
+        setValue(undefined);
+      }
+    };
+    read();
+    return watch.onUpdate(read);
+  }, [client, query, on]);
+  return value;
 }
 
 /** The website's wording for sign-in errors (AuthPage.tsx there). */
@@ -176,6 +213,7 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [user, setUser] = useState<Account["user"]>(null);
   const [items, setItems] = useState<ServerItem[] | undefined>();
+  const [collections, setCollections] = useState<ServerCollection[] | undefined>();
   const call = (path: string, body?: unknown) =>
     fetch(base + path, {
       method: body ? "POST" : "GET",
@@ -188,11 +226,11 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
   };
   useEffect(() => void native.secretGet("testToken").then((t) => setToken(t ?? null)), []);
   useEffect(() => {
-    if (!token) return setUser(null), setItems(undefined);
+    if (!token) return setUser(null), setItems(undefined), setCollections(undefined);
     let live = true;
     const poll = () =>
       call("/library")
-        .then((r) => live && (setUser(r.user), setItems(r.items)))
+        .then((r) => live && (setUser(r.user), setItems(r.items), setCollections(r.collections)))
         .catch(() => {})
         .finally(() => live && setTimeout(poll, 400));
     poll();
@@ -225,6 +263,8 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       setToken(null);
     },
     save: (changes) => call("/library/save", { changes }),
+    collections,
+    saveCollections: (list) => call("/collections/save", { collections: list.map(toServer) }),
     review: (r) => call("/reviews", r),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;

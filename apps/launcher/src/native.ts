@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Os } from "@quiver/api";
 
-type StateFile = "library" | "installs" | "catalog" | "settings";
+type StateFile = "library" | "installs" | "catalog" | "settings" | "collections";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
 export type OldApp = { name: string; repository?: string; provider: string; dir?: string; version?: string };
 export type Config = { api: string; convex: string; accountApi?: string; githubApi: string; returnTo: string; os: Os; arch: string; appsDir: string };
@@ -17,6 +17,16 @@ export type InstallRequest = {
   dir?: string;
   filesToAdd: string[];
   version: string;
+};
+
+/** An installed app, for a desktop or Steam shortcut. */
+export type ShortcutRequest = {
+  name: string;
+  folder: string;
+  dir?: string;
+  preferred: string[];
+  wine: boolean;
+  art: { icon?: string; header?: string; capsule?: string; hero?: string; logo?: string };
 };
 
 export const native = {
@@ -34,5 +44,12 @@ export const native = {
   setFullscreen: (on: boolean) => invoke<void>("set_fullscreen", { on }),
   logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<OldApp[]>("find_v3_library"),
+  /** Resolves to what to tell the player. */
+  createShortcut: (request: ShortcutRequest) => invoke<string>("create_shortcut", { request }),
+  addToSteam: (request: ShortcutRequest) => invoke<string>("add_to_steam", { request }),
+  openUrl: (url: string) => invoke<void>("open_url", { url }),
+  controllers: () => invoke<string[]>("controllers"),
+  onControllers: (handler: (names: string[]) => void) => listen<string[]>("pads", (e) => handler(e.payload)),
+  onPad: (handler: (p: { key: string; down: boolean }) => void) => listen<{ key: string; down: boolean }>("pad", (e) => handler(e.payload)),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),
 };
