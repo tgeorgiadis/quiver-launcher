@@ -49,9 +49,19 @@ jobs:
           cargo install --git https://github.com/chippers/msedgedriver-tool
           msedgedriver-tool.exe
           echo "NATIVE_DRIVER=$PWD\msedgedriver.exe" >> $env:GITHUB_ENV
+          .\msedgedriver.exe --version
+      - name: The app starts
+        run: |
+          $env:QUIVER_DATA = "$env:RUNNER_TEMP\quiver-smoke"
+          $app = Start-Process apps\launcher\src-tauri\target\debug\quiver-launcher.exe -PassThru
+          Start-Sleep 10
+          "still running: $(-not $app.HasExited), exit code: $($app.ExitCode)"
+          Get-Content "$env:QUIVER_DATA\quiver.log" -ErrorAction SilentlyContinue
+          Stop-Process $app -ErrorAction SilentlyContinue
       # Read-only run against the real catalog; reported, not gating, since the catalog changes on its own.
       - name: Live catalog
         continue-on-error: true
+        timeout-minutes: 15
         run: pnpm --filter @quiver/e2e live
 
   installer:

@@ -32,12 +32,20 @@ export async function launch({ env = {}, api: shared, data = mkdtempSync(join(tm
     stdio: "inherit",
   });
   await new Promise((r) => setTimeout(r, 1500));
-  const app = await remote({
-    hostname: "127.0.0.1",
-    port,
-    logLevel: "error",
-    capabilities: { "wdio:enforceWebDriverClassic": true, "tauri:options": { application: binary } },
-  });
+  let app;
+  try {
+    app = await remote({
+      hostname: "127.0.0.1",
+      port,
+      logLevel: "error",
+      capabilities: { "wdio:enforceWebDriverClassic": true, "tauri:options": { application: binary } },
+    });
+  } catch (error) {
+    // Don't leave the driver holding the test process open.
+    driver.kill();
+    if (!shared) api.close();
+    throw error;
+  }
   return {
     app,
     api,
