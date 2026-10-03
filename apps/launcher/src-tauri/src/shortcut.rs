@@ -68,7 +68,10 @@ pub async fn download_image(url: &str) -> Result<image::DynamicImage, String> {
 
 /// Puts a shortcut on the desktop; returns where.
 pub fn desktop(target: &Target, name: &str, icon: Option<&Path>) -> Result<PathBuf, String> {
-    let desktop = dirs::desktop_dir().ok_or("Couldn't find your desktop folder.")?;
+    // Without XDG user folders set up, Linux desktops still use ~/Desktop.
+    let desktop = dirs::desktop_dir()
+        .or_else(|| dirs::home_dir().map(|h| h.join("Desktop")))
+        .ok_or("Couldn't find your desktop folder.")?;
     std::fs::create_dir_all(&desktop).map_err(|e| e.to_string())?;
     write_shortcut(&desktop, target, name, icon)
 }

@@ -49,8 +49,12 @@ const entry = (slug, name, overrides = {}) => ({
 export async function startMockApi() {
   const zip = buildZip();
   const sha = createHash("sha256").update(zip).digest("hex");
-  const entries = [entry("test-port", "Test Port"), entry("tampered-port", "Tampered Port")];
+  const entries = [
+    entry("test-port", "Test Port", { consoles: ["n64"] }),
+    entry("tampered-port", "Tampered Port", { consoles: ["snes"], tags: ["snes", "port"] }),
+  ];
   let base = "";
+  let lastQuery = new URLSearchParams();
   let version = "1.0.0";
   const releasedAt = (v) => Date.UTC(2026, 0, Number(v.split(".")[1]) + 1);
   const release = (slug) => ({
@@ -77,6 +81,21 @@ export async function startMockApi() {
       res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
       res.end(JSON.stringify(body));
     };
+    // GitHub's API: every release of a catalog app (one the site verified, one it didn't), and READMEs.
+    if (url.pathname === "/github/repos/quiver/test-port/releases")
+      return send(
+        ["v1.0.0", "v0.9.0"].map((tag, i) => ({
+          tag_name: tag,
+          draft: false,
+          prerelease: false,
+          published_at: `2025-0${6 - i}-01T00:00:00Z`,
+          assets: [{ id: 10 + i, name: "TestPort-linux.zip", browser_download_url: `${base}/files/old-linux.zip`, size: zip.length, digest: `sha256:${sha}` }],
+        })),
+      );
+    if (url.pathname === "/github/repos/someone/homebrew/readme") {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      return res.end("# Homebrew\n\nStraight from GitHub.");
+    }
     // GitHub's API, for custom apps: one repository the catalog doesn't list.
     if (url.pathname.startsWith("/github/")) {
       if (url.pathname.toLowerCase() !== "/github/repos/someone/homebrew/releases") return send({ message: "Not Found" }, 404);
@@ -98,6 +117,14 @@ export async function startMockApi() {
       res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": zip.length });
       return res.end(zip);
     }
+    if (url.pathname === "/api/v1/facets")
+      return send({
+        total: entries.length,
+        consoles: [
+          { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
+          { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
+        ],
+      });
     if (url.pathname === "/api/v1/release-status")
       return send({
         items: entries.map((e) => ({ id: e.id, slug: e.slug, provider: "github", repository: `quiver/${e.slug}` })),
@@ -107,13 +134,23 @@ export async function startMockApi() {
     if (api !== "api" || apiVersion !== "v1" || resource !== "apps") return send({ error: { message: "Not found" } }, 404);
     if (!slug) {
       const search = url.searchParams.get("search")?.toLowerCase() ?? "";
-      const items = entries.filter((e) => e.name.toLowerCase().includes(search));
+      const system = url.searchParams.get("console");
+      lastQuery = url.searchParams;
+      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!system || e.consoles.includes(system)));
       return send({ items: items.map(withVersion), nextCursor: null, isDone: true });
     }
     const found = entries.find((e) => e.slug === slug);
     if (!found) return send({ error: { message: "App not found" } }, 404);
     if (child === "releases") return send({ items: [release(slug)], nextCursor: null, isDone: true });
-    return send({ entry: withVersion(found), project: { name: found.name, description: "", provider: "github" }, withdrawn: [] });
+    if (child === "readme")
+      return slug === "test-port"
+        ? send({ markdown: "# Test Port\n\nA **test** port. See [the guide](docs/guide.md).", rawBase: "https://raw.example/", htmlBase: "https://github.com/quiver/test-port/blob/HEAD/" })
+        : send({ error: { message: "This app has no README yet" } }, 404);
+    return send({
+      entry: withVersion(found),
+      project: { name: found.name, description: "", provider: "github", repository: `quiver/${slug}` },
+      withdrawn: [],
+    });
   });
   const withVersion = (e) => ({ ...e, verified: { ...e.verified, version, releasedAt: releasedAt(version) } });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -123,6 +160,8 @@ export async function startMockApi() {
     account: `${base}/account`,
     github: `${base}/github`,
     reviews: account.reviews,
+    /** The filters of the last catalog page asked for. */
+    lastQuery: () => lastQuery,
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     close: () => server.close(),
@@ -134,7 +173,7 @@ export async function startMockApi() {
  * with the same contract, over HTTP: the real backend is private.
  */
 function mockAccount(entries) {
-  const users = new Map(); // name -> { id, password, items: Map(entryId -> item) }
+  const users = new Map(); // name -> { id, password, items: Map(entryId -> item), collections: Map(key -> collection) }
   const tokens = new Map(); // token -> name
   const reviews = [];
   const flows = new Map(); // OAuth state -> redirectTo, then code -> state
@@ -167,7 +206,7 @@ function mockAccount(entries) {
     if (path === "/oauth/complete") {
       if (flows.get(body.code) !== body.state) return send(res, {}, 401);
       flows.delete(body.code);
-      if (!users.has("octocat")) users.set("octocat", { id: "user_octocat", items: new Map() });
+      if (!users.has("octocat")) users.set("octocat", { id: "user_octocat", items: new Map(), collections: new Map() });
       const token = `token_${Math.random()}`;
       tokens.set(token, "octocat");
       return send(res, { token });
@@ -175,7 +214,7 @@ function mockAccount(entries) {
     if (path === "/signin") {
       const existing = users.get(body.username);
       if (body.create ? existing : existing?.password !== body.password) return send(res, {}, 401);
-      if (body.create) users.set(body.username, { id: `user_${body.username}`, password: body.password, items: new Map() });
+      if (body.create) users.set(body.username, { id: `user_${body.username}`, password: body.password, items: new Map(), collections: new Map() });
       const token = `token_${Math.random()}`;
       tokens.set(token, body.username);
       return send(res, { token });
@@ -187,7 +226,13 @@ function mockAccount(entries) {
       return send(res, {
         user: { id: user.id, name },
         items: [...user.items.values()].map((i) => ({ ...i, ...(i.entryId ? { slug: entries.find((e) => e.id === i.entryId).slug } : {}) })),
+        collections: [...user.collections.values()],
       });
+    // As libraryCollections.save: whole collections, the latest save wins.
+    if (path === "/collections/save") {
+      for (const c of body.collections) user.collections.set(c.key, { ...c, updatedAt: Date.now() });
+      return send(res, []);
+    }
     if (path === "/library/save") {
       // As on the site: an add fills only empty fields, an edit sets what it names.
       for (const c of body.changes) {

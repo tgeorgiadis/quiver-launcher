@@ -84,6 +84,9 @@ test("a download that doesn't match Quiver's checksum is refused", async () => {
 test("arrow keys and controllers move between cards", async () => {
   await (await app.$("input[placeholder^=Search]")).click();
   const focused = () => app.execute(() => document.activeElement?.closest("article")?.dataset.slug);
+  // Down from the search box reaches the filters, then the first card.
+  await app.keys("ArrowDown");
+  assert.equal(await app.execute(() => document.activeElement?.getAttribute("aria-label")), "Sort");
   await app.keys("ArrowDown");
   assert.equal(await focused(), "test-port");
   await app.keys("ArrowRight");
@@ -91,8 +94,8 @@ test("arrow keys and controllers move between cards", async () => {
   // A controller's d-pad, as the Rust side reports it.
   const pad = (key, down) =>
     app.execute((key, down) => window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event: "pad", payload: { key, down } }), key, down);
-  await pad("left", true);
-  await pad("left", false);
+  await pad("DPadLeft", true);
+  await pad("DPadLeft", false);
   await until(async () => (await focused()) === "test-port");
 });
 

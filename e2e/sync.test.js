@@ -62,6 +62,15 @@ test("renaming an app on one computer renames it on the other", async () => {
   await b.until(async () => (await (await (await b.card("test-port")).$(".card-open")).getAttribute("aria-label")) === "My Port");
 });
 
+test("a collection made on one computer shows on the other", async () => {
+  await (await a.app.$("button[aria-label='New collection']")).click();
+  await (await a.app.$("input[aria-label='Collection name']")).setValue("Co-op");
+  await (await a.app.$("button=Save")).click();
+  await titles(b);
+  await (await (await b.app.$("nav[aria-label=Shelves]")).$("button=Co-op")).waitForDisplayed({ timeout: 10000 });
+  await (await (await a.app.$("nav[aria-label=Shelves]")).$("button=All")).click();
+});
+
 test("removing an app on one computer removes it on the other, keeping installed files", async () => {
   // B installs test-port; A then removes both apps.
   await (await (await b.card("test-port")).$("button=Get")).click();
