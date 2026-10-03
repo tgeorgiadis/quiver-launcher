@@ -6,7 +6,10 @@ import { join, resolve } from "node:path";
 import { remote } from "webdriverio";
 import { startMockApi } from "./mock-api.js";
 
-const binary = resolve(import.meta.dirname, "../apps/launcher/src-tauri/target/debug/quiver-launcher");
+const exe = process.platform === "win32" ? ".exe" : "";
+const binary = resolve(import.meta.dirname, `../apps/launcher/src-tauri/target/debug/quiver-launcher${exe}`);
+// Windows drives WebView2 through msedgedriver, which must match its version.
+const native = process.env.NATIVE_DRIVER ? ["--native-driver", process.env.NATIVE_DRIVER] : [];
 
 /**
  * One running copy of the app. Pass `api` to share a mock catalog between
@@ -15,7 +18,7 @@ const binary = resolve(import.meta.dirname, "../apps/launcher/src-tauri/target/d
  */
 export async function launch({ env = {}, api: shared, data = mkdtempSync(join(tmpdir(), "quiver-data-")), port = 4444 } = {}) {
   const api = shared ?? (await startMockApi());
-  const driver = spawn(join(homedir(), ".cargo/bin/tauri-driver"), ["--port", String(port), "--native-port", String(port + 1)], {
+  const driver = spawn(join(homedir(), `.cargo/bin/tauri-driver${exe}`), ["--port", String(port), "--native-port", String(port + 1), ...native], {
     env: {
       ...process.env,
       QUIVER_API: api.api,

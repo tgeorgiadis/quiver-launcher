@@ -43,3 +43,31 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
       - run: pnpm --filter @quiver/launcher tauri build --debug --no-bundle
+      - name: WebDriver for WebView2
+        run: |
+          cargo install tauri-driver --locked
+          cargo install --git https://github.com/chippers/msedgedriver-tool
+          msedgedriver-tool.exe
+          echo "NATIVE_DRIVER=$PWD\msedgedriver.exe" >> $env:GITHUB_ENV
+      # Read-only run against the real catalog; reported, not gating, since the catalog changes on its own.
+      - name: Live catalog
+        continue-on-error: true
+        run: pnpm --filter @quiver/e2e live
+
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      - run: pnpm install --frozen-lockfile
+      # Unsigned until there are signing keys.
+      - run: pnpm --filter @quiver/launcher tauri build --bundles nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Quiver Launcher Windows installer
+          path: apps/launcher/src-tauri/target/release/bundle/nsis/*.exe
