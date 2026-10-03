@@ -250,6 +250,7 @@ function Action({ entry }: { entry: Entry }) {
     );
   if (!availableOn(entry, config.os))
     return <p className="unavailable">Not available for {OS_NAMES[config.os] ?? config.os}</p>;
+  if (!entry.verified) return <p className="unavailable">No approved release yet</p>;
   return (
     <button className="primary wide" onClick={() => get(entry)}>
       <Download size={15} /> Get
