@@ -7,7 +7,7 @@
     "build": "pnpm --filter @quiver/launcher tauri build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "e2e": "pnpm --filter @quiver/e2e test"
+    "e2e": "pnpm --filter @quiver/e2e e2e"
   },
   "packageManager": "pnpm@10.16.0"
 }
