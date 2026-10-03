@@ -28,6 +28,7 @@ jobs:
       # Read-only run against the real catalog; reported, not gating, since the catalog changes on its own.
       - name: Live catalog
         continue-on-error: true
+        timeout-minutes: 15
         run: xvfb-run -a pnpm --filter @quiver/e2e live
 
   windows:
@@ -85,3 +86,34 @@ jobs:
         with:
           name: Quiver Launcher Windows installer
           path: apps/launcher/src-tauri/target/release/bundle/nsis/*.exe
+
+  # For Linux and Steam Deck: runs without installing anything. Built on the
+  # oldest supported Ubuntu so it works on older and newer distros alike.
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev libfuse2 xvfb
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @quiver/launcher tauri build --bundles appimage
+      - name: The AppImage starts
+        run: |
+          export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke
+          # Output goes to a file so nothing left running holds the step open.
+          status=0; xvfb-run -a timeout 15 apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage > $RUNNER_TEMP/app.log 2>&1 || status=$?
+          cat $RUNNER_TEMP/app.log $QUIVER_DATA/quiver.log 2>/dev/null || true
+          # 124: still running when the timeout stopped it.
+          test $status -eq 124
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Quiver Launcher for Linux (AppImage)
+          path: apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage

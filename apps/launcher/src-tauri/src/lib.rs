@@ -130,6 +130,10 @@ fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec
     };
     command
         .current_dir(exe.parent().unwrap_or(Path::new(&dir)))
+        // The game outlives the launcher's console; it shouldn't hold it open.
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .spawn()
         .map(|_| ())
         .map_err(|e| match wine {
