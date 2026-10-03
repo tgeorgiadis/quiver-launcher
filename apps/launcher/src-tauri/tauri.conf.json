@@ -10,7 +10,7 @@
     "beforeBuildCommand": "pnpm build"
   },
   "app": {
-    "windows": [{ "title": "Quiver Launcher", "width": 1280, "height": 800, "minWidth": 720, "minHeight": 500 }],
+    "windows": [{ "title": "Quiver Launcher", "width": 1280, "height": 800, "minWidth": 720, "minHeight": 500, "create": false }],
     "security": { "csp": null }
   },
   "bundle": {

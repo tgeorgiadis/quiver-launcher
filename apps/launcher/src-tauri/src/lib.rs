@@ -218,6 +218,25 @@ fn find_v3_library() -> Vec<v3::OldApp> {
     v3::find()
 }
 
+/// The window from tauri.conf.json. End-to-end tests on Windows set
+/// QUIVER_DEBUG_PORT on a debug build and attach to WebView2 there, since its
+/// runtime no longer takes the debugging port WebDriver passes it.
+fn main_window(app: &tauri::App, dir: &Path) -> tauri::Result<()> {
+    let builder = tauri::WebviewWindowBuilder::from_config(app.handle(), &app.config().app.windows[0])?;
+    #[cfg(all(windows, debug_assertions))]
+    let builder = match std::env::var("QUIVER_DEBUG_PORT") {
+        Ok(port) => builder
+            .additional_browser_args(&format!(
+                "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port={port}"
+            ))
+            .data_directory(dir.join("webview")),
+        Err(_) => builder,
+    };
+    let _ = dir;
+    builder.build()?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -242,6 +261,7 @@ pub fn run() {
                 .ok()
                 .and_then(|b| serde_json::from_slice(&b).ok())
                 .unwrap_or_default();
+            main_window(app, &dir)?;
             if settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen") {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.set_fullscreen(true);

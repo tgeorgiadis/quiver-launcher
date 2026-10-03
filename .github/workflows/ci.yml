@@ -45,7 +45,6 @@ jobs:
       - run: pnpm --filter @quiver/launcher tauri build --debug --no-bundle
       - name: WebDriver for WebView2
         run: |
-          cargo install tauri-driver --locked
           cargo install --git https://github.com/chippers/msedgedriver-tool
           msedgedriver-tool.exe
           .\msedgedriver.exe --version
