@@ -71,3 +71,4 @@ p.job-error { color: #e38c87; font-size: 13px; }
 .topbar button.icon { background: none; border: 0; padding: 8px; color: inherit; display: grid; place-items: center; }
 .settings { display: grid; gap: 14px; }
 .add-repo { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .add-repo input { min-width: 260px; } .add-repo p { flex-basis: 100%; }
+.options { margin: 12px 0; align-items: center; }

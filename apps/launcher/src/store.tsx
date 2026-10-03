@@ -38,6 +38,8 @@ export type Install = {
   dir?: string;
   version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean;
   lastPlayed?: number;
+  /** Install new releases without asking, or stay on this one. Unset: offer them. */
+  updates?: "auto" | "pinned";
 };
 export type Job = Progress | { error: string };
 /** Several files suit this computer: the player picks one. */
@@ -64,6 +66,7 @@ type Launcher = {
   addRepository: (input: string) => Promise<{ error: string } | { entry: Entry }>;
   /** Adds an app without installing it, such as one installed but not in the library. */
   add: (entry: Entry) => void;
+  setUpdates: (id: string, updates: Install["updates"]) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string }) => void;
   /** Changes made here that the account doesn't have yet. */
@@ -94,13 +97,14 @@ export function hasUpdate(entry: Entry | undefined, install: Install | undefined
   return Boolean(
     entry?.verified &&
       install &&
+      install.updates !== "pinned" &&
       bare(install.version) !== bare(entry.verified.version) &&
       entry.verified.releasedAt > (install.releasedAt ?? 0),
   );
 }
 
 /** This computer's preferences; they don't sync. */
-export type Settings = { fullscreen?: boolean; scale?: number };
+export type Settings = { fullscreen?: boolean; scale?: number; /** Apps hidden from the library here. */ hidden?: string[] };
 
 type Saved = {
   settings: Settings;
@@ -220,6 +224,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       .finally(() => (pushing.current = false));
   }, [allItems, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Apps set to update by themselves.
+  useEffect(() => {
+    for (const item of library) {
+      const entry = catalog[item.id];
+      if (entry && installs[item.id]?.updates === "auto" && !jobs[item.id] && hasUpdate(entry, installs[item.id])) void installEntry(entry);
+    }
+  }, [catalog]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const fail = (id: string, error: unknown) =>
     setJobs((j) => ({ ...j, [id]: { error: error instanceof Error ? error.message : String(error) } }));
 
@@ -305,6 +317,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     notice,
     setNotice,
     add: (entry) => add(entry),
+    setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
     async addRepository(input) {
       const repository = githubRepository(input);
       if (!repository) return { error: "Enter a GitHub repository, like owner/name or its github.com address." };

@@ -89,7 +89,10 @@ function OldLibrary({ onDone }: { onDone: () => void }) {
 }
 
 function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrowse: () => void }) {
-  const { library, catalog, installs, jobs, get, add, remove } = useLauncher();
+  const { library: all, catalog, installs, jobs, get, add, remove, settings } = useLauncher();
+  const [showHidden, setShowHidden] = useState(false);
+  const hidden = new Set(settings.hidden);
+  const library = all.filter((i) => hidden.has(i.id) === showHidden);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"played" | "name" | "added">("played");
   const updates = library.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
@@ -108,8 +111,8 @@ function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrows
     .sort((a, b) => order(a.item) - order(b.item) || a.entry.projectName.localeCompare(b.entry.projectName))
     .map(({ entry }) => entry);
   // Removed from the library (here, elsewhere or by signing out) but its files are still here.
-  const loose = Object.keys(installs).flatMap((id) => (catalog[id] && !library.some((i) => i.id === id) ? [catalog[id]] : []));
-  if (!library.length && !loose.length)
+  const loose = Object.keys(installs).flatMap((id) => (catalog[id] && !all.some((i) => i.id === id) ? [catalog[id]] : []));
+  if (!all.length && !loose.length)
     return (
       <div className="empty">
         <Library size={40} strokeWidth={1.2} />
@@ -132,6 +135,12 @@ function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrows
           <option value="added">Recently added</option>
           <option value="name">Name</option>
         </select>
+        {(hidden.size > 0 || showHidden) && (
+          <label className="toggle">
+            <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
+            Show hidden apps ({hidden.size})
+          </label>
+        )}
         {updates.length > 0 && (
           <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
             Update all ({updates.length})
@@ -407,10 +416,39 @@ function Detail({ entry: opened, onClose, onSignIn }: { entry: Entry; onClose: (
               </button>
             )}
           </div>
+          {item && <AppOptions id={item.id} />}
           {item && <Customize id={item.id} />}
           {!isCustom(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
         </div>
       </section>
+    </div>
+  );
+}
+
+/** This computer's choices for an app: how it updates, and whether the library shows it. */
+function AppOptions({ id }: { id: string }) {
+  const { installs, setUpdates, settings, setSettings } = useLauncher();
+  const install = installs[id];
+  const hidden = settings.hidden?.includes(id);
+  return (
+    <div className="row options">
+      {install && (
+        <label>
+          Updates{" "}
+          <select value={install.updates ?? "ask"} onChange={(e) => setUpdates(id, e.target.value === "ask" ? undefined : (e.target.value as "auto" | "pinned"))}>
+            <option value="ask">Offer them</option>
+            <option value="auto">Install automatically</option>
+            <option value="pinned">Stay on v{install.version}</option>
+          </select>
+        </label>
+      )}
+      <button
+        onClick={() =>
+          setSettings({ ...settings, hidden: hidden ? settings.hidden!.filter((h) => h !== id) : [...(settings.hidden ?? []), id] })
+        }
+      >
+        {hidden ? "Show in library" : "Hide from library"}
+      </button>
     </div>
   );
 }

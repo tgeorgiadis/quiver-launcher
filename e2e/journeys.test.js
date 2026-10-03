@@ -49,6 +49,27 @@ test("a new verified release is offered as an update and installs", async () => 
   api.release("1.0.0");
 });
 
+test("an app can stay on its version, or update by itself", async () => {
+  const updates = async (choice) => {
+    await (await (await card("test-port")).$(".card-open")).click();
+    await (await (await app.$('[role="dialog"]')).$("select")).selectByVisibleText(choice);
+    await app.keys("Escape");
+  };
+  const reload = async () => {
+    await (await app.$("button*=Library")).click();
+    await (await app.$("button=Browse")).click();
+  };
+  await updates("Stay on v1.1.0");
+  api.release("1.2.0");
+  await reload();
+  await (await (await card("test-port")).$("button*=Play")).waitForDisplayed();
+  assert.ok(!(await (await card("test-port")).$("button*=Update").isExisting()), "no update offered");
+  await updates("Install automatically");
+  await reload();
+  await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "1.2.0", 30000);
+  api.release("1.0.0");
+});
+
 test("a download that doesn't match Quiver's checksum is refused", async () => {
   await (await app.$("button=Browse")).click();
   const port = await card("tampered-port");

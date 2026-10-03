@@ -110,5 +110,10 @@ test("signing out takes the library along, and signing back in brings it back", 
 test("signing in with GitHub happens in the browser and comes back to the app", async () => {
   await (await b.app.$("button=Sign in")).click();
   await (await b.app.$("button=Continue with GitHub")).click();
-  await (await b.app.$("span=octocat")).waitForDisplayed({ timeout: 10000 });
+  try {
+    await (await b.app.$("span=octocat")).waitForDisplayed({ timeout: 10000 });
+  } catch (e) {
+    console.log("BODY", await b.app.execute(() => document.body.innerText.slice(0, 1500)));
+    throw e;
+  }
 });
