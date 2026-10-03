@@ -77,6 +77,22 @@ export async function startMockApi() {
       res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
       res.end(JSON.stringify(body));
     };
+    // GitHub's API, for custom apps: one repository the catalog doesn't list.
+    if (url.pathname.startsWith("/github/")) {
+      if (url.pathname.toLowerCase() !== "/github/repos/someone/homebrew/releases") return send({ message: "Not Found" }, 404);
+      return send([
+        {
+          tag_name: "v2.0",
+          draft: false,
+          prerelease: false,
+          published_at: "2026-02-01T00:00:00Z",
+          assets: [
+            { id: 1, name: "Homebrew-linux.zip", browser_download_url: `${base}/files/homebrew-linux.zip`, size: zip.length, digest: `sha256:${sha}` },
+            { id: 2, name: "Homebrew-windows.zip", browser_download_url: `${base}/files/homebrew-windows.zip`, size: zip.length, digest: `sha256:${sha}` },
+          ],
+        },
+      ]);
+    }
     const [, api, apiVersion, resource, slug, child] = url.pathname.split("/");
     if (url.pathname.startsWith("/files/")) {
       res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": zip.length });
@@ -105,6 +121,7 @@ export async function startMockApi() {
   return {
     api: `${base}/api/v1`,
     account: `${base}/account`,
+    github: `${base}/github`,
     reviews: account.reviews,
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
@@ -169,19 +186,19 @@ function mockAccount(entries) {
     if (path === "/library")
       return send(res, {
         user: { id: user.id, name },
-        items: [...user.items.values()].map((i) => ({ ...i, slug: entries.find((e) => e.id === i.entryId).slug })),
+        items: [...user.items.values()].map((i) => ({ ...i, ...(i.entryId ? { slug: entries.find((e) => e.id === i.entryId).slug } : {}) })),
       });
     if (path === "/library/save") {
       // As on the site: an add fills only empty fields, an edit sets what it names.
       for (const c of body.changes) {
-        const row = user.items.get(c.entryId);
+        const row = user.items.get(c.key);
         if (!row && !c.add) continue;
-        const item = row ?? { entryId: c.entryId, removed: false };
+        const item = row ?? { key: c.key, ...(c.entryId ? { entryId: c.entryId } : { custom: c.custom }), removed: false };
         for (const key of ["name", "artUrl", "tags"])
           if (key in c && !(c.add && item[key] !== undefined)) item[key] = c[key] ?? undefined;
         if (c.add) item.removed = false;
         if (c.removed) item.removed = true;
-        user.items.set(c.entryId, { ...item, updatedAt: Date.now() });
+        user.items.set(c.key, { ...item, updatedAt: Date.now() });
       }
       return send(res, []);
     }

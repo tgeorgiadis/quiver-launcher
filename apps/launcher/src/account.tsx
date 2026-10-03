@@ -34,7 +34,7 @@ export type Account = {
   signInWith: (provider: Provider) => Promise<string | null>;
   signOut: () => Promise<void>;
   /** Saves changes; the ones refused come back. */
-  save: (changes: Change[]) => Promise<{ entryId: string; error: string }[]>;
+  save: (changes: Change[]) => Promise<{ key: string; error: string }[]>;
   review: (review: ReviewInput) => Promise<void>;
 };
 

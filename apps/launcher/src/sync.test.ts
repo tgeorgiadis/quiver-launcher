@@ -3,14 +3,14 @@ import type { LibraryItem } from "./store";
 import { applyServer, changesFrom, joinAccount, type ServerItem } from "./sync";
 
 const item = (id: string, extra: Partial<LibraryItem> = {}): LibraryItem => ({ id, slug: id, addedAt: 1, ...extra });
-const server = (entryId: string, extra: Partial<ServerItem> = {}): ServerItem => ({
-  entryId, slug: entryId, removed: false, updatedAt: 2, ...extra,
+const server = (key: string, extra: Partial<ServerItem> = {}): ServerItem => ({
+  key, entryId: key, slug: key, removed: false, updatedAt: 2, ...extra,
 });
 
 test("signing in adds the guest apps to the account and leaves another account's apps out", () => {
   const joined = joinAccount([item("a", { overrides: { name: "Mine" } }), item("b", { account: "other" })], "me");
   expect(joined.map((i) => i.id)).toEqual(["a"]);
-  expect(changesFrom(joined, "me")).toEqual([{ entryId: "a", add: true, name: "Mine" }]);
+  expect(changesFrom(joined, "me")).toEqual([{ key: "a", add: true, entryId: "a", name: "Mine" }]);
 });
 
 test("the account's values win except unsaved changes, and removals leave the library", () => {
@@ -27,5 +27,5 @@ test("the account's values win except unsaved changes, and removals leave the li
   expect(byId.renamed.overrides).toMatchObject({ name: "Here", cover: "https://x/art.png" });
   expect(byId.gone).toBeUndefined();
   expect(byId.new.account).toBe("me");
-  expect(changesFrom(result, "me")).toEqual([{ entryId: "renamed", name: "Here" }]);
+  expect(changesFrom(result, "me")).toEqual([{ key: "renamed", name: "Here" }]);
 });

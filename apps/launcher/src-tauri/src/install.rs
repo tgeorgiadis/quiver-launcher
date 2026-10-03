@@ -75,7 +75,9 @@ pub async fn install(
 ) -> Result<Installed, String> {
     let folder = plain_name(&req.folder)?.to_string();
     let filename = plain_name(&req.filename)?.to_string();
-    let staging = apps_dir.join(".staging").join(plain_name(&req.id)?);
+    // Ids can be "github:owner/repo"; the staging folder only needs to be unique.
+    let stage: String = req.id.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '_' }).collect();
+    let staging = apps_dir.join(".staging").join(stage);
     let _ = fs::remove_dir_all(&staging);
     fs::create_dir_all(&staging).map_err(text)?;
     let result = async {

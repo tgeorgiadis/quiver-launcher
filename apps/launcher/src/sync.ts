@@ -4,12 +4,15 @@
  * and pick out what still has to be saved to it. Installs are kept apart and
  * never touched here.
  */
-import type { LibraryItem } from "./store";
+import type { CustomApp, LibraryItem } from "./store";
 
 /** An app in the account's library (library.list on the site). */
 export type ServerItem = {
-  entryId: string;
-  slug: string;
+  /** The catalog entry's id, or "github:owner/repo" for a custom app. */
+  key: string;
+  entryId?: string;
+  slug?: string;
+  custom?: CustomApp;
   name?: string;
   artUrl?: string;
   tags?: string[];
@@ -21,8 +24,11 @@ export type ServerItem = {
  * empty; an edit sets the fields it names, and null clears one.
  */
 export type Change = {
-  entryId: string;
+  key: string;
   add?: true;
+  /** What an add stands for: a catalog entry or a custom app. */
+  entryId?: string;
+  custom?: CustomApp;
   name?: string | null;
   artUrl?: string | null;
   tags?: string[] | null;
@@ -44,7 +50,7 @@ export function joinAccount(local: LibraryItem[], account: string): LibraryItem[
 export function applyServer(local: LibraryItem[], server: ServerItem[], account: string): LibraryItem[] {
   const items = new Map(local.map((i) => [i.id, i]));
   for (const s of server) {
-    const mine = items.get(s.entryId);
+    const mine = items.get(s.key);
     const pending = mine?.pending ?? {};
     if (s.removed) {
       // Removed elsewhere: it leaves the library here; an install stays.
@@ -58,7 +64,15 @@ export function applyServer(local: LibraryItem[], server: ServerItem[], account:
       if (!pending.cover) overrides.cover = s.artUrl;
       if (!pending.tags) overrides.tags = s.tags;
     }
-    items.set(s.entryId, { addedAt: s.updatedAt, ...mine, id: s.entryId, slug: s.slug, account, overrides });
+    items.set(s.key, {
+      addedAt: s.updatedAt,
+      ...mine,
+      id: s.key,
+      slug: s.slug ?? mine?.slug ?? "",
+      ...(s.custom ? { custom: s.custom } : {}),
+      account,
+      overrides,
+    });
   }
   return [...items.values()];
 }
@@ -67,9 +81,10 @@ export function applyServer(local: LibraryItem[], server: ServerItem[], account:
 export function changesFrom(local: LibraryItem[], account: string): Change[] {
   return local
     .filter((i) => i.pending && i.account === account)
-    .map(({ id, pending = {}, overrides = {}, removed }): Change => {
-      if (removed) return { entryId: id, removed: true };
-      const change: Change = { entryId: id, ...(pending.added ? { add: true } : {}) };
+    .map(({ id, pending = {}, overrides = {}, removed, custom }): Change => {
+      if (removed) return { key: id, removed: true };
+      const added = custom ? { add: true as const, custom } : { add: true as const, entryId: id };
+      const change: Change = { key: id, ...(pending.added ? added : {}) };
       const fields = [["name", "name"], ["cover", "artUrl"], ["tags", "tags"]] as const;
       for (const [mine, theirs] of fields) {
         const value = overrides[mine];

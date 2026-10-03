@@ -27,6 +27,8 @@ struct Config {
     convex: String,
     /// A stand-in account service, for end-to-end tests.
     account_api: Option<String>,
+    /// GitHub's API, for custom apps (overridden in end-to-end tests).
+    github_api: String,
     /// Where GitHub and Discord sign-in return to.
     return_to: &'static str,
     os: &'static str,
@@ -54,6 +56,7 @@ fn config(data: State<Data>) -> Config {
         api: std::env::var("QUIVER_API").unwrap_or_else(|_| "https://api.quiverlauncher.com/api/v1".into()),
         convex: std::env::var("QUIVER_CONVEX").unwrap_or_else(|_| "https://convex.quiverlauncher.com".into()),
         account_api: std::env::var("QUIVER_ACCOUNT_API").ok(),
+        github_api: std::env::var("QUIVER_GITHUB_API").unwrap_or_else(|_| "https://api.github.com".into()),
         return_to: browser::RETURN_TO,
         os: OS,
         arch: ARCH,

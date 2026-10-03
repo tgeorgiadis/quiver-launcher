@@ -89,6 +89,22 @@ test("removing an app uninstalls it and takes it out of the library", async () =
   await until(async () => !(await (await card("test-port")).isExisting()));
 });
 
+test("an app the catalog doesn't list is added from its GitHub repository", async () => {
+  await (await app.$("button=Browse")).click();
+  await (await app.$("button=Add from GitHub")).click();
+  // A repository the catalog lists opens the catalog's app instead.
+  await (await app.$("input[aria-label='GitHub repository']")).setValue("https://github.com/quiver/test-port");
+  await (await app.$("button=Add")).click();
+  await (await app.$("h2=Test Port")).waitForDisplayed({ timeout: 10000 });
+  await app.keys("Escape");
+  await (await app.$("button=Add from GitHub")).click();
+  await (await app.$("input[aria-label='GitHub repository']")).setValue("someone/homebrew");
+  await (await app.$("button=Add")).click();
+  await (await (await app.$('[role="dialog"]')).$("button*=Play")).waitForDisplayed({ timeout: 30000 });
+  assert.equal(readFileSync(join(apps, "homebrew", ".quiver-version"), "utf8"), "v2.0");
+  await app.keys("Escape");
+});
+
 test("settings make the interface larger, and it stays that way", async () => {
   await (await app.$("button[aria-label=Settings]")).click();
   await (await app.$('[aria-label="Settings"] select')).selectByVisibleText("Large");

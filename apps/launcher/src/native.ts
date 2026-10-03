@@ -6,7 +6,7 @@ import type { Os } from "@quiver/api";
 type StateFile = "library" | "installs" | "catalog" | "settings";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
 export type OldApp = { name: string; repository?: string; provider: string; dir?: string; version?: string };
-export type Config = { api: string; convex: string; accountApi?: string; returnTo: string; os: Os; arch: string; appsDir: string };
+export type Config = { api: string; convex: string; accountApi?: string; githubApi: string; returnTo: string; os: Os; arch: string; appsDir: string };
 export type Progress = { id: string; phase: "downloading" | "installing"; received: number; total: number | null };
 export type InstallRequest = {
   id: string;

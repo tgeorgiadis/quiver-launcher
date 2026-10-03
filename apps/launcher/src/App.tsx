@@ -5,6 +5,7 @@ import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score, coverOf } from "@qu
 import { availableOn, hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { useAccount } from "./account";
 import { native } from "./native";
+import { isCustom } from "./custom";
 
 type Tab = "library" | "browse";
 
@@ -175,6 +176,42 @@ const withOverrides = (entry: Entry, o?: { name?: string; cover?: string }): Ent
   ...(o?.cover ? { libraryArt: { ...entry.libraryArt, header: o.cover, hero: o.cover } } : {}),
 });
 
+/** An app the catalog doesn't list, straight from its GitHub repository. */
+function AddRepository({ onOpen }: { onOpen: (e: Entry) => void }) {
+  const { addRepository } = useLauncher();
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!open) return <button onClick={() => setOpen(true)}>Add from GitHub</button>;
+  return (
+    <form
+      className="add-repo"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setBusy(true);
+        setError(null);
+        addRepository(input).then((r) => {
+          setBusy(false);
+          if ("error" in r) return setError(r.error);
+          setOpen(false);
+          setInput("");
+          onOpen(r.entry);
+        });
+      }}
+    >
+      <input autoFocus aria-label="GitHub repository" placeholder="owner/name or github.com address" value={input} onChange={(e) => setInput(e.target.value)} />
+      <button className="primary" disabled={busy}>
+        Add
+      </button>
+      <button type="button" onClick={() => setOpen(false)}>
+        Cancel
+      </button>
+      {error && <p className="job-error">{error}</p>}
+    </form>
+  );
+}
+
 function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
   const { client, config, library, remember } = useLauncher();
   const [search, setSearch] = useState("");
@@ -218,6 +255,7 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
           <input type="checkbox" checked={allPlatforms} onChange={(e) => setAllPlatforms(e.target.checked)} />
           Show apps for other platforms
         </label>
+        <AddRepository onOpen={onOpen} />
       </div>
       {error ? (
         <div className="empty">
@@ -370,7 +408,7 @@ function Detail({ entry: opened, onClose, onSignIn }: { entry: Entry; onClose: (
             )}
           </div>
           {item && <Customize id={item.id} />}
-          <Review entry={entry} onSignIn={onSignIn} />
+          {!isCustom(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
         </div>
       </section>
     </div>
