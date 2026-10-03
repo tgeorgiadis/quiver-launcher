@@ -121,7 +121,12 @@ fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec
         open.arg(&exe);
         open
     } else {
-        Command::new(&exe)
+        let mut run = Command::new(&exe);
+        // Many distros no longer ship FUSE 2, which AppImages mount themselves with.
+        if exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("appimage")) && !has_fuse2() {
+            run.env("APPIMAGE_EXTRACT_AND_RUN", "1");
+        }
+        run
     };
     command
         .current_dir(exe.parent().unwrap_or(Path::new(&dir)))
@@ -131,6 +136,14 @@ fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec
             true if e.kind() == std::io::ErrorKind::NotFound => "This is a Windows app. Install Wine to play it on Linux.".into(),
             _ => format!("Couldn't start {}: {e}", exe.display()),
         })
+}
+
+fn has_fuse2() -> bool {
+    // Without ldconfig, extracting still works, just more slowly.
+    Command::new("/sbin/ldconfig")
+        .arg("-p")
+        .output()
+        .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).contains("libfuse.so.2"))
 }
 
 #[tauri::command]
