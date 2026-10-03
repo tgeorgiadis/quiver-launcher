@@ -88,3 +88,12 @@ test("removing an app uninstalls it and takes it out of the library", async () =
   await until(() => !existsSync(join(apps, "test-port")));
   await until(async () => !(await (await card("test-port")).isExisting()));
 });
+
+test("settings make the interface larger, and it stays that way", async () => {
+  await (await app.$("button[aria-label=Settings]")).click();
+  await (await app.$('[aria-label="Settings"] select')).selectByVisibleText("Large");
+  await (await app.$("button=Done")).click();
+  assert.equal(await app.execute(() => document.documentElement.style.zoom), "1.15");
+  await until(() => existsSync(join(s.data, "settings.json")));
+  assert.equal(JSON.parse(readFileSync(join(s.data, "settings.json"), "utf8")).scale, 1.15);
+});

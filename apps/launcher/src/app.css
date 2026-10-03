@@ -68,3 +68,5 @@ p.job-error { color: #e38c87; font-size: 13px; }
 .choose p.or { text-align: center; margin: 4px 0; }
 .loose { margin-top: 32px; } .loose h2 { font-size: 1rem; margin-bottom: 12px; }
 .customize { display: grid; gap: 8px; margin: 12px 0; } .customize input { width: 100%; }
+.topbar button.icon { background: none; border: 0; padding: 8px; color: inherit; display: grid; place-items: center; }
+.settings { display: grid; gap: 14px; }

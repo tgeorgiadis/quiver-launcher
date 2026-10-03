@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Os } from "@quiver/api";
 
-type StateFile = "library" | "installs" | "catalog";
+type StateFile = "library" | "installs" | "catalog" | "settings";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
 export type OldApp = { name: string; repository?: string; provider: string; dir?: string; version?: string };
 export type Config = { api: string; convex: string; accountApi?: string; returnTo: string; os: Os; arch: string; appsDir: string };
@@ -31,6 +31,7 @@ export const native = {
   secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),
   /** Opens a sign-in page in the browser; resolves once it returns to the launcher. */
   browserSignIn: (url: string) => invoke<{ code: string } | { error: string }>("browser_sign_in", { url }),
+  setFullscreen: (on: boolean) => invoke<void>("set_fullscreen", { on }),
   logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<OldApp[]>("find_v3_library"),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),

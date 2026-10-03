@@ -64,7 +64,7 @@ fn config(data: State<Data>) -> Config {
 /// The launcher's own JSON files: the library, installs and the catalog cache.
 fn state_file(data: &Data, name: &str) -> Result<PathBuf, String> {
     match name {
-        "library" | "installs" | "catalog" => Ok(data.0.join(format!("{name}.json"))),
+        "library" | "installs" | "catalog" | "settings" => Ok(data.0.join(format!("{name}.json"))),
         _ => Err(format!("Unknown state file {name}")),
     }
 }
@@ -206,6 +206,11 @@ fn log_error(data: State<Data>, message: String) {
 }
 
 #[tauri::command]
+fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Result<(), String> {
+    window.set_fullscreen(on).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn find_v3_library() -> Vec<v3::OldApp> {
     v3::find()
 }
@@ -230,6 +235,15 @@ pub fn run() {
                 append_log(&log, &format!("crash: {info}"));
                 previous(info);
             }));
+            let settings: serde_json::Value = std::fs::read(dir.join("settings.json"))
+                .ok()
+                .and_then(|b| serde_json::from_slice(&b).ok())
+                .unwrap_or_default();
+            if settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen") {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.set_fullscreen(true);
+                }
+            }
             app.manage(Data(dir));
             gamepad::start(app.handle().clone());
             Ok(())
@@ -245,7 +259,8 @@ pub fn run() {
             secret_get,
             secret_set,
             browser_sign_in,
-            log_error
+            log_error,
+            set_fullscreen
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quiver Launcher");

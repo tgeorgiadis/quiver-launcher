@@ -63,6 +63,8 @@ type Launcher = {
   unsynced: number;
   /** Signs out, taking the library along: installs stay, the library starts empty. */
   signOut: () => Promise<void>;
+  settings: Settings;
+  setSettings: (settings: Settings) => void;
   /** A short note for the player, such as what signing in brought over. */
   notice: string | null;
   setNotice: (notice: string | null) => void;
@@ -90,7 +92,11 @@ export function hasUpdate(entry: Entry | undefined, install: Install | undefined
   );
 }
 
+/** This computer's preferences; they don't sync. */
+export type Settings = { fullscreen?: boolean; scale?: number };
+
 type Saved = {
+  settings: Settings;
   config: Config;
   library: LibraryItem[];
   installs: Record<string, Install>;
@@ -105,8 +111,9 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       native.readState<LibraryItem[]>("library"),
       native.readState<Record<string, Install>>("installs"),
       native.readState<Record<string, CatalogEntry>>("catalog"),
-    ]).then(([config, library, installs, catalog]) =>
-      setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {} }),
+      native.readState<Settings>("settings"),
+    ]).then(([config, library, installs, catalog, settings]) =>
+      setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {} }),
     );
   }, []);
   if (!saved) return null;
@@ -139,6 +146,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("library", allItems);
   usePersist("installs", installs);
   usePersist("catalog", catalog);
+  const [settings, setSettings] = useState(saved.settings);
+  usePersist("settings", settings);
+  useEffect(() => void document.documentElement.style.setProperty("zoom", String(settings.scale ?? 1)), [settings.scale]);
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
   const fetched = useRef(new Set<string>());
@@ -254,6 +264,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     notice,
     setNotice,
     add,
+    settings,
+    setSettings,
     customize: (id, { name, cover }) =>
       setLibrary((l) =>
         l.map((i) => {
@@ -338,7 +350,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 }
 
 /** Saves a state file whenever it changes after the first render. */
-function usePersist(name: "library" | "installs" | "catalog", value: unknown) {
+function usePersist(name: "library" | "installs" | "catalog" | "settings", value: unknown) {
   const first = useRef(true);
   useEffect(() => {
     if (first.current) first.current = false;

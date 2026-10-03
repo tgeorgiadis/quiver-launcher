@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Download, Library, Play, Search, ShieldCheck, Trash2, X } from "lucide-react";
+import { Download, Library, Play, Search, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
 import type { Entry, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score, coverOf } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { useAccount } from "./account";
+import { native } from "./native";
 
 type Tab = "library" | "browse";
 
@@ -13,6 +14,7 @@ export function App() {
   const [tab, setTab] = useState<Tab>(library.length ? "library" : "browse");
   const [open, setOpen] = useState<Entry | null>(null);
   const [signingIn, setSigningIn] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <div className="shell">
       <header className="topbar">
@@ -26,6 +28,9 @@ export function App() {
           </button>
         </nav>
         <AccountButton onSignIn={() => setSigningIn(true)} />
+        <button className="icon" aria-label="Settings" onClick={() => setSettingsOpen(true)}>
+          <Settings2 size={18} />
+        </button>
       </header>
       <main>
         <Notice />
@@ -38,6 +43,7 @@ export function App() {
       </main>
       {open && <Detail entry={open} onClose={() => setOpen(null)} onSignIn={() => setSigningIn(true)} />}
       {signingIn && <SignIn onClose={() => setSigningIn(false)} />}
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       <ChooseFile />
     </div>
   );
@@ -540,6 +546,49 @@ function SignIn({ onClose }: { onClose: () => void }) {
             {create ? "I already have an account" : "Create an account"}
           </button>
         </form>
+      </section>
+    </div>
+  );
+}
+
+/** Preferences for this computer. */
+function SettingsDialog({ onClose }: { onClose: () => void }) {
+  const { settings, setSettings, config } = useLauncher();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="overlay" onClick={onClose}>
+      <section className="detail choose" role="dialog" aria-label="Settings" onClick={(e) => e.stopPropagation()}>
+        <div className="detail-body settings">
+          <h2>Settings</h2>
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(settings.fullscreen)}
+              onChange={(e) => {
+                setSettings({ ...settings, fullscreen: e.target.checked });
+                void native.setFullscreen(e.target.checked);
+              }}
+            />
+            Full screen (good for a TV or Steam Deck)
+          </label>
+          <label>
+            Interface size{" "}
+            <select value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>
+              <option value={0.9}>Small</option>
+              <option value={1}>Normal</option>
+              <option value={1.15}>Large</option>
+              <option value={1.3}>Extra large</option>
+            </select>
+          </label>
+          <p className="muted">Apps are installed in {config.appsDir}</p>
+          <button className="primary" onClick={onClose}>
+            Done
+          </button>
+        </div>
       </section>
     </div>
   );
