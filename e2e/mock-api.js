@@ -53,6 +53,7 @@ export async function startMockApi() {
   let base = "";
   let version = "1.0.0";
   const release = (slug) => ({
+    id: `release_${slug}_${version}`,
     version,
     releasedAt: Date.now(),
     prerelease: false,

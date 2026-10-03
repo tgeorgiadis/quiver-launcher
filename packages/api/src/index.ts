@@ -61,6 +61,8 @@ export type Asset = {
 };
 
 export type Release = {
+  /** The entry's release (entryReleases id), which a review names. */
+  id: string;
   version: string;
   releasedAt: number;
   prerelease: boolean;
