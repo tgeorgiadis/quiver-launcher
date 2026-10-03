@@ -51,8 +51,9 @@ export async function startMockApi() {
   const sha = createHash("sha256").update(zip).digest("hex");
   const entries = [entry("test-port", "Test Port"), entry("tampered-port", "Tampered Port")];
   let base = "";
+  let version = "1.0.0";
   const release = (slug) => ({
-    version: "1.0.0",
+    version,
     releasedAt: Date.now(),
     prerelease: false,
     assets: ["linux", "windows"].map((os) => ({
@@ -72,23 +73,29 @@ export async function startMockApi() {
       res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
       res.end(JSON.stringify(body));
     };
-    const [, api, version, resource, slug, child] = url.pathname.split("/");
+    const [, api, apiVersion, resource, slug, child] = url.pathname.split("/");
     if (url.pathname.startsWith("/files/")) {
       res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": zip.length });
       return res.end(zip);
     }
-    if (api !== "api" || version !== "v1" || resource !== "apps") return send({ error: { message: "Not found" } }, 404);
+    if (api !== "api" || apiVersion !== "v1" || resource !== "apps") return send({ error: { message: "Not found" } }, 404);
     if (!slug) {
       const search = url.searchParams.get("search")?.toLowerCase() ?? "";
       const items = entries.filter((e) => e.name.toLowerCase().includes(search));
-      return send({ items, nextCursor: null, isDone: true });
+      return send({ items: items.map(withVersion), nextCursor: null, isDone: true });
     }
     const found = entries.find((e) => e.slug === slug);
     if (!found) return send({ error: { message: "App not found" } }, 404);
     if (child === "releases") return send({ items: [release(slug)], nextCursor: null, isDone: true });
-    return send({ entry: found, project: { name: found.name, description: "", provider: "github" }, withdrawn: [] });
+    return send({ entry: withVersion(found), project: { name: found.name, description: "", provider: "github" }, withdrawn: [] });
   });
+  const withVersion = (e) => ({ ...e, verified: { ...e.verified, version } });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   base = `http://127.0.0.1:${server.address().port}`;
-  return { api: `${base}/api/v1`, close: () => server.close() };
+  return {
+    api: `${base}/api/v1`,
+    /** Publishes a new verified release of every app. */
+    release: (next) => (version = next),
+    close: () => server.close(),
+  };
 }

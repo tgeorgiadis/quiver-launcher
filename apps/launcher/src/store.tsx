@@ -6,7 +6,7 @@
  * last catalog data seen is cached so the library shows instantly offline.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createClient, type Asset, type Client, type Entry } from "@quiver/api";
+import { createClient, type Asset, type Client, type Entry, type Withdrawn } from "@quiver/api";
 import { native, type Config, type Progress } from "./native";
 import { bestAssets } from "./assets";
 
@@ -17,6 +17,8 @@ export type LibraryItem = {
   addedAt: number;
   overrides?: { name?: string; cover?: string };
 };
+/** Catalog data for a library app, with releases pulled since. */
+export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
 export type Install = { version: string; folder: string; executables: string[] };
 export type Job = Progress | { error: string };
 /** Several files suit this computer: the player picks one. */
@@ -27,7 +29,7 @@ type Launcher = {
   client: Client;
   library: LibraryItem[];
   installs: Record<string, Install>;
-  catalog: Record<string, Entry>;
+  catalog: Record<string, CatalogEntry>;
   jobs: Record<string, Job>;
   choice: Choice | null;
   remember: (entries: Entry[]) => void;
@@ -42,6 +44,9 @@ const LauncherContext = createContext<Launcher | null>(null);
 
 export const useLauncher = () => useContext(LauncherContext)!;
 
+/** Whether this computer can install the app. */
+export const availableOn = (entry: Entry, os: string) => entry.supportedOS.some((o) => o === os || o === "unknown");
+
 export function hasUpdate(entry: Entry | undefined, install: Install | undefined) {
   return Boolean(entry?.verified && install && install.version !== entry.verified.version);
 }
@@ -51,11 +56,11 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     config: Config;
     library: LibraryItem[];
     installs: Record<string, Install>;
-    catalog: Record<string, Entry>;
+    catalog: Record<string, CatalogEntry>;
   } | null>(null);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [installs, setInstalls] = useState<Record<string, Install>>({});
-  const [catalog, setCatalog] = useState<Record<string, Entry>>({});
+  const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
   const [jobs, setJobs] = useState<Record<string, Job>>({});
   const [choice, setChoice] = useState<Choice | null>(null);
 
@@ -64,7 +69,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       native.config(),
       native.readState<LibraryItem[]>("library"),
       native.readState<Record<string, Install>>("installs"),
-      native.readState<Record<string, Entry>>("catalog"),
+      native.readState<Record<string, CatalogEntry>>("catalog"),
     ]).then(([config, library, installs, catalog]) => {
       setLibrary(library ?? []);
       setInstalls(installs ?? {});
@@ -87,7 +92,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     if (!loaded) return;
     for (const item of loaded.library)
       client.app(item.slug).then(
-        (d) => setCatalog((c) => ({ ...c, [item.id]: d.entry })),
+        (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn } })),
         () => {},
       );
   }, [loaded, client]);
@@ -148,11 +153,11 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     remember: (entries) => {
       const known = new Set(library.map((i) => i.id));
       const fresh = entries.filter((e) => known.has(e.id));
-      if (fresh.length) setCatalog((c) => ({ ...c, ...Object.fromEntries(fresh.map((e) => [e.id, e])) }));
+      if (fresh.length) setCatalog((c) => ({ ...c, ...Object.fromEntries(fresh.map((e) => [e.id, { ...c[e.id], ...e }])) }));
     },
     async get(entry) {
       if (jobs[entry.id] && !("error" in jobs[entry.id])) return;
-      setCatalog((c) => ({ ...c, [entry.id]: entry }));
+      setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       setLibrary((l) => (l.some((i) => i.id === entry.id) ? l : [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now() }]));
       await installEntry(entry);
     },

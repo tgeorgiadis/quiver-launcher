@@ -1,8 +1,7 @@
 name: CI
 on:
-  push:
-    branches: [v4]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   check:
@@ -26,3 +25,17 @@ jobs:
       - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
       - run: pnpm --filter @quiver/e2e build
       - run: xvfb-run -a pnpm e2e
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      - run: pnpm install --frozen-lockfile
+      - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
+      - run: pnpm --filter @quiver/launcher tauri build --debug --no-bundle

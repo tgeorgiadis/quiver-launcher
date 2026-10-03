@@ -62,6 +62,16 @@ test("a new player gets a port in one click and plays it", async () => {
   await until(() => existsSync(join(folder, "launched.txt")));
 });
 
+test("a new verified release is offered as an update and installs", async () => {
+  api.release("1.1.0");
+  await (await app.$("button=Browse")).click();
+  const port = await card("test-port");
+  await (await port.$("button*=Update to v1.1.0")).click();
+  await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "1.1.0");
+  assert.ok(existsSync(join(apps, "test-port", "launched.txt")), "files the app wrote are kept");
+  api.release("1.0.0");
+});
+
 test("a download that doesn't match Quiver's checksum is refused", async () => {
   await (await app.$("button=Browse")).click();
   const port = await card("tampered-port");

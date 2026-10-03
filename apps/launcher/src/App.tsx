@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, Library, Play, Search, ShieldCheck, Trash2, X } from "lucide-react";
 import type { Entry, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score, coverOf } from "@quiver/ui";
-import { hasUpdate, useLauncher } from "./store";
+import { availableOn, hasUpdate, useLauncher } from "./store";
 
 type Tab = "library" | "browse";
 
@@ -38,7 +38,8 @@ export function App() {
 }
 
 function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrowse: () => void }) {
-  const { library, catalog } = useLauncher();
+  const { library, catalog, installs, jobs, get } = useLauncher();
+  const updates = library.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
   const items = library.flatMap((i) => (catalog[i.id] ? [{ ...catalog[i.id], ...withOverrides(i.overrides) }] : []));
   if (!items.length)
     return (
@@ -52,11 +53,20 @@ function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrows
       </div>
     );
   return (
-    <div className="catalog-grid">
-      {items.map((entry) => (
-        <EntryCard key={entry.id} entry={entry} onOpen={() => onOpen(entry)} action={<Action entry={entry} />} />
-      ))}
-    </div>
+    <>
+      {updates.length > 0 && (
+        <div className="toolbar">
+          <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
+            Update all ({updates.length})
+          </button>
+        </div>
+      )}
+      <div className="catalog-grid">
+        {items.map((entry) => (
+          <EntryCard key={entry.id} entry={entry} onOpen={() => onOpen(entry)} action={<Action entry={entry} />} />
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -171,6 +181,19 @@ function Action({ entry }: { entry: Entry }) {
       </div>
     );
   }
+  const pulled = install && catalog[entry.id]?.withdrawn?.find((w) => w.version === install.version);
+  if (pulled)
+    return (
+      <div className="job-error" role="alert">
+        <p>
+          v{pulled.version} was withdrawn: {pulled.reason}
+        </p>
+        <div className="row">
+          <button onClick={() => get(catalog[entry.id])}>Install v{catalog[entry.id].verified?.version}</button>
+          <button onClick={() => play(entry.id)}>Play anyway</button>
+        </div>
+      </div>
+    );
   if (install && hasUpdate(catalog[entry.id] ?? entry, install))
     return (
       <div className="row">
@@ -186,7 +209,7 @@ function Action({ entry }: { entry: Entry }) {
         <Play size={15} /> Play
       </button>
     );
-  if (!entry.supportedOS.includes(config.os))
+  if (!availableOn(entry, config.os))
     return <p className="unavailable">Not available for {OS_NAMES[config.os] ?? config.os}</p>;
   return (
     <button className="primary wide" onClick={() => get(entry)}>
