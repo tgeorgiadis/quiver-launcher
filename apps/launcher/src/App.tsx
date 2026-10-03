@@ -84,7 +84,7 @@ function OldLibrary({ onDone }: { onDone: () => void }) {
 function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrowse: () => void }) {
   const { library, catalog, installs, jobs, get, add, remove } = useLauncher();
   const updates = library.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
-  const items = library.flatMap((i) => (catalog[i.id] ? [{ ...catalog[i.id], ...withOverrides(i.overrides) }] : []));
+  const items = library.flatMap((i) => (catalog[i.id] ? [withOverrides(catalog[i.id], i.overrides)] : []));
   // Removed from the library (here, elsewhere or by signing out) but its files are still here.
   const loose = Object.keys(installs).flatMap((id) => (catalog[id] && !library.some((i) => i.id === id) ? [catalog[id]] : []));
   if (!items.length && !loose.length)
@@ -138,9 +138,11 @@ function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrows
   );
 }
 
-const withOverrides = (o?: { name?: string; cover?: string }) => ({
+/** The catalog entry as this player named and pictured it. */
+const withOverrides = (entry: Entry, o?: { name?: string; cover?: string }): Entry => ({
+  ...entry,
   ...(o?.name ? { projectName: o.name } : {}),
-  ...(o?.cover ? { libraryArt: { header: o.cover } } : {}),
+  ...(o?.cover ? { libraryArt: { ...entry.libraryArt, header: o.cover, hero: o.cover } } : {}),
 });
 
 function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
@@ -287,9 +289,12 @@ function Action({ entry }: { entry: Entry }) {
   );
 }
 
-function Detail({ entry, onClose, onSignIn }: { entry: Entry; onClose: () => void; onSignIn: () => void }) {
-  const { library, installs, remove } = useLauncher();
-  const inLibrary = library.some((i) => i.id === entry.id);
+function Detail({ entry: opened, onClose, onSignIn }: { entry: Entry; onClose: () => void; onSignIn: () => void }) {
+  const { library, installs, catalog, remove } = useLauncher();
+  const item = library.find((i) => i.id === opened.id);
+  const inLibrary = Boolean(item);
+  // The player's own name and artwork, live as they change them.
+  const entry = withOverrides(catalog[opened.id] ?? opened, item?.overrides);
   const install = installs[entry.id];
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -334,10 +339,43 @@ function Detail({ entry, onClose, onSignIn }: { entry: Entry; onClose: () => voi
               </button>
             )}
           </div>
+          {item && <Customize id={item.id} />}
           <Review entry={entry} onSignIn={onSignIn} />
         </div>
       </section>
     </div>
+  );
+}
+
+/** Overrides the catalog's name and artwork for this player; empty shows the catalog's again. */
+function Customize({ id }: { id: string }) {
+  const { library, catalog, customize } = useLauncher();
+  const current = library.find((i) => i.id === id)?.overrides ?? {};
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(current.name ?? "");
+  const [cover, setCover] = useState(current.cover ?? "");
+  if (!open) return <button onClick={() => setOpen(true)}>Change name or artwork</button>;
+  const badCover = cover.trim() !== "" && !/^https:\/\/\S+$/.test(cover.trim());
+  return (
+    <form
+      className="customize"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (badCover) return;
+        customize(id, { name: name.trim() || undefined, cover: cover.trim() || undefined });
+        setOpen(false);
+      }}
+    >
+      <input aria-label="Name" maxLength={200} placeholder={catalog[id]?.projectName} value={name} onChange={(e) => setName(e.target.value)} />
+      <input aria-label="Artwork address" placeholder="Artwork address (https://…)" value={cover} onChange={(e) => setCover(e.target.value)} />
+      {badCover && <p className="job-error">Use an https:// image address.</p>}
+      <div className="row">
+        <button className="primary">Save</button>
+        <button type="button" onClick={() => (setName(""), setCover(""))}>
+          Use the catalog's
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -350,7 +388,7 @@ const RESULTS = [
 /** Signed in, a player who installed the app can say how it runs, for the release they have. */
 function Review({ entry, onSignIn }: { entry: Entry; onSignIn: () => void }) {
   const { user, review } = useAccount();
-  const { installs, config } = useLauncher();
+  const { installs, config, catalog } = useLauncher();
   const [result, setResult] = useState<(typeof RESULTS)[number][0] | null>(null);
   const [body, setBody] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | string>("idle");
@@ -370,7 +408,10 @@ function Review({ entry, onSignIn }: { entry: Entry; onSignIn: () => void }) {
         e.preventDefault();
         if (!result || config.os === "unknown") return;
         setState("sending");
-        review({ entryId: entry.id, result, body: body.trim() || undefined, platform: config.os, entryReleaseId: install.releaseId }).then(
+        // The site only takes a release that's still published.
+        const pulled = catalog[entry.id]?.withdrawn?.some((w) => w.version === install.version);
+        const entryReleaseId = pulled ? undefined : install.releaseId;
+        review({ entryId: entry.id, result, body: body.trim() || undefined, platform: config.os, entryReleaseId }).then(
           () => setState("sent"),
           (error) => setState(error instanceof Error ? error.message.replace(/^.*ConvexError: /, "") : "Couldn't post your review."),
         );

@@ -25,6 +25,10 @@ jobs:
       - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
       - run: pnpm --filter @quiver/e2e build
       - run: xvfb-run -a pnpm e2e
+      # Read-only run against the real catalog; reported, not gating, since the catalog changes on its own.
+      - name: Live catalog
+        continue-on-error: true
+        run: xvfb-run -a pnpm --filter @quiver/e2e live
 
   windows:
     runs-on: windows-latest

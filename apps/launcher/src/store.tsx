@@ -55,6 +55,8 @@ type Launcher = {
   remove: (id: string) => Promise<void>;
   /** Adds an app without installing it, such as one installed but not in the library. */
   add: (entry: Entry) => void;
+  /** Sets the player's own name and artwork; undefined shows the catalog's. */
+  customize: (id: string, overrides: { name?: string; cover?: string }) => void;
   /** Changes made here that the account doesn't have yet. */
   unsynced: number;
   /** Signs out, taking the library along: installs stay, the library starts empty. */
@@ -244,6 +246,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     notice,
     setNotice,
     add,
+    customize: (id, { name, cover }) =>
+      setLibrary((l) =>
+        l.map((i) => {
+          if (i.id !== id) return i;
+          const was = i.overrides ?? {};
+          const pending = i.account
+            ? { ...i.pending, ...(name !== was.name ? { name: true } : {}), ...(cover !== was.cover ? { cover: true } : {}) }
+            : i.pending;
+          return { ...i, overrides: { ...was, name, cover }, pending };
+        }),
+      ),
     unsynced: userId ? changesFrom(allItems, userId).length : 0,
     async signOut() {
       await account.signOut();

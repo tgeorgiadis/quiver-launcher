@@ -51,6 +51,17 @@ test("signing in on two computers combines their libraries on both", async () =>
   assert.deepEqual(await titles(b), ["tampered-port", "test-port"]);
 });
 
+test("renaming an app on one computer renames it on the other", async () => {
+  await (await (await a.card("test-port")).$(".card-open")).click();
+  await (await a.app.$("button=Change name or artwork")).click();
+  await (await a.app.$("input[aria-label=Name]")).setValue("My Port");
+  await (await a.app.$("button=Save")).click();
+  await (await a.app.$("h2=My Port")).waitForDisplayed();
+  await a.app.keys("Escape");
+  await titles(b);
+  await b.until(async () => (await (await (await b.card("test-port")).$(".card-open")).getAttribute("aria-label")) === "My Port");
+});
+
 test("removing an app on one computer removes it on the other, keeping installed files", async () => {
   // B installs test-port; A then removes both apps.
   await (await (await b.card("test-port")).$("button=Get")).click();

@@ -49,12 +49,23 @@ pub fn plain_name(name: &str) -> Result<&str, String> {
         || name == "."
         || name == ".."
         || name.contains(['/', '\\', ':'])
-        || name.chars().any(|c| c.is_control());
+        || name.ends_with('.')
+        || name.chars().any(|c| c.is_control() || "<>\"|?*".contains(c))
+        || is_device_name(name);
     if bad {
         Err(format!("\"{name}\" isn't a valid file or folder name."))
     } else {
         Ok(name)
     }
+}
+
+/// Names Windows reserves for devices, with or without an extension ("NUL.txt").
+fn is_device_name(name: &str) -> bool {
+    let stem = name.split('.').next().unwrap_or("").trim_end().to_ascii_uppercase();
+    matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || (stem.len() == 4
+            && (stem.starts_with("COM") || stem.starts_with("LPT"))
+            && stem.as_bytes()[3].is_ascii_digit())
 }
 
 pub async fn install(
@@ -289,6 +300,14 @@ mod tests {
         };
         assert_eq!(found(&[]), "Game.exe");
         assert_eq!(found(&["tool*.exe"]), "Tool.exe");
+    }
+
+    #[test]
+    fn folder_names_stay_inside_the_apps_folder() {
+        for bad in ["..", "a/b", "a\\b", "C:", "NUL", "com1.txt", "game.", ""] {
+            assert!(plain_name(bad).is_err(), "{bad}");
+        }
+        assert_eq!(plain_name(" Sample-Port ").unwrap(), "Sample-Port");
     }
 
     #[test]
