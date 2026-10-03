@@ -3,6 +3,8 @@
  * direction, across every screen, instead of per-screen focus code.
  * Controller: d-pad or left stick moves, A presses, B goes back (Escape).
  */
+import { listen } from "@tauri-apps/api/event";
+
 type Direction = "up" | "down" | "left" | "right";
 
 const FOCUSABLE = "button:not(:disabled), input, select, textarea, a[href], [tabindex]:not([tabindex='-1'])";
@@ -53,31 +55,21 @@ export function startSpatialNavigation() {
     move(direction);
   });
 
-  // Standard mapping: 0 = A, 1 = B, 12-15 = d-pad; axes 0/1 = left stick.
-  const held = new Map<string, number>();
-  const press = (key: string, down: boolean, act: () => void) => {
-    const now = performance.now();
-    const since = held.get(key);
-    if (!down) return void held.delete(key);
-    // Act on press, then repeat while held.
-    if (since === undefined || now - since > 180) {
-      held.set(key, since === undefined ? now + 220 : now);
-      act();
-    }
+  // Controllers come from the Rust side ("pad" events): act on press, repeat while held.
+  const repeats = new Map<string, ReturnType<typeof setTimeout>>();
+  const act = (key: string) => {
+    if (!document.hasFocus()) return; // A game is running in front.
+    if (key === "a") (document.activeElement as HTMLElement | null)?.click();
+    else if (key === "b") window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    else move(key as Direction);
   };
-  const poll = () => {
-    for (const pad of navigator.getGamepads?.() ?? []) {
-      if (!pad) continue;
-      const b = (i: number) => Boolean(pad.buttons[i]?.pressed);
-      const [x, y] = [pad.axes[0] ?? 0, pad.axes[1] ?? 0];
-      press("up", b(12) || y < -0.5, () => move("up"));
-      press("down", b(13) || y > 0.5, () => move("down"));
-      press("left", b(14) || x < -0.5, () => move("left"));
-      press("right", b(15) || x > 0.5, () => move("right"));
-      press("a", b(0), () => (document.activeElement as HTMLElement | null)?.click());
-      press("b", b(1), () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
-    }
-    requestAnimationFrame(poll);
-  };
-  window.addEventListener("gamepadconnected", () => requestAnimationFrame(poll), { once: true });
+  void listen<{ key: string; down: boolean }>("pad", ({ payload: { key, down } }) => {
+    clearTimeout(repeats.get(key));
+    repeats.delete(key);
+    if (!down) return;
+    act(key);
+    if (key === "a" || key === "b") return;
+    const again = (delay: number) => repeats.set(key, setTimeout(() => (act(key), again(120)), delay));
+    again(300);
+  });
 }

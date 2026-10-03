@@ -67,6 +67,12 @@ test("arrow keys and controllers move between cards", async () => {
   assert.equal(await focused(), "test-port");
   await app.keys("ArrowRight");
   assert.equal(await focused(), "tampered-port");
+  // A controller's d-pad, as the Rust side reports it.
+  const pad = (key, down) =>
+    app.execute((key, down) => window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event: "pad", payload: { key, down } }), key, down);
+  await pad("left", true);
+  await pad("left", false);
+  await until(async () => (await focused()) === "test-port");
 });
 
 test("search narrows the catalog", async () => {

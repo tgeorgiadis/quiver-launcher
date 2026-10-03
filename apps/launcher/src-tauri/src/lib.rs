@@ -1,4 +1,5 @@
 mod browser;
+mod gamepad;
 mod install;
 mod v3;
 
@@ -210,6 +211,7 @@ pub fn run() {
                 .or(portable)
                 .unwrap_or(app.path().app_data_dir()?);
             app.manage(Data(dir));
+            gamepad::start(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

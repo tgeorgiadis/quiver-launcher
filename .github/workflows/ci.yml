@@ -17,7 +17,7 @@ jobs:
       - name: System libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev webkit2gtk-driver xvfb
+          sudo apt-get install -y libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev webkit2gtk-driver xvfb
       - run: cargo install tauri-driver --locked
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck

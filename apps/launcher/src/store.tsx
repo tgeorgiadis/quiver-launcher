@@ -31,7 +31,9 @@ export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
   dir?: string;
-  version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean };
+  version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean;
+  lastPlayed?: number;
+};
 export type Job = Progress | { error: string };
 /** Several files suit this computer: the player picks one. */
 export type Choice = { entry: Entry; version: string; assets: Asset[]; resolve: (asset: Asset | null) => void };
@@ -223,7 +225,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       });
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
-      setInstalls((i) => ({ ...i, [entry.id]: { dir: i[entry.id]?.dir, version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
+      setInstalls((i) => ({ ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
       setJobs(({ [entry.id]: _, ...rest }) => rest);
     } catch (error) {
       fail(entry.id, error);
@@ -279,7 +281,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     async play(id) {
       const install = installs[id];
-      if (install) await native.launch(install.folder, install.dir, install.executables, Boolean(install.wine)).catch((e) => fail(id, e));
+      if (!install) return;
+      setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now() } }));
+      await native.launch(install.folder, install.dir, install.executables, Boolean(install.wine)).catch((e) => fail(id, e));
     },
     async remove(id) {
       const install = installs[id];

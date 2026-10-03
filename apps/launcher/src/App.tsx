@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, Library, Play, Search, ShieldCheck, Trash2, X } from "lucide-react";
 import type { Entry, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score, coverOf } from "@quiver/ui";
-import { availableOn, hasUpdate, useLauncher } from "./store";
+import { availableOn, hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { useAccount } from "./account";
 
 type Tab = "library" | "browse";
@@ -83,11 +83,26 @@ function OldLibrary({ onDone }: { onDone: () => void }) {
 
 function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrowse: () => void }) {
   const { library, catalog, installs, jobs, get, add, remove } = useLauncher();
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"played" | "name" | "added">("played");
   const updates = library.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
-  const items = library.flatMap((i) => (catalog[i.id] ? [withOverrides(catalog[i.id], i.overrides)] : []));
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  const order = {
+    played: (i: LibraryItem) => -(installs[i.id]?.lastPlayed ?? 0),
+    added: (i: LibraryItem) => -i.addedAt,
+    name: () => 0,
+  }[sort];
+  const items = library
+    .flatMap((i) => (catalog[i.id] ? [{ item: i, entry: withOverrides(catalog[i.id], i.overrides) }] : []))
+    .filter(({ entry, item }) => {
+      const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item.overrides?.tags ?? [])].join(" ").toLowerCase();
+      return words.every((w) => text.includes(w));
+    })
+    .sort((a, b) => order(a.item) - order(b.item) || a.entry.projectName.localeCompare(b.entry.projectName))
+    .map(({ entry }) => entry);
   // Removed from the library (here, elsewhere or by signing out) but its files are still here.
   const loose = Object.keys(installs).flatMap((id) => (catalog[id] && !library.some((i) => i.id === id) ? [catalog[id]] : []));
-  if (!items.length && !loose.length)
+  if (!library.length && !loose.length)
     return (
       <div className="empty">
         <Library size={40} strokeWidth={1.2} />
@@ -100,13 +115,22 @@ function LibraryPage({ onOpen, onBrowse }: { onOpen: (e: Entry) => void; onBrows
     );
   return (
     <>
-      {updates.length > 0 && (
-        <div className="toolbar">
+      <div className="toolbar">
+        <label className="search">
+          <Search size={16} />
+          <input placeholder="Search your library" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </label>
+        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+          <option value="played">Recently played</option>
+          <option value="added">Recently added</option>
+          <option value="name">Name</option>
+        </select>
+        {updates.length > 0 && (
           <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
             Update all ({updates.length})
           </button>
-        </div>
-      )}
+        )}
+      </div>
       <div className="catalog-grid">
         {items.map((entry) => (
           <EntryCard key={entry.id} entry={entry} onOpen={() => onOpen(entry)} action={<Action entry={entry} />} />
