@@ -55,3 +55,13 @@ button.danger { color: #e38c87; }
 .banner p { flex: 1; }
 .banner button { padding: 7px 14px; border-radius: 7px; background: #26272b; font-weight: 500; font-size: 13px; white-space: nowrap; }
 .banner button.primary { background: var(--accent); }
+.account { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.account button { padding: 7px 14px; border-radius: 7px; background: var(--panel); font-weight: 500; font-size: 13px; }
+.detail-body input, .detail-body textarea {
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); outline: 0;
+}
+.detail-body textarea { min-height: 70px; resize: vertical; }
+.review { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+.review h3 { font-size: 15px; }
+.row button.chosen { background: var(--accent); color: #04121b; }
+p.job-error { color: #e38c87; font-size: 13px; }

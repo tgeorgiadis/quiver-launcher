@@ -69,8 +69,10 @@ export async function startMockApi() {
       checksum: `sha256:${slug === "tampered-port" ? "0".repeat(64) : sha}`,
     })),
   });
-  const server = createServer((req, res) => {
+  const account = mockAccount(entries);
+  const server = createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
+    if (url.pathname.startsWith("/account/")) return account.handle(req, res, url.pathname.slice(8));
     const send = (body, status = 200) => {
       res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
       res.end(JSON.stringify(body));
@@ -102,8 +104,65 @@ export async function startMockApi() {
   base = `http://127.0.0.1:${server.address().port}`;
   return {
     api: `${base}/api/v1`,
+    account: `${base}/account`,
+    reviews: account.reviews,
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     close: () => server.close(),
   };
+}
+
+/**
+ * The site's account functions (users.me, library.list/save, reviews.save)
+ * with the same contract, over HTTP: the real backend is private.
+ */
+function mockAccount(entries) {
+  const users = new Map(); // name -> { id, password, items: Map(entryId -> item) }
+  const tokens = new Map(); // token -> name
+  const reviews = [];
+  const read = (req) =>
+    new Promise((resolve) => {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      req.on("end", () => resolve(body ? JSON.parse(body) : {}));
+    });
+  const send = (res, body, status = 200) => {
+    res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" });
+    res.end(JSON.stringify(body));
+  };
+  async function handle(req, res, path) {
+    if (req.method === "OPTIONS") return send(res, {});
+    const body = req.method === "POST" ? await read(req) : {};
+    if (path === "/signin") {
+      const existing = users.get(body.username);
+      if (body.create ? existing : existing?.password !== body.password) return send(res, {}, 401);
+      if (body.create) users.set(body.username, { id: `user_${body.username}`, password: body.password, items: new Map() });
+      const token = `token_${Math.random()}`;
+      tokens.set(token, body.username);
+      return send(res, { token });
+    }
+    const name = tokens.get((req.headers.authorization ?? "").replace("Bearer ", ""));
+    const user = users.get(name);
+    if (!user) return send(res, {}, 401);
+    if (path === "/library")
+      return send(res, {
+        user: { id: user.id, name },
+        items: [...user.items.values()].map((i) => ({ ...i, slug: entries.find((e) => e.id === i.entryId).slug })),
+      });
+    if (path === "/library/save") {
+      for (const c of body.changes) {
+        const item = user.items.get(c.entryId) ?? { entryId: c.entryId };
+        if (!user.items.has(c.entryId) && c.removed) continue;
+        for (const key of ["name", "artwork", "tags"]) if (key in c) item[key] = c[key] ?? undefined;
+        user.items.set(c.entryId, { ...item, removed: c.removed ?? false, updatedAt: Date.now() });
+      }
+      return send(res, null);
+    }
+    if (path === "/reviews") {
+      reviews.push({ ...body, user: name });
+      return send(res, null);
+    }
+    send(res, {}, 404);
+  }
+  return { handle, reviews };
 }

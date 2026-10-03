@@ -3,6 +3,7 @@ import { Download, Library, Play, Search, ShieldCheck, Trash2, X } from "lucide-
 import type { Entry, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score, coverOf } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
+import { useAccount } from "./account";
 
 type Tab = "library" | "browse";
 
@@ -11,6 +12,7 @@ export function App() {
   // A new player starts in the catalog; everyone else in their library.
   const [tab, setTab] = useState<Tab>(library.length ? "library" : "browse");
   const [open, setOpen] = useState<Entry | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
   return (
     <div className="shell">
       <header className="topbar">
@@ -23,8 +25,10 @@ export function App() {
             Browse
           </button>
         </nav>
+        <AccountButton onSignIn={() => setSigningIn(true)} />
       </header>
       <main>
+        <Notice />
         <OldLibrary onDone={() => setTab("library")} />
         {tab === "library" ? (
           <LibraryPage onOpen={setOpen} onBrowse={() => setTab("browse")} />
@@ -32,7 +36,8 @@ export function App() {
           <BrowsePage onOpen={setOpen} />
         )}
       </main>
-      {open && <Detail entry={open} onClose={() => setOpen(null)} />}
+      {open && <Detail entry={open} onClose={() => setOpen(null)} onSignIn={() => setSigningIn(true)} />}
+      {signingIn && <SignIn onClose={() => setSigningIn(false)} />}
       <ChooseFile />
     </div>
   );
@@ -198,9 +203,19 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
 
 /** The one button a card needs: Get, progress, Play or Update. */
 function Action({ entry }: { entry: Entry }) {
-  const { config, installs, jobs, catalog, get, play, dismiss } = useLauncher();
+  const { config, installs, jobs, catalog, library, get, play, dismiss, keep, remove } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
+  if (library.find((i) => i.id === entry.id)?.removedElsewhere)
+    return (
+      <div className="job-error" role="alert">
+        <p>Removed on another device</p>
+        <div className="row">
+          <button onClick={() => keep(entry.id)}>Keep</button>
+          <button onClick={() => remove(entry.id)}>Uninstall</button>
+        </div>
+      </div>
+    );
   if (job && "error" in job)
     return (
       <div className="job-error" role="alert">
@@ -258,7 +273,7 @@ function Action({ entry }: { entry: Entry }) {
   );
 }
 
-function Detail({ entry, onClose }: { entry: Entry; onClose: () => void }) {
+function Detail({ entry, onClose, onSignIn }: { entry: Entry; onClose: () => void; onSignIn: () => void }) {
   const { library, installs, remove } = useLauncher();
   const inLibrary = library.some((i) => i.id === entry.id);
   const install = installs[entry.id];
@@ -305,8 +320,134 @@ function Detail({ entry, onClose }: { entry: Entry; onClose: () => void }) {
               </button>
             )}
           </div>
+          <Review entry={entry} onSignIn={onSignIn} />
         </div>
       </section>
+    </div>
+  );
+}
+
+const RESULTS = [
+  ["runs", "Runs well"],
+  ["issues", "Runs with issues"],
+  ["broken", "Doesn't run"],
+] as const;
+
+/** Signed in, a player who installed the app can say how it runs, for the release they have. */
+function Review({ entry, onSignIn }: { entry: Entry; onSignIn: () => void }) {
+  const { user, review } = useAccount();
+  const { installs, config } = useLauncher();
+  const [result, setResult] = useState<(typeof RESULTS)[number][0] | null>(null);
+  const [body, setBody] = useState("");
+  const [state, setState] = useState<"idle" | "sending" | "sent" | string>("idle");
+  const install = installs[entry.id];
+  if (!install) return null;
+  if (!user)
+    return (
+      <div className="review">
+        <button onClick={onSignIn}>Sign in to review</button>
+      </div>
+    );
+  if (state === "sent") return <p className="review muted">Thanks, your review is posted.</p>;
+  return (
+    <form
+      className="review"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!result || config.os === "unknown") return;
+        setState("sending");
+        review({ entryId: entry.id, result, body: body.trim() || undefined, platform: config.os, entryReleaseId: install.releaseId }).then(
+          () => setState("sent"),
+          (error) => setState(error instanceof Error ? error.message.replace(/^.*ConvexError: /, "") : "Couldn't post your review."),
+        );
+      }}
+    >
+      <h3>How does v{install.version} run for you?</h3>
+      <div className="row">
+        {RESULTS.map(([value, label]) => (
+          <button type="button" key={value} className={result === value ? "chosen" : ""} onClick={() => setResult(value)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <textarea maxLength={500} placeholder="Anything others should know? (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
+      {state !== "idle" && state !== "sending" && <p className="job-error">{state}</p>}
+      <button className="primary" disabled={!result || state === "sending"}>
+        Post review
+      </button>
+    </form>
+  );
+}
+
+function AccountButton({ onSignIn }: { onSignIn: () => void }) {
+  const { ready, user, signOut } = useAccount();
+  if (!ready) return null;
+  return (
+    <div className="account">
+      {user ? (
+        <>
+          <span className="muted">{user.name}</span>
+          <button onClick={() => signOut()}>Sign out</button>
+        </>
+      ) : (
+        <button onClick={onSignIn}>Sign in</button>
+      )}
+    </div>
+  );
+}
+
+/** Signing in is optional: it syncs the library and lets players review apps. */
+function SignIn({ onClose }: { onClose: () => void }) {
+  const { signIn } = useAccount();
+  const [create, setCreate] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="overlay" onClick={onClose}>
+      <section className="detail choose" role="dialog" aria-label="Sign in" onClick={(e) => e.stopPropagation()}>
+        <form
+          className="detail-body"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setBusy(true);
+            signIn(username.trim(), password, create)
+              .then((message) => (message ? setError(message) : onClose()))
+              .finally(() => setBusy(false));
+          }}
+        >
+          <h2>{create ? "Create your Quiver account" : "Sign in to Quiver"}</h2>
+          <p className="muted">Your library syncs across your devices, and you can review apps. Everything works without an account too.</p>
+          <input autoFocus required placeholder="Username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input
+            required
+            type="password"
+            placeholder="Password"
+            autoComplete={create ? "new-password" : "current-password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {error && <p className="job-error">{error}</p>}
+          <button className="primary" disabled={busy}>
+            {create ? "Create account" : "Sign in"}
+          </button>
+          <button type="button" onClick={() => (setCreate(!create), setError(null))}>
+            {create ? "I already have an account" : "Create an account"}
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function Notice() {
+  const { notice, setNotice } = useLauncher();
+  if (!notice) return null;
+  return (
+    <div className="banner" role="status">
+      <p>{notice}</p>
+      <button onClick={() => setNotice(null)}>OK</button>
     </div>
   );
 }

@@ -12,9 +12,11 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@convex-dev/auth": "2.0.0-alpha.2",
     "@quiver/api": "workspace:*",
     "@quiver/ui": "workspace:*",
     "@tauri-apps/api": "^2",
+    "convex": "^1.46.0",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

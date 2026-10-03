@@ -9,13 +9,24 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { createClient, type Asset, type Client, type Entry, type Withdrawn } from "@quiver/api";
 import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
+import { AccountProvider, useAccount } from "./account";
+import { applyServer, changesFrom, joinAccount } from "./sync";
 
 export type LibraryItem = {
   /** The catalog entry's id. */
   id: string;
   slug: string;
   addedAt: number;
-  overrides?: { name?: string; cover?: string };
+  /** The player's own choices; empty shows the catalog's. */
+  overrides?: { name?: string; cover?: string; tags?: string[] };
+  /** Changed here and not yet saved to the account. */
+  pending?: { added?: boolean; name?: boolean; cover?: boolean; tags?: boolean; removed?: boolean };
+  /** The account this item last synced with. */
+  account?: string;
+  /** Removed here; kept until the removal reaches its account. */
+  removed?: boolean;
+  /** Removed on another device while installed here. */
+  removedElsewhere?: boolean;
 };
 /** Catalog data for a library app, with releases pulled since. */
 export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
@@ -43,6 +54,11 @@ type Launcher = {
   get: (entry: Entry) => Promise<void>;
   play: (id: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  /** Keeps an app another device removed, adding it back to the account. */
+  keep: (id: string) => void;
+  /** A short note for the player, such as what signing in brought over. */
+  notice: string | null;
+  setNotice: (notice: string | null) => void;
   dismiss: (id: string) => void;
 };
 
@@ -67,56 +83,102 @@ export function hasUpdate(entry: Entry | undefined, install: Install | undefined
   );
 }
 
-export function LauncherProvider({ children }: { children: ReactNode }) {
-  const [loaded, setLoaded] = useState<{
-    config: Config;
-    library: LibraryItem[];
-    installs: Record<string, Install>;
-    catalog: Record<string, CatalogEntry>;
-  } | null>(null);
-  const [library, setLibrary] = useState<LibraryItem[]>([]);
-  const [installs, setInstalls] = useState<Record<string, Install>>({});
-  const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
-  const [jobs, setJobs] = useState<Record<string, Job>>({});
-  const [choice, setChoice] = useState<Choice | null>(null);
-  const [oldApps, setOldApps] = useState<OldApp[]>([]);
+type Saved = {
+  config: Config;
+  library: LibraryItem[];
+  installs: Record<string, Install>;
+  catalog: Record<string, CatalogEntry>;
+};
 
+export function LauncherProvider({ children }: { children: ReactNode }) {
+  const [saved, setSaved] = useState<Saved | null>(null);
   useEffect(() => {
     Promise.all([
       native.config(),
       native.readState<LibraryItem[]>("library"),
       native.readState<Record<string, Install>>("installs"),
       native.readState<Record<string, CatalogEntry>>("catalog"),
-    ]).then(([config, library, installs, catalog]) => {
-      setLibrary(library ?? []);
-      setInstalls(installs ?? {});
-      setCatalog(catalog ?? {});
-      setLoaded({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {} });
-      if (!library?.length) native.findV3Library().then(setOldApps);
-    });
+    ]).then(([config, library, installs, catalog]) =>
+      setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {} }),
+    );
+  }, []);
+  if (!saved) return null;
+  return (
+    <AccountProvider config={saved.config}>
+      <LauncherState saved={saved}>{children}</LauncherState>
+    </AccountProvider>
+  );
+}
+
+function LauncherState({ saved, children }: { saved: Saved; children: ReactNode }) {
+  const { config } = saved;
+  const account = useAccount();
+  const [allItems, setLibrary] = useState(saved.library);
+  const [installs, setInstalls] = useState(saved.installs);
+  const [catalog, setCatalog] = useState(saved.catalog);
+  const [jobs, setJobs] = useState<Record<string, Job>>({});
+  const [choice, setChoice] = useState<Choice | null>(null);
+  const [oldApps, setOldApps] = useState<OldApp[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+  const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
+  const client = useMemo(() => createClient(config.api), [config.api]);
+
+  useEffect(() => {
+    if (!saved.library.length) native.findV3Library().then(setOldApps);
     const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
     return () => void off.then((stop) => stop());
-  }, []);
+  }, [saved]);
 
-  // Save each file when it changes, after the first load.
-  usePersist("library", library, loaded?.library);
-  usePersist("installs", installs, loaded?.installs);
-  usePersist("catalog", catalog, loaded?.catalog);
+  usePersist("library", allItems);
+  usePersist("installs", installs);
+  usePersist("catalog", catalog);
 
-  const client = useMemo(() => createClient(loaded?.config.api), [loaded?.config.api]);
-
-  // Refresh the library's catalog data (new versions, art) once per start.
+  // Catalog data for library apps: refreshed once per start, fetched for apps another device added.
+  const fetched = useRef(new Set<string>());
   useEffect(() => {
-    if (!loaded) return;
-    for (const item of loaded.library)
+    for (const item of library) {
+      if (fetched.current.has(item.id)) continue;
+      fetched.current.add(item.id);
       client.app(item.slug).then(
         (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn } })),
         () => {},
       );
-  }, [loaded, client]);
+    }
+  }, [library, client]);
 
-  if (!loaded) return null;
-  const { config } = loaded;
+  // Signed in: fold the account's library in, live.
+  const userId = account.user?.id;
+  useEffect(() => {
+    if (!userId || !account.items) return;
+    const server = account.items;
+    setLibrary((local) => {
+      const joined = joinAccount(local, userId);
+      const next = applyServer(joined, server, userId, (id) => Boolean(installs[id]));
+      const fromDevice = joined.filter((i) => i.pending?.added && !local.find((l) => l.id === i.id)?.account).length;
+      const fromAccount = next.filter((i) => !local.some((l) => l.id === i.id)).length;
+      if (fromDevice || fromAccount)
+        setNotice(`Library synced: ${fromDevice} ${fromDevice === 1 ? "app" : "apps"} from this computer, ${fromAccount} from your account.`);
+      return JSON.stringify(next) === JSON.stringify(local) ? local : next;
+    });
+  }, [userId, account.items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Signed in: save what changed here.
+  const pushing = useRef(false);
+  useEffect(() => {
+    const changes = userId ? changesFrom(allItems, userId) : [];
+    if (!userId || !changes.length || pushing.current) return;
+    pushing.current = true;
+    const sent = new Set(allItems.filter((i) => i.pending && i.account === userId));
+    (async () => {
+      for (let i = 0; i < changes.length; i += 100) await account.save(changes.slice(i, i + 100));
+    })()
+      .then(() =>
+        // Untouched since sending: saved. A removal that reached its account is done.
+        setLibrary((l) => l.flatMap((i) => (!sent.has(i) ? [i] : i.removed ? [] : [{ ...i, pending: undefined }]))),
+      )
+      .catch(() => {})
+      .finally(() => (pushing.current = false));
+  }, [allItems, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fail = (id: string, error: unknown) =>
     setJobs((j) => ({ ...j, [id]: { error: error instanceof Error ? error.message : String(error) } }));
@@ -162,10 +224,23 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function add(entry: Entry) {
+    setLibrary((l) => {
+      const mine = l.find((i) => i.id === entry.id);
+      const added = { pending: { ...mine?.pending, added: true }, account: userId ?? mine?.account, removed: undefined };
+      if (mine) return mine.removed ? l.map((i) => (i === mine ? { ...i, ...added } : i)) : l;
+      return [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now(), ...(userId ? added : {}) }];
+    });
+  }
+
   const value: Launcher = {
     config,
     client,
     library,
+    notice,
+    setNotice,
+    keep: (id) =>
+      setLibrary((l) => l.map((i) => (i.id === id ? { ...i, removedElsewhere: undefined, pending: { ...i.pending, added: true } } : i))),
     installs,
     catalog,
     jobs,
@@ -178,7 +253,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     async get(entry) {
       if (jobs[entry.id] && !("error" in jobs[entry.id])) return;
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
-      setLibrary((l) => (l.some((i) => i.id === entry.id) ? l : [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now() }]));
+      add(entry);
       await installEntry(entry);
     },
     async play(id) {
@@ -189,7 +264,12 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       const install = installs[id];
       if (install) await native.uninstall(install.folder, install.dir).catch(() => {});
       setInstalls(({ [id]: _, ...rest }) => rest);
-      setLibrary((l) => l.filter((i) => i.id !== id));
+      // A synced app is removed from its account too; one that never synced just goes.
+      setLibrary((l) =>
+        l.flatMap((i) =>
+          i.id !== id ? [i] : i.account && !i.removedElsewhere ? [{ ...i, removed: true, pending: { removed: true } }] : [],
+        ),
+      );
       setJobs(({ [id]: _, ...rest }) => rest);
     },
     oldApps,
@@ -211,7 +291,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         }
         const entry = detail.entry;
         setCatalog((c) => ({ ...c, [entry.id]: { ...entry, withdrawn: detail.withdrawn } }));
-        setLibrary((l) => (l.some((i) => i.id === entry.id) ? l : [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now() }]));
+        add(entry);
         if (old.dir && old.version) {
           const executables = entry.launcher.preferredExecutables?.[config.os as "windows" | "linux" | "macos"] ?? [];
           const install: Install = { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables };
@@ -226,14 +306,11 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   return <LauncherContext.Provider value={value}>{children}</LauncherContext.Provider>;
 }
 
-function usePersist(name: "library" | "installs" | "catalog", value: unknown, initial: unknown) {
+/** Saves a state file whenever it changes after the first render. */
+function usePersist(name: "library" | "installs" | "catalog", value: unknown) {
   const first = useRef(true);
   useEffect(() => {
-    if (initial === undefined) return;
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    native.writeState(name, value);
-  }, [name, value, initial]);
+    if (first.current) first.current = false;
+    else native.writeState(name, value);
+  }, [name, value]);
 }

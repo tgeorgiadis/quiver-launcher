@@ -6,7 +6,7 @@ import type { Os } from "@quiver/api";
 type StateFile = "library" | "installs" | "catalog";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
 export type OldApp = { name: string; repository?: string; provider: string; dir?: string; version?: string };
-export type Config = { api: string; os: Os; arch: string; appsDir: string };
+export type Config = { api: string; convex: string; accountApi?: string; os: Os; arch: string; appsDir: string };
 export type Progress = { id: string; phase: "downloading" | "installing"; received: number; total: number | null };
 export type InstallRequest = {
   id: string;
@@ -27,6 +27,8 @@ export const native = {
   launch: (folder: string, dir: string | undefined, preferred: string[], wine: boolean) =>
     invoke<void>("launch", { folder, dir, preferred, wine }),
   uninstall: (folder: string, dir?: string) => invoke<void>("uninstall", { folder, dir }),
+  secretGet: (key: string) => invoke<string | null>("secret_get", { key }),
+  secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),
   findV3Library: () => invoke<OldApp[]>("find_v3_library"),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),
 };

@@ -23,7 +23,7 @@ before(async () => {
       ],
     }),
   );
-  s = await launch({ QUIVER_V3_DATA: old });
+  s = await launch({ env: { QUIVER_V3_DATA: old } });
 });
 
 after(() => s?.close());

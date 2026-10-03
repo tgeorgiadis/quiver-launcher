@@ -21,6 +21,10 @@ impl Data {
 #[serde(rename_all = "camelCase")]
 struct Config {
     api: String,
+    /// The Convex deployment for sign-in, sync and reviews.
+    convex: String,
+    /// A stand-in account service, for end-to-end tests.
+    account_api: Option<String>,
     os: &'static str,
     arch: &'static str,
     apps_dir: String,
@@ -44,6 +48,8 @@ const ARCH: &str = match std::env::consts::ARCH.as_bytes() {
 fn config(data: State<Data>) -> Config {
     Config {
         api: std::env::var("QUIVER_API").unwrap_or_else(|_| "https://api.quiverlauncher.com/api/v1".into()),
+        convex: std::env::var("QUIVER_CONVEX").unwrap_or_else(|_| "https://convex.quiverlauncher.com".into()),
+        account_api: std::env::var("QUIVER_ACCOUNT_API").ok(),
         os: OS,
         arch: ARCH,
         apps_dir: data.apps().to_string_lossy().into(),
@@ -130,6 +136,51 @@ fn uninstall(data: State<Data>, folder: String, dir: Option<String>) -> Result<(
     Ok(())
 }
 
+/// Sign-in tokens: in the OS keychain, or a file in the data folder where
+/// there's none (some Linux desktops, and when QUIVER_DATA is set).
+fn secret_file(data: &Data) -> PathBuf {
+    data.0.join("account.json")
+}
+fn keychain(key: &str) -> Option<keyring::Entry> {
+    if std::env::var_os("QUIVER_DATA").is_some() {
+        return None;
+    }
+    keyring::Entry::new("Quiver Launcher", key).ok()
+}
+fn secrets(data: &Data) -> serde_json::Map<String, serde_json::Value> {
+    std::fs::read(secret_file(data)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default()
+}
+
+#[tauri::command]
+fn secret_get(data: State<Data>, key: String) -> Option<String> {
+    keychain(&key)
+        .and_then(|e| e.get_password().ok())
+        .or_else(|| secrets(&data).get(&key)?.as_str().map(str::to_string))
+}
+
+#[tauri::command]
+fn secret_set(data: State<Data>, key: String, value: Option<String>) -> Result<(), String> {
+    if let Some(entry) = keychain(&key) {
+        let saved = match &value {
+            Some(v) => entry.set_password(v),
+            None => entry.delete_credential().or_else(|e| match e {
+                keyring::Error::NoEntry => Ok(()),
+                e => Err(e),
+            }),
+        };
+        if saved.is_ok() {
+            return Ok(());
+        }
+    }
+    let mut all = secrets(&data);
+    match value {
+        Some(v) => all.insert(key, v.into()),
+        None => all.remove(&key),
+    };
+    std::fs::create_dir_all(&data.0).map_err(|e| e.to_string())?;
+    std::fs::write(secret_file(&data), serde_json::to_vec(&all).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn find_v3_library() -> Vec<v3::OldApp> {
     v3::find()
@@ -158,7 +209,9 @@ pub fn run() {
             install,
             launch,
             uninstall,
-            find_v3_library
+            find_v3_library,
+            secret_get,
+            secret_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quiver Launcher");
