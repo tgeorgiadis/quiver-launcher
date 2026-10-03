@@ -19,7 +19,9 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
     a.architecture === arch ? 0 : a.architecture === "universal" || a.architecture === "unknown" ? 1 : arch === "x64" && a.architecture === "x86" ? 2 : -1;
   const usable = assets.filter((a) => !AUXILIARY.test(a.filename) && formatRank(a.filename) >= 0);
   // Files the site couldn't place on a platform are tried only when none are for this one.
-  const forOs = usable.some((a) => a.os === os) ? usable.filter((a) => a.os === os) : usable.filter((a) => a.os === "unknown");
+  // Linux runs Windows builds through Wine when there's no Linux build.
+  const fallbacks: Os[] = os === "linux" ? ["unknown", "windows"] : ["unknown"];
+  const forOs = [os, ...fallbacks].map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
   const ranked = forOs
     .filter((a) => !wanted || a.filename.toLowerCase().includes(wanted))
     .filter((a) => archRank(a) >= 0)

@@ -90,11 +90,15 @@ fn app_dir(data: &Data, folder: &str) -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
-fn launch(data: State<Data>, folder: String, preferred: Vec<String>) -> Result<(), String> {
+fn launch(data: State<Data>, folder: String, preferred: Vec<String>, wine: bool) -> Result<(), String> {
     let dir = app_dir(&data, &folder)?;
-    let exe = install::find_executable(&dir, &preferred, OS)
+    let exe = install::find_executable(&dir, &preferred, if wine { "windows" } else { OS })
         .ok_or("Couldn't find a program to start in this app's folder.")?;
-    let mut command = if OS == "macos" && exe.extension().is_some_and(|e| e == "app") {
+    let mut command = if wine {
+        let mut wine = Command::new("wine");
+        wine.arg(&exe);
+        wine
+    } else if OS == "macos" && exe.extension().is_some_and(|e| e == "app") {
         let mut open = Command::new("open");
         open.arg(&exe);
         open
@@ -105,7 +109,10 @@ fn launch(data: State<Data>, folder: String, preferred: Vec<String>) -> Result<(
         .current_dir(exe.parent().unwrap_or(Path::new(&dir)))
         .spawn()
         .map(|_| ())
-        .map_err(|e| format!("Couldn't start {}: {e}", exe.display()))
+        .map_err(|e| match wine {
+            true if e.kind() == std::io::ErrorKind::NotFound => "This is a Windows app. Install Wine to play it on Linux.".into(),
+            _ => format!("Couldn't start {}: {e}", exe.display()),
+        })
 }
 
 #[tauri::command]

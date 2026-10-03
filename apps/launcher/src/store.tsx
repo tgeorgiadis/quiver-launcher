@@ -19,7 +19,7 @@ export type LibraryItem = {
 };
 /** Catalog data for a library app, with releases pulled since. */
 export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
-export type Install = { version: string; folder: string; executables: string[] };
+export type Install = { version: string; folder: string; executables: string[]; wine?: boolean };
 export type Job = Progress | { error: string };
 /** Several files suit this computer: the player picks one. */
 export type Choice = { entry: Entry; version: string; assets: Asset[]; resolve: (asset: Asset | null) => void };
@@ -45,7 +45,8 @@ const LauncherContext = createContext<Launcher | null>(null);
 export const useLauncher = () => useContext(LauncherContext)!;
 
 /** Whether this computer can install the app. */
-export const availableOn = (entry: Entry, os: string) => entry.supportedOS.some((o) => o === os || o === "unknown");
+export const availableOn = (entry: Entry, os: string) =>
+  entry.supportedOS.some((o) => o === os || o === "unknown" || (os === "linux" && o === "windows"));
 
 export function hasUpdate(entry: Entry | undefined, install: Install | undefined) {
   return Boolean(entry?.verified && install && install.version !== entry.verified.version);
@@ -134,8 +135,9 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         filesToAdd: settings.filesToAdd ?? [],
         version: release.version,
       });
-      const executables = settings.preferredExecutables?.[config.os as "windows" | "linux" | "macos"] ?? [];
-      setInstalls((i) => ({ ...i, [entry.id]: { version: release.version, folder, executables } }));
+      const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
+      const executables = settings.preferredExecutables?.[runs] ?? [];
+      setInstalls((i) => ({ ...i, [entry.id]: { version: release.version, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
       setJobs(({ [entry.id]: _, ...rest }) => rest);
     } catch (error) {
       fail(entry.id, error);
@@ -163,7 +165,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     },
     async play(id) {
       const install = installs[id];
-      if (install) await native.launch(install.folder, install.executables).catch((e) => fail(id, e));
+      if (install) await native.launch(install.folder, install.executables, Boolean(install.wine)).catch((e) => fail(id, e));
     },
     async remove(id) {
       const install = installs[id];

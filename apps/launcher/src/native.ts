@@ -20,7 +20,7 @@ export const native = {
   readState: <T>(name: "library" | "installs" | "catalog") => invoke<T | null>("read_state", { name }),
   writeState: (name: "library" | "installs" | "catalog", value: unknown) => invoke<void>("write_state", { name, value }),
   install: (request: InstallRequest) => invoke<{ dir: string; version: string }>("install", { request }),
-  launch: (folder: string, preferred: string[]) => invoke<void>("launch", { folder, preferred }),
+  launch: (folder: string, preferred: string[], wine: boolean) => invoke<void>("launch", { folder, preferred, wine }),
   uninstall: (folder: string) => invoke<void>("uninstall", { folder }),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),
 };

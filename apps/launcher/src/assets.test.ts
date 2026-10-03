@@ -24,7 +24,8 @@ test("applies the catalog's file filter and leaves real ties to the player", () 
   expect(bestAssets(files, "windows", "x64", "DX12").map((a) => a.filename)).toEqual(["Game-dx12.zip"]);
 });
 
-test("falls back to files with no known platform", () => {
+test("falls back to unplaced files, and to Windows builds on Linux", () => {
   const files = [asset("Game.zip", "unknown", "unknown"), asset("Game-mac.zip", "macos")];
   expect(bestAssets(files, "windows", "x64").map((a) => a.filename)).toEqual(["Game.zip"]);
+  expect(bestAssets([asset("Game-win64.zip", "windows")], "linux", "x64")).toHaveLength(1);
 });
