@@ -48,3 +48,10 @@ button.danger { color: #e38c87; }
 .description { color: #c9cbd0; white-space: pre-line; }
 .choices { display: flex; flex-direction: column; gap: 8px; }
 .choices button { justify-content: flex-start; }
+.banner {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 14px 16px;
+  border: 1px solid #0ea5e955; border-radius: 9px; background: #0ea5e914; font-size: 14px;
+}
+.banner p { flex: 1; }
+.banner button { padding: 7px 14px; border-radius: 7px; background: #26272b; font-weight: 500; font-size: 13px; white-space: nowrap; }
+.banner button.primary { background: var(--accent); }

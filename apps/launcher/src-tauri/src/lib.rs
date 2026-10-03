@@ -1,4 +1,5 @@
 mod install;
+mod v3;
 
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -84,14 +85,17 @@ async fn install(app: tauri::AppHandle, request: install::InstallRequest) -> Res
     .await
 }
 
-/// An app folder this launcher manages; refuses anything outside `apps`.
-fn app_dir(data: &Data, folder: &str) -> Result<PathBuf, String> {
-    Ok(data.apps().join(install::plain_name(folder)?))
+/// An app's folder: one in `apps`, or an install adopted from 3.x (`dir`).
+fn app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<PathBuf, String> {
+    match dir {
+        Some(dir) => Ok(PathBuf::from(dir)),
+        None => Ok(data.apps().join(install::plain_name(folder)?)),
+    }
 }
 
 #[tauri::command]
-fn launch(data: State<Data>, folder: String, preferred: Vec<String>, wine: bool) -> Result<(), String> {
-    let dir = app_dir(&data, &folder)?;
+fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Result<(), String> {
+    let dir = app_dir(&data, &folder, dir)?;
     let exe = install::find_executable(&dir, &preferred, if wine { "windows" } else { OS })
         .ok_or("Couldn't find a program to start in this app's folder.")?;
     let mut command = if wine {
@@ -116,18 +120,19 @@ fn launch(data: State<Data>, folder: String, preferred: Vec<String>, wine: bool)
 }
 
 #[tauri::command]
-fn uninstall(data: State<Data>, folder: String) -> Result<(), String> {
-    let dir = app_dir(&data, &folder)?;
-    if dir.exists() {
+fn uninstall(data: State<Data>, folder: String, dir: Option<String>) -> Result<(), String> {
+    let adopted = dir.is_some();
+    let dir = app_dir(&data, &folder, dir)?;
+    // An adopted folder is only removed while it still looks like an install.
+    if dir.exists() && (!adopted || dir.join("version.txt").is_file()) {
         trash::delete(&dir).or_else(|_| std::fs::remove_dir_all(&dir)).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
 
 #[tauri::command]
-fn installed_version(data: State<Data>, folder: String) -> Option<String> {
-    let dir = app_dir(&data, &folder).ok()?;
-    std::fs::read_to_string(dir.join(install::VERSION_FILE)).ok()
+fn find_v3_library() -> Vec<v3::OldApp> {
+    v3::find()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -153,7 +158,7 @@ pub fn run() {
             install,
             launch,
             uninstall,
-            installed_version
+            find_v3_library
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quiver Launcher");

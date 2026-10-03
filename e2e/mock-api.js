@@ -80,6 +80,12 @@ export async function startMockApi() {
       res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": zip.length });
       return res.end(zip);
     }
+    if (url.pathname === "/api/v1/release-status")
+      return send({
+        items: entries.map((e) => ({ id: e.id, slug: e.slug, provider: "github", repository: `quiver/${e.slug}` })),
+        nextCursor: null,
+        isDone: true,
+      });
     if (api !== "api" || apiVersion !== "v1" || resource !== "apps") return send({ error: { message: "Not found" } }, 404);
     if (!slug) {
       const search = url.searchParams.get("search")?.toLowerCase() ?? "";

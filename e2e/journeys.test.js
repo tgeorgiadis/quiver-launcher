@@ -5,41 +5,18 @@
  */
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { remote } from "webdriverio";
-import { startMockApi } from "./mock-api.js";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { launch } from "./session.js";
 
-const binary = resolve(import.meta.dirname, "../apps/launcher/src-tauri/target/debug/quiver-launcher");
-const data = mkdtempSync(join(tmpdir(), "quiver-data-"));
-const apps = join(data, "apps");
-let api, driver, app;
+let s, app, api, apps, card, until;
 
 before(async () => {
-  api = await startMockApi();
-  driver = spawn(join(homedir(), ".cargo/bin/tauri-driver"), [], {
-    env: { ...process.env, QUIVER_API: api.api, QUIVER_DATA: data },
-    stdio: "inherit",
-  });
-  await new Promise((r) => setTimeout(r, 1500));
-  app = await remote({
-    hostname: "127.0.0.1",
-    port: 4444,
-    logLevel: "error",
-    capabilities: { "wdio:enforceWebDriverClassic": true, "tauri:options": { application: binary } },
-  });
+  s = await launch();
+  ({ app, api, apps, card, until } = s);
 });
 
-after(async () => {
-  await app?.deleteSession();
-  driver?.kill();
-  api?.close();
-});
-
-const card = (name) => app.$(`article[data-slug="${name}"]`);
-const until = (check, timeout = 20000) => app.waitUntil(check, { timeout, interval: 200 });
+after(() => s?.close());
 
 test("a new player gets a port in one click and plays it", async () => {
   // An empty library starts in the catalog, showing ports for this computer.

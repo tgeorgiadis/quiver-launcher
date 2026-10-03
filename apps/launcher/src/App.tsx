@@ -25,6 +25,7 @@ export function App() {
         </nav>
       </header>
       <main>
+        <OldLibrary onDone={() => setTab("library")} />
         {tab === "library" ? (
           <LibraryPage onOpen={setOpen} onBrowse={() => setTab("browse")} />
         ) : (
@@ -33,6 +34,44 @@ export function App() {
       </main>
       {open && <Detail entry={open} onClose={() => setOpen(null)} />}
       <ChooseFile />
+    </div>
+  );
+}
+
+/** Offers to bring over a Quiver Launcher 3 library, installs and all. */
+function OldLibrary({ onDone }: { onDone: () => void }) {
+  const { oldApps, importOld } = useLauncher();
+  const [state, setState] = useState<"idle" | "busy" | string[]>("idle");
+  if (Array.isArray(state))
+    return state.length ? (
+      <div className="banner" role="status">
+        <p>Your apps are in your library. These aren't in the catalog yet, so they weren't brought over: {state.join(", ")}.</p>
+        <button onClick={() => setState("idle")}>OK</button>
+      </div>
+    ) : null;
+  if (!oldApps.length) return null;
+  return (
+    <div className="banner">
+      <p>
+        Quiver Launcher 3 is on this computer with {oldApps.length} {oldApps.length === 1 ? "app" : "apps"}. Bring them
+        over? Installed apps stay where they are, so nothing is downloaded again.
+      </p>
+      <button
+        className="primary"
+        disabled={state === "busy"}
+        onClick={() => {
+          setState("busy");
+          importOld().then(
+            (missing) => {
+              setState(missing);
+              onDone();
+            },
+            () => setState("idle"),
+          );
+        }}
+      >
+        {state === "busy" ? "Bringing them over…" : "Bring them over"}
+      </button>
     </div>
   );
 }

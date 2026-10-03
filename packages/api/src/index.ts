@@ -79,6 +79,9 @@ export type Detail = {
   withdrawn: Withdrawn[];
 };
 
+/** An app in the release status feed: enough to match a repository to its catalog entry. */
+export type ReleaseStatus = { id: string; slug: string; provider: string; repository?: string };
+
 export type Page<T> = { items: T[]; nextCursor: string | null; isDone: boolean };
 
 export type AppQuery = { search?: string; os?: Os; projectType?: ProjectType; cursor?: string | null; limit?: number };
@@ -111,6 +114,8 @@ export function createClient(base: string = DEFAULT_API) {
       return get<Page<Entry>>(`/apps?${params}`);
     },
     app: (slug: string) => get<Detail>(app(slug)),
+    releaseStatus: (cursor?: string | null) =>
+      get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     /** Approved releases, newest first: the first is what a player gets. */
     releases: (slug: string) => get<Page<Release>>(`${app(slug)}/releases?limit=5`),
   };

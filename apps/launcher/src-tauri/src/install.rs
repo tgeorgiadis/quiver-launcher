@@ -22,6 +22,8 @@ pub struct InstallRequest {
     /// `sha256:<hex>`; absent when the site couldn't pin the file.
     pub checksum: Option<String>,
     pub folder: String,
+    /// Install into this folder instead (an install adopted from 3.x).
+    pub dir: Option<String>,
     pub files_to_add: Vec<String>,
     pub version: String,
 }
@@ -74,7 +76,7 @@ pub async fn install(
             }
         }
         progress(Progress { id: req.id.clone(), phase: "installing", received: 0, total: None });
-        let target = apps_dir.join(&folder);
+        let target = req.dir.as_ref().map(PathBuf::from).unwrap_or_else(|| apps_dir.join(&folder));
         let files = req.files_to_add.clone();
         let version = req.version.clone();
         let out = staging.join("out");

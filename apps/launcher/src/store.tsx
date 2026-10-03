@@ -7,7 +7,7 @@
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createClient, type Asset, type Client, type Entry, type Withdrawn } from "@quiver/api";
-import { native, type Config, type Progress } from "./native";
+import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
 
 export type LibraryItem = {
@@ -19,7 +19,10 @@ export type LibraryItem = {
 };
 /** Catalog data for a library app, with releases pulled since. */
 export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
-export type Install = { version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean };
+export type Install = {
+  /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
+  dir?: string;
+  version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean };
 export type Job = Progress | { error: string };
 /** Several files suit this computer: the player picks one. */
 export type Choice = { entry: Entry; version: string; assets: Asset[]; resolve: (asset: Asset | null) => void };
@@ -32,6 +35,9 @@ type Launcher = {
   catalog: Record<string, CatalogEntry>;
   jobs: Record<string, Job>;
   choice: Choice | null;
+  /** Apps in a Quiver Launcher 3 library on this computer, until they're brought over. */
+  oldApps: OldApp[];
+  importOld: () => Promise<string[]>;
   remember: (entries: Entry[]) => void;
   /** Adds the app to the library and installs it. */
   get: (entry: Entry) => Promise<void>;
@@ -48,12 +54,15 @@ export const useLauncher = () => useContext(LauncherContext)!;
 export const availableOn = (entry: Entry, os: string) =>
   entry.supportedOS.some((o) => o === os || o === "unknown" || (os === "linux" && o === "windows"));
 
+/** "v1.2" and "1.2" are the same release. */
+const bare = (version: string) => version.trim().replace(/^v/i, "");
+
 export function hasUpdate(entry: Entry | undefined, install: Install | undefined) {
   // Only newer releases: a pulled one rolls back through the withdrawn warning instead.
   return Boolean(
     entry?.verified &&
       install &&
-      install.version !== entry.verified.version &&
+      bare(install.version) !== bare(entry.verified.version) &&
       entry.verified.releasedAt > (install.releasedAt ?? 0),
   );
 }
@@ -70,6 +79,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const [catalog, setCatalog] = useState<Record<string, CatalogEntry>>({});
   const [jobs, setJobs] = useState<Record<string, Job>>({});
   const [choice, setChoice] = useState<Choice | null>(null);
+  const [oldApps, setOldApps] = useState<OldApp[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -82,6 +92,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       setInstalls(installs ?? {});
       setCatalog(catalog ?? {});
       setLoaded({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {} });
+      if (!library?.length) native.findV3Library().then(setOldApps);
     });
     const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
     return () => void off.then((stop) => stop());
@@ -138,12 +149,13 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         filename: asset.filename,
         checksum: asset.checksum,
         folder,
+        dir: installs[entry.id]?.dir,
         filesToAdd: settings.filesToAdd ?? [],
         version: release.version,
       });
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
-      setInstalls((i) => ({ ...i, [entry.id]: { version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
+      setInstalls((i) => ({ ...i, [entry.id]: { dir: i[entry.id]?.dir, version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
       setJobs(({ [entry.id]: _, ...rest }) => rest);
     } catch (error) {
       fail(entry.id, error);
@@ -171,14 +183,43 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     },
     async play(id) {
       const install = installs[id];
-      if (install) await native.launch(install.folder, install.executables, Boolean(install.wine)).catch((e) => fail(id, e));
+      if (install) await native.launch(install.folder, install.dir, install.executables, Boolean(install.wine)).catch((e) => fail(id, e));
     },
     async remove(id) {
       const install = installs[id];
-      if (install) await native.uninstall(install.folder).catch(() => {});
+      if (install) await native.uninstall(install.folder, install.dir).catch(() => {});
       setInstalls(({ [id]: _, ...rest }) => rest);
       setLibrary((l) => l.filter((i) => i.id !== id));
       setJobs(({ [id]: _, ...rest }) => rest);
+    },
+    oldApps,
+    /** Adds the 3.x apps the catalog lists, keeping their installs; returns the names it couldn't match. */
+    async importOld() {
+      const ids = new Map<string, { id: string; slug: string }>();
+      for (let cursor: string | null = null, done = false; !done; ) {
+        const page = await client.releaseStatus(cursor);
+        for (const s of page.items) if (s.repository) ids.set(`${s.provider}:${s.repository}`.toLowerCase(), s);
+        [cursor, done] = [page.nextCursor, page.isDone];
+      }
+      const missing: string[] = [];
+      for (const old of oldApps) {
+        const match = old.repository && ids.get(`${old.provider}:${old.repository}`.toLowerCase());
+        const detail = match && (await client.app(match.slug).catch(() => null));
+        if (!detail) {
+          missing.push(old.name);
+          continue;
+        }
+        const entry = detail.entry;
+        setCatalog((c) => ({ ...c, [entry.id]: { ...entry, withdrawn: detail.withdrawn } }));
+        setLibrary((l) => (l.some((i) => i.id === entry.id) ? l : [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now() }]));
+        if (old.dir && old.version) {
+          const executables = entry.launcher.preferredExecutables?.[config.os as "windows" | "linux" | "macos"] ?? [];
+          const install: Install = { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables };
+          setInstalls((i) => ({ ...i, [entry.id]: install }));
+        }
+      }
+      setOldApps([]);
+      return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
   };

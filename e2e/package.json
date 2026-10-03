@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --filter @quiver/launcher tauri build --debug --no-bundle",
-    "e2e": "node --test --test-concurrency=1 journeys.test.js"
+    "e2e": "node --test --test-concurrency=1 journeys.test.js import.test.js"
   },
   "devDependencies": { "webdriverio": "^9" }
 }
