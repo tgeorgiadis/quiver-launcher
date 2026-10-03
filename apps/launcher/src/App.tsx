@@ -398,8 +398,9 @@ function AccountButton({ onSignIn }: { onSignIn: () => void }) {
 
 /** Signing in is optional: it syncs the library and lets players review apps. */
 function SignIn({ onClose }: { onClose: () => void }) {
-  const { signIn } = useAccount();
+  const { signIn, signInWith } = useAccount();
   const [create, setCreate] = useState(false);
+  const [waiting, setWaiting] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -419,6 +420,25 @@ function SignIn({ onClose }: { onClose: () => void }) {
         >
           <h2>{create ? "Create your Quiver account" : "Sign in to Quiver"}</h2>
           <p className="muted">Your library syncs across your devices, and you can review apps. Everything works without an account too.</p>
+          {(["github", "discord"] as const).map((provider) => (
+            <button
+              key={provider}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setBusy(true);
+                setWaiting(true);
+                setError(null);
+                signInWith(provider)
+                  .then((message) => (message ? setError(message) : onClose()))
+                  .finally(() => (setBusy(false), setWaiting(false)));
+              }}
+            >
+              Continue with {provider === "github" ? "GitHub" : "Discord"}
+            </button>
+          ))}
+          {waiting && <p className="muted">Finish signing in in your browser.</p>}
+          <p className="muted or">or</p>
           <input autoFocus required placeholder="Username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />
           <input
             required

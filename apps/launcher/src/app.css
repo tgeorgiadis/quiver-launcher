@@ -65,3 +65,4 @@ button.danger { color: #e38c87; }
 .review h3 { font-size: 15px; }
 .row button.chosen { background: var(--accent); color: #04121b; }
 p.job-error { color: #e38c87; font-size: 13px; }
+.choose p.or { text-align: center; margin: 4px 0; }

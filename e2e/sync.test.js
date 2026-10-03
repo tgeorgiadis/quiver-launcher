@@ -90,3 +90,11 @@ test("signing out keeps the library, and reviewing asks to sign in", async () =>
   await (await (await b.card("test-port")).$(".card-open")).click();
   await (await b.app.$("button=Sign in to review")).waitForDisplayed();
 });
+
+test("signing in with GitHub happens in the browser and comes back to the app", async () => {
+  await b.app.keys("Escape");
+  await (await b.app.$("button=Sign in")).click();
+  await (await b.app.$("button=Continue with GitHub")).click();
+  await (await b.app.$("span=octocat")).waitForDisplayed({ timeout: 10000 });
+  await b.until(async () => (await titles(b)).includes("test-port"));
+});

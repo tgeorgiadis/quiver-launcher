@@ -1,3 +1,4 @@
+mod browser;
 mod install;
 mod v3;
 
@@ -25,6 +26,8 @@ struct Config {
     convex: String,
     /// A stand-in account service, for end-to-end tests.
     account_api: Option<String>,
+    /// Where GitHub and Discord sign-in return to.
+    return_to: &'static str,
     os: &'static str,
     arch: &'static str,
     apps_dir: String,
@@ -50,6 +53,7 @@ fn config(data: State<Data>) -> Config {
         api: std::env::var("QUIVER_API").unwrap_or_else(|_| "https://api.quiverlauncher.com/api/v1".into()),
         convex: std::env::var("QUIVER_CONVEX").unwrap_or_else(|_| "https://convex.quiverlauncher.com".into()),
         account_api: std::env::var("QUIVER_ACCOUNT_API").ok(),
+        return_to: browser::RETURN_TO,
         os: OS,
         arch: ARCH,
         apps_dir: data.apps().to_string_lossy().into(),
@@ -181,6 +185,12 @@ fn secret_set(data: State<Data>, key: String, value: Option<String>) -> Result<(
     std::fs::write(secret_file(&data), serde_json::to_vec(&all).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
 }
 
+/// Opens a GitHub or Discord sign-in page and waits for it to come back.
+#[tauri::command]
+async fn browser_sign_in(url: String) -> Result<browser::Callback, String> {
+    tauri::async_runtime::spawn_blocking(move || browser::sign_in(&url)).await.map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 fn find_v3_library() -> Vec<v3::OldApp> {
     v3::find()
@@ -211,7 +221,8 @@ pub fn run() {
             uninstall,
             find_v3_library,
             secret_get,
-            secret_set
+            secret_set,
+            browser_sign_in
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quiver Launcher");

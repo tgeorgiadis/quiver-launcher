@@ -20,6 +20,7 @@ export async function launch({ env = {}, api: shared, data = mkdtempSync(join(tm
       ...process.env,
       QUIVER_API: api.api,
       QUIVER_ACCOUNT_API: api.account,
+      QUIVER_BROWSER: resolve(import.meta.dirname, "fake-browser.js"),
       QUIVER_DATA: data,
       QUIVER_V3_DATA: join(data, "none"),
       ...env,

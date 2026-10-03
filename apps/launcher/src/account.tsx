@@ -20,6 +20,8 @@ export type ReviewInput = {
   entryReleaseId?: string;
 };
 
+export type Provider = "github" | "discord";
+
 export type Account = {
   /** False until the saved session has been checked. */
   ready: boolean;
@@ -28,6 +30,8 @@ export type Account = {
   items: ServerItem[] | undefined;
   /** Resolves to an error message, or null when signed in. */
   signIn: (username: string, password: string, create: boolean) => Promise<string | null>;
+  /** Signs in with GitHub or Discord in the system browser; same result as signIn. */
+  signInWith: (provider: Provider) => Promise<string | null>;
   signOut: () => Promise<void>;
   save: (changes: Change[]) => Promise<void>;
   review: (review: ReviewInput) => Promise<void>;
@@ -44,8 +48,8 @@ const keychain: TokenStorage = {
 };
 
 export function AccountProvider({ config, children }: { config: Config; children: ReactNode }) {
-  if (config.accountApi) return <TestAccount base={config.accountApi}>{children}</TestAccount>;
-  return <ConvexAccount url={config.convex}>{children}</ConvexAccount>;
+  if (config.accountApi) return <TestAccount base={config.accountApi} returnTo={config.returnTo}>{children}</TestAccount>;
+  return <ConvexAccount url={config.convex} returnTo={config.returnTo}>{children}</ConvexAccount>;
 }
 
 const ref = <T extends "query" | "mutation">(type: T, name: string) =>
@@ -59,19 +63,52 @@ const fns = {
   list: ref("query", "library:list"),
   save: ref("mutation", "library:save"),
   review: ref("mutation", "reviews:save"),
+  github: [ref("mutation", "auth:startSignInGithub"), ref("mutation", "auth:completeSignInGithub")],
+  discord: [ref("mutation", "auth:startSignInDiscord"), ref("mutation", "auth:completeSignInDiscord")],
 };
 
-function ConvexAccount({ url, children }: { url: string; children: ReactNode }) {
+/**
+ * Starts a sign-in in the system browser, waits for it to return to the
+ * launcher's loopback address, and redeems the code.
+ */
+async function browserSignIn<T>(
+  start: (redirectTo: string) => Promise<{ redirect: string; state: string }>,
+  complete: (code: string, state: string) => Promise<T | null>,
+  returnTo: string,
+): Promise<{ error: string } | { session: T }> {
+  try {
+    const { redirect, state } = await start(returnTo);
+    const back = await native.browserSignIn(redirect);
+    if ("error" in back) return { error: OAUTH_ERRORS[back.error] ?? OAUTH_ERRORS.oauth_error };
+    const session = await complete(back.code, state);
+    return session ? { session } : { error: OAUTH_ERRORS.expired };
+  } catch (e) {
+    const message = e instanceof ConvexError && typeof e.data === "string" ? e.data : typeof e === "string" ? e : null;
+    return { error: message ?? OAUTH_ERRORS.oauth_error };
+  }
+}
+
+const OAUTH_ERRORS: Record<string, string> = {
+  access_denied: "Sign-in was cancelled.",
+  expired: "That sign-in took too long. Try again.",
+  oauth_error: "Couldn't sign in. Check your connection and try again.",
+};
+
+function ConvexAccount({ url, returnTo, children }: { url: string; returnTo: string; children: ReactNode }) {
   const client = useMemo(() => new ConvexReactClient(url), [url]);
   return (
     // The website's auth functions, without its generated API types (the site is private).
     <ConvexAuthProvider client={client} api={fns as never} storage={keychain}>
-      <ConvexAccountState>{children}</ConvexAccountState>
+      <ConvexAccountState client={client} returnTo={returnTo}>
+        {children}
+      </ConvexAccountState>
     </ConvexAuthProvider>
   );
 }
 
-function ConvexAccountState({ children }: { children: ReactNode }) {
+type Tokens = Parameters<ReturnType<typeof useAuthActions>["setSession"]>[0];
+
+function ConvexAccountState({ client, returnTo, children }: { client: ConvexReactClient; returnTo: string; children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const me = useQuery(fns.me, isAuthenticated ? {} : "skip") as { _id: string; displayName: string } | null | undefined;
   const items = useQuery(fns.list, isAuthenticated ? {} : "skip") as ServerItem[] | undefined;
@@ -79,7 +116,7 @@ function ConvexAccountState({ children }: { children: ReactNode }) {
   const review = useMutation(fns.review);
   const login = useSignInWithPassword(fns.signIn as never);
   const register = useSignUpWithPassword(fns.signUp as never);
-  const { signOut } = useAuthActions();
+  const { signOut, setSession } = useAuthActions();
   const account: Account = {
     ready: !isLoading,
     user: me ? { id: me._id, name: me.displayName } : null,
@@ -87,6 +124,20 @@ function ConvexAccountState({ children }: { children: ReactNode }) {
     async signIn(username, password, create) {
       const result = await (create ? register.signUp : login.signIn)({ username, password });
       return result.status === "complete" ? null : messageOf(result);
+    },
+    async signInWith(provider) {
+      const [start, complete] = fns[provider];
+      const result = await browserSignIn(
+        (redirectTo) => client.mutation(start, { redirectTo }),
+        async (code, state) => {
+          const r = await client.mutation(complete, { code, state });
+          return r.status === "complete" ? (r.tokens as Tokens) : null;
+        },
+        returnTo,
+      );
+      if ("error" in result) return result.error;
+      await setSession(result.session);
+      return null;
     },
     signOut: async () => void (await signOut()),
     save: async (changes) => void (await save({ changes })),
@@ -120,7 +171,7 @@ function messageOf(result: unknown) {
  * A stand-in with the same contract over plain HTTP, for end-to-end tests
  * (QUIVER_ACCOUNT_API), since the site's backend is private.
  */
-function TestAccount({ base, children }: { base: string; children: ReactNode }) {
+function TestAccount({ base, returnTo, children }: { base: string; returnTo: string; children: ReactNode }) {
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [user, setUser] = useState<Account["user"]>(null);
   const [items, setItems] = useState<ServerItem[] | undefined>();
@@ -130,6 +181,10 @@ function TestAccount({ base, children }: { base: string; children: ReactNode }) 
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
     }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
+  const adopt = async (token: string) => {
+    await native.secretSet("testToken", token);
+    setToken(token);
+  };
   useEffect(() => void native.secretGet("testToken").then((t) => setToken(t ?? null)), []);
   useEffect(() => {
     if (!token) return setUser(null), setItems(undefined);
@@ -149,9 +204,19 @@ function TestAccount({ base, children }: { base: string; children: ReactNode }) 
     async signIn(username, password, create) {
       const r = await fetch(base + "/signin", { method: "POST", body: JSON.stringify({ username, password, create }) });
       if (!r.ok) return "That username and password don't match.";
-      const { token } = await r.json();
-      await native.secretSet("testToken", token);
-      setToken(token);
+      await adopt((await r.json()).token);
+      return null;
+    },
+    async signInWith(provider) {
+      const post = (path: string, body: unknown) =>
+        fetch(base + path, { method: "POST", body: JSON.stringify(body) }).then((r) => (r.ok ? r.json() : null));
+      const result = await browserSignIn<string>(
+        (redirectTo) => post("/oauth/start", { provider, redirectTo }),
+        async (code, state) => (await post("/oauth/complete", { code, state }))?.token ?? null,
+        returnTo,
+      );
+      if ("error" in result) return result.error;
+      await adopt(result.session);
       return null;
     },
     async signOut() {

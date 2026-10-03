@@ -120,6 +120,7 @@ function mockAccount(entries) {
   const users = new Map(); // name -> { id, password, items: Map(entryId -> item) }
   const tokens = new Map(); // token -> name
   const reviews = [];
+  const flows = new Map(); // OAuth state -> redirectTo, then code -> state
   const read = (req) =>
     new Promise((resolve) => {
       let body = "";
@@ -133,6 +134,27 @@ function mockAccount(entries) {
   async function handle(req, res, path) {
     if (req.method === "OPTIONS") return send(res, {});
     const body = req.method === "POST" ? await read(req) : {};
+    // GitHub/Discord: start, the provider page that sends the browser back, and redeem.
+    if (path === "/oauth/start") {
+      const state = `state_${Math.random()}`;
+      flows.set(state, body.redirectTo);
+      return send(res, { redirect: `http://${req.headers.host}/account/oauth/authorize?state=${state}`, state });
+    }
+    if (path === "/oauth/authorize") {
+      const state = new URL(req.url, "http://x").searchParams.get("state");
+      const code = `code_${Math.random()}`;
+      flows.set(code, state);
+      res.writeHead(302, { Location: `${flows.get(state)}?convexAuthCode=${encodeURIComponent(code)}` });
+      return res.end();
+    }
+    if (path === "/oauth/complete") {
+      if (flows.get(body.code) !== body.state) return send(res, {}, 401);
+      flows.delete(body.code);
+      if (!users.has("octocat")) users.set("octocat", { id: "user_octocat", items: new Map() });
+      const token = `token_${Math.random()}`;
+      tokens.set(token, "octocat");
+      return send(res, { token });
+    }
     if (path === "/signin") {
       const existing = users.get(body.username);
       if (body.create ? existing : existing?.password !== body.password) return send(res, {}, 401);
