@@ -83,6 +83,15 @@ test("a download that doesn't match Quiver's checksum is refused", async () => {
   assert.ok(!existsSync(join(apps, "tampered-port")), "nothing was installed");
 });
 
+test("arrow keys and controllers move between cards", async () => {
+  await (await app.$("input[placeholder^=Search]")).click();
+  const focused = () => app.execute(() => document.activeElement?.closest("article")?.dataset.slug);
+  await app.keys("ArrowDown");
+  assert.equal(await focused(), "test-port");
+  await app.keys("ArrowRight");
+  assert.equal(await focused(), "tampered-port");
+});
+
 test("search narrows the catalog", async () => {
   await (await app.$("input[placeholder^=Search]")).setValue("tampered");
   await until(async () => !(await (await card("test-port")).isExisting()));

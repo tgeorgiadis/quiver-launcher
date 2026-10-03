@@ -52,10 +52,11 @@ export async function startMockApi() {
   const entries = [entry("test-port", "Test Port"), entry("tampered-port", "Tampered Port")];
   let base = "";
   let version = "1.0.0";
+  const releasedAt = (v) => Date.UTC(2026, 0, Number(v.split(".")[1]) + 1);
   const release = (slug) => ({
     id: `release_${slug}_${version}`,
     version,
-    releasedAt: Date.now(),
+    releasedAt: releasedAt(version),
     prerelease: false,
     assets: ["linux", "windows"].map((os) => ({
       id: `asset_${slug}_${os}`,
@@ -90,7 +91,7 @@ export async function startMockApi() {
     if (child === "releases") return send({ items: [release(slug)], nextCursor: null, isDone: true });
     return send({ entry: withVersion(found), project: { name: found.name, description: "", provider: "github" }, withdrawn: [] });
   });
-  const withVersion = (e) => ({ ...e, verified: { ...e.verified, version } });
+  const withVersion = (e) => ({ ...e, verified: { ...e.verified, version, releasedAt: releasedAt(version) } });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   base = `http://127.0.0.1:${server.address().port}`;
   return {

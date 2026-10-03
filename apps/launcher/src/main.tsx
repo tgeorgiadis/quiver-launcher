@@ -4,6 +4,9 @@ import "@quiver/ui/styles.css";
 import "./app.css";
 import { App } from "./App";
 import { LauncherProvider } from "./store";
+import { startSpatialNavigation } from "./spatial";
+
+startSpatialNavigation();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

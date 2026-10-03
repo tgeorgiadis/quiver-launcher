@@ -19,7 +19,7 @@ export type LibraryItem = {
 };
 /** Catalog data for a library app, with releases pulled since. */
 export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
-export type Install = { version: string; releaseId?: string; folder: string; executables: string[]; wine?: boolean };
+export type Install = { version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean };
 export type Job = Progress | { error: string };
 /** Several files suit this computer: the player picks one. */
 export type Choice = { entry: Entry; version: string; assets: Asset[]; resolve: (asset: Asset | null) => void };
@@ -49,7 +49,13 @@ export const availableOn = (entry: Entry, os: string) =>
   entry.supportedOS.some((o) => o === os || o === "unknown" || (os === "linux" && o === "windows"));
 
 export function hasUpdate(entry: Entry | undefined, install: Install | undefined) {
-  return Boolean(entry?.verified && install && install.version !== entry.verified.version);
+  // Only newer releases: a pulled one rolls back through the withdrawn warning instead.
+  return Boolean(
+    entry?.verified &&
+      install &&
+      install.version !== entry.verified.version &&
+      entry.verified.releasedAt > (install.releasedAt ?? 0),
+  );
 }
 
 export function LauncherProvider({ children }: { children: ReactNode }) {
@@ -137,7 +143,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       });
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
-      setInstalls((i) => ({ ...i, [entry.id]: { version: release.version, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
+      setInstalls((i) => ({ ...i, [entry.id]: { version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
       setJobs(({ [entry.id]: _, ...rest }) => rest);
     } catch (error) {
       fail(entry.id, error);
