@@ -1,0 +1,10 @@
+{
+  "name": "@quiver/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @quiver/launcher tauri build --debug --no-bundle",
+    "test": "node --test --test-concurrency=1 journeys.test.js"
+  },
+  "devDependencies": { "webdriverio": "^9" }
+}

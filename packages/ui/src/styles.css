@@ -1,0 +1,71 @@
+/* Catalog look shared with quiverlauncher.com (src/styles.css there). */
+:root {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #e9eaed;
+  background: #0e0e10;
+  line-height: 1.5;
+  color-scheme: dark;
+  --muted: #929499;
+  --line: #292a2d;
+  --accent: #38bdf8;
+  --panel: #18191c;
+  --green: #8ac3a2;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+h1, h2, h3, p { margin: 0; }
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 19px;
+}
+.entry-card {
+  border: 1px solid #2b2c31;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #191a1d;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.16s, border-color 0.16s;
+}
+.entry-card:hover, .entry-card:focus-within { transform: translateY(-4px); border-color: var(--accent); }
+.card-open { display: block; width: 100%; padding: 0; text-align: left; }
+.card-cover {
+  height: 150px;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 90%, #0ea5e922, transparent 75%), linear-gradient(135deg, #27272c, #1c1c21);
+}
+.artwork { display: flex; align-items: center; justify-content: center; color: #92949b; overflow: hidden; }
+.card-cover .artwork { height: 100%; padding: 26px 30px 20px; }
+.card-cover .artwork.cover-photo { padding: 0; }
+.artwork img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 10px #0005); }
+.artwork.cover-photo img { object-fit: cover; filter: none; }
+.cover-badge {
+  position: absolute; top: 10px; right: 10px; padding: 3px 7px; border-radius: 4px;
+  background: #0ea5e9; color: #04121b; font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+}
+.card-body { padding: 14px 15px 12px; }
+.card-tags { display: flex; gap: 6px; font-size: 9px; color: #94a3b8; letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 6px; min-height: 13px; }
+.card-kind { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.platform-icons { display: flex; align-items: center; gap: 7px; color: #b7c0cc; font-size: 13px; margin-left: auto; }
+.card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.card-bottom {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  border-top: 1px solid #292a2e; margin-top: 12px; padding-top: 10px; font-size: 12px; color: #8d919a;
+}
+.score { font-size: 11px; color: var(--green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.score.caution { color: #d7b56a; }
+.score.negative { color: #e38c87; }
+.score.muted { color: #8d919a; }
+.card-action { padding: 0 15px 14px; margin-top: auto; }
+.spinner {
+  border: 2px solid #37383d; border-top-color: var(--accent); width: 20px; height: 20px;
+  border-radius: 100%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

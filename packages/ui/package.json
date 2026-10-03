@@ -1,0 +1,13 @@
+{
+  "name": "@quiver/ui",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "src/index.tsx",
+  "exports": { ".": "./src/index.tsx", "./styles.css": "./src/styles.css" },
+  "scripts": { "typecheck": "tsc -p ." },
+  "dependencies": { "@quiver/api": "workspace:*", "lucide-react": "^0.468.0", "react-icons": "^5.7.0" },
+  "peerDependencies": { "react": "^19.2.0" },
+  "devDependencies": { "@types/react": "^19.2.0", "react": "^19.2.0", "typescript": "~5.9.3" }
+}
