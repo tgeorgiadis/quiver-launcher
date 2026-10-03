@@ -48,8 +48,10 @@ jobs:
           cargo install tauri-driver --locked
           cargo install --git https://github.com/chippers/msedgedriver-tool
           msedgedriver-tool.exe
-          echo "NATIVE_DRIVER=$PWD\msedgedriver.exe" >> $env:GITHUB_ENV
           .\msedgedriver.exe --version
+          # Verbose driver log, printed after the run.
+          Set-Content msedgedriver-verbose.cmd "@`"$PWD\msedgedriver.exe`" %* --verbose --log-path=`"$env:RUNNER_TEMP\msedgedriver.log`""
+          echo "NATIVE_DRIVER=$PWD\msedgedriver-verbose.cmd" >> $env:GITHUB_ENV
       - name: The app starts
         run: |
           $env:QUIVER_DATA = "$env:RUNNER_TEMP\quiver-smoke"
@@ -63,6 +65,9 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         run: pnpm --filter @quiver/e2e live
+      - name: Driver log
+        if: always()
+        run: Get-Content "$env:RUNNER_TEMP\msedgedriver.log" -Tail 80 -ErrorAction SilentlyContinue
 
   installer:
     runs-on: windows-latest
