@@ -338,3 +338,16 @@ main.app-main { padding: 0 0 40px; }
   .detail-tabs > button { padding: 10px 12px; }
   .form-row { flex-direction: column; align-items: stretch; gap: 0; }
 }
+
+/* A newer release the site is checking (the website's release-hold-notice and release-checking-line). */
+.release-hold-notice {
+  display: flex; gap: 10px; align-items: flex-start; margin-bottom: 15px; padding: 12px 15px; border: 1px solid rgb(56 189 248 / 30%);
+  border-left-width: 3px; border-radius: 8px; background: rgb(56 189 248 / 7%); color: #c3d4de; font-size: 13px; line-height: 1.5;
+}
+.release-hold-notice svg { flex: none; margin-top: 1px; color: var(--accent); }
+.release-hold-notice p { margin: 0; }
+.release-hold-notice p + p { margin-top: 6px; }
+.release-hold-notice strong { color: #e9eaed; }
+.release-hold-link { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; color: var(--accent); text-decoration: none; }
+.release-checking-line { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; color: #c3d4de; font-size: 13px; }
+.release-checking-line svg { flex: none; color: var(--accent); }

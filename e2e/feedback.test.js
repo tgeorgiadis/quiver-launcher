@@ -95,3 +95,20 @@ test("saving again updates the player's feedback instead of adding more", async 
   assert.equal((await rows()).filter((r) => r.author === "playerYou").length, 1);
   await app.keys("Escape");
 });
+
+test("a newer release still being checked shows as on the website", async () => {
+  await (await (await s.card("test-remake")).$(".card-open")).click();
+  const line = await (await page()).$(".release-checking-line");
+  await line.waitForDisplayed({ timeout: 10000 });
+  assert.equal(await line.getText(), "Version v1.1.0 is waiting for a maintainer's review.");
+  await (await tab("Releases")).click();
+  const notice = await (await page()).$(".release-hold-notice");
+  await notice.waitForDisplayed({ timeout: 10000 });
+  const text = await notice.getText();
+  assert.match(text, /Version v1\.1\.0 is out and waiting for a maintainer's review\. Quiver checks new releases/);
+  assert.match(text, /Until then, Quiver Launcher installs 1\.0\.0\./);
+  assert.match(text, /It changes how the app is built\./);
+  assert.equal(await (await notice.$("a")).getAttribute("href"), "https://github.com/quiver/test-remake/releases/tag/v1.1.0");
+  assert.match(await (await notice.$("a")).getText(), /View v1\.1\.0 on GitHub/);
+  await app.keys("Escape");
+});

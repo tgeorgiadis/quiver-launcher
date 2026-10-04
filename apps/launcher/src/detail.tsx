@@ -4,8 +4,8 @@
  * the player's tags.
  */
 import { useEffect, useState } from "react";
-import { ChevronDown, Download, ExternalLink, Monitor, Package, ShieldAlert, ShieldCheck } from "lucide-react";
-import type { AiUse, Detail, Entry, Readme as ReadmeText, Release } from "@quiver/api";
+import { ArrowUpRight, ChevronDown, Download, ExternalLink, Monitor, Package, ShieldAlert, ShieldCheck } from "lucide-react";
+import type { AiUse, Checking, Detail, Entry, Readme as ReadmeText, Release } from "@quiver/api";
 import { Markdown, OS_NAMES, fullDate, relativeTime } from "@quiver/ui";
 import { useLauncher } from "./store";
 import { native } from "./native";
@@ -113,10 +113,27 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
   );
 }
 
+/** Where a newer release stands while the site checks it, as the website words it; kept current each minute. */
+export function CheckingStatus({ checking, short = false }: { checking: Checking; short?: boolean }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  if (checking.checkEndsAt === undefined) return checking.needsReview ? "waiting for a maintainer's review." : "being checked.";
+  const hours = Math.ceil((checking.checkEndsAt - now) / 3_600_000);
+  const ready = hours <= 0 ? "ready shortly" : `ready in about ${hours} ${hours === 1 ? "hour" : "hours"}`;
+  return short ? `being checked · ${ready}` : `being checked, ${ready}.`;
+}
+
+/** The newer release being checked, shown only when the app has an approved one to install meanwhile. */
+export const checkingOf = (detail: Detail | null | undefined, releases: Releases) => (releases.items?.length ? detail?.checking : undefined);
+
 /** The releases the site approved, as on the website's Releases tab; another version installs from On this computer. */
 export function ReleasesTab({ detail, releases }: { detail: Detail | null | undefined; releases: Releases }) {
   const [toggled, setToggled] = useState<Set<string>>(new Set());
   const { items } = releases;
+  const checking = checkingOf(detail, releases);
   return (
     <section className="release-section">
       {detail?.withdrawn.map((w) => (
@@ -140,6 +157,27 @@ export function ReleasesTab({ detail, releases }: { detail: Detail | null | unde
         </div>
       ) : (
         <>
+          {checking && (
+            <div className="release-hold-notice" role="note">
+              <ShieldCheck size={18} aria-hidden="true" />
+              <div>
+                <p>
+                  <strong>
+                    Version {checking.version} is out and <CheckingStatus checking={checking} />
+                  </strong>{" "}
+                  Quiver checks new releases before Quiver Launcher offers them, so a compromised or malicious update can't reach you straight away. Until
+                  then, Quiver Launcher installs {items[0].version}.
+                </p>
+                {checking.checkEndsAt === undefined && checking.reasons.length > 0 && <p>{checking.reasons.join(" ")}</p>}
+                {checking.upstreamUrl && (
+                  <a className="release-hold-link" href={checking.upstreamUrl}>
+                    View {checking.version} on {detail?.project.provider === "gitlab" ? "GitLab" : "GitHub"}
+                    <ArrowUpRight size={13} aria-hidden="true" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
           {items[0].prerelease && (
             <div className="prerelease-notice" role="note">
               <strong>This is a pre-release build.</strong> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features.

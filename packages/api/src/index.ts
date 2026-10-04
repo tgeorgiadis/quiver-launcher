@@ -108,10 +108,26 @@ export type AiUse = {
   checkedAt: number;
 };
 
+/** A newer release the site is checking before it's offered. */
+export type Checking = {
+  version: string;
+  releasedAt: number;
+  prerelease: boolean;
+  firstSeenAt: number;
+  /** When the wait ends; none while a maintainer has to look at it. */
+  checkEndsAt?: number;
+  needsReview: boolean;
+  /** Why it waits, worded for players. */
+  reasons: string[];
+  earlyAccess: boolean;
+  upstreamUrl?: string;
+};
+
 export type Detail = {
   entry: Entry;
   project: { name: string; description: string; repository?: string; provider: string; website?: string; author?: string; aiUse?: AiUse };
   withdrawn: Withdrawn[];
+  checking?: Checking;
 };
 
 /** What a player said about how an app ran (reviews.list on the site). */

@@ -4,7 +4,7 @@ import type { AppQuery, Entry, GameMatch, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
-import { ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, useAppDetail, useReleases } from "./detail";
+import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleases } from "./detail";
 import { FeedbackTab, ReportPrompt, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, type GameLink } from "./game";
 import { ErrorBoundary } from "./boundary";
@@ -484,6 +484,7 @@ function AppPage({
     if (!user) onSignIn();
   };
   const said = entry.recommended + entry.reportIssues + entry.reportBroken;
+  const checking = checkingOf(detail, releases);
   const tabs = [
     ["overview", "Overview", undefined],
     ["releases", "Releases", releases.items && `${releases.items.length}${releases.more ? "+" : ""}`],
@@ -564,6 +565,15 @@ function AppPage({
                 </p>
               )}
               {install?.local && <p className="muted">Removing it from your library leaves its files where they are.</p>}
+              {/* As on the website: a newer release the site is still checking. */}
+              {checking && (
+                <p className="release-checking-line">
+                  <ShieldCheck size={14} aria-hidden="true" />
+                  <span>
+                    Version {checking.version} is <CheckingStatus checking={checking} short />
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         </div>

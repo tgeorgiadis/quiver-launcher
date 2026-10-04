@@ -175,6 +175,15 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         game,
         games: game ? [game] : [],
         withdrawn: [],
+        // Test Remake has a newer release waiting for a maintainer.
+        ...(slug === "test-remake"
+          ? {
+              checking: {
+                version: "v1.1.0", releasedAt: Date.UTC(2026, 9, 1), prerelease: false, firstSeenAt: Date.UTC(2026, 9, 1), needsReview: true,
+                reasons: ["It changes how the app is built."], earlyAccess: false, upstreamUrl: "https://github.com/quiver/test-remake/releases/tag/v1.1.0",
+              },
+            }
+          : {}),
       };
     },
     "catalog:readme": ({ slug }) =>
