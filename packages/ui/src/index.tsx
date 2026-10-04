@@ -203,8 +203,14 @@ export function EntryCard({
   badge,
   action,
   consoleNames = {},
+  cover,
+  className,
 }: {
   entry: Entry;
+  /** A picture in place of the cover (the launcher's box art or icon cards). */
+  cover?: ReactNode;
+  /** More classes on the card. */
+  className?: string;
   onOpen?: () => void;
   /** A label over the cover, such as "In library"; else "New" for a recently added app. */
   badge?: ReactNode;
@@ -217,10 +223,10 @@ export function EntryCard({
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleNames[tag] ?? tagLabel(tag));
   const fresh = Date.now() - entry.addedAt < 30 * DAY;
   return (
-    <article className="entry-card" data-slug={entry.slug}>
+    <article className={className ? `entry-card ${className}` : "entry-card"} data-slug={entry.slug}>
       <button type="button" className="card-open" onClick={onOpen} aria-label={entry.projectName}>
         <div className="card-cover">
-          <Artwork src={coverOf(entry)} name={entry.projectName} className={wide ? "cover-photo" : ""} />
+          {cover ?? <Artwork src={coverOf(entry)} name={entry.projectName} className={wide ? "cover-photo" : ""} />}
           {badge ? <span className="cover-badge">{badge}</span> : fresh && <span className="cover-badge">New</span>}
           <span className="card-arrow">
             <ArrowUpRight size={17} />

@@ -4,6 +4,7 @@ import type { AppQuery, Entry, GameMatch, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
+import { ViewOptions } from "./library-view";
 import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleases } from "./detail";
 import { FeedbackTab, ReportPrompt, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, type GameLink } from "./game";
@@ -843,6 +844,10 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
               <option value="dark">Dark</option>
             </select>
           </label>
+          <section className="settings-section" aria-label="Library">
+            <h3>Library</h3>
+            <ViewOptions />
+          </section>
           <p className="muted">Apps are installed in {config.appsDir}</p>
           <TelemetrySetting />
           <ControlSettings />

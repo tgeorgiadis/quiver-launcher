@@ -109,7 +109,10 @@ test("library playlists: installed or not, a hand-picked collection, and section
   await playlist("Favourites");
   await until(async () => JSON.stringify(await shown()) === '["test-port"]');
   await playlist("All");
+  // Sections by console are in the View menu.
+  await (await app.$("button[aria-label='View options']")).click();
   await (await app.$("label*=Group by console")).click();
+  await app.keys("Escape");
   await (await app.$("h2=Nintendo 64")).waitForDisplayed();
   await (await app.$("h2=Super Nintendo Entertainment System")).waitForDisplayed();
   const saved = JSON.parse(readFileSync(join(s.data, "collections.json"), "utf8"));

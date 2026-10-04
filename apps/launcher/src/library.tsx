@@ -7,7 +7,7 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Filter, Library, ListPlus, MoreHorizontal, Plus, Search, X } from "lucide-react";
+import { ChevronDown, LayoutGrid, Library, List, ListPlus, MoreHorizontal, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiver/api";
 import { EntryCard, tagLabel } from "@quiver/ui";
 import { hasUpdate, useLauncher, type LibraryItem } from "./store";
@@ -15,6 +15,7 @@ import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
 import { isOwn } from "./custom";
 import { track } from "./telemetry";
+import { CardArt, ViewOptions, useLibraryView } from "./library-view";
 
 type Tab = "all" | "installed" | "not-installed" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
@@ -60,7 +61,8 @@ export function LibraryPage({
   onSignIn: () => void;
   action: (entry: Entry) => ReactNode;
 }) {
-  const { client, library: all, catalog, installs, jobs, get, add, remove, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
+  const { client, library: all, catalog, installs, jobs, get, add, remove, settings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
+  const { view, byConsole } = useLibraryView();
   const { user, unshareList } = useAccount();
   const [tab, setTab] = useState<Tab>("all");
   const [editing, setEditing] = useState<Collection | null>(null);
@@ -70,6 +72,19 @@ export function LibraryPage({
   const [sort, setSort] = useState<"played" | "name" | "added">("played");
   const [filters, setFilters] = useState<Filters>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // A mouse wheel scrolls the tab row sideways when it has more tabs than fit.
+  const tabRow = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const row = tabRow.current;
+    if (!row) return;
+    const wheel = (e: WheelEvent) => {
+      if (row.scrollWidth <= row.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      row.scrollLeft += e.deltaY;
+    };
+    row.addEventListener("wheel", wheel, { passive: false });
+    return () => row.removeEventListener("wheel", wheel);
+  });
   const hidden = new Set(settings.hidden);
   const collection = collections.find((c) => c.key === tab);
   const makers = Object.fromEntries(consoles.map((c) => [c.id, c.brand]));
@@ -148,6 +163,7 @@ export function LibraryPage({
             setTab(saved.removed ? "all" : saved.key);
             // Its filters are the playlist now.
             setFilters({});
+            setFiltersOpen(false);
           }}
         />
       )}
@@ -201,12 +217,15 @@ export function LibraryPage({
     ...collections.map((c): [Tab, string] => [c.key, c.name]),
   ];
   const own = collections.filter((c) => !c.follows);
+  // Box art and icon cards show their own picture; covers are the catalog card's, as on the website.
+  const art = (entry: Entry) => (view.image === "cover" ? undefined : <CardArt entry={entry} image={view.image} />);
   const card = (entry: Entry) => {
     const item = inLibrary.get(entry.id);
     return (
       <EntryCard
         key={entry.id}
         entry={entry}
+        cover={art(entry)}
         consoleNames={consoleNames}
         onOpen={() => onOpen(entry)}
         badge={collection?.follows && item ? "In library" : undefined}
@@ -223,120 +242,146 @@ export function LibraryPage({
       />
     );
   };
-  const grid = (entries: Entry[]) => <div className="catalog-grid">{entries.map(card)}</div>;
+  // The player's view: grid or list, the cards' picture and size, names or not.
+  const gridClass = `catalog-grid library-grid layout-${view.layout} image-${view.image} size-${view.size}${view.names || view.layout === "list" ? "" : " no-names"}`;
+  const grid = (entries: Entry[]) => <div className={gridClass}>{entries.map(card)}</div>;
   const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
+  const on = Object.values(filters).filter(Boolean).length;
   return (
     <>
-      <nav className="playlists" aria-label="Playlists">
-        {tabs.map(([key, name]) => (
-          <span key={key} className="playlist-tab">
-            <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)}>
-              {name}
-            </button>
-            {/* The open playlist's menu: edit, share or delete it; a followed one is copied or removed. */}
-            {tab === key && collection && (
-              <Menu
-                label={`${collection.name} options`}
-                icon={<MoreHorizontal size={15} />}
-                items={collection.follows
-                  ? [
-                      [
-                        "Make a copy",
-                        () => {
-                          if (!loaded) return;
-                          // Its apps join the library (nothing downloads), so the copy shows them on every computer.
-                          const entries = loaded.items.flatMap((i) => (i.kind === "entry" ? [i.entry] : []));
-                          cache(entries);
-                          entries.filter((e) => !inLibrary.has(e.id)).forEach((e) => add(e));
-                          const copy: Collection = { key: newKey(), name: `${collection.name} (copy)`.slice(0, 60), tags: [], consoles: [], apps: entries.map((e) => e.id), order: collections.length };
-                          saveCollection(copy);
-                          setTab(copy.key);
-                        },
-                      ],
-                      ["Remove", () => (saveCollection({ ...collection, removed: true }), setTab("all"))],
-                    ]
-                  : [
-                      ["Edit", () => setEditing(collection)],
-                      [collection.shared ? "Shared playlist" : "Share", () => setSharing(collection)],
-                      [
-                        collection.shared ? "Delete (stops sharing it)" : "Delete",
-                        () => {
-                          // Deleting a shared playlist stops sharing it.
-                          if (collection.shared && user) void unshareList(collection.shared.slug).catch(() => {});
-                          saveCollection({ ...collection, removed: true });
-                          setTab("all");
-                        },
-                      ],
-                    ]}
-              />
+      <div className="library-bar">
+        <nav ref={tabRow} className="playlists" aria-label="Playlists">
+          {tabs.map(([key, name]) => (
+            <span key={key} className="playlist-tab">
+              <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)}>
+                {name}
+              </button>
+              {/* The open playlist's menu: edit, share or delete it; a followed one is copied or removed. */}
+              {tab === key && collection && (
+                <Menu
+                  label={`${collection.name} options`}
+                  icon={<MoreHorizontal size={15} />}
+                  items={collection.follows
+                    ? [
+                        [
+                          "Make a copy",
+                          () => {
+                            if (!loaded) return;
+                            // Its apps join the library (nothing downloads), so the copy shows them on every computer.
+                            const entries = loaded.items.flatMap((i) => (i.kind === "entry" ? [i.entry] : []));
+                            cache(entries);
+                            entries.filter((e) => !inLibrary.has(e.id)).forEach((e) => add(e));
+                            const copy: Collection = { key: newKey(), name: `${collection.name} (copy)`.slice(0, 60), tags: [], consoles: [], apps: entries.map((e) => e.id), order: collections.length };
+                            saveCollection(copy);
+                            setTab(copy.key);
+                          },
+                        ],
+                        ["Remove", () => (saveCollection({ ...collection, removed: true }), setTab("all"))],
+                      ]
+                    : [
+                        ["Edit", () => setEditing(collection)],
+                        [collection.shared ? "Shared playlist" : "Share", () => setSharing(collection)],
+                        [
+                          collection.shared ? "Delete (stops sharing it)" : "Delete",
+                          () => {
+                            // Deleting a shared playlist stops sharing it.
+                            if (collection.shared && user) void unshareList(collection.shared.slug).catch(() => {});
+                            saveCollection({ ...collection, removed: true });
+                            setTab("all");
+                          },
+                        ],
+                      ]}
+                />
+              )}
+            </span>
+          ))}
+          <Menu
+            label="Add a playlist"
+            icon={<Plus size={15} />}
+            items={[
+              ["New playlist", () => setEditing({ key: newKey(), name: "", tags: [], consoles: [], order: collections.length })],
+              ["Add a shared playlist", () => setFollowing(true)],
+            ]}
+          />
+          {collections.length > 6 && (
+            <select aria-label="All playlists" value={collection ? tab : ""} onChange={(e) => e.target.value && setTab(e.target.value)}>
+              <option value="">More…</option>
+              {collections.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </nav>
+        <div className="library-tools">
+          <label className="search library-search">
+            <Search size={15} />
+            <input aria-label="Search your library" placeholder="Search your library" value={search} onChange={(e) => setSearch(e.target.value)} />
+            {search && (
+              <button type="button" className="search-clear" aria-label="Clear search" onClick={() => setSearch("")}>
+                <X size={13} />
+              </button>
             )}
+          </label>
+          <span className="quiet-select">
+            <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+              <option value="played">Recently played</option>
+              <option value="added">Recently added</option>
+              <option value="name">Name</option>
+            </select>
+            <ChevronDown size={14} aria-hidden="true" />
           </span>
-        ))}
-        <Menu
-          label="Add a playlist"
-          icon={<Plus size={15} />}
-          items={[
-            ["New playlist", () => setEditing({ key: newKey(), name: "", tags: [], consoles: [], order: collections.length })],
-            ["Add a shared playlist", () => setFollowing(true)],
-          ]}
-        />
-        {collections.length > 6 && (
-          <select aria-label="All playlists" value={collection ? tab : ""} onChange={(e) => e.target.value && setTab(e.target.value)}>
-            <option value="">More…</option>
-            {collections.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </nav>
-      <div className="toolbar">
-        <label className="search">
-          <Search size={16} />
-          <input placeholder="Search your library" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </label>
-        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-          <option value="played">Recently played</option>
-          <option value="added">Recently added</option>
-          <option value="name">Name</option>
-        </select>
-        <button className={filtersOpen ? "on" : ""} aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
-          <Filter size={14} /> Filters{filtering ? ` · ${Object.values(filters).filter(Boolean).length}` : ""}
-        </button>
-        <label className="toggle">
-          <input type="checkbox" checked={Boolean(settings.byConsole)} onChange={(e) => setSettings({ ...settings, byConsole: e.target.checked })} />
-          Group by console
-        </label>
-        <button onClick={onAdd}>
-          <Plus size={15} /> Add an app
-        </button>
-        {updates.length > 0 && (
-          <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
-            Update all ({updates.length})
+          <button
+            className={`tool${filtersOpen || filtering ? " on" : ""}`}
+            aria-expanded={filtersOpen}
+            aria-controls="library-filters"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+          >
+            <SlidersHorizontal size={15} /> Filters
+            {filtering && <span className="tool-count">{on}</span>}
           </button>
-        )}
+          <Popover label="View options" icon={view.layout === "list" ? <List size={17} /> : <LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
+            {() => <ViewOptions />}
+          </Popover>
+          <button className="primary add-app" onClick={onAdd}>
+            <Plus size={15} /> Add an app
+          </button>
+        </div>
       </div>
-      {filtersOpen && (
-        <div className="toolbar filters" aria-label="Library filters">
-          <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} ownTags={ownTags} />
+      {/* Filters: pills to pick from while open; the ones on stay, each removable, while it's closed. */}
+      {(filtersOpen || filtering) && (
+        <div id="library-filters" className="filter-bar" role="group" aria-label="Library filters">
+          <FilterFields
+            value={filters}
+            set={set}
+            entries={candidates.map((c) => c.entry)}
+            ownTags={ownTags}
+            pills={{ all: filtersOpen, clear: (key) => setFilters({ ...filters, [key]: undefined }) }}
+          />
+          {filtering && (
+            <span className="filter-actions">
+              <button type="button" className="text-button" onClick={() => setFilters({})}>
+                Clear all
+              </button>
+              <button
+                type="button"
+                className="save-playlist"
+                onClick={() => setEditing({ key: newKey(), name: "", order: collections.length, ...toPlaylist(filters) })}
+              >
+                <ListPlus size={14} /> Save as playlist
+              </button>
+            </span>
+          )}
         </div>
       )}
-      {filtering && (
-        <div className="filter-chips">
-          {(Object.entries(filters) as [keyof Filters, string | undefined][]).map(
-            ([key, value]) =>
-              value && (
-                <button key={key} className="chip on" aria-label={`Remove filter ${label(key, value, consoleNames)}`} onClick={() => setFilters({ ...filters, [key]: undefined })}>
-                  {label(key, value, consoleNames)} <X size={12} />
-                </button>
-              ),
-          )}
-          <button
-            className="primary save-playlist"
-            onClick={() => setEditing({ key: newKey(), name: "", order: collections.length, ...toPlaylist(filters) })}
-          >
-            Save as playlist
+      {tab === "updates" && updates.length > 0 && (
+        <div className="library-note">
+          <p className="muted">
+            {updates.length} {updates.length === 1 ? "app has an update" : "apps have updates"}.
+          </p>
+          <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
+            Update all ({updates.length})
           </button>
         </div>
       )}
@@ -352,7 +397,7 @@ export function LibraryPage({
           {collection && !search && !filtering ? (collection.follows ? "Nothing in this playlist." : "No apps in this playlist yet. Add some from each app's menu, or edit its filters.") : "Nothing here."}
         </p>
       )}
-      {settings.byConsole
+      {byConsole
         ? sections(items, consoleNames).map(([name, entries]) => (
             <section key={name} className="console-section">
               <h2>{name}</h2>
@@ -363,11 +408,12 @@ export function LibraryPage({
       {loose.length > 0 && (
         <section className="loose">
           <h2>Installed, not in your library</h2>
-          <div className="catalog-grid">
+          <div className={gridClass}>
             {loose.map((entry) => (
               <EntryCard
                 key={entry.id}
                 entry={entry}
+                cover={art(entry)}
                 consoleNames={consoleNames}
                 onOpen={() => onOpen(entry)}
                 action={
@@ -397,56 +443,106 @@ function label(key: keyof Filters, value: string, consoleNames: Record<string, s
   return tagLabel(value);
 }
 
-/** The catalog's filters, over the apps at hand: their consoles, kinds and tags. */
-function FilterFields({ value, set, entries, ownTags = [] }: { value: Filters; set: (key: keyof Filters) => (e: { target: { value: string } }) => void; entries: Entry[]; ownTags?: string[] }) {
+/**
+ * The catalog's filters, over the apps at hand: their consoles, kinds and
+ * tags. As `pills` (the library's filter row), each is a compact dropdown,
+ * removable once it's on; `all: false` shows only the ones on.
+ */
+function FilterFields({
+  value,
+  set,
+  entries,
+  ownTags = [],
+  pills,
+}: {
+  value: Filters;
+  set: (key: keyof Filters) => (e: { target: { value: string } }) => void;
+  entries: Entry[];
+  ownTags?: string[];
+  pills?: { all: boolean; clear: (key: keyof Filters) => void };
+}) {
   const { consoles, consoleNames } = useLauncher();
   const here = new Set(entries.flatMap((e) => e.consoles ?? []));
   const present = consoles.filter((c) => here.has(c.id) || value.console === c.id);
   const brands = [...new Set(present.map((c) => c.brand))];
   const tags = [...new Set([...entries.flatMap((e) => e.tags), ...ownTags, ...(value.tag ? [value.tag] : [])])].sort();
+  /** What a filter's empty choice says: in full in a dialog, short on a pill. */
+  const none = (full: string, short: string) => (pills ? short : full);
+  const pill = (key: keyof Filters, select: ReactNode) => {
+    if (!pills) return select;
+    const chosen = value[key];
+    if (!chosen && !pills.all) return null;
+    return (
+      <span key={key} className={`pill${chosen ? " on" : ""}`}>
+        {select}
+        {chosen ? (
+          <button type="button" className="pill-clear" aria-label={`Remove filter ${label(key, chosen, consoleNames)}`} onClick={() => pills.clear(key)}>
+            <X size={12} />
+          </button>
+        ) : (
+          <ChevronDown size={13} aria-hidden="true" />
+        )}
+      </span>
+    );
+  };
   return (
     <>
-      <select aria-label="Console" value={value.console ?? ""} onChange={set("console")}>
-        <option value="">All consoles</option>
-        {brands.map((brand) => (
-          <optgroup key={brand} label={brand === "OtherPlatforms" ? "Other platforms" : brand}>
-            <option value={`maker:${brand}`}>{brand === "OtherPlatforms" ? "All other platforms" : `All ${brand}`}</option>
-            {present
-              .filter((c) => c.brand === brand)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {consoleNames[c.id] ?? c.name}
-                </option>
-              ))}
-          </optgroup>
-        ))}
-      </select>
-      <select aria-label="Project type" value={value.projectType ?? ""} onChange={set("projectType")}>
-        <option value="">All project types</option>
-        {Object.entries(PROJECT_TYPES).map(([id, name]) => (
-          <option key={id} value={id}>
-            {name}
-          </option>
-        ))}
-      </select>
-      <select aria-label="AI use" value={value.ai ?? ""} onChange={set("ai")}>
-        <option value="">Show all apps</option>
-        <option value="no-generated">Hide mostly AI-generated apps</option>
-        <option value="no-ai">Hide apps with any AI use</option>
-      </select>
-      <select aria-label="Tag" value={value.tag ?? ""} onChange={set("tag")}>
-        <option value="">All tags</option>
-        {tags.map((t) => (
-          <option key={t} value={t}>
-            {tagLabel(t)}
-          </option>
-        ))}
-      </select>
-      <select aria-label="Installed" value={value.installed ?? ""} onChange={set("installed")}>
-        <option value="">Installed or not</option>
-        <option value="yes">Installed only</option>
-        <option value="no">Not installed only</option>
-      </select>
+      {pill(
+        "console",
+        <select aria-label="Console" value={value.console ?? ""} onChange={set("console")}>
+          <option value="">{none("All consoles", "Any console")}</option>
+          {brands.map((brand) => (
+            <optgroup key={brand} label={brand === "OtherPlatforms" ? "Other platforms" : brand}>
+              <option value={`maker:${brand}`}>{brand === "OtherPlatforms" ? "All other platforms" : `All ${brand}`}</option>
+              {present
+                .filter((c) => c.brand === brand)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {consoleNames[c.id] ?? c.name}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </select>,
+      )}
+      {pill(
+        "projectType",
+        <select aria-label="Project type" value={value.projectType ?? ""} onChange={set("projectType")}>
+          <option value="">{none("All project types", "Any project type")}</option>
+          {Object.entries(PROJECT_TYPES).map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>,
+      )}
+      {pill(
+        "ai",
+        <select aria-label="AI use" value={value.ai ?? ""} onChange={set("ai")}>
+          <option value="">{none("Show all apps", "Any AI use")}</option>
+          <option value="no-generated">Hide mostly AI-generated apps</option>
+          <option value="no-ai">Hide apps with any AI use</option>
+        </select>,
+      )}
+      {pill(
+        "tag",
+        <select aria-label="Tag" value={value.tag ?? ""} onChange={set("tag")}>
+          <option value="">{none("All tags", "Any tag")}</option>
+          {tags.map((t) => (
+            <option key={t} value={t}>
+              {tagLabel(t)}
+            </option>
+          ))}
+        </select>,
+      )}
+      {pill(
+        "installed",
+        <select aria-label="Installed" value={value.installed ?? ""} onChange={set("installed")}>
+          <option value="">Installed or not</option>
+          <option value="yes">Installed only</option>
+          <option value="no">Not installed only</option>
+        </select>,
+      )}
     </>
   );
 }
@@ -456,8 +552,31 @@ function FilterFields({ value, set, entries, ownTags = [] }: { value: Filters; s
  * card can't clip it), under the button or above it. Closes on Escape or
  * Back, a click outside, or focus moving away.
  */
-function Popover({ label, icon, role, up, children }: { label: string; icon: ReactNode; role: "menu" | "group"; up?: boolean; children: (close: () => void) => ReactNode }) {
-  const [at, setAt] = useState<{ left: number; top: number; bottom: number } | null>(null);
+function Popover({
+  label,
+  icon,
+  role,
+  up,
+  align,
+  className = "menu-button",
+  panel: panelClass,
+  panelLabel,
+  children,
+}: {
+  label: string;
+  icon: ReactNode;
+  role: "menu" | "group";
+  up?: boolean;
+  /** "end": the panel lines up with the button's right edge, for a button at the right of the page. */
+  align?: "end";
+  className?: string;
+  /** More classes on the panel. */
+  panel?: string;
+  /** The panel's name, when it isn't the button's. */
+  panelLabel?: string;
+  children: (close: () => void) => ReactNode;
+}) {
+  const [at, setAt] = useState<{ left: number; right: number; top: number; bottom: number } | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const close = () => setAt(null);
@@ -491,11 +610,11 @@ function Popover({ label, icon, role, up, children }: { label: string; icon: Rea
     const r = button.current!.getBoundingClientRect();
     // The interface size zooms the page; the panel's position is set in unzoomed pixels.
     const zoom = Number(getComputedStyle(document.documentElement).zoom) || 1;
-    setAt({ left: r.left / zoom, top: r.bottom / zoom + 6, bottom: (window.innerHeight - r.top) / zoom + 6 });
+    setAt({ left: r.left / zoom, right: (window.innerWidth - r.right) / zoom, top: r.bottom / zoom + 6, bottom: (window.innerHeight - r.top) / zoom + 6 });
   };
   return (
     <>
-      <button ref={button} className="menu-button" aria-label={label} title={label} aria-haspopup={role === "menu" ? "menu" : "true"} aria-expanded={Boolean(at)} onClick={() => (at ? close() : open())}>
+      <button ref={button} className={className} aria-label={label} title={label} aria-haspopup={role === "menu" ? "menu" : "true"} aria-expanded={Boolean(at)} onClick={() => (at ? close() : open())}>
         {icon}
       </button>
       {at &&
@@ -503,10 +622,10 @@ function Popover({ label, icon, role, up, children }: { label: string; icon: Rea
           <div
             ref={panel}
             tabIndex={-1}
-            className={`menu floating${up ? " up" : ""}`}
+            className={`menu floating${up ? " up" : ""}${panelClass ? ` ${panelClass}` : ""}`}
             role={role}
-            aria-label={role === "menu" ? label : "Playlists for this app"}
-            style={up ? { left: Math.max(8, at.left - 200), bottom: at.bottom } : { left: at.left, top: at.top }}
+            aria-label={panelLabel ?? label}
+            style={up ? { left: Math.max(8, at.left - 200), bottom: at.bottom } : align ? { left: "auto", right: Math.max(8, at.right), top: at.top } : { left: at.left, top: at.top }}
           >
             {children(close)}
           </div>,
@@ -534,7 +653,7 @@ function Menu({ label, icon, items }: { label: string; icon: ReactNode; items: [
 /** On a library card: which of the player's playlists the app is on, and a new one. */
 function PlaylistPicker({ id, playlists }: { id: string; playlists: Collection[] }) {
   return (
-    <Popover label="Add to playlist" icon={<ListPlus size={15} />} role="group" up>
+    <Popover label="Add to playlist" icon={<ListPlus size={15} />} role="group" panelLabel="Playlists for this app" up>
       {() => <PlaylistChoices id={id} playlists={playlists} />}
     </Popover>
   );

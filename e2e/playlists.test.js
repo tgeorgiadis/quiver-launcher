@@ -54,7 +54,7 @@ test("the library filters by console and AI use, as the catalog does", async () 
   await a.until(async () => JSON.stringify(await shown(a)) === '["test-port"]');
   // What's on shows as chips, each one removable.
   assert.ok(await a.app.$("button[aria-label='Remove filter Nintendo 64']").isExisting());
-  assert.match(await (await a.app.$("button*=Filters")).getText(), /Filters · 2/);
+  assert.equal(await (await a.app.$(".library-tools .tool-count")).getText(), "2");
 });
 
 test("the filters are kept as a playlist", async () => {

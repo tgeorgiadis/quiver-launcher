@@ -16,6 +16,7 @@ import { setBindings, type Bindings } from "./spatial";
 import { customEntry, customKey, folderNameFor, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { createConvexClient } from "./catalog";
 import { followTheme, type Theme } from "./theme";
+import type { LibraryView } from "./view";
 
 export type { CustomApp, Collection, GameArt, LocalApp };
 
@@ -157,6 +158,8 @@ export type Settings = {
   padOff?: boolean;
   /** The library in sections by original console. */
   byConsole?: boolean;
+  /** How the library shows its apps (view.ts); only what differs from the defaults. */
+  library?: Partial<LibraryView>;
   /** Anonymous usage data turned off here (telemetry.ts); signed in, the account's setting wins. */
   telemetryOff?: boolean;
   /** The first-run notice about usage data was answered. */

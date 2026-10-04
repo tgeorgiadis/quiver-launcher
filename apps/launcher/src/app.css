@@ -370,10 +370,6 @@ main.app-main { padding: 0 0 40px; }
 .card-actions { display: flex; align-items: center; gap: 6px; }
 .card-actions > :first-child { flex: 1; min-width: 0; }
 .card-actions .menu { left: auto; right: 0; top: auto; bottom: calc(100% + 6px); flex-direction: row; flex-wrap: wrap; gap: 6px; width: 240px; }
-.toolbar button.on { color: var(--strong); border-color: var(--accent); }
-.filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -8px 0 18px; }
-.filter-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
-.filter-chips .save-playlist { margin-left: 4px; }
 .new-playlist { display: inline-flex; }
 .new-playlist input { width: 130px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; font-size: 12px; outline: 0; }
 .playlist-note { margin: -6px 0 16px; }
@@ -383,3 +379,163 @@ main.app-main { padding: 0 0 40px; }
 .menu.floating { position: fixed; top: auto; z-index: 20; }
 .menu.floating.up { flex-direction: row; flex-wrap: wrap; gap: 6px; width: 240px; }
 .playlists { flex-wrap: nowrap; }
+
+/*
+ * The library's header: the playlist tabs on the left; search, sort, Filters,
+ * View and Add an app on the right, all one height. When the row is too narrow
+ * for both, the tabs take a line of their own and the tools the next.
+ */
+.library-bar { container: library-bar / inline-size; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin-bottom: 18px; }
+.library-bar .playlists { flex: 1 1 340px; min-width: 0; margin: 0; padding: 2px 1px; align-items: center; scrollbar-color: transparent transparent; }
+/* A scrolling tab row shows its scrollbar, thin, only under the pointer. */
+.library-bar .playlists:hover { scrollbar-color: var(--line-strong) transparent; }
+.library-bar .playlists button:not(.active):hover { border-color: var(--line-strong); background: none; }
+.library-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-left: auto; }
+.library-tools > * { height: 34px; }
+.library-search {
+  flex: 0 1 240px; width: 240px; min-width: 150px; max-width: none; gap: 7px; padding: 0 8px 0 11px;
+  transition: flex-basis 0.18s, width 0.18s, border-color 0.15s;
+}
+.library-search:focus-within { flex-basis: 320px; width: 320px; border-color: var(--accent); }
+.library-search input { min-width: 0; height: 100%; font-size: 13px; color: var(--fg); }
+.library-search input::placeholder { color: var(--muted); }
+.search-clear { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--muted); flex-shrink: 0; }
+.search-clear:hover, .search-clear:focus-visible { color: var(--strong); background: var(--field); }
+.quiet-select { position: relative; display: inline-flex; align-items: center; }
+.quiet-select select {
+  appearance: none; field-sizing: content; height: 100%; padding: 0 28px 0 10px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.quiet-select select:hover, .quiet-select select:focus-visible { background: var(--panel); color: var(--strong); }
+.quiet-select > svg { position: absolute; right: 9px; color: var(--muted); pointer-events: none; }
+.library-tools .tool {
+  display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px;
+  color: var(--text-2); font-size: 13px; font-weight: 500; white-space: nowrap; transition: border-color 0.15s, background 0.15s;
+}
+.library-tools .tool:hover, .library-tools .tool[aria-expanded="true"] { color: var(--strong); background: var(--panel); border-color: var(--line-strong); }
+.library-tools .tool.on { color: var(--strong); background: var(--accent-soft); border-color: var(--accent); }
+.library-tools .tool.icon-only { width: 34px; padding: 0; justify-content: center; }
+.tool-count {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 1;
+}
+.library-tools .add-app { padding: 0 14px; border-radius: 8px; white-space: nowrap; }
+@container library-bar (max-width: 1040px) {
+  .library-bar .playlists { flex-basis: 100%; }
+  .library-tools { width: 100%; margin-left: 0; }
+  .library-search, .library-search:focus-within { flex: 1 1 200px; width: auto; }
+}
+@container library-bar (max-width: 520px) {
+  .library-search, .library-search:focus-within { flex-basis: 100%; }
+}
+
+/* Filters: one slim row of pill dropdowns; a pill that's on is tinted and has its own remove button. */
+.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -6px 0 18px; }
+.pill {
+  position: relative; display: inline-flex; align-items: center; height: 30px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--panel); color: var(--text-2); transition: border-color 0.15s;
+}
+.pill:hover, .pill:focus-within { border-color: var(--line-strong); }
+.pill select {
+  appearance: none; field-sizing: content; max-width: 260px; height: 100%; padding: 0 28px 0 12px; border: 0; border-radius: 999px;
+  background: transparent; font-size: 12.5px; cursor: pointer; text-overflow: ellipsis;
+}
+.pill > svg { position: absolute; right: 10px; color: var(--muted); pointer-events: none; }
+.pill.on { border-color: var(--accent); background: var(--accent-soft); color: var(--strong); }
+.pill.on select { padding-right: 2px; font-weight: 500; }
+.pill-clear { display: grid; place-items: center; width: 22px; height: 22px; margin: 0 4px 0 2px; border-radius: 50%; color: var(--text-2); }
+.pill-clear:hover, .pill-clear:focus-visible { color: var(--strong); background: var(--accent-soft); }
+.filter-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.filter-bar .text-button { height: 30px; padding: 0 8px; border-radius: 6px; color: var(--link); font-size: 12.5px; }
+.filter-bar .text-button:hover { text-decoration: underline; }
+.filter-bar .save-playlist {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 999px;
+  color: var(--link); font-size: 12.5px; font-weight: 500;
+}
+.filter-bar .save-playlist:hover, .filter-bar .save-playlist:focus-visible { background: var(--accent-soft); }
+.library-note { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: -6px 0 18px; }
+
+/* The View menu, and the same options in Settings. */
+.menu.view-panel { width: 300px; padding: 14px; }
+.view-options { display: grid; gap: 12px; }
+.view-choice { display: grid; gap: 6px; }
+.view-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-4); }
+.segmented { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--field); }
+.view-options .segmented button {
+  flex: 1; padding: 6px 8px; border-radius: 6px; background: transparent; color: var(--text-2); font-size: 12.5px; font-weight: 500; white-space: nowrap;
+}
+.view-options .segmented button:hover { color: var(--strong); }
+.view-options .segmented button[aria-pressed="true"] { background: var(--raised); color: var(--strong); box-shadow: 0 1px 3px var(--card-shadow), inset 0 0 0 1px var(--line-strong); }
+.view-options .toggle { color: var(--text-2); }
+.view-options .toggle:has(input:disabled) { opacity: 0.55; }
+.settings-section { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+.settings-section h3 { font-size: 15px; }
+.settings-section .view-options { max-width: 380px; }
+
+/*
+ * Library cards as the player chose (view.ts): three sizes; box art cards are
+ * portrait and icon cards square, in narrower columns, with only the name
+ * under them; or a list, one app to a row.
+ */
+.library-grid { --card-min: 230px; --cover-h: 173px; }
+.library-grid.size-small { --card-min: 185px; --cover-h: 136px; gap: 14px; }
+.library-grid.size-large { --card-min: 300px; --cover-h: 222px; }
+.library-grid.layout-grid { grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); }
+.library-grid .card-cover { height: var(--cover-h); }
+.library-grid.image-box { --card-min: 168px; }
+.library-grid.image-box.size-small { --card-min: 128px; }
+.library-grid.image-box.size-large { --card-min: 220px; }
+.library-grid.image-icon { --card-min: 160px; }
+.library-grid.image-icon.size-small { --card-min: 124px; }
+.library-grid.image-icon.size-large { --card-min: 210px; }
+.layout-grid:is(.image-box, .image-icon) .card-cover { height: auto; aspect-ratio: 2 / 3; }
+.layout-grid.image-icon .card-cover { aspect-ratio: 1; }
+.layout-grid:is(.image-box, .image-icon) .card-arrow { display: none; }
+.layout-grid:is(.image-box, .image-icon) .card-body { padding: 10px 12px 9px; }
+.layout-grid:is(.image-box, .image-icon) .card-body > :not(.card-title) { display: none; }
+.layout-grid:is(.image-box, .image-icon) .card-title { font-size: 14px; }
+.layout-grid:is(.image-box, .image-icon) .card-action { padding: 0 10px 10px; }
+.layout-grid:is(.image-box, .image-icon).size-small .cover-badge { top: 8px; right: 8px; }
+.layout-grid.size-small.image-cover .card-bottom { display: none; }
+.layout-grid.no-names .card-body { display: none; }
+.layout-grid.no-names .card-action { padding-top: 10px; }
+.layout-grid.no-names:is(.image-box, .image-icon) .card-action { padding-top: 8px; }
+
+/* A box art or icon card's picture. */
+.card-art { position: relative; display: grid; place-items: center; width: 100%; height: 100%; overflow: hidden; color: var(--text-4); }
+.card-art img { display: block; width: 100%; height: 100%; }
+.card-art.fill img { object-fit: cover; }
+.card-art.icon, .card-art.placeholder { background: var(--field); }
+.card-art.icon img { width: 58%; height: 58%; object-fit: contain; filter: drop-shadow(0 6px 10px #0004); }
+.card-art.letterbox img { position: relative; object-fit: contain; }
+.card-art.letterbox .card-art-blur { position: absolute; inset: 0; object-fit: cover; filter: blur(16px) saturate(1.2); opacity: 0.5; transform: scale(1.2); }
+
+/* The list: a small picture, the name and details, how it runs, and the card's buttons, in a row. */
+.library-grid.layout-list { container: library-list / inline-size; grid-template-columns: minmax(0, 1fr); gap: 8px; --thumb-w: 128px; --thumb-h: 60px; }
+.layout-list.size-small { --thumb-w: 96px; --thumb-h: 45px; gap: 6px; }
+.layout-list.size-large { --thumb-w: 176px; --thumb-h: 82px; }
+.layout-list.image-box { --thumb-w: 48px; --thumb-h: 72px; }
+.layout-list.image-box.size-small { --thumb-w: 34px; --thumb-h: 51px; }
+.layout-list.image-box.size-large { --thumb-w: 64px; --thumb-h: 96px; }
+.layout-list.image-icon { --thumb-w: 56px; --thumb-h: 56px; }
+.layout-list.image-icon.size-small { --thumb-w: 40px; --thumb-h: 40px; }
+.layout-list.image-icon.size-large { --thumb-w: 76px; --thumb-h: 76px; }
+.layout-list .entry-card { flex-direction: row; align-items: center; }
+.layout-list .entry-card:hover, .layout-list .entry-card:focus-within { transform: none; box-shadow: none; }
+.layout-list .card-open { display: flex; flex: 1; align-items: center; gap: 16px; min-width: 0; padding: 8px; }
+.layout-list .card-cover { flex-shrink: 0; width: var(--thumb-w); height: var(--thumb-h); border-radius: 6px; }
+.layout-list .card-cover .artwork { padding: 8px; }
+.layout-list .card-cover .artwork.cover-photo { padding: 0; }
+.layout-list .card-arrow, .layout-list .cover-badge { display: none; }
+.layout-list .card-body { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 20px; padding: 0; }
+.layout-list .card-title { grid-column: 1; grid-row: 1; }
+.layout-list .card-tags { grid-column: 1; grid-row: 2; margin: 3px 0 0; min-height: 0; }
+.layout-list .card-tags > .ai-chip, .layout-list .card-tags .platform-icons { margin-left: 0; }
+.layout-list .based-on { grid-column: 1; grid-row: 3; margin-top: 5px; }
+.layout-list .card-bottom { grid-column: 2; grid-row: 1 / span 3; flex-direction: column; align-items: flex-end; gap: 3px; margin: 0; padding: 0; border: 0; }
+.layout-list.size-small .based-on { display: none; }
+.layout-list .card-action { flex: 0 0 210px; margin: 0; padding: 0 12px 0 4px; }
+@container library-list (max-width: 640px) {
+  .layout-list .card-bottom { display: none; }
+  .layout-list .card-action { flex-basis: 150px; }
+}

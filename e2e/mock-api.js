@@ -374,7 +374,32 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       });
     send({ error: { message: "Not found" } }, 404);
   });
-  const withVersion = (e) => ({ ...e, verified: { ...e.verified, version, releasedAt: releasedAt(version) } });
+  // Each app's own artwork. As the site's entryDTO does, a slot an app has none of is its game's, and so is its icon.
+  const ownArt = {
+    "test-port": { artwork: "/art/test-port-icon.png", libraryArt: { header: "/art/test-port-header.png", capsule: "/art/test-port-capsule.png" } },
+    // No box art or icon of its own: its game's.
+    "test-remake": { libraryArt: { header: "/art/test-remake-header.png" } },
+    // A cover only, and a game with no artwork.
+    "tampered-port": { libraryArt: { header: "/art/tampered-port-header.png" } },
+  };
+  const withArt = (e) => {
+    const own = ownArt[e.slug] ?? {};
+    const game = games()[e.games[0]?.slug]?.game;
+    const at = (path) => path && `${base}${path}`;
+    const libraryArt = Object.fromEntries(
+      ["capsule", "header", "hero", "logo"].flatMap((slot) => {
+        const src = at(own.libraryArt?.[slot]) ?? game?.libraryArt?.[slot];
+        return src ? [[slot, src]] : [];
+      }),
+    );
+    const gameIcon = own.artwork ? undefined : game?.artwork;
+    return {
+      ...(Object.keys(libraryArt).length ? { libraryArt } : {}),
+      ...(own.artwork || gameIcon ? { artwork: at(own.artwork) ?? gameIcon } : {}),
+      ...(gameIcon ? { artworkFromGame: true } : {}),
+    };
+  };
+  const withVersion = (e) => ({ ...e, ...withArt(e), verified: { ...e.verified, version, releasedAt: releasedAt(version) } });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   base = `http://127.0.0.1:${server.address().port}`;
   return {
