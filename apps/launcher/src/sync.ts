@@ -136,9 +136,15 @@ export function applyServerCollections(local: Collection[], server: ServerCollec
     local.flatMap((c) => (!c.account ? [{ ...c, account, pending: true }] : c.account === account ? [c] : [])).map((c) => [c.key, c]),
   );
   for (const { updatedAt: _, ...s } of server) {
-    if (mine.get(s.key)?.pending) continue;
-    if (s.removed) mine.delete(s.key);
-    else mine.set(s.key, { ...s, removed: undefined, account });
+    const here = mine.get(s.key);
+    if (here?.pending) continue;
+    if (s.removed) {
+      mine.delete(s.key);
+      continue;
+    }
+    // Apps on this computer only never reach the account: they stay on the shelf here.
+    const local = (here?.apps ?? []).filter((id) => id.startsWith("local:"));
+    mine.set(s.key, { ...s, ...(local.length ? { apps: [...(s.apps ?? []), ...local] } : {}), removed: undefined, account });
   }
   return [...mine.values()];
 }

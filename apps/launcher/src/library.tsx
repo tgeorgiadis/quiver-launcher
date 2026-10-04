@@ -6,6 +6,7 @@
  * and a list someone shared can be followed as a shelf.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Filter, Library, ListPlus, MoreHorizontal, Plus, Search, X } from "lucide-react";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiver/api";
 import { EntryCard, tagLabel } from "@quiver/ui";
@@ -59,6 +60,7 @@ export function LibraryPage({
   action: (entry: Entry) => ReactNode;
 }) {
   const { client, library: all, catalog, installs, jobs, get, add, remove, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
+  const { user, unshareList } = useAccount();
   const [shelf, setShelf] = useState<Shelf>("all");
   const [editing, setEditing] = useState<Collection | null>(null);
   const [sharing, setSharing] = useState<Collection | null>(null);
@@ -70,18 +72,19 @@ export function LibraryPage({
   const hidden = new Set(settings.hidden);
   const collection = collections.find((c) => c.key === shelf);
   const makers = Object.fromEntries(consoles.map((c) => [c.id, c.brand]));
-  // A followed shelf's apps come from the list on the site.
-  const [list, setList] = useState<SharedList | null | undefined>();
+  // A followed shelf's apps come from the list on the site: undefined while loading, null once it's not shared, "failed" offline.
+  const [list, setList] = useState<SharedList | null | undefined | "failed">();
   useEffect(() => {
     setList(undefined);
     if (!collection?.follows) return;
     let live = true;
     client.sharedList(collection.follows).then(
       (l) => live && setList(l),
-      () => live && setList(null),
+      () => live && setList("failed"),
     );
     return () => void (live = false);
   }, [client, collection?.follows]);
+  const loaded = list && list !== "failed" ? list : undefined;
   const shown = all.filter((i) => hidden.has(i.id) === (shelf === "hidden"));
   const updates = shown.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
   const words = search.toLowerCase().split(/\s+/).filter(Boolean);
@@ -102,7 +105,7 @@ export function LibraryPage({
   }[sort];
   // What the shelf holds before the search and filters: library apps, plus picked or listed apps not in the library.
   const candidates: { entry: Entry; item?: LibraryItem }[] = collection?.follows
-    ? (list?.items ?? []).flatMap((i) => {
+    ? (loaded?.items ?? []).flatMap((i) => {
         if (i.kind !== "entry") return [];
         const item = inLibrary.get(i.entry.id);
         return [{ entry: item && catalog[item.id] ? withOverrides(catalog[item.id], item.overrides) : i.entry, item }];
@@ -111,6 +114,8 @@ export function LibraryPage({
         ...shown.flatMap((i) => (catalog[i.id] ? [{ entry: withOverrides(catalog[i.id], i.overrides), item: i }] : [])),
         ...(collection?.apps ?? []).flatMap((id) => (!inLibrary.has(id) && catalog[id] ? [{ entry: catalog[id] }] : [])),
       ];
+  // The player's own tags, to filter on as well as the catalog's.
+  const ownTags = [...new Set(candidates.flatMap((c) => c.item?.overrides?.tags ?? []))];
   const onShelf = (entry: Entry, item?: LibraryItem) => {
     if (collection?.follows) return true;
     const installed = Boolean(installs[entry.id]);
@@ -135,6 +140,7 @@ export function LibraryPage({
         <ShelfEditor
           collection={editing}
           library={candidates.map((c) => c.entry)}
+          ownTags={ownTags}
           onClose={(saved) => {
             setEditing(null);
             if (!saved) return;
@@ -155,11 +161,13 @@ export function LibraryPage({
       )}
     </>
   );
-  /** The catalog apps on a shelf now, which sharing it puts on the list. */
+  /** The catalog apps on a shelf now, as it shows them (not hidden ones), which sharing it puts on the list. */
   function sharedEntries(c: Collection) {
     const ids = new Set(c.apps ?? []);
     return [
-      ...all.flatMap((i) => (catalog[i.id] && (ids.has(i.id) || (hasFilters(c) && matches(c, facts(catalog[i.id], i), makers))) ? [catalog[i.id]] : [])),
+      ...all.flatMap((i) =>
+        catalog[i.id] && !hidden.has(i.id) && (ids.has(i.id) || (hasFilters(c) && matches(c, facts(catalog[i.id], i), makers))) ? [catalog[i.id]] : [],
+      ),
       ...[...ids].flatMap((id) => (!inLibrary.has(id) && catalog[id] ? [catalog[id]] : [])),
     ];
   }
@@ -234,8 +242,11 @@ export function LibraryPage({
                       [
                         "Make a copy",
                         () => {
-                          const entries = (list?.items ?? []).flatMap((i) => (i.kind === "entry" ? [i.entry] : []));
+                          if (!loaded) return;
+                          // Its apps join the library (nothing downloads), so the copy shows them on every computer.
+                          const entries = loaded.items.flatMap((i) => (i.kind === "entry" ? [i.entry] : []));
                           cache(entries);
+                          entries.filter((e) => !inLibrary.has(e.id)).forEach((e) => add(e));
                           const copy: Collection = { key: newKey(), name: `${collection.name} (copy)`.slice(0, 60), tags: [], consoles: [], apps: entries.map((e) => e.id), order: collections.length };
                           saveCollection(copy);
                           setShelf(copy.key);
@@ -246,7 +257,15 @@ export function LibraryPage({
                   : [
                       ["Edit", () => setEditing(collection)],
                       [collection.shared ? "Shared list" : "Share", () => setSharing(collection)],
-                      ["Delete", () => (saveCollection({ ...collection, removed: true }), setShelf("all"))],
+                      [
+                        collection.shared ? "Delete (stops sharing it)" : "Delete",
+                        () => {
+                          // A shared shelf's list goes with it.
+                          if (collection.shared && user) void unshareList(collection.shared.slug).catch(() => {});
+                          saveCollection({ ...collection, removed: true });
+                          setShelf("all");
+                        },
+                      ],
                     ]}
               />
             )}
@@ -299,7 +318,7 @@ export function LibraryPage({
       </div>
       {filtersOpen && (
         <div className="toolbar filters" aria-label="Library filters">
-          <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} />
+          <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} ownTags={ownTags} />
         </div>
       )}
       {filtering && (
@@ -320,12 +339,13 @@ export function LibraryPage({
           </button>
         </div>
       )}
-      {collection?.follows && list && (
+      {collection?.follows && loaded && (
         <p className="muted shelf-note">
-          A list by {list.owner.name}, kept up to date with theirs.{list.unavailable ? ` ${list.unavailable} of its apps left the catalog.` : ""}
+          A list by {loaded.owner.name}, kept up to date with theirs.{loaded.unavailable ? ` ${loaded.unavailable} of its apps left the catalog.` : ""}
         </p>
       )}
       {collection?.follows && list === null && <p className="muted shelf-note">This list isn't shared any more.</p>}
+      {collection?.follows && list === "failed" && <p className="muted shelf-note">Couldn't reach quiverlauncher.com to show this list. Check your connection.</p>}
       {items.length === 0 && (
         <p className="empty">
           {collection && !search && !filtering ? (collection.follows ? "Nothing on this list." : "No apps on this shelf yet. Add some from each app's menu, or edit its filters.") : "Nothing here."}
@@ -377,12 +397,12 @@ function label(key: keyof Filters, value: string, consoleNames: Record<string, s
 }
 
 /** The catalog's filters, over the apps at hand: their consoles, kinds and tags. */
-function FilterFields({ value, set, entries }: { value: Filters; set: (key: keyof Filters) => (e: { target: { value: string } }) => void; entries: Entry[] }) {
+function FilterFields({ value, set, entries, ownTags = [] }: { value: Filters; set: (key: keyof Filters) => (e: { target: { value: string } }) => void; entries: Entry[]; ownTags?: string[] }) {
   const { consoles, consoleNames } = useLauncher();
   const here = new Set(entries.flatMap((e) => e.consoles ?? []));
   const present = consoles.filter((c) => here.has(c.id) || value.console === c.id);
   const brands = [...new Set(present.map((c) => c.brand))];
-  const tags = [...new Set([...entries.flatMap((e) => e.tags), ...(value.tag ? [value.tag] : [])])].sort();
+  const tags = [...new Set([...entries.flatMap((e) => e.tags), ...ownTags, ...(value.tag ? [value.tag] : [])])].sort();
   return (
     <>
       <select aria-label="Console" value={value.console ?? ""} onChange={set("console")}>
@@ -430,60 +450,92 @@ function FilterFields({ value, set, entries }: { value: Filters; set: (key: keyo
   );
 }
 
-/** A small menu of actions behind one button; closes on a choice, outside, or Escape. */
-function Menu({ label, icon, items }: { label: string; icon: ReactNode; items: [string, () => void][] }) {
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLSpanElement>(null);
+/**
+ * A button with a panel that floats above the page (so a scrolling row or a
+ * card can't clip it), under the button or above it. Closes on Escape or
+ * Back, a click outside, or focus moving away.
+ */
+function Popover({ label, icon, role, up, children }: { label: string; icon: ReactNode; role: "menu" | "group"; up?: boolean; children: (close: () => void) => ReactNode }) {
+  const [at, setAt] = useState<{ left: number; top: number; bottom: number } | null>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const close = () => setAt(null);
   useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
-    const key = (e: KeyboardEvent) => e.key === "Escape" && (e.stopPropagation(), setOpen(false));
+    if (!at) return;
+    const inside = (n: EventTarget | null) => n instanceof Node && Boolean(button.current?.contains(n) || panel.current?.contains(n));
+    const away = (e: MouseEvent) => !inside(e.target) && close();
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Only this closes: a page under it doesn't go back too.
+      e.stopPropagation();
+      close();
+      button.current?.focus();
+    };
+    const blur = (e: Event) => {
+      if (!inside((e as FocusEvent).relatedTarget)) close();
+    };
+    const nodes = [button.current, panel.current];
     window.addEventListener("mousedown", away);
     window.addEventListener("keydown", key, true);
+    window.addEventListener("resize", close);
+    nodes.forEach((n) => n?.addEventListener("focusout", blur));
     return () => {
       window.removeEventListener("mousedown", away);
       window.removeEventListener("keydown", key, true);
+      window.removeEventListener("resize", close);
+      nodes.forEach((n) => n?.removeEventListener("focusout", blur));
     };
-  }, [open]);
+  }, [at]);
+  const open = () => {
+    const r = button.current!.getBoundingClientRect();
+    // The interface size zooms the page; the panel's position is set in unzoomed pixels.
+    const zoom = Number(getComputedStyle(document.documentElement).zoom) || 1;
+    setAt({ left: r.left / zoom, top: r.bottom / zoom + 6, bottom: (window.innerHeight - r.top) / zoom + 6 });
+  };
   return (
-    <span className="menu-box" ref={box}>
-      <button className="menu-button" aria-label={label} title={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+    <>
+      <button ref={button} className="menu-button" aria-label={label} title={label} aria-haspopup={role === "menu" ? "menu" : "true"} aria-expanded={Boolean(at)} onClick={() => (at ? close() : open())}>
         {icon}
       </button>
-      {open && (
-        <div className="menu" role="menu" aria-label={label}>
-          {items.map(([text, act]) => (
-            <button key={text} role="menuitem" onClick={() => (setOpen(false), act())}>
-              {text}
-            </button>
-          ))}
-        </div>
-      )}
-    </span>
+      {at &&
+        createPortal(
+          <div
+            ref={panel}
+            tabIndex={-1}
+            className={`menu floating${up ? " up" : ""}`}
+            role={role}
+            aria-label={role === "menu" ? label : "Shelves for this app"}
+            style={up ? { left: Math.max(8, at.left - 200), bottom: at.bottom } : { left: at.left, top: at.top }}
+          >
+            {children(close)}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+/** A small menu of actions behind one button. */
+function Menu({ label, icon, items }: { label: string; icon: ReactNode; items: [string, () => void][] }) {
+  return (
+    <Popover label={label} icon={icon} role="menu">
+      {(close) =>
+        items.map(([text, act]) => (
+          <button key={text} role="menuitem" onClick={() => (close(), act())}>
+            {text}
+          </button>
+        ))
+      }
+    </Popover>
   );
 }
 
 /** On a library card: which of the player's shelves the app is on, and a new one. */
 function ShelfPicker({ id, shelves }: { id: string; shelves: Collection[] }) {
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
-    window.addEventListener("mousedown", away);
-    return () => window.removeEventListener("mousedown", away);
-  }, [open]);
   return (
-    <span className="menu-box" ref={box}>
-      <button className="menu-button" aria-label="Add to shelf" title="Add to shelf" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <ListPlus size={15} />
-      </button>
-      {open && (
-        <div className="menu" role="group" aria-label="Shelves for this app">
-          <ShelfChoices id={id} shelves={shelves} />
-        </div>
-      )}
-    </span>
+    <Popover label="Add to shelf" icon={<ListPlus size={15} />} role="group" up>
+      {() => <ShelfChoices id={id} shelves={shelves} />}
+    </Popover>
   );
 }
 
@@ -548,7 +600,7 @@ function Dialog({ label, onClose, children }: { label: string; onClose: () => vo
 }
 
 /** Names a shelf and sets its filters. Without filters it holds only the apps picked for it. */
-function ShelfEditor({ collection, library, onClose }: { collection: Collection; library: Entry[]; onClose: (saved?: Collection) => void }) {
+function ShelfEditor({ collection, library, ownTags, onClose }: { collection: Collection; library: Entry[]; ownTags: string[]; onClose: (saved?: Collection) => void }) {
   const { saveCollection } = useLauncher();
   const [name, setName] = useState(collection.name);
   const [filters, setFilters] = useState<Filters>(fromShelf(collection));
@@ -562,7 +614,17 @@ function ShelfEditor({ collection, library, onClose }: { collection: Collection;
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          const saved: Collection = { ...collection, name: name.trim().slice(0, 60), ...toShelf(filters) };
+          // One choice of each shows here; a shelf with more keeps them unless that choice changes.
+          const was = fromShelf(collection);
+          const next = toShelf(filters);
+          const saved: Collection = {
+            ...collection,
+            ...next,
+            name: name.trim().slice(0, 60),
+            tags: filters.tag === was.tag ? collection.tags : next.tags,
+            consoles: filters.console === was.console ? collection.consoles : next.consoles,
+            projectTypes: filters.projectType === was.projectType ? collection.projectTypes : next.projectTypes,
+          };
           saveCollection(saved);
           onClose(saved);
         }}
@@ -573,7 +635,7 @@ function ShelfEditor({ collection, library, onClose }: { collection: Collection;
           {picked ? `${picked} ${picked === 1 ? "app" : "apps"} picked for it. ` : ""}Add apps from each app's menu. It also shows apps that match these filters:
         </p>
         <div className="toolbar filters">
-          <FilterFields value={filters} set={set} entries={library} />
+          <FilterFields value={filters} set={set} entries={library} ownTags={ownTags} />
         </div>
         <div className="row">
           <button className="primary">Save</button>
@@ -597,6 +659,17 @@ function ShareDialog({ collection: opened, entries, onSignIn, onClose }: { colle
   const collection = collections.find((c) => c.key === opened.key) ?? opened;
   const [sharedAs, setSharedAs] = useState<string | undefined>();
   const slug = sharedAs ?? collection.shared?.slug;
+  const { client } = useLauncher();
+  // A shared list's description, to show and keep when it's updated.
+  useEffect(() => {
+    if (!collection.shared?.slug) return;
+    let live = true;
+    client.sharedList(collection.shared.slug).then((l) => live && l?.description && setDescription(l.description), () => {});
+    return () => void (live = false);
+  }, [client, collection.shared?.slug]);
+  const describe = (
+    <textarea aria-label="Description" maxLength={500} placeholder="What's it for? (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+  );
   // Only catalog apps: those the player added themselves aren't shared.
   const shareable = entries.filter((e) => !isOwn(e.id));
   const left = entries.length - shareable.length;
@@ -625,6 +698,7 @@ function ShareDialog({ collection: opened, entries, onSignIn, onClose }: { colle
           <>
             <p className="muted">Anyone with the link can see it on quiverlauncher.com and add it to their library. Changes you make here reach them when you update it.</p>
             <input readOnly aria-label="Shared list link" value={listUrl(slug)} onFocus={(e) => e.target.select()} />
+            {describe}
             <div className="row">
               <button className="primary" onClick={() => void navigator.clipboard?.writeText(listUrl(slug)).then(() => setMessage("Link copied."))}>
                 Copy link
@@ -653,7 +727,7 @@ function ShareDialog({ collection: opened, entries, onSignIn, onClose }: { colle
               Puts its {shareable.length} {shareable.length === 1 ? "app" : "apps"} on a page anyone with the link can see, and add to their library.
               {left ? ` ${left} you added yourself ${left === 1 ? "isn't" : "aren't"} shared.` : ""}
             </p>
-            <textarea aria-label="Description" maxLength={500} placeholder="What's it for? (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+            {describe}
             <button className="primary" disabled={busy || !shareable.length} onClick={share}>
               Share
             </button>

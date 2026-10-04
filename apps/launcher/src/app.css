@@ -379,3 +379,6 @@ main.app-main { padding: 0 0 40px; }
 .list-preview { margin: 0; padding-left: 18px; font-size: 13px; color: #c9cbd1; }
 .detail-body.share input[readonly] { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .detail-body textarea { min-height: 70px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: inherit; resize: vertical; }
+.menu.floating { position: fixed; top: auto; z-index: 20; }
+.menu.floating.up { flex-direction: row; flex-wrap: wrap; gap: 6px; width: 240px; }
+.shelves { flex-wrap: nowrap; }

@@ -60,3 +60,9 @@ test("a shelf holds its picked apps, and with filters also what matches them, as
   expect(inCollection({ tags: [], consoles: [], ai: "no-generated" }, app)).toBe(false);
   expect(inCollection({ tags: [], consoles: [], ai: "no-ai" }, { ...app, aiLevel: "none" })).toBe(true);
 });
+
+test("apps on this computer only stay on a shelf when the account's copy of it arrives", () => {
+  const local = [{ key: "s", name: "Mine", tags: [], consoles: [], apps: ["entry_a", "local:game"], order: 0, account: "me" }];
+  const [shelf] = applyServerCollections(local, [{ key: "s", name: "Mine", tags: [], consoles: [], apps: ["entry_a", "entry_b"], order: 0, removed: false, updatedAt: 2 }], "me");
+  expect(shelf.apps).toEqual(["entry_a", "entry_b", "local:game"]);
+});

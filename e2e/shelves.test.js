@@ -36,6 +36,14 @@ const shown = (s) => s.app.execute(() => [...document.querySelectorAll("main > d
 const shelf = async (s, name) => (await s.app.$("nav[aria-label=Shelves]")).$(`button=${name}`);
 const inMenu = async (s, menu, item) => (await s.app.$(menu)).$(`button=${item}`);
 const collections = () => JSON.parse(readFileSync(join(a.data, "collections.json"), "utf8"));
+/** Whether an open menu is really on top where it is: nothing clips or covers its middle. */
+const onTop = (s, selector) =>
+  s.app.execute((selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+  }, selector);
 
 test("the library filters by console and AI use, as the catalog does", async () => {
   await a.until(async () => (await shown(a)).length === 3);
@@ -65,6 +73,7 @@ test("the filters are kept as a shelf", async () => {
 test("an app is added to a shelf by hand, from its card", async () => {
   await (await shelf(a, "All")).click();
   await (await (await a.card("tampered-port")).$("button[aria-label='Add to shelf']")).click();
+  assert.ok(await onTop(a, "[aria-label='Shelves for this app']"), "the card's shelf picker isn't clipped");
   await (await inMenu(a, "[aria-label='Shelves for this app']", "N64 without AI")).click();
   await (await shelf(a, "N64 without AI")).click();
   await a.until(async () => JSON.stringify(await shown(a)) === '["tampered-port","test-port"]');
@@ -82,6 +91,7 @@ test("a shelf is shared, and another player adds the list to their library", asy
   // The shelf's menu: Share.
   await (await shelf(a, "N64 without AI")).click();
   await (await a.app.$("button[aria-label='N64 without AI options']")).click();
+  assert.ok(await onTop(a, "[role=menu]"), "the shelf's menu isn't clipped by the tab row");
   await (await inMenu(a, "[role=menu]", "Share")).click();
   const share = await a.app.$("[role=dialog][aria-label='Share a shelf']");
   await (await share.$("button=Share")).click();
