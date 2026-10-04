@@ -348,7 +348,7 @@ export function LibraryPage({
       {collection?.follows && list === "failed" && <p className="muted playlist-note">Couldn't reach quiverlauncher.com to show this playlist. Check your connection.</p>}
       {items.length === 0 && (
         <p className="empty">
-          {collection && !search && !filtering ? (collection.follows ? "Nothing on this playlist." : "No apps on this playlist yet. Add some from each app's menu, or edit its filters.") : "Nothing here."}
+          {collection && !search && !filtering ? (collection.follows ? "Nothing in this playlist." : "No apps in this playlist yet. Add some from each app's menu, or edit its filters.") : "Nothing here."}
         </p>
       )}
       {settings.byConsole

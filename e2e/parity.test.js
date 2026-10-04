@@ -101,7 +101,7 @@ test("library playlists: installed or not, a hand-picked collection, and section
   await (await (await app.$("[role=menu]")).$("button=New playlist")).click();
   await (await app.$("input[aria-label='Playlist name']")).setValue("Favourites");
   await (await (await dialog()).$("button=Save")).click();
-  await (await app.$("p*=No apps on this playlist yet.")).waitForDisplayed();
+  await (await app.$("p*=No apps in this playlist yet.")).waitForDisplayed();
   await playlist("All");
   await open("test-port");
   await (await (await page()).$("button.chip=Favourites")).click();
