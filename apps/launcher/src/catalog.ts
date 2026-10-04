@@ -67,7 +67,7 @@ export function createConvexClient(url: string, rest: Client, fetch?: typeof glo
   };
 }
 
-type Way = Pick<Entry, "projectName" | "recommended" | "reportIssues" | "reportBroken" | "lastReleaseAt">;
+type Way = Pick<Entry, "name" | "recommended" | "reportIssues" | "reportBroken" | "lastReleaseAt">;
 
 /**
  * Best ways to play a game first, as on the website's game page: the share of
@@ -81,6 +81,6 @@ export function byPlayerFeedback(a: Way, b: Way) {
     score(b) - score(a) ||
     total(b) - total(a) ||
     (b.lastReleaseAt ?? 0) - (a.lastReleaseAt ?? 0) ||
-    a.projectName.localeCompare(b.projectName)
+    a.name.localeCompare(b.name)
   );
 }

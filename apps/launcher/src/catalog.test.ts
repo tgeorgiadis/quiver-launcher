@@ -60,12 +60,12 @@ test("an error from the site is thrown, not swallowed", async () => {
   await expect(client.facets()).rejects.toThrow(/catalog:facets/);
 });
 
-const way = (projectName: string, recommended: number, reportIssues = 0, reportBroken = 0, lastReleaseAt?: number) => ({
-  projectName, recommended, reportIssues, reportBroken, lastReleaseAt,
+const way = (name: string, recommended: number, reportIssues = 0, reportBroken = 0, lastReleaseAt?: number) => ({
+  name, recommended, reportIssues, reportBroken, lastReleaseAt,
 });
 
 test("ways to play a game are best first, as on the website", () => {
-  const order = (...ways: ReturnType<typeof way>[]) => ways.sort(byPlayerFeedback).map((w) => w.projectName);
+  const order = (...ways: ReturnType<typeof way>[]) => ways.sort(byPlayerFeedback).map((w) => w.name);
   // One "runs well" beats none; ten of ten beat one of one; one "doesn't run" goes below no feedback.
   expect(order(way("none", 0), way("one", 1))).toEqual(["one", "none"]);
   expect(order(way("one", 1), way("ten", 10))).toEqual(["ten", "one"]);

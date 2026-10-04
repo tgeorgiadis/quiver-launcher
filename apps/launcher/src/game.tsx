@@ -71,13 +71,6 @@ export function GamePage({
       live = false;
     };
   }, [client, link.slug, round]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !document.querySelector('[role="dialog"]')) onBack();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onBack]);
 
   const backLink = (
     <button className="back-link" onClick={onBack}>

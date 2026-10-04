@@ -9,12 +9,15 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch } from "./session.js";
+import { startMockApi } from "./mock-api.js";
 
 let s, app, api, card, until;
 
 before(async () => {
-  s = await launch();
-  ({ app, api, card, until } = s);
+  // Two apps a page, so paging through Convex's cursor is tried too.
+  api = await startMockApi({ pageSize: 2 });
+  s = await launch({ api });
+  ({ app, card, until } = s);
   await (await card("test-port")).waitForDisplayed({ timeout: 20000 });
   // Newer WebView2 returns a Promise from scrollTo; act like it everywhere, so a page that returns it from an effect fails here too.
   await app.execute(() => {
@@ -23,9 +26,15 @@ before(async () => {
   });
 });
 
-after(() => s?.close());
+after(async () => {
+  await s?.close();
+  api?.close();
+});
 
-const page = () => app.$(".app-page");
+// Pages under the top one stay mounted, hidden.
+const page = () => app.$(".page-layer:not([hidden]) .app-page");
+/** The catalog's cards, in order. */
+const listed = () => app.execute(() => [...document.querySelectorAll("main > div:not(.page-layer) article")].map((a) => a.dataset.slug));
 const text = async (selector, scope = page()) => (await (await scope).$(selector)).getText();
 const search = async (value) => {
   const box = await app.$("input[placeholder^=Search]");
@@ -56,6 +65,17 @@ test("opening an app and going back never blanks the window", async () => {
   await (await card("test-port")).waitForDisplayed();
   assert.ok(await rootFilled());
   assert.deepEqual(uiErrors(), []);
+});
+
+test("Show more pages in the rest of the catalog with Convex's cursor", async () => {
+  await until(async () => (await listed()).length === 2);
+  assert.deepEqual(await listed(), ["test-port", "tampered-port"]);
+  await (await app.$("button=Show more")).click();
+  await until(async () => (await listed()).length === 3);
+  assert.deepEqual(await listed(), ["test-port", "tampered-port", "test-remake"]);
+  assert.ok(!(await app.$("button=Show more").isExisting()), "the last page has no Show more");
+  const last = api.convexQueries().filter((q) => q.path === "catalog:list").at(-1);
+  assert.deepEqual(last.args.paginationOpts, { numItems: 48, cursor: "2" });
 });
 
 test("a search shows the games it matches above the apps, from the site's Convex queries", async () => {
@@ -94,12 +114,14 @@ test("a game opens as a page with its apps best first, and Back retraces the way
   assert.deepEqual(order, ["test-port", "test-remake"]);
   assert.equal(await text("button.back-link"), "Back to results for “test po”");
 
-  // An app from the game's page, and back to the game.
-  await (await (await (await page()).$('article[data-slug="test-remake"]')).$(".card-open")).click();
+  // An app from the game's page, from the keyboard as with a controller, and back to the game with focus where it was.
+  await app.execute(() => document.querySelector('.page-layer:not([hidden]) article[data-slug="test-remake"] .card-open').focus());
+  await app.keys("Enter");
   await until(async () => (await text("h1").catch(() => "")) === "Test Remake");
   assert.equal(await text("button.back-link"), "Test Port (original)");
-  await (await (await page()).$("button.back-link")).click();
+  await app.keys("Escape");
   await until(async () => (await text("h1").catch(() => "")) === "Test Port (original)");
+  assert.equal(await app.execute(() => document.activeElement?.closest("article")?.dataset.slug), "test-remake");
   // Its "Based on" chip goes back to the game already open, not a second copy of it.
   await (await (await (await page()).$('article[data-slug="test-remake"]')).$(".card-open")).click();
   await until(async () => (await text("h1").catch(() => "")) === "Test Remake");
@@ -135,4 +157,20 @@ test("an app's Based on chip opens its game, even one with no artwork", async ()
   await app.keys("Escape");
   await (await card("tampered-port")).waitForDisplayed();
   assert.deepEqual(uiErrors(), []);
+});
+
+// Last: it leaves an error in the log on purpose.
+test("a page that fails says so and goes back, keeping the search", async () => {
+  await search("broken");
+  await (await gameButton("broken-game")).waitForDisplayed({ timeout: 10000 });
+  await (await gameButton("broken-game")).click();
+  const problem = await app.$(".page-layer:not([hidden]) [role=alert]");
+  await problem.waitForDisplayed({ timeout: 10000 });
+  assert.match(await problem.getText(), /This page hit a problem/);
+  assert.equal(await text("button.back-link", problem), "Back to results for “broken”");
+  await until(() => uiErrors().length > 0, 5000); // The error is in quiver.log.
+  // Escape works there too, and the catalog is as it was.
+  await app.keys("Escape");
+  await (await gameButton("broken-game")).waitForDisplayed();
+  assert.equal(await (await app.$("input[placeholder^=Search]")).getValue(), "broken");
 });

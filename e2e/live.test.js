@@ -5,7 +5,7 @@
  */
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { launch } from "./session.js";
 
@@ -35,15 +35,25 @@ test("the real catalog shows quickly, and all of it pages in", async () => {
 
 test("real apps and games open as pages, and going back never blanks the window", async () => {
   const { app, until } = s;
-  const page = () => app.$(".app-page");
+  const page = () => app.$(".page-layer:not([hidden]) .app-page");
   const heading = () => page().then((p) => p.$("h1")).then((h) => h.getText()).catch(() => "");
   const filled = () => app.execute(() => document.getElementById("root").childElementCount > 0);
+  // A page that fails shows a message in its place and logs it; neither may happen with real data.
+  const problems = async () => {
+    const log = join(s.data, "quiver.log");
+    const logged = existsSync(log) ? readFileSync(log, "utf8").split("\n").filter((line) => / ui: /.test(line)) : [];
+    const shown = await app.execute(() => [...document.querySelectorAll('[role="alert"] h2')].map((h) => h.textContent));
+    return [...logged, ...shown];
+  };
   await until(async () => (await app.$$("article")).length > 0, 30000);
   // The first few apps of the catalog open, and Back returns to the catalog.
   for (const slug of (await cards()).slice(0, 3)) {
     await (await (await app.$(`article[data-slug="${slug}"]`)).$(".card-open")).click();
     await until(async () => (await heading()) !== "", 20000);
     console.log(`${slug}: page "${await heading()}"`);
+    // Its README and repository arrive after the first paint.
+    await new Promise((r) => setTimeout(r, 2000));
+    assert.deepEqual(await problems(), [], `${slug}'s page hit a problem`);
     await (await (await page()).$("button.back-link")).click();
     await (await app.$(`article[data-slug="${slug}"]`)).waitForDisplayed({ timeout: 10000 });
     assert.ok(await filled(), `the window went blank after ${slug}`);
@@ -74,6 +84,7 @@ test("real apps and games open as pages, and going back never blanks the window"
   await app.keys(["Control", "a"]);
   await app.keys("Backspace");
   await until(async () => !(await app.$(".search-games").isExisting()), 20000);
+  assert.deepEqual(await problems(), []);
 });
 
 test("Get installs verified ports, and Play starts one", async () => {

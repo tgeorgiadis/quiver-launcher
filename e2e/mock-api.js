@@ -29,7 +29,7 @@ z.close()`,
 }
 
 /** A 1×1 PNG, for any artwork. */
-const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwADAgH/6Vn8SgAAAABJRU5ErkJggg==", "base64");
+const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 
 const readBody = (req) =>
   new Promise((resolve) => {
@@ -58,7 +58,8 @@ const entry = (slug, name, overrides = {}) => ({
   ...overrides,
 });
 
-export async function startMockApi() {
+/** `pageSize` caps how many apps a catalog page has, to try paging. */
+export async function startMockApi({ pageSize = Infinity } = {}) {
   const zip = buildZip();
   const sha = createHash("sha256").update(zip).digest("hex");
   const entries = [
@@ -95,6 +96,12 @@ export async function startMockApi() {
       game: { id: "game_tampered-port", slug: "tampered-port", title: "Tampered Port (original)", description: "", originalSystems: ["snes"] },
       apps: ["tampered-port"],
     },
+    // Answered malformed on purpose, to see a page fail.
+    "broken-game": {
+      game: { id: "game_broken-game", slug: "broken-game", title: "Broken Game (original)", description: "", originalSystems: [] },
+      apps: ["test-port"],
+      malformed: true,
+    },
   });
   /** catalog.ts on the site: every typed word starts a word of the title. */
   const words = (text) =>
@@ -106,16 +113,48 @@ export async function startMockApi() {
       .filter(Boolean);
   const titleMatches = (title, search) => words(search).every((typed) => words(title).some((word) => word.startsWith(typed)));
   const BRANDS = ["Nintendo", "PlayStation", "Xbox", "Sega", "OtherPlatforms"];
-  const page = (items) => ({ page: items, continueCursor: "", isDone: true });
+  /** A page from `cursor` (an index here; opaque on the site). */
+  const page = (items, { numItems, cursor }) => {
+    const start = Number(cursor ?? 0);
+    const end = start + Math.min(numItems, pageSize);
+    return { page: items.slice(start, end), continueCursor: String(Math.min(end, items.length)), isDone: end >= items.length };
+  };
+  // The site's argument validators: an unknown, null or out-of-range argument is refused, as Convex does.
+  const OS = ["windows", "linux", "macos", "android", "ios"];
+  const ARGS = {
+    "catalog:list": {
+      paginationOpts: "page!", search: "string", os: OS, projectType: ["port", "tool", "emulator", "game"], console: "string",
+      maker: BRANDS, sort: ["name", "updated", "added", "rating"], ai: ["no-generated", "no-ai"], developer: "string", hideDevelopers: "array",
+    },
+    "catalog:detail": { slug: "string!" },
+    "catalog:readme": { slug: "string!" },
+    "catalog:releases": { slug: "string!", paginationOpts: "page!" },
+    "catalog:facets": {},
+    "catalog:matchingGames": { search: "string!", hideDevelopers: "array" },
+    "catalog:game": { slug: "string!" },
+  };
+  function validate(path, args) {
+    const rules = ARGS[path];
+    for (const [key, rule] of Object.entries(rules))
+      if (typeof rule === "string" && rule.endsWith("!") && !(key in args)) throw new Error(`ArgumentValidationError: ${key} is required`);
+    for (const [key, value] of Object.entries(args)) {
+      const rule = (typeof rules[key] === "string" ? rules[key].replace("!", "") : rules[key]) ?? "unknown";
+      const ok =
+        rule === "string" ? typeof value === "string"
+        : rule === "array" ? Array.isArray(value)
+        : rule === "page" ? Number.isInteger(value?.numItems) && value.numItems >= 1 && value.numItems <= 100 && (value.cursor === null || typeof value.cursor === "string")
+        : Array.isArray(rule) && rule.includes(value);
+      if (!ok) throw new Error(`ArgumentValidationError: ${key} = ${JSON.stringify(value)}`);
+    }
+  }
   /** The site's public catalog queries, as Convex answers them. */
   const convex = {
     "catalog:list": (a) => {
-      if (a.maker && !BRANDS.includes(a.maker)) throw new Error("ArgumentValidationError: maker");
       // As URL parameters, so tests read the last listing's filters the same way as before.
       lastQuery = new URLSearchParams(Object.entries(a).filter(([k, v]) => k !== "paginationOpts" && v !== undefined).map(([k, v]) => [k, String(v)]));
       const search = (a.search ?? "").toLowerCase();
       const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)));
-      return page(items.map(withVersion));
+      return page(items.map(withVersion), a.paginationOpts);
     },
     "catalog:detail": ({ slug }) => {
       const found = entries.find((e) => e.slug === slug);
@@ -133,7 +172,7 @@ export async function startMockApi() {
       slug === "test-port"
         ? { markdown: "# Test Port\n\nA **test** port. See [the guide](docs/guide.md).", rawBase: "https://raw.example/", htmlBase: "https://github.com/quiver/test-port/blob/HEAD/", fetchedAt: 1 }
         : null,
-    "catalog:releases": ({ slug }) => page(entries.some((e) => e.slug === slug) ? [release(slug)] : []),
+    "catalog:releases": ({ slug, paginationOpts }) => page(entries.some((e) => e.slug === slug) ? [release(slug)] : [], paginationOpts),
     "catalog:facets": () => ({
       total: entries.length,
       consoles: [
@@ -151,6 +190,7 @@ export async function startMockApi() {
     },
     "catalog:game": ({ slug }) => {
       const g = games()[slug];
+      if (g?.malformed) return { game: g.game, entries: null };
       return g ? { game: g.game, entries: g.apps.map((s) => withVersion(entries.find((e) => e.slug === s))) } : null;
     },
   };
@@ -230,6 +270,7 @@ export async function startMockApi() {
       convexQueries.push({ path, args: a });
       if (!convex[path]) return send({ status: "error", errorMessage: `Could not find public function for '${path}'` }, 560);
       try {
+        validate(path, a);
         return send({ status: "success", value: convex[path](a), logLines: [] });
       } catch (error) {
         return send({ status: "error", errorMessage: String(error.message) }, 560);

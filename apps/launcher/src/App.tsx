@@ -17,6 +17,8 @@ type Tab = "library" | "browse";
 type View = { kind: "app"; entry: Entry } | { kind: "game"; game: GameLink };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : `game:${v.game.slug}`);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
+/** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
+const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
 
 export function App() {
   const { library } = useLauncher();
@@ -55,18 +57,23 @@ export function App() {
     window.scrollTo(0, at?.y ?? 0);
     if (at?.focus instanceof HTMLElement && at.focus.isConnected) at.focus.focus({ preventScroll: true });
   }, [stack]);
+  // Escape, or a controller's Back, goes back a page; an open dialog takes it instead.
+  useEffect(() => {
+    if (!stack.length) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !document.querySelector('[role="dialog"]')) goBack();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stack.length, goBack]);
   const top = stack.at(-1);
-  const below = stack.at(-2);
   const query = search.trim();
-  const back = below
-    ? below.kind === "app"
-      ? below.entry.projectName
-      : (below.game.title ?? "Back")
-    : tab === "library"
-      ? "Library"
-      : query
-        ? `Back to results for “${shorten(query)}”`
-        : "Browse";
+  const listName = tab === "library" ? "Library" : query ? `Back to results for “${shorten(query)}”` : "Browse";
+  /** What Back on the page at `i` returns to. */
+  const backFrom = (i: number) => {
+    const below = stack[i - 1];
+    return !below ? listName : below.kind === "app" ? below.entry.projectName : (below.game.title ?? "Back");
+  };
   const action = (entry: Entry) => <Action entry={entry} />;
   return (
     <div className="shell">
@@ -86,49 +93,72 @@ export function App() {
         </button>
       </header>
       <main className={top ? "app-main" : ""}>
-        {/* Kept mounted under a page, so going back keeps the search, filters and scroll. */}
+        {/*
+          Every page in the stack stays mounted, hidden under the top one, so
+          Back finds it as it was left. One that fails shows why and a way back;
+          the boundary around them all catches a page failing as it closes.
+        */}
+        <ErrorBoundary
+          resetKey={stack.map(viewKey).join(" ")}
+          fallback={(error, reset) =>
+            stack.length ? (
+              <PageProblem error={error} back={backFrom(stack.length - 1)} onBack={() => (reset(), goBack())} />
+            ) : (
+              <div className="banner" role="alert">
+                <p>That page hit a problem as it closed: {error.message}</p>
+                <button onClick={reset}>OK</button>
+              </div>
+            )
+          }
+        >
+          {stack.map((view, i) => (
+            <div key={viewKey(view)} className="page-layer" hidden={i !== stack.length - 1}>
+              <ErrorBoundary fallback={(error) => <PageProblem error={error} back={backFrom(i)} onBack={goBack} />}>
+                {view.kind === "app" ? (
+                  <AppPage entry={view.entry} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onSignIn={() => setSigningIn(true)} />
+                ) : (
+                  <GamePage game={view.game} back={backFrom(i)} onBack={goBack} onOpenApp={openApp} action={action} />
+                )}
+              </ErrorBoundary>
+            </div>
+          ))}
+        </ErrorBoundary>
+        {/* Kept mounted under the pages too, so going back keeps the search, filters and scroll. */}
         <div hidden={Boolean(top)}>
           <Notice />
-          <OldLibrary onDone={() => switchTab("library")} />
+          {/* Finishing an import shows the library, under whatever page is open. */}
+          <OldLibrary onDone={() => setTab("library")} />
           {tab === "library" ? (
             <LibraryPage onOpen={openApp} onBrowse={() => switchTab("browse")} action={action} />
           ) : (
             <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} />
           )}
         </div>
-        {top && (
-          // A page that fails shows why and a way back; the list under it is untouched.
-          <ErrorBoundary
-            key={viewKey(top)}
-            fallback={(error) => (
-              <section className="app-page" role="alert">
-                <div className="backdrop-inner">
-                  <button className="back-link" onClick={goBack}>
-                    <ArrowLeft size={15} /> {back}
-                  </button>
-                </div>
-                <div className="empty">
-                  <h2>This page hit a problem</h2>
-                  <p>{error.message}</p>
-                  <button className="primary" onClick={goBack}>
-                    Go back
-                  </button>
-                </div>
-              </section>
-            )}
-          >
-            {top.kind === "app" ? (
-              <AppPage entry={top.entry} back={back} onClose={goBack} onOpenGame={openGame} onSignIn={() => setSigningIn(true)} />
-            ) : (
-              <GamePage game={top.game} back={back} onBack={goBack} onOpenApp={openApp} action={action} />
-            )}
-          </ErrorBoundary>
-        )}
       </main>
       {signingIn && <SignIn onClose={() => setSigningIn(false)} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       <ChooseFile />
     </div>
+  );
+}
+
+/** In place of a page that failed: what went wrong, and the way back. */
+function PageProblem({ error, back, onBack }: { error: Error; back: string; onBack: () => void }) {
+  return (
+    <section className="app-page" role="alert">
+      <div className="backdrop-inner">
+        <button className="back-link" onClick={onBack}>
+          <ArrowLeft size={15} /> {back}
+        </button>
+      </div>
+      <div className="empty">
+        <h2>This page hit a problem</h2>
+        <p>{error.message}</p>
+        <button className="primary" onClick={onBack}>
+          Go back
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -249,10 +279,9 @@ function BrowsePage({
   }, [query, JSON.stringify(filters), client]); // eslint-disable-line react-hooks/exhaustive-deps
   // As on the website: games whose titles match the search, above the apps, whatever the filters.
   useEffect(() => {
-    if (query.trim().length < 2) {
-      setGames([]);
-      return;
-    }
+    // As on the website, the last search's games go as soon as the search changes.
+    setGames([]);
+    if (query.trim().length < 2) return;
     let live = true;
     client.matchingGames(query).then(
       (found) => live && setGames(found),
@@ -402,10 +431,10 @@ function Action({ entry }: { entry: Entry }) {
     return (
       <div className="job-error" role="alert">
         <p>
-          v{pulled.version} was withdrawn: {pulled.reason}
+          {versionLabel(pulled.version)} was withdrawn: {pulled.reason}
         </p>
         <div className="row">
-          <button onClick={() => get(catalog[entry.id])}>Install v{catalog[entry.id].verified?.version}</button>
+          <button onClick={() => get(catalog[entry.id])}>Install {versionLabel(catalog[entry.id].verified?.version)}</button>
           <button onClick={() => play(entry.id)}>Play anyway</button>
         </div>
       </div>
@@ -416,7 +445,7 @@ function Action({ entry }: { entry: Entry }) {
         <button className="primary" onClick={() => play(entry.id)}>
           <Play size={15} /> Play
         </button>
-        <button onClick={() => get(catalog[entry.id] ?? entry)}>Update to v{(catalog[entry.id] ?? entry).verified?.version}</button>
+        <button onClick={() => get(catalog[entry.id] ?? entry)}>Update to {versionLabel((catalog[entry.id] ?? entry).verified?.version)}</button>
       </div>
     );
   if (install)
@@ -456,11 +485,6 @@ function AppPage({
   const install = installs[entry.id];
   const source = useSource(entry);
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !document.querySelector('[role="dialog"]') && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
   const eyebrow = [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].join(", ");
   return (
     <section className="app-page" aria-label={entry.projectName}>
@@ -493,10 +517,10 @@ function AppPage({
                 {entry.verified && (
                   <span className="verified">
                     <ShieldCheck size={14} />
-                    {entry.verified.pinned ? `v${entry.verified.version} · verified` : `v${entry.verified.version} · files can't be verified`}
+                    {entry.verified.pinned ? `${versionLabel(entry.verified.version)} · verified` : `${versionLabel(entry.verified.version)} · files can't be verified`}
                   </span>
                 )}
-                {install && <span className="muted">Installed {/^v/i.test(install.version) ? "" : "v"}{install.version}</span>}
+                {install && <span className="muted">Installed {versionLabel(install.version)}</span>}
               </div>
               <div className="app-actions">
                 <Action entry={entry} />
@@ -552,7 +576,7 @@ function AppOptions({ id }: { id: string }) {
           <select value={install.updates ?? "ask"} onChange={(e) => setUpdates(id, e.target.value === "ask" ? undefined : (e.target.value as "auto" | "pinned"))}>
             <option value="ask">Offer them</option>
             <option value="auto">Install automatically</option>
-            <option value="pinned">Stay on v{install.version}</option>
+            <option value="pinned">Stay on {versionLabel(install.version)}</option>
           </select>
         </label>
       )}
@@ -637,7 +661,7 @@ function Review({ entry, onSignIn }: { entry: Entry; onSignIn: () => void }) {
         );
       }}
     >
-      <h3>How does v{install.version} run for you?</h3>
+      <h3>How does {versionLabel(install.version)} run for you?</h3>
       <div className="row">
         {RESULTS.map(([value, label]) => (
           <button type="button" key={value} className={result === value ? "chosen" : ""} onClick={() => setResult(value)}>
@@ -805,7 +829,7 @@ function ChooseFile() {
         <div className="detail-body">
           <h2>Which download?</h2>
           <p className="muted">
-            {choice.entry.projectName} v{choice.version} has more than one file for your computer.
+            {choice.entry.projectName} {versionLabel(choice.version)} has more than one file for your computer.
           </p>
           <div className="choices">
             {choice.assets.map((a) => (
