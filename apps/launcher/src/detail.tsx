@@ -44,11 +44,10 @@ export function RepositoryLink({ source }: { source: Source }) {
   );
 }
 
-/** The project's README: the site's copy, else straight from GitHub. Long ones fold. */
+/** The project's README: the site's copy, else straight from GitHub. */
 export function Readme({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
   const { client, github } = useLauncher();
   const [readme, setReadme] = useState<ReadmeText | null | undefined>();
-  const [open, setOpen] = useState(false);
   useEffect(() => {
     if (source === undefined) return;
     let live = true;
@@ -65,12 +64,9 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
   return (
     <section className="readme">
       <h3>README</h3>
-      <div className={`readme-body${open ? "" : " clipped"}`}>
+      <div className="readme-body">
         <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} />
       </div>
-      <button className="readme-toggle" onClick={() => setOpen(!open)}>
-        {open ? "Show less" : "Show the whole README"}
-      </button>
     </section>
   );
 }

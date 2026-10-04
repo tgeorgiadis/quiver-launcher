@@ -41,7 +41,7 @@ button.danger { color: #e38c87; }
 .detail-hero { height: 220px; background: linear-gradient(135deg, #27272c, #1c1c21); }
 .detail-hero .artwork { height: 100%; }
 .detail-body { display: flex; flex-direction: column; gap: 12px; padding: 20px 24px 24px; }
-.detail-body .platform-icons { margin-left: 0; }
+.detail-body .platform-icons, .app-page .platform-icons { margin-left: 0; }
 .facts { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px; }
 .verified { display: inline-flex; align-items: center; gap: 5px; color: var(--green); }
 .muted { color: var(--muted); font-size: 13px; }
@@ -57,10 +57,10 @@ button.danger { color: #e38c87; }
 .banner button.primary { background: var(--accent); }
 .account { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .account button { padding: 7px 14px; border-radius: 7px; background: var(--panel); font-weight: 500; font-size: 13px; }
-.detail-body input, .detail-body textarea {
+.detail-body input, .detail-body textarea, .app-page input, .app-page textarea {
   padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); outline: 0;
 }
-.detail-body textarea { min-height: 70px; resize: vertical; }
+.detail-body textarea, .app-page textarea { min-height: 70px; resize: vertical; }
 .review { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
 .review h3 { font-size: 15px; }
 .row button.chosen { background: var(--accent); color: #04121b; }
@@ -73,7 +73,7 @@ p.job-error { color: #e38c87; font-size: 13px; }
 .add-repo { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .add-repo input { min-width: 260px; } .add-repo p { flex-basis: 100%; }
 .options { margin: 12px 0; align-items: center; }
 .filters { gap: 10px; margin-top: -8px; }
-.toolbar select, .detail-body select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.toolbar select, .detail-body select, .app-page select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
 .shelves { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .shelves button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; }
 .shelves button.active, .shelves button:hover { color: #fff; border-color: var(--accent); background: #0ea5e91a; }
@@ -86,12 +86,9 @@ p.job-error { color: #e38c87; font-size: 13px; }
 .tags { display: grid; gap: 8px; margin: 4px 0; }
 .repo-link { display: inline-flex; align-items: center; gap: 5px; color: #7dd3fc; text-decoration: none; }
 .repo-link:hover { text-decoration: underline; }
-.readme { border-top: 1px solid var(--line); padding-top: 16px; }
+.readme { padding: 22px 24px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
 .readme h3, .versions h3, .controls h3 { font-size: 15px; margin-bottom: 10px; }
 .readme-body { position: relative; overflow: hidden; }
-.readme-body.clipped { max-height: 360px; }
-.readme-body.clipped::after { content: ""; position: absolute; inset: auto 0 0; height: 120px; background: linear-gradient(transparent, #141518); pointer-events: none; }
-.readme-toggle { display: flex; margin: 12px auto 0; padding: 7px 14px; border-radius: 7px; background: #26272b; font-size: 13px; }
 .versions { display: grid; gap: 8px; }
 .versions ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
 .versions li { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 7px; background: var(--panel); font-size: 13px; }
@@ -107,3 +104,34 @@ p.job-error { color: #e38c87; font-size: 13px; }
 .bindings button { width: 100%; padding: 5px 10px; border-radius: 6px; background: #26272b; font-size: 12px; }
 .bindings button.chosen { background: var(--accent); color: #04121b; }
 .detail.choose:has(.controls) { width: min(620px, 100%); }
+
+/* An app's page, like its page on quiverlauncher.com. */
+main.app-main { padding: 0 0 40px; }
+.app-backdrop { position: relative; isolation: isolate; overflow: hidden; background: radial-gradient(120% 90% at 20% 0%, #1f2a36 0%, #15171b 55%, var(--bg, #0e0e10) 100%); }
+.app-backdrop .backdrop-art { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; opacity: 0.6; }
+.app-backdrop::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #0e0e1059 0%, #0e0e108c 45%, var(--bg, #0e0e10) 100%), linear-gradient(90deg, #0e0e10bf 0%, transparent 65%); }
+.backdrop-inner { display: flex; flex-direction: column; justify-content: space-between; gap: 36px; padding: 20px 24px 28px; }
+.app-backdrop.has-art .backdrop-inner { min-height: 360px; }
+.back-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; color: #a3a5ae; font-size: 13px; background: none; padding: 4px 0; }
+.back-link:hover, .back-link:focus-visible { color: #fff; }
+.app-hero { display: flex; align-items: center; gap: 26px; }
+.app-hero > .artwork { flex-shrink: 0; width: 104px; height: 104px; padding: 12px; border: 1px solid #383941; border-radius: 16px; background: #18191cd9; box-shadow: 0 10px 30px #0008; }
+.app-hero .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.8px; color: #94979f; }
+.app-hero h1 { font-size: 38px; margin: 6px 0 8px; text-shadow: 0 2px 16px #000a; }
+.app-tagline { max-width: 720px; color: #c9cbd1; font-size: 14px; line-height: 1.6; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.app-hero .based-on { flex-wrap: wrap; margin: 0 0 10px; }
+.app-hero .game-chip { white-space: normal; }
+.app-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.app-actions .wide { width: auto; min-width: 160px; }
+.app-columns { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; padding: 24px; }
+.app-columns:not(:has(aside)) { grid-template-columns: minmax(0, 1fr); }
+.app-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.app-content .review { border: 1px solid var(--line); border-radius: 9px; padding: 22px 24px; background: var(--panel); }
+.app-panel { align-self: start; display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.app-panel h3 { font-size: 15px; }
+.app-panel .row { flex-wrap: wrap; }
+@media (max-width: 860px) {
+  .app-columns { grid-template-columns: minmax(0, 1fr); }
+  .app-hero { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .app-hero h1 { font-size: 28px; }
+}

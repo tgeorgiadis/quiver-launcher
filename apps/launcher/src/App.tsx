@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Download, Play, Search, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
+import { ArrowLeft, Download, Play, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
 import type { AppQuery, Entry, Page } from "@quiver/api";
-import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score, coverOf } from "@quiver/ui";
+import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
 import { Readme, RepositoryLink, Shortcuts, Tags, Versions, useSource } from "./detail";
@@ -24,10 +24,10 @@ export function App() {
       <header className="topbar">
         <strong className="brand">Quiver</strong>
         <nav>
-          <button className={tab === "library" ? "active" : ""} onClick={() => setTab("library")}>
+          <button className={tab === "library" ? "active" : ""} onClick={() => (setTab("library"), setOpen(null))}>
             Library <span className="count">{library.length}</span>
           </button>
-          <button className={tab === "browse" ? "active" : ""} onClick={() => setTab("browse")}>
+          <button className={tab === "browse" ? "active" : ""} onClick={() => (setTab("browse"), setOpen(null))}>
             Browse
           </button>
         </nav>
@@ -36,16 +36,27 @@ export function App() {
           <Settings2 size={18} />
         </button>
       </header>
-      <main>
-        <Notice />
-        <OldLibrary onDone={() => setTab("library")} />
-        {tab === "library" ? (
-          <LibraryPage onOpen={setOpen} onBrowse={() => setTab("browse")} action={(entry) => <Action entry={entry} />} />
-        ) : (
-          <BrowsePage onOpen={setOpen} />
+      <main className={open ? "app-main" : ""}>
+        {/* Kept mounted under an app's page, so going back keeps the filters and scroll. */}
+        <div hidden={Boolean(open)}>
+          <Notice />
+          <OldLibrary onDone={() => setTab("library")} />
+          {tab === "library" ? (
+            <LibraryPage onOpen={setOpen} onBrowse={() => setTab("browse")} action={(entry) => <Action entry={entry} />} />
+          ) : (
+            <BrowsePage onOpen={setOpen} />
+          )}
+        </div>
+        {open && (
+          <AppPage
+            key={open.id}
+            entry={open}
+            back={tab === "library" ? "Library" : "Browse"}
+            onClose={() => setOpen(null)}
+            onSignIn={() => setSigningIn(true)}
+          />
         )}
       </main>
-      {open && <Detail entry={open} onClose={() => setOpen(null)} onSignIn={() => setSigningIn(true)} />}
       {signingIn && <SignIn onClose={() => setSigningIn(false)} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       <ChooseFile />
@@ -318,70 +329,97 @@ function Action({ entry }: { entry: Entry }) {
   );
 }
 
-function Detail({ entry: opened, onClose, onSignIn }: { entry: Entry; onClose: () => void; onSignIn: () => void }) {
-  const { library, installs, catalog, remove } = useLauncher();
+/** An app's own page, laid out like its page on quiverlauncher.com. */
+function AppPage({ entry: opened, back, onClose, onSignIn }: { entry: Entry; back: string; onClose: () => void; onSignIn: () => void }) {
+  const { library, installs, catalog, remove, consoleNames } = useLauncher();
   const item = library.find((i) => i.id === opened.id);
-  const inLibrary = Boolean(item);
   // The player's own name and artwork, live as they change them.
   const entry = withOverrides(catalog[opened.id] ?? opened, item?.overrides);
   const install = installs[entry.id];
   const source = useSource(entry);
+  const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
+  useEffect(() => window.scrollTo(0, 0), []);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !document.querySelector('[role="dialog"]') && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  const eyebrow = [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].join(", ");
   return (
-    <div className="overlay" onClick={onClose}>
-      <section className="detail" role="dialog" aria-label={entry.projectName} onClick={(e) => e.stopPropagation()}>
-        <button className="close" onClick={onClose} aria-label="Close">
-          <X size={18} />
-        </button>
-        <div className="detail-hero">
-          <Artwork src={entry.libraryArt?.hero || coverOf(entry)} name={entry.projectName} className="cover-photo" />
+    <section className="app-page" aria-label={entry.projectName}>
+      <div className={`app-backdrop${hero ? " has-art" : ""}`}>
+        {hero && <img className="backdrop-art" src={hero} alt="" />}
+        <div className="backdrop-inner">
+          <button className="back-link" onClick={onClose}>
+            <ArrowLeft size={15} /> {back}
+          </button>
+          <div className="app-hero">
+            <Artwork src={entry.artwork ?? entry.libraryArt?.logo} name={entry.projectName} />
+            <div>
+              <div className="eyebrow">{[eyebrow, PROJECT_TYPES[entry.projectType]].filter(Boolean).join(" / ").toUpperCase()}</div>
+              <h1>{entry.projectName}</h1>
+              {entry.description && <p className="app-tagline">{entry.description}</p>}
+              {entry.games.length > 0 && (
+                <div className="based-on">
+                  <span className="based-on-label">Based on</span>
+                  {entry.games.map((g) => (
+                    <span key={g.id} className="game-chip">
+                      {g.title}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="facts">
+                <PlatformIcons os={entry.supportedOS} />
+                <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} />
+                {entry.verified && (
+                  <span className="verified">
+                    <ShieldCheck size={14} />
+                    {entry.verified.pinned ? `v${entry.verified.version} · verified` : `v${entry.verified.version} · files can't be verified`}
+                  </span>
+                )}
+                {install && <span className="muted">Installed {/^v/i.test(install.version) ? "" : "v"}{install.version}</span>}
+              </div>
+              <div className="app-actions">
+                <Action entry={entry} />
+                {source && <RepositoryLink source={source} />}
+                {item && (
+                  <button
+                    className="danger"
+                    onClick={() => {
+                      remove(entry.id);
+                      onClose();
+                    }}
+                  >
+                    <Trash2 size={15} /> {install ? "Uninstall and remove" : "Remove from library"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="detail-body">
-          <h2>{entry.projectName}</h2>
-          {entry.games.length > 0 && <p className="muted">Based on {entry.games.map((g) => g.title).join(", ")}</p>}
-          <div className="facts">
-            <PlatformIcons os={entry.supportedOS} />
-            <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} />
-            {entry.verified && (
-              <span className="verified">
-                <ShieldCheck size={14} />
-                {entry.verified.pinned ? `v${entry.verified.version} · verified` : `v${entry.verified.version} · files can't be verified`}
-              </span>
-            )}
-            {install && <span className="muted">Installed {/^v/i.test(install.version) ? "" : "v"}{install.version}</span>}
-            {source && <RepositoryLink source={source} />}
-          </div>
-          <p className="description">{entry.description}</p>
-          <div className="row">
-            <Action entry={entry} />
-            {inLibrary && (
-              <button
-                className="danger"
-                onClick={() => {
-                  remove(entry.id);
-                  onClose();
-                }}
-              >
-                <Trash2 size={15} /> {install ? "Uninstall and remove" : "Remove from library"}
-              </button>
-            )}
-          </div>
-          <Shortcuts entry={entry} />
-          {item && <AppOptions id={item.id} />}
-          {item && <Versions entry={entry} source={source} />}
-          {item && <Tags id={item.id} />}
-          {item && <Customize id={item.id} />}
-          {!isCustom(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
+      </div>
+      <div className="app-columns">
+        <div className="app-content">
           <Readme entry={entry} source={source} />
+          {!isCustom(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
         </div>
-      </section>
-    </div>
+        {(item || install) && (
+          <aside className="app-panel" aria-label="On this computer">
+            <h3>On this computer</h3>
+            <Shortcuts entry={entry} />
+            {item && <AppOptions id={item.id} />}
+            {item && <Versions entry={entry} source={source} />}
+            {item && <Tags id={item.id} />}
+            {item && <Customize id={item.id} />}
+          </aside>
+        )}
+      </div>
+    </section>
   );
 }
+
+const PROJECT_TYPES: Record<string, string> = { port: "Port", tool: "Tool", emulator: "Emulator", game: "Standalone game" };
 
 /** This computer's choices for an app: how it updates, and whether the library shows it. */
 function AppOptions({ id }: { id: string }) {

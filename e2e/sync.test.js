@@ -56,7 +56,7 @@ test("renaming an app on one computer renames it on the other", async () => {
   await (await a.app.$("button=Change name or artwork")).click();
   await (await a.app.$("input[aria-label=Name]")).setValue("My Port");
   await (await a.app.$("button=Save")).click();
-  await (await a.app.$("h2=My Port")).waitForDisplayed();
+  await (await a.app.$("h1=My Port")).waitForDisplayed();
   await a.app.keys("Escape");
   await titles(b);
   await b.until(async () => (await (await (await b.card("test-port")).$(".card-open")).getAttribute("aria-label")) === "My Port");
@@ -88,6 +88,8 @@ test("removing an app on one computer removes it on the other, keeping installed
 
 test("a signed-in player reviews the release they installed", async () => {
   await (await (await b.card("test-port")).$(".card-open")).click();
+  // The README arrives after the page opens and moves the review form down.
+  await (await b.app.$(".readme")).waitForDisplayed({ timeout: 10000 });
   await (await b.app.$("button=Runs well")).click();
   await (await b.app.$("textarea")).setValue("Smooth at 60 fps");
   await (await b.app.$("button=Post review")).click();

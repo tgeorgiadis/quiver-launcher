@@ -24,6 +24,7 @@ before(async () => {
 after(() => s?.close());
 
 const dialog = () => app.$('[role="dialog"]');
+const page = () => app.$(".app-page");
 const open = async (slug) => (await (await card(slug)).$(".card-open")).click();
 
 test("the catalog filters by console and sorts as the website does", async () => {
@@ -43,19 +44,25 @@ test("cards show what the website's cards show", async () => {
   assert.match(await (await port.$(".card-bottom")).getText(), /Mostly runs/);
 });
 
-test("an app's page shows its README and links to its repository", async () => {
+test("an app opens as a full page, with its README and a link to its repository", async () => {
   await (await (await card("test-port")).$("button=Get")).click();
   await (await (await card("test-port")).$("button*=Play")).waitForDisplayed({ timeout: 30000 });
   await open("test-port");
-  await (await (await dialog()).$(".readme")).waitForDisplayed({ timeout: 10000 });
-  assert.match(await (await (await dialog()).$(".readme")).getText(), /A test port/);
-  const link = await (await dialog()).$("a.repo-link");
+  assert.equal(await (await page()).$("h1").then((h) => h.getText()), "Test Port");
+  assert.equal(await (await card("test-port")).isDisplayed(), false);
+  // Back returns to the catalog as it was.
+  await (await (await page()).$("button.back-link")).click();
+  await (await card("test-port")).waitForDisplayed();
+  await open("test-port");
+  await (await (await page()).$(".readme")).waitForDisplayed({ timeout: 10000 });
+  assert.match(await (await (await page()).$(".readme")).getText(), /A test port/);
+  const link = await (await page()).$("a.repo-link");
   assert.match(await link.getText(), /quiver\/test-port/);
   assert.equal(await link.getAttribute("href"), "https://github.com/quiver/test-port");
 });
 
 test("any release can be installed, and the ones Quiver verified say so", async () => {
-  await (await (await dialog()).$("button=Change version")).click();
+  await (await (await page()).$("button=Change version")).click();
   const row = (version) => app.$(`//section[@aria-label="Versions"]//li[strong[text()="${version}"]]`);
   await (await row("v0.9.0")).waitForDisplayed({ timeout: 10000 });
   assert.match(await (await row("1.0.0")).getText(), /Verified[\s\S]*Installed/);
@@ -63,16 +70,16 @@ test("any release can be installed, and the ones Quiver verified say so", async 
   await (await (await row("v0.9.0")).$("button=Install")).click();
   await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "v0.9.0", 30000);
   // It stays on the version picked.
-  await until(async () => (await (await (await dialog()).$("select")).getValue()) === "pinned");
+  await until(async () => (await (await (await page()).$("select")).getValue()) === "pinned");
 });
 
 test("a desktop shortcut and a Steam shortcut start the game", async () => {
-  await (await (await dialog()).$("button*=Desktop shortcut")).click();
+  await (await (await page()).$("button*=Desktop shortcut")).click();
   await (await app.$(".shortcuts p")).waitForDisplayed({ timeout: 10000 });
   assert.match(await (await app.$(".shortcuts p")).getText(), /is on your desktop/);
   const desktop = readFileSync(join(home, "Desktop", "Test Port.desktop"), "utf8");
   assert.match(desktop, /Exec=".*test-port.*port\.sh"/);
-  await (await (await dialog()).$("button=Add to Steam")).click();
+  await (await (await page()).$("button=Add to Steam")).click();
   await (await app.$("p*=is in Steam")).waitForDisplayed({ timeout: 10000 });
   const vdf = readFileSync(join(steamConfig, "shortcuts.vdf"));
   assert.ok(vdf.includes("Test Port") && vdf.includes("port.sh") && vdf.includes("QuiverLauncher"));
@@ -96,7 +103,7 @@ test("library shelves: installed or not, a hand-picked collection, and sections 
   await (await app.$("p=No apps in this collection yet.")).waitForDisplayed();
   await shelf("All");
   await open("test-port");
-  await (await (await dialog()).$("button.chip=Favourites")).click();
+  await (await (await page()).$("button.chip=Favourites")).click();
   await app.keys("Escape");
   await shelf("Favourites");
   await until(async () => JSON.stringify(await shown()) === '["test-port"]');

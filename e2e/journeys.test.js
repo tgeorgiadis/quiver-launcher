@@ -52,7 +52,7 @@ test("a new verified release is offered as an update and installs", async () => 
 test("an app can stay on its version, or update by itself", async () => {
   const updates = async (choice) => {
     await (await (await card("test-port")).$(".card-open")).click();
-    await (await (await app.$('[role="dialog"]')).$("select")).selectByVisibleText(choice);
+    await (await (await app.$(".app-page")).$("select")).selectByVisibleText(choice);
     await app.keys("Escape");
   };
   const reload = async () => {
@@ -119,12 +119,12 @@ test("an app the catalog doesn't list is added from its GitHub repository", asyn
   // A repository the catalog lists opens the catalog's app instead.
   await (await app.$("input[aria-label='GitHub repository']")).setValue("https://github.com/quiver/test-port");
   await (await app.$("button=Add")).click();
-  await (await app.$("h2=Test Port")).waitForDisplayed({ timeout: 10000 });
+  await (await app.$("h1=Test Port")).waitForDisplayed({ timeout: 10000 });
   await app.keys("Escape");
   await (await app.$("button=Add from GitHub")).click();
   await (await app.$("input[aria-label='GitHub repository']")).setValue("someone/homebrew");
   await (await app.$("button=Add")).click();
-  await (await (await app.$('[role="dialog"]')).$("button*=Play")).waitForDisplayed({ timeout: 30000 });
+  await (await (await app.$(".app-page")).$("button*=Play")).waitForDisplayed({ timeout: 30000 });
   assert.equal(readFileSync(join(apps, "homebrew", ".quiver-version"), "utf8"), "v2.0");
   await app.keys("Escape");
 });
