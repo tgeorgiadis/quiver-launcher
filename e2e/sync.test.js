@@ -63,8 +63,9 @@ test("renaming an app on one computer renames it on the other", async () => {
 });
 
 test("a collection made on one computer shows on the other", async () => {
-  await (await a.app.$("button[aria-label='New collection']")).click();
-  await (await a.app.$("input[aria-label='Collection name']")).setValue("Co-op");
+  await (await a.app.$("button[aria-label='Add a shelf']")).click();
+  await (await (await a.app.$("[role=menu]")).$("button=New shelf")).click();
+  await (await a.app.$("input[aria-label='Shelf name']")).setValue("Co-op");
   await (await a.app.$("button=Save")).click();
   await titles(b);
   await (await (await b.app.$("nav[aria-label=Shelves]")).$("button=Co-op")).waitForDisplayed({ timeout: 10000 });

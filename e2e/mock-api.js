@@ -72,6 +72,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       recommended: 0,
       reviewCount: 1,
       reportBroken: 1,
+      aiLevel: "generated",
     }),
   ];
   let base = "";
@@ -134,6 +135,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     "catalog:matchingGames": { search: "string!", hideDevelopers: "array" },
     "catalog:game": { slug: "string!" },
     "reviews:list": { slug: "string!", paginationOpts: "page!" },
+    "sharedLists:get": { slug: "string!" },
   };
   function validate(path, args) {
     const rules = ARGS[path];
@@ -208,6 +210,19 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     },
     // What players said, newest first.
     "reviews:list": ({ slug, paginationOpts }) => page(account.feedback(slug), paginationOpts),
+    // A list a player shared, as anyone sees it.
+    "sharedLists:get": ({ slug }) => {
+      const list = account.lists.get(slug);
+      if (!list) return null;
+      const items = list.apps.flatMap((a) => {
+        const e = entries.find((x) => x.id === a.entryId);
+        return e ? [{ kind: "entry", entry: withVersion(e) }] : [];
+      });
+      return {
+        slug, name: list.name, ...(list.description ? { description: list.description } : {}), owner: { name: list.owner },
+        items, unavailable: list.apps.length - items.length, createdAt: list.createdAt, updatedAt: list.updatedAt,
+      };
+    },
     "catalog:game": ({ slug }) => {
       const g = games()[slug];
       if (g?.malformed) return { game: g.game, entries: null };
@@ -329,6 +344,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     github: `${base}/github`,
     gitlab: `${base}/gitlab`,
     reviews: account.reviews,
+    /** Shared lists by slug. */
+    lists: account.lists,
     /** The filters of the last catalog page asked for. */
     lastQuery: () => lastQuery,
     /** Every Convex query asked for, oldest first: { path, args }. */
@@ -346,6 +363,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
  * with the same contract, over HTTP: the real backend is private.
  */
 function mockAccount(entries) {
+  // Shared lists by slug: { owner, collectionKey, name, description, apps: [{ entryId }], createdAt, updatedAt }.
+  const lists = new Map();
   const users = new Map(); // name -> { id, password, items: Map(entryId -> item), collections: Map(key -> collection) }
   const tokens = new Map(); // token -> name
   const reviews = [];
@@ -408,12 +427,46 @@ function mockAccount(entries) {
       return send(res, {
         user: { id: user.id, name },
         items: [...user.items.values()].map((i) => ({ ...i, ...(i.entryId ? { slug: entries.find((e) => e.id === i.entryId).slug } : {}) })),
-        collections: [...user.collections.values()],
+        // As libraryCollections.list: the shared list's slug when the collection is shared.
+        collections: [...user.collections.values()].map((c) => {
+          const shared = [...lists.entries()].find(([, l]) => l.owner === name && l.collectionKey === c.key);
+          return shared ? { ...c, shared: { slug: shared[0] } } : c;
+        }),
       });
     // As libraryCollections.save: whole collections, the latest save wins.
     if (path === "/collections/save") {
-      for (const c of body.collections) user.collections.set(c.key, { ...c, updatedAt: Date.now() });
+      // As libraryCollections.save: only the fields it knows (anything else fails the whole call); new fields merge, null clears.
+      const known = ["key", "name", "tags", "consoles", "installed", "order", "removed", "apps", "projectTypes", "ai", "follows"];
+      if (body.collections.some((c) => Object.keys(c).some((k) => !known.includes(k)))) return send(res, { error: "ArgumentValidationError" }, 400);
+      for (const c of body.collections) {
+        const before = user.collections.get(c.key) ?? {};
+        const merged = { ...c };
+        for (const k of ["apps", "projectTypes", "ai", "follows"]) {
+          if (c[k] === undefined && before[k] !== undefined) merged[k] = before[k];
+          if (c[k] === null) delete merged[k];
+        }
+        user.collections.set(c.key, { ...merged, updatedAt: Date.now() });
+      }
       return send(res, []);
+    }
+    // As sharedLists.share: sharing the same collection again updates its list.
+    if (path === "/lists/share") {
+      const name2 = String(body.name ?? "").trim();
+      if (!name2 || name2.length > 60) return send(res, { error: "Give the list a name of 60 characters or fewer." }, 400);
+      if (!Array.isArray(body.apps) || body.apps.length > 100) return send(res, { error: "A list can have up to 100 apps." }, 400);
+      const now = Date.now();
+      const mine = [...lists.entries()].find(([, l]) => l.owner === name && l.collectionKey === body.collectionKey);
+      const slug = mine?.[0] ?? `${name2.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}-${Math.random().toString(36).slice(2, 10)}`;
+      lists.set(slug, {
+        owner: name, collectionKey: body.collectionKey, name: name2, description: body.description, apps: body.apps,
+        createdAt: mine?.[1].createdAt ?? now, updatedAt: now,
+      });
+      return send(res, { slug, refused: [] });
+    }
+    if (path === "/lists/unshare") {
+      if (lists.get(body.slug)?.owner !== name) return send(res, { error: "List not found" }, 400);
+      lists.delete(body.slug);
+      return send(res, null);
     }
     if (path === "/library/save") {
       // As on the site: an add fills only empty fields, an edit sets what it names.
@@ -458,5 +511,5 @@ function mockAccount(entries) {
   }
   const feedback = (slug) =>
     [...saved.values()].filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id).sort((a, b) => b.createdAt - a.createdAt);
-  return { handle, reviews, feedback };
+  return { handle, reviews, feedback, lists };
 }

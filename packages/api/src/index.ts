@@ -130,6 +130,27 @@ export type Detail = {
   checking?: Checking;
 };
 
+/** A list a player shared from their library, public at quiverlauncher.com/lists/<slug> (sharedLists.get). */
+export type SharedList = {
+  slug: string;
+  name: string;
+  description?: string;
+  owner: { name: string; avatar?: string };
+  items: ({ kind: "entry"; entry: Entry } | { kind: "custom"; custom: { provider: "github" | "gitlab"; repository: string; name: string }; url: string })[];
+  /** Apps on it that left the catalog. */
+  unavailable: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+/** The site's address for a shared list. */
+export const listUrl = (slug: string) => `https://quiverlauncher.com/lists/${slug}`;
+/** A shared list's slug from its address (or the slug itself); null if it isn't one. */
+export function listSlug(input: string): string | null {
+  const m = input.trim().match(/^(?:(?:https?:\/\/)?(?:www\.)?quiverlauncher\.com\/lists\/)?([a-z0-9-]{1,100})\/?(?:[?#].*)?$/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
 /** What a player said about how an app ran (reviews.list on the site). */
 export type Feedback = {
   id: string;
@@ -198,6 +219,8 @@ export type Client = {
   matchingGames(search: string): Promise<GameMatch[]>;
   /** Null when there's no such game. */
   game(slug: string): Promise<GameDetail | null>;
+  /** A shared list; null when there's none (or it stopped being shared). */
+  sharedList(slug: string): Promise<SharedList | null>;
 };
 
 export function createClient(base: string = DEFAULT_API): Client {
@@ -239,6 +262,7 @@ export function createClient(base: string = DEFAULT_API): Client {
     // REST has no game search.
     matchingGames: () => Promise.resolve([]),
     game: (slug: string) => get<GameDetail>(`/games/${encodeURIComponent(slug)}`).catch(notFound<GameDetail>),
+    sharedList: (slug: string) => get<SharedList>(`/lists/${encodeURIComponent(slug)}`).catch(notFound<SharedList>),
   };
 }
 

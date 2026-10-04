@@ -145,7 +145,7 @@ export function App() {
             }}
           />
           {tab === "library" ? (
-            <LibraryPage onOpen={openApp} onBrowse={() => switchTab("browse")} onAdd={() => setAdding(true)} action={action} />
+            <LibraryPage onOpen={openApp} onBrowse={() => switchTab("browse")} onAdd={() => setAdding(true)} onSignIn={() => setSigningIn(true)} action={action} />
           ) : (
             <BrowsePage onOpen={openApp} onOpenGame={openGame} onAdd={() => setAdding(true)} search={search} onSearch={setSearch} />
           )}

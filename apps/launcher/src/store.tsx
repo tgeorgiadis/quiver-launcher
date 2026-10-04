@@ -74,6 +74,8 @@ type Launcher = {
   oldApps: OldApp[];
   importOld: () => Promise<string[]>;
   remember: (entries: Entry[]) => void;
+  /** Keeps catalog data for apps that aren't in the library, such as those on a shelf copied from a shared list. */
+  cache: (entries: Entry[]) => void;
   /** Adds the app to the library and installs it: its newest release, or the one given. */
   get: (entry: Entry, release?: Release) => Promise<void>;
   play: (id: string) => Promise<void>;
@@ -505,6 +507,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     catalog,
     jobs,
     choice,
+    cache: (entries) => setCatalog((c) => ({ ...c, ...Object.fromEntries(entries.map((e) => [e.id, { ...c[e.id], ...e }])) })),
     remember: (entries) => {
       const known = new Set(library.map((i) => i.id));
       const fresh = entries.filter((e) => known.has(e.id));

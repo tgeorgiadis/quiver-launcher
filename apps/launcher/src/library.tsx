@@ -1,16 +1,22 @@
 /**
  * The library: shelves (All, Installed, Not installed, Updates, Hidden and the
- * player's collections) over a search, a sort, and optional sections by the
- * original console.
+ * player's own) over a search, a sort, the catalog's filters and optional
+ * sections by the original console. A shelf holds apps picked by hand,
+ * saved filters, or both; one can be shared as a list on quiverlauncher.com,
+ * and a list someone shared can be followed as a shelf.
  */
-import { useEffect, useState, type ReactNode } from "react";
-import { Library, Pencil, Plus, Search } from "lucide-react";
-import type { Entry } from "@quiver/api";
-import { EntryCard } from "@quiver/ui";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Filter, Library, ListPlus, MoreHorizontal, Plus, Search, X } from "lucide-react";
+import { listSlug, listUrl, type Entry, type SharedList } from "@quiver/api";
+import { EntryCard, tagLabel } from "@quiver/ui";
 import { hasUpdate, useLauncher, type LibraryItem } from "./store";
-import { inCollection, type Collection } from "./sync";
+import { useAccount } from "./account";
+import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
+import { isOwn } from "./custom";
 
 type Shelf = "all" | "installed" | "not-installed" | "updates" | "hidden" | string;
+/** The library's filters, as the catalog's: one choice of each. */
+type Filters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
 
 /** The catalog entry as this player named and pictured it. */
 export const withOverrides = (entry: Entry, o?: { name?: string; cover?: string }): Entry => ({
@@ -19,51 +25,145 @@ export const withOverrides = (entry: Entry, o?: { name?: string; cover?: string 
   ...(o?.cover ? { libraryArt: { ...entry.libraryArt, header: o.cover, hero: o.cover } } : {}),
 });
 
+const newKey = () => `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+/** A shelf's filters from the library's, and back. */
+const toShelf = (f: Filters) => ({
+  tags: f.tag ? [f.tag] : [],
+  consoles: f.console ? [f.console] : [],
+  projectTypes: f.projectType ? [f.projectType] : undefined,
+  ai: f.ai,
+  installed: f.installed,
+});
+const fromShelf = (c: Collection): Filters => ({
+  tag: c.tags[0],
+  console: c.consoles[0],
+  projectType: c.projectTypes?.[0],
+  ai: c.ai,
+  installed: c.installed,
+});
+const PROJECT_TYPES: Record<string, string> = { port: "Port", tool: "Tool", emulator: "Emulator", game: "Standalone game" };
+const AI: Record<string, string> = { "no-generated": "Hide mostly AI-generated", "no-ai": "Hide any AI use" };
+
 export function LibraryPage({
   onOpen,
   onBrowse,
   onAdd,
+  onSignIn,
   action,
 }: {
   onOpen: (e: Entry) => void;
   onBrowse: () => void;
   /** Adds an app the catalog doesn't have. */
   onAdd: () => void;
+  onSignIn: () => void;
   action: (entry: Entry) => ReactNode;
 }) {
-  const { library: all, catalog, installs, jobs, get, add, remove, settings, setSettings, collections, consoleNames } = useLauncher();
+  const { client, library: all, catalog, installs, jobs, get, add, remove, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
   const [shelf, setShelf] = useState<Shelf>("all");
   const [editing, setEditing] = useState<Collection | null>(null);
+  const [sharing, setSharing] = useState<Collection | null>(null);
+  const [following, setFollowing] = useState(false);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"played" | "name" | "added">("played");
+  const [filters, setFilters] = useState<Filters>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const hidden = new Set(settings.hidden);
   const collection = collections.find((c) => c.key === shelf);
+  const makers = Object.fromEntries(consoles.map((c) => [c.id, c.brand]));
+  // A followed shelf's apps come from the list on the site.
+  const [list, setList] = useState<SharedList | null | undefined>();
+  useEffect(() => {
+    setList(undefined);
+    if (!collection?.follows) return;
+    let live = true;
+    client.sharedList(collection.follows).then(
+      (l) => live && setList(l),
+      () => live && setList(null),
+    );
+    return () => void (live = false);
+  }, [client, collection?.follows]);
   const shown = all.filter((i) => hidden.has(i.id) === (shelf === "hidden"));
   const updates = shown.filter((i) => !jobs[i.id] && hasUpdate(catalog[i.id], installs[i.id]));
   const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  const inLibrary = new Map(all.map((i) => [i.id, i]));
+  const facts = (entry: Entry, item?: LibraryItem): AppFacts => ({
+    id: entry.id,
+    tags: [...entry.tags, ...(item?.overrides?.tags ?? [])],
+    consoles: entry.consoles ?? [],
+    installed: Boolean(installs[entry.id]),
+    // Apps the player added match only the filters there's data for.
+    projectType: isOwn(entry.id) ? undefined : entry.projectType,
+    aiLevel: entry.aiLevel,
+  });
   const order = {
-    played: (i: LibraryItem) => -(installs[i.id]?.lastPlayed ?? 0),
-    added: (i: LibraryItem) => -i.addedAt,
+    played: (e: Entry) => -(installs[e.id]?.lastPlayed ?? 0),
+    added: (e: Entry) => -(inLibrary.get(e.id)?.addedAt ?? 0),
     name: () => 0,
   }[sort];
-  const onShelf = (item: LibraryItem, entry: Entry) => {
-    const installed = Boolean(installs[item.id]);
+  // What the shelf holds before the search and filters: library apps, plus picked or listed apps not in the library.
+  const candidates: { entry: Entry; item?: LibraryItem }[] = collection?.follows
+    ? (list?.items ?? []).flatMap((i) => {
+        if (i.kind !== "entry") return [];
+        const item = inLibrary.get(i.entry.id);
+        return [{ entry: item && catalog[item.id] ? withOverrides(catalog[item.id], item.overrides) : i.entry, item }];
+      })
+    : [
+        ...shown.flatMap((i) => (catalog[i.id] ? [{ entry: withOverrides(catalog[i.id], i.overrides), item: i }] : [])),
+        ...(collection?.apps ?? []).flatMap((id) => (!inLibrary.has(id) && catalog[id] ? [{ entry: catalog[id] }] : [])),
+      ];
+  const onShelf = (entry: Entry, item?: LibraryItem) => {
+    if (collection?.follows) return true;
+    const installed = Boolean(installs[entry.id]);
     if (shelf === "installed" || shelf === "not-installed") return installed === (shelf === "installed");
-    if (shelf === "updates") return updates.includes(item);
-    if (!collection) return true;
-    return inCollection(collection, { tags: [...entry.tags, ...(item.overrides?.tags ?? [])], consoles: entry.consoles ?? [], installed });
+    if (shelf === "updates") return Boolean(item && updates.includes(item));
+    if (!collection) return Boolean(item);
+    return inCollection(collection, facts(entry, item), makers);
   };
-  const items = shown
-    .flatMap((i) => (catalog[i.id] ? [{ item: i, entry: withOverrides(catalog[i.id], i.overrides) }] : []))
+  const filtering = Object.values(filters).some(Boolean);
+  const items = candidates
     .filter(({ entry, item }) => {
-      const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item.overrides?.tags ?? [])].join(" ").toLowerCase();
-      return words.every((w) => text.includes(w)) && onShelf(item, entry);
+      const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
+      return words.every((w) => text.includes(w)) && onShelf(entry, item) && (!filtering || matches(toShelf(filters), facts(entry, item), makers));
     })
-    .sort((a, b) => order(a.item) - order(b.item) || a.entry.projectName.localeCompare(b.entry.projectName))
+    .sort((a, b) => order(a.entry) - order(b.entry) || a.entry.projectName.localeCompare(b.entry.projectName))
     .map(({ entry }) => entry);
   // Removed from the library (here, elsewhere or by signing out) but its files are still here.
   const loose = Object.keys(installs).flatMap((id) => (catalog[id] && !all.some((i) => i.id === id) ? [catalog[id]] : []));
-  if (!all.length && !loose.length)
+  const dialogs = (
+    <>
+      {editing && (
+        <ShelfEditor
+          collection={editing}
+          library={candidates.map((c) => c.entry)}
+          onClose={(saved) => {
+            setEditing(null);
+            if (!saved) return;
+            setShelf(saved.removed ? "all" : saved.key);
+            // Its filters are the shelf now.
+            setFilters({});
+          }}
+        />
+      )}
+      {sharing && <ShareDialog collection={sharing} entries={sharedEntries(sharing)} onSignIn={onSignIn} onClose={() => setSharing(null)} />}
+      {following && (
+        <FollowDialog
+          onClose={(key) => {
+            setFollowing(false);
+            if (key) setShelf(key);
+          }}
+        />
+      )}
+    </>
+  );
+  /** The catalog apps on a shelf now, which sharing it puts on the list. */
+  function sharedEntries(c: Collection) {
+    const ids = new Set(c.apps ?? []);
+    return [
+      ...all.flatMap((i) => (catalog[i.id] && (ids.has(i.id) || (hasFilters(c) && matches(c, facts(catalog[i.id], i), makers))) ? [catalog[i.id]] : [])),
+      ...[...ids].flatMap((id) => (!inLibrary.has(id) && catalog[id] ? [catalog[id]] : [])),
+    ];
+  }
+  if (!all.length && !loose.length && !collections.length)
     return (
       <div className="empty">
         <Library size={40} strokeWidth={1.2} />
@@ -76,7 +176,11 @@ export function LibraryPage({
           <button onClick={onAdd}>
             <Plus size={15} /> Add an app
           </button>
+          <button onClick={() => setFollowing(true)}>
+            <ListPlus size={15} /> Add a shared list
+          </button>
         </div>
+        {dialogs}
       </div>
     );
   const shelves: [Shelf, string][] = [
@@ -87,24 +191,85 @@ export function LibraryPage({
     ...(hidden.size || shelf === "hidden" ? [["hidden", `Hidden (${hidden.size})`] as [Shelf, string]] : []),
     ...collections.map((c): [Shelf, string] => [c.key, c.name]),
   ];
-  const grid = (entries: Entry[]) => (
-    <div className="catalog-grid">
-      {entries.map((entry) => (
-        <EntryCard key={entry.id} entry={entry} consoleNames={consoleNames} onOpen={() => onOpen(entry)} action={action(entry)} />
-      ))}
-    </div>
-  );
+  const own = collections.filter((c) => !c.follows);
+  const card = (entry: Entry) => {
+    const item = inLibrary.get(entry.id);
+    return (
+      <EntryCard
+        key={entry.id}
+        entry={entry}
+        consoleNames={consoleNames}
+        onOpen={() => onOpen(entry)}
+        badge={collection?.follows && item ? "In library" : undefined}
+        action={
+          item ? (
+            <div className="card-actions">
+              {action(entry)}
+              <ShelfPicker id={entry.id} shelves={own} />
+            </div>
+          ) : (
+            action(entry)
+          )
+        }
+      />
+    );
+  };
+  const grid = (entries: Entry[]) => <div className="catalog-grid">{entries.map(card)}</div>;
+  const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   return (
     <>
       <nav className="shelves" aria-label="Shelves">
         {shelves.map(([key, name]) => (
-          <button key={key} className={shelf === key ? "active" : ""} aria-pressed={shelf === key} onClick={() => setShelf(key)}>
-            {name}
-          </button>
+          <span key={key} className="shelf-tab">
+            <button className={shelf === key ? "active" : ""} aria-pressed={shelf === key} onClick={() => setShelf(key)}>
+              {name}
+            </button>
+            {/* The open shelf's menu: edit, share or delete it; a followed one is copied or removed. */}
+            {shelf === key && collection && (
+              <Menu
+                label={`${collection.name} options`}
+                icon={<MoreHorizontal size={15} />}
+                items={collection.follows
+                  ? [
+                      [
+                        "Make a copy",
+                        () => {
+                          const entries = (list?.items ?? []).flatMap((i) => (i.kind === "entry" ? [i.entry] : []));
+                          cache(entries);
+                          const copy: Collection = { key: newKey(), name: `${collection.name} (copy)`.slice(0, 60), tags: [], consoles: [], apps: entries.map((e) => e.id), order: collections.length };
+                          saveCollection(copy);
+                          setShelf(copy.key);
+                        },
+                      ],
+                      ["Remove", () => (saveCollection({ ...collection, removed: true }), setShelf("all"))],
+                    ]
+                  : [
+                      ["Edit", () => setEditing(collection)],
+                      [collection.shared ? "Shared list" : "Share", () => setSharing(collection)],
+                      ["Delete", () => (saveCollection({ ...collection, removed: true }), setShelf("all"))],
+                    ]}
+              />
+            )}
+          </span>
         ))}
-        <button aria-label="New collection" title="New collection" onClick={() => setEditing({ key: `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name: "", tags: [], consoles: [], order: collections.length })}>
-          <Plus size={15} />
-        </button>
+        <Menu
+          label="Add a shelf"
+          icon={<Plus size={15} />}
+          items={[
+            ["New shelf", () => setEditing({ key: newKey(), name: "", tags: [], consoles: [], order: collections.length })],
+            ["Add a shared list", () => setFollowing(true)],
+          ]}
+        />
+        {collections.length > 6 && (
+          <select aria-label="All shelves" value={collection ? shelf : ""} onChange={(e) => e.target.value && setShelf(e.target.value)}>
+            <option value="">More…</option>
+            {collections.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
       </nav>
       <div className="toolbar">
         <label className="search">
@@ -116,6 +281,9 @@ export function LibraryPage({
           <option value="added">Recently added</option>
           <option value="name">Name</option>
         </select>
+        <button className={filtersOpen ? "on" : ""} aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
+          <Filter size={14} /> Filters{filtering ? ` · ${Object.values(filters).filter(Boolean).length}` : ""}
+        </button>
         <label className="toggle">
           <input type="checkbox" checked={Boolean(settings.byConsole)} onChange={(e) => setSettings({ ...settings, byConsole: e.target.checked })} />
           Group by console
@@ -123,18 +291,46 @@ export function LibraryPage({
         <button onClick={onAdd}>
           <Plus size={15} /> Add an app
         </button>
-        {collection && (
-          <button onClick={() => setEditing(collection)}>
-            <Pencil size={14} /> Edit collection
-          </button>
-        )}
         {updates.length > 0 && (
           <button className="primary" onClick={() => updates.forEach((i) => get(catalog[i.id]))}>
             Update all ({updates.length})
           </button>
         )}
       </div>
-      {items.length === 0 && <p className="empty">{collection && !search ? "No apps in this collection yet." : "Nothing here."}</p>}
+      {filtersOpen && (
+        <div className="toolbar filters" aria-label="Library filters">
+          <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} />
+        </div>
+      )}
+      {filtering && (
+        <div className="filter-chips">
+          {(Object.entries(filters) as [keyof Filters, string | undefined][]).map(
+            ([key, value]) =>
+              value && (
+                <button key={key} className="chip on" aria-label={`Remove filter ${label(key, value, consoleNames)}`} onClick={() => setFilters({ ...filters, [key]: undefined })}>
+                  {label(key, value, consoleNames)} <X size={12} />
+                </button>
+              ),
+          )}
+          <button
+            className="primary save-shelf"
+            onClick={() => setEditing({ key: newKey(), name: "", order: collections.length, ...toShelf(filters) })}
+          >
+            Save as shelf
+          </button>
+        </div>
+      )}
+      {collection?.follows && list && (
+        <p className="muted shelf-note">
+          A list by {list.owner.name}, kept up to date with theirs.{list.unavailable ? ` ${list.unavailable} of its apps left the catalog.` : ""}
+        </p>
+      )}
+      {collection?.follows && list === null && <p className="muted shelf-note">This list isn't shared any more.</p>}
+      {items.length === 0 && (
+        <p className="empty">
+          {collection && !search && !filtering ? (collection.follows ? "Nothing on this list." : "No apps on this shelf yet. Add some from each app's menu, or edit its filters.") : "Nothing here."}
+        </p>
+      )}
       {settings.byConsole
         ? sections(items, consoleNames).map(([name, entries]) => (
             <section key={name} className="console-section">
@@ -166,15 +362,160 @@ export function LibraryPage({
           </div>
         </section>
       )}
-      {editing && (
-        <CollectionEditor
-          collection={editing}
-          onClose={(saved) => {
-            setEditing(null);
-            if (saved) setShelf(saved.removed ? "all" : saved.key);
-          }}
-        />
+      {dialogs}
+    </>
+  );
+}
+
+/** How a filter reads on its chip. */
+function label(key: keyof Filters, value: string, consoleNames: Record<string, string>) {
+  if (key === "console") return value.startsWith("maker:") ? `All ${value.slice(6) === "OtherPlatforms" ? "other platforms" : value.slice(6)}` : (consoleNames[value] ?? value.toUpperCase());
+  if (key === "projectType") return PROJECT_TYPES[value] ?? value;
+  if (key === "ai") return AI[value];
+  if (key === "installed") return value === "yes" ? "Installed" : "Not installed";
+  return tagLabel(value);
+}
+
+/** The catalog's filters, over the apps at hand: their consoles, kinds and tags. */
+function FilterFields({ value, set, entries }: { value: Filters; set: (key: keyof Filters) => (e: { target: { value: string } }) => void; entries: Entry[] }) {
+  const { consoles, consoleNames } = useLauncher();
+  const here = new Set(entries.flatMap((e) => e.consoles ?? []));
+  const present = consoles.filter((c) => here.has(c.id) || value.console === c.id);
+  const brands = [...new Set(present.map((c) => c.brand))];
+  const tags = [...new Set([...entries.flatMap((e) => e.tags), ...(value.tag ? [value.tag] : [])])].sort();
+  return (
+    <>
+      <select aria-label="Console" value={value.console ?? ""} onChange={set("console")}>
+        <option value="">All consoles</option>
+        {brands.map((brand) => (
+          <optgroup key={brand} label={brand === "OtherPlatforms" ? "Other platforms" : brand}>
+            <option value={`maker:${brand}`}>{brand === "OtherPlatforms" ? "All other platforms" : `All ${brand}`}</option>
+            {present
+              .filter((c) => c.brand === brand)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {consoleNames[c.id] ?? c.name}
+                </option>
+              ))}
+          </optgroup>
+        ))}
+      </select>
+      <select aria-label="Project type" value={value.projectType ?? ""} onChange={set("projectType")}>
+        <option value="">All project types</option>
+        {Object.entries(PROJECT_TYPES).map(([id, name]) => (
+          <option key={id} value={id}>
+            {name}
+          </option>
+        ))}
+      </select>
+      <select aria-label="AI use" value={value.ai ?? ""} onChange={set("ai")}>
+        <option value="">Show all apps</option>
+        <option value="no-generated">Hide mostly AI-generated apps</option>
+        <option value="no-ai">Hide apps with any AI use</option>
+      </select>
+      <select aria-label="Tag" value={value.tag ?? ""} onChange={set("tag")}>
+        <option value="">All tags</option>
+        {tags.map((t) => (
+          <option key={t} value={t}>
+            {tagLabel(t)}
+          </option>
+        ))}
+      </select>
+      <select aria-label="Installed" value={value.installed ?? ""} onChange={set("installed")}>
+        <option value="">Installed or not</option>
+        <option value="yes">Installed only</option>
+        <option value="no">Not installed only</option>
+      </select>
+    </>
+  );
+}
+
+/** A small menu of actions behind one button; closes on a choice, outside, or Escape. */
+function Menu({ label, icon, items }: { label: string; icon: ReactNode; items: [string, () => void][] }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const key = (e: KeyboardEvent) => e.key === "Escape" && (e.stopPropagation(), setOpen(false));
+    window.addEventListener("mousedown", away);
+    window.addEventListener("keydown", key, true);
+    return () => {
+      window.removeEventListener("mousedown", away);
+      window.removeEventListener("keydown", key, true);
+    };
+  }, [open]);
+  return (
+    <span className="menu-box" ref={box}>
+      <button className="menu-button" aria-label={label} title={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {icon}
+      </button>
+      {open && (
+        <div className="menu" role="menu" aria-label={label}>
+          {items.map(([text, act]) => (
+            <button key={text} role="menuitem" onClick={() => (setOpen(false), act())}>
+              {text}
+            </button>
+          ))}
+        </div>
       )}
+    </span>
+  );
+}
+
+/** On a library card: which of the player's shelves the app is on, and a new one. */
+function ShelfPicker({ id, shelves }: { id: string; shelves: Collection[] }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("mousedown", away);
+    return () => window.removeEventListener("mousedown", away);
+  }, [open]);
+  return (
+    <span className="menu-box" ref={box}>
+      <button className="menu-button" aria-label="Add to shelf" title="Add to shelf" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <ListPlus size={15} />
+      </button>
+      {open && (
+        <div className="menu" role="group" aria-label="Shelves for this app">
+          <ShelfChoices id={id} shelves={shelves} />
+        </div>
+      )}
+    </span>
+  );
+}
+
+/** Puts an app on the player's shelves, or takes it off; a new shelf starts with it. Also on the app's page. */
+export function ShelfChoices({ id, shelves }: { id: string; shelves: Collection[] }) {
+  const { saveCollection, collections } = useLauncher();
+  const [name, setName] = useState("");
+  const on = (c: Collection) => Boolean(c.apps?.includes(id));
+  return (
+    <>
+      {shelves.map((c) => (
+        <button
+          key={c.key}
+          type="button"
+          className={`chip${on(c) ? " on" : ""}`}
+          aria-pressed={on(c)}
+          onClick={() => saveCollection({ ...c, apps: on(c) ? c.apps!.filter((a) => a !== id) : [...(c.apps ?? []), id] })}
+        >
+          {c.name}
+        </button>
+      ))}
+      <form
+        className="new-shelf"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!name.trim()) return;
+          saveCollection({ key: newKey(), name: name.trim().slice(0, 60), tags: [], consoles: [], apps: [id], order: collections.length });
+          setName("");
+        }}
+      >
+        <input aria-label="New shelf" placeholder="New shelf…" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
+      </form>
     </>
   );
 }
@@ -190,83 +531,204 @@ function sections(entries: Entry[], names: Record<string, string>): [string, Ent
   return [...groups].sort(([a], [b]) => (a === "Other" ? 1 : b === "Other" ? -1 : a.localeCompare(b)));
 }
 
-/** Names a collection and says which apps it shows. With nothing chosen it's hand-picked. */
-function CollectionEditor({ collection, onClose }: { collection: Collection; onClose: (saved?: Collection) => void }) {
-  const { saveCollection, library, catalog, consoleNames } = useLauncher();
-  const [name, setName] = useState(collection.name);
-  const [tags, setTags] = useState(collection.tags.join(", "));
-  const [consoles, setConsoles] = useState(collection.consoles);
-  const [installed, setInstalled] = useState<"" | "yes" | "no">(collection.installed ?? "");
-  const isNew = !collection.name;
+/** A dialog: closes on Escape or outside. */
+function Dialog({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-  // Consoles of the apps in the library, and any already chosen.
-  const owned = [...new Set([...library.flatMap((i) => catalog[i.id]?.consoles ?? []), ...consoles])];
-  const save = (removed?: boolean) => {
-    const parsed = tags.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 20);
-    const nothing = !parsed.length && !consoles.length && !installed;
-    const saved: Collection = {
-      ...collection,
-      name: name.trim().slice(0, 60),
-      // Hand-picked: its own tag, put on apps from their page.
-      tags: nothing ? [name.trim().toLowerCase().slice(0, 50)] : parsed,
-      consoles,
-      installed: installed || undefined,
-      removed: removed || undefined,
-    };
-    saveCollection(saved);
-    onClose(saved);
+  return (
+    <div className="overlay" onClick={onClose}>
+      <section className="detail choose" role="dialog" aria-label={label} onClick={(e) => e.stopPropagation()}>
+        {children}
+      </section>
+    </div>
+  );
+}
+
+/** Names a shelf and sets its filters. Without filters it holds only the apps picked for it. */
+function ShelfEditor({ collection, library, onClose }: { collection: Collection; library: Entry[]; onClose: (saved?: Collection) => void }) {
+  const { saveCollection } = useLauncher();
+  const [name, setName] = useState(collection.name);
+  const [filters, setFilters] = useState<Filters>(fromShelf(collection));
+  const isNew = !collection.name;
+  const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
+  const picked = collection.apps?.length ?? 0;
+  return (
+    <Dialog label={isNew ? "New shelf" : "Edit shelf"} onClose={() => onClose()}>
+      <form
+        className="detail-body"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!name.trim()) return;
+          const saved: Collection = { ...collection, name: name.trim().slice(0, 60), ...toShelf(filters) };
+          saveCollection(saved);
+          onClose(saved);
+        }}
+      >
+        <h2>{isNew ? "New shelf" : "Edit shelf"}</h2>
+        <input autoFocus required aria-label="Shelf name" placeholder="Name, like Favourites" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
+        <p className="muted">
+          {picked ? `${picked} ${picked === 1 ? "app" : "apps"} picked for it. ` : ""}Add apps from each app's menu. It also shows apps that match these filters:
+        </p>
+        <div className="toolbar filters">
+          <FilterFields value={filters} set={set} entries={library} />
+        </div>
+        <div className="row">
+          <button className="primary">Save</button>
+          <button type="button" onClick={() => onClose()}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+/** Shares a shelf as a list anyone with the link can see and follow; again, it updates the list. */
+function ShareDialog({ collection: opened, entries, onSignIn, onClose }: { collection: Collection; entries: Entry[]; onSignIn: () => void; onClose: () => void }) {
+  const { saveCollection, collections } = useLauncher();
+  const { user, shareList, unshareList } = useAccount();
+  const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  // The shelf as it is now (signing in or syncing changes it), and the list's slug once shared.
+  const collection = collections.find((c) => c.key === opened.key) ?? opened;
+  const [sharedAs, setSharedAs] = useState<string | undefined>();
+  const slug = sharedAs ?? collection.shared?.slug;
+  // Only catalog apps: those the player added themselves aren't shared.
+  const shareable = entries.filter((e) => !isOwn(e.id));
+  const left = entries.length - shareable.length;
+  const share = () => {
+    setBusy(true);
+    setMessage(null);
+    shareList({ collectionKey: collection.key, name: collection.name, ...(description.trim() ? { description: description.trim() } : {}), apps: shareable.map((e) => ({ entryId: e.id })) })
+      .then(
+        (next) => (setSharedAs(next), saveCollection({ ...collection, shared: { slug: next } }), setMessage(next === slug ? "The shared list is up to date." : null)),
+        (e) => setMessage(e instanceof Error ? e.message : String(e)),
+      )
+      .finally(() => setBusy(false));
   };
   return (
-    <div className="overlay" onClick={() => onClose()}>
-      <section className="detail choose" role="dialog" aria-label={isNew ? "New collection" : "Edit collection"} onClick={(e) => e.stopPropagation()}>
+    <Dialog label="Share a shelf" onClose={onClose}>
+      <div className="detail-body share">
+        <h2>{slug ? `${collection.name} is shared` : `Share ${collection.name}`}</h2>
+        {!user ? (
+          <>
+            <p className="muted">Sign in to share a shelf as a list others can add to their library.</p>
+            <button className="primary" onClick={() => (onClose(), onSignIn())}>
+              Sign in
+            </button>
+          </>
+        ) : slug ? (
+          <>
+            <p className="muted">Anyone with the link can see it on quiverlauncher.com and add it to their library. Changes you make here reach them when you update it.</p>
+            <input readOnly aria-label="Shared list link" value={listUrl(slug)} onFocus={(e) => e.target.select()} />
+            <div className="row">
+              <button className="primary" onClick={() => void navigator.clipboard?.writeText(listUrl(slug)).then(() => setMessage("Link copied."))}>
+                Copy link
+              </button>
+              <button disabled={busy} onClick={share}>
+                Update shared list
+              </button>
+              <button
+                className="danger"
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  unshareList(slug).then(
+                    () => (setSharedAs(undefined), saveCollection({ ...collection, shared: undefined }), onClose()),
+                    () => (setMessage("Couldn't stop sharing it. Try again."), setBusy(false)),
+                  );
+                }}
+              >
+                Stop sharing
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="muted">
+              Puts its {shareable.length} {shareable.length === 1 ? "app" : "apps"} on a page anyone with the link can see, and add to their library.
+              {left ? ` ${left} you added yourself ${left === 1 ? "isn't" : "aren't"} shared.` : ""}
+            </p>
+            <textarea aria-label="Description" maxLength={500} placeholder="What's it for? (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <button className="primary" disabled={busy || !shareable.length} onClick={share}>
+              Share
+            </button>
+          </>
+        )}
+        {message && <p className="muted" role="status">{message}</p>}
+        <button onClick={onClose}>Done</button>
+      </div>
+    </Dialog>
+  );
+}
+
+/** Adds a list someone shared, from its link, as a shelf that follows theirs. */
+function FollowDialog({ onClose }: { onClose: (key?: string) => void }) {
+  const { client, collections, saveCollection } = useLauncher();
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [list, setList] = useState<SharedList | null>(null);
+  if (!list)
+    return (
+      <Dialog label="Add a shared list" onClose={() => onClose()}>
         <form
           className="detail-body"
           onSubmit={(e) => {
             e.preventDefault();
-            if (name.trim()) save();
+            const slug = listSlug(input);
+            if (!slug) return setError("Paste the list's link, like quiverlauncher.com/lists/…");
+            setBusy(true);
+            setError(null);
+            client.sharedList(slug).then(
+              (l) => (setBusy(false), l ? setList(l) : setError("That list isn't shared any more, or the link is wrong.")),
+              () => (setBusy(false), setError("Couldn't reach quiverlauncher.com. Check your connection and try again.")),
+            );
           }}
         >
-          <h2>{isNew ? "New collection" : "Edit collection"}</h2>
-          <input autoFocus required aria-label="Collection name" placeholder="Name, like Favourites" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
-          <p className="muted">Leave the rest empty to pick its apps yourself, from each app's page. Or show apps that match:</p>
-          <input aria-label="Tags" placeholder="Tags, separated by commas" value={tags} onChange={(e) => setTags(e.target.value)} />
-          {owned.length > 0 && (
-            <div className="chips" aria-label="Consoles">
-              {owned.map((id) => (
-                <button
-                  type="button"
-                  key={id}
-                  className={`chip${consoles.includes(id) ? " on" : ""}`}
-                  aria-pressed={consoles.includes(id)}
-                  onClick={() => setConsoles(consoles.includes(id) ? consoles.filter((c) => c !== id) : [...consoles, id])}
-                >
-                  {consoleNames[id] ?? id.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          )}
-          <select aria-label="Installed" value={installed} onChange={(e) => setInstalled(e.target.value as "" | "yes" | "no")}>
-            <option value="">Installed or not</option>
-            <option value="yes">Installed only</option>
-            <option value="no">Not installed only</option>
-          </select>
-          <div className="row">
-            <button className="primary">Save</button>
-            {!isNew && (
-              <button type="button" className="danger" onClick={() => save(true)}>
-                Delete collection
-              </button>
-            )}
-            <button type="button" onClick={() => onClose()}>
-              Cancel
-            </button>
-          </div>
+          <h2>Add a shared list</h2>
+          <p className="muted">Someone shared a list of apps? Paste its link to add it as a shelf. It stays up to date with theirs.</p>
+          <input autoFocus aria-label="Shared list link" placeholder="https://quiverlauncher.com/lists/…" value={input} onChange={(e) => setInput(e.target.value)} />
+          {error && <p className="job-error">{error}</p>}
+          <button className="primary" disabled={busy || !input.trim()}>
+            {busy ? "Looking it up…" : "Look it up"}
+          </button>
         </form>
-      </section>
-    </div>
+      </Dialog>
+    );
+  const apps = list.items.flatMap((i) => (i.kind === "entry" ? [i.entry] : []));
+  const existing = collections.find((c) => c.follows === list.slug);
+  return (
+    <Dialog label="Add a shared list" onClose={() => onClose()}>
+      <div className="detail-body">
+        <h2>{list.name}</h2>
+        <p className="muted">
+          A list by {list.owner.name} · {apps.length} {apps.length === 1 ? "app" : "apps"}
+        </p>
+        {list.description && <p>{list.description}</p>}
+        <ul className="list-preview">
+          {apps.slice(0, 8).map((e) => (
+            <li key={e.id}>{e.projectName}</li>
+          ))}
+          {apps.length > 8 && <li className="muted">and {apps.length - 8} more</li>}
+        </ul>
+        <p className="muted">Apps you don't have yet show with Get; nothing downloads until you press it.</p>
+        <button
+          className="primary"
+          onClick={() => {
+            if (existing) return onClose(existing.key);
+            const shelf: Collection = { key: newKey(), name: list.name.slice(0, 60), tags: [], consoles: [], follows: list.slug, order: collections.length };
+            saveCollection(shelf);
+            onClose(shelf.key);
+          }}
+        >
+          {existing ? "Open it" : "Add to my library"}
+        </button>
+      </div>
+    </Dialog>
   );
 }

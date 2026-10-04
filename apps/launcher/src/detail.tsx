@@ -10,6 +10,7 @@ import { Markdown, OS_NAMES, fullDate, relativeTime } from "@quiver/ui";
 import { useLauncher } from "./store";
 import { native } from "./native";
 import { isCustom, isLocal } from "./custom";
+import { ShelfChoices } from "./library";
 
 export type Source = { provider: "github" | "gitlab"; repository: string; url: string };
 
@@ -421,26 +422,19 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
   );
 }
 
-/** The player's own tags on an app, and the hand-picked collections it's in. */
+/** The player's shelves the app is on (or a new one), and their own tags on it. */
 export function Tags({ id }: { id: string }) {
   const { library, collections, setTags } = useLauncher();
   const tags = library.find((i) => i.id === id)?.overrides?.tags ?? [];
   const [input, setInput] = useState("");
   const has = (tag: string) => tags.some((t) => t.toLowerCase() === tag.toLowerCase());
   const toggle = (tag: string) => setTags(id, has(tag) ? tags.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...tags, tag]);
-  const picked = collections.filter((c) => c.tags.length === 1 && !c.consoles.length && !c.installed);
   return (
-    <section className="tags" aria-label="Collections and tags">
-      {picked.length > 0 && (
-        <div className="chips">
-          <span className="muted">Collections</span>
-          {picked.map((c) => (
-            <button key={c.key} className={`chip${has(c.tags[0]) ? " on" : ""}`} aria-pressed={has(c.tags[0])} onClick={() => toggle(c.tags[0])}>
-              {c.name}
-            </button>
-          ))}
-        </div>
-      )}
+    <section className="tags" aria-label="Shelves and tags">
+      <div className="chips">
+        <span className="muted">Shelves</span>
+        <ShelfChoices id={id} shelves={collections.filter((c) => !c.follows)} />
+      </div>
       <form
         className="chips"
         onSubmit={(e) => {

@@ -47,3 +47,16 @@ test("a collection matches every part it sets", () => {
   expect(inCollection({ tags: ["fav"], consoles: ["snes"] }, app)).toBe(false);
   expect(inCollection({ tags: [], consoles: [], installed: "no" }, app)).toBe(false);
 });
+
+test("a shelf holds its picked apps, and with filters also what matches them, as the catalog filters", () => {
+  const app = { id: "a", tags: [], consoles: ["n64"], installed: false, projectType: "port", aiLevel: "generated" };
+  const makers = { n64: "Nintendo" };
+  // Only picked apps, without filters.
+  expect(inCollection({ tags: [], consoles: [], apps: ["a"] }, app)).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], apps: ["b"] }, app)).toBe(false);
+  // A maker's consoles, project types and AI use.
+  expect(inCollection({ tags: [], consoles: ["maker:Nintendo"] }, app, makers)).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], projectTypes: ["tool"] }, app)).toBe(false);
+  expect(inCollection({ tags: [], consoles: [], ai: "no-generated" }, app)).toBe(false);
+  expect(inCollection({ tags: [], consoles: [], ai: "no-ai" }, { ...app, aiLevel: "none" })).toBe(true);
+});

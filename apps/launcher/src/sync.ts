@@ -98,9 +98,12 @@ export function changesFrom(local: LibraryItem[], account: string): Change[] {
 }
 
 /**
- * A saved library filter (Library shelves). It shows apps that match every
- * part it sets: any of its tags (the player's or the catalog's), any of its
- * consoles, and installed or not. A hand-picked collection is one tag.
+ * A shelf in the library (a collection, on the site). It shows the apps
+ * picked for it by hand, and the apps that match every filter it sets: any of
+ * its tags (the player's or the catalog's), consoles (or a maker's, as
+ * "maker:Nintendo") and project types, its AI use, installed or not. Without
+ * filters it's just the picked apps. A followed shelf mirrors a list someone
+ * shared, and its apps come from the site.
  */
 export type Collection = {
   /** Made here, kept once it syncs. */
@@ -109,6 +112,14 @@ export type Collection = {
   tags: string[];
   consoles: string[];
   installed?: "yes" | "no";
+  projectTypes?: string[];
+  ai?: "no-generated" | "no-ai";
+  /** Apps picked by hand, by library key. */
+  apps?: string[];
+  /** The shared list this shelf follows, by its slug. */
+  follows?: string;
+  /** Shared as a list (the site says so; set here as soon as it's shared). */
+  shared?: { slug: string };
   order: number;
   removed?: boolean;
   /** Changed here and not yet saved to the account. */
@@ -132,12 +143,39 @@ export function applyServerCollections(local: Collection[], server: ServerCollec
   return [...mine.values()];
 }
 
-/** Whether an app belongs on a collection's shelf. */
-export function inCollection(c: Pick<Collection, "tags" | "consoles" | "installed">, app: { tags: string[]; consoles: string[]; installed: boolean }) {
+type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai">;
+/** What a shelf or the library filters ask of an app. */
+export type AppFacts = {
+  id?: string;
+  tags: string[];
+  consoles: string[];
+  installed: boolean;
+  projectType?: string;
+  aiLevel?: string;
+};
+
+/** Whether any filter is set; without one, a shelf is only its picked apps. */
+export const hasFilters = (c: Filters) =>
+  Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai);
+
+/**
+ * Whether an app matches every filter that's set. `makers` gives each console's
+ * maker, for "maker:Nintendo". AI use as the site filters it: "no-generated"
+ * hides mostly AI-made apps, "no-ai" any AI use.
+ */
+export function matches(c: Filters, app: AppFacts, makers: Record<string, string> = {}) {
   const tags = new Set(app.tags.map((t) => t.toLowerCase()));
+  const consoleOk = (want: string) => (want.startsWith("maker:") ? app.consoles.some((id) => makers[id] === want.slice(6)) : app.consoles.includes(want));
   return (
     (!c.tags.length || c.tags.some((t) => tags.has(t.toLowerCase()))) &&
-    (!c.consoles.length || c.consoles.some((t) => app.consoles.includes(t))) &&
-    (!c.installed || (c.installed === "yes") === app.installed)
+    (!c.consoles.length || c.consoles.some(consoleOk)) &&
+    (!c.installed || (c.installed === "yes") === app.installed) &&
+    (!c.projectTypes?.length || c.projectTypes.includes(app.projectType ?? "")) &&
+    (!c.ai || (c.ai === "no-ai" ? !app.aiLevel || app.aiLevel === "none" : app.aiLevel !== "generated"))
   );
+}
+
+/** Whether an app is on a shelf: picked for it, or matching its filters. */
+export function inCollection(c: Filters & Pick<Collection, "apps">, app: AppFacts, makers: Record<string, string> = {}) {
+  return Boolean(app.id && c.apps?.includes(app.id)) || (hasFilters(c) && matches(c, app, makers));
 }

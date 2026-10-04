@@ -43,7 +43,16 @@ export type Account = {
   review: (review: ReviewInput) => Promise<void>;
   /** The player's own feedback on an app, null signed out or when they haven't given any. */
   ownReview: (entryId: string) => Promise<Feedback | null>;
+  /** Shares a shelf as a public list (again: updates it); resolves to its slug. Rejects with a message to show. */
+  shareList: (list: ShareInput) => Promise<string>;
+  /** Stops sharing a list. */
+  unshareList: (slug: string) => Promise<void>;
 };
+
+/** A shelf to share: the catalog apps on it, by entry id. */
+export type ShareInput = { collectionKey: string; name: string; description?: string; apps: { entryId: string }[] };
+
+const SHARE_FAILED = "Couldn't share this shelf. Try again.";
 
 const REVIEW_FAILED = "Couldn't save your feedback. Try again.";
 
@@ -76,6 +85,8 @@ const fns = {
   saveCollections: ref("mutation", "libraryCollections:save"),
   review: ref("mutation", "reviews:save"),
   ownReview: ref("query", "reviews:own"),
+  shareList: ref("mutation", "sharedLists:share"),
+  unshareList: ref("mutation", "sharedLists:unshare"),
   github: [ref("mutation", "auth:startSignInGithub"), ref("mutation", "auth:completeSignInGithub")],
   discord: [ref("mutation", "auth:startSignInDiscord"), ref("mutation", "auth:completeSignInDiscord")],
 };
@@ -167,13 +178,25 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
       }
     },
     ownReview: (entryId) => (me ? (client.query(fns.ownReview, { entryId }) as Promise<Feedback | null>) : Promise.resolve(null)),
+    async shareList(list) {
+      try {
+        return ((await client.mutation(fns.shareList, list)) as { slug: string }).slug;
+      } catch (e) {
+        throw new Error(e instanceof ConvexError && typeof e.data === "string" ? e.data : SHARE_FAILED);
+      }
+    },
+    unshareList: async (slug) => void (await client.mutation(fns.unshareList, { slug })),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }
 
-/** What the site stores of a collection. */
-const toServer = ({ key, name, tags, consoles, installed, order, removed }: Collection) => ({
+/** What the site stores of a collection; apps on this computer only never leave it. null clears a field there. */
+const toServer = ({ key, name, tags, consoles, installed, order, removed, apps, projectTypes, ai, follows }: Collection) => ({
   key, name, tags, consoles, ...(installed ? { installed } : {}), order, removed: Boolean(removed),
+  apps: (apps ?? []).filter((id) => !id.startsWith("local:")),
+  projectTypes: projectTypes?.length ? projectTypes : null,
+  ai: ai ?? null,
+  follows: follows ?? null,
 });
 
 /**
@@ -288,6 +311,16 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? REVIEW_FAILED);
     },
     ownReview: (entryId) => (token ? call("/reviews/own", { entryId }) : Promise.resolve(null)),
+    async shareList(list) {
+      const response = await fetch(base + "/lists/share", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(list),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? SHARE_FAILED);
+      return (await response.json()).slug;
+    },
+    unshareList: (slug) => call("/lists/unshare", { slug }),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }

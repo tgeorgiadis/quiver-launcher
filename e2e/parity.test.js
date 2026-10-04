@@ -97,10 +97,11 @@ test("library shelves: installed or not, a hand-picked collection, and sections 
   assert.deepEqual(await shown(), ["test-port"]);
   await shelf("Not installed");
   assert.deepEqual(await shown(), ["tampered-port"]);
-  await (await app.$("button[aria-label='New collection']")).click();
-  await (await app.$("input[aria-label='Collection name']")).setValue("Favourites");
+  await (await app.$("button[aria-label='Add a shelf']")).click();
+  await (await (await app.$("[role=menu]")).$("button=New shelf")).click();
+  await (await app.$("input[aria-label='Shelf name']")).setValue("Favourites");
   await (await (await dialog()).$("button=Save")).click();
-  await (await app.$("p=No apps in this collection yet.")).waitForDisplayed();
+  await (await app.$("p*=No apps on this shelf yet.")).waitForDisplayed();
   await shelf("All");
   await open("test-port");
   await (await (await page()).$("button.chip=Favourites")).click();
@@ -112,7 +113,7 @@ test("library shelves: installed or not, a hand-picked collection, and sections 
   await (await app.$("h2=Nintendo 64")).waitForDisplayed();
   await (await app.$("h2=Super Nintendo Entertainment System")).waitForDisplayed();
   const saved = JSON.parse(readFileSync(join(s.data, "collections.json"), "utf8"));
-  assert.deepEqual(saved.map((c) => [c.name, c.tags]), [["Favourites", ["favourites"]]]);
+  assert.deepEqual(saved.map((c) => [c.name, c.apps]), [["Favourites", ["entry_test-port"]]]);
 });
 
 test("settings show controllers and rebind keys and buttons", async () => {

@@ -7,7 +7,7 @@
  */
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
-import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type Feedback, type GameDetail, type GameMatch, type Page, type Readme, type Release } from "@quiver/api";
+import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type Feedback, type GameDetail, type SharedList, type GameMatch, type Page, type Readme, type Release } from "@quiver/api";
 
 type ConvexPage<T> = { page: T[]; continueCursor: string; isDone: boolean };
 type PageArgs = { paginationOpts: { numItems: number; cursor: string | null } };
@@ -22,6 +22,7 @@ const refs = {
   matchingGames: query<{ search: string }, GameMatch[]>("catalog:matchingGames"),
   game: query<{ slug: string }, GameDetail | null>("catalog:game"),
   reviews: query<PageArgs & { slug: string }, ConvexPage<Feedback>>("reviews:list"),
+  sharedList: query<{ slug: string }, SharedList | null>("sharedLists:get"),
 };
 
 const toPage = <T,>(r: ConvexPage<T>): Page<T> => ({ items: r.page, nextCursor: r.isDone ? null : r.continueCursor, isDone: r.isDone });
@@ -67,6 +68,7 @@ export function createConvexClient(url: string, rest: Client, fetch?: typeof glo
       return text.length < 2 ? Promise.resolve([]) : convex.query(refs.matchingGames, { search: text });
     },
     game: (slug) => convex.query(refs.game, { slug }),
+    sharedList: (slug) => convex.query(refs.sharedList, { slug }),
   };
 }
 
