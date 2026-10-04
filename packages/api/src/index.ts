@@ -97,10 +97,41 @@ export type Release = {
 
 export type Withdrawn = { version: string; reason: string; at: number };
 
+/** How much AI wrote an app, and how the site knows. */
+export type AiUse = {
+  level: "none" | "assisted" | "generated";
+  source: "developer" | "readme" | "signals" | "admin";
+  developerAnswer?: "none" | "assisted" | "generated" | "unknown" | "credited";
+  answeredBy?: string;
+  answerUrl?: string;
+  evidence: { kind: string; detail: string; url?: string }[];
+  checkedAt: number;
+};
+
 export type Detail = {
   entry: Entry;
-  project: { name: string; description: string; repository?: string; provider: string; website?: string; author?: string };
+  project: { name: string; description: string; repository?: string; provider: string; website?: string; author?: string; aiUse?: AiUse };
   withdrawn: Withdrawn[];
+};
+
+/** What a player said about how an app ran (reviews.list on the site). */
+export type Feedback = {
+  id: string;
+  userId: string;
+  author: string;
+  avatar?: string;
+  entryId: string;
+  entryReleaseId?: string;
+  /** The release they tested, as tagged ("v1.2.0"). */
+  version?: string;
+  result: "runs" | "issues" | "broken";
+  body: string;
+  platform?: Os;
+  createdAt: number;
+  updatedAt: number;
+  /** Only on the player's own, while others can't see it. */
+  underReview?: boolean;
+  moderatorHidden?: boolean;
 };
 
 /** An app in the release status feed: enough to match a repository to its catalog entry. */
@@ -144,7 +175,9 @@ export type Client = {
   readme(slug: string): Promise<Readme | null>;
   releaseStatus(cursor?: string | null): Promise<Page<ReleaseStatus>>;
   /** Approved releases, newest first: the first is what a player gets. */
-  releases(slug: string, limit?: number): Promise<Page<Release>>;
+  releases(slug: string, limit?: number, cursor?: string | null): Promise<Page<Release>>;
+  /** What players said, newest first. */
+  reviews(slug: string, cursor?: string | null, limit?: number): Promise<Page<Feedback>>;
   /** Up to four original games whose titles match a search of 2 or more characters. */
   matchingGames(search: string): Promise<GameMatch[]>;
   /** Null when there's no such game. */
@@ -183,7 +216,10 @@ export function createClient(base: string = DEFAULT_API): Client {
     readme: (slug: string) => get<Readme>(`${app(slug)}/readme`).catch(notFound<Readme>),
     releaseStatus: (cursor?: string | null) =>
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
-    releases: (slug: string, limit = 5) => get<Page<Release>>(`${app(slug)}/releases?limit=${limit}`),
+    releases: (slug: string, limit = 5, cursor?: string | null) =>
+      get<Page<Release>>(`${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    reviews: (slug: string, cursor?: string | null, limit = 12) =>
+      get<Page<Feedback>>(`${app(slug)}/reviews?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     // REST has no game search.
     matchingGames: () => Promise.resolve([]),
     game: (slug: string) => get<GameDetail>(`/games/${encodeURIComponent(slug)}`).catch(notFound<GameDetail>),

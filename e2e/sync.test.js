@@ -88,17 +88,18 @@ test("removing an app on one computer removes it on the other, keeping installed
 
 test("a signed-in player reviews the release they installed", async () => {
   await (await (await b.card("test-port")).$(".card-open")).click();
-  // The README arrives after the page opens and moves the review form down.
-  await (await b.app.$(".readme")).waitForDisplayed({ timeout: 10000 });
-  await (await b.app.$("button=Runs well")).click();
+  await (await b.app.$("button*=Player feedback")).click();
+  await (await b.app.$("button*=Share how it ran")).click();
+  // The release they have is the one they say they tested.
+  await (await b.app.$("h3=How did it go?")).waitForDisplayed({ timeout: 10000 });
   await (await b.app.$("textarea")).setValue("Smooth at 60 fps");
-  await (await b.app.$("button=Post review")).click();
-  await (await b.app.$("p*=your review is posted")).waitForDisplayed({ timeout: 10000 });
+  await (await b.app.$("button=Share")).click();
+  await (await b.app.$("p*=You've shared how it ran")).waitForDisplayed({ timeout: 10000 });
   assert.deepEqual(api.reviews.at(-1), {
     entryId: "entry_test-port",
     result: "runs",
     body: "Smooth at 60 fps",
-    platform: "linux",
+    platform: process.platform === "win32" ? "windows" : "linux",
     entryReleaseId: "release_test-port_1.0.0",
     user: "player",
   });
@@ -110,7 +111,8 @@ test("signing out takes the library along, and signing back in brings it back", 
   await (await b.app.$("h2=Installed, not in your library")).waitForDisplayed();
   assert.ok(existsSync(join(b.apps, "test-port")), "installed files stay");
   await (await (await b.card("test-port")).$(".card-open")).click();
-  await (await b.app.$("button=Sign in to review")).waitForDisplayed();
+  await (await b.app.$("button*=Player feedback")).click();
+  await (await b.app.$("p=Sign in to share how it runs for you.")).waitForDisplayed();
   await b.app.keys("Escape");
   await signIn(b, false);
   await b.until(async () => (await titles(b)).includes("test-port"));

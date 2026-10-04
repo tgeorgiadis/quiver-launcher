@@ -4,7 +4,8 @@ import type { AppQuery, Entry, GameMatch, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
-import { Readme, RepositoryLink, Shortcuts, Tags, Versions, useSource } from "./detail";
+import { ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, useAppDetail, useReleases } from "./detail";
+import { FeedbackTab, ReportPrompt, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, type GameLink } from "./game";
 import { ErrorBoundary } from "./boundary";
 import { ControlSettings } from "./controls";
@@ -468,7 +469,26 @@ function AppPage({
   // The player's own name and artwork, live as they change them.
   const entry = withOverrides(catalog[opened.id] ?? opened, item?.overrides);
   const install = installs[entry.id];
-  const source = useSource(entry);
+  // Apps the player added have no page on the site: no releases or feedback there.
+  const site = !isOwn(entry.id);
+  const { source, detail } = useAppDetail(entry);
+  const releases = useReleases(entry, site);
+  const { own, refresh } = useOwnFeedback(entry, site);
+  const { user } = useAccount();
+  const [tab, setTab] = useState<"overview" | "releases" | "feedback">("overview");
+  // Sharing feedback asked for here; signing in comes first when needed.
+  const [intent, setIntent] = useState<Intent | null>(null);
+  const share = (next: Intent) => {
+    setTab("feedback");
+    setIntent(next);
+    if (!user) onSignIn();
+  };
+  const said = entry.recommended + entry.reportIssues + entry.reportBroken;
+  const tabs = [
+    ["overview", "Overview", undefined],
+    ["releases", "Releases", releases.items && `${releases.items.length}${releases.more ? "+" : ""}`],
+    ["feedback", "Player feedback", String(said)],
+  ] as const;
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
   const [problem, setProblem] = useState<string | null>(null);
   const eyebrow = [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].join(", ");
@@ -499,7 +519,13 @@ function AppPage({
               )}
               <div className="facts">
                 <PlatformIcons os={entry.supportedOS} />
-                <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} />
+                {site && (
+                  // As on the website: what players said, and the way to it.
+                  <button type="button" className="score-link" onClick={() => (said ? setTab("feedback") : share("edit"))}>
+                    <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} />
+                    <span className="score-link-text">{said ? `Feedback from ${said} ${said === 1 ? "player" : "players"}` : "Be the first to say how it runs"}</span>
+                  </button>
+                )}
                 {entry.verified && (
                   <span className="verified">
                     <ShieldCheck size={14} />
@@ -542,21 +568,46 @@ function AppPage({
           </div>
         </div>
       </div>
-      <div className="app-columns">
-        <div className="app-content">
-          <Readme entry={entry} source={source} />
-          {!isOwn(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
+      {site && (
+        <div className="detail-tabs" role="tablist" aria-label="App sections">
+          {tabs.map(([key, label, count]) => (
+            <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>
+              {label}
+              {count !== undefined && <span className="tab-count">{count}</span>}
+            </button>
+          ))}
         </div>
-        {(item || install) && (
-          <aside className="app-panel" aria-label="On this computer">
-            <h3>On this computer</h3>
-            <Shortcuts entry={entry} />
-            {item && <AppOptions id={item.id} />}
-            {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
-            {item && <Tags id={item.id} />}
-            {item && <Customize id={item.id} />}
-          </aside>
-        )}
+      )}
+      <div className="app-columns">
+        <div className="app-content" role={site ? "tabpanel" : undefined}>
+          {tab === "overview" && <Readme entry={entry} source={source} />}
+          {tab === "releases" && <ReleasesTab detail={detail} releases={releases} />}
+          {tab === "feedback" && (
+            <FeedbackTab
+              entry={entry}
+              releases={releases.items}
+              own={own}
+              onSaved={refresh}
+              intent={intent}
+              onIntentDone={() => setIntent(null)}
+              onShare={share}
+            />
+          )}
+        </div>
+        <aside className="app-side">
+          {site && tab !== "feedback" && <ReportPrompt count={said} own={own} onShare={share} />}
+          {site && <ProjectDetails entry={entry} detail={detail} />}
+          {(item || install) && (
+            <section className="app-panel" aria-label="On this computer">
+              <h3>On this computer</h3>
+              <Shortcuts entry={entry} />
+              {item && <AppOptions id={item.id} />}
+              {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
+              {item && <Tags id={item.id} />}
+              {item && <Customize id={item.id} />}
+            </section>
+          )}
+        </aside>
       </div>
     </section>
   );
@@ -621,61 +672,6 @@ function Customize({ id }: { id: string }) {
           Use the catalog's
         </button>
       </div>
-    </form>
-  );
-}
-
-const RESULTS = [
-  ["runs", "Runs well"],
-  ["issues", "Runs with issues"],
-  ["broken", "Doesn't run"],
-] as const;
-
-/** Signed in, a player who installed the app can say how it runs, for the release they have. */
-function Review({ entry, onSignIn }: { entry: Entry; onSignIn: () => void }) {
-  const { user, review } = useAccount();
-  const { installs, config, catalog } = useLauncher();
-  const [result, setResult] = useState<(typeof RESULTS)[number][0] | null>(null);
-  const [body, setBody] = useState("");
-  const [state, setState] = useState<"idle" | "sending" | "sent" | string>("idle");
-  const install = installs[entry.id];
-  if (!install) return null;
-  if (!user)
-    return (
-      <div className="review">
-        <button onClick={onSignIn}>Sign in to review</button>
-      </div>
-    );
-  if (state === "sent") return <p className="review muted">Thanks, your review is posted.</p>;
-  return (
-    <form
-      className="review"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (!result || config.os === "unknown") return;
-        setState("sending");
-        // The site only takes a release that's still published.
-        const pulled = catalog[entry.id]?.withdrawn?.some((w) => w.version === install.version);
-        const entryReleaseId = pulled ? undefined : install.releaseId;
-        review({ entryId: entry.id, result, body: body.trim() || undefined, platform: config.os, entryReleaseId }).then(
-          () => setState("sent"),
-          (error) => setState(error instanceof Error ? error.message.replace(/^.*ConvexError: /, "") : "Couldn't post your review."),
-        );
-      }}
-    >
-      <h3>How does {versionLabel(install.version)} run for you?</h3>
-      <div className="row">
-        {RESULTS.map(([value, label]) => (
-          <button type="button" key={value} className={result === value ? "chosen" : ""} onClick={() => setResult(value)}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <textarea maxLength={500} placeholder="Anything others should know? (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
-      {state !== "idle" && state !== "sending" && <p className="job-error">{state}</p>}
-      <button className="primary" disabled={!result || state === "sending"}>
-        Post review
-      </button>
     </form>
   );
 }

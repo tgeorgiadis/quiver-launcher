@@ -43,6 +43,17 @@ test("an app, README and releases come from Convex; a missing app is a 404", asy
   expect(await none.readme("gone")).toBeNull();
 });
 
+test("what players said comes from reviews:list, 12 at a time", async () => {
+  const { fetch, asked } = fakeConvex({ "reviews:list": { page: [{ id: "r", result: "runs" }], continueCursor: "c2", isDone: false } });
+  const client = createConvexClient("https://convex.test", rest, fetch);
+  expect(await client.reviews("a")).toEqual({ items: [{ id: "r", result: "runs" }], nextCursor: "c2", isDone: false });
+  await client.reviews("a", "c2");
+  expect(asked.map((q) => q.args)).toEqual([
+    { slug: "a", paginationOpts: { numItems: 12, cursor: null } },
+    { slug: "a", paginationOpts: { numItems: 12, cursor: "c2" } },
+  ]);
+});
+
 test("game search needs two characters, and the release status feed stays on REST", async () => {
   const { fetch, asked } = fakeConvex({ "catalog:matchingGames": [{ slug: "g", title: "G", apps: 2 }], "catalog:game": null });
   const client = createConvexClient("https://convex.test", rest, fetch);

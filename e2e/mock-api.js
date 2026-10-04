@@ -133,6 +133,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     "catalog:facets": {},
     "catalog:matchingGames": { search: "string!", hideDevelopers: "array" },
     "catalog:game": { slug: "string!" },
+    "reviews:list": { slug: "string!", paginationOpts: "page!" },
   };
   function validate(path, args) {
     const rules = ARGS[path];
@@ -162,8 +163,15 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       if (!found) return null;
       const game = games()[found.games[0]?.slug]?.game ?? null;
       return {
-        entry: withVersion(found),
-        project: { name: found.name, description: "", provider: "github", repository: `quiver/${slug}` },
+        entry: { ...withVersion(found), developer: { key: "quiver-tester", name: "quiver-tester" } },
+        project: {
+          name: found.name,
+          description: "",
+          provider: "github",
+          repository: `quiver/${slug}`,
+          author: "Quiver Tester",
+          aiUse: { level: "none", source: "signals", checkedAt: Date.UTC(2026, 8, 1), evidence: [{ kind: "check", detail: "No sign of AI use." }] },
+        },
         game,
         games: game ? [game] : [],
         withdrawn: [],
@@ -189,6 +197,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         .map((g) => ({ slug: g.game.slug, title: g.game.title, ...(g.art ? { art: g.art } : {}), apps: g.apps.length }))
         .slice(0, 4);
     },
+    // What players said, newest first.
+    "reviews:list": ({ slug, paginationOpts }) => page(account.feedback(slug), paginationOpts),
     "catalog:game": ({ slug }) => {
       const g = games()[slug];
       if (g?.malformed) return { game: g.game, entries: null };
@@ -330,6 +340,15 @@ function mockAccount(entries) {
   const users = new Map(); // name -> { id, password, items: Map(entryId -> item), collections: Map(key -> collection) }
   const tokens = new Map(); // token -> name
   const reviews = [];
+  // One review per player and app, as reviews.list shows it; Test Port starts with two.
+  const saved = new Map();
+  const seed = (name, result, body, at) =>
+    saved.set(`${name}:entry_test-port`, {
+      id: `review_${name}_entry_test-port`, userId: `user_${name}`, author: name, entryId: "entry_test-port",
+      entryReleaseId: "release_test-port_1.0.0", version: "v1.0.0", result, body, platform: "linux", createdAt: at, updatedAt: at,
+    });
+  seed("ada", "runs", "Smooth on my Steam Deck.", Date.UTC(2026, 8, 20));
+  seed("lin", "issues", "", Date.UTC(2026, 8, 18));
   const flows = new Map(); // OAuth state -> redirectTo, then code -> state
   const read = (req) =>
     new Promise((resolve) => {
@@ -401,11 +420,34 @@ function mockAccount(entries) {
       }
       return send(res, []);
     }
+    if (path === "/reviews/own") return send(res, saved.get(`${name}:${body.entryId}`) ?? null);
     if (path === "/reviews") {
+      // As reviews.save on the site checks it.
+      const entry = entries.find((e) => e.id === body.entryId);
+      const note = (body.body ?? "").trim();
+      const refused = !entry
+        ? "Published entry required"
+        : !["runs", "issues", "broken"].includes(body.result) || !["windows", "linux", "macos", "android", "ios"].includes(body.platform)
+          ? "Invalid review"
+          : note.length > 500
+            ? "Note must be 500 characters or fewer"
+            : body.entryReleaseId && !body.entryReleaseId.startsWith(`release_${entry.slug}_`)
+              ? "Published release required"
+              : null;
+      if (refused) return send(res, { error: refused }, 400);
+      const key = `${name}:${body.entryId}`;
+      const now = Date.now();
+      saved.set(key, {
+        id: `review_${name}_${body.entryId}`, userId: user.id, author: name, entryId: body.entryId,
+        ...(body.entryReleaseId ? { entryReleaseId: body.entryReleaseId, version: `v${body.entryReleaseId.split("_").pop()}` } : {}),
+        result: body.result, body: note, platform: body.platform, createdAt: saved.get(key)?.createdAt ?? now, updatedAt: now,
+      });
       reviews.push({ ...body, user: name });
       return send(res, null);
     }
     send(res, {}, 404);
   }
-  return { handle, reviews };
+  const feedback = (slug) =>
+    [...saved.values()].filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id).sort((a, b) => b.createdAt - a.createdAt);
+  return { handle, reviews, feedback };
 }

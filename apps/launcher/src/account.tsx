@@ -8,7 +8,7 @@ import { makeFunctionReference, type FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
 import { ConvexAuthProvider, useAuthActions, type TokenStorage } from "@convex-dev/auth/react";
 import { useSignInWithPassword, useSignUpWithPassword } from "@convex-dev/auth/providers/password/react";
-import type { Os } from "@quiver/api";
+import type { Feedback, Os } from "@quiver/api";
 import { native, type Config } from "./native";
 import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
 
@@ -39,8 +39,13 @@ export type Account = {
   saveCollections: (collections: Collection[]) => Promise<{ key: string; error: string }[]>;
   /** Saves changes; the ones refused come back. */
   save: (changes: Change[]) => Promise<{ key: string; error: string }[]>;
+  /** Saves the player's feedback on an app, replacing any they gave before; rejects with a message to show. */
   review: (review: ReviewInput) => Promise<void>;
+  /** The player's own feedback on an app, null signed out or when they haven't given any. */
+  ownReview: (entryId: string) => Promise<Feedback | null>;
 };
+
+const REVIEW_FAILED = "Couldn't save your feedback. Try again.";
 
 const AccountContext = createContext<Account | null>(null);
 export const useAccount = () => useContext(AccountContext)!;
@@ -70,6 +75,7 @@ const fns = {
   collections: ref("query", "libraryCollections:list"),
   saveCollections: ref("mutation", "libraryCollections:save"),
   review: ref("mutation", "reviews:save"),
+  ownReview: ref("query", "reviews:own"),
   github: [ref("mutation", "auth:startSignInGithub"), ref("mutation", "auth:completeSignInGithub")],
   discord: [ref("mutation", "auth:startSignInDiscord"), ref("mutation", "auth:completeSignInDiscord")],
 };
@@ -152,7 +158,15 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     },
     signOut: async () => void (await signOut()),
     save: (changes) => save({ changes }),
-    review: async (r) => void (await review(r)),
+    async review(r) {
+      try {
+        await review(r);
+      } catch (e) {
+        // The site's reasons ("Note must be 500 characters or fewer") come as the error's data.
+        throw new Error(e instanceof ConvexError && typeof e.data === "string" ? e.data : REVIEW_FAILED);
+      }
+    },
+    ownReview: (entryId) => (me ? (client.query(fns.ownReview, { entryId }) as Promise<Feedback | null>) : Promise.resolve(null)),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }
@@ -265,7 +279,15 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
     save: (changes) => call("/library/save", { changes }),
     collections,
     saveCollections: (list) => call("/collections/save", { collections: list.map(toServer) }),
-    review: (r) => call("/reviews", r),
+    async review(r) {
+      const response = await fetch(base + "/reviews", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(r),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? REVIEW_FAILED);
+    },
+    ownReview: (entryId) => (token ? call("/reviews/own", { entryId }) : Promise.resolve(null)),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }

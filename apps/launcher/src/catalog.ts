@@ -7,7 +7,7 @@
  */
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
-import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type GameDetail, type GameMatch, type Page, type Readme, type Release } from "@quiver/api";
+import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type Feedback, type GameDetail, type GameMatch, type Page, type Readme, type Release } from "@quiver/api";
 
 type ConvexPage<T> = { page: T[]; continueCursor: string; isDone: boolean };
 type PageArgs = { paginationOpts: { numItems: number; cursor: string | null } };
@@ -21,6 +21,7 @@ const refs = {
   releases: query<PageArgs & { slug: string }, ConvexPage<Release>>("catalog:releases"),
   matchingGames: query<{ search: string }, GameMatch[]>("catalog:matchingGames"),
   game: query<{ slug: string }, GameDetail | null>("catalog:game"),
+  reviews: query<PageArgs & { slug: string }, ConvexPage<Feedback>>("reviews:list"),
 };
 
 const toPage = <T,>(r: ConvexPage<T>): Page<T> => ({ items: r.page, nextCursor: r.isDone ? null : r.continueCursor, isDone: r.isDone });
@@ -57,8 +58,10 @@ export function createConvexClient(url: string, rest: Client, fetch?: typeof glo
       return readme && { markdown: readme.markdown, rawBase: readme.rawBase, htmlBase: readme.htmlBase };
     },
     releaseStatus: (cursor) => rest.releaseStatus(cursor),
-    releases: (slug, limit = 5) =>
-      convex.query(refs.releases, { slug, paginationOpts: { numItems: limit, cursor: null } }).then(toPage),
+    releases: (slug, limit = 5, cursor = null) =>
+      convex.query(refs.releases, { slug, paginationOpts: { numItems: limit, cursor } }).then(toPage),
+    reviews: (slug, cursor = null, limit = 12) =>
+      convex.query(refs.reviews, { slug, paginationOpts: { numItems: limit, cursor } }).then(toPage),
     matchingGames(search) {
       const text = search.trim().slice(0, 200);
       return text.length < 2 ? Promise.resolve([]) : convex.query(refs.matchingGames, { search: text });

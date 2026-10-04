@@ -87,6 +87,34 @@ test("real apps and games open as pages, and going back never blanks the window"
   assert.deepEqual(await problems(), []);
 });
 
+test("a real app's player feedback shows as on the website", async () => {
+  const { app, until } = s;
+  const box = await app.$("input[placeholder^=Search]");
+  await box.setValue("ConkerBFDReloaded");
+  const card = await app.$('article[data-slug="conker-s-bad-fur-day-conkerbfdreloaded"]');
+  await card.waitForDisplayed({ timeout: 20000 });
+  await (await card.$(".card-open")).click();
+  const page = () => app.$(".page-layer:not([hidden]) .app-page");
+  // Its Player feedback tab, with the count the website shows.
+  let count = "";
+  await until(async () => {
+    for (const t of await (await page()).$$("button[role=tab]")) {
+      const label = await t.getText();
+      if (label.startsWith("Player feedback")) return (count = label.replace("Player feedback", "").trim()), await t.click(), true;
+    }
+    return false;
+  }, 20000);
+  const reviews = () =>
+    app.execute(() => [...document.querySelectorAll(".page-layer:not([hidden]) .feedback article.review")].map((r) => r.querySelector(".review-author strong").textContent));
+  await until(async () => (await reviews()).length >= 2, 20000);
+  console.log(`ConkerBFDReloaded: ${count} on the tab, ${(await reviews()).length} shown (${(await reviews()).join(", ")})`);
+  assert.ok(Number(count) >= 2);
+  await app.keys("Escape");
+  await box.click();
+  await app.keys(["Control", "a"]);
+  await app.keys("Backspace");
+});
+
 test("Get installs verified ports, and Play starts one", async () => {
   const { app, until } = s;
   const results = [];
