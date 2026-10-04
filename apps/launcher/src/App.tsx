@@ -58,14 +58,18 @@ export function App() {
     if (at?.focus instanceof HTMLElement && at.focus.isConnected) at.focus.focus({ preventScroll: true });
   }, [stack]);
   // Escape, or a controller's Back, goes back a page; an open dialog takes it instead.
+  // Listening from the start puts this ahead of any dialog's own listener, so a dialog closing on the same Escape still counts.
+  const pages = useRef(0);
+  useLayoutEffect(() => {
+    pages.current = stack.length;
+  }, [stack]);
   useEffect(() => {
-    if (!stack.length) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !document.querySelector('[role="dialog"]')) goBack();
+      if (e.key === "Escape" && pages.current && !document.querySelector('[role="dialog"]')) goBack();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [stack.length, goBack]);
+  }, [goBack]);
   const top = stack.at(-1);
   const query = search.trim();
   const listName = tab === "library" ? "Library" : query ? `Back to results for “${shorten(query)}”` : "Browse";
@@ -96,20 +100,17 @@ export function App() {
         {/*
           Every page in the stack stays mounted, hidden under the top one, so
           Back finds it as it was left. One that fails shows why and a way back;
-          the boundary around them all catches a page failing as it closes.
+          the boundary around them all catches a page failing as it closes, and
+          OK brings back the pages still open.
         */}
         <ErrorBoundary
           resetKey={stack.map(viewKey).join(" ")}
-          fallback={(error, reset) =>
-            stack.length ? (
-              <PageProblem error={error} back={backFrom(stack.length - 1)} onBack={() => (reset(), goBack())} />
-            ) : (
-              <div className="banner" role="alert">
-                <p>That page hit a problem as it closed: {error.message}</p>
-                <button onClick={reset}>OK</button>
-              </div>
-            )
-          }
+          fallback={(error, reset) => (
+            <div className="banner" role="alert">
+              <p>That page hit a problem as it closed: {error.message}</p>
+              <button onClick={reset}>OK</button>
+            </div>
+          )}
         >
           {stack.map((view, i) => (
             <div key={viewKey(view)} className="page-layer" hidden={i !== stack.length - 1}>
@@ -127,7 +128,13 @@ export function App() {
         <div hidden={Boolean(top)}>
           <Notice />
           {/* Finishing an import shows the library, under whatever page is open. */}
-          <OldLibrary onDone={() => setTab("library")} />
+          <OldLibrary
+            onDone={() => {
+              setTab("library");
+              // Back from the page shows the library from its top, not where Browse was scrolled.
+              covered.current[0] = { y: 0, focus: null };
+            }}
+          />
           {tab === "library" ? (
             <LibraryPage onOpen={openApp} onBrowse={() => switchTab("browse")} action={action} />
           ) : (
