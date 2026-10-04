@@ -74,7 +74,7 @@ type Launcher = {
   oldApps: OldApp[];
   importOld: () => Promise<string[]>;
   remember: (entries: Entry[]) => void;
-  /** Keeps catalog data for apps that aren't in the library, such as those on a shelf copied from a shared list. */
+  /** Keeps catalog data for apps that aren't in the library, such as those on a copy of a shared playlist. */
   cache: (entries: Entry[]) => void;
   /** Adds the app to the library and installs it: its newest release, or the one given. */
   get: (entry: Entry, release?: Release) => Promise<void>;

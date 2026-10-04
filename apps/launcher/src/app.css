@@ -86,9 +86,9 @@ p.job-error { color: #e38c87; font-size: 13px; }
 .options { margin: 12px 0; align-items: center; }
 .filters { gap: 10px; margin-top: -8px; }
 .toolbar select, .detail-body select, .app-page select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
-.shelves { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.shelves button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; }
-.shelves button.active, .shelves button:hover { color: #fff; border-color: var(--accent); background: #0ea5e91a; }
+.playlists { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.playlists button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; }
+.playlists button.active, .playlists button:hover { color: #fff; border-color: var(--accent); background: #0ea5e91a; }
 .console-section { margin-bottom: 28px; } .console-section h2 { font-size: 1rem; margin-bottom: 12px; color: #c9cbd0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .chips .muted { margin-right: 4px; }
@@ -352,13 +352,13 @@ main.app-main { padding: 0 0 40px; }
 .release-checking-line { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; color: #c3d4de; font-size: 13px; }
 .release-checking-line svg { flex: none; color: var(--accent); }
 
-/* Library: shelf tabs with a menu, the Filters panel and its chips, and adding apps to shelves. */
-.shelf-tab { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
-.shelves { overflow-x: auto; scrollbar-width: thin; }
-.shelves select { flex-shrink: 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 13px; }
+/* Library: playlist tabs with a menu, the Filters panel and its chips, and adding apps to playlists. */
+.playlist-tab { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.playlists { overflow-x: auto; scrollbar-width: thin; }
+.playlists select { flex-shrink: 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 13px; }
 .menu-box { position: relative; display: inline-flex; }
 .menu-button { display: inline-flex; align-items: center; justify-content: center; padding: 6px; border-radius: 999px; color: var(--muted); }
-.shelves .menu-button { border: 1px solid transparent; }
+.playlists .menu-button { border: 1px solid transparent; }
 .menu-button:hover, .menu-button[aria-expanded="true"] { color: #fff; background: var(--panel); }
 .menu {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 6; display: flex; flex-direction: column; min-width: 180px; padding: 6px;
@@ -372,13 +372,13 @@ main.app-main { padding: 0 0 40px; }
 .toolbar button.on { color: #fff; border-color: var(--accent); }
 .filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -8px 0 18px; }
 .filter-chips .chip { display: inline-flex; align-items: center; gap: 6px; }
-.filter-chips .save-shelf { margin-left: 4px; }
-.new-shelf { display: inline-flex; }
-.new-shelf input { width: 130px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; font-size: 12px; outline: 0; }
-.shelf-note { margin: -6px 0 16px; }
+.filter-chips .save-playlist { margin-left: 4px; }
+.new-playlist { display: inline-flex; }
+.new-playlist input { width: 130px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: transparent; font-size: 12px; outline: 0; }
+.playlist-note { margin: -6px 0 16px; }
 .list-preview { margin: 0; padding-left: 18px; font-size: 13px; color: #c9cbd1; }
 .detail-body.share input[readonly] { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .detail-body textarea { min-height: 70px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: inherit; resize: vertical; }
 .menu.floating { position: fixed; top: auto; z-index: 20; }
 .menu.floating.up { flex-direction: row; flex-wrap: wrap; gap: 6px; width: 240px; }
-.shelves { flex-wrap: nowrap; }
+.playlists { flex-wrap: nowrap; }

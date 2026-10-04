@@ -63,13 +63,13 @@ test("renaming an app on one computer renames it on the other", async () => {
 });
 
 test("a collection made on one computer shows on the other", async () => {
-  await (await a.app.$("button[aria-label='Add a shelf']")).click();
-  await (await (await a.app.$("[role=menu]")).$("button=New shelf")).click();
-  await (await a.app.$("input[aria-label='Shelf name']")).setValue("Co-op");
+  await (await a.app.$("button[aria-label='Add a playlist']")).click();
+  await (await (await a.app.$("[role=menu]")).$("button=New playlist")).click();
+  await (await a.app.$("input[aria-label='Playlist name']")).setValue("Co-op");
   await (await a.app.$("button=Save")).click();
   await titles(b);
-  await (await (await b.app.$("nav[aria-label=Shelves]")).$("button=Co-op")).waitForDisplayed({ timeout: 10000 });
-  await (await (await a.app.$("nav[aria-label=Shelves]")).$("button=All")).click();
+  await (await (await b.app.$("nav[aria-label=Playlists]")).$("button=Co-op")).waitForDisplayed({ timeout: 10000 });
+  await (await (await a.app.$("nav[aria-label=Playlists]")).$("button=All")).click();
 });
 
 test("removing an app on one computer removes it on the other, keeping installed files", async () => {

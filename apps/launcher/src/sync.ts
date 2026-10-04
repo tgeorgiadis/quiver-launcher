@@ -98,11 +98,11 @@ export function changesFrom(local: LibraryItem[], account: string): Change[] {
 }
 
 /**
- * A shelf in the library (a collection, on the site). It shows the apps
+ * A playlist in the library (a collection, on the site). It shows the apps
  * picked for it by hand, and the apps that match every filter it sets: any of
  * its tags (the player's or the catalog's), consoles (or a maker's, as
  * "maker:Nintendo") and project types, its AI use, installed or not. Without
- * filters it's just the picked apps. A followed shelf mirrors a list someone
+ * filters it's just the picked apps. A followed playlist mirrors one someone
  * shared, and its apps come from the site.
  */
 export type Collection = {
@@ -116,9 +116,9 @@ export type Collection = {
   ai?: "no-generated" | "no-ai";
   /** Apps picked by hand, by library key. */
   apps?: string[];
-  /** The shared list this shelf follows, by its slug. */
+  /** The shared playlist this one follows, by its slug. */
   follows?: string;
-  /** Shared as a list (the site says so; set here as soon as it's shared). */
+  /** Shared (the site says so; set here as soon as it's shared). */
   shared?: { slug: string };
   order: number;
   removed?: boolean;
@@ -142,7 +142,7 @@ export function applyServerCollections(local: Collection[], server: ServerCollec
       mine.delete(s.key);
       continue;
     }
-    // Apps on this computer only never reach the account: they stay on the shelf here.
+    // Apps on this computer only never reach the account: they stay on the playlist here.
     const local = (here?.apps ?? []).filter((id) => id.startsWith("local:"));
     mine.set(s.key, { ...s, ...(local.length ? { apps: [...(s.apps ?? []), ...local] } : {}), removed: undefined, account });
   }
@@ -150,7 +150,7 @@ export function applyServerCollections(local: Collection[], server: ServerCollec
 }
 
 type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai">;
-/** What a shelf or the library filters ask of an app. */
+/** What a playlist or the library filters ask of an app. */
 export type AppFacts = {
   id?: string;
   tags: string[];
@@ -160,7 +160,7 @@ export type AppFacts = {
   aiLevel?: string;
 };
 
-/** Whether any filter is set; without one, a shelf is only its picked apps. */
+/** Whether any filter is set; without one, a playlist is only its picked apps. */
 export const hasFilters = (c: Filters) =>
   Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai);
 
@@ -181,7 +181,7 @@ export function matches(c: Filters, app: AppFacts, makers: Record<string, string
   );
 }
 
-/** Whether an app is on a shelf: picked for it, or matching its filters. */
+/** Whether an app is on a playlist: picked for it, or matching its filters. */
 export function inCollection(c: Filters & Pick<Collection, "apps">, app: AppFacts, makers: Record<string, string> = {}) {
   return Boolean(app.id && c.apps?.includes(app.id)) || (hasFilters(c) && matches(c, app, makers));
 }

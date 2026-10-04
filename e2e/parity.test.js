@@ -1,6 +1,6 @@
 /**
  * Journeys for what Quiver Launcher 3 could do: catalog filters, an app's
- * README, repository and versions, shortcuts, library shelves and bindings.
+ * README, repository and versions, shortcuts, library playlists and bindings.
  */
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
@@ -86,29 +86,29 @@ test("a desktop shortcut and a Steam shortcut start the game", async () => {
   await app.keys("Escape");
 });
 
-test("library shelves: installed or not, a hand-picked collection, and sections by console", async () => {
+test("library playlists: installed or not, a hand-picked collection, and sections by console", async () => {
   // Tampered Port stays in the library, not installed (its download is refused).
   await (await (await card("tampered-port")).$("button=Get")).click();
   await (await (await card("tampered-port")).$('[role="alert"]')).waitForDisplayed({ timeout: 30000 });
   await (await app.$("button*=Library")).click();
-  const shelf = async (name) => (await (await app.$("nav[aria-label=Shelves]")).$(`button=${name}`)).click();
+  const playlist = async (name) => (await (await app.$("nav[aria-label=Playlists]")).$(`button=${name}`)).click();
   const shown = () => app.execute(() => [...document.querySelectorAll("main article")].map((e) => e.dataset.slug).sort());
-  await shelf("Installed");
+  await playlist("Installed");
   assert.deepEqual(await shown(), ["test-port"]);
-  await shelf("Not installed");
+  await playlist("Not installed");
   assert.deepEqual(await shown(), ["tampered-port"]);
-  await (await app.$("button[aria-label='Add a shelf']")).click();
-  await (await (await app.$("[role=menu]")).$("button=New shelf")).click();
-  await (await app.$("input[aria-label='Shelf name']")).setValue("Favourites");
+  await (await app.$("button[aria-label='Add a playlist']")).click();
+  await (await (await app.$("[role=menu]")).$("button=New playlist")).click();
+  await (await app.$("input[aria-label='Playlist name']")).setValue("Favourites");
   await (await (await dialog()).$("button=Save")).click();
-  await (await app.$("p*=No apps on this shelf yet.")).waitForDisplayed();
-  await shelf("All");
+  await (await app.$("p*=No apps on this playlist yet.")).waitForDisplayed();
+  await playlist("All");
   await open("test-port");
   await (await (await page()).$("button.chip=Favourites")).click();
   await app.keys("Escape");
-  await shelf("Favourites");
+  await playlist("Favourites");
   await until(async () => JSON.stringify(await shown()) === '["test-port"]');
-  await shelf("All");
+  await playlist("All");
   await (await app.$("label*=Group by console")).click();
   await (await app.$("h2=Nintendo 64")).waitForDisplayed();
   await (await app.$("h2=Super Nintendo Entertainment System")).waitForDisplayed();

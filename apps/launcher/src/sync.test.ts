@@ -31,10 +31,10 @@ test("the account's values win except unsaved changes, and removals leave the li
 });
 
 test("collections: this device's join the account, the account's win unless changed here", () => {
-  const shelf = { name: "Fav", tags: ["fav"], consoles: [], order: 0 };
+  const playlist = { name: "Fav", tags: ["fav"], consoles: [], order: 0 };
   const result = applyServerCollections(
-    [{ key: "guest", ...shelf }, { key: "edited", ...shelf, name: "Mine", account: "me", pending: true }, { key: "theirs", ...shelf, account: "other" }],
-    [{ key: "edited", ...shelf, removed: false, updatedAt: 1 }, { key: "gone", ...shelf, removed: true, updatedAt: 1 }, { key: "new", ...shelf, removed: false, updatedAt: 1 }],
+    [{ key: "guest", ...playlist }, { key: "edited", ...playlist, name: "Mine", account: "me", pending: true }, { key: "theirs", ...playlist, account: "other" }],
+    [{ key: "edited", ...playlist, removed: false, updatedAt: 1 }, { key: "gone", ...playlist, removed: true, updatedAt: 1 }, { key: "new", ...playlist, removed: false, updatedAt: 1 }],
     "me",
   );
   expect(result.map((c) => [c.key, c.name, c.pending ?? false])).toEqual([["guest", "Fav", true], ["edited", "Mine", true], ["new", "Fav", false]]);
@@ -48,7 +48,7 @@ test("a collection matches every part it sets", () => {
   expect(inCollection({ tags: [], consoles: [], installed: "no" }, app)).toBe(false);
 });
 
-test("a shelf holds its picked apps, and with filters also what matches them, as the catalog filters", () => {
+test("a playlist holds its picked apps, and with filters also what matches them, as the catalog filters", () => {
   const app = { id: "a", tags: [], consoles: ["n64"], installed: false, projectType: "port", aiLevel: "generated" };
   const makers = { n64: "Nintendo" };
   // Only picked apps, without filters.
@@ -61,8 +61,8 @@ test("a shelf holds its picked apps, and with filters also what matches them, as
   expect(inCollection({ tags: [], consoles: [], ai: "no-ai" }, { ...app, aiLevel: "none" })).toBe(true);
 });
 
-test("apps on this computer only stay on a shelf when the account's copy of it arrives", () => {
+test("apps on this computer only stay on a playlist when the account's copy of it arrives", () => {
   const local = [{ key: "s", name: "Mine", tags: [], consoles: [], apps: ["entry_a", "local:game"], order: 0, account: "me" }];
-  const [shelf] = applyServerCollections(local, [{ key: "s", name: "Mine", tags: [], consoles: [], apps: ["entry_a", "entry_b"], order: 0, removed: false, updatedAt: 2 }], "me");
-  expect(shelf.apps).toEqual(["entry_a", "entry_b", "local:game"]);
+  const [playlist] = applyServerCollections(local, [{ key: "s", name: "Mine", tags: [], consoles: [], apps: ["entry_a", "entry_b"], order: 0, removed: false, updatedAt: 2 }], "me");
+  expect(playlist.apps).toEqual(["entry_a", "entry_b", "local:game"]);
 });

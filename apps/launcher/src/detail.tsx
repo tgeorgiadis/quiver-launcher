@@ -10,7 +10,7 @@ import { Markdown, OS_NAMES, fullDate, relativeTime } from "@quiver/ui";
 import { useLauncher } from "./store";
 import { native } from "./native";
 import { isCustom, isLocal } from "./custom";
-import { ShelfChoices } from "./library";
+import { PlaylistChoices } from "./library";
 
 export type Source = { provider: "github" | "gitlab"; repository: string; url: string };
 
@@ -422,7 +422,7 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
   );
 }
 
-/** The player's shelves the app is on (or a new one), and their own tags on it. */
+/** The player's playlists the app is on (or a new one), and their own tags on it. */
 export function Tags({ id }: { id: string }) {
   const { library, collections, setTags } = useLauncher();
   const tags = library.find((i) => i.id === id)?.overrides?.tags ?? [];
@@ -430,10 +430,10 @@ export function Tags({ id }: { id: string }) {
   const has = (tag: string) => tags.some((t) => t.toLowerCase() === tag.toLowerCase());
   const toggle = (tag: string) => setTags(id, has(tag) ? tags.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...tags, tag]);
   return (
-    <section className="tags" aria-label="Shelves and tags">
+    <section className="tags" aria-label="Playlists and tags">
       <div className="chips">
-        <span className="muted">Shelves</span>
-        <ShelfChoices id={id} shelves={collections.filter((c) => !c.follows)} />
+        <span className="muted">Playlists</span>
+        <PlaylistChoices id={id} playlists={collections.filter((c) => !c.follows)} />
       </div>
       <form
         className="chips"

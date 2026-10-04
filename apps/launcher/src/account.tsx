@@ -43,16 +43,16 @@ export type Account = {
   review: (review: ReviewInput) => Promise<void>;
   /** The player's own feedback on an app, null signed out or when they haven't given any. */
   ownReview: (entryId: string) => Promise<Feedback | null>;
-  /** Shares a shelf as a public list (again: updates it); resolves to its slug. Rejects with a message to show. */
+  /** Shares a playlist publicly (again: updates it); resolves to its slug. Rejects with a message to show. */
   shareList: (list: ShareInput) => Promise<string>;
-  /** Stops sharing a list. */
+  /** Stops sharing a playlist. */
   unshareList: (slug: string) => Promise<void>;
 };
 
-/** A shelf to share: the catalog apps on it, by entry id. */
+/** A playlist to share: the catalog apps on it, by entry id. */
 export type ShareInput = { collectionKey: string; name: string; description?: string; apps: { entryId: string }[] };
 
-const SHARE_FAILED = "Couldn't share this shelf. Try again.";
+const SHARE_FAILED = "Couldn't share this playlist. Try again.";
 
 const REVIEW_FAILED = "Couldn't save your feedback. Try again.";
 
