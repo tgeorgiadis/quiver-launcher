@@ -1,7 +1,7 @@
 /**
  * Against the real catalog (read-only: no account, nothing written to the
- * site). Runs in CI on Linux and Windows, where api.quiverlauncher.com is
- * reachable, and reports how fast the catalog shows.
+ * site). Runs in CI on Linux and Windows, where quiverlauncher.com's Convex
+ * deployment is reachable, and reports how fast the catalog shows.
  */
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
@@ -11,7 +11,7 @@ import { launch } from "./session.js";
 
 let s;
 before(async () => {
-  s = await launch({ env: { QUIVER_API: "https://api.quiverlauncher.com/api/v1" } });
+  s = await launch({ env: { QUIVER_API: "https://api.quiverlauncher.com/api/v1", QUIVER_CONVEX: "https://convex.quiverlauncher.com" } });
 });
 after(() => s?.close());
 
@@ -31,6 +31,49 @@ test("the real catalog shows quickly, and all of it pages in", async () => {
   }
   console.log(`whole catalog for this computer: ${(await cards()).length} ports`);
   await app.execute(() => window.scrollTo(0, 0));
+});
+
+test("real apps and games open as pages, and going back never blanks the window", async () => {
+  const { app, until } = s;
+  const page = () => app.$(".app-page");
+  const heading = () => page().then((p) => p.$("h1")).then((h) => h.getText()).catch(() => "");
+  const filled = () => app.execute(() => document.getElementById("root").childElementCount > 0);
+  await until(async () => (await app.$$("article")).length > 0, 30000);
+  // The first few apps of the catalog open, and Back returns to the catalog.
+  for (const slug of (await cards()).slice(0, 3)) {
+    await (await (await app.$(`article[data-slug="${slug}"]`)).$(".card-open")).click();
+    await until(async () => (await heading()) !== "", 20000);
+    console.log(`${slug}: page "${await heading()}"`);
+    await (await (await page()).$("button.back-link")).click();
+    await (await app.$(`article[data-slug="${slug}"]`)).waitForDisplayed({ timeout: 10000 });
+    assert.ok(await filled(), `the window went blank after ${slug}`);
+  }
+  // As on quiverlauncher.com: searching "mario" shows Mario's Tennis among the games, with its page.
+  const box = await app.$("input[placeholder^=Search]");
+  await box.setValue("mario");
+  const game = await app.$('.search-games button[data-game="marios-tennis"]');
+  await game.waitForDisplayed({ timeout: 20000 });
+  assert.match(await game.getText(), /Mario's Tennis[\s\S]*ways? to play →/);
+  await game.click();
+  await until(async () => (await heading()) === "Mario's Tennis", 20000);
+  await (await (await page()).$(".catalog-grid article")).waitForDisplayed({ timeout: 20000 });
+  assert.match(await (await (await page()).$(".detail-tags")).getText(), /Virtual Boy/);
+  const ways = await app.execute(() => [...document.querySelectorAll(".game-page article")].map((a) => a.dataset.slug));
+  console.log(`Mario's Tennis: ${ways.join(", ")}`);
+  assert.ok(ways.includes("marios-tennis-mariotennisvirtualboyrecomp"));
+  // One of its apps, with its README from the site, then back through the game to the search.
+  await (await (await app.$('.game-page article[data-slug="marios-tennis-mariotennisvirtualboyrecomp"]')).$(".card-open")).click();
+  await until(async () => (await heading()) === "MarioTennisVirtualBoyRecomp", 20000);
+  await (await (await page()).$(".readme")).waitForDisplayed({ timeout: 20000 });
+  await (await (await page()).$("button.back-link")).click();
+  await until(async () => (await heading()) === "Mario's Tennis", 20000);
+  await (await (await page()).$("button.back-link")).click();
+  await game.waitForDisplayed({ timeout: 10000 });
+  assert.ok(await filled());
+  await box.click();
+  await app.keys(["Control", "a"]);
+  await app.keys("Backspace");
+  await until(async () => !(await app.$(".search-games").isExisting()), 20000);
 });
 
 test("Get installs verified ports, and Play starts one", async () => {

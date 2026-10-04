@@ -6,6 +6,7 @@ import { App } from "./App";
 import { LauncherProvider } from "./store";
 import { startSpatialNavigation } from "./spatial";
 import { native } from "./native";
+import { ErrorBoundary } from "./boundary";
 
 startSpatialNavigation();
 window.addEventListener("error", (e) => void native.logError(`ui: ${e.message} at ${e.filename}:${e.lineno}`).catch(() => {}));
@@ -21,8 +22,21 @@ document.addEventListener("click", (e) => {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <LauncherProvider>
-      <App />
-    </LauncherProvider>
+    {/* Last resort: a message and a way out, never a blank window. */}
+    <ErrorBoundary
+      fallback={(error) => (
+        <div className="empty" role="alert">
+          <h2>Quiver Launcher hit a problem</h2>
+          <p>{error.message}</p>
+          <button className="primary" onClick={() => location.reload()}>
+            Reload
+          </button>
+        </div>
+      )}
+    >
+      <LauncherProvider>
+        <App />
+      </LauncherProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

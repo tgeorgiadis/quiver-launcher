@@ -1,6 +1,7 @@
 /**
- * A stand-in for quiverlauncher.com's /api/v1 and GitHub's release files,
- * so journeys run offline and the same way every time.
+ * A stand-in for quiverlauncher.com (its Convex catalog queries, and the one
+ * REST route the launcher still uses) and GitHub's release files, so journeys
+ * run offline and the same way every time.
  */
 import { createServer } from "node:http";
 import { createHash } from "node:crypto";
@@ -13,7 +14,8 @@ import { join } from "node:path";
 function buildZip() {
   const dir = mkdtempSync(join(tmpdir(), "quiver-zip-"));
   const zip = join(dir, "port.zip");
-  execFileSync("python3", [
+  // PYTHON for Windows, where python3 is usually the Microsoft Store's placeholder.
+  execFileSync(process.env.PYTHON ?? "python3", [
     "-c",
     `import zipfile,sys
 z=zipfile.ZipFile(sys.argv[1],"w")
@@ -25,6 +27,16 @@ z.close()`,
   ]);
   return readFileSync(zip);
 }
+
+/** A 1×1 PNG, for any artwork. */
+const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwADAgH/6Vn8SgAAAABJRU5ErkJggg==", "base64");
+
+const readBody = (req) =>
+  new Promise((resolve) => {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => resolve(body));
+  });
 
 const entry = (slug, name, overrides = {}) => ({
   id: `entry_${slug}`,
@@ -52,9 +64,96 @@ export async function startMockApi() {
   const entries = [
     entry("test-port", "Test Port", { consoles: ["n64"] }),
     entry("tampered-port", "Tampered Port", { consoles: ["snes"], tags: ["snes", "port"] }),
+    // A second way to play Test Port's game, which players say doesn't run.
+    entry("test-remake", "Test Remake", {
+      consoles: ["n64"],
+      games: [{ id: "game_test-port", slug: "test-port", title: "Test Port (original)" }],
+      recommended: 0,
+      reviewCount: 1,
+      reportBroken: 1,
+    }),
   ];
   let base = "";
   let lastQuery = new URLSearchParams();
+  const convexQueries = [];
+  // The original games, and their apps in the site's (unsorted) order.
+  const games = () => ({
+    "test-port": {
+      game: {
+        id: "game_test-port",
+        slug: "test-port",
+        title: "Test Port (original)",
+        description: "The 1996 original.\nSecond line.",
+        artwork: `${base}/art/icon.png`,
+        libraryArt: { capsule: `${base}/art/capsule.png`, hero: `${base}/art/hero.png` },
+        originalSystems: ["n64"],
+      },
+      art: `${base}/art/capsule.png`,
+      apps: ["test-remake", "test-port"],
+    },
+    "tampered-port": {
+      game: { id: "game_tampered-port", slug: "tampered-port", title: "Tampered Port (original)", description: "", originalSystems: ["snes"] },
+      apps: ["tampered-port"],
+    },
+  });
+  /** catalog.ts on the site: every typed word starts a word of the title. */
+  const words = (text) =>
+    text
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+  const titleMatches = (title, search) => words(search).every((typed) => words(title).some((word) => word.startsWith(typed)));
+  const BRANDS = ["Nintendo", "PlayStation", "Xbox", "Sega", "OtherPlatforms"];
+  const page = (items) => ({ page: items, continueCursor: "", isDone: true });
+  /** The site's public catalog queries, as Convex answers them. */
+  const convex = {
+    "catalog:list": (a) => {
+      if (a.maker && !BRANDS.includes(a.maker)) throw new Error("ArgumentValidationError: maker");
+      // As URL parameters, so tests read the last listing's filters the same way as before.
+      lastQuery = new URLSearchParams(Object.entries(a).filter(([k, v]) => k !== "paginationOpts" && v !== undefined).map(([k, v]) => [k, String(v)]));
+      const search = (a.search ?? "").toLowerCase();
+      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)));
+      return page(items.map(withVersion));
+    },
+    "catalog:detail": ({ slug }) => {
+      const found = entries.find((e) => e.slug === slug);
+      if (!found) return null;
+      const game = games()[found.games[0]?.slug]?.game ?? null;
+      return {
+        entry: withVersion(found),
+        project: { name: found.name, description: "", provider: "github", repository: `quiver/${slug}` },
+        game,
+        games: game ? [game] : [],
+        withdrawn: [],
+      };
+    },
+    "catalog:readme": ({ slug }) =>
+      slug === "test-port"
+        ? { markdown: "# Test Port\n\nA **test** port. See [the guide](docs/guide.md).", rawBase: "https://raw.example/", htmlBase: "https://github.com/quiver/test-port/blob/HEAD/", fetchedAt: 1 }
+        : null,
+    "catalog:releases": ({ slug }) => page(entries.some((e) => e.slug === slug) ? [release(slug)] : []),
+    "catalog:facets": () => ({
+      total: entries.length,
+      consoles: [
+        { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
+        { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
+      ],
+    }),
+    "catalog:matchingGames": ({ search }) => {
+      const text = search.trim();
+      if (text.length < 2) return [];
+      return Object.values(games())
+        .filter((g) => titleMatches(g.game.title, text))
+        .map((g) => ({ slug: g.game.slug, title: g.game.title, ...(g.art ? { art: g.art } : {}), apps: g.apps.length }))
+        .slice(0, 4);
+    },
+    "catalog:game": ({ slug }) => {
+      const g = games()[slug];
+      return g ? { game: g.game, entries: g.apps.map((s) => withVersion(entries.find((e) => e.slug === s))) } : null;
+    },
+  };
   let version = "1.0.0";
   const releasedAt = (v) => Date.UTC(2026, 0, Number(v.split(".")[1]) + 1);
   const release = (slug) => ({
@@ -112,56 +211,52 @@ export async function startMockApi() {
         },
       ]);
     }
-    const [, api, apiVersion, resource, slug, child] = url.pathname.split("/");
     if (url.pathname.startsWith("/files/")) {
       res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": zip.length });
       return res.end(zip);
     }
-    if (url.pathname === "/api/v1/facets")
-      return send({
-        total: entries.length,
-        consoles: [
-          { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
-          { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
-        ],
-      });
+    if (url.pathname.startsWith("/art/")) {
+      res.writeHead(200, { "Content-Type": "image/png" });
+      return res.end(PIXEL);
+    }
+    // Convex's HTTP query endpoint, as ConvexHttpClient calls it.
+    if (url.pathname === "/convex/api/query") {
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST", "Access-Control-Allow-Headers": "Content-Type, Convex-Client, Authorization" });
+        return res.end();
+      }
+      const { path, args } = JSON.parse(await readBody(req));
+      const a = (Array.isArray(args) ? args[0] : args) ?? {};
+      convexQueries.push({ path, args: a });
+      if (!convex[path]) return send({ status: "error", errorMessage: `Could not find public function for '${path}'` }, 560);
+      try {
+        return send({ status: "success", value: convex[path](a), logLines: [] });
+      } catch (error) {
+        return send({ status: "error", errorMessage: String(error.message) }, 560);
+      }
+    }
+    // The site's internal release status feed has no public query, so it's still REST.
     if (url.pathname === "/api/v1/release-status")
       return send({
         items: entries.map((e) => ({ id: e.id, slug: e.slug, provider: "github", repository: `quiver/${e.slug}` })),
         nextCursor: null,
         isDone: true,
       });
-    if (api !== "api" || apiVersion !== "v1" || resource !== "apps") return send({ error: { message: "Not found" } }, 404);
-    if (!slug) {
-      const search = url.searchParams.get("search")?.toLowerCase() ?? "";
-      const system = url.searchParams.get("console");
-      lastQuery = url.searchParams;
-      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!system || e.consoles.includes(system)));
-      return send({ items: items.map(withVersion), nextCursor: null, isDone: true });
-    }
-    const found = entries.find((e) => e.slug === slug);
-    if (!found) return send({ error: { message: "App not found" } }, 404);
-    if (child === "releases") return send({ items: [release(slug)], nextCursor: null, isDone: true });
-    if (child === "readme")
-      return slug === "test-port"
-        ? send({ markdown: "# Test Port\n\nA **test** port. See [the guide](docs/guide.md).", rawBase: "https://raw.example/", htmlBase: "https://github.com/quiver/test-port/blob/HEAD/" })
-        : send({ error: { message: "This app has no README yet" } }, 404);
-    return send({
-      entry: withVersion(found),
-      project: { name: found.name, description: "", provider: "github", repository: `quiver/${slug}` },
-      withdrawn: [],
-    });
+    send({ error: { message: "Not found" } }, 404);
   });
   const withVersion = (e) => ({ ...e, verified: { ...e.verified, version, releasedAt: releasedAt(version) } });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   base = `http://127.0.0.1:${server.address().port}`;
   return {
     api: `${base}/api/v1`,
+    convex: `${base}/convex`,
     account: `${base}/account`,
     github: `${base}/github`,
     reviews: account.reviews,
     /** The filters of the last catalog page asked for. */
     lastQuery: () => lastQuery,
+    /** Every Convex query asked for, oldest first: { path, args }. */
+    convexQueries: () => convexQueries,
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     close: () => server.close(),

@@ -1,33 +1,82 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, Download, Play, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
-import type { AppQuery, Entry, Page } from "@quiver/api";
+import type { AppQuery, Entry, GameMatch, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
 import { Readme, RepositoryLink, Shortcuts, Tags, Versions, useSource } from "./detail";
+import { GamePage, GamesSection, type GameLink } from "./game";
+import { ErrorBoundary } from "./boundary";
 import { ControlSettings } from "./controls";
 import { useAccount } from "./account";
 import { native } from "./native";
 import { isCustom } from "./custom";
 
 type Tab = "library" | "browse";
+/** A page over the library or catalog: an app's, or an original game's. */
+type View = { kind: "app"; entry: Entry } | { kind: "game"; game: GameLink };
+const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : `game:${v.game.slug}`);
+const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 
 export function App() {
   const { library } = useLauncher();
   // A new player starts in the catalog; everyone else in their library.
   const [tab, setTab] = useState<Tab>(library.length ? "library" : "browse");
-  const [open, setOpen] = useState<Entry | null>(null);
+  // Pages opened from the list, each over the one before: Back goes down one.
+  const [stack, setStack] = useState<View[]>([]);
+  const [search, setSearch] = useState("");
   const [signingIn, setSigningIn] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Where each covered page was scrolled to and what had focus, to put back on the way back.
+  const covered = useRef<{ y: number; focus: Element | null }[]>([]);
+  const open = useCallback((view: View) => {
+    const here = { y: window.scrollY, focus: document.activeElement };
+    setStack((s) => {
+      covered.current[s.length] = here;
+      // A page already open further down is gone back to, so the stack stays short.
+      const i = s.findIndex((v) => viewKey(v) === viewKey(view));
+      return i >= 0 ? s.slice(0, i + 1) : [...s, view];
+    });
+  }, []);
+  const openApp = useCallback((entry: Entry) => open({ kind: "app", entry }), [open]);
+  const openGame = useCallback((game: GameLink) => open({ kind: "game", game }), [open]);
+  const goBack = useCallback(() => setStack((s) => s.slice(0, -1)), []);
+  const switchTab = (next: Tab) => {
+    setTab(next);
+    setStack([]);
+    covered.current = [];
+  };
+  const depth = useRef(0);
+  useLayoutEffect(() => {
+    const back = stack.length < depth.current;
+    depth.current = stack.length;
+    const at = back ? covered.current[stack.length] : undefined;
+    // Braces matter: scrollTo returns a Promise in newer WebView2, and an effect's return value is its cleanup.
+    window.scrollTo(0, at?.y ?? 0);
+    if (at?.focus instanceof HTMLElement && at.focus.isConnected) at.focus.focus({ preventScroll: true });
+  }, [stack]);
+  const top = stack.at(-1);
+  const below = stack.at(-2);
+  const query = search.trim();
+  const back = below
+    ? below.kind === "app"
+      ? below.entry.projectName
+      : (below.game.title ?? "Back")
+    : tab === "library"
+      ? "Library"
+      : query
+        ? `Back to results for “${shorten(query)}”`
+        : "Browse";
+  const action = (entry: Entry) => <Action entry={entry} />;
   return (
     <div className="shell">
       <header className="topbar">
         <strong className="brand">Quiver</strong>
         <nav>
-          <button className={tab === "library" ? "active" : ""} onClick={() => (setTab("library"), setOpen(null))}>
+          <button className={tab === "library" ? "active" : ""} onClick={() => switchTab("library")}>
             Library <span className="count">{library.length}</span>
           </button>
-          <button className={tab === "browse" ? "active" : ""} onClick={() => (setTab("browse"), setOpen(null))}>
+          <button className={tab === "browse" ? "active" : ""} onClick={() => switchTab("browse")}>
             Browse
           </button>
         </nav>
@@ -36,25 +85,44 @@ export function App() {
           <Settings2 size={18} />
         </button>
       </header>
-      <main className={open ? "app-main" : ""}>
-        {/* Kept mounted under an app's page, so going back keeps the filters and scroll. */}
-        <div hidden={Boolean(open)}>
+      <main className={top ? "app-main" : ""}>
+        {/* Kept mounted under a page, so going back keeps the search, filters and scroll. */}
+        <div hidden={Boolean(top)}>
           <Notice />
-          <OldLibrary onDone={() => setTab("library")} />
+          <OldLibrary onDone={() => switchTab("library")} />
           {tab === "library" ? (
-            <LibraryPage onOpen={setOpen} onBrowse={() => setTab("browse")} action={(entry) => <Action entry={entry} />} />
+            <LibraryPage onOpen={openApp} onBrowse={() => switchTab("browse")} action={action} />
           ) : (
-            <BrowsePage onOpen={setOpen} />
+            <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} />
           )}
         </div>
-        {open && (
-          <AppPage
-            key={open.id}
-            entry={open}
-            back={tab === "library" ? "Library" : "Browse"}
-            onClose={() => setOpen(null)}
-            onSignIn={() => setSigningIn(true)}
-          />
+        {top && (
+          // A page that fails shows why and a way back; the list under it is untouched.
+          <ErrorBoundary
+            key={viewKey(top)}
+            fallback={(error) => (
+              <section className="app-page" role="alert">
+                <div className="backdrop-inner">
+                  <button className="back-link" onClick={goBack}>
+                    <ArrowLeft size={15} /> {back}
+                  </button>
+                </div>
+                <div className="empty">
+                  <h2>This page hit a problem</h2>
+                  <p>{error.message}</p>
+                  <button className="primary" onClick={goBack}>
+                    Go back
+                  </button>
+                </div>
+              </section>
+            )}
+          >
+            {top.kind === "app" ? (
+              <AppPage entry={top.entry} back={back} onClose={goBack} onOpenGame={openGame} onSignIn={() => setSigningIn(true)} />
+            ) : (
+              <GamePage game={top.game} back={back} onBack={goBack} onOpenApp={openApp} action={action} />
+            )}
+          </ErrorBoundary>
         )}
       </main>
       {signingIn && <SignIn onClose={() => setSigningIn(false)} />}
@@ -138,31 +206,62 @@ function AddRepository({ onOpen }: { onOpen: (e: Entry) => void }) {
   );
 }
 
-function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
+function BrowsePage({
+  onOpen,
+  onOpenGame,
+  search,
+  onSearch,
+}: {
+  onOpen: (e: Entry) => void;
+  onOpenGame: (game: GameLink) => void;
+  search: string;
+  onSearch: (search: string) => void;
+}) {
   const { client, config, library, remember, consoles, consoleNames } = useLauncher();
-  const [search, setSearch] = useState("");
   // The site's catalog filters; the platform starts at this computer's.
   const [filters, setFilters] = useState<Omit<AppQuery, "search" | "cursor" | "limit">>({ os: config.os, sort: "added" });
   const [pages, setPages] = useState<Page<Entry>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [games, setGames] = useState<GameMatch[]>([]);
   const query = useDebounced(search, 250);
   const searching = Boolean(query.trim());
+  // Only the newest request's answer is shown: an older one can arrive after it.
+  const latest = useRef(0);
 
   function load(cursor?: string | null) {
+    const request = ++latest.current;
     setLoading(true);
     setError(null);
     client
       // A search orders by relevance.
       .apps({ ...filters, search: query, sort: searching ? undefined : filters.sort, cursor })
       .then((page) => {
+        if (request !== latest.current) return;
         remember(page.items);
         setPages((p) => (cursor ? [...p, page] : [page]));
       })
-      .catch(() => setError("Couldn't reach quiverlauncher.com. Check your connection and try again."))
-      .finally(() => setLoading(false));
+      .catch(() => request === latest.current && setError("Couldn't reach quiverlauncher.com. Check your connection and try again."))
+      .finally(() => request === latest.current && setLoading(false));
   }
-  useEffect(() => load(), [query, JSON.stringify(filters), client]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, [query, JSON.stringify(filters), client]); // eslint-disable-line react-hooks/exhaustive-deps
+  // As on the website: games whose titles match the search, above the apps, whatever the filters.
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setGames([]);
+      return;
+    }
+    let live = true;
+    client.matchingGames(query).then(
+      (found) => live && setGames(found),
+      () => live && setGames([]),
+    );
+    return () => {
+      live = false;
+    };
+  }, [query, client]);
   const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const brands = [...new Set(consoles.map((c) => c.brand))];
 
@@ -178,7 +277,7 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
             autoFocus
             placeholder="Search ports, games and tools"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => onSearch(e.target.value)}
           />
         </label>
         <AddRepository onOpen={onOpen} />
@@ -237,6 +336,13 @@ function BrowsePage({ onOpen }: { onOpen: (e: Entry) => void }) {
         </div>
       ) : (
         <>
+          {search.trim() && <p className="results-bar">Results for “{search.trim()}”</p>}
+          {games.length > 0 && (
+            <>
+              <GamesSection games={games} onOpen={onOpenGame} />
+              <h2 className="catalog-section-label">Apps</h2>
+            </>
+          )}
           <div className="catalog-grid">
             {entries.map((entry) => (
               <EntryCard
@@ -330,7 +436,19 @@ function Action({ entry }: { entry: Entry }) {
 }
 
 /** An app's own page, laid out like its page on quiverlauncher.com. */
-function AppPage({ entry: opened, back, onClose, onSignIn }: { entry: Entry; back: string; onClose: () => void; onSignIn: () => void }) {
+function AppPage({
+  entry: opened,
+  back,
+  onClose,
+  onOpenGame,
+  onSignIn,
+}: {
+  entry: Entry;
+  back: string;
+  onClose: () => void;
+  onOpenGame: (game: GameLink) => void;
+  onSignIn: () => void;
+}) {
   const { library, installs, catalog, remove, consoleNames } = useLauncher();
   const item = library.find((i) => i.id === opened.id);
   // The player's own name and artwork, live as they change them.
@@ -338,7 +456,6 @@ function AppPage({ entry: opened, back, onClose, onSignIn }: { entry: Entry; bac
   const install = installs[entry.id];
   const source = useSource(entry);
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
-  useEffect(() => window.scrollTo(0, 0), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && !document.querySelector('[role="dialog"]') && onClose();
     window.addEventListener("keydown", onKey);
@@ -362,10 +479,11 @@ function AppPage({ entry: opened, back, onClose, onSignIn }: { entry: Entry; bac
               {entry.games.length > 0 && (
                 <div className="based-on">
                   <span className="based-on-label">Based on</span>
+                  {/* As on the website, each opens the original game's page. */}
                   {entry.games.map((g) => (
-                    <span key={g.id} className="game-chip">
+                    <button key={g.id} type="button" className="game-chip" data-game={g.slug} onClick={() => onOpenGame(g)}>
                       {g.title}
-                    </span>
+                    </button>
                   ))}
                 </div>
               )}

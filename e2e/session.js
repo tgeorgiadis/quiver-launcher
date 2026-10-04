@@ -24,6 +24,7 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
   const env = {
     ...process.env,
     QUIVER_API: api.api,
+    QUIVER_CONVEX: api.convex,
     QUIVER_ACCOUNT_API: api.account,
     QUIVER_GITHUB_API: api.github,
     QUIVER_BROWSER: resolve(import.meta.dirname, "fake-browser.js"),

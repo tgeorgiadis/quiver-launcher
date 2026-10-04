@@ -6,14 +6,14 @@
  * last catalog data seen is cached so the library shows instantly offline.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { DEFAULT_API, createClient, createGithub, createGitlab, githubRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
+import { createClient, createGithub, createGitlab, githubRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
 import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, joinAccount, type Collection } from "./sync";
 import { setBindings, type Bindings } from "./spatial";
 import { customEntry, customKey, isCustom, type CustomApp } from "./custom";
-import { withConvexListing } from "./catalog";
+import { createConvexClient } from "./catalog";
 
 export type { CustomApp, Collection };
 
@@ -173,11 +173,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [oldApps, setOldApps] = useState<OldApp[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
-  // Against the real site, the listing goes through Convex so sort and the AI filter work.
-  const client = useMemo(
-    () => (config.api === DEFAULT_API ? withConvexListing(createClient(config.api), config.convex) : createClient(config.api)),
-    [config.api, config.convex],
-  );
+  // The catalog comes from the site's Convex queries, as on the website; REST only for the release status feed.
+  const client = useMemo(() => createConvexClient(config.convex, createClient(config.api)), [config.api, config.convex]);
   const github = useMemo(() => createGithub(config.githubApi), [config.githubApi]);
   const gitlab = useMemo(() => createGitlab(), []);
   const [consoles, setConsoles] = useState<Console[]>([]);
@@ -199,7 +196,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
   useEffect(() => void document.documentElement.style.setProperty("zoom", String(settings.scale ?? 1)), [settings.scale]);
-  useEffect(() => setBindings(settings), [settings]);
+  useEffect(() => {
+    setBindings(settings);
+  }, [settings]);
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
   const fetched = useRef(new Set<string>());

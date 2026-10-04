@@ -135,3 +135,38 @@ main.app-main { padding: 0 0 40px; }
   .app-hero { flex-direction: column; align-items: flex-start; gap: 14px; }
   .app-hero h1 { font-size: 28px; }
 }
+
+/* Search: the results line, and the games that match above the apps (the website's CatalogPage). */
+.results-bar { margin: -6px 0 18px; font-size: 11px; color: #9699a1; }
+.catalog-section-label { margin: 0 0 10px; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8f929b; }
+.search-games { margin: 0 0 22px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.search-games ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.search-games button {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--panel); transition: border-color 0.15s;
+}
+.search-games button:hover, .search-games button:focus-visible { border-color: #2f6b8f; }
+.search-game-art { width: 40px; height: 56px; flex-shrink: 0; border-radius: 5px; background: #1b1c20; }
+.search-game-art svg { width: 22px; height: 22px; }
+.search-games button > span { display: grid; gap: 3px; min-width: 0; }
+.search-games strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.search-games small { color: #7dd3fc; font-size: 12px; }
+
+/* "Based on" on an app's page opens the original game. */
+.app-hero button.game-chip { cursor: pointer; }
+.app-hero button.game-chip:hover, .app-hero button.game-chip:focus-visible { border-color: var(--accent); color: #fff; }
+
+/* An original game's page (the website's GamePage). */
+.game-page .app-hero > .artwork.box-art { width: 120px; height: 180px; padding: 0; }
+.game-description { -webkit-line-clamp: 3; white-space: pre-line; cursor: pointer; }
+.game-description.expanded { display: block; cursor: default; }
+.detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.detail-tags > span { display: inline-block; font-size: 10px; background: #2a292d; border-radius: 4px; padding: 3px 8px; color: #d7d4db; }
+.game-body { padding: 8px 24px 24px; }
+.section-top { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 24px; }
+.section-top h2 { display: flex; gap: 12px; align-items: center; font-size: 22px; }
+.section-top > .muted { font-size: 11px; }
+.tab-count { font-size: 10px; font-weight: 400; padding: 1px 7px; border-radius: 999px; background: #24262b; color: #b4b7c0; }
+@media (max-width: 860px) {
+  .game-page .app-hero > .artwork.box-art { width: 80px; height: 120px; }
+}

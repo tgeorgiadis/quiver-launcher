@@ -51,7 +51,26 @@ export type Entry = {
   lastReleaseVersion?: string;
   aiLevel?: "none" | "assisted" | "generated";
   verified?: Verified;
+  developer?: { key: string; name: string };
 };
+
+/** An original game, which one or more apps play. */
+export type Game = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  artwork?: string;
+  libraryArt?: LibraryArt;
+  /** Console ids (see facets). */
+  originalSystems: string[];
+};
+
+/** A game whose title matches a search, and how many apps play it. */
+export type GameMatch = { slug: string; title: string; art?: string; apps: number };
+
+/** A game's page: the game and every app that plays it, in no order. */
+export type GameDetail = { game: Game; entries: Entry[] };
 
 export type Asset = {
   id: string;
@@ -116,7 +135,23 @@ export class ApiError extends Error {
 
 export const DEFAULT_API = "https://api.quiverlauncher.com/api/v1";
 
-export function createClient(base: string = DEFAULT_API) {
+/** The catalog, however it's reached: REST here, Convex in the launcher. */
+export type Client = {
+  apps(q?: AppQuery): Promise<Page<Entry>>;
+  app(slug: string): Promise<Detail>;
+  facets(): Promise<Facets>;
+  /** Null when the site has no README for the app. */
+  readme(slug: string): Promise<Readme | null>;
+  releaseStatus(cursor?: string | null): Promise<Page<ReleaseStatus>>;
+  /** Approved releases, newest first: the first is what a player gets. */
+  releases(slug: string, limit?: number): Promise<Page<Release>>;
+  /** Up to four original games whose titles match a search of 2 or more characters. */
+  matchingGames(search: string): Promise<GameMatch[]>;
+  /** Null when there's no such game. */
+  game(slug: string): Promise<GameDetail | null>;
+};
+
+export function createClient(base: string = DEFAULT_API): Client {
   async function get<T>(path: string): Promise<T> {
     const response = await fetch(base + path);
     if (!response.ok) {
@@ -126,6 +161,10 @@ export function createClient(base: string = DEFAULT_API) {
     return response.json();
   }
   const app = (slug: string) => `/apps/${encodeURIComponent(slug)}`;
+  const notFound = <T,>(e: unknown): T | null => {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  };
   return {
     apps(q: AppQuery = {}) {
       const params = new URLSearchParams({ limit: String(q.limit ?? 48) });
@@ -141,20 +180,15 @@ export function createClient(base: string = DEFAULT_API) {
     },
     app: (slug: string) => get<Detail>(app(slug)),
     facets: () => get<Facets>("/facets"),
-    /** Null when the site has no README for the app. */
-    readme: (slug: string) =>
-      get<Readme>(`${app(slug)}/readme`).catch((e) => {
-        if (e instanceof ApiError && e.status === 404) return null;
-        throw e;
-      }),
+    readme: (slug: string) => get<Readme>(`${app(slug)}/readme`).catch(notFound<Readme>),
     releaseStatus: (cursor?: string | null) =>
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
-    /** Approved releases, newest first: the first is what a player gets. */
     releases: (slug: string, limit = 5) => get<Page<Release>>(`${app(slug)}/releases?limit=${limit}`),
+    // REST has no game search.
+    matchingGames: () => Promise.resolve([]),
+    game: (slug: string) => get<GameDetail>(`/games/${encodeURIComponent(slug)}`).catch(notFound<GameDetail>),
   };
 }
-
-export type Client = ReturnType<typeof createClient>;
 
 /** Which computer a release file is for, from its name. */
 export function inferPlatform(filename: string): { os: Os; architecture: Architecture } {
