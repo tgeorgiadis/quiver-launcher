@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { parseRepository } from "@quiver/api";
 import type { LibraryItem } from "./store";
 import { changesFrom, joinAccount } from "./sync";
-import { literalPattern } from "./custom";
+import { folderNameFor } from "./custom";
 
 test("a pasted repository is found on GitHub or GitLab, from any page of it", () => {
   expect(parseRepository("owner/name")).toEqual({ provider: "github", repository: "owner/name" });
@@ -23,7 +23,10 @@ test("apps on this computer only stay out of the account", () => {
   expect(changesFrom(joined, "me").map((c) => c.key)).toEqual(["entry_b"]);
 });
 
-test("a picked program's name only matches itself", () => {
-  expect(literalPattern("Game [Win] v1*.exe")).toBe("Game [[]Win[]] v1[*].exe");
-  expect(literalPattern("game?.exe")).toBe("game[?].exe");
+test("a folder you fill takes its name from the app's, minus what folders can't have", () => {
+  expect(folderNameFor("Zelda: Ocarina of Time")).toBe("Zelda Ocarina of Time");
+  expect(folderNameFor("Who Wants to Be a Millionaire?")).toBe("Who Wants to Be a Millionaire");
+  expect(folderNameFor("Super Mario Bros.")).toBe("Super Mario Bros");
+  expect(folderNameFor("CON")).toBe("CON app");
+  expect(folderNameFor(" ?? ")).toBe("App");
 });

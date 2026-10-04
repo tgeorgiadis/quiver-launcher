@@ -91,6 +91,7 @@ export function Shortcuts({ entry }: { entry: Entry }) {
     dir: install.dir,
     preferred: install.executables,
     wine: Boolean(install.wine),
+    program: install.program,
     art: { icon: entry.artwork ?? art.logo, header: art.header, capsule: art.capsule, hero: art.hero, logo: art.logo },
   };
   const run = (action: Promise<string>) =>

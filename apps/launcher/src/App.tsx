@@ -84,7 +84,13 @@ export function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        <strong className="brand">Quiver</strong>
+        {/* As on the website; it goes to the library. */}
+        <button className="brand" aria-label="Quiver Launcher: go to your library" onClick={() => switchTab("library")}>
+          <img src="/quiver-icon-96.png" alt="" width="34" height="34" />
+          <span>
+            Quiver<span className="brand-label">LAUNCHER</span>
+          </span>
+        </button>
         <nav>
           <button className={tab === "library" ? "active" : ""} onClick={() => switchTab("library")}>
             Library <span className="count">{library.length}</span>
@@ -390,7 +396,8 @@ function Action({ entry }: { entry: Entry }) {
       <div className="job-error" role="alert">
         <p>{job.error}</p>
         <div className="row">
-          <button onClick={() => get(entry)}>Try again</button>
+          {/* A local app has nothing to download: Try again plays it again. */}
+          <button onClick={() => (install?.local ? (dismiss(entry.id), void play(entry.id)) : get(entry))}>Try again</button>
           <button onClick={() => dismiss(entry.id)}>Dismiss</button>
         </div>
       </div>

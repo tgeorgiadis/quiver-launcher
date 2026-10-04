@@ -3,7 +3,21 @@
   position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 28px;
   padding: 12px 24px; background: #0e0e10ee; border-bottom: 1px solid var(--line); backdrop-filter: blur(8px);
 }
-.brand { font-size: 17px; letter-spacing: -0.02em; }
+/* The website's brand (its src/styles.css), smaller as the window narrows. */
+.brand { display: flex; align-items: center; gap: 10px; padding: 0; flex-shrink: 0; }
+.brand > img { width: 34px; height: 34px; }
+.brand > span { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 750; letter-spacing: -1.3px; }
+.brand-label { font-size: 9px; letter-spacing: 1.5px; color: #888b93; font-weight: 600; border-left: 1px solid #393b40; padding-left: 14px; }
+@media (max-width: 1050px) { .brand-label { display: none; } }
+@media (max-width: 760px) {
+  .brand > span { font-size: 24px; }
+  .brand > img { width: 29px; height: 29px; }
+}
+/* Narrowest (a small window at a large interface size): the icon alone. */
+@media (max-width: 600px) {
+  .topbar { gap: 14px; padding: 10px 14px; }
+  .brand > span { display: none; }
+}
 .topbar nav { display: flex; gap: 4px; }
 .topbar nav button { padding: 7px 14px; border-radius: 7px; color: var(--muted); font-weight: 500; }
 .topbar nav button.active, .topbar nav button:hover { color: #fff; background: var(--panel); }

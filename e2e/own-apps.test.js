@@ -55,7 +55,7 @@ test("a GitLab repository with several games in a release: the player picks thei
   await (await app.$("button=Add and get")).click();
   await until(async () => (await heading()) === "Game B");
   await until(() => existsSync(join(apps, "collection", ".quiver-version")), 30000);
-  assert.deepEqual(api.downloads().slice(-1), [`gameb-v1.0-${os}-x64.zip`]);
+  assert.deepEqual(api.downloads().slice(-1), [`GameB-v1.0-${os}-x64.zip`]);
   // It stays on Game B in later releases, and it's marked as one Quiver hasn't checked.
   const item = library().find((i) => i.id === "gitlab:someone/collection");
   assert.deepEqual(item.custom, { provider: "gitlab", repository: "someone/collection", name: "Game B", assetFilter: "gameb" });
@@ -88,6 +88,10 @@ test("a program already on this computer starts where it is, and removing it lea
 
 test("a folder to fill, with the game's artwork matched by name, plays once a program is in it", async () => {
   await addAn("A folder you fill yourself");
+  // Never a folder that's already there, such as another app's.
+  await (await app.$("[role=dialog] input[aria-label=Name]")).setValue("collection");
+  await (await app.$("button=Make the folder")).click();
+  await (await app.$("p*=There's already a folder named collection")).waitForDisplayed({ timeout: 10000 });
   await (await app.$("[role=dialog] input[aria-label=Name]")).setValue("Tampered");
   // The game it plays is matched by name and picked, for its artwork and consoles.
   const match = await app.$('.art-match button[data-game="tampered-port"]');

@@ -314,7 +314,7 @@ export function createGitlab(base = "https://gitlab.com/api/v4") {
         released_at: string;
         upcoming_release?: boolean;
         description?: string;
-        assets?: { links?: { id: number; name: string; url: string; direct_asset_url?: string }[] };
+        assets?: { links?: { id: number; name: string; url: string; direct_asset_url?: string; filepath?: string }[] };
       };
       const raw: Raw[] = await response.json();
       return raw.map((r) => ({
@@ -323,13 +323,18 @@ export function createGitlab(base = "https://gitlab.com/api/v4") {
         releasedAt: Date.parse(r.released_at) || 0,
         prerelease: Boolean(r.upcoming_release),
         notes: r.description,
-        assets: (r.assets?.links ?? []).map((a) => ({
-          id: String(a.id),
-          url: a.direct_asset_url ?? a.url,
-          filename: a.name,
-          ...inferPlatform(a.name),
-          format: a.name.split(".").pop() ?? "unknown",
-        })),
+        assets: (r.assets?.links ?? []).map((a) => {
+          // A link's name is its title ("Windows build"); the file's own name is in its path.
+          const last = (s?: string) => (s ? decodeURIComponent(s.split(/[?#]/)[0].split("/").pop() ?? "") : "");
+          const filename = [last(a.filepath), last(a.direct_asset_url), last(a.url)].find((f) => /\.[a-z0-9]{1,8}$/i.test(f)) ?? a.name;
+          return {
+            id: String(a.id),
+            url: a.direct_asset_url ?? a.url,
+            filename,
+            ...inferPlatform(`${filename} ${a.name}`),
+            format: filename.split(".").pop() ?? "unknown",
+          };
+        }),
       }));
     },
   };

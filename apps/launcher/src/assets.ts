@@ -38,8 +38,14 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
 export function assetFilterFor(chosen: string, files: string[]): string {
   const name = chosen.toLowerCase();
   const others = files.map((f) => f.toLowerCase()).filter((f) => f !== name);
+  // Platform and format words name the computer, not the app: a filter with one would miss on another computer.
+  const PLATFORM = /(?:^|[\s._-])(?:windows|win(?:32|64)?|linux|macos|mac|osx|x64|x86(?:[_-]64)?|amd64|arm64|aarch64|universal|portable)(?=$|[\s._-])/g;
   const trim = (part: string) => part.replace(/^[\s._-]+|[\s._-]+$/g, "");
-  const parts = name.split(/v?\d+(?:[._-]\d+)+|(?:\.(?:zip|7z|tar\.gz|tgz|appimage|exe))$/).map(trim);
+  const parts = name
+    .replace(/\.(?:zip|7z|tar\.gz|tgz|appimage|exe)$/, "")
+    .replace(PLATFORM, " ")
+    .split(/v?\d+(?:[._-]\d+)+/)
+    .map(trim);
   const words = parts.flatMap((p) => p.split(/[\s._-]+/));
   return (
     [...parts, ...words]

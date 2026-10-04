@@ -26,6 +26,8 @@ export type ShortcutRequest = {
   dir?: string;
   preferred: string[];
   wine: boolean;
+  /** A program the player picked, started exactly. */
+  program?: string;
   art: { icon?: string; header?: string; capsule?: string; hero?: string; logo?: string };
 };
 
@@ -34,8 +36,8 @@ export const native = {
   readState: <T>(name: StateFile) => invoke<T | null>("read_state", { name }),
   writeState: (name: StateFile, value: unknown) => invoke<void>("write_state", { name, value }),
   install: (request: InstallRequest) => invoke<{ dir: string; version: string }>("install", { request }),
-  launch: (folder: string, dir: string | undefined, preferred: string[], wine: boolean) =>
-    invoke<void>("launch", { folder, dir, preferred, wine }),
+  launch: (folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string) =>
+    invoke<void>("launch", { folder, dir, preferred, wine, program }),
   uninstall: (folder: string, dir?: string) => invoke<void>("uninstall", { folder, dir }),
   secretGet: (key: string) => invoke<string | null>("secret_get", { key }),
   secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),

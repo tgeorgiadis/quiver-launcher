@@ -32,6 +32,9 @@ pub struct ShortcutRequest {
     pub dir: Option<String>,
     pub preferred: Vec<String>,
     pub wine: bool,
+    /// A program the player picked, started exactly.
+    #[serde(default)]
+    pub program: Option<String>,
     #[serde(default)]
     pub art: Art,
 }

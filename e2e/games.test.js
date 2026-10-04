@@ -159,6 +159,15 @@ test("an app's Based on chip opens its game, even one with no artwork", async ()
   assert.deepEqual(uiErrors(), []);
 });
 
+test("the Quiver logo, as on the website, goes to the library", async () => {
+  const logo = await app.$(".topbar button.brand");
+  await until(() => app.execute(() => document.querySelector(".topbar .brand img").naturalWidth > 0));
+  await logo.click();
+  await (await app.$("h2=Your library is empty")).waitForDisplayed();
+  await (await app.$("button=Browse")).click();
+  await (await card("test-port")).waitForDisplayed();
+});
+
 // Last: it leaves an error in the log on purpose.
 test("a page that fails says so and goes back, keeping the search", async () => {
   await search("broken");

@@ -36,6 +36,8 @@ test("a file picked among several is found again in later releases", () => {
   expect(assetFilterFor(files[2], files)).toBe("collection-extras");
   // It still matches the next release's file.
   expect("GameB-v1.3.0-windows-x64.zip".toLowerCase()).toContain(assetFilterFor(files[1], files));
+  // Platform words name the computer, not the app, so the pick holds on another computer too.
+  expect(assetFilterFor("GameB-Linux.zip", ["GameA-Linux.zip", "GameB-Linux.zip"])).toBe("gameb");
   // No part of its own: the whole name.
   expect(assetFilterFor("Game-1.0.zip", ["Game-1.0.zip", "GameDeluxe-1.0.zip"])).toBe("game-1.0.zip");
 });

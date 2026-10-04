@@ -260,7 +260,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         {
           tag_name: "v1.0",
           released_at: "2026-03-01T00:00:00Z",
-          assets: { links: files.map((name, i) => ({ id: i + 1, name, url: `${base}/files/${name.toLowerCase()}` })) },
+          // Links have titles; the file's own name is in its address.
+          assets: { links: files.map((name, i) => ({ id: i + 1, name: `Game ${i + 1}`, url: `${base}/files/${name}` })) },
         },
       ]);
     }

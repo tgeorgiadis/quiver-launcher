@@ -71,5 +71,12 @@ export function localEntry(id: string, app: LocalApp, art?: GameArt): CatalogEnt
   return withArt(stub(id, app.name, where), art) satisfies Entry;
 }
 
-/** A file name as a pattern that matches only itself (the launcher's executables are glob patterns). */
-export const literalPattern = (name: string) => name.replace(/[[\]*?]/g, (c) => `[${c}]`);
+/** A folder name for an app's name: what Windows, macOS and Linux all allow. */
+export function folderNameFor(name: string) {
+  const clean = name
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[. ]+$/, "");
+  return /^(con|prn|aux|nul|com\d|lpt\d)(\.|$)/i.test(clean) ? `${clean} app` : clean || "App";
+}

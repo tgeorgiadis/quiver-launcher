@@ -12,7 +12,7 @@ import { bestAssets } from "./assets";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, joinAccount, type Collection } from "./sync";
 import { setBindings, type Bindings } from "./spatial";
-import { customEntry, customKey, isCustom, literalPattern, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { customEntry, customKey, folderNameFor, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { createConvexClient } from "./catalog";
 
 export type { CustomApp, Collection, GameArt, LocalApp };
@@ -48,6 +48,8 @@ export type Install = {
   updates?: "auto" | "pinned";
   /** The player's own files (a local app): never downloaded, updated or deleted. */
   local?: true;
+  /** A program the player picked, started exactly where it is. */
+  program?: string;
 };
 /** A repository the catalog doesn't list, before it's added: its latest release and the files for this computer. */
 export type RepositoryPreview = { app: CustomApp; latest?: Release; files: Asset[] };
@@ -263,7 +265,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     setLibrary((local) => {
       const joined = joinAccount(local, userId);
       const next = applyServer(joined, server, userId);
-      const fromDevice = local.filter((i) => !i.account).length;
+      // Apps on this computer only don't go to the account, so they aren't counted.
+      const fromDevice = local.filter((i) => !i.account && !i.local).length;
       const fromAccount = next.filter((i) => !local.some((l) => l.id === i.id)).length;
       if (fromDevice || fromAccount)
         setNotice(`Library synced: ${fromDevice} ${fromDevice === 1 ? "app" : "apps"} from this computer, ${fromAccount} from your account.`);
@@ -326,6 +329,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   /** `app` is the custom app's repository, when it isn't in the library yet. */
   async function installEntry(entry: Entry, chosen?: Release, app?: CustomApp) {
+    // The player's own files are never downloaded over.
+    if (isLocal(entry.id) || installs[entry.id]?.local) return;
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
     try {
       const custom = isCustom(entry.id) ? (app ?? allItems.find((i) => i.id === entry.id)?.custom ?? fromKey(entry.id)) : null;
@@ -338,11 +343,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
             })).items[0]);
       if (!release) throw new Error(custom ? "This repository has no releases yet." : "This app has no approved release yet.");
       const settings = release.installationOverride ?? entry.launcher;
-      let [asset, ...others] = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter);
-      // A file the player picked that a later release names differently: they pick again.
-      if (!asset && custom && settings.releaseAssetFilter) [asset, ...others] = bestAssets(release.assets, config.os, config.arch);
+      let candidates = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter);
+      // A file the player picked that a later release names differently: they pick again, even from one.
+      const missed = !candidates.length && Boolean(custom && settings.releaseAssetFilter);
+      if (missed) candidates = bestAssets(release.assets, config.os, config.arch);
+      let [asset, ...others] = candidates;
       if (!asset) throw new Error(`This release has no download for your computer.`);
-      if (others.length) {
+      if (others.length || missed) {
         const picked = await new Promise<Asset | null>((resolve) =>
           setChoice({ entry, version: release.version, assets: [asset, ...others], resolve }),
         );
@@ -354,6 +361,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         asset = picked;
       }
       const folder = settings.folderName?.trim() || entry.slug;
+      // One folder, one app: uninstalling either would take the other's files.
+      const shared = Object.entries(installs).some(([id, i]) => id !== entry.id && !i.dir && i.folder.toLowerCase() === folder.toLowerCase());
+      if (shared) throw new Error(`Another app in your library is in the folder ${folder}, so this one can't go there.`);
       await native.install({
         id: entry.id,
         url: asset.url,
@@ -430,6 +440,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     async lookUpRepository(input) {
       const repository = parseRepository(input);
       if (!repository) return { error: "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address." };
+      // Already added: its page.
+      const key = customKey(repository.provider, repository.repository);
+      if (library.some((i) => i.id === key) && catalog[key]) return { listed: catalog[key] };
       try {
         const listed = (await catalogRepositories().catch(() => new Map())).get(`${repository.provider}:${repository.repository}`.toLowerCase());
         const detail = listed && (await client.app(listed.slug).catch(() => null));
@@ -455,9 +468,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const cut = Math.max(app.path.lastIndexOf("/"), app.path.lastIndexOf("\\")) + 1;
         const file = app.path.slice(cut);
         local = { kind: "program", path: app.path, name: app.name };
-        install = { local: true, version: "", dir: app.path.slice(0, cut), folder: file, executables: [literalPattern(file)] };
+        // A Windows program on Linux runs through Wine.
+        const wine = config.os === "linux" && /\.(exe|bat|cmd)$/i.test(file);
+        install = { local: true, version: "", dir: app.path.slice(0, cut), folder: file, executables: [], program: app.path, ...(wine ? { wine } : {}) };
       } else {
-        const folder = await native.createAppFolder(app.name);
+        const folder = await native.createAppFolder(folderNameFor(app.name));
         local = { kind: "folder", folder, name: app.name };
         install = { local: true, version: "", folder, executables: [] };
       }
@@ -505,7 +520,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const install = installs[id];
       if (!install) return;
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now() } }));
-      await native.launch(install.folder, install.dir, install.executables, Boolean(install.wine)).catch((e) => fail(id, e));
+      await native.launch(install.folder, install.dir, install.executables, Boolean(install.wine), install.program).catch((e) => fail(id, e));
     },
     async remove(id) {
       const install = installs[id];

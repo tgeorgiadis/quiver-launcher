@@ -75,6 +75,12 @@ pub async fn install(
 ) -> Result<Installed, String> {
     let folder = plain_name(&req.folder)?.to_string();
     let filename = plain_name(&req.filename)?.to_string();
+    // Never into a folder of files Quiver didn't put there, such as one the player fills themselves.
+    if req.dir.is_none() && !may_install_into(&apps_dir.join(&folder)) {
+        return Err(format!(
+            "The folder {folder} in your apps folder has files Quiver didn't install, so it won't install over them. Rename or move that folder, then try again."
+        ));
+    }
     // Ids can be "github:owner/repo"; the staging folder only needs to be unique.
     let stage: String = req.id.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '_' }).collect();
     let staging = apps_dir.join(".staging").join(stage);
@@ -97,6 +103,11 @@ pub async fn install(
         tokio::task::spawn_blocking(move || -> Result<(), String> {
             extract(&file, &filename, &out)?;
             flatten(&out).map_err(text)?;
+            // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.
+            fs::create_dir_all(&dir).map_err(text)?;
+            if !dir.join(VERSION_FILE).exists() {
+                fs::write(dir.join(VERSION_FILE), "").map_err(text)?;
+            }
             merge(&out, &dir).map_err(text)?;
             for name in &files {
                 let path = dir.join(plain_name(name)?);
@@ -113,6 +124,18 @@ pub async fn install(
     .await;
     let _ = fs::remove_dir_all(&staging);
     result
+}
+
+/// Whether Quiver may install into a folder: a new or empty one, or one it
+/// installed into. Never a folder of files the player put there themselves.
+pub fn may_install_into(dir: &Path) -> bool {
+    !fs::read_dir(dir).is_ok_and(|mut entries| entries.next().is_some()) || dir.join(VERSION_FILE).is_file()
+}
+
+/// Whether Quiver may remove an app's folder: only one that still looks like
+/// an install, one it installed into or (adopted) a 3.x install.
+pub fn may_remove(dir: &Path, adopted: bool) -> bool {
+    dir.join(VERSION_FILE).is_file() || (adopted && dir.join("version.txt").is_file())
 }
 
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
@@ -302,6 +325,27 @@ fn text(e: impl std::fmt::Display) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn never_installs_over_or_removes_the_players_own_folder() {
+        let apps = tempfile::tempdir().unwrap();
+        let own = apps.path().join("Mine");
+        assert!(may_install_into(&own), "a new folder");
+        fs::create_dir(&own).unwrap();
+        assert!(may_install_into(&own), "an empty folder");
+        fs::write(own.join("game.exe"), "").unwrap();
+        assert!(!may_install_into(&own), "the player's files");
+        assert!(!may_remove(&own, false));
+        // A 3.x install is only removed while it still has its version file, and only when adopted.
+        fs::write(own.join("version.txt"), "1.0").unwrap();
+        assert!(!may_remove(&own, false));
+        assert!(may_remove(&own, true));
+        let ours = apps.path().join("Ours");
+        fs::create_dir(&ours).unwrap();
+        fs::write(ours.join("game.exe"), "").unwrap();
+        fs::write(ours.join(VERSION_FILE), "1.0").unwrap();
+        assert!(may_install_into(&ours) && may_remove(&ours, false));
+    }
 
     #[test]
     fn prefers_catalog_executable_then_skips_helpers() {

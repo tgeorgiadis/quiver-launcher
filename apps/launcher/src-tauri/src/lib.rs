@@ -113,11 +113,29 @@ fn app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<PathBuf, St
     }
 }
 
+const NO_PROGRAM: &str = "Couldn't find a program to start in this app's folder.";
+
 /// What starts an installed app: its program, or Wine (on Linux) or `open` (a macOS .app) with it.
-fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], wine: bool) -> Result<shortcut::Target, String> {
-    let dir = app_dir(data, folder, dir)?;
-    let exe = install::find_executable(&dir, preferred, if wine { "windows" } else { OS })
-        .ok_or("Couldn't find a program to start in this app's folder.")?;
+/// `program` is one the player picked: exactly that file, never a guess.
+fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>) -> Result<shortcut::Target, String> {
+    let (exe, wine) = match program {
+        Some(program) => {
+            let exe = PathBuf::from(&program);
+            if !exe.exists() {
+                return Err(format!("The program isn't at {program} any more. Remove this app and add it again from where it is now."));
+            }
+            (exe, wine)
+        }
+        None => {
+            let dir = app_dir(data, folder, dir)?;
+            match install::find_executable(&dir, preferred, if wine { "windows" } else { OS }) {
+                Some(exe) => (exe, wine),
+                // A folder with only a Windows build runs through Wine on Linux.
+                None if OS == "linux" && !wine => (install::find_executable(&dir, preferred, "windows").ok_or(NO_PROGRAM)?, true),
+                None => return Err(NO_PROGRAM.into()),
+            }
+        }
+    };
     let (program, args) = if wine {
         (PathBuf::from("wine"), vec![exe.to_string_lossy().into_owned()])
     } else if OS == "macos" && exe.extension().is_some_and(|e| e == "app") {
@@ -130,12 +148,12 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
     };
     // Many distros no longer ship FUSE 2, which AppImages mount themselves with.
     let extract_appimage = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("appimage")) && !has_fuse2();
-    Ok(shortcut::Target { dir: exe.parent().unwrap_or(&dir).to_path_buf(), exe, program, args, extract_appimage })
+    Ok(shortcut::Target { dir: exe.parent().unwrap_or(Path::new(".")).to_path_buf(), exe, program, args, extract_appimage })
 }
 
 #[tauri::command]
-fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Result<(), String> {
-    let target = target(&data, &folder, dir, &preferred, wine)?;
+fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool, program: Option<String>) -> Result<(), String> {
+    let target = target(&data, &folder, dir, &preferred, wine, program)?;
     let mut command = Command::new(&target.program);
     command.args(&target.args);
     if target.extract_appimage {
@@ -149,8 +167,13 @@ fn launch(data: State<Data>, folder: String, dir: Option<String>, preferred: Vec
         .stderr(std::process::Stdio::null())
         .spawn()
         .map(|_| ())
-        .map_err(|e| match wine {
-            true if e.kind() == std::io::ErrorKind::NotFound => "This is a Windows app. Install Wine to play it on Linux.".into(),
+        .map_err(|e| match e.kind() {
+            std::io::ErrorKind::NotFound if wine => "This is a Windows app. Install Wine to play it on Linux.".into(),
+            // A downloaded AppImage or program isn't executable until it's allowed to run.
+            std::io::ErrorKind::PermissionDenied if OS != "windows" => format!(
+                "{} isn't allowed to run as a program. Allow it in its file properties (Permissions), or run chmod +x on it, then press Play again.",
+                target.exe.display()
+            ),
             _ => format!("Couldn't start {}: {e}", target.exe.display()),
         })
 }
@@ -165,7 +188,7 @@ async fn shortcut_icon(data: &Data, request: &shortcut::ShortcutRequest) -> Opti
 #[tauri::command]
 async fn create_shortcut(app: tauri::AppHandle, request: shortcut::ShortcutRequest) -> Result<String, String> {
     let data = app.state::<Data>();
-    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine)?;
+    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine, request.program.clone())?;
     let icon = shortcut_icon(&data, &request).await;
     let path = shortcut::desktop(&target, &request.name, icon.as_deref())?;
     Ok(format!("{} is on your desktop.", path.file_name().unwrap_or_default().to_string_lossy()))
@@ -175,7 +198,7 @@ async fn create_shortcut(app: tauri::AppHandle, request: shortcut::ShortcutReque
 #[tauri::command]
 async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest) -> Result<String, String> {
     let data = app.state::<Data>();
-    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine)?;
+    let target = target(&data, &request.folder, request.dir.clone(), &request.preferred, request.wine, request.program.clone())?;
     steam::account()?;
     let icon = shortcut_icon(&data, &request).await;
     let mut shortcut = steam::Shortcut::new(&request.name, &target, icon.as_deref());
@@ -213,8 +236,8 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
     Ok(format!("{} will be added to Steam when Steam closes.{proton} Restart Steam to see it.", request.name))
 }
 
-/// Opens an installed app's folder in the file manager. The window names the
-/// app, never a path: only folders of apps in installs.json can be opened.
+/// Opens an installed app's folder in the file manager: the folder of an app
+/// in installs.json, by the app's id.
 #[tauri::command]
 fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
     let installs: serde_json::Value = std::fs::read(state_file(&data, "installs")?)
@@ -240,12 +263,16 @@ fn reveal(dir: &Path) -> Result<(), String> {
     open::that_detached(dir).map_err(|e| e.to_string())
 }
 
-/// Makes (or finds) a folder in the apps folder for an app the player fills
-/// themselves, opens it for them, and resolves to its name.
+/// Makes a new folder in the apps folder for an app the player fills
+/// themselves, opens it for them, and resolves to its name. Never one that's
+/// already there: it could be another app's.
 #[tauri::command]
 fn create_app_folder(data: State<Data>, name: String) -> Result<String, String> {
     let name = install::plain_name(&name)?.to_string();
     let dir = data.apps().join(&name);
+    if dir.exists() {
+        return Err(format!("There's already a folder named {name} in your apps folder. Choose another name."));
+    }
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     reveal(&dir)?;
     Ok(name)
@@ -254,12 +281,12 @@ fn create_app_folder(data: State<Data>, name: String) -> Result<String, String> 
 /// Asks the player for a program on this computer; null if they cancel.
 /// `QUIVER_PICK` answers instead in end-to-end tests.
 #[tauri::command]
-async fn pick_program(app: tauri::AppHandle) -> Option<String> {
+async fn pick_program(app: tauri::AppHandle, window: tauri::WebviewWindow) -> Option<String> {
     if let Some(path) = std::env::var_os("QUIVER_PICK") {
         return Some(path.to_string_lossy().into());
     }
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let dialog = app.dialog().file().set_title("Choose the program that starts the app");
+    let dialog = app.dialog().file().set_parent(&window).set_title("Choose the program that starts the app");
     let dialog = match OS {
         "windows" => dialog.add_filter("Programs", &["exe", "lnk", "bat", "cmd"]),
         "macos" => dialog.add_filter("Apps", &["app"]),
@@ -293,8 +320,9 @@ fn has_fuse2() -> bool {
 fn uninstall(data: State<Data>, folder: String, dir: Option<String>) -> Result<(), String> {
     let adopted = dir.is_some();
     let dir = app_dir(&data, &folder, dir)?;
-    // An adopted folder is only removed while it still looks like an install.
-    if dir.exists() && (!adopted || dir.join("version.txt").is_file()) {
+    // Only a folder that still looks like an install is removed: one Quiver
+    // installed into, or a 3.x install. Never a folder of the player's own.
+    if dir.exists() && install::may_remove(&dir, adopted) {
         trash::delete(&dir).or_else(|_| std::fs::remove_dir_all(&dir)).map_err(|e| e.to_string())?;
     }
     Ok(())

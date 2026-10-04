@@ -79,6 +79,14 @@ function FromRepository({ onBack, onDone }: Done) {
   const [name, setName] = useState("");
   const [file, setFile] = useState<string | undefined>();
   const [art, setArt] = useState<GameArt | null>(null);
+  // A lookup that ends after the player went back or closed the dialog is dropped.
+  const live = useRef(true);
+  useEffect(
+    () => () => {
+      live.current = false;
+    },
+    [],
+  );
   if (!preview)
     return (
       <form
@@ -87,6 +95,7 @@ function FromRepository({ onBack, onDone }: Done) {
           setBusy(true);
           setError(null);
           lookUpRepository(input).then((r) => {
+            if (!live.current) return;
             setBusy(false);
             if ("error" in r) return setError(r.error);
             // The catalog lists it: its own page, with checked releases.
@@ -146,7 +155,7 @@ function FromRepository({ onBack, onDone }: Done) {
 }
 
 const PROGRAMS: Record<string, string> = {
-  windows: "a program (.exe) or a shortcut to one",
+  windows: "a program (.exe)",
   linux: "an AppImage or another program",
   macos: "an app",
 };
@@ -157,13 +166,17 @@ function FromProgram({ onBack, onDone }: Done) {
   const [name, setName] = useState("");
   const [art, setArt] = useState<GameArt | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const choose = () =>
+  const [picking, setPicking] = useState(false);
+  const choose = () => {
+    setPicking(true);
     native.pickProgram().then((picked) => {
+      setPicking(false);
       if (!picked) return;
       setPath(picked);
       // "Super Game.exe" is "Super Game".
       setName(picked.split(/[\\/]/).pop()!.replace(/\.(exe|lnk|bat|cmd|appimage|app|sh|x86_64)$/i, ""));
-    }, (e) => setError(String(e)));
+    }, (e) => (setPicking(false), setError(String(e))));
+  };
   return (
     <form
       onSubmit={(e) => {
@@ -175,7 +188,7 @@ function FromProgram({ onBack, onDone }: Done) {
       <Heading title="A program on this computer" onBack={onBack} />
       <p className="muted">Choose {PROGRAMS[config.os] ?? "the program"} that starts the app. It starts where it is, and removing it from your library leaves it there.</p>
       <div className="row">
-        <button type="button" onClick={choose}>
+        <button type="button" onClick={choose} disabled={picking}>
           {path ? "Choose another program…" : "Choose the program…"}
         </button>
       </div>
@@ -238,7 +251,7 @@ function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | nu
   const { client } = useLauncher();
   const [matches, setMatches] = useState<GameMatch[]>([]);
   // Undefined until the player picks: until then the best match is picked for them.
-  const [picked, setPicked] = useState<string | null | undefined>(undefined);
+  const picked = useRef<string | null | undefined>(undefined);
   const latest = useRef(0);
   function choose(slug: string | null) {
     const request = ++latest.current;
@@ -258,7 +271,7 @@ function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | nu
           (found) => {
             if (!live) return;
             setMatches(found);
-            if (picked === undefined) choose(found[0]?.slug ?? null);
+            if (picked.current === undefined) choose(found[0]?.slug ?? null);
           },
           () => {},
         ),
@@ -270,7 +283,7 @@ function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | nu
     };
   }, [name, client]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!matches.length && !value) return null;
-  const pick = (slug: string | null) => (setPicked(slug), choose(slug));
+  const pick = (slug: string | null) => ((picked.current = slug), choose(slug));
   // A pick from an earlier name stays on offer.
   const shown = value && !matches.some((m) => m.slug === value.game.slug) ? [{ slug: value.game.slug, title: value.game.title, art: value.libraryArt?.capsule, apps: 0 }, ...matches] : matches;
   return (
