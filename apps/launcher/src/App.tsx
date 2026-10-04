@@ -9,6 +9,8 @@ import { FeedbackTab, ReportPrompt, useOwnFeedback, type Intent } from "./feedba
 import { GamePage, GamesSection, type GameLink } from "./game";
 import { ErrorBoundary } from "./boundary";
 import { ControlSettings } from "./controls";
+import { track } from "./telemetry";
+import { TelemetryNotice, TelemetrySetting, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount } from "./account";
 import { native } from "./native";
 import { isLocal, isOwn } from "./custom";
@@ -23,6 +25,7 @@ const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimE
 const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
 
 export function App() {
+  useTelemetrySetup();
   const { library } = useLauncher();
   // A new player starts in the catalog; everyone else in their library.
   const [tab, setTab] = useState<Tab>(library.length ? "library" : "browse");
@@ -74,6 +77,15 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [goBack]);
   const top = stack.at(-1);
+  // Usage data: the screen shown, a catalog app's or game's by its slug (never one the player added).
+  const screen = !top ? tab : top.kind === "app" ? `app:${isOwn(top.entry.id) ? "" : top.entry.slug}` : `game:${top.game.slug}`;
+  useEffect(() => {
+    const [name, slug] = screen.split(":");
+    track("screen_viewed", { screen: name, ...(slug !== undefined ? { slug: slug || null } : {}) });
+  }, [screen]);
+  useEffect(() => void (settingsOpen && track("screen_viewed", { screen: "settings" })), [settingsOpen]);
+  useEffect(() => void (adding && track("screen_viewed", { screen: "add_app" })), [adding]);
+  useEffect(() => void (signingIn && track("screen_viewed", { screen: "sign_in" })), [signingIn]);
   const query = search.trim();
   const listName = tab === "library" ? "Library" : query ? `Back to results for “${shorten(query)}”` : "Browse";
   /** What Back on the page at `i` returns to. */
@@ -135,6 +147,7 @@ export function App() {
         </ErrorBoundary>
         {/* Kept mounted under the pages too, so going back keeps the search, filters and scroll. */}
         <div hidden={Boolean(top)}>
+          <TelemetryNotice />
           <Notice />
           {/* Finishing an import shows the library, under whatever page is open. */}
           <OldLibrary
@@ -237,6 +250,8 @@ function BrowsePage({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState<GameMatch[]>([]);
+  // The search whose games are in.
+  const [gamesFor, setGamesFor] = useState<string | null>(null);
   const query = useDebounced(search, 250);
   const searching = Boolean(query.trim());
   // Only the newest request's answer is shown: an older one can arrive after it.
@@ -264,16 +279,26 @@ function BrowsePage({
   useEffect(() => {
     // As on the website, the last search's games go as soon as the search changes.
     setGames([]);
-    if (query.trim().length < 2) return;
+    setGamesFor(null);
+    if (query.trim().length < 2) return setGamesFor(query);
     let live = true;
     client.matchingGames(query).then(
-      (found) => live && setGames(found),
-      () => live && setGames([]),
+      (found) => live && (setGames(found), setGamesFor(query)),
+      () => live && (setGames([]), setGamesFor(query)),
     );
     return () => {
       live = false;
     };
   }, [query, client]);
+  // Usage data: a search that found no apps, by its length only, once its games are in too.
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    const typed = query.trim();
+    if (!typed || loading || error || gamesFor !== query || pages.length !== 1 || pages[0].items.length || reported.current === typed) return;
+    reported.current = typed;
+    const filtered = Boolean(filters.projectType || filters.console || filters.ai || filters.os !== config.os);
+    track("search_no_results", { query_length: typed.length, results: 0, games: games.length, filtered });
+  }, [query, loading, error, gamesFor, pages, games]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const brands = [...new Set(consoles.map((c) => c.brand))];
 
@@ -726,7 +751,7 @@ function SignIn({ onClose }: { onClose: () => void }) {
             e.preventDefault();
             setBusy(true);
             signIn(username.trim(), password, create)
-              .then((message) => (message ? setError(message) : onClose()))
+              .then((message) => (message ? setError(message) : (track("signed_in", { method: "password", created: create }), onClose())))
               .finally(() => setBusy(false));
           }}
         >
@@ -742,7 +767,7 @@ function SignIn({ onClose }: { onClose: () => void }) {
                 setWaiting(true);
                 setError(null);
                 signInWith(provider)
-                  .then((message) => (message ? setError(message) : onClose()))
+                  .then((message) => (message ? setError(message) : (track("signed_in", { method: provider }), onClose())))
                   .finally(() => (setBusy(false), setWaiting(false)));
               }}
             >
@@ -807,6 +832,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
             </select>
           </label>
           <p className="muted">Apps are installed in {config.appsDir}</p>
+          <TelemetrySetting />
           <ControlSettings />
           <button className="primary" onClick={onClose}>
             Done

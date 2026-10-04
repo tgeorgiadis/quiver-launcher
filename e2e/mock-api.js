@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { gunzipSync } from "node:zlib";
 
 /** A zip with a wrapper folder and a program that leaves a mark when run. */
 function buildZip() {
@@ -58,6 +59,14 @@ const entry = (slug, name, overrides = {}) => ({
   ...overrides,
 });
 
+/** PostHog's request bodies: JSON, gzipped JSON, or base64 form data (a page closing). */
+function decodePosthog(raw, url) {
+  const zipped = url.searchParams.get("compression") === "gzip-js" || (raw[0] === 0x1f && raw[1] === 0x8b);
+  const text = (zipped ? gunzipSync(raw) : raw).toString("utf8");
+  const form = text.startsWith("data=") && new URLSearchParams(text).get("data");
+  return form ? Buffer.from(form, "base64").toString("utf8") : text;
+}
+
 /** `pageSize` caps how many apps a catalog page has, to try paging. */
 export async function startMockApi({ pageSize = Infinity } = {}) {
   const zip = buildZip();
@@ -79,6 +88,9 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   let lastQuery = new URLSearchParams();
   const convexQueries = [];
   const downloads = [];
+  // Usage data sent to the stand-in for PostHog (QUIVER_POSTHOG_HOST): events, and every request body as sent.
+  const telemetry = [];
+  const telemetryBodies = [];
   // The original games, and their apps in the site's (unsorted) order.
   const games = () => ({
     "test-port": {
@@ -251,6 +263,34 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
     if (url.pathname.startsWith("/account/")) return account.handle(req, res, url.pathname.slice(8));
+    // PostHog: events are recorded; flags and remote config answer with nothing to change.
+    if (url.pathname.startsWith("/posthog/")) {
+      const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": req.headers.origin ?? "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, headers);
+        return res.end();
+      }
+      const path = url.pathname.slice("/posthog".length);
+      if (/^\/(flags|decide)\/?$/.test(path) || path.startsWith("/array/")) {
+        res.writeHead(200, headers);
+        return res.end(JSON.stringify({ featureFlags: {}, featureFlagPayloads: {}, errorsWhileComputingFlags: false }));
+      }
+      const raw = await new Promise((resolve) => {
+        const chunks = [];
+        req.on("data", (c) => chunks.push(c));
+        req.on("end", () => resolve(Buffer.concat(chunks)));
+      });
+      const text = decodePosthog(raw, url);
+      telemetryBodies.push(text);
+      try {
+        const parsed = JSON.parse(text);
+        telemetry.push(...(Array.isArray(parsed) ? parsed : (parsed.batch ?? [parsed])));
+      } catch {
+        // Kept in telemetryBodies, for tests to look at.
+      }
+      res.writeHead(200, headers);
+      return res.end(JSON.stringify({ status: 1 }));
+    }
     const send = (body, status = 200) => {
       res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
       res.end(JSON.stringify(body));
@@ -343,6 +383,14 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     account: `${base}/account`,
     github: `${base}/github`,
     gitlab: `${base}/gitlab`,
+    posthog: `${base}/posthog`,
+    /** Usage data events received, oldest first, and every request body as text. */
+    telemetry: () => telemetry,
+    telemetryBodies: () => telemetryBodies,
+    /** Calls to users.setAnalytics: { user, enabled }. */
+    analyticsCalls: account.analyticsCalls,
+    /** Turns usage data off (or on) for an account, as the website's privacy page does. */
+    setAnalytics: account.setAnalytics,
     reviews: account.reviews,
     /** Shared lists by slug. */
     lists: account.lists,
@@ -359,7 +407,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
 }
 
 /**
- * The site's account functions (users.me, library.list/save, reviews.save)
+ * The site's account functions (users.me and setAnalytics, library.list/save, reviews.save)
  * with the same contract, over HTTP: the real backend is private.
  */
 function mockAccount(entries) {
@@ -368,6 +416,7 @@ function mockAccount(entries) {
   const users = new Map(); // name -> { id, password, items: Map(entryId -> item), collections: Map(key -> collection) }
   const tokens = new Map(); // token -> name
   const reviews = [];
+  const analyticsCalls = [];
   // One review per player and app, as reviews.list shows it; Test Port starts with two.
   const saved = new Map();
   const seed = (name, result, body, at) =>
@@ -425,7 +474,8 @@ function mockAccount(entries) {
     if (!user) return send(res, {}, 401);
     if (path === "/library")
       return send(res, {
-        user: { id: user.id, name },
+        // As users.me: the account's usage data setting too.
+        user: { id: user.id, name, provider: user.password ? "password" : "github", ...(user.analyticsOptOut ? { analyticsOptOut: true } : {}) },
         items: [...user.items.values()].map((i) => ({ ...i, ...(i.entryId ? { slug: entries.find((e) => e.id === i.entryId).slug } : {}) })),
         // As libraryCollections.list: the shared list's slug when the collection is shared.
         collections: [...user.collections.values()].map((c) => {
@@ -482,6 +532,13 @@ function mockAccount(entries) {
       }
       return send(res, []);
     }
+    // As users.setAnalytics.
+    if (path === "/analytics") {
+      if (typeof body.enabled !== "boolean") return send(res, { error: "ArgumentValidationError" }, 400);
+      user.analyticsOptOut = body.enabled ? undefined : true;
+      analyticsCalls.push({ user: name, enabled: body.enabled });
+      return send(res, null);
+    }
     if (path === "/reviews/own") return send(res, saved.get(`${name}:${body.entryId}`) ?? null);
     if (path === "/reviews") {
       // As reviews.save on the site checks it.
@@ -511,5 +568,9 @@ function mockAccount(entries) {
   }
   const feedback = (slug) =>
     [...saved.values()].filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id).sort((a, b) => b.createdAt - a.createdAt);
-  return { handle, reviews, feedback, lists };
+  const setAnalytics = (name, enabled) => {
+    const user = users.get(name);
+    if (user) user.analyticsOptOut = enabled ? undefined : true;
+  };
+  return { handle, reviews, feedback, lists, analyticsCalls, setAnalytics };
 }

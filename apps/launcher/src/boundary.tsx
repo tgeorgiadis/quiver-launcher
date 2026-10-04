@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { native } from "./native";
+import { captureError } from "./telemetry";
 
 type Props = {
   fallback: (error: Error, reset: () => void) => ReactNode;
@@ -10,7 +11,8 @@ type Props = {
 
 /**
  * Shows `fallback` where part of the window failed, and writes the error to
- * quiver.log, instead of React taking the whole window down with it.
+ * quiver.log (and error tracking, when usage data is on), instead of React
+ * taking the whole window down with it.
  */
 export class ErrorBoundary extends Component<Props, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -20,6 +22,7 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
   componentDidCatch(error: unknown, info: ErrorInfo) {
     const text = error instanceof Error ? (error.stack ?? error.message) : String(error);
     void native.logError(`ui: ${text}${info.componentStack ?? ""}`).catch(() => {});
+    captureError(error, { handled: "error_boundary" });
   }
   componentDidUpdate(previous: Props) {
     if (this.state.error && previous.resetKey !== this.props.resetKey) this.reset();

@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm --filter @quiver/launcher tauri build --debug --no-bundle",
-    "e2e": "node --test --test-concurrency=1 journeys.test.js parity.test.js import.test.js sync.test.js games.test.js own-apps.test.js feedback.test.js playlists.test.js",
+    "build": "node build.js",
+    "e2e": "node --test --test-concurrency=1 journeys.test.js parity.test.js import.test.js sync.test.js games.test.js own-apps.test.js feedback.test.js playlists.test.js telemetry.test.js",
     "live": "node --test live.test.js"
   },
   "devDependencies": {

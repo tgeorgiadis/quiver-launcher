@@ -28,6 +28,8 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     QUIVER_ACCOUNT_API: api.account,
     QUIVER_GITHUB_API: api.github,
     QUIVER_GITLAB_API: api.gitlab,
+    // Usage data goes to the mock too, never to PostHog (the e2e build has a test token).
+    QUIVER_POSTHOG_HOST: api.posthog,
     QUIVER_BROWSER: resolve(import.meta.dirname, "fake-browser.js"),
     QUIVER_DATA: data,
     QUIVER_V3_DATA: join(data, "none"),

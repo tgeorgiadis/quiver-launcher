@@ -2,7 +2,7 @@
  * Optional sign-in through quiverlauncher.com (Convex Auth, the same backend
  * as the website). Signed in, the library syncs and reviews can be left.
  */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ConvexReactClient, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { makeFunctionReference, type FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
@@ -23,9 +23,9 @@ export type ReviewInput = {
 export type Provider = "github" | "discord";
 
 export type Account = {
-  /** False until the saved session has been checked. */
+  /** False until the saved session, and the account it's for, have been checked. */
   ready: boolean;
-  user: { id: string; name: string } | null;
+  user: AccountUser | null;
   /** The account's library, live; undefined while signed out or loading. */
   items: ServerItem[] | undefined;
   /** Resolves to an error message, or null when signed in. */
@@ -47,6 +47,19 @@ export type Account = {
   shareList: (list: ShareInput) => Promise<string>;
   /** Stops sharing a playlist. */
   unshareList: (slug: string) => Promise<void>;
+  /** Turns anonymous usage data on or off for the account, wherever they sign in (the website's users.setAnalytics). */
+  setAnalytics: (enabled: boolean) => Promise<void>;
+};
+
+/** The signed-in account, as the website's users.me has it. */
+export type AccountUser = {
+  id: string;
+  name: string;
+  role?: string;
+  provider?: string;
+  createdAt?: number;
+  /** Usage data turned off for the account (telemetry.ts follows it while signed in). */
+  analyticsOptOut?: boolean;
 };
 
 /** A playlist to share: the catalog apps on it, by entry id. */
@@ -87,6 +100,7 @@ const fns = {
   ownReview: ref("query", "reviews:own"),
   shareList: ref("mutation", "sharedLists:share"),
   unshareList: ref("mutation", "sharedLists:unshare"),
+  setAnalytics: ref("mutation", "users:setAnalytics"),
   github: [ref("mutation", "auth:startSignInGithub"), ref("mutation", "auth:completeSignInGithub")],
   discord: [ref("mutation", "auth:startSignInDiscord"), ref("mutation", "auth:completeSignInDiscord")],
 };
@@ -134,18 +148,35 @@ type Tokens = Parameters<ReturnType<typeof useAuthActions>["setSession"]>[0];
 
 function ConvexAccountState({ client, returnTo, children }: { client: ConvexReactClient; returnTo: string; children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const me = useQuery(fns.me, isAuthenticated ? {} : "skip") as { _id: string; displayName: string } | null | undefined;
+  const me = useQuery(fns.me, isAuthenticated ? {} : "skip") as
+    | { _id: string; _creationTime: number; displayName: string; role?: string; provider?: string; analyticsOptOut?: boolean }
+    | null
+    | undefined;
   const items = useQuery(fns.list, isAuthenticated ? {} : "skip") as ServerItem[] | undefined;
   const collections = useOptionalQuery<ServerCollection[]>(client, fns.collections, isAuthenticated);
   const save = useMutation(fns.save);
   const saveCollections = useMutation(fns.saveCollections);
   const review = useMutation(fns.review);
+  const setAnalytics = useMutation(fns.setAnalytics);
   const login = useSignInWithPassword(fns.signIn as never);
   const register = useSignUpWithPassword(fns.signUp as never);
   const { signOut, setSession } = useAuthActions();
+  // At the start, signed in, ready once the account itself has loaded, so its settings (such as usage data) are known; then it stays ready.
+  const settled = useRef(false);
+  const ready = settled.current || (!isLoading && (!isAuthenticated || me !== undefined));
+  settled.current = ready;
   const account: Account = {
-    ready: !isLoading,
-    user: me ? { id: me._id, name: me.displayName } : null,
+    ready,
+    user: me
+      ? {
+          id: me._id,
+          name: me.displayName,
+          role: me.role,
+          provider: me.provider,
+          createdAt: me._creationTime,
+          analyticsOptOut: me.analyticsOptOut,
+        }
+      : null,
     items: me ? items : undefined,
     collections: me ? collections : undefined,
     saveCollections: (list) => saveCollections({ collections: list.map(toServer) }),
@@ -186,6 +217,7 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
       }
     },
     unshareList: async (slug) => void (await client.mutation(fns.unshareList, { slug })),
+    setAnalytics: async (enabled) => void (await setAnalytics({ enabled })),
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }
@@ -251,6 +283,10 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
   const [user, setUser] = useState<Account["user"]>(null);
   const [items, setItems] = useState<ServerItem[] | undefined>();
   const [collections, setCollections] = useState<ServerCollection[] | undefined>();
+  // The saved session's account has been asked for once.
+  const [polled, setPolled] = useState(false);
+  // A poll that started before the usage data setting changed may answer with the old one.
+  const changes = useRef(0);
   const call = (path: string, body?: unknown) =>
     fetch(base + path, {
       method: body ? "POST" : "GET",
@@ -265,16 +301,18 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
   useEffect(() => {
     if (!token) return setUser(null), setItems(undefined), setCollections(undefined);
     let live = true;
-    const poll = () =>
-      call("/library")
-        .then((r) => live && (setUser(r.user), setItems(r.items), setCollections(r.collections)))
+    const poll = () => {
+      const at = changes.current;
+      return call("/library")
+        .then((r) => live && at === changes.current && (setUser(r.user), setItems(r.items), setCollections(r.collections)))
         .catch(() => {})
-        .finally(() => live && setTimeout(poll, 400));
+        .finally(() => live && (setPolled(true), setTimeout(poll, 400)));
+    };
     poll();
     return () => void (live = false);
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
   const account: Account = {
-    ready: token !== undefined,
+    ready: token !== undefined && (token === null || polled),
     user,
     items,
     async signIn(username, password, create) {
@@ -321,6 +359,11 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       return (await response.json()).slug;
     },
     unshareList: (slug) => call("/lists/unshare", { slug }),
+    async setAnalytics(enabled) {
+      changes.current++;
+      setUser((u) => u && { ...u, analyticsOptOut: enabled ? undefined : true });
+      await call("/analytics", { enabled }).finally(() => changes.current++);
+    },
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }

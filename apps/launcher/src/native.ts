@@ -6,7 +6,23 @@ import type { Os } from "@quiver/api";
 type StateFile = "library" | "installs" | "catalog" | "settings" | "collections";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
 export type OldApp = { name: string; repository?: string; provider: string; dir?: string; version?: string };
-export type Config = { api: string; convex: string; accountApi?: string; githubApi: string; gitlabApi: string; returnTo: string; os: Os; arch: string; appsDir: string };
+export type Config = {
+  api: string;
+  convex: string;
+  accountApi?: string;
+  githubApi: string;
+  gitlabApi: string;
+  returnTo: string;
+  os: Os;
+  arch: string;
+  appsDir: string;
+  /** Where anonymous usage data goes (telemetry.ts). */
+  posthogHost: string;
+  version: string;
+  /** The home folder and user name, which usage data never contains. */
+  home: string | null;
+  user: string | null;
+};
 export type Progress = { id: string; phase: "downloading" | "installing"; received: number; total: number | null };
 export type InstallRequest = {
   id: string;

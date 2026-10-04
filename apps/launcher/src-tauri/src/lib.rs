@@ -39,6 +39,14 @@ struct Config {
     os: &'static str,
     arch: &'static str,
     apps_dir: String,
+    /// Where anonymous usage data goes: PostHog, or a stand-in in end-to-end tests.
+    posthog_host: String,
+    /// This build's version, sent with usage data.
+    version: String,
+    /// The home folder and the user's name on this computer, which usage data
+    /// must never contain: the UI takes them out of anything it sends.
+    home: Option<String>,
+    user: Option<String>,
 }
 
 const OS: &str = match std::env::consts::OS.as_bytes() {
@@ -56,7 +64,7 @@ const ARCH: &str = match std::env::consts::ARCH.as_bytes() {
 };
 
 #[tauri::command]
-fn config(data: State<Data>) -> Config {
+fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
     Config {
         api: std::env::var("QUIVER_API").unwrap_or_else(|_| "https://api.quiverlauncher.com/api/v1".into()),
         convex: std::env::var("QUIVER_CONVEX").unwrap_or_else(|_| "https://convex.quiverlauncher.com".into()),
@@ -67,6 +75,10 @@ fn config(data: State<Data>) -> Config {
         os: OS,
         arch: ARCH,
         apps_dir: data.apps().to_string_lossy().into(),
+        posthog_host: std::env::var("QUIVER_POSTHOG_HOST").unwrap_or_else(|_| "https://us.i.posthog.com".into()),
+        version: app.package_info().version.to_string(),
+        home: std::env::var(if OS == "windows" { "USERPROFILE" } else { "HOME" }).ok().filter(|h| !h.is_empty()),
+        user: std::env::var("USERNAME").or_else(|_| std::env::var("USER")).ok().filter(|u| !u.is_empty()),
     }
 }
 

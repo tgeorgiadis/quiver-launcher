@@ -9,8 +9,9 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
 import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
+import { reasonOf, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, joinAccount, type Collection } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, type Collection } from "./sync";
 import { setBindings, type Bindings } from "./spatial";
 import { customEntry, customKey, folderNameFor, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { createConvexClient } from "./catalog";
@@ -153,7 +154,19 @@ export type Settings = {
   padOff?: boolean;
   /** The library in sections by original console. */
   byConsole?: boolean;
+  /** Anonymous usage data turned off here (telemetry.ts); signed in, the account's setting wins. */
+  telemetryOff?: boolean;
+  /** The first-run notice about usage data was answered. */
+  telemetryNoticeSeen?: boolean;
+  /** Quiver Launcher has started here before. */
+  launched?: boolean;
 };
+
+/** An app as usage data names it: a catalog app by its slug; one the player added only by where it's from. */
+export const appRef = (id: string, slug: string) => ({
+  slug: isCustom(id) || isLocal(id) ? null : slug,
+  source: isLocal(id) ? "local" : isCustom(id) ? "custom" : "catalog",
+});
 
 type Saved = {
   settings: Settings;
@@ -334,6 +347,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
+    const ref = appRef(entry.id, entry.slug);
+    const from = installs[entry.id]?.version;
+    let version = chosen?.version ?? entry.verified?.version;
+    track("app_install_started", { ...ref, version: version ?? null, update: Boolean(from) });
     try {
       const custom = isCustom(entry.id) ? (app ?? allItems.find((i) => i.id === entry.id)?.custom ?? fromKey(entry.id)) : null;
       const release =
@@ -344,6 +361,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
               throw new Error("Couldn't reach quiverlauncher.com. Check your connection and try again.");
             })).items[0]);
       if (!release) throw new Error(custom ? "This repository has no releases yet." : "This app has no approved release yet.");
+      version = release.version;
       const settings = release.installationOverride ?? entry.launcher;
       let candidates = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter);
       // A file the player picked that a later release names differently: they pick again, even from one.
@@ -358,6 +376,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         setChoice(null);
         if (!picked) {
           setJobs(({ [entry.id]: _, ...rest }) => rest);
+          track("app_install_cancelled", { ...ref, version });
           return;
         }
         asset = picked;
@@ -382,8 +401,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const updates = chosen ? "pinned" : installs[entry.id]?.updates;
       setInstalls((i) => ({ ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(updates ? { updates } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
       setJobs(({ [entry.id]: _, ...rest }) => rest);
+      if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && installs[entry.id]?.updates === "auto" });
+      else track("app_installed", { ...ref, version: release.version });
     } catch (error) {
       fail(entry.id, error);
+      track("app_install_failed", { ...ref, version: version ?? null, update: Boolean(from), reason: reasonOf(error) });
     }
   }
 
@@ -424,14 +446,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     consoles,
     consoleNames,
     collections,
-    saveCollection: (c) =>
+    saveCollection: (c) => {
+      if (!c.removed && !allCollections.some((x) => x.key === c.key))
+        track(c.follows ? "playlist_followed" : "playlist_created", c.follows ? undefined : { has_filters: hasFilters(c), apps: c.apps?.length ?? 0 });
       setCollections((all) => {
         const synced = c.account ?? userId;
         const next = { ...c, account: synced, pending: synced ? true : undefined };
         // Never synced: a removal just deletes it.
         const keep = c.removed && !synced ? [] : [next];
         return all.some((x) => x.key === c.key) ? all.flatMap((x) => (x.key === c.key ? keep : [x])) : [...all, ...keep];
-      }),
+      });
+    },
     setTags: (id, tags) =>
       setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, tags: tags.length ? tags : undefined }, pending: i.account ? { ...i.pending, tags: true } : i.pending }))),
     library,
@@ -458,6 +483,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     addCustomApp(app, latest, art) {
       const entry = addCustom(app, latest, art);
+      track("app_added", { kind: "repository", host: app.provider });
       void installEntry(entry, undefined, app);
       return entry;
     },
@@ -482,6 +508,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setCatalog((c) => ({ ...c, [id]: entry }));
       add(entry, { local, art });
       setInstalls((i) => ({ ...i, [id]: install }));
+      track("app_added", { kind: app.kind, host: null });
       return entry;
     },
     settings,
@@ -499,6 +526,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       ),
     unsynced: userId ? changesFrom(allItems, userId).length : 0,
     async signOut() {
+      track("signed_out");
       await account.signOut();
       setLibrary((l) => l.filter((i) => i.local));
       setCollections([]);
@@ -523,12 +551,19 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const install = installs[id];
       if (!install) return;
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now() } }));
-      await native.launch(install.folder, install.dir, install.executables, Boolean(install.wine), install.program).catch((e) => fail(id, e));
+      const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
+      await native.launch(install.folder, install.dir, install.executables, Boolean(install.wine), install.program).then(
+        () => track("app_launched", ref),
+        (e) => (fail(id, e), track("app_launch_failed", { ...ref, reason: reasonOf(e) })),
+      );
     },
     async remove(id) {
       const install = installs[id];
       // A local app's files are the player's own: it only leaves the library.
-      if (install && !install.local) await native.uninstall(install.folder, install.dir).catch(() => {});
+      if (install && !install.local) {
+        await native.uninstall(install.folder, install.dir).catch(() => {});
+        track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
+      }
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>

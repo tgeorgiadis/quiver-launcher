@@ -82,6 +82,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Unsigned until there are signing keys.
       - run: pnpm --filter @quiver/launcher tauri build --bundles nsis
+        # Usage data (telemetry.ts): the PostHog project token, a repository variable; unset, the build sends nothing.
+        env:
+          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: Quiver Launcher Windows installer
@@ -105,9 +108,13 @@ jobs:
           sudo apt-get install -y libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev libfuse2 xvfb
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @quiver/launcher tauri build --bundles appimage
+        env:
+          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
       - name: The AppImage starts
         run: |
           export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke
+          # A smoke test isn't usage: its events go nowhere.
+          export QUIVER_POSTHOG_HOST=http://127.0.0.1:9
           # Output goes to a file so nothing left running holds the step open.
           status=0; xvfb-run -a timeout 15 apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage > $RUNNER_TEMP/app.log 2>&1 || status=$?
           cat $RUNNER_TEMP/app.log $QUIVER_DATA/quiver.log 2>/dev/null || true

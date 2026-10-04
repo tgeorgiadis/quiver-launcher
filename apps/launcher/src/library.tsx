@@ -14,6 +14,7 @@ import { hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
 import { isOwn } from "./custom";
+import { track } from "./telemetry";
 
 type Tab = "all" | "installed" | "not-installed" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
@@ -678,7 +679,12 @@ function ShareDialog({ collection: opened, entries, onSignIn, onClose }: { colle
     setMessage(null);
     shareList({ collectionKey: collection.key, name: collection.name, ...(description.trim() ? { description: description.trim() } : {}), apps: shareable.map((e) => ({ entryId: e.id })) })
       .then(
-        (next) => (setSharedAs(next), saveCollection({ ...collection, shared: { slug: next } }), setMessage(next === slug ? "The shared playlist is up to date." : null)),
+        (next) => (
+          track("playlist_shared", { apps: shareable.length, update: next === slug }),
+          setSharedAs(next),
+          saveCollection({ ...collection, shared: { slug: next } }),
+          setMessage(next === slug ? "The shared playlist is up to date." : null)
+        ),
         (e) => setMessage(e instanceof Error ? e.message : String(e)),
       )
       .finally(() => setBusy(false));

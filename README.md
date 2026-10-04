@@ -36,6 +36,28 @@ xvfb-run -a pnpm e2e
 `QUIVER_API` points the app at another catalog and `QUIVER_DATA` at another data folder. A
 `portable.txt` beside the executable keeps everything in a `data` folder next to it.
 
+## Usage data
+
+Like quiverlauncher.com, the launcher sends anonymous usage data to PostHog unless it's turned off:
+in Settings ("Send anonymous usage data"), from the notice shown on the first start, or, signed in,
+on the Quiver account (the launcher follows the account's setting, as the website does). It sends
+named events only (`apps/launcher/src/telemetry.ts`): the screens opened, apps installed, updated,
+launched and uninstalled (catalog apps by slug; apps players add only by kind), installs and launches
+that failed and why, playlists made, shared and followed, searches that found nothing (their length,
+not their words), sign-in and sign-out, and errors. Every event carries the launcher's version, OS
+and architecture. Nothing is captured by itself (no clicks, text, page views or replays), and paths,
+the home and apps folders and the computer's user name are taken out of everything sent. Signed in,
+events join the account's person, as on the website; signed out, they're anonymous.
+
+| Variable                     | When       | What                                                                                |
+| ---------------------------- | ---------- | ----------------------------------------------------------------------------------- |
+| `VITE_POSTHOG_PROJECT_TOKEN` | build time | The PostHog project token (the website's). Without it nothing is sent or shown.     |
+| `VITE_POSTHOG_DEV`           | build time | `1` lets `pnpm dev` send too; dev builds send nothing otherwise.                    |
+| `QUIVER_POSTHOG_HOST`        | run time   | Where events go; `https://us.i.posthog.com` unless set. The e2e tests use their mock. |
+
+Release builds read the token from the environment, such as `VITE_POSTHOG_PROJECT_TOKEN=phc_… pnpm build`;
+CI passes the repository variable `POSTHOG_PROJECT_TOKEN`. See `apps/launcher/.env.example`.
+
 ## License
 
 MIT
