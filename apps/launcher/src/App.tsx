@@ -15,6 +15,7 @@ import { useAccount } from "./account";
 import { native } from "./native";
 import { isLocal, isOwn } from "./custom";
 import { AddApp } from "./own";
+import type { Theme } from "./theme";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, or an original game's. */
@@ -829,6 +830,17 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
               <option value={1}>Normal</option>
               <option value={1.15}>Large</option>
               <option value={1.3}>Extra large</option>
+            </select>
+          </label>
+          <label>
+            Theme{" "}
+            <select
+              value={settings.theme ?? "system"}
+              onChange={(e) => setSettings({ ...settings, theme: e.target.value === "system" ? undefined : (e.target.value as Theme) })}
+            >
+              <option value="system">Same as the system</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
             </select>
           </label>
           <p className="muted">Apps are installed in {config.appsDir}</p>

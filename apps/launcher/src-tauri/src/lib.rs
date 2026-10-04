@@ -409,6 +409,33 @@ fn set_fullscreen(window: tauri::WebviewWindow, on: bool) -> Result<(), String> 
     window.set_fullscreen(on).map_err(|e| e.to_string())
 }
 
+/// "light", "dark", or anything else to follow the system.
+fn theme_of(name: Option<&str>) -> Option<tauri::Theme> {
+    match name {
+        Some("light") => Some(tauri::Theme::Light),
+        Some("dark") => Some(tauri::Theme::Dark),
+        _ => None,
+    }
+}
+
+/// The page's background, shown before it draws (no white flash in dark, or dark flash in light).
+fn backdrop(theme: tauri::Theme) -> tauri::window::Color {
+    match theme {
+        tauri::Theme::Light => tauri::window::Color(0xf4, 0xf5, 0xf7, 0xff),
+        _ => tauri::window::Color(0x0e, 0x0e, 0x10, 0xff),
+    }
+}
+
+/// The title bar, scrollbars and the page's colour scheme follow the launcher's theme.
+#[tauri::command]
+fn set_theme(window: tauri::WebviewWindow, theme: Option<String>) -> Result<(), String> {
+    let theme = theme_of(theme.as_deref());
+    window.set_theme(theme).map_err(|e| e.to_string())?;
+    let shown = theme.or_else(|| window.theme().ok()).unwrap_or(tauri::Theme::Dark);
+    let _ = window.set_background_color(Some(backdrop(shown)));
+    Ok(())
+}
+
 #[tauri::command]
 fn find_v3_library() -> Vec<v3::OldApp> {
     v3::find()
@@ -417,8 +444,8 @@ fn find_v3_library() -> Vec<v3::OldApp> {
 /// The window from tauri.conf.json. End-to-end tests on Windows set
 /// QUIVER_DEBUG_PORT on a debug build and attach to WebView2 there, since its
 /// runtime no longer takes the debugging port WebDriver passes it.
-fn main_window(app: &tauri::App, dir: &Path) -> tauri::Result<()> {
-    let builder = tauri::WebviewWindowBuilder::from_config(app.handle(), &app.config().app.windows[0])?;
+fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>) -> tauri::Result<()> {
+    let builder = tauri::WebviewWindowBuilder::from_config(app.handle(), &app.config().app.windows[0])?.theme(theme);
     #[cfg(all(windows, debug_assertions))]
     let builder = match std::env::var("QUIVER_DEBUG_PORT") {
         Ok(port) => builder
@@ -464,7 +491,13 @@ pub fn run() {
                 .ok()
                 .and_then(|b| serde_json::from_slice(&b).ok())
                 .unwrap_or_default();
-            main_window(app, &dir)?;
+            main_window(app, &dir, theme_of(settings["theme"].as_str()))?;
+            // Paint behind the page in the theme it will draw in.
+            if let Some(window) = app.get_webview_window("main") {
+                if let Ok(theme) = window.theme() {
+                    let _ = window.set_background_color(Some(backdrop(theme)));
+                }
+            }
             if settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen") {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.set_fullscreen(true);
@@ -488,6 +521,7 @@ pub fn run() {
             browser_sign_in,
             log_error,
             set_fullscreen,
+            set_theme,
             create_shortcut,
             add_to_steam,
             open_url,

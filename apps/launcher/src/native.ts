@@ -60,6 +60,8 @@ export const native = {
   /** Opens a sign-in page in the browser; resolves once it returns to the launcher. */
   browserSignIn: (url: string) => invoke<{ code: string } | { error: string }>("browser_sign_in", { url }),
   setFullscreen: (on: boolean) => invoke<void>("set_fullscreen", { on }),
+  /** The window's title bar and colour scheme; null follows the system. */
+  setTheme: (theme: "light" | "dark" | null) => invoke<void>("set_theme", { theme }),
   logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<OldApp[]>("find_v3_library"),
   /** Resolves to what to tell the player. */

@@ -15,6 +15,7 @@ import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccou
 import { setBindings, type Bindings } from "./spatial";
 import { customEntry, customKey, folderNameFor, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { createConvexClient } from "./catalog";
+import { followTheme, type Theme } from "./theme";
 
 export type { CustomApp, Collection, GameArt, LocalApp };
 
@@ -145,6 +146,8 @@ export function hasUpdate(entry: Entry | undefined, install: Install | undefined
 export type Settings = {
   fullscreen?: boolean;
   scale?: number;
+  /** Light or dark; unset follows the system. */
+  theme?: Theme;
   /** Apps hidden from the library here. */
   hidden?: string[];
   /** Keyboard and controller bindings; unset uses the defaults. */
@@ -236,6 +239,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
   useEffect(() => void document.documentElement.style.setProperty("zoom", String(settings.scale ?? 1)), [settings.scale]);
+  useEffect(() => {
+    void native.setTheme(settings.theme ?? null).catch(() => {});
+    return followTheme(settings.theme);
+  }, [settings.theme]);
   useEffect(() => {
     setBindings(settings);
   }, [settings]);

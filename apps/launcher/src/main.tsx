@@ -7,7 +7,10 @@ import { LauncherProvider } from "./store";
 import { startSpatialNavigation } from "./spatial";
 import { native } from "./native";
 import { ErrorBoundary } from "./boundary";
+import { showTheme, systemTheme } from "./theme";
 
+// Until settings load, the window's own theme (set from them at start, or the system's).
+showTheme(systemTheme());
 startSpatialNavigation();
 window.addEventListener("error", (e) => void native.logError(`ui: ${e.message} at ${e.filename}:${e.lineno}`).catch(() => {}));
 window.addEventListener("unhandledrejection", (e) => void native.logError(`ui: ${String(e.reason?.stack ?? e.reason)}`).catch(() => {}));
