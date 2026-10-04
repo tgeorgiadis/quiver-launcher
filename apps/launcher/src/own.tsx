@@ -265,9 +265,13 @@ function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | nu
   }
   useEffect(() => {
     let live = true;
+    // File names drop apostrophes ("Marios Tennis"): without a match, try the words without a final s.
+    const loose = name.replace(/\b(\w{3,})s\b/gi, "$1");
+    const search = () =>
+      client.matchingGames(name).then((found) => (found.length || loose === name ? found : client.matchingGames(loose)));
     const timer = setTimeout(
       () =>
-        client.matchingGames(name).then(
+        search().then(
           (found) => {
             if (!live) return;
             setMatches(found);
