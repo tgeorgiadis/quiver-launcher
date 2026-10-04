@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, Play, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FolderOpen, Play, Plus, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Page } from "@quiver/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiver/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
@@ -10,7 +10,8 @@ import { ErrorBoundary } from "./boundary";
 import { ControlSettings } from "./controls";
 import { useAccount } from "./account";
 import { native } from "./native";
-import { isCustom } from "./custom";
+import { isLocal, isOwn } from "./custom";
+import { AddApp } from "./own";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, or an original game's. */
@@ -29,6 +30,7 @@ export function App() {
   const [search, setSearch] = useState("");
   const [signingIn, setSigningIn] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
   // Where each covered page was scrolled to and what had focus, to put back on the way back.
   const covered = useRef<{ y: number; focus: Element | null }[]>([]);
   const open = useCallback((view: View) => {
@@ -136,14 +138,15 @@ export function App() {
             }}
           />
           {tab === "library" ? (
-            <LibraryPage onOpen={openApp} onBrowse={() => switchTab("browse")} action={action} />
+            <LibraryPage onOpen={openApp} onBrowse={() => switchTab("browse")} onAdd={() => setAdding(true)} action={action} />
           ) : (
-            <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} />
+            <BrowsePage onOpen={openApp} onOpenGame={openGame} onAdd={() => setAdding(true)} search={search} onSearch={setSearch} />
           )}
         </div>
       </main>
       {signingIn && <SignIn onClose={() => setSigningIn(false)} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {adding && <AddApp onClose={() => setAdding(false)} onOpen={openApp} />}
       <ChooseFile />
     </div>
   );
@@ -207,50 +210,16 @@ function OldLibrary({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** An app the catalog doesn't list, straight from its GitHub repository. */
-function AddRepository({ onOpen }: { onOpen: (e: Entry) => void }) {
-  const { addRepository } = useLauncher();
-  const [open, setOpen] = useState(false);
-  const [input, setInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  if (!open) return <button onClick={() => setOpen(true)}>Add from GitHub</button>;
-  return (
-    <form
-      className="add-repo"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setBusy(true);
-        setError(null);
-        addRepository(input).then((r) => {
-          setBusy(false);
-          if ("error" in r) return setError(r.error);
-          setOpen(false);
-          setInput("");
-          onOpen(r.entry);
-        });
-      }}
-    >
-      <input autoFocus aria-label="GitHub repository" placeholder="owner/name or github.com address" value={input} onChange={(e) => setInput(e.target.value)} />
-      <button className="primary" disabled={busy}>
-        Add
-      </button>
-      <button type="button" onClick={() => setOpen(false)}>
-        Cancel
-      </button>
-      {error && <p className="job-error">{error}</p>}
-    </form>
-  );
-}
-
 function BrowsePage({
   onOpen,
   onOpenGame,
+  onAdd,
   search,
   onSearch,
 }: {
   onOpen: (e: Entry) => void;
   onOpenGame: (game: GameLink) => void;
+  onAdd: () => void;
   search: string;
   onSearch: (search: string) => void;
 }) {
@@ -316,7 +285,9 @@ function BrowsePage({
             onChange={(e) => onSearch(e.target.value)}
           />
         </label>
-        <AddRepository onOpen={onOpen} />
+        <button onClick={onAdd}>
+          <Plus size={15} /> Add an app
+        </button>
       </div>
       <div className="toolbar filters">
         <select aria-label="Sort" value={searching ? "" : (filters.sort ?? "added")} disabled={searching} onChange={set("sort")}>
@@ -492,6 +463,7 @@ function AppPage({
   const install = installs[entry.id];
   const source = useSource(entry);
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
+  const [problem, setProblem] = useState<string | null>(null);
   const eyebrow = [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].join(", ");
   return (
     <section className="app-page" aria-label={entry.projectName}>
@@ -524,13 +496,22 @@ function AppPage({
                 {entry.verified && (
                   <span className="verified">
                     <ShieldCheck size={14} />
-                    {entry.verified.pinned ? `${versionLabel(entry.verified.version)} · verified` : `${versionLabel(entry.verified.version)} · files can't be verified`}
+                    {isOwn(entry.id)
+                      ? `${versionLabel(entry.verified.version)} · not checked by Quiver`
+                      : entry.verified.pinned
+                        ? `${versionLabel(entry.verified.version)} · verified`
+                        : `${versionLabel(entry.verified.version)} · files can't be verified`}
                   </span>
                 )}
-                {install && <span className="muted">Installed {versionLabel(install.version)}</span>}
+                {install && !install.local && <span className="muted">Installed {versionLabel(install.version)}</span>}
               </div>
               <div className="app-actions">
                 <Action entry={entry} />
+                {install && (
+                  <button onClick={() => (setProblem(null), native.openFolder(entry.id).catch((e) => setProblem(String(e))))}>
+                    <FolderOpen size={15} /> Open folder
+                  </button>
+                )}
                 {source && <RepositoryLink source={source} />}
                 {item && (
                   <button
@@ -540,10 +521,16 @@ function AppPage({
                       onClose();
                     }}
                   >
-                    <Trash2 size={15} /> {install ? "Uninstall and remove" : "Remove from library"}
+                    <Trash2 size={15} /> {install && !install.local ? "Uninstall and remove" : "Remove from library"}
                   </button>
                 )}
               </div>
+              {problem && (
+                <p className="job-error" role="status">
+                  {problem}
+                </p>
+              )}
+              {install?.local && <p className="muted">Removing it from your library leaves its files where they are.</p>}
             </div>
           </div>
         </div>
@@ -551,14 +538,14 @@ function AppPage({
       <div className="app-columns">
         <div className="app-content">
           <Readme entry={entry} source={source} />
-          {!isCustom(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
+          {!isOwn(entry.id) && <Review entry={entry} onSignIn={onSignIn} />}
         </div>
         {(item || install) && (
           <aside className="app-panel" aria-label="On this computer">
             <h3>On this computer</h3>
             <Shortcuts entry={entry} />
             {item && <AppOptions id={item.id} />}
-            {item && <Versions entry={entry} source={source} />}
+            {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
             {item && <Tags id={item.id} />}
             {item && <Customize id={item.id} />}
           </aside>
@@ -577,7 +564,8 @@ function AppOptions({ id }: { id: string }) {
   const hidden = settings.hidden?.includes(id);
   return (
     <div className="row options">
-      {install && (
+      {/* A local app has no releases to update from. */}
+      {install && !install.local && (
         <label>
           Updates{" "}
           <select value={install.updates ?? "ask"} onChange={(e) => setUpdates(id, e.target.value === "ask" ? undefined : (e.target.value as "auto" | "pinned"))}>

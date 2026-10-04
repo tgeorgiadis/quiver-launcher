@@ -29,3 +29,22 @@ export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: strin
     .sort((x, y) => x.rank - y.rank);
   return ranked.filter((r) => r.rank === ranked[0].rank).map((r) => r.a);
 }
+
+/**
+ * A filter that keeps picking the file the player chose among several, in
+ * later releases too: the longest part of its name, without version numbers,
+ * that no other file's name has. Its whole name when no part is its own.
+ */
+export function assetFilterFor(chosen: string, files: string[]): string {
+  const name = chosen.toLowerCase();
+  const others = files.map((f) => f.toLowerCase()).filter((f) => f !== name);
+  const trim = (part: string) => part.replace(/^[\s._-]+|[\s._-]+$/g, "");
+  const parts = name.split(/v?\d+(?:[._-]\d+)+|(?:\.(?:zip|7z|tar\.gz|tgz|appimage|exe))$/).map(trim);
+  const words = parts.flatMap((p) => p.split(/[\s._-]+/));
+  return (
+    [...parts, ...words]
+      .filter((p) => p.length >= 2)
+      .sort((a, b) => b.length - a.length)
+      .find((p) => !others.some((o) => o.includes(p))) ?? name
+  );
+}

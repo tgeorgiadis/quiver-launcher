@@ -37,10 +37,12 @@ export type Change = {
 
 /**
  * Signing in: the guest library's apps join the account. Apps another
- * account left here go with it (signing out takes the library along).
+ * account left here go with it (signing out takes the library along). Apps
+ * on this computer only (local apps) stay out of every account.
  */
 export function joinAccount(local: LibraryItem[], account: string): LibraryItem[] {
   return local.flatMap((item) => {
+    if (item.local) return [item];
     if (item.account) return item.account === account ? [item] : [];
     return [{ ...item, account, pending: { added: true } }];
   });
@@ -80,7 +82,7 @@ export function applyServer(local: LibraryItem[], server: ServerItem[], account:
 /** What still has to reach the account. */
 export function changesFrom(local: LibraryItem[], account: string): Change[] {
   return local
-    .filter((i) => i.pending && i.account === account)
+    .filter((i) => i.pending && i.account === account && !i.local)
     .map(({ id, pending = {}, overrides = {}, removed, custom }): Change => {
       if (removed) return { key: id, removed: true };
       const added = custom ? { add: true as const, custom } : { add: true as const, entryId: id };

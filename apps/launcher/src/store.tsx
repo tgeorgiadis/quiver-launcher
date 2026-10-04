@@ -6,23 +6,27 @@
  * last catalog data seen is cached so the library shows instantly offline.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createClient, createGithub, createGitlab, githubRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
+import { createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
 import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, joinAccount, type Collection } from "./sync";
 import { setBindings, type Bindings } from "./spatial";
-import { customEntry, customKey, isCustom, type CustomApp } from "./custom";
+import { customEntry, customKey, isCustom, literalPattern, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { createConvexClient } from "./catalog";
 
-export type { CustomApp, Collection };
+export type { CustomApp, Collection, GameArt, LocalApp };
 
 export type LibraryItem = {
-  /** The catalog entry's id, or "github:owner/repo" for a custom app. */
+  /** The catalog entry's id, "github:owner/repo" or "gitlab:…" for a custom app, "local:…" for a local one. */
   id: string;
   slug: string;
   /** A repository the catalog doesn't list. */
   custom?: CustomApp;
+  /** On this computer only: a program already here, or a folder the player fills. Never synced. */
+  local?: LocalApp;
+  /** A game's artwork and consoles the player matched to an app they added; this device only. */
+  art?: GameArt;
   addedAt: number;
   /** The player's own choices; empty shows the catalog's. */
   overrides?: { name?: string; cover?: string; tags?: string[] };
@@ -42,7 +46,11 @@ export type Install = {
   lastPlayed?: number;
   /** Install new releases without asking, or stay on this one. Unset: offer them. */
   updates?: "auto" | "pinned";
+  /** The player's own files (a local app): never downloaded, updated or deleted. */
+  local?: true;
 };
+/** A repository the catalog doesn't list, before it's added: its latest release and the files for this computer. */
+export type RepositoryPreview = { app: CustomApp; latest?: Release; files: Asset[] };
 export type Job = Progress | { error: string };
 /** Several files suit this computer: the player picks one. */
 export type Choice = { entry: Entry; version: string; assets: Asset[]; resolve: (asset: Asset | null) => void };
@@ -69,8 +77,12 @@ type Launcher = {
   play: (id: string) => Promise<void>;
   /** Uninstalls the app and takes it out of the library. */
   remove: (id: string) => Promise<void>;
-  /** Adds and installs an app from a GitHub repository; opens the catalog's app if it lists it. Resolves to an error. */
-  addRepository: (input: string) => Promise<{ error: string } | { entry: Entry }>;
+  /** A GitHub or GitLab repository: the catalog's app when it lists it, else what adding it would install. */
+  lookUpRepository: (input: string) => Promise<{ error: string } | { listed: Entry } | { preview: RepositoryPreview }>;
+  /** Adds a repository the catalog doesn't list and installs it. */
+  addCustomApp: (app: CustomApp, latest: Release | undefined, art?: GameArt) => Entry;
+  /** Adds a program on this computer, or makes a folder in the apps folder to fill; this device only. */
+  addLocalApp: (app: { kind: "program"; path: string; name: string } | { kind: "folder"; name: string }, art?: GameArt) => Promise<Entry>;
   /** Adds an app without installing it, such as one installed but not in the library. */
   add: (entry: Entry) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
@@ -84,7 +96,7 @@ type Launcher = {
   saveCollection: (collection: Collection) => void;
   /** Changes made here that the account doesn't have yet. */
   unsynced: number;
-  /** Signs out, taking the library along: installs stay, the library starts empty. */
+  /** Signs out, taking the library along: installs and apps on this computer only stay. */
   signOut: () => Promise<void>;
   settings: Settings;
   setSettings: (settings: Settings) => void;
@@ -97,6 +109,14 @@ type Launcher = {
 const LauncherContext = createContext<Launcher | null>(null);
 
 export const useLauncher = () => useContext(LauncherContext)!;
+
+/** The release a player gets: the newest that isn't a pre-release, else the newest. */
+const latestOf = (releases: Release[]) => releases.find((r) => !r.prerelease) ?? releases[0];
+/** A custom app's repository from its key, for one not in the library; GitHub and GitLab don't mind its lower case. */
+const fromKey = (id: string): CustomApp => {
+  const repository = id.slice(id.indexOf(":") + 1);
+  return { provider: id.startsWith("gitlab:") ? "gitlab" : "github", repository, name: repository.split("/").at(-1)! };
+};
 
 /** Whether this computer can install the app. */
 export const availableOn = (entry: Entry, os: string) =>
@@ -176,7 +196,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // The catalog comes from the site's Convex queries, as on the website; REST only for the release status feed.
   const client = useMemo(() => createConvexClient(config.convex, createClient(config.api)), [config.api, config.convex]);
   const github = useMemo(() => createGithub(config.githubApi), [config.githubApi]);
-  const gitlab = useMemo(() => createGitlab(), []);
+  const gitlab = useMemo(() => createGitlab(config.gitlabApi), [config.gitlabApi]);
+  /** A custom app's releases, newest first. */
+  const releasesOf = (app: Pick<CustomApp, "provider" | "repository">) =>
+    app.provider === "gitlab" ? gitlab.releases(app.repository) : github.releases(app.repository);
   const [consoles, setConsoles] = useState<Console[]>([]);
   useEffect(() => void client.facets().then((f) => setConsoles(f.consoles), () => {}), [client]);
   const consoleNames = useMemo(() => Object.fromEntries(consoles.map((c) => [c.id, c.name])), [consoles]);
@@ -212,11 +235,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     for (const item of library) {
       if (fetched.current.has(item.id)) continue;
       fetched.current.add(item.id);
-      const custom = item.custom;
+      const { custom, local, art } = item;
+      // Nothing to look up for a local app.
+      if (local) {
+        setCatalog((c) => (c[item.id] ? c : { ...c, [item.id]: localEntry(item.id, local, art) }));
+        continue;
+      }
       if (custom) {
-        github.releases(custom.repository).then(
-          ([latest]) => setCatalog((c) => ({ ...c, [item.id]: customEntry(item.id, custom, latest) })),
-          () => setCatalog((c) => (c[item.id] ? c : { ...c, [item.id]: customEntry(item.id, custom) })),
+        releasesOf(custom).then(
+          (releases) => setCatalog((c) => ({ ...c, [item.id]: customEntry(item.id, custom, latestOf(releases), art) })),
+          () => setCatalog((c) => (c[item.id] ? c : { ...c, [item.id]: customEntry(item.id, custom, undefined, art) })),
         );
         continue;
       }
@@ -225,7 +253,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         () => {},
       );
     }
-  }, [library, client, github, round]);
+  }, [library, client, github, gitlab, round]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Signed in: fold the account's library in, live.
   const userId = account.user?.id;
@@ -296,21 +324,23 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const fail = (id: string, error: unknown) =>
     setJobs((j) => ({ ...j, [id]: { error: error instanceof Error ? error.message : String(error) } }));
 
-  async function installEntry(entry: Entry, chosen?: Release) {
+  /** `app` is the custom app's repository, when it isn't in the library yet. */
+  async function installEntry(entry: Entry, chosen?: Release, app?: CustomApp) {
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
     try {
-      // GitHub doesn't mind the key's lower case.
-      const custom = isCustom(entry.id) ? entry.id.slice("github:".length) : null;
+      const custom = isCustom(entry.id) ? (app ?? allItems.find((i) => i.id === entry.id)?.custom ?? fromKey(entry.id)) : null;
       const release =
         chosen ??
         (custom
-          ? (await github.releases(custom))[0]
+          ? latestOf(await releasesOf(custom))
           : (await client.releases(entry.slug).catch(() => {
               throw new Error("Couldn't reach quiverlauncher.com. Check your connection and try again.");
             })).items[0]);
       if (!release) throw new Error(custom ? "This repository has no releases yet." : "This app has no approved release yet.");
       const settings = release.installationOverride ?? entry.launcher;
       let [asset, ...others] = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter);
+      // A file the player picked that a later release names differently: they pick again.
+      if (!asset && custom && settings.releaseAssetFilter) [asset, ...others] = bestAssets(release.assets, config.os, config.arch);
       if (!asset) throw new Error(`This release has no download for your computer.`);
       if (others.length) {
         const picked = await new Promise<Asset | null>((resolve) =>
@@ -345,12 +375,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     }
   }
 
-  function add(entry: Entry, custom?: CustomApp) {
+  function add(entry: Entry, own: Pick<LibraryItem, "custom" | "local" | "art"> = {}) {
     setLibrary((l) => {
       const mine = l.find((i) => i.id === entry.id);
       const added = { pending: { ...mine?.pending, added: true }, account: userId ?? mine?.account, removed: undefined };
       if (mine) return mine.removed ? l.map((i) => (i === mine ? { ...i, ...added } : i)) : l;
-      return [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now(), ...(custom ? { custom } : {}), ...(userId ? added : {}) }];
+      // A local app stays on this computer, out of the account.
+      return [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now(), ...own, ...(userId && !own.local ? added : {}) }];
     });
   }
 
@@ -366,12 +397,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   }
 
   /** Adds a custom app for a repository; the caller installs it. */
-  async function addCustom(repository: string, name: string) {
-    const releases = await github.releases(repository);
-    const custom: CustomApp = { provider: "github", repository, name };
-    const entry = customEntry(customKey(repository), custom, releases[0]);
+  function addCustom(custom: CustomApp, latest?: Release, art?: GameArt) {
+    const entry = customEntry(customKey(custom.provider, custom.repository), custom, latest, art);
     setCatalog((c) => ({ ...c, [entry.id]: entry }));
-    add(entry, custom);
+    add(entry, { custom, art });
     return entry;
   }
 
@@ -398,19 +427,45 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     setNotice,
     add: (entry) => add(entry),
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
-    async addRepository(input) {
-      const repository = githubRepository(input);
-      if (!repository) return { error: "Enter a GitHub repository, like owner/name or its github.com address." };
+    async lookUpRepository(input) {
+      const repository = parseRepository(input);
+      if (!repository) return { error: "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address." };
       try {
-        const listed = (await catalogRepositories().catch(() => new Map())).get(`github:${repository}`.toLowerCase());
+        const listed = (await catalogRepositories().catch(() => new Map())).get(`${repository.provider}:${repository.repository}`.toLowerCase());
         const detail = listed && (await client.app(listed.slug).catch(() => null));
-        if (detail) return { entry: detail.entry };
-        const entry = await addCustom(repository, repository.split("/")[1]);
-        void installEntry(entry);
-        return { entry };
+        if (detail) return { listed: detail.entry };
+        const latest = latestOf(await releasesOf(repository));
+        const app: CustomApp = { ...repository, name: repository.repository.split("/").at(-1)! };
+        return { preview: { app, latest, files: latest ? bestAssets(latest.assets, config.os, config.arch) : [] } };
       } catch (e) {
         return { error: e instanceof Error ? e.message : String(e) };
       }
+    },
+    addCustomApp(app, latest, art) {
+      const entry = addCustom(app, latest, art);
+      void installEntry(entry, undefined, app);
+      return entry;
+    },
+    async addLocalApp(app, art) {
+      const id = localKey();
+      let local: LocalApp;
+      let install: Install;
+      if (app.kind === "program") {
+        // It starts where it is, from its own folder.
+        const cut = Math.max(app.path.lastIndexOf("/"), app.path.lastIndexOf("\\")) + 1;
+        const file = app.path.slice(cut);
+        local = { kind: "program", path: app.path, name: app.name };
+        install = { local: true, version: "", dir: app.path.slice(0, cut), folder: file, executables: [literalPattern(file)] };
+      } else {
+        const folder = await native.createAppFolder(app.name);
+        local = { kind: "folder", folder, name: app.name };
+        install = { local: true, version: "", folder, executables: [] };
+      }
+      const entry = localEntry(id, local, art);
+      setCatalog((c) => ({ ...c, [id]: entry }));
+      add(entry, { local, art });
+      setInstalls((i) => ({ ...i, [id]: install }));
+      return entry;
     },
     settings,
     setSettings,
@@ -428,7 +483,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     unsynced: userId ? changesFrom(allItems, userId).length : 0,
     async signOut() {
       await account.signOut();
-      setLibrary([]);
+      setLibrary((l) => l.filter((i) => i.local));
       setCollections([]);
     },
     installs,
@@ -454,7 +509,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     async remove(id) {
       const install = installs[id];
-      if (install) await native.uninstall(install.folder, install.dir).catch(() => {});
+      // A local app's files are the player's own: it only leaves the library.
+      if (install && !install.local) await native.uninstall(install.folder, install.dir).catch(() => {});
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>
@@ -477,14 +533,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           entry = detail.entry;
           setCatalog((c) => ({ ...c, [entry.id]: { ...entry, withdrawn: detail.withdrawn } }));
           add(entry);
-        } else if (old.provider === "github" && old.repository && githubRepository(old.repository)) {
+        } else if (old.repository && ((old.provider === "github" && githubRepository(old.repository)) || old.provider === "gitlab")) {
           // Not in the catalog: it comes over as a custom app.
-          const added = await addCustom(old.repository, old.name).catch(() => null);
-          if (!added) {
+          const custom: CustomApp = { provider: old.provider, repository: old.repository, name: old.name };
+          const releases = await releasesOf(custom).catch(() => null);
+          if (!releases) {
             missing.push(old.name);
             continue;
           }
-          entry = added;
+          entry = addCustom(custom, latestOf(releases));
         } else {
           missing.push(old.name);
           continue;

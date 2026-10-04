@@ -6,7 +6,7 @@ import type { Os } from "@quiver/api";
 type StateFile = "library" | "installs" | "catalog" | "settings" | "collections";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
 export type OldApp = { name: string; repository?: string; provider: string; dir?: string; version?: string };
-export type Config = { api: string; convex: string; accountApi?: string; githubApi: string; returnTo: string; os: Os; arch: string; appsDir: string };
+export type Config = { api: string; convex: string; accountApi?: string; githubApi: string; gitlabApi: string; returnTo: string; os: Os; arch: string; appsDir: string };
 export type Progress = { id: string; phase: "downloading" | "installing"; received: number; total: number | null };
 export type InstallRequest = {
   id: string;
@@ -48,6 +48,12 @@ export const native = {
   createShortcut: (request: ShortcutRequest) => invoke<string>("create_shortcut", { request }),
   addToSteam: (request: ShortcutRequest) => invoke<string>("add_to_steam", { request }),
   openUrl: (url: string) => invoke<void>("open_url", { url }),
+  /** Opens an installed app's folder in the file manager. */
+  openFolder: (id: string) => invoke<void>("open_folder", { id }),
+  /** Makes a folder in the apps folder (or finds it), opens it, and resolves to its name. */
+  createAppFolder: (name: string) => invoke<string>("create_app_folder", { name }),
+  /** Asks for a program on this computer; null when the player cancels. */
+  pickProgram: () => invoke<string | null>("pick_program"),
   controllers: () => invoke<string[]>("controllers"),
   onControllers: (handler: (names: string[]) => void) => listen<string[]>("pads", (e) => handler(e.payload)),
   onPad: (handler: (p: { key: string; down: boolean }) => void) => listen<{ key: string; down: boolean }>("pad", (e) => handler(e.payload)),

@@ -8,7 +8,7 @@ import type { Entry, Readme as ReadmeText, Release } from "@quiver/api";
 import { Markdown, fullDate } from "@quiver/ui";
 import { useLauncher } from "./store";
 import { native } from "./native";
-import { isCustom } from "./custom";
+import { isCustom, isLocal } from "./custom";
 
 export type Source = { provider: "github" | "gitlab"; repository: string; url: string };
 
@@ -22,10 +22,17 @@ export function useSource(entry: Entry): Source | null | undefined {
   const { client, library } = useLauncher();
   const custom = library.find((i) => i.id === entry.id)?.custom;
   const [source, setSource] = useState<Source | null | undefined>(() =>
-    custom ? sourceOf(custom.provider, custom.repository) : isCustom(entry.id) ? sourceOf("github", entry.id.slice(7)) : undefined,
+    custom
+      ? sourceOf(custom.provider, custom.repository)
+      : isCustom(entry.id)
+        ? sourceOf(entry.id.slice(0, entry.id.indexOf(":")), entry.id.slice(entry.id.indexOf(":") + 1))
+        : isLocal(entry.id)
+          ? null
+          : undefined,
   );
   useEffect(() => {
-    if (isCustom(entry.id)) return;
+    // Apps the player added have no page on the site.
+    if (isCustom(entry.id) || isLocal(entry.id)) return;
     let live = true;
     client.app(entry.slug).then(
       (d) => live && setSource(sourceOf(d.project.provider, d.project.repository)),
@@ -49,7 +56,7 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
   const { client, github } = useLauncher();
   const [readme, setReadme] = useState<ReadmeText | null | undefined>();
   useEffect(() => {
-    if (source === undefined) return;
+    if (source === undefined || isLocal(entry.id)) return;
     let live = true;
     const upstream = () => (source?.provider === "github" ? github.readme(source.repository) : Promise.resolve(null));
     (isCustom(entry.id) ? upstream() : client.readme(entry.slug).then((r) => r ?? upstream()))

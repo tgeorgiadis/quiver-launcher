@@ -22,10 +22,13 @@ export const withOverrides = (entry: Entry, o?: { name?: string; cover?: string 
 export function LibraryPage({
   onOpen,
   onBrowse,
+  onAdd,
   action,
 }: {
   onOpen: (e: Entry) => void;
   onBrowse: () => void;
+  /** Adds an app the catalog doesn't have. */
+  onAdd: () => void;
   action: (entry: Entry) => ReactNode;
 }) {
   const { library: all, catalog, installs, jobs, get, add, remove, settings, setSettings, collections, consoleNames } = useLauncher();
@@ -66,9 +69,14 @@ export function LibraryPage({
         <Library size={40} strokeWidth={1.2} />
         <h2>Your library is empty</h2>
         <p>Find a port in the catalog and press Get. It's added here and downloads straight away.</p>
-        <button className="primary" onClick={onBrowse}>
-          Browse the catalog
-        </button>
+        <div className="row">
+          <button className="primary" onClick={onBrowse}>
+            Browse the catalog
+          </button>
+          <button onClick={onAdd}>
+            <Plus size={15} /> Add an app
+          </button>
+        </div>
       </div>
     );
   const shelves: [Shelf, string][] = [
@@ -112,6 +120,9 @@ export function LibraryPage({
           <input type="checkbox" checked={Boolean(settings.byConsole)} onChange={(e) => setSettings({ ...settings, byConsole: e.target.checked })} />
           Group by console
         </label>
+        <button onClick={onAdd}>
+          <Plus size={15} /> Add an app
+        </button>
         {collection && (
           <button onClick={() => setEditing(collection)}>
             <Pencil size={14} /> Edit collection

@@ -170,3 +170,28 @@ main.app-main { padding: 0 0 40px; }
 @media (max-width: 860px) {
   .game-page .app-hero > .artwork.box-art { width: 80px; height: 120px; }
 }
+
+/* Add an app: three ways, then a short form. */
+.detail.choose.add-app { width: min(580px, 100%); }
+.add-app form { display: flex; flex-direction: column; gap: 12px; }
+.add-app .back-link { margin-bottom: -4px; padding: 4px 0; background: none; font-weight: 400; }
+.add-app .add-choice {
+  display: flex; align-items: center; justify-content: flex-start; gap: 14px; width: 100%; padding: 14px 16px; text-align: left;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--panel); transition: border-color 0.15s;
+}
+.add-app .add-choice:hover, .add-app .add-choice:focus-visible { border-color: var(--accent); }
+.add-app .add-choice > svg { flex-shrink: 0; color: var(--accent); }
+.add-app .add-choice span { display: grid; gap: 2px; }
+.add-app .add-choice small { color: var(--muted); font-size: 12px; }
+.field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.picked-path { font-size: 12px; overflow-wrap: anywhere; }
+.add-app .pick-file, .add-app .art-match { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }
+.add-app .pick-file legend, .add-app .art-match legend { width: 100%; margin-bottom: 6px; font-size: 13px; color: var(--muted); }
+.add-app .pick-file label { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 13px; overflow-wrap: anywhere; }
+.add-app .art-match button {
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px; padding: 6px 10px 6px 6px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); font-size: 12px; text-align: left;
+}
+.add-app .art-match button[aria-pressed="true"] { border-color: var(--accent); background: #0ea5e91a; color: #fff; }
+.add-app .art-match .artwork { width: 28px; height: 40px; flex-shrink: 0; border-radius: 4px; background: #1b1c20; }
+.add-app .art-match .artwork svg { width: 16px; height: 16px; }

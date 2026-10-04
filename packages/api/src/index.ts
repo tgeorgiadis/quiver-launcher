@@ -225,6 +225,24 @@ export function githubRepository(input: string): string | null {
 }
 
 /**
+ * A repository from what a player pastes: a github.com or gitlab.com address
+ * (any page of it), or "owner/name" for GitHub. Null if it isn't one.
+ */
+export function parseRepository(input: string): { provider: "github" | "gitlab"; repository: string } | null {
+  const text = input.trim().replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
+  const lab = text.match(/^gitlab\.com\/(.+?)(?:\/-\/.*)?\/?$/i);
+  if (lab) {
+    const path = lab[1].replace(/\.git$/i, "");
+    const parts = path.split("/");
+    const ok = parts.length >= 2 && parts.every((p) => /^[a-z0-9_][a-z0-9_.-]*$/i.test(p) && p !== "..");
+    return ok ? { provider: "gitlab", repository: path } : null;
+  }
+  const hub = text.match(/^github\.com\/([^/]+)\/([^/?#]+)/i);
+  const repository = githubRepository(hub ? `${hub[1]}/${hub[2]}` : text);
+  return repository ? { provider: "github", repository } : null;
+}
+
+/**
  * Releases straight from GitHub, for custom apps the catalog doesn't list.
  * Nobody has checked these; GitHub's own SHA-256 digest still guards the
  * download when it has one.

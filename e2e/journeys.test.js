@@ -114,16 +114,20 @@ test("removing an app uninstalls it and takes it out of the library", async () =
 });
 
 test("an app the catalog doesn't list is added from its GitHub repository", async () => {
+  const fromRepository = async (address) => {
+    await (await app.$("button*=Add an app")).click();
+    await (await app.$("button*=From GitHub or GitLab")).click();
+    await (await app.$("input[aria-label=Repository]")).setValue(address);
+    await (await app.$("button=Look it up")).click();
+  };
   await (await app.$("button=Browse")).click();
-  await (await app.$("button=Add from GitHub")).click();
   // A repository the catalog lists opens the catalog's app instead.
-  await (await app.$("input[aria-label='GitHub repository']")).setValue("https://github.com/quiver/test-port");
-  await (await app.$("button=Add")).click();
+  await fromRepository("https://github.com/quiver/test-port");
   await (await app.$("h1=Test Port")).waitForDisplayed({ timeout: 10000 });
   await app.keys("Escape");
-  await (await app.$("button=Add from GitHub")).click();
-  await (await app.$("input[aria-label='GitHub repository']")).setValue("someone/homebrew");
-  await (await app.$("button=Add")).click();
+  await fromRepository("someone/homebrew");
+  await (await app.$("p*=Downloads Homebrew-")).waitForDisplayed({ timeout: 10000 });
+  await (await app.$("button=Add and get")).click();
   await (await (await app.$(".app-page")).$("button*=Play")).waitForDisplayed({ timeout: 30000 });
   assert.equal(readFileSync(join(apps, "homebrew", ".quiver-version"), "utf8"), "v2.0");
   await app.keys("Escape");

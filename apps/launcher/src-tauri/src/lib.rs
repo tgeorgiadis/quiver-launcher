@@ -9,6 +9,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::{Emitter, Manager, State};
+use tauri_plugin_dialog::DialogExt;
 
 /// Where the launcher keeps its files: `QUIVER_DATA`, else a `data` folder
 /// beside a portable install (one with `portable.txt` next to it), else the
@@ -31,6 +32,8 @@ struct Config {
     account_api: Option<String>,
     /// GitHub's API, for custom apps (overridden in end-to-end tests).
     github_api: String,
+    /// GitLab's API, for custom apps (overridden in end-to-end tests).
+    gitlab_api: String,
     /// Where GitHub and Discord sign-in return to.
     return_to: &'static str,
     os: &'static str,
@@ -59,6 +62,7 @@ fn config(data: State<Data>) -> Config {
         convex: std::env::var("QUIVER_CONVEX").unwrap_or_else(|_| "https://convex.quiverlauncher.com".into()),
         account_api: std::env::var("QUIVER_ACCOUNT_API").ok(),
         github_api: std::env::var("QUIVER_GITHUB_API").unwrap_or_else(|_| "https://api.github.com".into()),
+        gitlab_api: std::env::var("QUIVER_GITLAB_API").unwrap_or_else(|_| "https://gitlab.com/api/v4".into()),
         return_to: browser::RETURN_TO,
         os: OS,
         arch: ARCH,
@@ -118,6 +122,9 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         (PathBuf::from("wine"), vec![exe.to_string_lossy().into_owned()])
     } else if OS == "macos" && exe.extension().is_some_and(|e| e == "app") {
         (PathBuf::from("open"), vec![exe.to_string_lossy().into_owned()])
+    } else if OS == "windows" && exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("lnk")) {
+        // A shortcut the player picked: Explorer starts what it points at.
+        (PathBuf::from("explorer"), vec![exe.to_string_lossy().into_owned()])
     } else {
         (exe.clone(), vec![])
     };
@@ -204,6 +211,65 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(format!("{} will be added to Steam when Steam closes.{proton} Restart Steam to see it.", request.name))
+}
+
+/// Opens an installed app's folder in the file manager. The window names the
+/// app, never a path: only folders of apps in installs.json can be opened.
+#[tauri::command]
+fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
+    let installs: serde_json::Value = std::fs::read(state_file(&data, "installs")?)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let install = installs.get(&id).ok_or("This app isn't installed.")?;
+    let folder = install["folder"].as_str().unwrap_or_default();
+    let dir = app_dir(&data, folder, install["dir"].as_str().map(str::to_string))?;
+    if !dir.is_dir() {
+        return Err("This app's folder isn't there any more.".into());
+    }
+    reveal(&dir)
+}
+
+/// Shows a folder in Explorer, Files or Finder. End-to-end tests note it in
+/// `QUIVER_OPENED` instead of opening a window.
+fn reveal(dir: &Path) -> Result<(), String> {
+    if let Some(log) = std::env::var_os("QUIVER_OPENED") {
+        append_log(Path::new(&log), &dir.to_string_lossy());
+        return Ok(());
+    }
+    open::that_detached(dir).map_err(|e| e.to_string())
+}
+
+/// Makes (or finds) a folder in the apps folder for an app the player fills
+/// themselves, opens it for them, and resolves to its name.
+#[tauri::command]
+fn create_app_folder(data: State<Data>, name: String) -> Result<String, String> {
+    let name = install::plain_name(&name)?.to_string();
+    let dir = data.apps().join(&name);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    reveal(&dir)?;
+    Ok(name)
+}
+
+/// Asks the player for a program on this computer; null if they cancel.
+/// `QUIVER_PICK` answers instead in end-to-end tests.
+#[tauri::command]
+async fn pick_program(app: tauri::AppHandle) -> Option<String> {
+    if let Some(path) = std::env::var_os("QUIVER_PICK") {
+        return Some(path.to_string_lossy().into());
+    }
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let dialog = app.dialog().file().set_title("Choose the program that starts the app");
+    let dialog = match OS {
+        "windows" => dialog.add_filter("Programs", &["exe", "lnk", "bat", "cmd"]),
+        "macos" => dialog.add_filter("Apps", &["app"]),
+        _ => dialog,
+    };
+    dialog.pick_file(move |path| {
+        let _ = tx.send(path);
+    });
+    let path = rx.await.ok().flatten()?.into_path().ok()?;
+    Some(path.to_string_lossy().into())
 }
 
 /// Opens a web page in the browser.
@@ -336,6 +402,7 @@ pub fn run() {
         }
     }
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let portable = std::env::current_exe()
                 .ok()
@@ -384,6 +451,9 @@ pub fn run() {
             create_shortcut,
             add_to_steam,
             open_url,
+            open_folder,
+            create_app_folder,
+            pick_program,
             gamepad::controllers
         ])
         .run(tauri::generate_context!())

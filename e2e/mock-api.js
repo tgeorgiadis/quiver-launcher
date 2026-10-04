@@ -77,6 +77,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   let base = "";
   let lastQuery = new URLSearchParams();
   const convexQueries = [];
+  const downloads = [];
   // The original games, and their apps in the site's (unsorted) order.
   const games = () => ({
     "test-port": {
@@ -251,7 +252,20 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         },
       ]);
     }
+    // GitLab's API, for custom apps: one repository whose release has two games for each platform.
+    if (url.pathname.startsWith("/gitlab/")) {
+      if (url.pathname !== "/gitlab/projects/someone%2Fcollection/releases") return send({ message: "404 Project Not Found" }, 404);
+      const files = ["GameA-v1.0-windows-x64.zip", "GameB-v1.0-windows-x64.zip", "GameA-v1.0-linux-x64.zip", "GameB-v1.0-linux-x64.zip"];
+      return send([
+        {
+          tag_name: "v1.0",
+          released_at: "2026-03-01T00:00:00Z",
+          assets: { links: files.map((name, i) => ({ id: i + 1, name, url: `${base}/files/${name.toLowerCase()}` })) },
+        },
+      ]);
+    }
     if (url.pathname.startsWith("/files/")) {
+      downloads.push(url.pathname.slice("/files/".length));
       res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": zip.length });
       return res.end(zip);
     }
@@ -293,11 +307,14 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     convex: `${base}/convex`,
     account: `${base}/account`,
     github: `${base}/github`,
+    gitlab: `${base}/gitlab`,
     reviews: account.reviews,
     /** The filters of the last catalog page asked for. */
     lastQuery: () => lastQuery,
     /** Every Convex query asked for, oldest first: { path, args }. */
     convexQueries: () => convexQueries,
+    /** Every release file downloaded, by name, oldest first. */
+    downloads: () => downloads,
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     close: () => server.close(),
