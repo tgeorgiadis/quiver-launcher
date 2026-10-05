@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, FolderOpen, Pin, Play, Plus, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FolderOpen, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Page } from "@quiverlauncher/api";
-import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiverlauncher/ui";
+import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, Score } from "@quiverlauncher/ui";
 import { availableOn, hasUpdate, skipped, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
 import { ViewOptions } from "./library-view";
@@ -466,15 +466,22 @@ function Action({ entry }: { entry: Entry }) {
         <button onClick={() => get(catalog[entry.id] ?? entry)}>Update to {versionLabel((catalog[entry.id] ?? entry).verified?.version)}</button>
       </div>
     );
-  if (install && install.updates === "pinned")
+  if (install && (install.updates === "pinned" || install.unverified))
     return (
       <div className="row pinned-action">
         <button className="primary wide" onClick={() => play(entry.id)}>
           <Play size={15} /> Play
         </button>
-        <span className="pin-mark" role="img" aria-label={`Pinned to ${versionLabel(install.version)}`} title={`Pinned to ${versionLabel(install.version)}`}>
-          <Pin size={14} />
-        </span>
+        {install.unverified && (
+          <span className="unverified-mark" role="img" aria-label={`${versionLabel(install.version)} is unverified`} title={`${versionLabel(install.version)} is unverified`}>
+            <ShieldAlert size={14} />
+          </span>
+        )}
+        {install.updates === "pinned" && (
+          <span className="pin-mark" role="img" aria-label={`Pinned to ${versionLabel(install.version)}`} title={`Pinned to ${versionLabel(install.version)}`}>
+            <Pin size={14} />
+          </span>
+        )}
       </div>
     );
   if (install)
@@ -507,7 +514,7 @@ function AppPage({
   onOpenGame: (game: GameLink) => void;
   onSignIn: () => void;
 }) {
-  const { library, installs, catalog, remove, consoleNames, setUpdates } = useLauncher();
+  const { library, installs, catalog, remove, consoleNames, setUpdates, get } = useLauncher();
   const item = library.find((i) => i.id === opened.id);
   // The player's own name and artwork, live as they change them.
   const entry = withOverrides(catalog[opened.id] ?? opened, item?.overrides);
@@ -582,6 +589,7 @@ function AppPage({
                   </span>
                 )}
                 {install && !install.local && <span className="muted">Installed {versionLabel(install.version)}</span>}
+                {install?.unverified && <ReleaseBadge state="unverified" title="Installed before Quiver verified it" />}
               </div>
               <div className="app-actions">
                 <Action entry={entry} />
@@ -609,6 +617,15 @@ function AppPage({
                 </p>
               )}
               {install?.local && <p className="muted">Removing it from your library leaves its files where they are.</p>}
+              {install?.differs && (
+                <p className="release-pinned-line differs" role="alert">
+                  <ShieldAlert size={14} aria-hidden="true" />
+                  <span>The verified {versionLabel(install.version)} isn&apos;t the file you installed.</span>
+                  <button type="button" className="link-button" onClick={() => get(entry)}>
+                    Install the verified {versionLabel(install.version)}
+                  </button>
+                </p>
+              )}
               {install && !install.local && install.updates === "pinned" && (
                 <p className="release-pinned-line">
                   <Pin size={14} aria-hidden="true" />

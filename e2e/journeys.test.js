@@ -74,7 +74,7 @@ test("an app can stay on its version, or update by itself", async () => {
   await (await page.$("button=Change version")).click();
   const row = (version) => app.$(`//section[@aria-label="Versions"]//li[strong[text()="${version}"]]`);
   await (await (await row("v1.0.0")).$("button=Install")).click();
-  await (await (await app.$('//section[@role="dialog"]')).$("button=Install")).click();
+  await (await (await app.$('//section[@role="dialog"]')).$("button=Install anyway")).click();
   await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "v1.0.0", 30000);
   assert.equal(await (await page.$("select")).getValue(), "auto");
   await (await page.$("p*=put v1.2.0 back")).waitForDisplayed({ timeout: 10000 });

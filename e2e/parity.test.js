@@ -61,25 +61,38 @@ test("an app opens as a full page, with its README and a link to its repository"
   assert.equal(await link.getAttribute("href"), "https://github.com/quiver/test-port");
 });
 
-test("any release can be installed, and the ones Quiver verified say so", async () => {
+test("any release can be installed, and each says whether Quiver verified it", async () => {
   await (await (await page()).$("button=Change version")).click();
   const row = (version) => app.$(`//section[@aria-label="Versions"]//li[strong[text()="${version}"]]`);
   await (await row("v0.9.0")).waitForDisplayed({ timeout: 10000 });
   assert.match(await (await row("1.0.0")).getText(), /Verified[\s\S]*Installed/);
-  assert.match(await (await row("v0.9.0")).getText(), /Not verified/);
-  // One Quiver didn't verify asks first; cancelling installs nothing.
-  const warning = () => app.$(`//section[@role="dialog"][@aria-label="Install a version Quiver hasn't verified"]`);
-  await (await (await row("v0.9.0")).$("button=Install")).click();
+  assert.match(await (await row("v1.1.0")).getText(), /Unverified/);
+  assert.match(await (await row("v0.9.0")).getText(), /Unverified/);
+  // One a maintainer stopped can't be installed, and says why.
+  assert.match(await (await row("v0.8.0")).getText(), /Blocked[\s\S]*A maintainer is taking a closer look\./);
+  assert.ok(!(await (await (await row("v0.8.0")).$("button=Install")).isExisting()), "a blocked release has no Install");
+  // One that's being checked asks first, and waiting is the easy choice.
+  const warning = () => app.$(`//section[@role="dialog"][@aria-label="Install a release before it's verified"]`);
+  await (await (await row("v1.1.0")).$("button=Install")).click();
   await (await warning()).waitForDisplayed({ timeout: 10000 });
-  assert.match(await (await warning()).getText(), /hasn.t checked this release.s files/);
-  await (await (await warning()).$("button=Cancel")).click();
+  const text = await (await warning()).getText();
+  assert.match(text, /Install v1\.1\.0 before it.s verified\?/);
+  assert.match(text, /VirusTotal: no antivirus engine flags its files\./);
+  assert.match(text, /If you wait, it.s verified in about 3[01] hours/);
+  assert.equal(await app.execute(() => document.activeElement?.textContent), "Wait");
+  await (await (await warning()).$("button=Wait")).click();
   await (await warning()).waitForDisplayed({ reverse: true });
+  // One the site knows installs the files Quiver saw, against their checksum.
   await (await (await row("v0.9.0")).$("button=Install")).click();
-  await (await (await warning()).$("button=Install")).click();
+  assert.match(await (await warning()).getText(), /No maintainer has checked this release\./);
+  await (await (await warning()).$("button=Install anyway")).click();
   await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "v0.9.0", 30000);
-  // Picking a version only installs it: the verified release is still offered.
+  assert.equal(api.downloads().at(-1), "test-port-v0.9.0-linux.zip");
+  // Picking a version only installs it: the verified release is still offered, and the app says it's unverified.
   assert.equal(await (await (await page()).$("select")).getValue(), "ask");
   await (await (await page()).$("button=Update to v1.0.0")).waitForDisplayed({ timeout: 10000 });
+  assert.ok(await (await (await page()).$(".app-hero .release-badge.unverified")).isExisting(), "the app says it's unverified");
+  assert.equal(JSON.parse(readFileSync(join(s.data, "installs.json"), "utf8"))["entry_test-port"].unverified, true);
 });
 
 test("staying on a version is its own choice, and it shows", async () => {
@@ -96,6 +109,17 @@ test("staying on a version is its own choice, and it shows", async () => {
   await (await line.$("button=Unpin")).click();
   await (await (await page()).$("button=Update to v1.0.0")).waitForDisplayed({ timeout: 10000 });
   assert.equal(await (await (await page()).$("select")).getValue(), "ask");
+});
+
+test("an unverified install turns verified once Quiver verifies the same file", async () => {
+  api.release("0.9.0");
+  await app.keys("Escape");
+  await (await app.$("button*=Library")).click();
+  await (await app.$("button=Browse")).click();
+  await until(() => !JSON.parse(readFileSync(join(s.data, "installs.json"), "utf8"))["entry_test-port"].unverified, 30000);
+  await open("test-port");
+  assert.ok(!(await (await (await page()).$(".app-hero .release-badge.unverified")).isExisting()));
+  api.release("1.0.0");
 });
 
 test("a desktop shortcut and a Steam shortcut start the game", async () => {
