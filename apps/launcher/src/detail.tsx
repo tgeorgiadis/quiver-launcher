@@ -4,12 +4,12 @@
  * the player's tags.
  */
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ChevronDown, Download, ExternalLink, Monitor, Package, Pin, ShieldAlert, ShieldCheck } from "lucide-react";
-import { ApiError, type AiUse, type Checking, type Detail, type Entry, type Readme as ReadmeText, type Release, type ReleaseScan } from "@quiverlauncher/api";
+import { ArrowUpRight, ChevronDown, Download, ExternalLink, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
+import { ApiError, type AiUse, type Checking, type Detail, type Entry, type HistoryRelease, type Readme as ReadmeText, type Release, type ReleaseScan } from "@quiverlauncher/api";
 import { OS_NAMES, ReleaseBadge, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { useLauncher } from "./store";
-import { bare, versionList, type Version } from "./versions";
+import { bare, versionLabel, versionList, type Version } from "./versions";
 import { native } from "./native";
 import { isCustom, isLocal } from "./custom";
 import { Dialog, PlaylistChoices } from "./library";
@@ -73,6 +73,53 @@ export function useReleases(entry: Entry, on: boolean) {
 }
 export type Releases = ReturnType<typeof useReleases>;
 
+/** A verified release as the full list has it, for a site that doesn't list every release yet. */
+const asHistory = (r: Release): HistoryRelease => ({
+  releaseId: r.id,
+  version: r.version,
+  releasedAt: r.releasedAt,
+  notes: r.notes ?? "",
+  prerelease: r.prerelease,
+  state: "verified",
+  reasons: [],
+  assets: r.assets,
+  ...(r.installationOverride ? { installationOverride: r.installationOverride } : {}),
+});
+
+/**
+ * Every release of the app's repository, newest first, verified or not, as
+ * the website's Releases tab lists them: 10, then 10 more at a time. A site
+ * that doesn't list them all yet gives its verified ones.
+ */
+export function useReleaseHistory(entry: Entry, on: boolean) {
+  const { client } = useLauncher();
+  const [items, setItems] = useState<HistoryRelease[] | undefined>();
+  const [next, setNext] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  function load(cursor: string | null) {
+    setLoading(true);
+    client
+      .releaseHistory(entry.slug, 10, cursor)
+      .catch((e: unknown) => {
+        if (!(e instanceof ApiError && e.status === 404)) throw e;
+        return client.releases(entry.slug, 10, cursor).then((page) => ({ ...page, items: page.items.map(asHistory) }));
+      })
+      .then(
+        (page) => {
+          setItems((list) => (cursor ? [...(list ?? []), ...page.items] : page.items));
+          setNext(page.isDone ? null : page.nextCursor);
+          setLoading(false);
+        },
+        () => (setItems((list) => list ?? []), setLoading(false)),
+      );
+  }
+  useEffect(() => {
+    if (on) load(null);
+  }, [client, entry.slug, on]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { items, more: Boolean(next), loading, loadMore: () => load(next) };
+}
+export type ReleaseHistory = ReturnType<typeof useReleaseHistory>;
+
 export function RepositoryLink({ source }: { source: Source }) {
   return (
     <a className="repo-link" href={source.url}>
@@ -116,38 +163,124 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
   );
 }
 
-/** Where a newer release stands while the site checks it, as the website words it; kept current each minute. */
-export function CheckingStatus({ checking, short = false }: { checking: Checking; short?: boolean }) {
+/** Where a newer, unverified release stands, as the website words it; kept current each minute. */
+export function CheckingStatus({ checking }: { checking: Checking }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(timer);
   }, []);
-  if (checking.checkEndsAt === undefined) return checking.needsReview ? "waiting for a maintainer's review." : "being checked.";
+  if (checking.checkEndsAt === undefined) return checking.needsReview ? "unverified · waiting for a maintainer" : "unverified · being checked";
   const hours = Math.ceil((checking.checkEndsAt - now) / 3_600_000);
-  const ready = hours <= 0 ? "ready shortly" : `ready in about ${hours} ${hours === 1 ? "hour" : "hours"}`;
-  return short ? `being checked · ${ready}` : `being checked, ${ready}.`;
+  return hours <= 0 ? "unverified · verified shortly" : `unverified · verified in about ${hours} ${hours === 1 ? "hour" : "hours"}`;
 }
 
 /** The newer release being checked, shown only when the app has an approved one to install meanwhile. */
 export const checkingOf = (detail: Detail | null | undefined, releases: Releases) => (releases.items?.length ? detail?.checking : undefined);
 
-/** The releases the site approved, as on the website's Releases tab; another version installs from On this computer. */
-export function ReleasesTab({ detail, releases }: { detail: Detail | null | undefined; releases: Releases }) {
+/**
+ * One release, in release order with the others, as on the website: a
+ * verified one links its files; an unverified one stands out in orange and
+ * says why, with its files under a warning; a blocked one stands out in red,
+ * says why and links nothing.
+ */
+function ReleaseCard({ release, open, onToggle, host }: { release: HistoryRelease; open: boolean; onToggle: () => void; host: string }) {
+  const { state, scan } = release;
+  return (
+    <article className={`panel release release-${state}${open ? " open" : ""}`}>
+      <button type="button" className="release-summary" aria-expanded={open} onClick={onToggle}>
+        <span>
+          <strong>
+            {release.version}
+            {release.prerelease && <span className="prerelease-tag">Pre-release</span>}
+          </strong>
+          <small className="muted">
+            {fullDate(release.releasedAt)} · {release.assets.length} {release.assets.length === 1 ? "file" : "files"}
+          </small>
+        </span>
+        <ReleaseBadge state={state} />
+        <ChevronDown size={16} />
+      </button>
+      {state !== "verified" && (
+        <div className="release-why">
+          {release.reasons.map((r) => (
+            <p key={r}>{r}</p>
+          ))}
+          {release.checkEndsAt !== undefined && <p>Due to be verified in {hoursFrom(release.checkEndsAt)}.</p>}
+          {state === "blocked" && (
+            <p>
+              <strong>If you installed it, remove it and install a verified release instead.</strong>
+            </p>
+          )}
+          {scan?.url && (scan.verdict === "flagged" || scan.verdict === "warning") && (
+            <a className="release-hold-link" href={scan.url}>
+              VirusTotal: {scan.engines ?? "flagged"}
+              <ArrowUpRight size={13} aria-hidden="true" />
+            </a>
+          )}
+        </div>
+      )}
+      {open && (
+        <div className="release-details">
+          {release.notes.trim() ? (
+            <div className="release-notes">
+              <Markdown text={release.notes} />
+            </div>
+          ) : (
+            <p className="muted release-notes">No release notes provided.</p>
+          )}
+          {state === "blocked" ? (
+            <p className="release-files-note">Quiver blocked this release, so it doesn&apos;t link its files. Change version installs it only if you pick it and insist.</p>
+          ) : (
+            <>
+              {state === "unverified" && (
+                <p className="release-files-note">Quiver hasn&apos;t verified these files. Change version installs them only if you pick this release and confirm.</p>
+              )}
+              <div className="download-list">
+                {release.assets.map((a) => (
+                  <a className="download" key={a.id} href={a.url}>
+                    <Download size={18} />
+                    <span>
+                      <strong>
+                        {a.os === "unknown" ? "Platform unspecified" : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
+                      </strong>
+                      <small>{a.filename}</small>
+                    </span>
+                    <ExternalLink size={14} />
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+          {state !== "verified" && release.upstreamUrl && (
+            <a className="release-hold-link" href={release.upstreamUrl}>
+              View {release.version} on {host}
+              <ArrowUpRight size={13} aria-hidden="true" />
+            </a>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+/**
+ * Every release of the app in release order, verified or not, as on the
+ * website's Releases tab. Another version installs from Change version.
+ */
+export function ReleasesTab({ detail, history }: { detail: Detail | null | undefined; history: ReleaseHistory }) {
   const [toggled, setToggled] = useState<Set<string>>(new Set());
-  const { items } = releases;
-  const checking = checkingOf(detail, releases);
+  const { items } = history;
+  const host = detail?.project.provider === "gitlab" ? "GitLab" : "GitHub";
+  const newestVerified = items?.find((r) => r.state === "verified");
   return (
     <section className="release-section">
-      {detail?.withdrawn.map((w) => (
-        <div key={w.version + w.at} className="release-withdrawn-notice" role="note">
-          <ShieldAlert size={18} aria-hidden="true" />
-          <p>
-            <strong>Version {w.version} was withdrawn</strong> on {fullDate(w.at)}: {/[.!?]$/.test(w.reason) ? w.reason : `${w.reason}.`} If you
-            installed it, remove it and install a version listed here instead.
-          </p>
+      {newestVerified?.prerelease && (
+        <div className="prerelease-notice" role="note">
+          <strong>The newest verified release is a pre-release build.</strong> The project hasn't published a newer stable release with downloads, so Quiver Launcher
+          installs this one. Expect bugs and unfinished features.
         </div>
-      ))}
+      )}
       {items === undefined ? (
         <div className="more" role="status" aria-label="Loading releases">
           <span className="spinner" />
@@ -156,85 +289,21 @@ export function ReleasesTab({ detail, releases }: { detail: Detail | null | unde
         <div className="empty compact panel">
           <Package size={28} />
           <h3>Releases are being cataloged</h3>
-          <p>There are no approved builds yet. Check the upstream project for downloads.</p>
+          <p>There are no releases yet. Check the upstream project for downloads.</p>
         </div>
       ) : (
         <>
-          {checking && (
-            <div className="release-hold-notice" role="note">
-              <ShieldCheck size={18} aria-hidden="true" />
-              <div>
-                <p>
-                  <strong>
-                    Version {checking.version} is out and <CheckingStatus checking={checking} />
-                  </strong>{" "}
-                  Quiver checks new releases before Quiver Launcher offers them, so a compromised or malicious update can't reach you straight away. Until
-                  then, Quiver Launcher installs {items[0].version}.
-                </p>
-                {checking.checkEndsAt === undefined && checking.reasons.length > 0 && <p>{checking.reasons.join(" ")}</p>}
-                {checking.upstreamUrl && (
-                  <a className="release-hold-link" href={checking.upstreamUrl}>
-                    View {checking.version} on {detail?.project.provider === "gitlab" ? "GitLab" : "GitHub"}
-                    <ArrowUpRight size={13} aria-hidden="true" />
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-          {items[0].prerelease && (
-            <div className="prerelease-notice" role="note">
-              <strong>This is a pre-release build.</strong> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features.
-            </div>
-          )}
-          {items.map((release, i) => {
-            const open = (i === 0) !== toggled.has(release.id);
-            const flip = () => setToggled((t) => (t.delete(release.id) ? new Set(t) : new Set(t).add(release.id)));
-            return (
-              <article key={release.id} className={`panel release${open ? " open" : ""}`}>
-                <button type="button" className="release-summary" aria-expanded={open} onClick={flip}>
-                  <span>
-                    <strong>
-                      {release.version}
-                      {release.prerelease && <span className="prerelease-tag">Pre-release</span>}
-                    </strong>
-                    <small className="muted">
-                      {fullDate(release.releasedAt)} · {release.assets.length} {release.assets.length === 1 ? "file" : "files"}
-                    </small>
-                  </span>
-                  <ChevronDown size={16} />
-                </button>
-                {open && (
-                  <div className="release-details">
-                    {release.notes?.trim() ? (
-                      <div className="release-notes">
-                        <Markdown text={release.notes} />
-                      </div>
-                    ) : (
-                      <p className="muted release-notes">No release notes provided.</p>
-                    )}
-                    <div className="download-list">
-                      {release.assets.map((a) => (
-                        <a className="download" key={a.id} href={a.url}>
-                          <Download size={18} />
-                          <span>
-                            <strong>
-                              {a.os === "unknown" ? "Platform unspecified" : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
-                            </strong>
-                            <small>{a.filename}</small>
-                          </span>
-                          <ExternalLink size={14} />
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </article>
-            );
+          <p className="muted release-intro">Quiver Launcher only updates to verified releases. It installs an unverified or blocked one only if you pick it and confirm.</p>
+          {items.map((release) => {
+            // The newest verified release starts open; the others fold.
+            const open = (release === newestVerified) !== toggled.has(release.releaseId);
+            const flip = () => setToggled((t) => (t.delete(release.releaseId) ? new Set(t) : new Set(t).add(release.releaseId)));
+            return <ReleaseCard key={release.releaseId} release={release} open={open} onToggle={flip} host={host} />;
           })}
         </>
       )}
-      {releases.more && (
-        <button className="button secondary" disabled={releases.loading} onClick={releases.loadMore}>
+      {history.more && (
+        <button className="button secondary" disabled={history.loading} onClick={history.loadMore}>
           Show older releases
         </button>
       )}
@@ -384,15 +453,19 @@ function PinButton({ pressed, onClick }: { pressed: boolean; onClick: () => void
 /**
  * Every release of the app, verified or not. A verified one installs from
  * the site's checked files. For a catalog app, an unverified one asks
- * first, steering toward waiting for it to be verified; a blocked one can't
- * be installed. Installing one only installs it: staying on it is the pin,
- * which the player sets on purpose.
+ * first, steering toward waiting for it to be verified; a blocked one asks
+ * harder, and installs only once the player ticks that they understand.
+ * Installing one only installs it: staying on it is the pin, which the
+ * player sets on purpose (never on a blocked one).
  */
 export function Versions({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
   const { client, github, gitlab, installs, get, jobs, setUpdates } = useLauncher();
   const [versions, setVersions] = useState<Version[] | string | null>(null);
   // An unverified release the player chose, waiting for them to confirm; `pin` keeps the app on it after.
   const [asking, setAsking] = useState<{ version: Version; pin: boolean } | null>(null);
+  // A blocked release the player chose: installed only once they tick that they understand.
+  const [insisting, setInsisting] = useState<Version | null>(null);
+  const [understood, setUnderstood] = useState(false);
   const install = installs[entry.id];
   const pinned = install?.updates === "pinned";
   // A custom app has nothing Quiver checks, so nothing to mark or warn about.
@@ -418,12 +491,68 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
   }
   function installVersion(version: Version, pin: boolean) {
     setVersions(null);
-    void get(entry, version.release, { pin, unverified: !custom && version.state !== "verified" });
+    const blocked = !custom && version.state === "blocked" ? (version.reasons[0] ?? "Quiver blocked this release.") : undefined;
+    void get(entry, version.release, { pin, unverified: !custom && version.state !== "verified", ...(blocked ? { blocked } : {}) });
   }
   function pick(version: Version, pin = false) {
-    if (version.state === "blocked") return;
+    if (version.state === "blocked" && !custom) return (setUnderstood(false), setInsisting(version));
     if (version.state === "unverified" && !custom) return setAsking({ version, pin });
     installVersion(version, pin);
+  }
+  if (insisting) {
+    const close = () => setInsisting(null);
+    const { release, reasons, scan } = insisting;
+    const keep = install && !install.local ? versionLabel(install.version) : undefined;
+    return (
+      <Dialog label="Install a blocked release" onClose={close}>
+        <div className="detail-body unverified-prompt blocked-prompt">
+          <h2>
+            <ShieldX size={18} /> Install a blocked release?
+          </h2>
+          <p>
+            Quiver blocked {release.version}, so it&apos;s not meant to be installed. Quiver Launcher never updates to it. Install it only if you know why you need this
+            exact version.
+          </p>
+          {reasons.length > 0 && (
+            <ul className="unverified-reasons">
+              {reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          )}
+          {scan && (
+            <p className="scan-line">
+              VirusTotal: {scanText(scan)}{" "}
+              {scan.url && (
+                <a href={scan.url} target="_blank" rel="noreferrer">
+                  See the report
+                </a>
+              )}
+            </p>
+          )}
+          <p>It installs the files Quiver saw when it came out, and refuses any that changed since.</p>
+          <label className="blocked-consent">
+            <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} /> I understand Quiver blocked this release
+          </label>
+          <div className="row">
+            {/* Keeping what they have is the easy choice: it's first, and where a controller starts. */}
+            <button className="primary" autoFocus onClick={close}>
+              {keep ? `Keep ${keep}` : "Cancel"}
+            </button>
+            <button
+              className="danger"
+              disabled={!understood}
+              onClick={() => {
+                close();
+                installVersion(insisting, false);
+              }}
+            >
+              Install {release.version} anyway
+            </button>
+          </div>
+        </div>
+      </Dialog>
+    );
   }
   if (asking) {
     const close = () => setAsking(null);
@@ -493,7 +622,7 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
         {versions.map((version) => {
           const { release, state, reasons } = version;
           return (
-            <li key={release.id + release.version} className={`version ${state}`}>
+            <li key={release.id + release.version} className={`version ${custom ? "verified" : state}`}>
               <strong>{release.version}</strong>
               <span className="muted">{release.releasedAt ? fullDate(release.releasedAt) : ""}</span>
               {!custom && <ReleaseBadge state={state} title={reasons.join(" ") || undefined} />}
@@ -501,18 +630,20 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
               {install && bare(install.version) === bare(release.version) ? (
                 <span className="version-actions">
                   <span className="installed">Installed</span>
-                  <PinButton pressed={pinned} onClick={() => setUpdates(entry.id, pinned ? undefined : "pinned")} />
+                  {state !== "blocked" && <PinButton pressed={pinned} onClick={() => setUpdates(entry.id, pinned ? undefined : "pinned")} />}
                 </span>
-              ) : state === "blocked" ? (
-                <span className="version-blocked">{reasons[0] ?? "Quiver won't install it."}</span>
+              ) : state === "blocked" && !custom && release.assets.length === 0 ? (
+                // A site from before blocked installs lists no files for one.
+                <span className="version-blocked">Quiver won&apos;t install it.</span>
               ) : (
                 <span className="version-actions">
-                  <button className={state === "verified" || custom ? undefined : "quiet"} onClick={() => pick(version)}>
+                  <button className={state === "verified" || custom ? undefined : `quiet ${state}`} onClick={() => pick(version)}>
                     Install
                   </button>
-                  <PinButton pressed={false} onClick={() => pick(version, true)} />
+                  {(state !== "blocked" || custom) && <PinButton pressed={false} onClick={() => pick(version, true)} />}
                 </span>
               )}
+              {!custom && state !== "verified" && reasons.length > 0 && <span className="version-why">{reasons.join(" ")}</span>}
             </li>
           );
         })}

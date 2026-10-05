@@ -9,7 +9,8 @@ import type { ReleaseState } from "@quiverlauncher/ui";
  * A release in Change version: verified (published on the site), or not.
  * An unverified one the site knows installs its files against the
  * checksums the site pinned; one it hasn't seen yet comes straight from
- * GitHub or GitLab. A blocked one isn't installed at all.
+ * GitHub or GitLab. A blocked one installs its pinned files only when the
+ * player insists.
  */
 export type Version = {
   release: Release;
@@ -22,6 +23,8 @@ export type Version = {
   known: boolean;
 };
 export const bare = (v: string) => v.trim().replace(/^v/i, "");
+/** "v1.2", however the release names it. */
+export const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
 const NOT_SEEN = "Quiver hasn't seen this release yet.";
 const fromSite = (u: UnverifiedRelease): Release => ({
   id: u.releaseId,

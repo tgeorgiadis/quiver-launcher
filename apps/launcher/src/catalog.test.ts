@@ -95,3 +95,12 @@ test("unverified releases come from catalog:unverifiedReleases; a site without t
   const older = createConvexClient("https://convex.test", rest, fakeConvex({}).fetch);
   await expect(older.unverifiedReleases("a")).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 404);
 });
+
+test("every release comes from catalog:releaseHistory, a page at a time; a site without it is a 404", async () => {
+  const listed = [{ releaseId: "r2", version: "1.1", releasedAt: 2, notes: "", prerelease: false, state: "blocked", reasons: ["Stopped."], assets: [] }];
+  const { fetch, asked } = fakeConvex({ "catalog:releaseHistory": { page: listed, continueCursor: "c1", isDone: false } });
+  expect(await createConvexClient("https://convex.test", rest, fetch).releaseHistory("a", 10)).toEqual({ items: listed, nextCursor: "c1", isDone: false });
+  expect(asked).toEqual([{ path: "catalog:releaseHistory", args: { slug: "a", paginationOpts: { numItems: 10, cursor: null } } }]);
+  const older = createConvexClient("https://convex.test", rest, fakeConvex({}).fetch);
+  await expect(older.releaseHistory("a")).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 404);
+});

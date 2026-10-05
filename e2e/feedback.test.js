@@ -100,15 +100,19 @@ test("a newer release still being checked shows as on the website", async () => 
   await (await (await s.card("test-remake")).$(".card-open")).click();
   const line = await (await page()).$(".release-checking-line");
   await line.waitForDisplayed({ timeout: 10000 });
-  assert.equal(await line.getText(), "Version v1.1.0 is waiting for a maintainer's review.");
+  assert.equal(await line.getText(), "Version v1.1.0 is unverified · waiting for a maintainer");
   await (await tab("Releases")).click();
-  const notice = await (await page()).$(".release-hold-notice");
-  await notice.waitForDisplayed({ timeout: 10000 });
-  const text = await notice.getText();
-  assert.match(text, /Version v1\.1\.0 is out and waiting for a maintainer's review\. Quiver checks new releases/);
-  assert.match(text, /Until then, Quiver Launcher installs 1\.0\.0\./);
+  // In release order with the verified one, standing out, saying why.
+  await until(async () => (await (await page()).$$("article.release")).length === 2);
+  const [newer, verified] = await (await page()).$$("article.release");
+  assert.match(await newer.getAttribute("class"), /release-unverified/);
+  const text = await newer.getText();
+  assert.match(text, /^v1\.1\.0[\s\S]*Unverified/);
   assert.match(text, /It changes how the app is built\./);
-  assert.equal(await (await notice.$("a")).getAttribute("href"), "https://github.com/quiver/test-remake/releases/tag/v1.1.0");
-  assert.match(await (await notice.$("a")).getText(), /View v1\.1\.0 on GitHub/);
+  assert.match(await verified.getText(), /^1\.0\.0[\s\S]*Verified[\s\S]*Fixes a crash on start\./);
+  await (await newer.$("button.release-summary")).click();
+  const link = await newer.$("a*=View v1.1.0 on GitHub");
+  await link.waitForDisplayed({ timeout: 10000 });
+  assert.equal(await link.getAttribute("href"), "https://github.com/quiver/test-remake/releases/tag/v1.1.0");
   await app.keys("Escape");
 });

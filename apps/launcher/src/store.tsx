@@ -53,6 +53,8 @@ export type Install = {
   skip?: string;
   /** Installed before Quiver verified it; cleared once the site verifies this version with the same file. */
   unverified?: true;
+  /** Installed though Quiver blocked it, the player having insisted: why it was blocked. Cleared as `unverified` is. */
+  blocked?: string;
   /** The verified release of this version isn't the file that was installed. */
   differs?: true;
   /** The installed file's checksum (`sha256:<hex>`), when it had one. */
@@ -90,8 +92,9 @@ type Launcher = {
   /**
    * Adds the app to the library and installs it: its newest release, or the one given; `pin` then keeps it on that one.
    * `unverified`: a release Quiver hasn't verified, which the player confirmed.
+   * `blocked`: why Quiver blocked it, for one the player insisted on.
    */
-  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean }) => Promise<void>;
+  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string }) => Promise<void>;
   play: (id: string) => Promise<void>;
   /** Uninstalls the app and takes it out of the library. */
   remove: (id: string) => Promise<void>;
@@ -385,7 +388,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
             const now = i[id];
             if (now?.version !== install.version) return i;
             if (!same) return { ...i, [id]: { ...now, differs: true } };
-            const { unverified: _, differs: __, ...verified } = now;
+            const { unverified: _, differs: __, blocked: ___, ...verified } = now;
             return { ...i, [id]: verified };
           });
         })
@@ -397,14 +400,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     setJobs((j) => ({ ...j, [id]: { error: error instanceof Error ? error.message : String(error) } }));
 
   /** `app` is the custom app's repository, when it isn't in the library yet. */
-  async function installEntry(entry: Entry, chosen?: Release, app?: CustomApp, pin = false, unverified = false) {
+  async function installEntry(entry: Entry, chosen?: Release, app?: CustomApp, pin = false, unverified = false, blocked?: string) {
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
     const ref = appRef(entry.id, entry.slug);
     const from = installs[entry.id]?.version;
     let version = chosen?.version ?? entry.verified?.version;
-    track("app_install_started", { ...ref, version: version ?? null, update: Boolean(from), verified: !unverified });
+    track("app_install_started", { ...ref, version: version ?? null, update: Boolean(from), verified: !unverified, blocked: Boolean(blocked) });
     try {
       const custom = isCustom(entry.id) ? (app ?? allItems.find((i) => i.id === entry.id)?.custom ?? fromKey(entry.id)) : null;
       const release =
@@ -457,11 +460,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const skip = chosen && verified && release.releasedAt < verified.releasedAt ? verified.version : undefined;
       setInstalls((i) => {
         const updates = pin ? "pinned" : i[entry.id]?.updates;
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(asset.checksum ? { checksum: asset.checksum } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(asset.checksum ? { checksum: asset.checksum } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
-      if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && installs[entry.id]?.updates === "auto", verified: !unverified });
-      else track("app_installed", { ...ref, version: release.version, verified: !unverified });
+      if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && installs[entry.id]?.updates === "auto", verified: !unverified, blocked: Boolean(blocked) });
+      else track("app_installed", { ...ref, version: release.version, verified: !unverified, blocked: Boolean(blocked) });
     } catch (error) {
       fail(entry.id, error);
       track("app_install_failed", { ...ref, version: version ?? null, update: Boolean(from), reason: reasonOf(error) });
@@ -606,7 +609,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (jobs[entry.id] && !("error" in jobs[entry.id])) return;
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release, undefined, options?.pin, options?.unverified);
+      await installEntry(entry, release, undefined, options?.pin, options?.unverified || Boolean(options?.blocked), options?.blocked);
     },
     async play(id) {
       const install = installs[id];

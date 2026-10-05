@@ -144,6 +144,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     "catalog:readme": { slug: "string!" },
     "catalog:releases": { slug: "string!", paginationOpts: "page!" },
     "catalog:unverifiedReleases": { slug: "string!" },
+    "catalog:releaseHistory": { slug: "string!", paginationOpts: "page!" },
     "catalog:facets": {},
     "catalog:matchingGames": { search: "string!", hideDevelopers: "array" },
     "catalog:game": { slug: "string!" },
@@ -207,7 +208,17 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         : null,
     "catalog:releases": ({ slug, paginationOpts }) => page(entries.some((e) => e.slug === slug) ? [release(slug)] : [], paginationOpts),
     // Test Port's releases the site hasn't verified: one being checked, one no maintainer looked at, one a maintainer stopped.
-    "catalog:unverifiedReleases": ({ slug }) => (slug === "test-port" ? unverifiedReleases().filter((r) => r.version.replace(/^v/, "") !== version) : []),
+    "catalog:unverifiedReleases": ({ slug }) => unverifiedFor(slug),
+    // Every release, newest first, each with its state.
+    "catalog:releaseHistory": ({ slug, paginationOpts }) => {
+      if (!entries.some((e) => e.slug === slug)) return page([], paginationOpts);
+      const { id, assets, ...verified } = release(slug);
+      const all = [
+        { ...verified, releaseId: id, notes: "Fixes a crash on start.", state: "verified", reasons: [], assets },
+        ...unverifiedFor(slug).map((r) => ({ notes: "", ...r })),
+      ];
+      return page(all.sort((a, b) => b.releasedAt - a.releasedAt), paginationOpts);
+    },
     "catalog:facets": () => ({
       total: entries.length,
       consoles: [
@@ -262,6 +273,17 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       checksum: `sha256:${slug === "tampered-port" ? "0".repeat(64) : sha}`,
     })),
   });
+  const unverifiedFor = (slug) =>
+    slug === "test-port"
+      ? unverifiedReleases().filter((r) => r.version.replace(/^v/, "") !== version)
+      : slug === "test-remake"
+        ? [
+            {
+              releaseId: "rel_test-remake_1.1.0", version: "v1.1.0", releasedAt: Date.UTC(2026, 9, 1), prerelease: false, state: "unverified",
+              reasons: ["It changes how the app is built."], upstreamUrl: "https://github.com/quiver/test-remake/releases/tag/v1.1.0", assets: [],
+            },
+          ]
+        : [];
   const unverifiedReleases = () => [
     {
       releaseId: "rel_test-port_1.1.0", version: "v1.1.0", releasedAt: Date.UTC(2025, 6, 1), prerelease: false, state: "unverified",
@@ -275,7 +297,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     },
     {
       releaseId: "rel_test-port_0.8.0", version: "v0.8.0", releasedAt: Date.UTC(2025, 3, 1), prerelease: false, state: "blocked",
-      reasons: ["A maintainer is taking a closer look."], assets: [],
+      reasons: ["A maintainer is taking a closer look."], scan: { verdict: "warning", engines: "1 of 70 engines", url: "https://www.virustotal.com/gui/file/8" },
+      assets: ["linux", "windows"].map((os) => ({ id: `asset_0.8.0_${os}`, url: `${base}/files/test-port-v0.8.0-${os}.zip`, filename: `TestPort-${os}.zip`, os, architecture: "x64", format: "zip", checksum: `sha256:${sha}` })),
     },
   ];
   const account = mockAccount(entries);
