@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, FolderOpen, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FolderOpen, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, ShieldX, Trash2 } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Page } from "@quiverlauncher/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, Score } from "@quiverlauncher/ui";
 import { availableOn, hasUpdate, skipped, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
 import { ViewOptions } from "./library-view";
-import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleases } from "./detail";
+import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleaseHistory, useReleases } from "./detail";
+import { versionLabel } from "./versions";
 import { FeedbackTab, ReportPrompt, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { ErrorBoundary } from "./boundary";
@@ -24,7 +25,6 @@ type View = { kind: "app"; entry: Entry } | { kind: "game"; game: GameLink };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : `game:${v.game.slug}`);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
-const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
 /** "v1.2" and "1.2" are the same release. */
 const bare = (version: string) => version.trim().replace(/^v/i, "");
 
@@ -472,11 +472,16 @@ function Action({ entry }: { entry: Entry }) {
         <button className="primary wide" onClick={() => play(entry.id)}>
           <Play size={15} /> Play
         </button>
-        {install.unverified && (
-          <span className="unverified-mark" role="img" aria-label={`${versionLabel(install.version)} is unverified`} title={`${versionLabel(install.version)} is unverified`}>
-            <ShieldAlert size={14} />
-          </span>
-        )}
+        {install.unverified &&
+          (install.blocked ? (
+            <span className="blocked-mark" role="img" aria-label={`Quiver blocked ${versionLabel(install.version)}`} title={`Quiver blocked ${versionLabel(install.version)}: ${install.blocked}`}>
+              <ShieldX size={14} />
+            </span>
+          ) : (
+            <span className="unverified-mark" role="img" aria-label={`${versionLabel(install.version)} is unverified`} title={`${versionLabel(install.version)} is unverified`}>
+              <ShieldAlert size={14} />
+            </span>
+          ))}
         {install.updates === "pinned" && (
           <span className="pin-mark" role="img" aria-label={`Pinned to ${versionLabel(install.version)}`} title={`Pinned to ${versionLabel(install.version)}`}>
             <Pin size={14} />
@@ -523,6 +528,7 @@ function AppPage({
   const site = !isOwn(entry.id);
   const { source, detail } = useAppDetail(entry);
   const releases = useReleases(entry, site);
+  const history = useReleaseHistory(entry, site);
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
   const [tab, setTab] = useState<"overview" | "releases" | "feedback">("overview");
@@ -537,7 +543,7 @@ function AppPage({
   const checking = checkingOf(detail, releases);
   const tabs = [
     ["overview", "Overview", undefined],
-    ["releases", "Releases", releases.items && `${releases.items.length}${releases.more ? "+" : ""}`],
+    ["releases", "Releases", history.items && `${history.items.length}${history.more ? "+" : ""}`],
     ["feedback", "Player feedback", String(said)],
   ] as const;
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
@@ -589,7 +595,12 @@ function AppPage({
                   </span>
                 )}
                 {install && !install.local && <span className="muted">Installed {versionLabel(install.version)}</span>}
-                {install?.unverified && <ReleaseBadge state="unverified" title="Installed before Quiver verified it" />}
+                {install?.unverified &&
+                  (install.blocked ? (
+                    <ReleaseBadge state="blocked" title={`Quiver blocked it: ${install.blocked}`} />
+                  ) : (
+                    <ReleaseBadge state="unverified" title="Installed before Quiver verified it" />
+                  ))}
               </div>
               <div className="app-actions">
                 <Action entry={entry} />
@@ -617,6 +628,19 @@ function AppPage({
                 </p>
               )}
               {install?.local && <p className="muted">Removing it from your library leaves its files where they are.</p>}
+              {install?.blocked && !install.local && (
+                <p className="release-pinned-line blocked" role="alert">
+                  <ShieldX size={14} aria-hidden="true" />
+                  <span>
+                    Quiver blocked {versionLabel(install.version)}: {install.blocked}
+                  </span>
+                  {entry.verified && bare(entry.verified.version) !== bare(install.version) && (
+                    <button type="button" className="link-button" onClick={() => get(entry)}>
+                      Install the verified {versionLabel(entry.verified.version)}
+                    </button>
+                  )}
+                </p>
+              )}
               {install?.differs && (
                 <p className="release-pinned-line differs" role="alert">
                   <ShieldAlert size={14} aria-hidden="true" />
@@ -654,9 +678,9 @@ function AppPage({
               {/* As on the website: a newer release the site is still checking. */}
               {checking && (
                 <p className="release-checking-line">
-                  <ShieldCheck size={14} aria-hidden="true" />
+                  <ShieldAlert size={14} aria-hidden="true" />
                   <span>
-                    Version {checking.version} is <CheckingStatus checking={checking} short />
+                    Version {checking.version} is <CheckingStatus checking={checking} />
                   </span>
                 </p>
               )}
@@ -677,7 +701,7 @@ function AppPage({
       <div className="app-columns">
         <div className="app-content" role={site ? "tabpanel" : undefined}>
           {tab === "overview" && <Readme entry={entry} source={source} />}
-          {tab === "releases" && <ReleasesTab detail={detail} releases={releases} />}
+          {tab === "releases" && <ReleasesTab detail={detail} history={history} />}
           {tab === "feedback" && (
             <FeedbackTab
               entry={entry}

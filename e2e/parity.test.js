@@ -68,9 +68,10 @@ test("any release can be installed, and each says whether Quiver verified it", a
   assert.match(await (await row("1.0.0")).getText(), /Verified[\s\S]*Installed/);
   assert.match(await (await row("v1.1.0")).getText(), /Unverified/);
   assert.match(await (await row("v0.9.0")).getText(), /Unverified/);
-  // One a maintainer stopped can't be installed, and says why.
+  // One a maintainer stopped says why, and has no pin.
   assert.match(await (await row("v0.8.0")).getText(), /Blocked[\s\S]*A maintainer is taking a closer look\./);
-  assert.ok(!(await (await (await row("v0.8.0")).$("button=Install")).isExisting()), "a blocked release has no Install");
+  assert.match(await (await row("v0.8.0")).getAttribute("class"), /blocked/);
+  assert.ok(!(await (await (await row("v0.8.0")).$("button.pin-button")).isExisting()), "a blocked release can't be pinned");
   // One that's being checked asks first, and waiting is the easy choice.
   const warning = () => app.$(`//section[@role="dialog"][@aria-label="Install a release before it's verified"]`);
   await (await (await row("v1.1.0")).$("button=Install")).click();
@@ -82,6 +83,28 @@ test("any release can be installed, and each says whether Quiver verified it", a
   assert.equal(await app.execute(() => document.activeElement?.textContent), "Wait");
   await (await (await warning()).$("button=Wait")).click();
   await (await warning()).waitForDisplayed({ reverse: true });
+  // A blocked one installs only once the player ticks that they understand, and keeping what they have is the easy choice.
+  const insist = () => app.$(`//section[@role="dialog"][@aria-label="Install a blocked release"]`);
+  await (await (await row("v0.8.0")).$("button=Install")).click();
+  await (await insist()).waitForDisplayed({ timeout: 10000 });
+  const why = await (await insist()).getText();
+  assert.match(why, /Install a blocked release\?/);
+  assert.match(why, /A maintainer is taking a closer look\./);
+  assert.match(why, /VirusTotal: 1 of 70 engines flag one of its files\./);
+  assert.equal(await app.execute(() => document.activeElement?.textContent), "Keep v1.0.0");
+  const anyway = async () => (await insist()).$("button=Install v0.8.0 anyway");
+  assert.equal(await (await anyway()).isEnabled(), false);
+  await (await (await insist()).$("label*=I understand Quiver blocked this release")).click();
+  await until(async () => (await anyway()).isEnabled());
+  await (await anyway()).click();
+  await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "v0.8.0", 30000);
+  assert.equal(api.downloads().at(-1), "test-port-v0.8.0-linux.zip");
+  // The app says it's blocked, and why, and offers the verified release.
+  await (await (await page()).$(".app-hero .release-badge.blocked")).waitForDisplayed({ timeout: 10000 });
+  assert.match(await (await (await page()).$(".release-pinned-line.blocked")).getText(), /Quiver blocked v0\.8\.0: A maintainer is taking a closer look\.\s*Install the verified v1\.0\.0/);
+  assert.equal(JSON.parse(readFileSync(join(s.data, "installs.json"), "utf8"))["entry_test-port"].blocked, "A maintainer is taking a closer look.");
+  await (await (await page()).$("button=Change version")).click();
+  await (await row("v0.9.0")).waitForDisplayed({ timeout: 10000 });
   // One the site knows installs the files Quiver saw, against their checksum.
   await (await (await row("v0.9.0")).$("button=Install")).click();
   assert.match(await (await warning()).getText(), /No maintainer has checked this release\./);
@@ -93,6 +116,7 @@ test("any release can be installed, and each says whether Quiver verified it", a
   await (await (await page()).$("button=Update to v1.0.0")).waitForDisplayed({ timeout: 10000 });
   assert.ok(await (await (await page()).$(".app-hero .release-badge.unverified")).isExisting(), "the app says it's unverified");
   assert.equal(JSON.parse(readFileSync(join(s.data, "installs.json"), "utf8"))["entry_test-port"].unverified, true);
+  assert.equal(JSON.parse(readFileSync(join(s.data, "installs.json"), "utf8"))["entry_test-port"].blocked, undefined);
 });
 
 test("staying on a version is its own choice, and it shows", async () => {

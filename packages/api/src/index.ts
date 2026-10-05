@@ -160,8 +160,8 @@ export type ReleaseScan = {
  * A release of an app's repository Quiver hasn't verified for it. An
  * "unverified" one installs only when a player picks it and confirms,
  * against the checksums the site pinned when it first saw it; a "blocked"
- * one (withdrawn, taken down, held, stopped, a file replaced, flagged) not
- * at all. Never an update.
+ * one (withdrawn, taken down, held, stopped, a file replaced, flagged) only
+ * when a player insists after a stronger warning. Never an update.
  */
 export type UnverifiedRelease = {
   releaseId: string;
@@ -174,7 +174,30 @@ export type UnverifiedRelease = {
   /** When it's verified by itself if nothing changes. */
   checkEndsAt?: number;
   scan?: ReleaseScan;
-  /** Empty when blocked. */
+  /** With the checksums pinned when Quiver first saw them (none from a site older than blocked installs, when blocked). */
+  assets: Asset[];
+  installationOverride?: InstallSettings;
+  upstreamUrl?: string;
+};
+
+/**
+ * Any release of an app's repository, as the app page lists them: newest
+ * first, each verified, unverified or blocked, with why. Only a verified
+ * one is ever an update.
+ */
+export type HistoryRelease = {
+  releaseId: string;
+  version: string;
+  releasedAt: number;
+  notes: string;
+  prerelease: boolean;
+  state: "verified" | "unverified" | "blocked";
+  /** Why it isn't verified, or why it's blocked, worded for players; empty when verified. */
+  reasons: string[];
+  /** When it's verified by itself if nothing changes. */
+  checkEndsAt?: number;
+  scan?: ReleaseScan;
+  /** With the checksums Quiver pinned. */
   assets: Asset[];
   installationOverride?: InstallSettings;
   upstreamUrl?: string;
@@ -272,6 +295,8 @@ export type Client = {
   releases(slug: string, limit?: number, cursor?: string | null): Promise<Page<Release>>;
   /** Releases Quiver hasn't verified for the app, newest first. A 404 ApiError from a site that doesn't list them yet. */
   unverifiedReleases(slug: string): Promise<UnverifiedRelease[]>;
+  /** Every release of the app's repository, newest first, each with its state. A 404 ApiError from a site that doesn't list them yet. */
+  releaseHistory(slug: string, limit?: number, cursor?: string | null): Promise<Page<HistoryRelease>>;
   /** What players said, newest first. */
   reviews(slug: string, cursor?: string | null, limit?: number): Promise<Page<Feedback>>;
   /** Up to four original games whose titles match a search of 2 or more characters. */
@@ -317,6 +342,8 @@ export function createClient(base: string = DEFAULT_API): Client {
     releases: (slug: string, limit = 5, cursor?: string | null) =>
       get<Page<Release>>(`${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     unverifiedReleases: (slug: string) => get<{ items: UnverifiedRelease[] }>(`${app(slug)}/unverified-releases`).then((r) => r.items),
+    releaseHistory: (slug: string, limit = 10, cursor?: string | null) =>
+      get<Page<HistoryRelease>>(`${app(slug)}/release-history?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     reviews: (slug: string, cursor?: string | null, limit = 12) =>
       get<Page<Feedback>>(`${app(slug)}/reviews?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     // REST has no game search.
