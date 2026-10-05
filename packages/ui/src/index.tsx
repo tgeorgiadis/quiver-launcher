@@ -5,7 +5,7 @@
  * `@quiverlauncher/ui/markdown`, kept apart because it's large.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, Clock, Gamepad2 } from "lucide-react";
+import { ArrowUpRight, Clock, Gamepad2, ShieldAlert, ShieldCheck, ShieldX, type LucideIcon } from "lucide-react";
 import type { IconType } from "react-icons";
 import { FaAndroid, FaApple, FaLinux, FaWindows } from "react-icons/fa6";
 import { SiIos } from "react-icons/si";
@@ -311,6 +311,29 @@ function ReleaseAge({ entry }: { entry: CardEntry }) {
   return (
     <span className="release-age" title={title}>
       Updated {relativeTime(at)}
+    </span>
+  );
+}
+
+/**
+ * Whether Quiver checked a release: verified (published, its files
+ * checked), unverified (not yet, or never), or blocked (withdrawn, taken
+ * down, stopped, or flagged, so it's never installed).
+ */
+export type ReleaseState = "verified" | "unverified" | "blocked";
+const RELEASE_STATES: Record<ReleaseState, { icon: LucideIcon; label: string; title: string }> = {
+  verified: { icon: ShieldCheck, label: "Verified", title: "Quiver checked this release's files" },
+  unverified: { icon: ShieldAlert, label: "Unverified", title: "Quiver hasn't verified this release" },
+  blocked: { icon: ShieldX, label: "Blocked", title: "Quiver won't install this release" },
+};
+
+/** A release's state, green, orange or red, with its shield. */
+export function ReleaseBadge({ state, label, title }: { state: ReleaseState; label?: ReactNode; title?: string }) {
+  const { icon: Icon, ...words } = RELEASE_STATES[state];
+  return (
+    <span className={`release-badge ${state}`} title={title ?? words.title}>
+      <Icon size={13} aria-hidden="true" />
+      {label ?? words.label}
     </span>
   );
 }

@@ -86,3 +86,12 @@ test("ways to play a game are best first, as on the website", () => {
   expect(order(way("old", 0, 0, 0, 1), way("new", 0, 0, 0, 2))).toEqual(["new", "old"]);
   expect(order(way("b", 0), way("a", 0))).toEqual(["a", "b"]);
 });
+
+test("unverified releases come from catalog:unverifiedReleases; a site without them is a 404", async () => {
+  const listed = [{ releaseId: "r2", version: "1.1", releasedAt: 2, prerelease: false, state: "unverified", reasons: [], assets: [] }];
+  const { fetch, asked } = fakeConvex({ "catalog:unverifiedReleases": listed });
+  expect(await createConvexClient("https://convex.test", rest, fetch).unverifiedReleases("a")).toEqual(listed);
+  expect(asked).toEqual([{ path: "catalog:unverifiedReleases", args: { slug: "a" } }]);
+  const older = createConvexClient("https://convex.test", rest, fakeConvex({}).fetch);
+  await expect(older.unverifiedReleases("a")).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 404);
+});

@@ -5,6 +5,7 @@ import {
   Artwork,
   EntryCard,
   EntryCardContent,
+  ReleaseBadge,
   Score,
   isNew,
   isStale,
@@ -175,5 +176,25 @@ describe("EntryCardContent", () => {
     expect(container.querySelector(".cover-badge")).toBeNull();
     expect(container.querySelector(".card-kind")?.textContent).toBe("N64 console · Harbour Masters");
     expect([...container.querySelectorAll(".game-chip-row .game-chip")].map((c) => c.textContent)).toEqual(["One", "Two"]);
+  });
+});
+
+describe("ReleaseBadge", () => {
+  it("says whether Quiver verified a release, in its colour and with its shield", () => {
+    const { container } = render(
+      <>
+        <ReleaseBadge state="verified" />
+        <ReleaseBadge state="unverified" />
+        <ReleaseBadge state="blocked" label="Withdrawn" title="Pulled by a maintainer" />
+      </>,
+    );
+    const badges = [...container.querySelectorAll(".release-badge")];
+    expect(badges.map((b) => [b.className, b.textContent])).toEqual([
+      ["release-badge verified", "Verified"],
+      ["release-badge unverified", "Unverified"],
+      ["release-badge blocked", "Withdrawn"],
+    ]);
+    expect(badges.every((b) => b.querySelector("svg[aria-hidden=true]"))).toBe(true);
+    expect(badges[2].getAttribute("title")).toBe("Pulled by a maintainer");
   });
 });
