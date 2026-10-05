@@ -180,6 +180,8 @@ main.app-main { padding: 0 0 40px; }
 .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
 .detail-tags > span { display: inline-block; font-size: 10px; background: var(--field); border-radius: 4px; padding: 3px 8px; color: var(--text-2); }
 .game-body { padding: 8px 24px 24px; }
+.game-version + .game-version { margin-top: 28px; }
+.game-version-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; }
 .section-top { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 24px; }
 .section-top h2 { display: flex; gap: 12px; align-items: center; font-size: 22px; }
 .section-top > .muted { font-size: 11px; }

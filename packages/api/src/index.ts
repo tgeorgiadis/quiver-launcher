@@ -25,6 +25,14 @@ export type Verified = {
   rolling?: boolean;
 };
 
+/** Which version of a game an app is based on. */
+export type BasedOn = {
+  /** Console id of the version, such as "ps1" (see facets). */
+  console?: string;
+  /** The edition, when it matters: "Director's Cut". */
+  edition?: string;
+};
+
 export type Entry = {
   id: string;
   catalogId?: string;
@@ -35,6 +43,8 @@ export type Entry = {
   games: { id: string; slug: string; title: string }[];
   /** Original consoles of the games it's based on, as console ids (see facets). */
   consoles?: string[];
+  /** The version of its game it's based on: the PlayStation version, a Director's Cut. */
+  basedOn?: BasedOn;
   libraryArt?: LibraryArt;
   artwork?: string;
   tags: string[];

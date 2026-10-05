@@ -7,7 +7,7 @@ import { LibraryPage, withOverrides } from "./library";
 import { ViewOptions } from "./library-view";
 import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleases } from "./detail";
 import { FeedbackTab, ReportPrompt, useOwnFeedback, type Intent } from "./feedback";
-import { GamePage, GamesSection, type GameLink } from "./game";
+import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { ErrorBoundary } from "./boundary";
 import { ControlSettings } from "./controls";
 import { track } from "./telemetry";
@@ -543,6 +543,7 @@ function AppPage({
                       {g.title}
                     </button>
                   ))}
+                  {entry.basedOn && <span className="based-on-version">{gameVersionLabel(entry.basedOn, consoleNames)}</span>}
                 </div>
               )}
               <div className="facts">

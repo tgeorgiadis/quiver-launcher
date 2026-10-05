@@ -207,6 +207,11 @@
   text-transform: uppercase;
   color: var(--ql-based-on-label);
 }
+/* "PlayStation version", after the games an app's page says it's based on. */
+.based-on-version {
+  font-size: 12px;
+  color: var(--ql-based-on-label);
+}
 .game-chip {
   max-width: 100%;
   overflow: hidden;
