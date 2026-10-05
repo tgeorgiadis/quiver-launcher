@@ -102,7 +102,7 @@ type Launcher = {
   saveCollection: (collection: Collection) => void;
   /** Changes made here that the account doesn't have yet. */
   unsynced: number;
-  /** Signs out, taking the library along: installs and apps on this computer only stay. */
+  /** Signs out, taking the library along except the apps installed on this computer, which stay until another account signs in. */
   signOut: () => Promise<void>;
   settings: Settings;
   setSettings: (settings: Settings) => void;
@@ -535,8 +535,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     async signOut() {
       track("signed_out");
       await account.signOut();
-      setLibrary((l) => l.filter((i) => i.local));
+      // Apps installed here stay in the library, still the account's, so signing back in carries on and another account leaves them out.
+      setLibrary((l) => l.filter((i) => i.local || installs[i.id]));
       setCollections([]);
+      setNotice("Signed out. Apps installed on this computer stay in your library; sign in to see the rest.");
     },
     installs,
     catalog,
