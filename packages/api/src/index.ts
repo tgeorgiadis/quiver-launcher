@@ -58,7 +58,10 @@ export type Entry = {
 export type Game = {
   id: string;
   slug: string;
+  /** The name most players know it by. */
   title: string;
+  /** Other names it goes by, such as its title in another region. */
+  alternateTitles?: string[];
   description: string;
   artwork?: string;
   libraryArt?: LibraryArt;
@@ -66,8 +69,15 @@ export type Game = {
   originalSystems: string[];
 };
 
-/** A game whose title matches a search, and how many apps play it. */
-export type GameMatch = { slug: string; title: string; art?: string; apps: number };
+/** A game whose title (or another of its names) matches a search, and how many apps play it. */
+export type GameMatch = {
+  slug: string;
+  title: string;
+  /** The other name the search matched, when its title didn't. */
+  matched?: string;
+  art?: string;
+  apps: number;
+};
 
 /** A game's page: the game and every app that plays it, in no order. */
 export type GameDetail = { game: Game; entries: Entry[] };
