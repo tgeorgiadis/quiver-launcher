@@ -4,9 +4,8 @@ The catalog's components and styles, shared by [Quiver Launcher](https://github.
 and [quiverlauncher.com](https://quiverlauncher.com) so an app looks the same in both: the catalog card and its
 parts (artwork, platform icons, score, AI chip, release age), tag and date formatting, and README rendering.
 
-```sh
-npm install @quiverlauncher/ui react lucide-react react-icons
-```
+It isn't published anywhere: quiverlauncher.com includes this repository as a git submodule and builds it from
+source, with `react`, `lucide-react` and `react-icons` as peers.
 
 ```tsx
 import { EntryCard, EntryCardContent } from "@quiverlauncher/ui";
@@ -23,7 +22,7 @@ import "@quiverlauncher/ui/catalog.css";
 ```
 
 The components don't need a router or a data layer: a card takes an `entry` from
-[`@quiverlauncher/api`](https://www.npmjs.com/package/@quiverlauncher/api) (or anything shaped like `CardEntry`).
+[`@quiverlauncher/api`](../api) (or anything shaped like `CardEntry`).
 
 ## Colours
 
@@ -50,7 +49,6 @@ palette and light/dark themes. Define these, for example on `:root`:
 
 ## Developing
 
-This package lives in the launcher's repository, which uses it straight from source. `pnpm --filter
-@quiverlauncher/ui test` runs its tests; `pnpm pack` builds `dist/` and shows what would be published.
+`pnpm --filter @quiverlauncher/ui test` runs its tests.
 
 MIT licensed.

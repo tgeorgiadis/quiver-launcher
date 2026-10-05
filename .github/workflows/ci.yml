@@ -22,8 +22,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
-      # The npm packages' published build (packages/; publish-packages.yml).
-      - run: pnpm --filter "./packages/*" build
       - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
       - run: pnpm --filter @quiver/e2e build
       - run: xvfb-run -a pnpm e2e

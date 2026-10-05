@@ -1,44 +1,22 @@
 {
   "name": "@quiverlauncher/ui",
   "version": "0.1.0",
+  "private": true,
   "description": "Catalog components and styles shared by Quiver Launcher and quiverlauncher.com",
   "license": "MIT",
   "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tgeorgiadis/quiver-launcher.git",
-    "directory": "packages/ui"
-  },
-  "homepage": "https://github.com/tgeorgiadis/quiver-launcher/tree/v4/packages/ui#readme",
   "main": "src/index.tsx",
   "exports": {
     ".": "./src/index.tsx",
     "./markdown": "./src/markdown.tsx",
     "./catalog.css": "./src/catalog.css"
   },
-  "publishConfig": {
-    "access": "public",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "./markdown": {
-        "types": "./dist/markdown.d.ts",
-        "default": "./dist/markdown.js"
-      },
-      "./catalog.css": "./dist/catalog.css"
-    }
-  },
-  "files": ["dist"],
-  "sideEffects": ["*.css"],
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
     "typecheck": "tsc -p .",
-    "test": "vitest run",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json && node -e \"require('fs').copyFileSync('src/catalog.css','dist/catalog.css')\"",
-    "prepack": "pnpm run build"
+    "test": "vitest run"
   },
   "dependencies": {
     "@quiverlauncher/api": "workspace:^",

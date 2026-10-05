@@ -2,7 +2,7 @@
 
 A typed client for the [quiverlauncher.com](https://quiverlauncher.com) catalog API
 (`https://api.quiverlauncher.com/api/v1`), and the types of what it returns. Quiver Launcher uses it, and
-[`@quiverlauncher/ui`](https://www.npmjs.com/package/@quiverlauncher/ui)'s components take its `Entry`.
+[`@quiverlauncher/ui`](../ui)'s components take its `Entry`.
 
 ```ts
 import { createClient } from "@quiverlauncher/api";
