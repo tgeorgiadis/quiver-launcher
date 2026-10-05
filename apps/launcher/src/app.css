@@ -162,7 +162,7 @@ main.app-main { padding: 0 0 40px; }
 .search-games button:hover, .search-games button:focus-visible { border-color: var(--accent); }
 .search-game-art { width: 40px; height: 56px; flex-shrink: 0; border-radius: 5px; background: var(--field); }
 .search-game-art svg { width: 22px; height: 22px; }
-.search-games button > span { display: grid; gap: 3px; min-width: 0; }
+.search-games button > span:not(.artwork) { display: grid; gap: 3px; min-width: 0; }
 .search-games strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .search-games small { color: var(--link); font-size: 12px; }
 

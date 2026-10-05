@@ -14,8 +14,8 @@
   background: var(--ql-card);
   transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
 }
-.entry-card:hover,
-.entry-card:focus-within {
+/* Lifts under the pointer, or with keyboard focus on it or a button in it. */
+.entry-card:is(:hover, :focus-visible, :has(:focus-visible)) {
   transform: translateY(-4px);
   border-color: var(--ql-accent);
   box-shadow: 0 15px 30px var(--ql-card-shadow);
