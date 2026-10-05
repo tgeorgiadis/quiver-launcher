@@ -5,8 +5,8 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, FolderPlus, GitBranch, MonitorPlay } from "lucide-react";
-import type { Entry, GameMatch } from "@quiver/api";
-import { Artwork, fullDate } from "@quiver/ui";
+import type { Entry, GameMatch } from "@quiverlauncher/api";
+import { Artwork, fullDate } from "@quiverlauncher/ui";
 import { useLauncher, type GameArt, type RepositoryPreview } from "./store";
 import { native } from "./native";
 import { assetFilterFor } from "./assets";

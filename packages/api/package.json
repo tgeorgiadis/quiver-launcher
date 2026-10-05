@@ -1,10 +1,17 @@
 {
-  "name": "@quiver/api",
+  "name": "@quiverlauncher/api",
   "version": "0.1.0",
-  "license": "MIT",
   "private": true,
+  "description": "Typed client for the quiverlauncher.com catalog API",
+  "license": "MIT",
   "type": "module",
   "main": "src/index.ts",
-  "scripts": { "typecheck": "tsc -p ." },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
   "devDependencies": { "typescript": "~5.9.3" }
 }

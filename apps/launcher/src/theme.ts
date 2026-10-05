@@ -7,7 +7,7 @@ export function systemTheme(): Theme {
   return systemQuery()?.matches ? "light" : "dark";
 }
 
-/** Shows the page in a theme (styles.css's :root[data-theme]). */
+/** Shows the page in a theme (base.css's :root[data-theme]). */
 export function showTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
 }

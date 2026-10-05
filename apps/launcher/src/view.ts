@@ -3,8 +3,8 @@
  * picture each card has, how big the cards are, and whether names show under
  * them. Kept in settings.json with the other preferences for this device.
  */
-import type { Entry } from "@quiver/api";
-import { coverOf } from "@quiver/ui";
+import type { Entry } from "@quiverlauncher/api";
+import { coverOf } from "@quiverlauncher/ui";
 
 export type Layout = "grid" | "list";
 /** Cover: the wide library art, as the catalog shows it. Box art: the portrait capsule. Icon: the app's icon on a plain tile. */

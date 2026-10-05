@@ -53,6 +53,8 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
       hostname: "127.0.0.1",
       port,
       logLevel: "error",
+      // The app can take a while to show its first screen on a CI runner; an action right after launch waits for it.
+      waitforTimeout: 20000,
       capabilities: windows
         ? { browserName: "webview2", "wdio:enforceWebDriverClassic": true, "ms:edgeOptions": { debuggerAddress: `127.0.0.1:${debugPort}` } }
         : { "wdio:enforceWebDriverClassic": true, "tauri:options": { application: binary } },
@@ -63,6 +65,10 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     if (!shared) api.close();
     throw error;
   }
+  // WebKitGTK's driver leaves out text it thinks is clipped (an ellipsised title, a
+  // line-clamped description) and the line breaks between blocks, so read what
+  // the page shows instead, as WebView2's driver does.
+  if (!windows) await app.overwriteCommand("getText", async function () { return (await app.execute((el) => el.innerText, this)).trim(); }, true);
   return {
     app,
     api,

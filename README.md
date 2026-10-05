@@ -36,6 +36,12 @@ xvfb-run -a pnpm e2e
 `QUIVER_API` points the app at another catalog and `QUIVER_DATA` at another data folder. A
 `portable.txt` beside the executable keeps everything in a `data` folder next to it.
 
+## Shared packages
+
+quiverlauncher.com includes this repository as a git submodule and builds `packages/api` and `packages/ui` from
+it, so the site shows apps with the same components as the launcher and checks its API against the same types.
+Nothing is published to npm. A change here reaches the site when its submodule is moved to a newer commit.
+
 ## Usage data
 
 Like quiverlauncher.com, the launcher sends anonymous usage data to PostHog unless it's turned off:

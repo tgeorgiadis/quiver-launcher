@@ -6,7 +6,7 @@
  * last catalog data seen is cached so the library shows instantly offline.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
+import { createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiverlauncher/api";
 import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
 import { reasonOf, track } from "./telemetry";
@@ -103,7 +103,7 @@ type Launcher = {
   saveCollection: (collection: Collection) => void;
   /** Changes made here that the account doesn't have yet. */
   unsynced: number;
-  /** Signs out, taking the library along: installs and apps on this computer only stay. */
+  /** Signs out, taking the library along except the apps installed on this computer, which stay until another account signs in. */
   signOut: () => Promise<void>;
   settings: Settings;
   setSettings: (settings: Settings) => void;
@@ -538,8 +538,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     async signOut() {
       track("signed_out");
       await account.signOut();
-      setLibrary((l) => l.filter((i) => i.local));
+      // Apps installed here stay in the library, still the account's, so signing back in carries on and another account leaves them out.
+      setLibrary((l) => l.filter((i) => i.local || installs[i.id]));
       setCollections([]);
+      setNotice("Signed out. Apps installed on this computer stay in your library; sign in to see the rest.");
     },
     installs,
     catalog,

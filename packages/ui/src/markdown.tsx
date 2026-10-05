@@ -1,4 +1,4 @@
-/** README and release-notes rendering, as on quiverlauncher.com (src/components/Markdown.tsx there). */
+/** README and release-notes rendering, shared by Quiver Launcher and quiverlauncher.com. */
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";

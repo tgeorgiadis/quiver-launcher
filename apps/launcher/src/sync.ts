@@ -37,8 +37,8 @@ export type Change = {
 
 /**
  * Signing in: the guest library's apps join the account. Apps another
- * account left here go with it (signing out takes the library along). Apps
- * on this computer only (local apps) stay out of every account.
+ * account left here (its installed apps stay after signing out) go with it.
+ * Apps on this computer only (local apps) stay out of every account.
  */
 export function joinAccount(local: LibraryItem[], account: string): LibraryItem[] {
   return local.flatMap((item) => {

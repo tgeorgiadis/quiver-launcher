@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { Gamepad2 } from "lucide-react";
-import type { Entry } from "@quiver/api";
+import type { Entry } from "@quiverlauncher/api";
 import { useLauncher } from "./store";
 import { CARD_IMAGES, CARD_SIZES, LAYOUTS, artFor, savedView, viewOf, type CardImage, type LibraryView } from "./view";
 

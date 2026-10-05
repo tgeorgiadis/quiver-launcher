@@ -8,8 +8,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, LayoutGrid, Library, List, ListPlus, MoreHorizontal, Plus, Search, SlidersHorizontal, X } from "lucide-react";
-import { listSlug, listUrl, type Entry, type SharedList } from "@quiver/api";
-import { EntryCard, tagLabel } from "@quiver/ui";
+import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
+import { EntryCard, tagLabel } from "@quiverlauncher/ui";
 import { hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
@@ -392,7 +392,8 @@ export function LibraryPage({
       )}
       {collection?.follows && list === null && <p className="muted playlist-note">This playlist isn't shared any more.</p>}
       {collection?.follows && list === "failed" && <p className="muted playlist-note">Couldn't reach quiverlauncher.com to show this playlist. Check your connection.</p>}
-      {items.length === 0 && (
+      {/* An empty library over apps still installed here: their section says it all. */}
+      {items.length === 0 && !(loose.length && tab === "all" && !search && !filtering) && (
         <p className="empty">
           {collection && !search && !filtering ? (collection.follows ? "Nothing in this playlist." : "No apps in this playlist yet. Add some from each app's menu, or edit its filters.") : "Nothing here."}
         </p>

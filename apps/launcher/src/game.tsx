@@ -4,8 +4,8 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
-import type { Entry, GameDetail, GameMatch } from "@quiver/api";
-import { Artwork, EntryCard } from "@quiver/ui";
+import type { Entry, GameDetail, GameMatch } from "@quiverlauncher/api";
+import { Artwork, EntryCard } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { byPlayerFeedback } from "./catalog";
 

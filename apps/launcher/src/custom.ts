@@ -7,7 +7,7 @@
  *   folder the player fills. This device only; never downloaded, updated,
  *   moved or deleted.
  */
-import type { Entry, LibraryArt, Os, Release } from "@quiver/api";
+import type { Entry, LibraryArt, Os, Release } from "@quiverlauncher/api";
 import type { CatalogEntry } from "./store";
 
 export type CustomApp = { provider: "github" | "gitlab"; repository: string; name: string; assetFilter?: string };
