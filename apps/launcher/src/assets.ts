@@ -1,4 +1,4 @@
-import type { Asset, Os } from "@quiver/api";
+import type { Asset, Os } from "@quiverlauncher/api";
 
 /** Checksums, signatures, symbols and source archives: never the app itself. */
 const AUXILIARY =

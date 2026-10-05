@@ -8,12 +8,12 @@ library, downloaded, checked against the checksum Quiver pinned for it, and inst
 
 ## Layout
 
-| Path            | What it is                                                                 |
-| --------------- | -------------------------------------------------------------------------- |
-| `apps/launcher` | The Tauri app: React UI in `src`, Rust core in `src-tauri`                  |
-| `packages/api`  | Typed client for the catalog API (`https://api.quiverlauncher.com/api/v1`) |
-| `packages/ui`   | Catalog components and styles shared with quiverlauncher.com               |
-| `e2e`           | User journeys run against the real app with WebDriver and a mock catalog   |
+| Path            | What it is                                                                                                  |
+| --------------- | ----------------------------------------------------------------------------------------------------------- |
+| `apps/launcher` | The Tauri app: React UI in `src`, Rust core in `src-tauri`                                                  |
+| `packages/api`  | Typed client for the catalog API (`https://api.quiverlauncher.com/api/v1`), on npm as `@quiverlauncher/api` |
+| `packages/ui`   | Catalog components and styles shared with quiverlauncher.com, on npm as `@quiverlauncher/ui`                |
+| `e2e`           | User journeys run against the real app with WebDriver and a mock catalog                                    |
 
 ## Develop
 
@@ -35,6 +35,16 @@ xvfb-run -a pnpm e2e
 
 `QUIVER_API` points the app at another catalog and `QUIVER_DATA` at another data folder. A
 `portable.txt` beside the executable keeps everything in a `data` folder next to it.
+
+## Shared packages
+
+`packages/api` and `packages/ui` are also published to npm, so quiverlauncher.com shows apps with the same
+components as the launcher and checks its API against the same types. The launcher uses them straight from this
+repository, so building it needs nothing from npm.
+
+To release one, raise `version` in its `package.json` and merge to `v4`. The
+[Publish packages](.github/workflows/publish-packages.yml) workflow then publishes every version npm doesn't have
+yet, once its `npm` environment is approved.
 
 ## Usage data
 

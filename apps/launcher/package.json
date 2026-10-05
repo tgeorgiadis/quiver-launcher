@@ -13,14 +13,15 @@
   },
   "dependencies": {
     "@convex-dev/auth": "2.0.0-alpha.2",
-    "@quiver/api": "workspace:*",
-    "@quiver/ui": "workspace:*",
+    "@quiverlauncher/api": "workspace:*",
+    "@quiverlauncher/ui": "workspace:*",
     "@tauri-apps/api": "^2",
     "convex": "^1.46.0",
     "lucide-react": "^0.468.0",
     "posthog-js": "~1.434.18",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-icons": "^5.7.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

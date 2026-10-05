@@ -8,8 +8,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Filter, Library, ListPlus, MoreHorizontal, Plus, Search, X } from "lucide-react";
-import { listSlug, listUrl, type Entry, type SharedList } from "@quiver/api";
-import { EntryCard, tagLabel } from "@quiver/ui";
+import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
+import { EntryCard, tagLabel } from "@quiverlauncher/ui";
 import { hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";

@@ -1,10 +1,36 @@
 {
-  "name": "@quiver/api",
+  "name": "@quiverlauncher/api",
   "version": "0.1.0",
+  "description": "Typed client for the quiverlauncher.com catalog API",
   "license": "MIT",
-  "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tgeorgiadis/quiver-launcher.git",
+    "directory": "packages/api"
+  },
+  "homepage": "https://github.com/tgeorgiadis/quiver-launcher/tree/v4/packages/api#readme",
   "main": "src/index.ts",
-  "scripts": { "typecheck": "tsc -p ." },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "prepack": "pnpm run build"
+  },
   "devDependencies": { "typescript": "~5.9.3" }
 }

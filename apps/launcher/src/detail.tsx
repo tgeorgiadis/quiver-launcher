@@ -5,8 +5,9 @@
  */
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ChevronDown, Download, ExternalLink, Monitor, Package, ShieldAlert, ShieldCheck } from "lucide-react";
-import type { AiUse, Checking, Detail, Entry, Readme as ReadmeText, Release } from "@quiver/api";
-import { Markdown, OS_NAMES, fullDate, relativeTime } from "@quiver/ui";
+import type { AiUse, Checking, Detail, Entry, Readme as ReadmeText, Release } from "@quiverlauncher/api";
+import { OS_NAMES, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
+import { Markdown } from "@quiverlauncher/ui/markdown";
 import { useLauncher } from "./store";
 import { native } from "./native";
 import { isCustom, isLocal } from "./custom";
@@ -240,7 +241,6 @@ export function ReleasesTab({ detail, releases }: { detail: Detail | null | unde
   );
 }
 
-const PLATFORMS = ["windows", "linux", "macos", "android", "ios"] as const;
 const DEVELOPER_SAYS: Record<string, string> = { none: "No AI used", assisted: "Some AI assistance", generated: "Mostly AI-generated" };
 const AI_SOURCES: Record<AiUse["source"], string> = {
   developer: "the developer's answer",
@@ -285,7 +285,6 @@ export function ProjectDetails({ entry, detail }: { entry: Entry; detail: Detail
     : entry.lastReleaseAt
       ? { version: entry.lastReleaseVersion, at: entry.lastReleaseAt }
       : undefined;
-  const platforms = PLATFORMS.filter((p) => entry.supportedOS.includes(p)).map((p) => OS_NAMES[p]);
   const stale = latest && Date.now() - latest.at > 365 * 24 * 60 * 60 * 1000;
   const developer = detail?.entry.developer ?? entry.developer;
   return (
@@ -299,7 +298,7 @@ export function ProjectDetails({ entry, detail }: { entry: Entry; detail: Detail
           </>
         )}
         <dt>Supported platforms</dt>
-        <dd>{platforms.length ? platforms.join(", ") : "Not confirmed yet"}</dd>
+        <dd>{platformList(entry.supportedOS)}</dd>
         <dt>Latest release</dt>
         <dd>
           {latest ? (

@@ -1,7 +1,7 @@
 /** The Rust side of the launcher (src-tauri/src/lib.rs). */
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { Os } from "@quiver/api";
+import type { Os } from "@quiverlauncher/api";
 
 type StateFile = "library" | "installs" | "catalog" | "settings" | "collections";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */

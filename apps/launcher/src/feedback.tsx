@@ -5,8 +5,8 @@
  */
 import { useEffect, useState } from "react";
 import { CircleCheck, CircleX, MessageSquare, Pencil, TriangleAlert } from "lucide-react";
-import type { Entry, Feedback, Release } from "@quiver/api";
-import { OS_NAMES, fullDate } from "@quiver/ui";
+import type { Entry, Feedback, Release } from "@quiverlauncher/api";
+import { OS_NAMES, fullDate } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { useAccount } from "./account";
 

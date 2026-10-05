@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { ApiError, type Client } from "@quiver/api";
+import { ApiError, type Client } from "@quiverlauncher/api";
 import { byPlayerFeedback, createConvexClient } from "./catalog";
 
 /** Convex's HTTP endpoint, answering each query from `answers` and recording what was asked. */
