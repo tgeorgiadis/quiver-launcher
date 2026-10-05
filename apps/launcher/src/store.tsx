@@ -6,7 +6,7 @@
  * last catalog data seen is cached so the library shows instantly offline.
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiver/api";
+import { createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Release, type Withdrawn } from "@quiverlauncher/api";
 import { native, type Config, type OldApp, type Progress } from "./native";
 import { bestAssets } from "./assets";
 import { reasonOf, track } from "./telemetry";

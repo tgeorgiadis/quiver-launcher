@@ -132,7 +132,9 @@ main.app-main { padding: 0 0 40px; }
 .app-hero .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.8px; color: var(--text-4); }
 .app-hero h1 { font-size: 38px; margin: 6px 0 8px; text-shadow: var(--hero-shadow); }
 .app-tagline { max-width: 720px; color: var(--text-2); font-size: 14px; line-height: 1.6; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.app-hero .based-on { flex-wrap: wrap; margin: 0 0 10px; }
+.app-hero .based-on { flex-wrap: wrap; overflow: hidden; margin: 0 0 10px; }
+.app-hero .based-on > * { flex-shrink: 0; }
+.app-hero .based-on > .game-chip { flex-shrink: 1; min-width: 0; }
 .app-hero .game-chip { white-space: normal; }
 .app-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
 .app-actions .wide { width: auto; min-width: 160px; }
@@ -160,7 +162,7 @@ main.app-main { padding: 0 0 40px; }
 .search-games button:hover, .search-games button:focus-visible { border-color: var(--accent); }
 .search-game-art { width: 40px; height: 56px; flex-shrink: 0; border-radius: 5px; background: var(--field); }
 .search-game-art svg { width: 22px; height: 22px; }
-.search-games button > span { display: grid; gap: 3px; min-width: 0; }
+.search-games button > span:not(.artwork) { display: grid; gap: 3px; min-width: 0; }
 .search-games strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .search-games small { color: var(--link); font-size: 12px; }
 
@@ -367,6 +369,8 @@ main.app-main { padding: 0 0 40px; }
 }
 .menu > button { padding: 8px 10px; border-radius: 6px; text-align: left; font-size: 13px; white-space: nowrap; }
 .menu > button:hover, .menu > button:focus-visible { background: var(--panel); }
+/* The controller moves focus by script, which never counts as :focus-visible once the mouse or a tap has been used, so a card lifts whenever focus is in it. */
+.entry-card:focus-within { transform: translateY(-4px); border-color: var(--ql-accent); box-shadow: 0 15px 30px var(--ql-card-shadow); }
 .card-actions { display: flex; align-items: center; gap: 6px; }
 .card-actions > :first-child { flex: 1; min-width: 0; }
 .card-actions .menu { left: auto; right: 0; top: auto; bottom: calc(100% + 6px); flex-direction: row; flex-wrap: wrap; gap: 6px; width: 240px; }

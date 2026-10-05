@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, Download, FolderOpen, Play, Plus, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
-import type { AppQuery, Entry, GameMatch, Page } from "@quiver/api";
-import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiver/ui";
+import type { AppQuery, Entry, GameMatch, Page } from "@quiverlauncher/api";
+import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiverlauncher/ui";
 import { availableOn, hasUpdate, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
 import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleases } from "./detail";

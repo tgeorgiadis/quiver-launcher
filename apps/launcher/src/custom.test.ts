@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { parseRepository } from "@quiver/api";
+import { parseRepository } from "@quiverlauncher/api";
 import type { LibraryItem } from "./store";
 import { changesFrom, joinAccount } from "./sync";
 import { folderNameFor } from "./custom";

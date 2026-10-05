@@ -8,7 +8,7 @@ import { makeFunctionReference, type FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
 import { ConvexAuthProvider, useAuthActions, type TokenStorage } from "@convex-dev/auth/react";
 import { useSignInWithPassword, useSignUpWithPassword } from "@convex-dev/auth/providers/password/react";
-import type { Feedback, Os } from "@quiver/api";
+import type { Feedback, Os } from "@quiverlauncher/api";
 import { native, type Config } from "./native";
 import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
 

@@ -7,7 +7,7 @@
  */
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
-import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type Feedback, type GameDetail, type SharedList, type GameMatch, type Page, type Readme, type Release } from "@quiver/api";
+import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type Feedback, type GameDetail, type SharedList, type GameMatch, type Page, type Readme, type Release } from "@quiverlauncher/api";
 
 type ConvexPage<T> = { page: T[]; continueCursor: string; isDone: boolean };
 type PageArgs = { paginationOpts: { numItems: number; cursor: string | null } };

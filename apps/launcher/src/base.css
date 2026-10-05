@@ -1,0 +1,181 @@
+/* The launcher's palette (dark, and light under data-theme), base styles, and the
+   --ql-* colours @quiverlauncher/ui/catalog.css asks for, from this palette. */
+:root {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  line-height: 1.5;
+  color-scheme: dark;
+  --bg: #0e0e10;
+  --fg: #e9eaed;
+  --strong: #fff;
+  --text-2: #c9cbd0;
+  --text-3: #a4a7af;
+  --text-4: #8d919a;
+  --muted: #929499;
+  --line: #292a2d;
+  --line-strong: #3a3c42;
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-soft: #0ea5e91a;
+  --on-accent: #04121b;
+  --link: #7dd3fc;
+  --panel: #18191c;
+  --raised: #141518;
+  --field: #26272b;
+  --field-hover: #2f3035;
+  --input-bg: #131416;
+  --card: #191a1d;
+  --card-line: #2b2c31;
+  --card-shadow: #0002;
+  --shadow: #0009;
+  --overlay: #000a;
+  --close-bg: #000a;
+  --arrow-bg: #0002;
+  --topbar: #0e0e10ee;
+  --green: #8ac3a2;
+  --caution: #d7b56a;
+  --danger: #e38c87;
+  --warm: #f0b98d;
+  --warm-text: #d9c3b3;
+  --red-text: #e3c9c5;
+  --red-strong: #f3c2bc;
+  --hold-text: #c3d4de;
+  --chip-bg: #243044;
+  --chip-line: #3c516c;
+  --chip-fg: #f4f6f8;
+  --chip-muted: #b7c0cc;
+  --you-bg: #13283a;
+  --you-fg: #9fcbe4;
+  --prompt-bg: #10222e;
+  --prompt-line: #27627c;
+  --code-bg: #25272c;
+  --pre-bg: #111215;
+  --cover-1: radial-gradient(ellipse at 50% 90%, #0ea5e922, transparent 75%), linear-gradient(135deg, #27272c, #1c1c21);
+  --cover-2: radial-gradient(ellipse at 40% 90%, #5073843d, transparent 70%), #1c232a;
+  --cover-3: radial-gradient(ellipse at 40% 90%, #6278552e, transparent 70%), #212620;
+  --cover-4: radial-gradient(ellipse at 40% 90%, #8363913b, transparent 70%), #25212b;
+  --backdrop-1: #1f2a36;
+  --backdrop-2: #15171b;
+  --backdrop-art: 0.6;
+  --hero-shadow: 0 2px 16px #000a;
+}
+/* Light: the same layout on paper white, with darker accents so text keeps its contrast. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --fg: #17181b;
+  --strong: #0b0c0e;
+  --text-2: #33363c;
+  --text-3: #4b4f57;
+  --text-4: #666a73;
+  --muted: #5d6169;
+  --line: #dcdee3;
+  --line-strong: #c6c9d0;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-soft: #0284c71a;
+  --on-accent: #fff;
+  --link: #0369a1;
+  --panel: #fff;
+  --raised: #fff;
+  --field: #e8eaee;
+  --field-hover: #dcdfe5;
+  --input-bg: #fff;
+  --card: #fff;
+  --card-line: #dcdee3;
+  --card-shadow: #0f172a1f;
+  --shadow: #0f172a29;
+  --overlay: #0f172a59;
+  --close-bg: #ffffffd9;
+  --arrow-bg: #ffffffb3;
+  --topbar: #f4f5f7ee;
+  --green: #2e7d52;
+  --caution: #8a5d00;
+  --danger: #b93a30;
+  --warm: #a3501a;
+  --warm-text: #6b4a33;
+  --red-text: #7a3a33;
+  --red-strong: #9b2c22;
+  --hold-text: #2f4a5b;
+  --chip-bg: #e2ecf8;
+  --chip-line: #b6c8de;
+  --chip-fg: #1b2a3d;
+  --chip-muted: #44546a;
+  --you-bg: #dbeefa;
+  --you-fg: #0c4a6e;
+  --prompt-bg: #e3f1f9;
+  --prompt-line: #8cc2dd;
+  --code-bg: #eceef1;
+  --pre-bg: #f3f4f6;
+  --cover-1: radial-gradient(ellipse at 50% 90%, #0ea5e926, transparent 75%), linear-gradient(135deg, #eceef2, #e1e4e9);
+  --cover-2: radial-gradient(ellipse at 40% 90%, #5073842e, transparent 70%), #e4eaef;
+  --cover-3: radial-gradient(ellipse at 40% 90%, #62785526, transparent 70%), #e6ebe3;
+  --cover-4: radial-gradient(ellipse at 40% 90%, #8363912b, transparent 70%), #ebe6ef;
+  --backdrop-1: #dbe7f2;
+  --backdrop-2: #eceef2;
+  --backdrop-art: 0.35;
+  --hero-shadow: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+h1, h2, h3, p { margin: 0; }
+
+/* The shared catalog styles' colours (@quiverlauncher/ui/catalog.css), from the palette above. */
+:root {
+  --ql-card: var(--card);
+  --ql-card-line: var(--card-line);
+  --ql-card-shadow: var(--card-shadow);
+  --ql-accent: var(--accent);
+  --ql-line: var(--line);
+  --ql-line-strong: var(--line-strong);
+  --ql-cover-1: var(--cover-1);
+  --ql-cover-2: var(--cover-2);
+  --ql-cover-3: var(--cover-3);
+  --ql-cover-4: var(--cover-4);
+  --ql-artwork-icon: var(--text-4);
+  --ql-artwork-shadow: #0005;
+  --ql-arrow-line: var(--line);
+  --ql-arrow-bg: var(--arrow-bg);
+  --ql-arrow-fg: var(--text-3);
+  --ql-badge-bg: #0ea5e9;
+  --ql-badge-fg: #04121b;
+  --ql-card-kind: var(--text-4);
+  --ql-platform-icons: var(--chip-muted);
+  --ql-separator: var(--text-4);
+  --ql-ai-chip-line: var(--line-strong);
+  --ql-ai-chip-fg: var(--chip-muted);
+  --ql-based-on-label: var(--text-4);
+  --ql-chip-fg: var(--chip-fg);
+  --ql-chip-bg: var(--chip-bg);
+  --ql-chip-line: var(--chip-line);
+  --ql-card-meta: var(--text-4);
+  --ql-positive: var(--green);
+  --ql-caution: var(--caution);
+  --ql-negative: var(--danger);
+  --ql-score-muted: var(--text-4);
+  --ql-release-none: var(--text-4);
+  --ql-md-text: var(--text-2);
+  --ql-md-heading: var(--strong);
+  --ql-md-quote: var(--text-3);
+  --ql-md-th: var(--field);
+  --ql-link: var(--link);
+  --ql-link-underline: color-mix(in srgb, var(--link) 40%, transparent);
+  --ql-code-bg: var(--code-bg);
+  --ql-pre-bg: var(--pre-bg);
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 19px;
+}
+.spinner {
+  border: 2px solid var(--line-strong); border-top-color: var(--accent); width: 20px; height: 20px;
+  border-radius: 100%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

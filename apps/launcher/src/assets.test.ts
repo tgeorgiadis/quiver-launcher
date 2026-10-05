@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { Asset } from "@quiver/api";
+import type { Asset } from "@quiverlauncher/api";
 import { assetFilterFor, bestAssets } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
