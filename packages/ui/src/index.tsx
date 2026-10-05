@@ -340,7 +340,7 @@ export function EntryCardContent({
   /** A console's name for a tag that is one; other tags are shown with `tagLabel`. */
   consoleName?: (tag: string) => string | undefined;
   /** The title's element: a heading where the card isn't inside a button. */
-  heading?: "h2" | "h3" | "span";
+  heading?: "h2" | "h3" | "h4" | "span";
 }) {
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
   // A heading isn't phrasing content, so it can't sit in a span.

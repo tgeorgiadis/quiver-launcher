@@ -4,10 +4,36 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
-import type { Entry, Game, GameDetail, GameMatch } from "@quiverlauncher/api";
+import type { BasedOn, Entry, Game, GameDetail, GameMatch } from "@quiverlauncher/api";
 import { Artwork, EntryCard } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { byPlayerFeedback } from "./catalog";
+
+/** How a version reads, as on the website: "PlayStation version", "PlayStation · Director's Cut". */
+export function gameVersionLabel(version: BasedOn, consoleNames: Record<string, string>) {
+  const console = version.console && (consoleNames[version.console] ?? version.console.toUpperCase());
+  if (console && version.edition) return `${console} · ${version.edition}`;
+  return version.edition ?? `${console} version`;
+}
+
+const versionKey = (version?: BasedOn) => (version ? `${version.console ?? ""}|${version.edition?.toLowerCase() ?? ""}` : "");
+
+/**
+ * Apps by the version of the game they're based on, in the order given, with
+ * apps of no known version last; one group when fewer than two are known.
+ */
+export function byVersion(entries: Entry[]) {
+  const groups = new Map<string, { version?: BasedOn; entries: Entry[] }>();
+  for (const entry of entries) {
+    const key = versionKey(entry.basedOn);
+    const group = groups.get(key) ?? { version: entry.basedOn, entries: [] };
+    group.entries.push(entry);
+    groups.set(key, group);
+  }
+  const known = [...groups.values()].filter((g) => g.version);
+  if (known.length < 2) return [{ version: undefined, entries }];
+  return [...known, ...(groups.get("") ? [groups.get("")!] : [])];
+}
 
 /** What's known of a game before its page loads, to show its title meanwhile. */
 export type GameLink = { slug: string; title?: string };
@@ -118,6 +144,7 @@ export function GamePage({
   const boxArt = game?.libraryArt?.capsule;
   const systems = [...new Set(game?.originalSystems ?? [])];
   const entries = data ? [...data.entries].sort(byPlayerFeedback) : [];
+  const groups = byVersion(entries);
   const inLibrary = new Set(library.map((i) => i.id));
   return (
     <section className="app-page game-page" aria-label={title || "Game"} aria-busy={data === undefined} data-game={link.slug}>
@@ -176,18 +203,29 @@ export function GamePage({
             {entries.length === 0 ? (
               <p className="empty">No apps play this game yet.</p>
             ) : (
-              <div className="catalog-grid">
-                {entries.map((entry) => (
-                  <EntryCard
-                    key={entry.id}
-                    entry={entry}
-                    consoleNames={consoleNames}
-                    onOpen={() => onOpenApp(entry)}
-                    badge={inLibrary.has(entry.id) ? "In library" : undefined}
-                    action={action(entry)}
-                  />
-                ))}
-              </div>
+              groups.map((group) => (
+                // Apps based on different versions (PlayStation, N64) are grouped by version.
+                <section key={versionKey(group.version)} className="game-version" aria-label={group.version && gameVersionLabel(group.version, consoleNames)}>
+                  {groups.length > 1 && (
+                    <h3 className="game-version-heading">
+                      {group.version ? gameVersionLabel(group.version, consoleNames) : "Other ways to play"}
+                      <span className="tab-count">{group.entries.length}</span>
+                    </h3>
+                  )}
+                  <div className="catalog-grid">
+                    {group.entries.map((entry) => (
+                      <EntryCard
+                        key={entry.id}
+                        entry={entry}
+                        consoleNames={consoleNames}
+                        onOpen={() => onOpenApp(entry)}
+                        badge={inLibrary.has(entry.id) ? "In library" : undefined}
+                        action={action(entry)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))
             )}
           </>
         )}
