@@ -715,7 +715,7 @@ function AppPage({
           )}
         </div>
         <aside className="app-side">
-          {site && tab !== "feedback" && <ReportPrompt count={said} own={own} onShare={share} />}
+          {site && tab !== "feedback" && <ReportPrompt entry={entry} count={said} own={own} onShare={share} />}
           {site && <ProjectDetails entry={entry} detail={detail} />}
           {(item || install) && (
             <section className="app-panel" aria-label="On this computer">

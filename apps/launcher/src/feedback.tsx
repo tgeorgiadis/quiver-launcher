@@ -9,6 +9,7 @@ import type { Entry, Feedback, Release } from "@quiverlauncher/api";
 import { OS_NAMES, fullDate } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { useAccount } from "./account";
+import { NOTE_LIMIT, clearDraft, readDraft, saveDraft } from "./reviewDraft";
 
 export type Result = Feedback["result"];
 /** What the player asked to do: give feedback with this answer, or edit what they gave. */
@@ -58,7 +59,19 @@ export function useOwnFeedback(entry: Entry, on: boolean) {
 }
 
 /** Beside the other tabs, as on the website: one tap to say how it ran. */
-export function ReportPrompt({ count, own, onShare }: { count: number; own: Feedback | null | undefined; onShare: (intent: Intent) => void }) {
+export function ReportPrompt({ entry, count, own, onShare }: { entry: Entry; count: number; own: Feedback | null | undefined; onShare: (intent: Intent) => void }) {
+  const { user } = useAccount();
+  if (user && readDraft(user.id, entry.id))
+    return (
+      <section className="panel report-prompt done draft">
+        <p>
+          <Pencil size={16} aria-hidden /> Your feedback isn't shared yet. What you wrote is still here.
+        </p>
+        <button type="button" className="text-button" onClick={() => onShare("edit")}>
+          Finish your feedback
+        </button>
+      </section>
+    );
   if (own)
     return (
       <section className="panel report-prompt done">
@@ -128,11 +141,16 @@ export function FeedbackTab({
     setForm({ picked: intent === "edit" ? undefined : intent });
     onIntentDone();
   }, [user, intent]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Unsent feedback from before (another tab, or a restart) opens the form again.
+  useEffect(() => {
+    if (user && readDraft(user.id, entry.id)) setForm((f) => f ?? {});
+  }, [user?.id, entry.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const empty = list !== undefined && list.length === 0 && !next;
   return (
     <section className="feedback" aria-label="Player feedback">
       {user && form ? (
         <ReviewEditor
+          userId={user.id}
           entry={entry}
           existing={own}
           picked={form.picked}
@@ -211,6 +229,7 @@ const CHOICES: [Result, string, string][] = [
  * again replaces what the player said before. The app needn't be installed.
  */
 function ReviewEditor({
+  userId,
   entry,
   existing,
   picked,
@@ -218,6 +237,7 @@ function ReviewEditor({
   onCancel,
   onSaved,
 }: {
+  userId: string;
   entry: Entry;
   existing: Feedback | null | undefined;
   picked?: Result;
@@ -230,20 +250,33 @@ function ReviewEditor({
   const install = installs[entry.id];
   // A release the site withdrew can't be named.
   const installed = install?.releaseId && !catalog[entry.id]?.withdrawn?.some((w) => w.version === install.version) ? install.releaseId : undefined;
-  const [result, setResult] = useState<Result>(picked ?? "runs");
-  const [platform, setPlatform] = useState(config.os === "unknown" ? "" : config.os);
-  const [releaseId, setReleaseId] = useState(installed && releases.some((r) => r.id === installed) ? installed : "");
-  const [body, setBody] = useState("");
+  // Unsent changes from earlier (another tab, or before a restart) come back.
+  const [draft] = useState(() => readDraft(userId, entry.id));
+  const [result, setResult] = useState<Result>(picked ?? draft?.result ?? "runs");
+  const [platform, setPlatform] = useState(draft?.platform ?? (config.os === "unknown" ? "" : config.os));
+  const [releaseId, setReleaseId] = useState(draft?.releaseId ?? (installed && releases.some((r) => r.id === installed) ? installed : ""));
+  const [body, setBody] = useState(draft?.body ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  // What they said before, when it arrives.
+  // Changed here since opening (or kept from before): what's kept if they leave.
+  const [changed, setChanged] = useState(!!draft);
+  // What they said before, when it arrives, unless they've changed it since.
   useEffect(() => {
-    if (!existing) return;
+    if (!existing || changed) return;
     setResult(picked ?? existing.result);
     setBody(existing.body);
     if (existing.platform && existing.platform !== "unknown") setPlatform(existing.platform);
     setReleaseId(existing.entryReleaseId ?? "");
   }, [existing]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (changed) saveDraft(userId, entry.id, { result, platform, releaseId, body });
+  }, [changed, userId, entry.id, result, platform, releaseId, body]);
+  const edit =
+    <T,>(set: (value: T) => void) =>
+    (value: T) => {
+      setChanged(true);
+      set(value);
+    };
   return (
     <form
       className="review-editor panel"
@@ -258,7 +291,10 @@ function ReviewEditor({
           body: body.trim(),
           platform: platform as Exclude<typeof config.os, "unknown">,
           ...(releaseId ? { entryReleaseId: releaseId } : {}),
-        }).then(onSaved, (error) => {
+        }).then(() => {
+          clearDraft(userId, entry.id);
+          onSaved();
+        }, (error) => {
           setMessage(error instanceof Error ? error.message : String(error));
           setBusy(false);
         });
@@ -273,7 +309,7 @@ function ReviewEditor({
             type="button"
             aria-pressed={result === value}
             className={result === value ? `selected ${RESULTS[value].tone}` : ""}
-            onClick={() => setResult(value)}
+            onClick={() => edit(setResult)(value)}
           >
             <strong>{title}</strong>
             <small>{text}</small>
@@ -283,7 +319,7 @@ function ReviewEditor({
       <div className="form-row">
         <label className="field">
           Tested on
-          <select required value={platform} onChange={(e) => setPlatform(e.target.value as typeof platform)}>
+          <select required value={platform} onChange={(e) => edit(setPlatform)(e.target.value as typeof platform)}>
             <option value="">Choose a platform</option>
             {Object.entries(OS_NAMES).map(([id, name]) => (
               <option key={id} value={id}>
@@ -294,7 +330,7 @@ function ReviewEditor({
         </label>
         <label className="field">
           Tested release
-          <select value={releaseId} onChange={(e) => setReleaseId(e.target.value)}>
+          <select value={releaseId} onChange={(e) => edit(setReleaseId)(e.target.value)}>
             <option value="">Not sure</option>
             {releases.map((r) => (
               <option key={r.id} value={r.id}>
@@ -307,22 +343,45 @@ function ReviewEditor({
       <label className="field">
         Note
         <textarea
-          maxLength={500}
+          maxLength={NOTE_LIMIT}
           rows={4}
           value={body}
+          aria-describedby="review-note-count"
           placeholder="What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => edit(setBody)(e.target.value)}
         />
       </label>
+      <CharacterCount id="review-note-count" length={body.length} limit={NOTE_LIMIT} />
       <div className="review-editor-actions">
         <button className="button" disabled={busy}>
           {busy ? "Saving…" : existing ? "Update notes" : "Share"}
         </button>
-        <button type="button" className="button secondary" disabled={busy} onClick={onCancel}>
+        <button
+          type="button"
+          className="button secondary"
+          disabled={busy}
+          onClick={() => {
+            clearDraft(userId, entry.id);
+            onCancel();
+          }}
+        >
           Cancel
         </button>
       </div>
       {message && <p role="status">{message}</p>}
     </form>
+  );
+}
+
+/** "120/500" under the note, and a clear message once it's full, so typing never just stops. */
+function CharacterCount({ id, length, limit }: { id: string; length: number; limit: number }) {
+  const full = length >= limit;
+  return (
+    <div id={id} className={`character-count${full ? " full" : ""}`}>
+      <span aria-live="polite">{full ? `You've reached the ${limit}-character limit.` : ""}</span>
+      <span>
+        {length}/{limit}
+      </span>
+    </div>
   );
 }
