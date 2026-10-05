@@ -107,9 +107,11 @@ test("a signed-in player reviews the release they installed", async () => {
   await b.app.keys("Escape");
 });
 
-test("signing out takes the library along, and signing back in brings it back", async () => {
+test("signing out keeps the apps installed here in the library, and signing back in carries on", async () => {
   await (await b.app.$("button=Sign out")).click();
-  await (await b.app.$("h2=Installed, not in your library")).waitForDisplayed();
+  await (await b.app.$("p*=Apps installed on this computer stay in your library")).waitForDisplayed();
+  assert.deepEqual(await titles(b), ["test-port"]);
+  assert.equal(await (await b.app.$("h2=Installed, not in your library")).isExisting(), false);
   assert.ok(existsSync(join(b.apps, "test-port")), "installed files stay");
   await (await (await b.card("test-port")).$(".card-open")).click();
   await (await b.app.$("button*=Player feedback")).click();

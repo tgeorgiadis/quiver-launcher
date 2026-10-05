@@ -347,7 +347,8 @@ export function LibraryPage({
       )}
       {collection?.follows && list === null && <p className="muted playlist-note">This playlist isn't shared any more.</p>}
       {collection?.follows && list === "failed" && <p className="muted playlist-note">Couldn't reach quiverlauncher.com to show this playlist. Check your connection.</p>}
-      {items.length === 0 && (
+      {/* An empty library over apps still installed here: their section says it all. */}
+      {items.length === 0 && !(loose.length && tab === "all" && !search && !filtering) && (
         <p className="empty">
           {collection && !search && !filtering ? (collection.follows ? "Nothing in this playlist." : "No apps in this playlist yet. Add some from each app's menu, or edit its filters.") : "Nothing here."}
         </p>
