@@ -354,6 +354,8 @@ main.app-main { padding: 0 0 40px; }
 .form-row { display: flex; align-items: end; gap: 15px; }
 .form-row > .field { flex: 1; }
 .review-editor-actions { display: flex; gap: 10px; }
+.character-count { display: flex; justify-content: flex-end; gap: 8px; margin: -8px 0 14px; color: var(--text-4); font-size: 11px; font-variant-numeric: tabular-nums; }
+.character-count.full { color: var(--caution); }
 .review-editor [role="status"] { margin-top: 12px; color: var(--danger); font-size: 12px; }
 
 .report-prompt { padding: 18px 20px; border-color: var(--prompt-line); background: linear-gradient(160deg, var(--prompt-bg), var(--panel) 70%); }
@@ -368,6 +370,7 @@ main.app-main { padding: 0 0 40px; }
 .report-prompt.done { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; border-color: var(--line); background: var(--panel); }
 .report-prompt.done p { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; }
 .report-prompt.done svg { color: var(--green); }
+.report-prompt.draft svg { color: var(--caution); }
 
 .content-panel { padding: 22px 24px; }
 .content-panel dl { font-size: 12px; margin: 6px 0 0; }
