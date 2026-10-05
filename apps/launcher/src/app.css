@@ -165,6 +165,7 @@ main.app-main { padding: 0 0 40px; }
 .search-games button > span:not(.artwork) { display: grid; gap: 3px; min-width: 0; }
 .search-games strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .search-games small { color: var(--link); font-size: 12px; }
+.search-games small.search-game-aka { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* "Based on" on an app's page opens the original game. */
 .app-hero button.game-chip { cursor: pointer; }
@@ -174,6 +175,8 @@ main.app-main { padding: 0 0 40px; }
 .game-page .app-hero > .artwork.box-art { width: 120px; height: 180px; padding: 0; }
 .game-description { -webkit-line-clamp: 3; white-space: pre-line; cursor: pointer; }
 .game-description.expanded { display: block; cursor: default; }
+.game-akas { max-width: 720px; color: var(--text-2); font-size: 13px; margin: -2px 0 10px; }
+.game-akas strong { font-weight: 600; }
 .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
 .detail-tags > span { display: inline-block; font-size: 10px; background: var(--field); border-radius: 4px; padding: 3px 8px; color: var(--text-2); }
 .game-body { padding: 8px 24px 24px; }

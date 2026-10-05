@@ -23,6 +23,7 @@ export function GamesSection({ games, onOpen }: { games: GameMatch[]; onOpen: (g
               <Artwork src={g.art} name={g.title} className="search-game-art cover-photo" />
               <span>
                 <strong>{g.title}</strong>
+                {g.matched && <small className="search-game-aka">Also known as {g.matched}</small>}
                 <small>{g.apps === 1 ? "1 way to play" : `${g.apps} ways to play`} →</small>
               </span>
             </button>
@@ -107,6 +108,11 @@ export function GamePage({
             <div>
               <div className="eyebrow">THE ORIGINAL GAME</div>
               <h1>{title}</h1>
+              {!!game?.alternateTitles?.length && (
+                <p className="game-akas">
+                  Also known as <strong>{game.alternateTitles.join(" · ")}</strong>
+                </p>
+              )}
               {game?.description.trim() && (
                 <p
                   className={`app-tagline game-description${expanded ? " expanded" : ""}`}
