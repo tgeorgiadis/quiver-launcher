@@ -201,7 +201,7 @@ function ReleaseCard({ release, open, onToggle, host }: { release: HistoryReleas
         <ReleaseBadge state={state} />
         <ChevronDown size={16} />
       </button>
-      {state !== "verified" && (
+      {(state === "blocked" || (state === "unverified" && open)) && (
         <div className="release-why">
           {release.reasons.map((r) => (
             <p key={r}>{r}</p>
@@ -648,7 +648,7 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
                   {(state !== "blocked" || custom) && <PinButton pressed={false} onClick={() => pick(version, true)} />}
                 </span>
               )}
-              {!custom && state !== "verified" && reasons.length > 0 && <span className="version-why">{reasons.join(" ")}</span>}
+              {!custom && state === "blocked" && reasons.length > 0 && <span className="version-why">{reasons.join(" ")}</span>}
             </li>
           );
         })}
