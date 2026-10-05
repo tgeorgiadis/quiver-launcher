@@ -150,6 +150,17 @@
   font-weight: 600;
   letter-spacing: -0.02em;
 }
+/* A line about the player's own copy, in place of the catalog's details (the launcher's library). */
+.card-body .card-status {
+  display: block;
+  min-height: 1.5em;
+  margin-top: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  color: var(--ql-card-meta);
+}
 .scrolling-text {
   display: block;
   overflow: hidden;

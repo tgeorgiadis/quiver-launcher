@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, FolderOpen, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, ShieldX, Trash2 } from "lucide-react";
+import { ArrowLeft, Compass, Download, FolderOpen, Library, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, ShieldX, Trash2 } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Page } from "@quiverlauncher/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, Score } from "@quiverlauncher/ui";
 import { availableOn, hasUpdate, skipped, useLauncher } from "./store";
@@ -110,10 +110,10 @@ export function App() {
         </button>
         <nav>
           <button className={tab === "library" ? "active" : ""} onClick={() => switchTab("library")}>
-            Library <span className="count">{library.length}</span>
+            <Library size={16} aria-hidden="true" /> Library <span className="count">{library.length}</span>
           </button>
           <button className={tab === "browse" ? "active" : ""} onClick={() => switchTab("browse")}>
-            Browse
+            <Compass size={16} aria-hidden="true" /> Browse
           </button>
         </nav>
         <AccountButton onSignIn={() => setSigningIn(true)} />

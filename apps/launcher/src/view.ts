@@ -12,8 +12,8 @@ export type CardImage = "cover" | "box" | "icon";
 export type CardSize = "small" | "medium" | "large";
 export type LibraryView = { layout: Layout; image: CardImage; size: CardSize; names: boolean };
 
-/** Today's look: a grid of cover cards, medium, with names. */
-export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "cover", size: "medium", names: true };
+/** A shelf of box art, medium, with names: unlike Browse's wide catalog cards. */
+export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", size: "medium", names: true };
 
 export const LAYOUTS: [Layout, string][] = [
   ["grid", "Grid"],
