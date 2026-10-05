@@ -108,6 +108,9 @@ function start(): Client | null {
         disable_external_dependency_loading: true,
         // No feature flags or remote config: only events are sent.
         advanced_disable_flags: true,
+        // PostHog drops events from a window that WebDriver controls (navigator.webdriver), which on Linux is how
+        // the end-to-end tests drive the app. A desktop app isn't crawled by bots, so nothing real is lost by keeping them.
+        opt_out_useragent_filter: true,
         // A stand-in (end-to-end tests) reads plain JSON.
         disable_compression: hostname(ctx.host) !== hostname(DEFAULT_HOST),
         // Turning it off after PostHog loaded drops everything; what's left is scrubbed.
