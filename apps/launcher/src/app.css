@@ -106,6 +106,13 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .versions ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
 .versions li { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 7px; background: var(--panel); font-size: 13px; }
 .versions li > :last-child { margin-left: auto; }
+.versions li { flex-wrap: wrap; }
+.version-actions { display: inline-flex; align-items: center; gap: 6px; }
+/* The pin: an icon, with its words shown when a keyboard or controller is on it. */
+.versions li .pin-button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; color: var(--muted); }
+.versions li .pin-button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.pin-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pin-button:focus-visible .pin-label { position: static; width: auto; height: auto; clip-path: none; }
 .versions li button, .versions > button, .shortcuts button { padding: 6px 12px; border-radius: 7px; background: var(--field); font-size: 13px; }
 .installed { color: var(--green); }
 .shortcuts { display: grid; gap: 6px; }
@@ -359,6 +366,12 @@ main.app-main { padding: 0 0 40px; }
 .release-hold-link { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; color: var(--accent); text-decoration: none; }
 .release-checking-line { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; color: var(--hold-text); font-size: 13px; }
 .release-checking-line svg { flex: none; color: var(--accent); }
+.release-pinned-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; color: var(--text-2); font-size: 13px; }
+.release-pinned-line svg { flex: none; color: var(--accent); }
+.link-button { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.link-button:hover, .link-button:focus-visible { color: var(--strong); }
+.pinned-action { flex-wrap: nowrap; }
+.pin-mark { display: inline-flex; flex: none; color: var(--accent); }
 
 /* Library: playlist tabs with a menu, the Filters panel and its chips, and adding apps to playlists. */
 .playlist-tab { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }

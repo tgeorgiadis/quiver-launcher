@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, FolderOpen, Play, Plus, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FolderOpen, Pin, Play, Plus, Search, Settings2, ShieldCheck, Trash2 } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Page } from "@quiverlauncher/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, Score } from "@quiverlauncher/ui";
-import { availableOn, hasUpdate, useLauncher } from "./store";
+import { availableOn, hasUpdate, skipped, useLauncher } from "./store";
 import { LibraryPage, withOverrides } from "./library";
 import { ViewOptions } from "./library-view";
 import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleases } from "./detail";
@@ -25,6 +25,8 @@ const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : `game:${v
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
 const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
+/** "v1.2" and "1.2" are the same release. */
+const bare = (version: string) => version.trim().replace(/^v/i, "");
 
 export function App() {
   useTelemetrySetup();
@@ -416,7 +418,7 @@ function BrowsePage({
 
 /** The one button a card needs: Get, progress, Play or Update. */
 function Action({ entry }: { entry: Entry }) {
-  const { config, installs, jobs, catalog, get, play, dismiss } = useLauncher();
+  const { config, installs, jobs, catalog, get, play, dismiss, setUpdates } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
   if (job && "error" in job)
@@ -447,7 +449,10 @@ function Action({ entry }: { entry: Entry }) {
           {versionLabel(pulled.version)} was withdrawn: {pulled.reason}
         </p>
         <div className="row">
-          <button onClick={() => get(catalog[entry.id])}>Install {versionLabel(catalog[entry.id].verified?.version)}</button>
+          {/* A withdrawn release outranks a pin: the way off it is right here. */}
+          <button onClick={() => (install.updates === "pinned" && setUpdates(entry.id, undefined), get(catalog[entry.id]))}>
+            {install.updates === "pinned" ? "Unpin and install" : "Install"} {versionLabel(catalog[entry.id].verified?.version)}
+          </button>
           <button onClick={() => play(entry.id)}>Play anyway</button>
         </div>
       </div>
@@ -459,6 +464,17 @@ function Action({ entry }: { entry: Entry }) {
           <Play size={15} /> Play
         </button>
         <button onClick={() => get(catalog[entry.id] ?? entry)}>Update to {versionLabel((catalog[entry.id] ?? entry).verified?.version)}</button>
+      </div>
+    );
+  if (install && install.updates === "pinned")
+    return (
+      <div className="row pinned-action">
+        <button className="primary wide" onClick={() => play(entry.id)}>
+          <Play size={15} /> Play
+        </button>
+        <span className="pin-mark" role="img" aria-label={`Pinned to ${versionLabel(install.version)}`} title={`Pinned to ${versionLabel(install.version)}`}>
+          <Pin size={14} />
+        </span>
       </div>
     );
   if (install)
@@ -491,7 +507,7 @@ function AppPage({
   onOpenGame: (game: GameLink) => void;
   onSignIn: () => void;
 }) {
-  const { library, installs, catalog, remove, consoleNames } = useLauncher();
+  const { library, installs, catalog, remove, consoleNames, setUpdates } = useLauncher();
   const item = library.find((i) => i.id === opened.id);
   // The player's own name and artwork, live as they change them.
   const entry = withOverrides(catalog[opened.id] ?? opened, item?.overrides);
@@ -593,6 +609,31 @@ function AppPage({
                 </p>
               )}
               {install?.local && <p className="muted">Removing it from your library leaves its files where they are.</p>}
+              {install && !install.local && install.updates === "pinned" && (
+                <p className="release-pinned-line">
+                  <Pin size={14} aria-hidden="true" />
+                  <span>
+                    Pinned to {versionLabel(install.version)}.
+                    {/* Quietly: no badge or count, but a pin never hides that there's more. */}
+                    {entry.verified && bare(entry.verified.version) !== bare(install.version) && entry.verified.releasedAt > (install.releasedAt ?? 0)
+                      ? ` ${versionLabel(entry.verified.version)} is available.`
+                      : ""}
+                  </span>
+                  <button type="button" className="link-button" onClick={() => setUpdates(entry.id, undefined)}>
+                    Unpin
+                  </button>
+                </p>
+              )}
+              {install && !install.local && install.updates === "auto" && skipped(entry, install) && (
+                <p className="release-pinned-line">
+                  <span>
+                    Auto Update won&apos;t put {versionLabel(entry.verified?.version)} back. It installs the next new release.
+                  </span>
+                  <button type="button" className="link-button" onClick={() => setUpdates(entry.id, "pinned")}>
+                    Always stay on {versionLabel(install.version)}
+                  </button>
+                </p>
+              )}
               {/* As on the website: a newer release the site is still checking. */}
               {checking && (
                 <p className="release-checking-line">
@@ -667,7 +708,7 @@ function AppOptions({ id }: { id: string }) {
           <select value={install.updates ?? "ask"} onChange={(e) => setUpdates(id, e.target.value === "ask" ? undefined : (e.target.value as "auto" | "pinned"))}>
             <option value="ask">Offer them</option>
             <option value="auto">Install automatically</option>
-            <option value="pinned">Stay on {versionLabel(install.version)}</option>
+            <option value="pinned">Always stay on {versionLabel(install.version)}</option>
           </select>
         </label>
       )}

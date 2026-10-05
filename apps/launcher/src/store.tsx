@@ -47,8 +47,10 @@ export type Install = {
   dir?: string;
   version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean;
   lastPlayed?: number;
-  /** Install new releases without asking, or stay on this one. Unset: offer them. */
+  /** Install new releases without asking, or stay on this one (only ever the player's own choice). Unset: offer them. */
   updates?: "auto" | "pinned";
+  /** A verified version Auto Update leaves alone: the one the player went back from by picking an older release. */
+  skip?: string;
   /** The player's own files (a local app): never downloaded, updated or deleted. */
   local?: true;
   /** A program the player picked, started exactly where it is. */
@@ -79,8 +81,8 @@ type Launcher = {
   remember: (entries: Entry[]) => void;
   /** Keeps catalog data for apps that aren't in the library, such as those on a copy of a shared playlist. */
   cache: (entries: Entry[]) => void;
-  /** Adds the app to the library and installs it: its newest release, or the one given. */
-  get: (entry: Entry, release?: Release) => Promise<void>;
+  /** Adds the app to the library and installs it: its newest release, or the one given; `pin` then keeps it on that one. */
+  get: (entry: Entry, release?: Release, options?: { pin?: boolean }) => Promise<void>;
   play: (id: string) => Promise<void>;
   /** Uninstalls the app and takes it out of the library. */
   remove: (id: string) => Promise<void>;
@@ -131,6 +133,10 @@ export const availableOn = (entry: Entry, os: string) =>
 
 /** "v1.2" and "1.2" are the same release. */
 const bare = (version: string) => version.trim().replace(/^v/i, "");
+
+/** Auto Update leaves this verified release alone: the player went back from it. */
+export const skipped = (entry: Entry | undefined, install: Install | undefined) =>
+  Boolean(install?.skip && entry?.verified && bare(install.skip) === bare(entry.verified.version));
 
 export function hasUpdate(entry: Entry | undefined, install: Install | undefined) {
   // Only newer releases: a pulled one rolls back through the withdrawn warning instead.
@@ -345,7 +351,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   useEffect(() => {
     for (const item of library) {
       const entry = catalog[item.id];
-      if (entry && installs[item.id]?.updates === "auto" && !jobs[item.id] && hasUpdate(entry, installs[item.id])) void installEntry(entry);
+      const install = installs[item.id];
+      if (entry && install?.updates === "auto" && !jobs[item.id] && hasUpdate(entry, install) && !skipped(entry, install)) void installEntry(entry);
     }
   }, [catalog]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -353,7 +360,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     setJobs((j) => ({ ...j, [id]: { error: error instanceof Error ? error.message : String(error) } }));
 
   /** `app` is the custom app's repository, when it isn't in the library yet. */
-  async function installEntry(entry: Entry, chosen?: Release, app?: CustomApp) {
+  async function installEntry(entry: Entry, chosen?: Release, app?: CustomApp, pin = false) {
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
@@ -407,9 +414,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       });
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
-      // Picking another version keeps the app on it until the player says otherwise.
-      const updates = chosen ? "pinned" : installs[entry.id]?.updates;
-      setInstalls((i) => ({ ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(updates ? { updates } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } }));
+      // Picking a version only installs it; staying on it is the player's own choice (`pin`).
+      // Going back from the verified release: Auto Update waits for the next one rather than undoing it.
+      const verified = (catalog[entry.id] ?? entry).verified;
+      const skip = chosen && verified && release.releasedAt < verified.releasedAt ? verified.version : undefined;
+      setInstalls((i) => {
+        const updates = pin ? "pinned" : i[entry.id]?.updates;
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables, ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } };
+      });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && installs[entry.id]?.updates === "auto" });
       else track("app_installed", { ...ref, version: release.version });
@@ -553,11 +565,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const fresh = entries.filter((e) => known.has(e.id));
       if (fresh.length) setCatalog((c) => ({ ...c, ...Object.fromEntries(fresh.map((e) => [e.id, { ...c[e.id], ...e }])) }));
     },
-    async get(entry, release) {
+    async get(entry, release, options) {
       if (jobs[entry.id] && !("error" in jobs[entry.id])) return;
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release);
+      await installEntry(entry, release, undefined, options?.pin);
     },
     async play(id) {
       const install = installs[id];
