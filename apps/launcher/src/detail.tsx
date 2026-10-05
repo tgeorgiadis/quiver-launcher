@@ -206,7 +206,12 @@ function ReleaseCard({ release, open, onToggle, host }: { release: HistoryReleas
           {release.reasons.map((r) => (
             <p key={r}>{r}</p>
           ))}
-          {release.checkEndsAt !== undefined && <p>Due to be verified in {hoursFrom(release.checkEndsAt)}.</p>}
+          {release.checkEndsAt !== undefined && (
+            <>
+              <p>It&apos;s in its 48-hour waiting period and will be verified in {hoursFrom(release.checkEndsAt)}.</p>
+              <p className="muted">Quiver only waits on releases less than 48 hours old, so a hacked or malicious update can be caught before it reaches you.</p>
+            </>
+          )}
           {state === "blocked" && (
             <p>
               <strong>If you installed it, remove it and install a verified release instead.</strong>
