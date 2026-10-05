@@ -252,6 +252,28 @@
 .score.muted {
   color: var(--ql-score-muted);
 }
+
+/* Whether Quiver verified a release (ReleaseBadge). */
+.release-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.release-badge svg {
+  flex: none;
+}
+.release-badge.verified {
+  color: var(--ql-positive);
+}
+.release-badge.unverified {
+  color: var(--ql-unverified, var(--ql-caution));
+}
+.release-badge.blocked {
+  color: var(--ql-negative);
+}
 .card-bottom .score {
   font-size: 12px;
 }

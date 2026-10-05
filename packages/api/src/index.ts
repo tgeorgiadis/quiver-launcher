@@ -147,6 +147,39 @@ export type Checking = {
   upstreamUrl?: string;
 };
 
+/** VirusTotal's verdict on a release, from its most worrying file. */
+export type ReleaseScan = {
+  verdict: "clean" | "warning" | "flagged" | "pending" | "missing";
+  /** "1 of 70 engines" call it malicious, for a warning or flag. */
+  engines?: string;
+  /** The report of the file the verdict is from. */
+  url?: string;
+};
+
+/**
+ * A release of an app's repository Quiver hasn't verified for it. An
+ * "unverified" one installs only when a player picks it and confirms,
+ * against the checksums the site pinned when it first saw it; a "blocked"
+ * one (withdrawn, taken down, held, stopped, a file replaced, flagged) not
+ * at all. Never an update.
+ */
+export type UnverifiedRelease = {
+  releaseId: string;
+  version: string;
+  releasedAt: number;
+  prerelease: boolean;
+  state: "unverified" | "blocked";
+  /** Why it isn't verified, or why it's blocked, worded for players. */
+  reasons: string[];
+  /** When it's verified by itself if nothing changes. */
+  checkEndsAt?: number;
+  scan?: ReleaseScan;
+  /** Empty when blocked. */
+  assets: Asset[];
+  installationOverride?: InstallSettings;
+  upstreamUrl?: string;
+};
+
 export type Detail = {
   entry: Entry;
   project: { name: string; description: string; repository?: string; provider: string; website?: string; author?: string; aiUse?: AiUse };
@@ -237,6 +270,8 @@ export type Client = {
   releaseStatus(cursor?: string | null): Promise<Page<ReleaseStatus>>;
   /** Approved releases, newest first: the first is what a player gets. */
   releases(slug: string, limit?: number, cursor?: string | null): Promise<Page<Release>>;
+  /** Releases Quiver hasn't verified for the app, newest first. A 404 ApiError from a site that doesn't list them yet. */
+  unverifiedReleases(slug: string): Promise<UnverifiedRelease[]>;
   /** What players said, newest first. */
   reviews(slug: string, cursor?: string | null, limit?: number): Promise<Page<Feedback>>;
   /** Up to four original games whose titles match a search of 2 or more characters. */
@@ -281,6 +316,7 @@ export function createClient(base: string = DEFAULT_API): Client {
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     releases: (slug: string, limit = 5, cursor?: string | null) =>
       get<Page<Release>>(`${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    unverifiedReleases: (slug: string) => get<{ items: UnverifiedRelease[] }>(`${app(slug)}/unverified-releases`).then((r) => r.items),
     reviews: (slug: string, cursor?: string | null, limit = 12) =>
       get<Page<Feedback>>(`${app(slug)}/reviews?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     // REST has no game search.

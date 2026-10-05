@@ -5,10 +5,11 @@
  */
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ChevronDown, Download, ExternalLink, Monitor, Package, Pin, ShieldAlert, ShieldCheck } from "lucide-react";
-import type { AiUse, Checking, Detail, Entry, Readme as ReadmeText, Release } from "@quiverlauncher/api";
-import { OS_NAMES, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
+import { ApiError, type AiUse, type Checking, type Detail, type Entry, type Readme as ReadmeText, type Release, type ReleaseScan } from "@quiverlauncher/api";
+import { OS_NAMES, ReleaseBadge, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { useLauncher } from "./store";
+import { bare, versionList, type Version } from "./versions";
 import { native } from "./native";
 import { isCustom, isLocal } from "./custom";
 import { Dialog, PlaylistChoices } from "./library";
@@ -355,8 +356,20 @@ export function Shortcuts({ entry }: { entry: Entry }) {
   );
 }
 
-type Version = { release: Release; verified: boolean };
-const bare = (v: string) => v.trim().replace(/^v/i, "");
+/** "about 31 hours" from now, for a release's wait. */
+const hoursFrom = (at: number) => {
+  const hours = Math.max(1, Math.ceil((at - Date.now()) / 3_600_000));
+  return `about ${hours} ${hours === 1 ? "hour" : "hours"}`;
+};
+
+/** What VirusTotal said, for a player deciding. */
+function scanText(scan: ReleaseScan) {
+  if (scan.verdict === "clean") return "no antivirus engine flags its files.";
+  if (scan.verdict === "warning") return `${scan.engines ?? "an engine"} flag one of its files. A lone detection is often a false alarm.`;
+  if (scan.verdict === "flagged") return `${scan.engines ?? "several engines"} flag one of its files.`;
+  if (scan.verdict === "pending") return "still scanning its files.";
+  return "couldn't scan every file.";
+}
 
 /** Keeps the app on a version: pressed while it's pinned there. Its words show for keyboards and controllers. */
 function PinButton({ pressed, onClick }: { pressed: boolean; onClick: () => void }) {
@@ -369,68 +382,101 @@ function PinButton({ pressed, onClick }: { pressed: boolean; onClick: () => void
 }
 
 /**
- * Every release on GitHub or GitLab, marking the ones quiverlauncher.com
- * verified. A verified one installs from the site's checked files; for a
- * catalog app, one that isn't asks first. Installing one only installs it:
- * staying on it is the pin, which the player sets on purpose.
+ * Every release of the app, verified or not. A verified one installs from
+ * the site's checked files. For a catalog app, an unverified one asks
+ * first, steering toward waiting for it to be verified; a blocked one can't
+ * be installed. Installing one only installs it: staying on it is the pin,
+ * which the player sets on purpose.
  */
 export function Versions({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
   const { client, github, gitlab, installs, get, jobs, setUpdates } = useLauncher();
   const [versions, setVersions] = useState<Version[] | string | null>(null);
   // An unverified release the player chose, waiting for them to confirm; `pin` keeps the app on it after.
-  const [unverified, setUnverified] = useState<{ release: Release; pin: boolean } | null>(null);
+  const [asking, setAsking] = useState<{ version: Version; pin: boolean } | null>(null);
   const install = installs[entry.id];
   const pinned = install?.updates === "pinned";
+  // A custom app has nothing Quiver checks, so nothing to mark or warn about.
+  const custom = isCustom(entry.id);
   if (source === undefined || jobs[entry.id]) return null;
   async function load() {
     setVersions("loading");
     try {
-      const [checked, upstream] = await Promise.all([
-        isCustom(entry.id) ? [] : client.releases(entry.slug, 100).then((p) => p.items),
+      const [checked, unverified, upstream] = await Promise.all([
+        custom ? [] : client.releases(entry.slug, 100).then((p) => p.items),
+        custom
+          ? []
+          : client.unverifiedReleases(entry.slug).catch((e: unknown) => {
+              if (e instanceof ApiError && e.status === 404) return null;
+              throw e;
+            }),
         !source ? [] : source.provider === "github" ? github.releases(source.repository, 50) : gitlab.releases(source.repository, 50),
       ]);
-      const verified = new Map(checked.map((r) => [bare(r.version), r]));
-      const list: Version[] = upstream.map((r) => {
-        const mine = verified.get(bare(r.version));
-        verified.delete(bare(r.version));
-        return mine ? { release: mine, verified: true } : { release: r, verified: false };
-      });
-      list.push(...[...verified.values()].map((release) => ({ release, verified: true })));
-      setVersions(list.sort((a, b) => b.release.releasedAt - a.release.releasedAt));
+      setVersions(versionList(checked, unverified, upstream));
     } catch (e) {
       setVersions(e instanceof Error ? e.message : String(e));
     }
   }
-  function pick({ release, verified }: Version, pin = false) {
-    // A custom app has nothing Quiver checks, so nothing to warn about.
-    if (!verified && !isCustom(entry.id)) return setUnverified({ release, pin });
+  function installVersion(version: Version, pin: boolean) {
     setVersions(null);
-    void get(entry, release, { pin });
+    void get(entry, version.release, { pin, unverified: !custom && version.state !== "verified" });
   }
-  if (unverified) {
-    const close = () => setUnverified(null);
+  function pick(version: Version, pin = false) {
+    if (version.state === "blocked") return;
+    if (version.state === "unverified" && !custom) return setAsking({ version, pin });
+    installVersion(version, pin);
+  }
+  if (asking) {
+    const close = () => setAsking(null);
+    const { version, pin } = asking;
     const host = source?.provider === "gitlab" ? "GitLab" : "GitHub";
+    const waits = version.checkEndsAt !== undefined;
     return (
-      <Dialog label="Install a version Quiver hasn't verified" onClose={close}>
-        <div className="detail-body">
+      <Dialog label="Install a release before it's verified" onClose={close}>
+        <div className="detail-body unverified-prompt">
           <h2>
-            <ShieldAlert size={18} /> Install {unverified.release.version}?
+            <ShieldAlert size={18} /> Install {version.release.version} before it&apos;s verified?
           </h2>
           <p>
-            Quiver hasn&apos;t checked this release&apos;s files. It downloads straight from {host}, as the developer published it.
-            {unverified.pin && ` ${entry.projectName} then stays on this version until you unpin it.`}
+            {version.known
+              ? `Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since.`
+              : `Quiver hasn't checked this release's files. It downloads straight from ${host}, as the developer published it.`}
           </p>
+          {version.reasons.length > 0 && (
+            <ul className="unverified-reasons">
+              {version.reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          )}
+          {version.scan && (
+            <p className="scan-line">
+              VirusTotal: {scanText(version.scan)}{" "}
+              {version.scan.url && (
+                <a href={version.scan.url} target="_blank" rel="noreferrer">
+                  See the report
+                </a>
+              )}
+            </p>
+          )}
+          {waits && (
+            <p className="wait-line">
+              <ShieldCheck size={14} aria-hidden="true" /> If you wait, it&apos;s verified in {hoursFrom(version.checkEndsAt!)} and offered as an update then.
+            </p>
+          )}
+          {pin && <p>{entry.projectName} then stays on this version until you unpin it.</p>}
           <div className="row">
+            {/* Waiting is the easy choice: it's first, and where a controller starts. */}
+            <button className="primary" autoFocus onClick={close}>
+              {waits ? "Wait" : "Cancel"}
+            </button>
             <button
               onClick={() => {
                 close();
-                setVersions(null);
-                void get(entry, unverified.release, { pin: unverified.pin });
+                installVersion(version, pin);
               }}
             >
-              Install
+              Install anyway
             </button>
-            <button onClick={close}>Cancel</button>
           </div>
         </div>
       </Dialog>
@@ -444,33 +490,32 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
       <h3>Versions</h3>
       {versions.length === 0 && <p className="muted">No releases found.</p>}
       <ul>
-        {versions.map(({ release, verified }) => (
-          <li key={release.id + release.version}>
-            <strong>{release.version}</strong>
-            <span className="muted">{release.releasedAt ? fullDate(release.releasedAt) : ""}</span>
-            {verified ? (
-              <span className="verified" title="Quiver checked this release's files">
-                <ShieldCheck size={13} /> Verified
-              </span>
-            ) : (
-              <span className="muted" title="Quiver hasn't checked this release">
-                Not verified
-              </span>
-            )}
-            {release.prerelease && <span className="muted">Pre-release</span>}
-            {install && bare(install.version) === bare(release.version) ? (
-              <span className="version-actions">
-                <span className="installed">Installed</span>
-                <PinButton pressed={pinned} onClick={() => setUpdates(entry.id, pinned ? undefined : "pinned")} />
-              </span>
-            ) : (
-              <span className="version-actions">
-                <button onClick={() => pick({ release, verified })}>Install</button>
-                <PinButton pressed={false} onClick={() => pick({ release, verified }, true)} />
-              </span>
-            )}
-          </li>
-        ))}
+        {versions.map((version) => {
+          const { release, state, reasons } = version;
+          return (
+            <li key={release.id + release.version} className={`version ${state}`}>
+              <strong>{release.version}</strong>
+              <span className="muted">{release.releasedAt ? fullDate(release.releasedAt) : ""}</span>
+              {!custom && <ReleaseBadge state={state} title={reasons.join(" ") || undefined} />}
+              {release.prerelease && <span className="muted">Pre-release</span>}
+              {install && bare(install.version) === bare(release.version) ? (
+                <span className="version-actions">
+                  <span className="installed">Installed</span>
+                  <PinButton pressed={pinned} onClick={() => setUpdates(entry.id, pinned ? undefined : "pinned")} />
+                </span>
+              ) : state === "blocked" ? (
+                <span className="version-blocked">{reasons[0] ?? "Quiver won't install it."}</span>
+              ) : (
+                <span className="version-actions">
+                  <button className={state === "verified" || custom ? undefined : "quiet"} onClick={() => pick(version)}>
+                    Install
+                  </button>
+                  <PinButton pressed={false} onClick={() => pick(version, true)} />
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <button onClick={() => setVersions(null)}>Close</button>
     </section>

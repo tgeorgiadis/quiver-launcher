@@ -7,7 +7,7 @@
  */
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
-import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type Feedback, type GameDetail, type SharedList, type GameMatch, type Page, type Readme, type Release } from "@quiverlauncher/api";
+import { ApiError, type AppQuery, type Client, type Detail, type Entry, type Facets, type Feedback, type GameDetail, type SharedList, type GameMatch, type Page, type Readme, type Release, type UnverifiedRelease } from "@quiverlauncher/api";
 
 type ConvexPage<T> = { page: T[]; continueCursor: string; isDone: boolean };
 type PageArgs = { paginationOpts: { numItems: number; cursor: string | null } };
@@ -19,6 +19,7 @@ const refs = {
   facets: query<Record<string, never>, Facets>("catalog:facets"),
   readme: query<{ slug: string }, (Readme & { fetchedAt?: number }) | null>("catalog:readme"),
   releases: query<PageArgs & { slug: string }, ConvexPage<Release>>("catalog:releases"),
+  unverifiedReleases: query<{ slug: string }, UnverifiedRelease[]>("catalog:unverifiedReleases"),
   matchingGames: query<{ search: string }, GameMatch[]>("catalog:matchingGames"),
   game: query<{ slug: string }, GameDetail | null>("catalog:game"),
   reviews: query<PageArgs & { slug: string }, ConvexPage<Feedback>>("reviews:list"),
@@ -61,6 +62,12 @@ export function createConvexClient(url: string, rest: Client, fetch?: typeof glo
     releaseStatus: (cursor) => rest.releaseStatus(cursor),
     releases: (slug, limit = 5, cursor = null) =>
       convex.query(refs.releases, { slug, paginationOpts: { numItems: limit, cursor } }).then(toPage),
+    unverifiedReleases: (slug) =>
+      convex.query(refs.unverifiedReleases, { slug }).catch((e: unknown) => {
+        // A site from before it listed them.
+        if (/Could not find public function/.test(String(e))) throw new ApiError(404, "The catalog doesn't list unverified releases.");
+        throw e;
+      }),
     reviews: (slug, cursor = null, limit = 12) =>
       convex.query(refs.reviews, { slug, paginationOpts: { numItems: limit, cursor } }).then(toPage),
     matchingGames(search) {

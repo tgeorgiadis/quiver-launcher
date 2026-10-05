@@ -143,6 +143,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     "catalog:detail": { slug: "string!" },
     "catalog:readme": { slug: "string!" },
     "catalog:releases": { slug: "string!", paginationOpts: "page!" },
+    "catalog:unverifiedReleases": { slug: "string!" },
     "catalog:facets": {},
     "catalog:matchingGames": { search: "string!", hideDevelopers: "array" },
     "catalog:game": { slug: "string!" },
@@ -205,6 +206,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         ? { markdown: "# Test Port\n\nA **test** port. See [the guide](docs/guide.md).", rawBase: "https://raw.example/", htmlBase: "https://github.com/quiver/test-port/blob/HEAD/", fetchedAt: 1 }
         : null,
     "catalog:releases": ({ slug, paginationOpts }) => page(entries.some((e) => e.slug === slug) ? [release(slug)] : [], paginationOpts),
+    // Test Port's releases the site hasn't verified: one being checked, one no maintainer looked at, one a maintainer stopped.
+    "catalog:unverifiedReleases": ({ slug }) => (slug === "test-port" ? unverifiedReleases().filter((r) => r.version.replace(/^v/, "") !== version) : []),
     "catalog:facets": () => ({
       total: entries.length,
       consoles: [
@@ -259,6 +262,22 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       checksum: `sha256:${slug === "tampered-port" ? "0".repeat(64) : sha}`,
     })),
   });
+  const unverifiedReleases = () => [
+    {
+      releaseId: "rel_test-port_1.1.0", version: "v1.1.0", releasedAt: Date.UTC(2025, 6, 1), prerelease: false, state: "unverified",
+      reasons: [], checkEndsAt: Date.now() + 31 * 3_600_000, scan: { verdict: "clean", url: "https://www.virustotal.com/gui/file/1" },
+      assets: ["linux", "windows"].map((os) => ({ id: `asset_1.1.0_${os}`, url: `${base}/files/test-port-v1.1.0-${os}.zip`, filename: `TestPort-${os}.zip`, os, architecture: "x64", format: "zip", checksum: `sha256:${sha}` })),
+    },
+    {
+      releaseId: "rel_test-port_0.9.0", version: "v0.9.0", releasedAt: Date.UTC(2025, 4, 1), prerelease: false, state: "unverified",
+      reasons: ["No maintainer has checked this release."],
+      assets: ["linux", "windows"].map((os) => ({ id: `asset_0.9.0_${os}`, url: `${base}/files/test-port-v0.9.0-${os}.zip`, filename: `TestPort-${os}.zip`, os, architecture: "x64", format: "zip", checksum: `sha256:${sha}` })),
+    },
+    {
+      releaseId: "rel_test-port_0.8.0", version: "v0.8.0", releasedAt: Date.UTC(2025, 3, 1), prerelease: false, state: "blocked",
+      reasons: ["A maintainer is taking a closer look."], assets: [],
+    },
+  ];
   const account = mockAccount(entries);
   const signedInPages = [];
   const server = createServer(async (req, res) => {
