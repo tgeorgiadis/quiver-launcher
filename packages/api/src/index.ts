@@ -60,8 +60,12 @@ export type Game = {
   slug: string;
   /** The name most players know it by. */
   title: string;
-  /** Other names it goes by, such as its title in another region. */
+  /** Where the title is the name, such as "US". */
+  titleRegion?: string;
+  /** Other names it goes by, with their region if any: "King's Field II (Japan)". */
   alternateTitles?: string[];
+  /** When it first came out. */
+  year?: number;
   description: string;
   artwork?: string;
   libraryArt?: LibraryArt;
