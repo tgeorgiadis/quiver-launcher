@@ -93,6 +93,7 @@ test("explicit events only, no replays or remote scripts, and every event says i
     disable_surveys: true,
     disable_external_dependency_loading: true,
     disable_compression: false,
+    opt_out_useragent_filter: true,
     capture_exceptions: { capture_unhandled_errors: true, capture_unhandled_rejections: true },
   });
   expect(posthog.register).toHaveBeenCalledWith({ app: "launcher", launcher_version: "4.0.0", os: "windows", arch: "x64" });

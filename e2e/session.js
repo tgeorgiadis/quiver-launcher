@@ -63,6 +63,10 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     if (!shared) api.close();
     throw error;
   }
+  // WebKitGTK's driver leaves out text it thinks is clipped (an ellipsised title, a
+  // line-clamped description) and the line breaks between blocks, so read what
+  // the page shows instead, as WebView2's driver does.
+  if (!windows) await app.overwriteCommand("getText", async function () { return (await app.execute((el) => el.innerText, this)).trim(); }, true);
   return {
     app,
     api,
