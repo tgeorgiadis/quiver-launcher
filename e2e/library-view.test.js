@@ -141,15 +141,8 @@ test("the filters still become a playlist", async () => {
   await s.until(async () => (await shown()).length === 3);
 });
 
-test("cards show the cover, box art or icon, falling back to the game's art and then the cover", async () => {
-  // Today's look: the catalog's cover.
-  assert.deepEqual(await pictures(), {
-    "test-port": ["test-port-header.png", "cover"],
-    "test-remake": ["test-remake-header.png", "cover"],
-    "tampered-port": ["tampered-port-header.png", "cover"],
-  });
-  await choose("Card image", "Box art");
-  await s.until(async () => (await pictures())["test-port"][1] === "fill");
+test("cards show box art, the icon or the cover, falling back to the game's art and then the cover", async () => {
+  // Box art unless the player picks otherwise.
   assert.deepEqual(await pictures(), {
     "test-port": ["test-port-capsule.png", "fill"],
     // No box art of its own: its game's.
@@ -168,9 +161,48 @@ test("cards show the cover, box art or icon, falling back to the game's art and 
   });
   const icon = await frame("test-port");
   assert.ok(Math.abs(icon.height - icon.width) <= 1, `icons are square: ${JSON.stringify(icon)}`);
+  // The catalog's cover, as Browse shows it.
   await choose("Card image", "Cover");
   await s.until(async () => (await pictures())["test-port"][1] === "cover");
+  assert.deepEqual(await pictures(), {
+    "test-port": ["test-port-header.png", "cover"],
+    "test-remake": ["test-remake-header.png", "cover"],
+    "tampered-port": ["tampered-port-header.png", "cover"],
+  });
+  await choose("Card image", "Box art");
+  await s.until(async () => (await pictures())["test-port"][1] === "fill");
   await closeView();
+});
+
+test("a library card says what this computer has of the app, not the catalog's details", async () => {
+  const status = () =>
+    s.app.execute(
+      (library) => Object.fromEntries([...document.querySelectorAll(`${library} article`)].map((a) => [a.dataset.slug, a.querySelector(".card-status")?.textContent])),
+      library,
+    );
+  // Installed and never played, or refused and not installed.
+  assert.deepEqual(await status(), {
+    "test-port": "Installed, not played yet",
+    "test-remake": "Installed, not played yet",
+    "tampered-port": "Not installed",
+  });
+  const card = await s.card("test-port");
+  assert.ok(!(await card.$(".based-on").isExisting()) && !(await card.$(".card-bottom").isExisting()), "no Based on, rating or release age");
+  assert.ok(!(await card.$(".cover-badge").isExisting()), "not marked New");
+  // Played, it says when, and it's the app to continue at the top of the library.
+  assert.ok(!(await s.app.$("section[aria-label='Continue playing']").isExisting()));
+  await (await card.$("button*=Play")).click();
+  await s.until(async () => (await status())["test-port"] === "Played today");
+  const resume = await s.app.$("section[aria-label='Continue playing']");
+  await resume.waitForDisplayed();
+  assert.equal(await (await resume.$(".continue-title")).getText(), "Test Port");
+  // Its Play button (or, where the test app can't start, what went wrong).
+  assert.ok(await (await resume.$(".continue-action > *")).isDisplayed());
+  // Its name opens the app's page.
+  await (await resume.$(".continue-title")).click();
+  await (await (await s.app.$(".app-page")).$("h1=Test Port")).waitForDisplayed();
+  await s.app.keys("Escape");
+  await s.until(async () => !(await (await s.app.$(".app-page")).isDisplayed()));
 });
 
 test("card size and the list change the layout; names can be hidden", async () => {
@@ -219,7 +251,7 @@ test("Settings has the same options under Library", async () => {
   await (await s.app.$("h2=Super Nintendo Entertainment System")).waitForDisplayed();
   await s.until(async () => (await pictures())["test-port"][1] === "fill");
   await s.until(() => settings().byConsole === true);
-  assert.deepEqual(settings().library, { image: "box", size: "large" });
+  assert.deepEqual(settings().library, { size: "large" });
 });
 
 test("the view is kept on this computer through a restart", async () => {

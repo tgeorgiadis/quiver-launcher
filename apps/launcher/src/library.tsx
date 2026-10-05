@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, LayoutGrid, Library, List, ListPlus, MoreHorizontal, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
-import { EntryCard, tagLabel } from "@quiverlauncher/ui";
+import { EntryCard, relativeTime, tagLabel } from "@quiverlauncher/ui";
 import { hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
@@ -217,6 +217,11 @@ export function LibraryPage({
     ...collections.map((c): [Tab, string] => [c.key, c.name]),
   ];
   const own = collections.filter((c) => !c.follows);
+  // The app played last, whatever the tab, search or filters, so the page doesn't jump as they change.
+  const played = all
+    .filter((i) => !hidden.has(i.id) && catalog[i.id] && installs[i.id]?.lastPlayed)
+    .sort((a, b) => installs[b.id].lastPlayed! - installs[a.id].lastPlayed!)[0];
+  const resume = played && withOverrides(catalog[played.id], played.overrides);
   // Box art and icon cards show their own picture; covers are the catalog card's, as on the website.
   const art = (entry: Entry) => (view.image === "cover" ? undefined : <CardArt entry={entry} image={view.image} />);
   const card = (entry: Entry) => {
@@ -228,7 +233,7 @@ export function LibraryPage({
         cover={art(entry)}
         consoleNames={consoleNames}
         onOpen={() => onOpen(entry)}
-        badge={collection?.follows && item ? "In library" : undefined}
+        status={<CopyStatus entry={entry} inLibrary={Boolean(item)} />}
         action={
           item ? (
             <div className="card-actions">
@@ -249,6 +254,7 @@ export function LibraryPage({
   const on = Object.values(filters).filter(Boolean).length;
   return (
     <>
+      {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
       <div className="library-bar">
         <nav ref={tabRow} className="playlists" aria-label="Playlists">
           {tabs.map(([key, name]) => (
@@ -417,6 +423,7 @@ export function LibraryPage({
                 cover={art(entry)}
                 consoleNames={consoleNames}
                 onOpen={() => onOpen(entry)}
+                status={<CopyStatus entry={entry} inLibrary={false} />}
                 action={
                   <div className="row">
                     <button className="primary" onClick={() => add(entry)}>
@@ -432,6 +439,43 @@ export function LibraryPage({
       )}
       {dialogs}
     </>
+  );
+}
+
+/** "today", "yesterday", "3 days ago". */
+const ago = (time: number) => {
+  const text = relativeTime(time);
+  return text === "1 day ago" ? "yesterday" : text;
+};
+
+/** The line under a library card's name: what this computer has of the app. */
+function CopyStatus({ entry, inLibrary }: { entry: Entry; inLibrary: boolean }) {
+  const { installs, jobs, catalog } = useLauncher();
+  const install = installs[entry.id];
+  const job = jobs[entry.id];
+  // A download's progress is in the card's button.
+  if (job && !("error" in job)) return <span data-state="busy">{job.phase === "installing" ? "Installing" : "Downloading"}</span>;
+  if (install && hasUpdate(catalog[entry.id] ?? entry, install)) return <span data-state="update">Update available</span>;
+  if (install?.lastPlayed) return <span data-state="played">Played {ago(install.lastPlayed)}</span>;
+  if (install) return <span data-state="ready">Installed, not played yet</span>;
+  return <span data-state="missing">{inLibrary ? "Not installed" : "Not in your library"}</span>;
+}
+
+/** The app played last, large on its art, with its Play button: the top of the library. */
+function ContinuePlaying({ entry, played, onOpen, action }: { entry: Entry; played: number; onOpen: () => void; action: ReactNode }) {
+  const art = entry.libraryArt?.hero || entry.libraryArt?.header;
+  return (
+    <section className={`continue app-backdrop${art ? " has-art" : ""}`} aria-label="Continue playing">
+      {art && <img className="backdrop-art" src={art} alt="" />}
+      <div className="continue-inner">
+        <span className="continue-label">Continue playing</span>
+        <button type="button" className="continue-title" onClick={onOpen}>
+          {entry.projectName}
+        </button>
+        <span className="continue-meta">Played {ago(played)}</span>
+        <div className="continue-action">{action}</div>
+      </div>
+    </section>
   );
 }
 

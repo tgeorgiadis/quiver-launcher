@@ -354,6 +354,7 @@ export function EntryCardContent({
   badge,
   consoleName,
   heading: Title = "span",
+  status,
 }: {
   entry: CardEntry;
   /** The cover, in place of the default `Artwork` of `coverOf(entry)`. */
@@ -364,60 +365,78 @@ export function EntryCardContent({
   consoleName?: (tag: string) => string | undefined;
   /** The title's element: a heading where the card isn't inside a button. */
   heading?: "h2" | "h3" | "h4" | "span";
+  /**
+   * A line about the player's own copy ("Played yesterday", "Not installed")
+   * in place of the catalog's details: the launcher's library. Without a
+   * badge, such a card isn't marked New either.
+   */
+  status?: ReactNode;
 }) {
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
   // A heading isn't phrasing content, so it can't sit in a span.
   const Body = Title === "span" ? "span" : "div";
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleName?.(tag) ?? tagLabel(tag));
+  const shelf = status !== undefined;
   return (
     <>
       <span className="card-cover">
         {artwork ?? <Artwork src={coverOf(entry)} name={entry.projectName} className={wide ? "cover-photo" : ""} />}
-        {badge ? <span className="cover-badge">{badge}</span> : isNew(entry.addedAt) && <span className="cover-badge">New</span>}
+        {badge ? <span className="cover-badge">{badge}</span> : !shelf && isNew(entry.addedAt) && <span className="cover-badge">New</span>}
         <span className="card-arrow">
           <ArrowUpRight size={17} />
         </span>
       </span>
       <Body className="card-body">
-        <span className="card-tags">
-          {kinds.length > 0 && (
-            <span className="card-kind">
-              <ScrollingText text={kinds.join(" · ")} />
+        {shelf ? (
+          <>
+            <Title className="card-title">
+              <ScrollingText text={entry.projectName} />
+            </Title>
+            <span className="card-status">{status}</span>
+          </>
+        ) : (
+          <>
+            <span className="card-tags">
+              {kinds.length > 0 && (
+                <span className="card-kind">
+                  <ScrollingText text={kinds.join(" · ")} />
+                </span>
+              )}
+              <AiChip level={entry.aiLevel} />
+              <PlatformIcons os={entry.supportedOS} />
             </span>
-          )}
-          <AiChip level={entry.aiLevel} />
-          <PlatformIcons os={entry.supportedOS} />
-        </span>
-        <Title className="card-title">
-          <ScrollingText text={entry.projectName} />
-        </Title>
-        {entry.games.length > 0 && (
-          <span className="based-on">
-            <span className="based-on-label">Based on</span>
-            {entry.games.length === 1 ? (
-              <span className="game-chip">
-                <ScrollingText text={entry.games[0].title} />
-              </span>
-            ) : (
-              // Several games keep full-size chips; the row scrolls on hover.
-              <span className="game-chip-row">
-                <ScrollingText text={entry.games.map((g) => g.title).join(", ")} speed={45}>
-                  {entry.games.map((game) => (
-                    <span key={game.id} className="game-chip">
-                      {game.title}
-                    </span>
-                  ))}
-                </ScrollingText>
+            <Title className="card-title">
+              <ScrollingText text={entry.projectName} />
+            </Title>
+            {entry.games.length > 0 && (
+              <span className="based-on">
+                <span className="based-on-label">Based on</span>
+                {entry.games.length === 1 ? (
+                  <span className="game-chip">
+                    <ScrollingText text={entry.games[0].title} />
+                  </span>
+                ) : (
+                  // Several games keep full-size chips; the row scrolls on hover.
+                  <span className="game-chip-row">
+                    <ScrollingText text={entry.games.map((g) => g.title).join(", ")} speed={45}>
+                      {entry.games.map((game) => (
+                        <span key={game.id} className="game-chip">
+                          {game.title}
+                        </span>
+                      ))}
+                    </ScrollingText>
+                  </span>
+                )}
               </span>
             )}
-          </span>
+            <span className="card-bottom">
+              <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />
+              <span className="card-meta">
+                <ReleaseAge entry={entry} />
+              </span>
+            </span>
+          </>
         )}
-        <span className="card-bottom">
-          <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />
-          <span className="card-meta">
-            <ReleaseAge entry={entry} />
-          </span>
-        </span>
       </Body>
     </>
   );
@@ -432,6 +451,7 @@ export function EntryCard({
   consoleNames = {},
   cover,
   className,
+  status,
 }: {
   entry: CardEntry & { slug: string };
   /** A picture in place of the cover (the launcher's box art or icon cards). */
@@ -445,12 +465,14 @@ export function EntryCard({
   action?: ReactNode;
   /** Console ids to their names, from the catalog's facets. */
   consoleNames?: Record<string, string>;
+  /** A line about the player's own copy, in place of the catalog's details (`EntryCardContent`). */
+  status?: ReactNode;
 }) {
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
   return (
     <article className={className ? `entry-card ${className}` : "entry-card"} data-slug={entry.slug}>
       <button type="button" className="card-open" onClick={onOpen} aria-label={entry.projectName}>
-        <EntryCardContent entry={entry} artwork={cover} badge={badge} consoleName={consoleName} />
+        <EntryCardContent entry={entry} artwork={cover} badge={badge} consoleName={consoleName} status={status} />
       </button>
       {action && <div className="card-action">{action}</div>}
     </article>

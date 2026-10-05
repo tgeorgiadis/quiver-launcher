@@ -19,8 +19,11 @@
   .brand > span { display: none; }
 }
 .topbar nav { display: flex; gap: 4px; }
-.topbar nav button { padding: 7px 14px; border-radius: 7px; color: var(--muted); font-weight: 500; }
+.topbar nav button { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 7px; color: var(--muted); font-weight: 500; }
 .topbar nav button.active, .topbar nav button:hover { color: var(--strong); background: var(--panel); }
+/* The page you're on: its icon in the accent, underlined. */
+.topbar nav button.active svg { color: var(--accent); }
+.topbar nav button.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 1px; height: 2px; border-radius: 2px; background: var(--accent); }
 .count { margin-left: 4px; color: var(--muted); font-size: 12px; }
 main { padding: 22px 24px 40px; }
 .toolbar { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -538,9 +541,11 @@ main.app-main { padding: 0 0 40px; }
 .layout-grid.image-icon .card-cover { aspect-ratio: 1; }
 .layout-grid:is(.image-box, .image-icon) .card-arrow { display: none; }
 .layout-grid:is(.image-box, .image-icon) .card-body { padding: 10px 12px 9px; }
-.layout-grid:is(.image-box, .image-icon) .card-body > :not(.card-title) { display: none; }
+.layout-grid:is(.image-box, .image-icon) .card-body > :not(.card-title, .card-status) { display: none; }
 .layout-grid:is(.image-box, .image-icon) .card-title { font-size: 14px; }
 .layout-grid:is(.image-box, .image-icon) .card-action { padding: 0 10px 10px; }
+/* Narrow cards stack Play and Update rather than wrapping them unevenly. */
+.layout-grid:is(.image-box, .image-icon) .card-action .row > button { flex: 1 0 100%; }
 .layout-grid:is(.image-box, .image-icon).size-small .cover-badge { top: 8px; right: 8px; }
 .layout-grid.size-small.image-cover .card-bottom { display: none; }
 .layout-grid.no-names .card-body { display: none; }
@@ -575,6 +580,7 @@ main.app-main { padding: 0 0 40px; }
 .layout-list .card-arrow, .layout-list .cover-badge { display: none; }
 .layout-list .card-body { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 20px; padding: 0; }
 .layout-list .card-title { grid-column: 1; grid-row: 1; }
+.layout-list .card-status { grid-column: 1; grid-row: 2; margin-top: 1px; }
 .layout-list .card-tags { grid-column: 1; grid-row: 2; margin: 3px 0 0; min-height: 0; }
 .layout-list .card-tags > .ai-chip, .layout-list .card-tags .platform-icons { margin-left: 0; }
 .layout-list .based-on { grid-column: 1; grid-row: 3; margin-top: 5px; }
@@ -584,4 +590,26 @@ main.app-main { padding: 0 0 40px; }
 @container library-list (max-width: 640px) {
   .layout-list .card-bottom { display: none; }
   .layout-list .card-action { flex-basis: 150px; }
+}
+
+/* A library card's line about this computer's copy; an app that isn't installed is greyed until pointed at. */
+.card-status [data-state="update"] { color: var(--link); font-weight: 600; }
+.card-status [data-state="ready"] { color: var(--green); }
+.library-grid .entry-card:has([data-state="missing"]) .card-cover > :first-child { filter: grayscale(0.7); opacity: 0.6; transition: filter 0.2s, opacity 0.2s; }
+.library-grid .entry-card:has([data-state="missing"]):is(:hover, :focus-within) .card-cover > :first-child { filter: none; opacity: 1; }
+
+/* Continue playing: the app played last, on its art, at the top of the library. */
+.continue { margin-bottom: 20px; border: 1px solid var(--line); border-radius: 12px; }
+.continue::after { background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 45%, transparent 100%); }
+.continue .backdrop-art { object-position: center 35%; opacity: calc(var(--backdrop-art) + 0.25); }
+.continue-inner { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 2px; min-height: 196px; padding: 22px 26px; }
+.continue-label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); }
+.continue-title { padding: 0; max-width: 100%; color: var(--strong); font-size: 28px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.2; text-align: left; text-shadow: var(--hero-shadow); }
+.continue-title:hover, .continue-title:focus-visible { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.continue-meta { color: var(--text-2); font-size: 13px; }
+.continue-action { margin-top: 12px; }
+.continue-action .wide { width: auto; min-width: 180px; padding-block: 9px; font-size: 14px; }
+@media (max-width: 600px) {
+  .continue-inner { min-height: 150px; padding: 16px 18px; }
+  .continue-title { font-size: 22px; }
 }

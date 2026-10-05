@@ -3,7 +3,7 @@ import { artFor, savedView, viewOf, DEFAULT_VIEW } from "./view";
 
 test("a library view keeps only what differs from today's look, and ignores what it doesn't know", () => {
   expect(viewOf(undefined)).toEqual(DEFAULT_VIEW);
-  expect(viewOf({ image: "box", size: "huge" as never, names: false })).toEqual({ ...DEFAULT_VIEW, image: "box", names: false });
+  expect(viewOf({ image: "icon", size: "huge" as never, names: false })).toEqual({ ...DEFAULT_VIEW, image: "icon", names: false });
   expect(savedView(DEFAULT_VIEW)).toBeUndefined();
   expect(savedView({ ...DEFAULT_VIEW, layout: "list" })).toEqual({ layout: "list" });
 });
