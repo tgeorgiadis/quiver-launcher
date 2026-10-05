@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
-import type { Entry, GameDetail, GameMatch } from "@quiverlauncher/api";
+import type { Entry, Game, GameDetail, GameMatch } from "@quiverlauncher/api";
 import { Artwork, EntryCard } from "@quiverlauncher/ui";
 import { useLauncher } from "./store";
 import { byPlayerFeedback } from "./catalog";
@@ -32,6 +32,28 @@ export function GamesSection({ games, onOpen }: { games: GameMatch[]; onOpen: (g
       </ul>
     </section>
   );
+}
+
+/** "in the US", "in Japan": where a name is used. */
+const inRegion = (region: string) => (/^(US|UK)\b/.test(region) ? `in the ${region}` : `in ${region}`);
+
+/** Under a game's title, as on the website: when it came out, where it's called that, and its other names. */
+function GameNames({ game }: { game: Game }) {
+  const parts = [
+    game.year && <span key="year">{game.year}</span>,
+    game.titleRegion && (
+      <span key="region">
+        Called {game.title} {inRegion(game.titleRegion)}
+      </span>
+    ),
+    !!game.alternateTitles?.length && (
+      <span key="others">
+        Also known as <strong>{game.alternateTitles.join(" · ")}</strong>
+      </span>
+    ),
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return <p className="game-akas">{parts.flatMap((part, i) => (i ? [" · ", part] : [part]))}</p>;
 }
 
 // The last answer for each game, so going back to one shows it at once.
@@ -108,11 +130,7 @@ export function GamePage({
             <div>
               <div className="eyebrow">THE ORIGINAL GAME</div>
               <h1>{title}</h1>
-              {!!game?.alternateTitles?.length && (
-                <p className="game-akas">
-                  Also known as <strong>{game.alternateTitles.join(" · ")}</strong>
-                </p>
-              )}
+              {game && <GameNames game={game} />}
               {game?.description.trim() && (
                 <p
                   className={`app-tagline game-description${expanded ? " expanded" : ""}`}
