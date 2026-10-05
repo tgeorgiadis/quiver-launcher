@@ -260,9 +260,16 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     })),
   });
   const account = mockAccount(entries);
+  const signedInPages = [];
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
     if (url.pathname.startsWith("/account/")) return account.handle(req, res, url.pathname.slice(8));
+    // The website's page the browser lands on after GitHub or Discord sign-in.
+    if (url.pathname === "/site/signed-in/") {
+      signedInPages.push(url.search);
+      res.writeHead(200, { "Content-Type": "text/html" });
+      return res.end("<title>Signed in</title>");
+    }
     // PostHog: events are recorded; flags and remote config answer with nothing to change.
     if (url.pathname.startsWith("/posthog/")) {
       const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": req.headers.origin ?? "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
@@ -409,6 +416,9 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     github: `${base}/github`,
     gitlab: `${base}/gitlab`,
     posthog: `${base}/posthog`,
+    site: `${base}/site`,
+    /** Visits to the website's signed-in page, by query string ("" or "?error=..."). */
+    signedInPages,
     /** Usage data events received, oldest first, and every request body as text. */
     telemetry: () => telemetry,
     telemetryBodies: () => telemetryBodies,

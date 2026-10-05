@@ -1,6 +1,7 @@
 //! GitHub and Discord sign-in in the system browser. The website's auth only
 //! returns to exact http(s) origins, so the launcher listens once on a fixed
-//! loopback address (listed in the site's ALLOWED_AUTH_ORIGINS) for the code.
+//! loopback address (listed in the site's ALLOWED_AUTH_ORIGINS) for the code,
+//! then sends the browser on to the website's "You're signed in" page.
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use std::time::{Duration, Instant};
@@ -14,9 +15,21 @@ pub enum Callback {
     Error(String),
 }
 
-const PAGE: &str = "<!doctype html><meta charset=utf-8><title>Quiver Launcher</title>\
-<body style=\"font:16px system-ui;background:#111;color:#eee;display:grid;place-items:center;height:90vh\">\
-<p>You can close this tab and go back to Quiver Launcher.</p>";
+/// Where the browser ends up: the website's page saying the player can close
+/// the tab, or that sign-in didn't finish (`?error=`). `QUIVER_SITE` points it
+/// elsewhere (end-to-end tests).
+fn finished_page(found: &Callback) -> String {
+    let site = std::env::var("QUIVER_SITE").unwrap_or_else(|_| "https://quiverlauncher.com".into());
+    let site = site.trim_end_matches('/');
+    match found {
+        Callback::Code(_) => format!("{site}/signed-in/"),
+        Callback::Error(e) => {
+            // Only plain error codes ("access_denied") go into the header.
+            let code = if !e.is_empty() && e.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_') { e } else { "oauth_error" };
+            format!("{site}/signed-in/?error={code}")
+        }
+    }
+}
 
 /// Opens `url` in the browser and waits for the sign-in to come back.
 pub fn sign_in(url: &str) -> Result<Callback, String> {
@@ -50,8 +63,8 @@ pub fn sign_in(url: &str) -> Result<Callback, String> {
         };
         let _ = write!(
             stream,
-            "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{PAGE}",
-            PAGE.len()
+            "HTTP/1.1 302 Found\r\nLocation: {}\r\nCache-Control: no-store\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+            finished_page(&found)
         );
         return Ok(found);
     }
@@ -98,5 +111,14 @@ mod tests {
     fn reads_the_code_from_the_callback() {
         let q = super::url_query("/?convexAuthCode=a%2Bb%3D&x=1");
         assert_eq!(q[0], ("convexAuthCode".into(), "a+b=".into()));
+    }
+
+    #[test]
+    fn sends_the_browser_to_the_website_without_the_code() {
+        use super::{finished_page, Callback};
+        assert_eq!(finished_page(&Callback::Code("secret".into())), "https://quiverlauncher.com/signed-in/");
+        assert_eq!(finished_page(&Callback::Error("access_denied".into())), "https://quiverlauncher.com/signed-in/?error=access_denied");
+        // Nothing from the query string can add a header.
+        assert_eq!(finished_page(&Callback::Error("x\r\nSet-Cookie: a=b".into())), "https://quiverlauncher.com/signed-in/?error=oauth_error");
     }
 }
