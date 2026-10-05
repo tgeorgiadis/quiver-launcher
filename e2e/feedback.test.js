@@ -102,15 +102,16 @@ test("a newer release still being checked shows as on the website", async () => 
   await line.waitForDisplayed({ timeout: 10000 });
   assert.equal(await line.getText(), "Version v1.1.0 is unverified · waiting for a maintainer");
   await (await tab("Releases")).click();
-  // In release order with the verified one, standing out, saying why.
+  // In release order with the verified one, saying why once opened.
   await until(async () => (await (await page()).$$("article.release")).length === 2);
   const [newer, verified] = await (await page()).$$("article.release");
   assert.match(await newer.getAttribute("class"), /release-unverified/);
   const text = await newer.getText();
   assert.match(text, /^v1\.1\.0[\s\S]*Unverified/);
-  assert.match(text, /It changes how the app is built\./);
+  assert.doesNotMatch(text, /It changes how the app is built\./);
   assert.match(await verified.getText(), /^1\.0\.0[\s\S]*Verified[\s\S]*Fixes a crash on start\./);
   await (await newer.$("button.release-summary")).click();
+  await until(async () => /It changes how the app is built\./.test(await newer.getText()));
   const link = await newer.$("a*=View v1.1.0 on GitHub");
   await link.waitForDisplayed({ timeout: 10000 });
   assert.equal(await link.getAttribute("href"), "https://github.com/quiver/test-remake/releases/tag/v1.1.0");
