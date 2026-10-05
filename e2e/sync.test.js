@@ -132,4 +132,7 @@ test("signing in with GitHub happens in the browser and comes back to the app", 
     console.log("BODY", await b.app.execute(() => document.body.innerText.slice(0, 1500)));
     throw e;
   }
+  // The browser tab ends on the website's page, not the launcher's loopback address.
+  await b.until(async () => api.signedInPages.length > 0);
+  assert.deepEqual(api.signedInPages, [""]);
 });

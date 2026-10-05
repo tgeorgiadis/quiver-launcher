@@ -385,10 +385,16 @@ fn secret_set(data: State<Data>, key: String, value: Option<String>) -> Result<(
     std::fs::write(secret_file(&data), serde_json::to_vec(&all).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
 }
 
-/// Opens a GitHub or Discord sign-in page and waits for it to come back.
+/// Opens a GitHub or Discord sign-in page and waits for it to come back,
+/// then brings the launcher back in front of the browser.
 #[tauri::command]
-async fn browser_sign_in(url: String) -> Result<browser::Callback, String> {
-    tauri::async_runtime::spawn_blocking(move || browser::sign_in(&url)).await.map_err(|e| e.to_string())?
+async fn browser_sign_in(window: tauri::WebviewWindow, url: String) -> Result<browser::Callback, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || browser::sign_in(&url)).await.map_err(|e| e.to_string())?;
+    if result.is_ok() {
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+    result
 }
 
 fn append_log(path: &Path, line: &str) {
