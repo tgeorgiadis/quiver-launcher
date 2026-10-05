@@ -11,7 +11,7 @@ import { Markdown } from "@quiverlauncher/ui/markdown";
 import { useLauncher } from "./store";
 import { native } from "./native";
 import { isCustom, isLocal } from "./custom";
-import { PlaylistChoices } from "./library";
+import { Dialog, PlaylistChoices } from "./library";
 
 export type Source = { provider: "github" | "gitlab"; repository: string; url: string };
 
@@ -360,11 +360,14 @@ const bare = (v: string) => v.trim().replace(/^v/i, "");
 
 /**
  * Every release on GitHub or GitLab, marking the ones quiverlauncher.com
- * verified. A verified one installs from the site's checked files.
+ * verified. A verified one installs from the site's checked files; for a
+ * catalog app, one that isn't asks first.
  */
 export function Versions({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
   const { client, github, gitlab, installs, get, jobs } = useLauncher();
   const [versions, setVersions] = useState<Version[] | string | null>(null);
+  // An unverified release the player chose, waiting for them to confirm.
+  const [unverified, setUnverified] = useState<Release | null>(null);
   const install = installs[entry.id];
   if (source === undefined || jobs[entry.id]) return null;
   async function load() {
@@ -385,6 +388,41 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
     } catch (e) {
       setVersions(e instanceof Error ? e.message : String(e));
     }
+  }
+  function pick({ release, verified }: Version) {
+    // A custom app has nothing Quiver checks, so nothing to warn about.
+    if (!verified && !isCustom(entry.id)) return setUnverified(release);
+    setVersions(null);
+    void get(entry, release);
+  }
+  if (unverified) {
+    const close = () => setUnverified(null);
+    const host = source?.provider === "gitlab" ? "GitLab" : "GitHub";
+    return (
+      <Dialog label="Install a version Quiver hasn't verified" onClose={close}>
+        <div className="detail-body">
+          <h2>
+            <ShieldAlert size={18} /> Install {unverified.version}?
+          </h2>
+          <p>
+            Quiver hasn&apos;t checked this release&apos;s files. It downloads straight from {host}, as the developer published it, and{" "}
+            {entry.projectName} stays on this version until you change it.
+          </p>
+          <div className="row">
+            <button
+              onClick={() => {
+                close();
+                setVersions(null);
+                void get(entry, unverified);
+              }}
+            >
+              Install
+            </button>
+            <button onClick={close}>Cancel</button>
+          </div>
+        </div>
+      </Dialog>
+    );
   }
   if (versions === null) return <button onClick={load}>Change version</button>;
   if (typeof versions === "string")
@@ -411,7 +449,7 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
             {install && bare(install.version) === bare(release.version) ? (
               <span className="installed">Installed</span>
             ) : (
-              <button onClick={() => (setVersions(null), void get(entry, release))}>Install</button>
+              <button onClick={() => pick({ release, verified })}>Install</button>
             )}
           </li>
         ))}

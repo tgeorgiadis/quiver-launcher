@@ -67,7 +67,15 @@ test("any release can be installed, and the ones Quiver verified say so", async 
   await (await row("v0.9.0")).waitForDisplayed({ timeout: 10000 });
   assert.match(await (await row("1.0.0")).getText(), /Verified[\s\S]*Installed/);
   assert.match(await (await row("v0.9.0")).getText(), /Not verified/);
+  // One Quiver didn't verify asks first; cancelling installs nothing.
+  const warning = () => app.$(`//section[@role="dialog"][@aria-label="Install a version Quiver hasn't verified"]`);
   await (await (await row("v0.9.0")).$("button=Install")).click();
+  await (await warning()).waitForDisplayed({ timeout: 10000 });
+  assert.match(await (await warning()).getText(), /hasn.t checked this release.s files/);
+  await (await (await warning()).$("button=Cancel")).click();
+  await (await warning()).waitForDisplayed({ reverse: true });
+  await (await (await row("v0.9.0")).$("button=Install")).click();
+  await (await (await warning()).$("button=Install")).click();
   await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "v0.9.0", 30000);
   // It stays on the version picked.
   await until(async () => (await (await (await page()).$("select")).getValue()) === "pinned");

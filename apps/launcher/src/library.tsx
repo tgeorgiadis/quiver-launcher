@@ -705,7 +705,7 @@ function sections(entries: Entry[], names: Record<string, string>): [string, Ent
 }
 
 /** A dialog: closes on Escape or outside. */
-function Dialog({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) {
+export function Dialog({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
