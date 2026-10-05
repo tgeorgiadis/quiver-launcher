@@ -4,7 +4,7 @@
  * the player's tags.
  */
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ChevronDown, Download, ExternalLink, Monitor, Package, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Download, ExternalLink, Monitor, Package, Pin, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { AiUse, Checking, Detail, Entry, Readme as ReadmeText, Release } from "@quiverlauncher/api";
 import { OS_NAMES, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
@@ -358,17 +358,29 @@ export function Shortcuts({ entry }: { entry: Entry }) {
 type Version = { release: Release; verified: boolean };
 const bare = (v: string) => v.trim().replace(/^v/i, "");
 
+/** Keeps the app on a version: pressed while it's pinned there. Its words show for keyboards and controllers. */
+function PinButton({ pressed, onClick }: { pressed: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className="pin-button" aria-pressed={pressed} title={pressed ? "Pinned: click to unpin" : "Always stay on this version"} onClick={onClick}>
+      <Pin size={14} aria-hidden="true" />
+      <span className="pin-label">Always stay on this version</span>
+    </button>
+  );
+}
+
 /**
  * Every release on GitHub or GitLab, marking the ones quiverlauncher.com
  * verified. A verified one installs from the site's checked files; for a
- * catalog app, one that isn't asks first.
+ * catalog app, one that isn't asks first. Installing one only installs it:
+ * staying on it is the pin, which the player sets on purpose.
  */
 export function Versions({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
-  const { client, github, gitlab, installs, get, jobs } = useLauncher();
+  const { client, github, gitlab, installs, get, jobs, setUpdates } = useLauncher();
   const [versions, setVersions] = useState<Version[] | string | null>(null);
-  // An unverified release the player chose, waiting for them to confirm.
-  const [unverified, setUnverified] = useState<Release | null>(null);
+  // An unverified release the player chose, waiting for them to confirm; `pin` keeps the app on it after.
+  const [unverified, setUnverified] = useState<{ release: Release; pin: boolean } | null>(null);
   const install = installs[entry.id];
+  const pinned = install?.updates === "pinned";
   if (source === undefined || jobs[entry.id]) return null;
   async function load() {
     setVersions("loading");
@@ -389,11 +401,11 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
       setVersions(e instanceof Error ? e.message : String(e));
     }
   }
-  function pick({ release, verified }: Version) {
+  function pick({ release, verified }: Version, pin = false) {
     // A custom app has nothing Quiver checks, so nothing to warn about.
-    if (!verified && !isCustom(entry.id)) return setUnverified(release);
+    if (!verified && !isCustom(entry.id)) return setUnverified({ release, pin });
     setVersions(null);
-    void get(entry, release);
+    void get(entry, release, { pin });
   }
   if (unverified) {
     const close = () => setUnverified(null);
@@ -402,18 +414,18 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
       <Dialog label="Install a version Quiver hasn't verified" onClose={close}>
         <div className="detail-body">
           <h2>
-            <ShieldAlert size={18} /> Install {unverified.version}?
+            <ShieldAlert size={18} /> Install {unverified.release.version}?
           </h2>
           <p>
-            Quiver hasn&apos;t checked this release&apos;s files. It downloads straight from {host}, as the developer published it, and{" "}
-            {entry.projectName} stays on this version until you change it.
+            Quiver hasn&apos;t checked this release&apos;s files. It downloads straight from {host}, as the developer published it.
+            {unverified.pin && ` ${entry.projectName} then stays on this version until you unpin it.`}
           </p>
           <div className="row">
             <button
               onClick={() => {
                 close();
                 setVersions(null);
-                void get(entry, unverified);
+                void get(entry, unverified.release, { pin: unverified.pin });
               }}
             >
               Install
@@ -447,9 +459,15 @@ export function Versions({ entry, source }: { entry: Entry; source: Source | nul
             )}
             {release.prerelease && <span className="muted">Pre-release</span>}
             {install && bare(install.version) === bare(release.version) ? (
-              <span className="installed">Installed</span>
+              <span className="version-actions">
+                <span className="installed">Installed</span>
+                <PinButton pressed={pinned} onClick={() => setUpdates(entry.id, pinned ? undefined : "pinned")} />
+              </span>
             ) : (
-              <button onClick={() => pick({ release, verified })}>Install</button>
+              <span className="version-actions">
+                <button onClick={() => pick({ release, verified })}>Install</button>
+                <PinButton pressed={false} onClick={() => pick({ release, verified }, true)} />
+              </span>
             )}
           </li>
         ))}

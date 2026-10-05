@@ -59,7 +59,7 @@ test("an app can stay on its version, or update by itself", async () => {
     await (await app.$("button*=Library")).click();
     await (await app.$("button=Browse")).click();
   };
-  await updates("Stay on v1.1.0");
+  await updates("Always stay on v1.1.0");
   api.release("1.2.0");
   await reload();
   await (await (await card("test-port")).$("button*=Play")).waitForDisplayed();
@@ -67,6 +67,24 @@ test("an app can stay on its version, or update by itself", async () => {
   await updates("Install automatically");
   await reload();
   await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "1.2.0", 30000);
+
+  // Going back a version: Auto Update doesn't put the newer one straight back, but the next release still comes.
+  await (await (await card("test-port")).$(".card-open")).click();
+  const page = await app.$(".app-page");
+  await (await page.$("button=Change version")).click();
+  const row = (version) => app.$(`//section[@aria-label="Versions"]//li[strong[text()="${version}"]]`);
+  await (await (await row("v1.0.0")).$("button=Install")).click();
+  await (await (await app.$('//section[@role="dialog"]')).$("button=Install")).click();
+  await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "v1.0.0", 30000);
+  assert.equal(await (await page.$("select")).getValue(), "auto");
+  await (await page.$("p*=put v1.2.0 back")).waitForDisplayed({ timeout: 10000 });
+  await app.keys("Escape");
+  await reload();
+  await (await (await card("test-port")).$("button=Update to v1.2.0")).waitForDisplayed({ timeout: 10000 });
+  assert.equal(readFileSync(join(apps, "test-port", ".quiver-version"), "utf8"), "v1.0.0");
+  api.release("1.3.0");
+  await reload();
+  await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "1.3.0", 30000);
   api.release("1.0.0");
 });
 

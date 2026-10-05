@@ -77,8 +77,25 @@ test("any release can be installed, and the ones Quiver verified say so", async 
   await (await (await row("v0.9.0")).$("button=Install")).click();
   await (await (await warning()).$("button=Install")).click();
   await until(() => readFileSync(join(apps, "test-port", ".quiver-version"), "utf8") === "v0.9.0", 30000);
-  // It stays on the version picked.
+  // Picking a version only installs it: the verified release is still offered.
+  assert.equal(await (await (await page()).$("select")).getValue(), "ask");
+  await (await (await page()).$("button=Update to v1.0.0")).waitForDisplayed({ timeout: 10000 });
+});
+
+test("staying on a version is its own choice, and it shows", async () => {
+  await (await (await page()).$("button=Change version")).click();
+  const row = (version) => app.$(`//section[@aria-label="Versions"]//li[strong[text()="${version}"]]`);
+  await (await (await row("v0.9.0")).$("button.pin-button")).click();
   await until(async () => (await (await (await page()).$("select")).getValue()) === "pinned");
+  assert.equal(await (await (await row("v0.9.0")).$("button.pin-button")).getAttribute("aria-pressed"), "true");
+  const line = await (await page()).$(".release-pinned-line");
+  assert.match(await line.getText(), /Pinned to v0\.9\.0\. v1\.0\.0 is available\./);
+  assert.ok(!(await (await (await page()).$("button=Update to v1.0.0")).isExisting()), "no update offered while pinned");
+  assert.ok(await (await (await page()).$(".pin-mark")).isExisting(), "the app shows it's pinned");
+  // Unpinning offers the verified release again.
+  await (await line.$("button=Unpin")).click();
+  await (await (await page()).$("button=Update to v1.0.0")).waitForDisplayed({ timeout: 10000 });
+  assert.equal(await (await (await page()).$("select")).getValue(), "ask");
 });
 
 test("a desktop shortcut and a Steam shortcut start the game", async () => {
