@@ -369,6 +369,8 @@ main.app-main { padding: 0 0 40px; }
 }
 .menu > button { padding: 8px 10px; border-radius: 6px; text-align: left; font-size: 13px; white-space: nowrap; }
 .menu > button:hover, .menu > button:focus-visible { background: var(--panel); }
+/* The controller moves focus by script, which never counts as :focus-visible once the mouse or a tap has been used, so a card lifts whenever focus is in it. */
+.entry-card:focus-within { transform: translateY(-4px); border-color: var(--ql-accent); box-shadow: 0 15px 30px var(--ql-card-shadow); }
 .card-actions { display: flex; align-items: center; gap: 6px; }
 .card-actions > :first-child { flex: 1; min-width: 0; }
 .card-actions .menu { left: auto; right: 0; top: auto; bottom: calc(100% + 6px); flex-direction: row; flex-wrap: wrap; gap: 6px; width: 240px; }

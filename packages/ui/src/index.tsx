@@ -322,7 +322,8 @@ export const coverOf = (entry: Pick<CardEntry, "libraryArt" | "artwork">) =>
 /**
  * What a catalog card shows: its cover and details. The caller wraps it in
  * an `.entry-card` that opens the app, such as `EntryCard`'s button or a
- * link, so it's all phrasing content, which a button may hold.
+ * link. With the default `span` title it's all phrasing content, which a
+ * button may hold; a heading title puts the details in a `div`.
  */
 export function EntryCardContent({
   entry,
@@ -342,6 +343,8 @@ export function EntryCardContent({
   heading?: "h2" | "h3" | "span";
 }) {
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
+  // A heading isn't phrasing content, so it can't sit in a span.
+  const Body = Title === "span" ? "span" : "div";
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleName?.(tag) ?? tagLabel(tag));
   return (
     <>
@@ -352,7 +355,7 @@ export function EntryCardContent({
           <ArrowUpRight size={17} />
         </span>
       </span>
-      <span className="card-body">
+      <Body className="card-body">
         <span className="card-tags">
           {kinds.length > 0 && (
             <span className="card-kind">
@@ -392,7 +395,7 @@ export function EntryCardContent({
             <ReleaseAge entry={entry} />
           </span>
         </span>
-      </span>
+      </Body>
     </>
   );
 }

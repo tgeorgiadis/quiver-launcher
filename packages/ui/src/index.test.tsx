@@ -170,6 +170,7 @@ describe("EntryCardContent", () => {
       </a>,
     );
     expect(container.querySelector("h2.card-title")?.textContent).toBe("Test Port");
+    expect(container.querySelector("h2.card-title")?.parentElement?.tagName).toBe("DIV");
     expect(container.querySelector(".artwork.custom")).not.toBeNull();
     expect(container.querySelector(".cover-badge")).toBeNull();
     expect(container.querySelector(".card-kind")?.textContent).toBe("N64 console · Harbour Masters");
