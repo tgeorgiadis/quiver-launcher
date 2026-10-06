@@ -261,6 +261,8 @@ export type AppQuery = {
   search?: string;
   os?: Os;
   projectType?: ProjectType;
+  /** Apps of any of these kinds, such as a player's saved filters; replaces `projectType`. REST takes only one. */
+  projectTypes?: ProjectType[];
   /** A console id, or "maker:Nintendo" for every console a maker made. */
   console?: string;
   sort?: Sort;
@@ -326,7 +328,8 @@ export function createClient(base: string = DEFAULT_API): Client {
       const params = new URLSearchParams({ limit: String(q.limit ?? 48) });
       if (q.search?.trim()) params.set("search", q.search.trim());
       if (q.os) params.set("os", q.os);
-      if (q.projectType) params.set("projectType", q.projectType);
+      const type = q.projectTypes ? (q.projectTypes.length === 1 ? q.projectTypes[0] : undefined) : q.projectType;
+      if (type) params.set("projectType", type);
       if (q.console?.startsWith("maker:")) params.set("maker", q.console.slice(6));
       else if (q.console) params.set("console", q.console);
       if (q.sort) params.set("sort", q.sort);

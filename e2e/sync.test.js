@@ -107,6 +107,27 @@ test("a signed-in player reviews the release they installed", async () => {
   await b.app.keys("Escape");
 });
 
+test("Browse opens with the filters saved on the website, keeping this computer's platform", async () => {
+  const browse = async () => {
+    await (await a.app.$("button*=Library")).click();
+    await (await a.app.$("button*=Browse")).click();
+  };
+  const os = process.platform === "win32" ? "windows" : "linux";
+  api.setCatalogDefaults("player", { projectTypes: ["port"], console: "n64", sort: "rating", platforms: ["android"] });
+  await a.until(async () => (await browse(), api.lastQuery().get("console") === "n64"));
+  assert.deepEqual(Object.fromEntries(api.lastQuery()), { os, projectType: "port", console: "n64", sort: "rating" });
+  assert.equal(await (await a.app.$(".browse-tools .tool-count")).getText(), "2");
+  // Several kinds of project at once, which only the website can save.
+  api.setCatalogDefaults("player", { projectTypes: ["port", "game"] });
+  await a.until(() => api.lastQuery().get("projectTypes") === "port,game");
+  // Removing one here wins over the saved filters until Browse opens again.
+  await (await a.app.$("button[aria-label='Remove filter Port, Standalone game']")).click();
+  await a.until(() => !api.lastQuery().has("projectTypes"));
+  api.setCatalogDefaults("player", undefined);
+  await browse();
+  await a.until(() => [...api.lastQuery().keys()].join() === "os,sort");
+});
+
 test("signing out keeps the apps installed here in the library, and signing back in carries on", async () => {
   await (await b.app.$("button=Sign out")).click();
   await (await b.app.$("p*=Apps installed on this computer stay in your library")).waitForDisplayed();

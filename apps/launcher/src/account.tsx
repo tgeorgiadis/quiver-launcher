@@ -60,6 +60,17 @@ export type AccountUser = {
   createdAt?: number;
   /** Usage data turned off for the account (telemetry.ts follows it while signed in). */
   analyticsOptOut?: boolean;
+  /** The catalog filters saved on the website ("Save as my default"); Browse opens with them. */
+  catalogDefaults?: CatalogDefaults;
+};
+
+/** Saved catalog filters, as the website's catalogFilters.ts keeps them; older sites have none. */
+export type CatalogDefaults = {
+  projectTypes?: string[];
+  platforms?: string[];
+  console?: string;
+  ai?: string;
+  sort?: string;
 };
 
 /** A playlist to share: the catalog apps on it, by entry id. */
@@ -149,7 +160,7 @@ type Tokens = Parameters<ReturnType<typeof useAuthActions>["setSession"]>[0];
 function ConvexAccountState({ client, returnTo, children }: { client: ConvexReactClient; returnTo: string; children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const me = useQuery(fns.me, isAuthenticated ? {} : "skip") as
-    | { _id: string; _creationTime: number; displayName: string; role?: string; provider?: string; analyticsOptOut?: boolean }
+    | { _id: string; _creationTime: number; displayName: string; role?: string; provider?: string; analyticsOptOut?: boolean; catalogDefaults?: CatalogDefaults }
     | null
     | undefined;
   const items = useQuery(fns.list, isAuthenticated ? {} : "skip") as ServerItem[] | undefined;
@@ -175,6 +186,7 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
           provider: me.provider,
           createdAt: me._creationTime,
           analyticsOptOut: me.analyticsOptOut,
+          catalogDefaults: me.catalogDefaults,
         }
       : null,
     items: me ? items : undefined,

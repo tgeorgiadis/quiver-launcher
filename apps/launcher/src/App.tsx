@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ChevronDown, Compass, Download, FolderOpen, Library, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Trash2, X } from "lucide-react";
-import type { AppQuery, Entry, GameMatch, Page } from "@quiverlauncher/api";
+import type { AppQuery, Entry, GameMatch, Page, ProjectType } from "@quiverlauncher/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, Score } from "@quiverlauncher/ui";
 import { availableOn, hasUpdate, skipped, useLauncher } from "./store";
 import { FilterPill, LibraryPage, filterLabel, withOverrides } from "./library";
@@ -13,7 +13,7 @@ import { ErrorBoundary } from "./boundary";
 import { ControlSettings } from "./controls";
 import { track } from "./telemetry";
 import { TelemetryNotice, TelemetrySetting, useTelemetrySetup } from "./telemetry-ui";
-import { useAccount } from "./account";
+import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { isLocal, isOwn } from "./custom";
 import { AddApp } from "./own";
@@ -248,8 +248,27 @@ function BrowsePage({
   onSearch: (search: string) => void;
 }) {
   const { client, config, library, remember, consoles, consoleNames } = useLauncher();
-  // The site's catalog filters; the platform starts at this computer's.
-  const [filters, setFilters] = useState<Omit<AppQuery, "search" | "cursor" | "limit">>({ os: config.os, sort: "added" });
+  const saved = useAccount().user?.catalogDefaults;
+  // The site's catalog filters: the ones saved on the account ("Save as my
+  // default" on the website), but the platform starts at this computer's,
+  // since only its apps can be installed here.
+  const fromSaved = (d?: CatalogDefaults): BrowseFilters => ({
+    os: config.os,
+    sort: SORTS.find((s) => s === d?.sort) ?? "added",
+    projectTypes: d?.projectTypes?.filter((t): t is ProjectType => t in PROJECT_TYPES).slice(0, 4),
+    console: d?.console,
+    ai: d?.ai === "no-generated" || d?.ai === "no-ai" ? d.ai : undefined,
+  });
+  const [filters, setFilters] = useState(() => fromSaved(saved));
+  // The account can load after Browse opens: its saved filters apply until the player picks their own.
+  const picked = useRef(false);
+  useEffect(() => {
+    if (!picked.current) setFilters(fromSaved(saved));
+  }, [JSON.stringify(saved)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const choose = (next: BrowseFilters) => {
+    picked.current = true;
+    setFilters(next);
+  };
   const [pages, setPages] = useState<Page<Entry>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -303,15 +322,16 @@ function BrowsePage({
     const filtered = filtering > 0;
     track("search_no_results", { query_length: typed.length, results: 0, games: games.length, filtered });
   }, [query, loading, error, gamesFor, pages, games]); // eslint-disable-line react-hooks/exhaustive-deps
-  const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
+  const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => choose({ ...filters, [key]: e.target.value || undefined });
   const brands = [...new Set(consoles.map((c) => c.brand))];
   const [filtersOpen, setFiltersOpen] = useState(false);
   // How many filters differ from the defaults: any platform but this computer's counts.
-  const filtering = [filters.projectType, filters.console, filters.ai, filters.os !== config.os].filter(Boolean).length;
+  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== config.os].filter(Boolean).length;
+  const types = filters.projectTypes ?? [];
   /** A filter's pill: `on` names it while it differs from the default, and removing it goes back to the default. */
-  const pill = (key: "os" | "console" | "projectType" | "ai", on: string | undefined, select: ReactNode) =>
+  const pill = (key: "os" | "console" | "projectTypes" | "ai", on: string | undefined, select: ReactNode) =>
     !on && !filtersOpen ? null : (
-      <FilterPill key={key} on={on} onClear={() => setFilters({ ...filters, [key]: key === "os" ? config.os : undefined })}>
+      <FilterPill key={key} on={on} onClear={() => choose({ ...filters, [key]: key === "os" ? config.os : undefined })}>
         {select}
       </FilterPill>
     );
@@ -399,10 +419,20 @@ function BrowsePage({
             </select>,
           )}
           {pill(
-            "projectType",
-            filters.projectType && filterLabel("projectType", filters.projectType, consoleNames),
-            <select aria-label="Project type" value={filters.projectType ?? ""} onChange={set("projectType")}>
+            "projectTypes",
+            types.length ? types.map((t) => filterLabel("projectType", t, consoleNames)).join(", ") : undefined,
+            <select
+              aria-label="Project type"
+              value={types.length > 1 ? "several" : (types[0] ?? "")}
+              onChange={(e) => choose({ ...filters, projectTypes: e.target.value ? [e.target.value as ProjectType] : undefined })}
+            >
               <option value="">Any project type</option>
+              {/* Several kinds come only from filters saved on the website. */}
+              {types.length > 1 && (
+                <option value="several" disabled>
+                  {types.map((t) => PROJECT_TYPES[t]).join(", ")}
+                </option>
+              )}
               {Object.entries(PROJECT_TYPES).map(([id, name]) => (
                 <option key={id} value={id}>
                   {name}
@@ -421,7 +451,7 @@ function BrowsePage({
           )}
           {filtering > 0 && (
             <span className="filter-actions">
-              <button type="button" className="text-button" onClick={() => setFilters({ os: config.os, sort: filters.sort })}>
+              <button type="button" className="text-button" onClick={() => choose({ os: config.os, sort: filters.sort })}>
                 Clear all
               </button>
             </span>
@@ -792,6 +822,9 @@ function AppPage({
 }
 
 const PROJECT_TYPES: Record<string, string> = { port: "Port", tool: "Tool", emulator: "Emulator", game: "Standalone game" };
+const SORTS = ["added", "updated", "rating", "name"] as const;
+/** Browse's catalog filters; several kinds of project come from saved filters. */
+type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType">;
 
 /** This computer's choices for an app: how it updates, and whether the library shows it. */
 function AppOptions({ id }: { id: string }) {

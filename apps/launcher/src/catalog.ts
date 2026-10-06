@@ -41,13 +41,15 @@ export function createConvexClient(url: string, rest: Client, fetch?: typeof glo
     apps(q: AppQuery = {}) {
       const search = q.search?.trim() || undefined;
       const maker = q.console?.startsWith("maker:") ? q.console.slice(6) : undefined;
+      const types = q.projectTypes ?? (q.projectType ? [q.projectType] : []);
       // Optional arguments are left out, never null: the site's validators refuse null.
       return convex
         .query(refs.list, {
           paginationOpts: { numItems: q.limit ?? 48, cursor: q.cursor ?? null },
           ...(search && { search }),
           ...(q.os && { os: q.os }),
-          ...(q.projectType && { projectType: q.projectType }),
+          // Several kinds need a site with saved filters; one works on any.
+          ...(types.length > 1 ? { projectTypes: types } : types[0] && { projectType: types[0] }),
           ...(maker ? { maker } : q.console && { console: q.console }),
           // A search orders by relevance.
           ...(q.sort && !search && { sort: q.sort }),
