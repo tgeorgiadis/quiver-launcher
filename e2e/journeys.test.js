@@ -102,9 +102,7 @@ test("a download that doesn't match Quiver's checksum is refused", async () => {
 test("arrow keys and controllers move between cards", async () => {
   await (await app.$("input[placeholder^=Search]")).click();
   const focused = () => app.execute(() => document.activeElement?.closest("article")?.dataset.slug);
-  // Down from the search box reaches the filters, then the first card.
-  await app.keys("ArrowDown");
-  assert.equal(await app.execute(() => document.activeElement?.getAttribute("aria-label")), "Sort");
+  // Down from the search box reaches the first card; the sort and Filters are beside the search.
   await app.keys("ArrowDown");
   assert.equal(await focused(), "test-port");
   await app.keys("ArrowRight");
