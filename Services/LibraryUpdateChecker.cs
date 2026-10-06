@@ -137,17 +137,18 @@ public sealed class LibraryUpdateChecker(HttpClient client, AppSettings settings
                 var other = await Once(key, () => ReleaseSourceRegistry.Default.FetchReleasesAsync(client,
                     app.RepositorySource, repository, credential, cancellationToken: token));
                 other.EnsureSuccess();
-                return ReleaseSelection.SelectLatestRelease(other.Releases, app.PreferredVersion, app.InstalledVersion, other.LatestTag);
+                return ReleaseSelection.SelectLatestRelease(other.Releases, app.ReleaseTarget, app.InstalledVersion, other.LatestTag);
             }
             var latest = await Once(key + ":latest", () => GitHubReleaseService.FetchLatestReleaseIndexAsync(client, repository, credential, cancellationToken: token));
             if (latest.IsRateLimited || latest.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) latest.EnsureSuccess();
-            if (string.IsNullOrWhiteSpace(app.PreferredVersion) && latest.StatusCode == HttpStatusCode.OK &&
+            // A pinned or verified release may not be GitHub's latest; that needs the release list.
+            if (string.IsNullOrWhiteSpace(app.ReleaseTarget) && latest.StatusCode == HttpStatusCode.OK &&
                 ReleaseSelection.SelectLatestRelease(latest.Releases, githubLatestTag: latest.LatestTag) is { } selected)
                 return selected;
             var list = await Once(key + ":list", () => GitHubReleaseService.FetchReleaseListAsync(client, repository, credential, token));
             list.EnsureSuccess();
             var releases = list.Releases.Concat(latest.StatusCode == HttpStatusCode.OK ? latest.Releases : []).ToArray();
-            return ReleaseSelection.SelectLatestRelease(releases, app.PreferredVersion, app.InstalledVersion, latest.LatestTag);
+            return ReleaseSelection.SelectLatestRelease(releases, app.ReleaseTarget, app.InstalledVersion, latest.LatestTag);
         }
     }
 }

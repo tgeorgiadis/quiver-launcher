@@ -141,13 +141,20 @@ public partial class BrowseView : UserControl
         Reload();
     }
 
-    private void BrowseRetry_Click(object? sender, RoutedEventArgs e) => Reload();
+    private void BrowseRetry_Click(object? sender, RoutedEventArgs e)
+    {
+        if (Model.ShowingCustomList) Model.ForgetCustomList();
+        Navigation.AfterRetry();
+        Reload();
+    }
 
     private void BrowseSourceTab_Click(object? sender, RoutedEventArgs e)
     {
         var custom = ReferenceEquals(sender, BrowseCustomListTabButton);
         if (Model.ShowingCustomList == custom) return;
         Model.ShowingCustomList = custom;
+        // The list may have been edited since it was last read.
+        if (custom) Model.ForgetCustomList();
         Reload();
     }
 

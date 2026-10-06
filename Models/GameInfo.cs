@@ -653,6 +653,21 @@ namespace QuiverLauncher.Models
             }
         }
 
+        /// <summary>The quiverlauncher.com app this is, when it is in the catalog. Looked up, not saved.</summary>
+        public string? CatalogSlug { get; set; }
+
+        /// <summary>The release Quiver verified for this app. Updates go to it unless the player pinned a version.</summary>
+        public string? CatalogVerifiedVersion { get; set; }
+
+        /// <summary>When quiverlauncher.com last confirmed <see cref="CatalogVerifiedVersion"/>.</summary>
+        public DateTimeOffset? CatalogVerifiedAt { get; set; }
+
+        /// <summary>The release updates and installs aim for: the player's pin, else the verified release.</summary>
+        public string? ReleaseTarget => string.IsNullOrWhiteSpace(PreferredVersion) ? CatalogVerifiedVersion : PreferredVersion;
+
+        internal bool MatchesReleaseTarget(string? version) =>
+            string.IsNullOrWhiteSpace(ReleaseTarget) || ReleaseVersionIdentity.AreVersionsEquivalent(ReleaseTarget, version);
+
         public string? PreferredVersion
         {
             get => _preferredVersion;
@@ -1522,12 +1537,12 @@ namespace QuiverLauncher.Models
                         return false;
 
                     await GameDownloadInstallService.DownloadAndInstallAsync(
-                        this, httpClient, gamesFolder, GetLatestRelease(), settings, _status, dialogs);
+                        this, httpClient, gamesFolder, await ReleaseForInstallAsync(), settings, _status, dialogs);
                     return false;
 
                 case GameStatus.UpdateAvailable:
                     await GameDownloadInstallService.DownloadAndInstallAsync(
-                        this, httpClient, gamesFolder, GetLatestRelease(), settings, _status, dialogs);
+                        this, httpClient, gamesFolder, await ReleaseForInstallAsync(), settings, _status, dialogs);
                     return false;
 
                 case GameStatus.Installed:
@@ -1539,6 +1554,21 @@ namespace QuiverLauncher.Models
         }
 
         public GitHubRelease? GetLatestRelease() => _cachedRelease;
+
+        /// <summary>
+        /// The cached release when it is still the one to install; null to choose again. A catalog app is
+        /// looked up first, so a release cached before Quiver verified another isn't installed by mistake.
+        /// </summary>
+        private async Task<GitHubRelease?> ReleaseForInstallAsync()
+        {
+            if (GameManager?.CatalogReleases is { } catalog)
+            {
+                try { await catalog.RefreshAsync([this], LauncherSession.OperationCancellation).ConfigureAwait(false); }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Catalog lookup failed for {Name}: {ex.Message}"); }
+            }
+            return _cachedRelease is { } release && MatchesReleaseTarget(release.tag_name) ? release : null;
+        }
 
         public static GitHubRelease? SelectLatestRelease(
             IReadOnlyList<GitHubRelease>? releases,
@@ -1587,14 +1617,13 @@ namespace QuiverLauncher.Models
 
             try
             {
-                if (!forceCheck && !GitHubApiCache.NeedsUpdateCheck(RepositorySource, Repository))
+                // A cached release chosen for another target (say, before the verified release changed) is stale.
+                var cachedForTarget = GitHubApiCache.TryGetCachedVersion(RepositorySource, Repository, out var cachedData) &&
+                    cachedData != null && MatchesReleaseTarget(cachedData.Version);
+                if (!forceCheck && cachedForTarget && !GitHubApiCache.NeedsUpdateCheck(RepositorySource, Repository))
                 {
-                    if (GitHubApiCache.TryGetCachedVersion(RepositorySource, Repository, out var cachedData) && cachedData != null)
-                    {
-                        ApplyCachedRelease(cachedData.Version, cachedData.CachedRelease);
-                        RefreshInstalledStatus();
-                    }
-
+                    ApplyCachedRelease(cachedData!.Version, cachedData.CachedRelease);
+                    RefreshInstalledStatus();
                     return;
                 }
 
@@ -1603,7 +1632,7 @@ namespace QuiverLauncher.Models
                     RepositorySource,
                     Repository,
                     GetReleaseApiToken(),
-                      forceCheck ? null : GitHubApiCache.GetETag(RepositorySource, Repository), cancellationToken: cancellationToken).ConfigureAwait(false);
+                      forceCheck || !cachedForTarget ? null : GitHubApiCache.GetETag(RepositorySource, Repository), cancellationToken: cancellationToken).ConfigureAwait(false);
 
                 result.EnsureSuccess();
                 if (result.IsNotModified)
@@ -1625,7 +1654,7 @@ namespace QuiverLauncher.Models
                 }
 
                 var latestRelease = SelectLatestRelease(
-                    result.Releases, PreferredVersion, InstalledVersion, result.LatestTag);
+                    result.Releases, ReleaseTarget, InstalledVersion, result.LatestTag);
                 if (latestRelease != null && !string.IsNullOrWhiteSpace(latestRelease.tag_name))
                 {
                     RepositoryCheckError = null;
@@ -1728,11 +1757,14 @@ namespace QuiverLauncher.Models
                 Repository,
                 GetReleaseApiToken(), cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-        public async Task InstallReleaseAsync(HttpClient httpClient, string gamesFolder, AppSettings settings, GitHubRelease release, GitHubAsset selectedAsset)
+        /// <param name="automatic">An automatic update: it never installs a release Quiver hasn't verified.</param>
+        public async Task InstallReleaseAsync(HttpClient httpClient, string gamesFolder, AppSettings settings, GitHubRelease release, GitHubAsset selectedAsset,
+            bool automatic = false)
         {
             GameDownloadService.SelectExplicit(this, release, settings, selectedAsset);
             await GameDownloadInstallService.DownloadAndInstallAsync(
-                this, httpClient, gamesFolder, release, settings, Status);
+                this, httpClient, gamesFolder, release, settings, Status,
+                automatic ? new AutomaticGameDownloadDialogs(AvaloniaGameDownloadDialogs.Instance) : null);
         }
 
         public static string? GetPlatformIcon(string assetName)

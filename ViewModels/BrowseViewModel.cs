@@ -102,6 +102,7 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
             var page = await client.GetAppsAsync(query, _cursor, token);
             if (generation != _generation) return false;
             Show(page);
+            Status = "";
             return page.Items.Count > 0;
         }
         catch (Exception ex) when (generation == _generation && !token.IsCancellationRequested)
@@ -137,8 +138,16 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     /// <summary>Forgets the player's list, so a changed location or file is read again.</summary>
     public void ForgetCustomList()
     {
+        // A load still reading the old list is dropped, so it can't show after the change.
+        ++_generation;
+        _cursor = null;
         _customApps = null;
         _customAppsLocation = null;
+        IsLoading = false;
+        IsLoadingMore = false;
+        Status = "";
+        Items.Clear();
+        Notify(nameof(CanLoadMore));
         Notify(nameof(HasCustomList));
         Notify(nameof(ShowingCustomList));
     }

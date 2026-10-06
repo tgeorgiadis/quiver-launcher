@@ -6,6 +6,9 @@ using QuiverLauncher.ViewModels;
 namespace QuiverLauncher.Services;
 
 public enum LibraryAddOutcome { Added, AlreadyAdded, FolderConflict }
+
+/// <summary>The app was saved to the library, but its folder or files could not be prepared.</summary>
+public sealed class LibraryAddPreparationException(Exception inner) : IOException("The app was saved, but its files could not be prepared.", inner);
 public sealed record LibraryAddResult(LibraryAddOutcome Outcome, GameInfo? App, List<GameInfo> Library, string? Error = null);
 
 /// <summary>Adds one app from Browse to the library: save, prepare its folder, then show it.</summary>
@@ -110,6 +113,7 @@ public sealed class LibraryAddService(GameManager manager, SettingsViewModel set
             else AppFilesToAddService.SyncForGame(app, manager.GamesFolder, null);
         });
         app.CatalogPreparation = preparation;
+        manager.CatalogReleases.ApplyKnown(app);
         Exception? failure = null;
         try { await preparation; }
         catch (Exception ex) { failure = ex; }
@@ -124,7 +128,7 @@ public sealed class LibraryAddService(GameManager manager, SettingsViewModel set
         // Network enrichment has its own session lifetime and never holds the save
         // queue, the Add feedback, or another app's addition open.
         _ = session.RunAsync(() => Task.Run(() => EnrichAddedAsync(app, session.Token), session.Token));
-        if (failure != null) throw new IOException("The app was saved, but its files could not be prepared.", failure);
+        if (failure != null) throw new LibraryAddPreparationException(failure);
     }
 
     internal async Task EnrichAddedAsync(GameInfo app, CancellationToken cancellationToken)
@@ -138,6 +142,7 @@ public sealed class LibraryAddService(GameManager manager, SettingsViewModel set
         async Task Release()
         {
             if (app.IsManuallyManaged || string.IsNullOrWhiteSpace(app.Repository)) return;
+            await manager.CatalogReleases.RefreshAsync([app], cancellationToken).ConfigureAwait(false);
             for (var attempt = 0; attempt < 3; attempt++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -151,7 +156,7 @@ public sealed class LibraryAddService(GameManager manager, SettingsViewModel set
                     continue;
                 }
                 result.EnsureSuccess();
-                var release = GameInfo.SelectLatestRelease(result.Releases, app.PreferredVersion, app.InstalledVersion, result.LatestTag);
+                var release = GameInfo.SelectLatestRelease(result.Releases, app.ReleaseTarget, app.InstalledVersion, result.LatestTag);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (release != null)
                 {

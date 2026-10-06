@@ -11,5 +11,7 @@ namespace QuiverLauncher.Core.Models
     {
         public string name { get; set; } = string.Empty;
         public string browser_download_url { get; set; } = string.Empty;
+        /// <summary>GitHub's "sha256:" checksum of the file, when it publishes one.</summary>
+        public string? digest { get; set; }
     }
 }

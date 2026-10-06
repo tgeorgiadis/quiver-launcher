@@ -181,6 +181,8 @@ public class DownloadSelectionFlowTests
             : DownloadAssetPolicyTests.Release("game-windows.zip", "game-windows-portable.zip", "game-macos.zip");
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
+            // These apps are not in the quiverlauncher.com catalog.
+            if (request.RequestUri!.Host == "api.quiverlauncher.com") return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
             if (request.RequestUri!.Host != "api.github.com")
             {
                 Downloads++;

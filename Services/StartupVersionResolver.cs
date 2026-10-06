@@ -15,8 +15,17 @@ internal static class StartupVersionResolver
     internal static StartupVersionEvidence? Resolve(GameInfo app)
     {
         if (app.IsManuallyManaged || string.IsNullOrWhiteSpace(app.Repository)) return null;
+        // quiverlauncher.com already said which release a catalog app updates to; GitHub needn't be asked at startup.
+        if (string.IsNullOrWhiteSpace(app.PreferredVersion) && app.CatalogVerifiedVersion is { Length: > 0 } verified &&
+            app.CatalogVerifiedAt is { } verifiedAt)
+        {
+            var known = GitHubApiCache.TryGetLastKnownVersion(app.RepositorySource, app.Repository, out var last) &&
+                last?.CachedRelease is { } cachedRelease && ReleaseVersionIdentity.AreVersionsEquivalent(cachedRelease.tag_name, verified)
+                ? last.CachedRelease : null;
+            return new(verified, verifiedAt, known);
+        }
         if (!GitHubApiCache.TryGetLastKnownVersion(app.RepositorySource, app.Repository, out var cached) || cached == null ||
-            (!string.IsNullOrWhiteSpace(app.PreferredVersion) && !ReleaseVersionIdentity.AreVersionsEquivalent(app.PreferredVersion, cached.Version)))
+            !app.MatchesReleaseTarget(cached.Version))
             return null;
         var release = cached.CachedRelease;
         if (release != null && !ReleaseVersionIdentity.AreVersionsEquivalent(release.tag_name, cached.Version)) release = null;

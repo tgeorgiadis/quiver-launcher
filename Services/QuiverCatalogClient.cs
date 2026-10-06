@@ -116,6 +116,40 @@ public sealed class QuiverCatalogReadme
     public string? RawBase { get; set; }
 }
 
+/// <summary>An app in the release status feed: enough to match a library app to the catalog.</summary>
+public sealed class QuiverCatalogStatus
+{
+    public string Id { get; set; } = "";
+    public string Slug { get; set; } = "";
+    public string Provider { get; set; } = "";
+    public string? Repository { get; set; }
+    public QuiverCatalogVerified? Verified { get; set; }
+}
+
+public sealed class QuiverCatalogAsset
+{
+    public string Filename { get; set; } = "";
+    /// <summary>"sha256:" and the hex digest of the file Quiver saw when the release came out.</summary>
+    public string? Checksum { get; set; }
+}
+
+public sealed class QuiverCatalogScan
+{
+    public string Verdict { get; set; } = "";
+    public string? Engines { get; set; }
+}
+
+/// <summary>A release as the site judges it: verified, unverified or blocked, with the files it pinned.</summary>
+public sealed class QuiverCatalogRelease
+{
+    public string Version { get; set; } = "";
+    public string State { get; set; } = "";
+    public List<string> Reasons { get; set; } = [];
+    public List<QuiverCatalogAsset> Assets { get; set; } = [];
+    public QuiverCatalogScan? Scan { get; set; }
+    public double? CheckEndsAt { get; set; }
+}
+
 public sealed record QuiverCatalogQuery(string? Search = null, string? Os = null, string? Console = null,
     string? ProjectType = null, string Sort = "added");
 
@@ -165,6 +199,13 @@ public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
     public Task<QuiverCatalogReadme?> GetReadmeAsync(string slug, CancellationToken token) =>
         GetAsync<QuiverCatalogReadme>($"/apps/{Uri.EscapeDataString(slug)}/readme", token);
 
+    public Task<QuiverCatalogPage<QuiverCatalogStatus>> GetReleaseStatusAsync(string? cursor, CancellationToken token) =>
+        GetPageAsync<QuiverCatalogStatus>("/release-status?limit=100" + (cursor == null ? "" : "&cursor=" + Uri.EscapeDataString(cursor)), token);
+
+    /// <summary>Every release the site knows for an app, newest first, each verified, unverified or blocked.</summary>
+    public Task<QuiverCatalogPage<QuiverCatalogRelease>> GetReleaseHistoryAsync(string slug, CancellationToken token) =>
+        GetPageAsync<QuiverCatalogRelease>($"/apps/{Uri.EscapeDataString(slug)}/release-history?limit=100", token);
+
     private async Task<QuiverCatalogPage<T>> GetPageAsync<T>(string path, CancellationToken token)
     {
         var page = await GetAsync<JsonObject>(path, token);
@@ -207,9 +248,7 @@ public static class QuiverCatalogMapping
     /// <summary>The app as an entry of an app list file (the format of apps.json).</summary>
     public static JsonObject ToListEntry(QuiverCatalogApp app, QuiverCatalogProject project)
     {
-        var folder = string.IsNullOrWhiteSpace(app.Launcher.FolderName)
-            ? Mods.GameModsConfig.SanitizeFolderName(app.Slug)
-            : app.Launcher.FolderName.Trim();
+        var folder = FolderFor(app);
         var entry = new JsonObject
         {
             ["name"] = app.Name,
@@ -242,6 +281,11 @@ public static class QuiverCatalogMapping
         }
         return entry;
     }
+
+    /// <summary>The app's folder: the catalog's, or its slug when the catalog gives none.</summary>
+    public static string FolderFor(QuiverCatalogApp app) => string.IsNullOrWhiteSpace(app.Launcher.FolderName)
+        ? Mods.GameModsConfig.SanitizeFolderName(app.Slug)
+        : app.Launcher.FolderName.Trim();
 
     public static Models.GameInfo ToGameInfo(AppCatalogService parser, QuiverCatalogApp app, QuiverCatalogProject project) =>
         parser.ParseAppsFromJson(new JsonObject { ["apps"] = new JsonArray(ToListEntry(app, project)) }.ToJsonString()).Single();

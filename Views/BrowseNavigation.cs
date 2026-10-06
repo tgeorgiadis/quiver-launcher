@@ -34,6 +34,8 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
 
     public bool Confirm()
     {
+        // A zone left over from before Browse was shown must not open an app.
+        if (!isActive()) return false;
         _selectFirstCardWhenLoaded = false;
         switch (Service.ActiveZone)
         {
@@ -53,6 +55,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
 
     public bool Cancel()
     {
+        if (!isActive()) return false;
         if (Service.ActiveZone is not (GamepadNavigationZone.BrowseToolbar or GamepadNavigationZone.BrowseFilters) || Items.Count == 0)
             return false;
         SelectCard(CardIndex < 0 ? 0 : CardIndex);
@@ -104,6 +107,14 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             return;
         }
         SelectCard(CardIndex < 0 ? 0 : CardIndex, bringIntoView: false);
+    }
+
+    /// <summary>"Try again" hides while it loads: keep the search box highlighted, then move to the cards.</summary>
+    internal void AfterRetry()
+    {
+        if (Service.ActiveZone != GamepadNavigationZone.BrowseToolbar || !host.IsFocusActive) return;
+        _selectFirstCardWhenLoaded = true;
+        Dispatcher.UIThread.Post(() => ApplyToolbarSelection(0), DispatcherPriority.Loaded);
     }
 
     /// <summary>"Clear filters" disappears once used; stay on the filter row.</summary>
@@ -250,7 +261,9 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     {
         foreach (var item in Items)
             item.IsGamepadFocused = false;
-        var controls = ToolbarControls().Concat(FilterControls()).ToList();
+        // Every control, including hidden ones, so one that reappears doesn't still look highlighted.
+        Control[] controls = [view.BrowseSearchTextBox, view.BrowseSortComboBox, view.BrowseRetryButton, view.BrowseCatalogTabButton,
+            view.BrowseCustomListTabButton, view.BrowsePlatformButton, view.BrowseConsoleButton, view.BrowseTypeButton, view.BrowseClearFiltersButton];
         foreach (var control in controls)
             control.Classes.Set("gamepad-focused", false);
         var focus = TopLevel.GetTopLevel(view)?.FocusManager;

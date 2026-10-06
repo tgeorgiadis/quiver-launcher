@@ -48,8 +48,8 @@ public class LibraryAddServiceTests
         launcher.Manager.Games.Should().ContainSingle().Which.Should().BeSameAs(added);
 
         await launcher.Session.DisposeAsync();
-        launcher.Network.Requests.Should().OnlyContain(uri => uri.AbsolutePath.StartsWith("/repos/HarbourMasters/Starship/releases"),
-            "only the background release lookup for the new app may use the network, and closing the session cancels it");
+        launcher.Network.Requests.Should().OnlyContain(uri => uri.AbsolutePath.StartsWith("/repos/HarbourMasters/Starship/releases") || uri.AbsolutePath == "/api/v1/release-status",
+            "only the background lookups for the new app (its releases, and whether Quiver verified one) may use the network, and closing the session cancels them");
     }
 
     private sealed class Store : ISettingsStore

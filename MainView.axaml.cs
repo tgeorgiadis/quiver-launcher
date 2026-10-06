@@ -528,7 +528,6 @@ namespace QuiverLauncher
         {
             BrowsePanel.Model.ForgetCustomList();
             if (Shell.Mode == MainViewMode.Browse) BrowsePanel.Reload();
-            else BrowsePanel.Model.Items.Clear();
         }
         void ISettingsFeatureHost.ApplyTrayAndBackgroundUpdateSettings() => ApplyTrayAndBackgroundUpdateSettings();
         void ISettingsFeatureHost.UpdateGamepadHintsBar() => UpdateGamepadHintsBar();
@@ -1207,6 +1206,10 @@ namespace QuiverLauncher
                 var result = await _libraryAdd.AddAsync(app);
                 if (result.Outcome == LibraryAddOutcome.FolderConflict)
                     await ShowMessageBoxAsync($"This app wasn't added. {result.Error}", "Could Not Add");
+            }
+            catch (LibraryAddPreparationException ex)
+            {
+                await ShowMessageBoxAsync($"{app.Name} was added to your library, but its files could not be prepared: {ex.InnerException?.Message}", "App Preparation");
             }
             catch (Exception ex)
             {

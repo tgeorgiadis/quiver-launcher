@@ -154,6 +154,29 @@ public static class GameDialogService
         });
     }
 
+    /// <summary>A Yes/No question with No as the default; false without a screen to ask on.</summary>
+    public static async Task<bool> ShowQuestionAsync(string message, string title)
+    {
+        if (!HasInteractiveUi())
+        {
+            WriteConsoleError(title, message + "\n\nNot installed: there is no window to confirm in.");
+            return false;
+        }
+
+        var operationToken = LauncherSession.OperationCancellation;
+        return await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            operationToken.ThrowIfCancellationRequested();
+            if (TryGetDesktopMainWindow() is null && TryGetMainView() is MainView view)
+                return await view.ShowOverlayPromptAsync(message, title, isQuestion: true, preferCancelDefault: true);
+            var result = false;
+            var box = LauncherPromptService.CreateScrollableMessageBoxWindow(message, title, isQuestion: true,
+                onQuestionResult: value => result = value, preferCancelDefault: true);
+            await ShowWindowAsync(box, operationToken);
+            return box.Tag switch { MessagePromptResult choice => choice == MessagePromptResult.Yes, bool flag => flag, _ => result };
+        });
+    }
+
     public static async Task<bool> ShowWineNotFoundWarningAsync()
     {
         if (TryGetDesktopMainWindow() is not Window mainWindow)

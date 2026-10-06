@@ -184,7 +184,7 @@
                                                 <ComboBoxItem Content="3×"/>
                                                 <ComboBoxItem Content="5×"/>
                                             </ComboBox>
-                                            <TextBlock Text="Scroll amount per wheel tick in the library and app catalog."
+                                            <TextBlock Text="Scroll amount per wheel tick in the library and Browse."
                                                        FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
                                         </StackPanel>
 
@@ -197,7 +197,7 @@
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding AutoUpdateNewlyAddedApps, Mode=TwoWay}"/>
-											<TextBlock Text="New apps from the catalog or Add Entry start with Auto Update enabled"
+											<TextBlock Text="New apps from Browse or Add Entry start with Auto Update enabled"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -919,14 +919,14 @@
 												   TextWrapping="Wrap"
 												   Margin="0,0,0,6"/>
 										<TextBox x:Name="CustomAppListTextBox"
-												 Watermark="https://… or C:\path\apps.json"
+												 Watermark="A URL or a file path"
 												 Foreground="{DynamicResource ThemeText}"
 												 Background="{DynamicResource ThemeBase}"
 												 BorderBrush="{DynamicResource ThemeBorder}"
 												 BorderThickness="1"
 												 Padding="12,10"
 												 CornerRadius="4"/>
-<Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button Grid.Column="0" Classes="options" Content="Save list" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveCustomAppList_Click" FontSize="12"/><Button Grid.Column="1" Classes="options" Content="Choose file" MinHeight="44" HorizontalAlignment="Stretch" Click="BrowseCustomAppList_Click" FontSize="12"/><Button Grid.Column="2" Classes="options" Content="Clear" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearCustomAppList_Click" FontSize="12"/></Grid>
+<Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="0,4,0,0"><Button Grid.Column="0" Classes="options" Content="Save list" MinHeight="44" HorizontalAlignment="Stretch" Click="SaveCustomAppList_Click" FontSize="12"/><Button Grid.Column="1" Classes="options" Content="Choose file" MinHeight="44" HorizontalAlignment="Stretch" Click="BrowseCustomAppList_Click" FontSize="12" IsVisible="{x:Static services:PlatformCapabilities.IsDesktop}"/><Button Grid.Column="2" Classes="options" Content="Clear" MinHeight="44" HorizontalAlignment="Stretch" Click="ClearCustomAppList_Click" FontSize="12"/></Grid>
 <Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,12,0,8"/>
 
 										<StackPanel Spacing="2">

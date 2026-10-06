@@ -118,10 +118,11 @@ public static class GameStatusService
 
             if (!checkRemoteVersion)
             {
-                if (applyCachedRelease && GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null)
+                if (applyCachedRelease && GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null &&
+                    game.MatchesReleaseTarget(cache.Version))
                     game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
                 else if (applyCachedRelease && GitHubApiCache.TryGetLastKnownVersion(game.RepositorySource, game.Repository, out var stale) && stale != null &&
-                    (string.IsNullOrWhiteSpace(game.PreferredVersion) || LauncherVersionService.AreVersionsEquivalent(game.PreferredVersion, stale.Version)))
+                    game.MatchesReleaseTarget(stale.Version))
                     game.ApplyLastKnownVersion(stale.Version);
             }
             else if (forceUpdateCheck)
@@ -131,14 +132,20 @@ public static class GameStatusService
                 if (GitHubApiCache.NeedsUpdateCheck(game.RepositorySource, game.Repository ?? string.Empty, isInstalledGame: true))
                     await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
                 else if (GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null)
-                    game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+                {
+                    if (game.MatchesReleaseTarget(cache.Version)) game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+                    else await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
+                }
             }
             else
             {
                 if (GitHubApiCache.NeedsUpdateCheck(game.RepositorySource, game.Repository ?? string.Empty, isInstalledGame: false))
                     await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
                 else if (GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null)
-                    game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+                {
+                    if (game.MatchesReleaseTarget(cache.Version)) game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+                    else await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
+                }
             }
 
             if (isInstalled && string.IsNullOrWhiteSpace(game.InstalledVersion))

@@ -447,6 +447,8 @@ public class GameDownloadInstallServiceTests
             LastError = $"{title}: {message}";
             return Task.CompletedTask;
         }
+
+        public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) => Task.FromResult(true);
     }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler

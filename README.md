@@ -108,7 +108,7 @@ on Windows, Linux, macOS, and Android. See [library protection and recovery](doc
 3. Browse your app library in the Library view
 4. Click the Download/Launch button on the app/game you want to use
 
-Browse reads the catalog from the [quiverlauncher.com](https://quiverlauncher.com) API each time you open it. Reviews are written on the website: an app's **Write a review on the website** button opens its page.
+Browse reads the catalog from the [quiverlauncher.com](https://quiverlauncher.com) API the first time you open it, and again whenever you search, sort or filter. Reviews are written on the website: an app's **Write a review on the website** button opens its page.
 
 ## Configuration
 
@@ -149,9 +149,18 @@ GameBanana URLs are detected automatically (no `gamebanana|` prefix required). O
 - GameBanana mods with multiple download files show a file picker on Install/Update. **Zip**, **7z**, and **RAR** archives are supported.
 - Thunderstore mods that list requirements prompt before install if those mods are not already installed. **Yes** installs the missing requirements (and the selected mod); **No** installs only the selected mod; **Cancel** aborts without installing anything. **Update All** still pulls missing requirements without prompting.
 
+### Verified releases
+
+Apps from the Quiver catalog follow what [quiverlauncher.com](https://quiverlauncher.com) checked:
+
+- Updates, including automatic ones, go to the release Quiver verified, not simply the newest one on GitHub or GitLab.
+- Every download of a catalog app is checked against the SHA-256 Quiver saw when the release came out, and is refused if it changed. Other apps are checked against the checksum GitHub publishes, when there is one.
+- Installing a release Quiver hasn't verified asks first and says why it isn't verified yet. Installing one Quiver blocked asks twice. Automatic updates never install either.
+- **Change version** marks each release Verified, Unverified or Blocked.
+
 ### Your own app list
 
-Quiver Launcher no longer subscribes to app lists. If you keep your own list, set it in **Settings → Advanced → My app list**: a local JSON file, or a URL such as a GitHub raw link. Its apps appear under **My app list** in Browse, where you can add them to your library. A list you added in an earlier version is carried over automatically.
+Quiver Launcher no longer subscribes to app lists. If you keep your own list, set it in **Settings → Advanced → My app list**: a local JSON file, or a URL such as a GitHub raw link. Its apps appear under **My app list** in Browse, where you can add them to your library. A list you added in an earlier version is carried over automatically; if you had several, the first enabled one is kept.
 
 The list uses the same format as `apps.json`: an `apps` array of app entries (an older list file's `name`, `description` and `version` are ignored).
 

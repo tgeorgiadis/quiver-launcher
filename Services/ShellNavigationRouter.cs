@@ -68,6 +68,9 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
     public bool ConfirmPriorityDetails()
     {
         var zone = navigation.ActiveZone;
+        // Details opened with the mouse leave the zone behind; Confirm still belongs to the details.
+        if (shell.BrowseDetailsOpen && zone != GamepadNavigationZone.BrowseDetailsOverlay && !IsChrome(zone))
+            return Enter(GamepadNavigationZone.BrowseDetailsOverlay)?.Confirm() ?? false;
         if ((shell.DocumentOpen && zone == GamepadNavigationZone.ChangelogOverlay)
             || (shell.ModDetailsOpen && zone == GamepadNavigationZone.ModsDetailsOverlay)
             || (shell.BrowseDetailsOpen && zone == GamepadNavigationZone.BrowseDetailsOverlay))

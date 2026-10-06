@@ -51,6 +51,9 @@ namespace QuiverLauncher.Services
             !IsLibraryEmpty && HasLibrarySearch && Games.Count == 0;
         public HttpClient HttpClient => _httpClient;
         public AppCatalogService CatalogService => _catalogService;
+        /// <summary>Which library apps are in the quiverlauncher.com catalog, and which of their releases Quiver verified.</summary>
+        public CatalogReleases CatalogReleases => _catalogReleases ??= new CatalogReleases(new QuiverCatalogClient(_httpClient), _cacheFolder);
+        private CatalogReleases? _catalogReleases;
         public ModProviderRegistry ModProviderRegistry => _modProviderRegistry;
         public string AppsFolder => _appsFolder;
         public string GamesFolder => _appsFolder;
@@ -148,6 +151,7 @@ namespace QuiverLauncher.Services
             IProgress<AppCheckProgress>? progress, CancellationToken token, IReadOnlySet<string>? appKeys = null)
         {
             var apps = LibraryApps.Where(app => appKeys == null || appKeys.Contains(app.InstanceKey)).ToArray();
+            await CatalogReleases.RefreshAsync(apps, token);
             foreach (var app in apps)
             {
                 token.ThrowIfCancellationRequested();
@@ -159,10 +163,12 @@ namespace QuiverLauncher.Services
                 apps.Where(a => a.IsInstalled), manual, TimeSpan.FromHours(6), progress, token);
         }
 
-        public Task<LibraryCheckResult> RefreshUninstalledUpdatesAsync(CancellationToken token) =>
-            new LibraryUpdateChecker(_httpClient, _settingsStore.Current).CheckAsync(
-                LibraryApps.Where(a => a.Status == GameStatus.NotInstalled).ToArray(), false,
-                TimeSpan.FromHours(24), null, token);
+        public async Task<LibraryCheckResult> RefreshUninstalledUpdatesAsync(CancellationToken token)
+        {
+            var apps = LibraryApps.Where(a => a.Status == GameStatus.NotInstalled).ToArray();
+            await CatalogReleases.RefreshAsync(apps, token);
+            return await new LibraryUpdateChecker(_httpClient, _settingsStore.Current).CheckAsync(apps, false, TimeSpan.FromHours(24), null, token);
+        }
 
         private void LoadVersionString()
         {
@@ -247,12 +253,13 @@ namespace QuiverLauncher.Services
         }
 
         public Task LoadGamesAsync(bool forceUpdateCheck = false) =>
-            LoadGamesCoreAsync(forceUpdateCheck, fullReload: true);
+            LoadGamesCoreAsync(forceUpdateCheck);
 
         internal async Task RefreshLoadedLibraryMetadataAsync(CancellationToken cancellationToken)
         {
             // Keep the same app instances and collection while online results arrive.
             var apps = _catalogApps.ToArray();
+            await CatalogReleases.RefreshAsync(apps, cancellationToken);
             await new LibraryUpdateChecker(_httpClient, _settingsStore.Current).CheckStartupAsync(apps, cancellationToken);
             await Task.WhenAll(apps.Select(async app =>
             {
@@ -262,19 +269,15 @@ namespace QuiverLauncher.Services
         }
 
         /// <summary>
-        /// Reloads the library from local apps.json.
-        /// Status is preserved for existing apps; only <paramref name="statusCheckIdentityKeys"/>
-        /// (or every app when null) are re-checked on disk.
-        /// Set <paramref name="allowNetwork"/> to false for catalog mutations: use
-        /// cached releases and icons without waiting for remote metadata.
+        /// Reloads the library from local apps.json, checking every app's status on disk. Set
+        /// <paramref name="allowNetwork"/> to false (startup) to use cached releases and icons
+        /// without waiting for remote metadata.
         /// </summary>
-        public Task ReloadLibraryFromDiskAsync(IEnumerable<string>? statusCheckIdentityKeys = null, bool allowNetwork = true) =>
-            LoadGamesCoreAsync(forceUpdateCheck: false, fullReload: false, statusCheckIdentityKeys, allowNetwork);
+        public Task ReloadLibraryFromDiskAsync(bool allowNetwork = true) =>
+            LoadGamesCoreAsync(forceUpdateCheck: false, allowNetwork);
 
         private async Task LoadGamesCoreAsync(
             bool forceUpdateCheck,
-            bool fullReload,
-            IEnumerable<string>? statusCheckIdentityKeys = null,
             bool allowNetwork = true)
         {
             // Validate and back up the existing library without rewriting it. Keep
@@ -295,39 +298,22 @@ namespace QuiverLauncher.Services
             var allApps = await _catalogService.LoadLocalCatalogAsync(_settings).ConfigureAwait(false);
             _catalogApps = allApps.Where(app => app != null).Cast<GameInfo>().ToList();
 
-            HashSet<string>? checkKeys = null;
-            if (!fullReload && statusCheckIdentityKeys != null)
-            {
-                checkKeys = new HashSet<string>(
-                    statusCheckIdentityKeys.Where(key => !string.IsNullOrWhiteSpace(key)),
-                    StringComparer.OrdinalIgnoreCase);
-            }
-
             foreach (var app in _catalogApps)
             {
                 if (app == null)
                     continue;
 
                 app.IsInLocalAppsJson = true;
+                CatalogReleases.ApplyKnown(app);
                 if (previousByKey.TryGetValue(app.InstanceKey, out var previousCheck) &&
                     string.Equals(app.Repository, previousCheck.Repository, StringComparison.OrdinalIgnoreCase) &&
                     string.Equals(app.EffectiveRepositorySource, previousCheck.EffectiveRepositorySource, StringComparison.OrdinalIgnoreCase))
                     app.RepositoryCheckError = previousCheck.RepositoryCheckError;
-                if (checkKeys == null)
-                    continue;
-                if (checkKeys.Contains(app.InstanceKey))
-                    continue;
-                if (previousByKey.TryGetValue(app.InstanceKey, out var previous))
-                    CopyRuntimeLibraryState(app, previous);
             }
 
             if (!string.IsNullOrEmpty(_appsFolder))
             {
-                var appsToCheck = checkKeys == null
-                    ? _catalogApps
-                    : _catalogApps.Where(app => app != null && checkKeys.Contains(app.InstanceKey)).ToList();
-
-                await Task.WhenAll(appsToCheck.Where(app => app != null).Select(async app =>
+                await Task.WhenAll(_catalogApps.Where(app => app != null).Select(async app =>
                 {
                     try
                     {
@@ -390,13 +376,6 @@ namespace QuiverLauncher.Services
                 OnPropertyChanged(nameof(IsLibraryEmpty));
                 OnPropertyChanged(nameof(HasNoLibrarySearchMatches));
             });
-        }
-
-        private static void CopyRuntimeLibraryState(GameInfo target, GameInfo source)
-        {
-            target.Status = source.Status;
-            target.InstalledVersion = source.InstalledVersion;
-            target.LatestVersion = source.LatestVersion;
         }
 
         public async Task ExportGamesAsync()

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Avalonia.Threading;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Core.Services;
@@ -63,7 +64,7 @@ public static class GameDownloadInstallService
                 if (GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) &&
                     cache?.CachedRelease != null &&
                     (string.IsNullOrWhiteSpace(game.LatestVersion) || ReleaseVersionIdentity.AreVersionsEquivalent(game.LatestVersion, cache.CachedRelease.tag_name)) &&
-                    (string.IsNullOrWhiteSpace(game.PreferredVersion) || ReleaseVersionIdentity.AreVersionsEquivalent(game.PreferredVersion, cache.CachedRelease.tag_name)))
+                    game.MatchesReleaseTarget(cache.CachedRelease.tag_name))
                 {
                     latestRelease = cache.CachedRelease;
                 }
@@ -88,7 +89,7 @@ public static class GameDownloadInstallService
 
                     latestRelease = GameInfo.SelectLatestRelease(
                         releaseResult.Releases,
-                        game.PreferredVersion,
+                        game.ReleaseTarget,
                         game.InstalledVersion,
                         releaseResult.LatestTag);
 
@@ -141,6 +142,24 @@ public static class GameDownloadInstallService
                 game.Status = GameStatus.Installed;
                 game.InstalledVersion = latestRelease.tag_name;
                 game.LatestVersion = latestRelease.tag_name;
+                game.DownloadProgress = 0;
+                return;
+            }
+
+            // A catalog release Quiver hasn't verified installs only once the player confirms, never by itself.
+            var check = await CheckReleaseAsync(game, latestRelease.tag_name).ConfigureAwait(false);
+            // A file Quiver didn't check, in a release whose files it did, is not verified either.
+            if (check is { Checksums.Count: > 0 } && check.ChecksumFor(asset.name) == null)
+                check = check with
+                {
+                    State = check.State == ReleaseCheckState.Blocked ? ReleaseCheckState.Blocked : ReleaseCheckState.Unverified,
+                    Reasons = [.. check.Reasons, $"Quiver checked this release's other files, not {asset.name}."],
+                    Checksums = new Dictionary<string, string>(),
+                };
+            if (check is { State: not ReleaseCheckState.Verified } &&
+                !await dialogs.ConfirmUnverifiedReleaseAsync(game.DisplayName, latestRelease.tag_name, check))
+            {
+                game.Status = triggerStatus;
                 game.DownloadProgress = 0;
                 return;
             }
@@ -235,6 +254,11 @@ public static class GameDownloadInstallService
                     await fs.FlushAsync().ConfigureAwait(false);
                     fs.Flush(true);
                 }
+
+                // The file must be the one Quiver checked (or, outside the catalog, the one GitHub published).
+                var expected = check?.ChecksumFor(asset.name) ?? DigestOf(asset);
+                if (expected != null && !string.Equals(await Sha256Async(downloadPath).ConfigureAwait(false), expected, StringComparison.OrdinalIgnoreCase))
+                    throw new DownloadMismatchException(asset.name, check?.ChecksumFor(asset.name) != null);
 
                 game.DownloadProgress = 90;
                 game.Status = GameStatus.Installing;
@@ -377,6 +401,13 @@ public static class GameDownloadInstallService
                 });
             }
         }
+        catch (DownloadMismatchException ex)
+        {
+            // Nothing was installed or removed: the app stays as it was.
+            game.Status = triggerStatus;
+            game.DownloadProgress = 0;
+            await dialogs.ShowErrorAsync(ex.Message, "Download Not Verified");
+        }
         catch (HttpRequestException ex)
         {
             // Stop the card's downloading indicator while the error dialog is open.
@@ -466,4 +497,31 @@ public static class GameDownloadInstallService
             Debug.WriteLine($"Failed to persist Linux runner settings: {ex.Message}");
         }
     }
+
+    private static async Task<ReleaseCheck?> CheckReleaseAsync(GameInfo game, string version)
+    {
+        if (game.GameManager?.CatalogReleases is not { } catalog) return null;
+        try { return await catalog.CheckAsync(game, version, LauncherSession.OperationCancellation).ConfigureAwait(false); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Release check failed for {game.Name}: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string? DigestOf(GitHubAsset asset) =>
+        asset.digest?.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) == true ? asset.digest["sha256:".Length..].ToLowerInvariant() : null;
+
+    private static async Task<string> Sha256Async(string path)
+    {
+        await using var stream = File.OpenRead(path);
+        return Convert.ToHexStringLower(await SHA256.HashDataAsync(stream).ConfigureAwait(false));
+    }
 }
+
+/// <summary>A download that isn't the file it should be; nothing was installed from it.</summary>
+public sealed class DownloadMismatchException(string fileName, bool checkedByQuiver) : Exception(checkedByQuiver
+    ? $"{fileName} isn't the file Quiver checked for this release, so it wasn't installed. It may have been changed since Quiver saw it."
+    : $"{fileName} doesn't match the checksum its developer published, so it wasn't installed. Try downloading it again.");
+

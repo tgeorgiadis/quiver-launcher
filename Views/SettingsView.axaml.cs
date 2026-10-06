@@ -385,7 +385,8 @@ public partial class SettingsView : UserControl
     private void SaveCustomAppList(string? location)
     {
         if (_context == null || _suppressSettingsUiEvents) return;
-        if (Model.SaveCustomAppList(location))
+        // Saving the same location again reads the list again, for a list that was edited.
+        if (Model.SaveCustomAppList(location) || _settings.CustomAppListLocation == (location?.Trim() ?? ""))
             _host.CustomAppListChanged();
     }
 

@@ -20,6 +20,8 @@ public class UpdateRetrySelectionTests
         public List<string> Paths { get; } = [];
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
+            // These apps are not in the quiverlauncher.com catalog.
+            if (request.RequestUri!.Host == "api.quiverlauncher.com") return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
             Paths.Add(request.RequestUri!.AbsolutePath);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {

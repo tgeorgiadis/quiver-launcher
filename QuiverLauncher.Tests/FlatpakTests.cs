@@ -347,6 +347,7 @@ public sealed class FlatpakTests : IDisposable
         public Task ShowRateLimitExceededAsync() => Task.CompletedTask;
         public Task ShowGitLabRateLimitExceededAsync() => Task.CompletedTask;
         public Task ShowErrorAsync(string message, string title) { Error = message; return Task.CompletedTask; }
+        public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) => Task.FromResult(true);
     }
 
     private sealed class FakeBundles : IFlatpakBundleReader

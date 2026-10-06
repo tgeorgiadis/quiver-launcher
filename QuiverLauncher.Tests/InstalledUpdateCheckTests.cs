@@ -18,6 +18,8 @@ public class InstalledUpdateCheckTests
         public List<string> Requests = [];
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
+            // These apps are not in the quiverlauncher.com catalog.
+            if (request.RequestUri!.Host == "api.quiverlauncher.com") return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
             Requests.Add(request.RequestUri!.AbsoluteUri);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(
                 """{"tag_name":"2.0","assets":[{"name":"app.zip","browser_download_url":"https://example.com/app.zip"}]}""") });

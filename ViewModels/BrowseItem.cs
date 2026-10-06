@@ -29,7 +29,7 @@ public sealed class BrowseItem : ObservableViewModel
     public string Kind { get; }
     public bool HasSubtitle => Subtitle.Length > 0;
     public bool HasKind => Kind.Length > 0;
-    public string FolderName => App?.Launcher.FolderName ?? ListApp?.FolderName ?? "";
+    public string FolderName => App != null ? QuiverCatalogMapping.FolderFor(App) : ListApp?.FolderName ?? "";
     public string ScoreText => App == null ? "" : BrowseText.Score(App.Recommended, App.ReportIssues, App.ReportBroken);
     public string ReleaseText => App == null ? "" : BrowseText.ReleaseAge(App.LastReleaseAt, DateTimeOffset.UtcNow);
     public bool IsNew => App != null && DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds((long)App.AddedAt) < TimeSpan.FromDays(30);

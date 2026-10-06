@@ -541,7 +541,7 @@
 </Grid>
 
 				<!-- Browse -->
-				<views:BrowseView x:Name="BrowsePanel" IsVisible="False" Margin="30,20,6,30"/>
+				<views:BrowseView x:Name="BrowsePanel" services:MouseWheelScroll.Multiplier="{Binding #ShellRoot.SettingsModel.MouseWheelScrollSpeed}" IsVisible="False" Margin="30,20,6,30"/>
 
 				<TextBlock x:Name="GamepadHintsBar"
 						   FontSize="11"
@@ -556,7 +556,7 @@
                 <views:DocumentView x:Name="ChangelogPanel" Grid.RowSpan="2" IsVisible="False" ZIndex="100"/>
 
 				<!-- Browse app details -->
-				<views:BrowseDetailsView x:Name="BrowseDetailsPanel" Grid.RowSpan="2" IsVisible="{Binding #ShellRoot.Shell.BrowseDetailsOpen}" ZIndex="110"/>
+				<views:BrowseDetailsView x:Name="BrowseDetailsPanel" services:MouseWheelScroll.Multiplier="{Binding #ShellRoot.SettingsModel.MouseWheelScrollSpeed}" Grid.RowSpan="2" IsVisible="{Binding #ShellRoot.Shell.BrowseDetailsOpen}" ZIndex="110"/>
 
 				<!-- Mod details (README / Changelog) -->
 				<ContentControl x:Name="ModDetailsPanel" IsVisible="{Binding Shell.ModDetailsOpen}" Grid.RowSpan="2" ZIndex="110" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>

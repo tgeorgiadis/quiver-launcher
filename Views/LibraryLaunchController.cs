@@ -272,9 +272,10 @@ public sealed class LibraryLaunchController
         try
         {
             game.IsLoading = true;
+            await _gameManager.CatalogReleases.RefreshAsync([game], _session.Token);
             var releaseResult = await game.FetchReleasesAsync(_gameManager.HttpClient, _session.Token);
             _session.Token.ThrowIfCancellationRequested();
-            var latestRelease = GameInfo.SelectLatestRelease(releaseResult.Releases, game.PreferredVersion, game.InstalledVersion, releaseResult.LatestTag);
+            var latestRelease = GameInfo.SelectLatestRelease(releaseResult.Releases, game.ReleaseTarget, game.InstalledVersion, releaseResult.LatestTag);
             if (latestRelease == null)
             {
                 if (allowAssetPicker)
@@ -294,7 +295,7 @@ public sealed class LibraryLaunchController
             var choices = GameDownloadService.Prepare(game, latestRelease, _settings);
             if (choices.Automatic is { } automatic)
             {
-                await game.InstallReleaseAsync(_gameManager.HttpClient, _gameManager.GamesFolder, _settings, latestRelease, automatic);
+                await game.InstallReleaseAsync(_gameManager.HttpClient, _gameManager.GamesFolder, _settings, latestRelease, automatic, automatic: !interactive);
                 await _persistence.SaveVersionPreferencesAsync(game, game.PreferredVersion, null);
                 Changed();
                 return true;
@@ -342,7 +343,13 @@ public sealed class LibraryLaunchController
                 return;
             }
 
-            ShowVersionSelectionMenu(anchor, game, releaseResult.Releases);
+            // Mark which releases Quiver verified, so the player can pick one it checked.
+            var states = new Dictionary<string, ReleaseCheckState>(StringComparer.OrdinalIgnoreCase);
+            foreach (var release in releaseResult.Releases)
+                if (await _gameManager.CatalogReleases.CheckAsync(game, release.tag_name, _session.Token) is { } check)
+                    states[release.tag_name] = check.State;
+            _session.Token.ThrowIfCancellationRequested();
+            ShowVersionSelectionMenu(anchor, game, releaseResult.Releases, states);
         }
         catch (Exception ex)
         {
@@ -354,7 +361,8 @@ public sealed class LibraryLaunchController
         }
     }
 
-    public void ShowVersionSelectionMenu(Control anchor, GameInfo game, IReadOnlyList<GitHubRelease> releases)
+    public void ShowVersionSelectionMenu(Control anchor, GameInfo game, IReadOnlyList<GitHubRelease> releases,
+        IReadOnlyDictionary<string, ReleaseCheckState>? states = null)
     {
         if (game.IsFlatpak) return;
         var contextMenu = new ContextMenu();
@@ -363,6 +371,8 @@ public sealed class LibraryLaunchController
         foreach (var release in releases)
         {
             var tags = new List<string>();
+            if (states != null && states.TryGetValue(release.tag_name, out var state))
+                tags.Add(state.ToString());
             if (!string.IsNullOrWhiteSpace(game.LatestVersion) && release.tag_name.Equals(game.LatestVersion, StringComparison.OrdinalIgnoreCase))
             {
                 tags.Add("Latest");

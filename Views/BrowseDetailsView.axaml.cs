@@ -90,7 +90,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         BrowseDetailsSubtitle.Text = item?.Subtitle;
         BrowseDetailsFacts.Text = app == null ? (entry == null ? "" : string.Join(", ", entry.Tags))
             : string.Join(" · ", new[] { item!.ScoreText, BrowseText.PlatformNames(app.SupportedOS),
-                app.Verified?.Version is { Length: > 0 } v ? $"Latest: {v}" : item.ReleaseText }.Where(t => t.Length > 0));
+                app.Verified?.Version is { Length: > 0 } v ? $"Verified release: {v}" : "No verified release yet" }.Where(t => t.Length > 0));
         BrowseDetailsNote.Text = Model.Error.Length > 0 ? Model.Error
             : _libraryApp != null ? "In your library."
             : app != null && entry == null ? "Loading…" : "";
@@ -171,17 +171,31 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         {
             BodyFocused = true;
             ClearHighlights();
+            TopLevel.GetTopLevel(this)?.FocusManager?.Focus(null);
             var viewer = BrowseDetailsScrollViewer;
             viewer.Offset = new Vector(viewer.Offset.X, Math.Max(0, viewer.Offset.Y + (nav.ScrollDown ? 96 : -96)));
             return true;
         }
         BodyFocused = nav.Region == DetailsRegion.Body;
-        if (!BodyFocused) ApplySelection(nav.Index);
+        if (BodyFocused)
+        {
+            // Reading the body: no button may look highlighted while A does nothing.
+            ClearHighlights();
+            TopLevel.GetTopLevel(this)?.FocusManager?.Focus(null);
+        }
+        else ApplySelection(nav.Index);
         return true;
     }
 
     public bool Confirm()
     {
+        // Opened with the mouse: the first press only highlights an action.
+        if (FocusIndex < 0)
+        {
+            BodyFocused = false;
+            ApplySelection(FirstActionIndex());
+            return true;
+        }
         var controls = Controls();
         var index = Nav.ClampIndex(FocusIndex, controls.Count);
         if (!BodyFocused && index >= 0 && controls[index] is Button button)
@@ -196,7 +210,11 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     }
 
     public bool Options() => Cancel();
-    public void RestoreFocus() => ApplySelection(Math.Max(0, FocusIndex));
+    public void RestoreFocus()
+    {
+        BodyFocused = false;
+        ApplySelection(FocusIndex >= 0 ? FocusIndex : FirstActionIndex());
+    }
 
     private void ApplySelection(int index)
     {
