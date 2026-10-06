@@ -137,7 +137,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   const OS = ["windows", "linux", "macos", "android", "ios"];
   const ARGS = {
     "catalog:list": {
-      paginationOpts: "page!", search: "string", os: OS, projectType: ["port", "tool", "emulator", "game"], console: "string",
+      paginationOpts: "page!", search: "string", os: OS, projectType: ["port", "tool", "emulator", "game"], projectTypes: "array", console: "string",
       maker: BRANDS, sort: ["name", "updated", "added", "rating"], ai: ["no-generated", "no-ai"], developer: "string", hideDevelopers: "array",
     },
     "catalog:detail": { slug: "string!" },
@@ -468,6 +468,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     analyticsCalls: account.analyticsCalls,
     /** Turns usage data off (or on) for an account, as the website's privacy page does. */
     setAnalytics: account.setAnalytics,
+    /** Saves an account's catalog filters, as "Save as my default" on the website does; undefined clears them. */
+    setCatalogDefaults: account.setCatalogDefaults,
     reviews: account.reviews,
     /** Shared lists by slug. */
     lists: account.lists,
@@ -552,7 +554,14 @@ function mockAccount(entries) {
     if (path === "/library")
       return send(res, {
         // As users.me: the account's usage data setting too.
-        user: { id: user.id, name, provider: user.password ? "password" : "github", ...(user.analyticsOptOut ? { analyticsOptOut: true } : {}) },
+        user: {
+          id: user.id,
+          name,
+          provider: user.password ? "password" : "github",
+          ...(user.analyticsOptOut ? { analyticsOptOut: true } : {}),
+          // The filters saved on the website ("Save as my default").
+          ...(user.catalogDefaults ? { catalogDefaults: user.catalogDefaults } : {}),
+        },
         items: [...user.items.values()].map((i) => ({ ...i, ...(i.entryId ? { slug: entries.find((e) => e.id === i.entryId).slug } : {}) })),
         // As libraryCollections.list: the shared list's slug when the collection is shared.
         collections: [...user.collections.values()].map((c) => {
@@ -649,5 +658,9 @@ function mockAccount(entries) {
     const user = users.get(name);
     if (user) user.analyticsOptOut = enabled ? undefined : true;
   };
-  return { handle, reviews, feedback, lists, analyticsCalls, setAnalytics };
+  const setCatalogDefaults = (name, defaults) => {
+    const user = users.get(name);
+    if (user) user.catalogDefaults = defaults;
+  };
+  return { handle, reviews, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults };
 }

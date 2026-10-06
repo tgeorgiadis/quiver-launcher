@@ -25,6 +25,19 @@ test("the listing goes through catalog:list, leaving out what isn't set and sort
   expect(asked[1].args).toEqual({ paginationOpts: { numItems: 48, cursor: "next" }, search: "mario", console: "n64" });
 });
 
+test("several kinds of project, from saved filters, go as projectTypes; one goes as projectType", async () => {
+  const { fetch, asked } = fakeConvex({ "catalog:list": { page: [], continueCursor: "", isDone: true } });
+  const client = createConvexClient("https://convex.test", rest, fetch);
+  await client.apps({ projectTypes: ["port", "game"] });
+  await client.apps({ projectTypes: ["tool"] });
+  await client.apps({ projectTypes: [] });
+  expect(asked.map((q) => q.args)).toEqual([
+    { paginationOpts: { numItems: 48, cursor: null }, projectTypes: ["port", "game"] },
+    { paginationOpts: { numItems: 48, cursor: null }, projectType: "tool" },
+    { paginationOpts: { numItems: 48, cursor: null } },
+  ]);
+});
+
 test("an app, README and releases come from Convex; a missing app is a 404", async () => {
   const detail = { entry: { id: "a" }, project: { name: "A", description: "", provider: "github", repository: "o/a" }, withdrawn: [] };
   const { fetch, asked } = fakeConvex({
