@@ -109,7 +109,7 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
         var parts = new List<string> { string.IsNullOrWhiteSpace(review.Author) ? "A player" : review.Author.Trim(), BrowseText.ReviewResult(review.Result) };
         if (review.Platform is { Length: > 0 } platform) parts.Add(BrowseText.PlatformNames([platform]));
         if (review.Version is { Length: > 0 } version) parts.Add($"tested on {version}");
-        if (review.CreatedAt > 0) parts.Add(DateTimeOffset.FromUnixTimeMilliseconds(review.CreatedAt).LocalDateTime.ToString("d"));
+        if (review.CreatedAt > 0) parts.Add(DateTimeOffset.FromUnixTimeMilliseconds((long)review.CreatedAt).LocalDateTime.ToString("d"));
         return new(string.Join(" · ", parts.Where(p => p.Length > 0)), review.Body.Trim());
     }
 }

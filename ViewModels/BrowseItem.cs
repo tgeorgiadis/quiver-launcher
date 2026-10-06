@@ -32,7 +32,7 @@ public sealed class BrowseItem : ObservableViewModel
     public string FolderName => App?.Launcher.FolderName ?? ListApp?.FolderName ?? "";
     public string ScoreText => App == null ? "" : BrowseText.Score(App.Recommended, App.ReportIssues, App.ReportBroken);
     public string ReleaseText => App == null ? "" : BrowseText.ReleaseAge(App.LastReleaseAt, DateTimeOffset.UtcNow);
-    public bool IsNew => App != null && DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(App.AddedAt) < TimeSpan.FromDays(30);
+    public bool IsNew => App != null && DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds((long)App.AddedAt) < TimeSpan.FromDays(30);
     public string Badge => InLibrary ? "In library" : IsNew ? "New" : "";
     public bool HasBadge => Badge.Length > 0;
 
@@ -106,10 +106,10 @@ public static class BrowseText
         return $"{label} · {string.Join(", ", said)}";
     }
 
-    public static string ReleaseAge(long? releasedAt, DateTimeOffset now)
+    public static string ReleaseAge(double? releasedAt, DateTimeOffset now)
     {
         if (releasedAt is not { } at) return "No releases";
-        var age = now - DateTimeOffset.FromUnixTimeMilliseconds(at);
+        var age = now - DateTimeOffset.FromUnixTimeMilliseconds((long)at);
         if (age.TotalDays >= 365) return $"No release in {(int)(age.TotalDays / 365)} yr+";
         return "Updated " + (age.TotalDays >= 30 ? $"{(int)(age.TotalDays / 30)} mo ago"
             : age.TotalDays >= 1 ? $"{(int)age.TotalDays} d ago"

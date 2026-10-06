@@ -67,8 +67,9 @@ public sealed class QuiverCatalogApp
     public int Recommended { get; set; }
     public int ReportIssues { get; set; }
     public int ReportBroken { get; set; }
-    public long AddedAt { get; set; }
-    public long? LastReleaseAt { get; set; }
+    // Times are JavaScript milliseconds, which can have a fraction.
+    public double AddedAt { get; set; }
+    public double? LastReleaseAt { get; set; }
     public string? LastReleaseVersion { get; set; }
     public QuiverCatalogVerified? Verified { get; set; }
 }
@@ -93,7 +94,7 @@ public sealed class QuiverCatalogReview
     public string Body { get; set; } = "";
     public string? Platform { get; set; }
     public string? Version { get; set; }
-    public long CreatedAt { get; set; }
+    public double CreatedAt { get; set; }
 }
 
 public sealed class QuiverCatalogConsole

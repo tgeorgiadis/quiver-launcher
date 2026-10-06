@@ -9,9 +9,9 @@ namespace QuiverLauncher.Tests;
 public class QuiverCatalogClientTests : IDisposable
 {
     // A live /apps item, trimmed. aiLevel, basedOn, developer, makers, modSources, verified.pinned
-    // and friends are fields this client does not model and must ignore.
+    // and friends are fields this client does not model and must ignore. Times can have a fraction.
     private const string G1RDeluxe = """
-        {"addedAt":1788046368000,"aiLevel":"assisted","artwork":"https://raw.githubusercontent.com/bryanthaboi/pokemon-gen1-recomp-project/refs/heads/main/assets/logo/gen1recomp_cover.png",
+        {"addedAt":1788046368000.25,"aiLevel":"assisted","artwork":"https://raw.githubusercontent.com/bryanthaboi/pokemon-gen1-recomp-project/refs/heads/main/assets/logo/gen1recomp_cover.png",
          "basedOn":{"console":"gb"},"consoles":["gb","gbc","gba"],"description":"G1R Deluxe brings Pokemon RBY / GSC / FRLG / RSE to PC.",
          "developer":{"key":"bryanthaboi","name":"bryanthaboi"},"gameId":"k97eep4wv41b1gwj2dne37gjkn8f748v",
          "games":[{"id":"k97eep4wv41b1gwj2dne37gjkn8f748v","slug":"pokemon-red","title":"Pokemon Red"},{"id":"k9790j3hwh7s9ff8wcqnr6g4vh8f6j6r","slug":"pokemon-gold","title":"Pokemon Gold"}],
