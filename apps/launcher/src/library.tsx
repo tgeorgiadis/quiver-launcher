@@ -320,7 +320,7 @@ export function LibraryPage({
             </select>
           )}
         </nav>
-        <div className="library-tools">
+        <div className="library-tools page-tools">
           <label className="search library-search">
             <Search size={15} />
             <input aria-label="Search your library" placeholder="Search your library" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -479,8 +479,8 @@ function ContinuePlaying({ entry, played, onOpen, action }: { entry: Entry; play
   );
 }
 
-/** How a filter reads on its chip. */
-function label(key: keyof Filters, value: string, consoleNames: Record<string, string>) {
+/** How a filter reads on its chip, here and in the catalog's. */
+export function filterLabel(key: keyof Filters, value: string, consoleNames: Record<string, string>) {
   if (key === "console") return value.startsWith("maker:") ? `All ${value.slice(6) === "OtherPlatforms" ? "other platforms" : value.slice(6)}` : (consoleNames[value] ?? value.toUpperCase());
   if (key === "projectType") return PROJECT_TYPES[value] ?? value;
   if (key === "ai") return AI[value];
@@ -518,16 +518,9 @@ function FilterFields({
     const chosen = value[key];
     if (!chosen && !pills.all) return null;
     return (
-      <span key={key} className={`pill${chosen ? " on" : ""}`}>
+      <FilterPill key={key} on={chosen ? filterLabel(key, chosen, consoleNames) : undefined} onClear={() => pills.clear(key)}>
         {select}
-        {chosen ? (
-          <button type="button" className="pill-clear" aria-label={`Remove filter ${label(key, chosen, consoleNames)}`} onClick={() => pills.clear(key)}>
-            <X size={12} />
-          </button>
-        ) : (
-          <ChevronDown size={13} aria-hidden="true" />
-        )}
-      </span>
+      </FilterPill>
     );
   };
   return (
@@ -589,6 +582,26 @@ function FilterFields({
         </select>,
       )}
     </>
+  );
+}
+
+/**
+ * One filter as a compact dropdown: tinted, with its own remove button, while
+ * it's on (`on` names it for the button), as in the library's and the
+ * catalog's filter rows.
+ */
+export function FilterPill({ on, onClear, children }: { on?: string; onClear: () => void; children: ReactNode }) {
+  return (
+    <span className={`pill${on ? " on" : ""}`}>
+      {children}
+      {on ? (
+        <button type="button" className="pill-clear" aria-label={`Remove filter ${on}`} onClick={onClear}>
+          <X size={12} />
+        </button>
+      ) : (
+        <ChevronDown size={13} aria-hidden="true" />
+      )}
+    </span>
   );
 }
 

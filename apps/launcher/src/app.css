@@ -442,7 +442,7 @@ main.app-main { padding: 0 0 40px; }
 .library-bar .playlists:hover { scrollbar-color: var(--line-strong) transparent; }
 .library-bar .playlists button:not(.active):hover { border-color: var(--line-strong); background: none; }
 .library-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-left: auto; }
-.library-tools > * { height: 34px; }
+.page-tools > * { height: 34px; }
 .library-search {
   flex: 0 1 240px; width: 240px; min-width: 150px; max-width: none; gap: 7px; padding: 0 8px 0 11px;
   transition: flex-basis 0.18s, width 0.18s, border-color 0.15s;
@@ -459,18 +459,20 @@ main.app-main { padding: 0 0 40px; }
 }
 .quiet-select select:hover, .quiet-select select:focus-visible { background: var(--panel); color: var(--strong); }
 .quiet-select > svg { position: absolute; right: 9px; color: var(--muted); pointer-events: none; }
-.library-tools .tool {
+/* A search orders by relevance, so the sort waits. */
+.quiet-select select:disabled { cursor: default; background: transparent; color: var(--muted); }
+.page-tools .tool {
   display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px;
   color: var(--text-2); font-size: 13px; font-weight: 500; white-space: nowrap; transition: border-color 0.15s, background 0.15s;
 }
-.library-tools .tool:hover, .library-tools .tool[aria-expanded="true"] { color: var(--strong); background: var(--panel); border-color: var(--line-strong); }
-.library-tools .tool.on { color: var(--strong); background: var(--accent-soft); border-color: var(--accent); }
-.library-tools .tool.icon-only { width: 34px; padding: 0; justify-content: center; }
+.page-tools .tool:hover, .page-tools .tool[aria-expanded="true"] { color: var(--strong); background: var(--panel); border-color: var(--line-strong); }
+.page-tools .tool.on { color: var(--strong); background: var(--accent-soft); border-color: var(--accent); }
+.page-tools .tool.icon-only { width: 34px; padding: 0; justify-content: center; }
 .tool-count {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
   background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 1;
 }
-.library-tools .add-app { padding: 0 14px; border-radius: 8px; white-space: nowrap; }
+.page-tools .add-app { padding: 0 14px; border-radius: 8px; white-space: nowrap; }
 @container library-bar (max-width: 1040px) {
   .library-bar .playlists { flex-basis: 100%; }
   .library-tools { width: 100%; margin-left: 0; }
@@ -478,6 +480,25 @@ main.app-main { padding: 0 0 40px; }
 }
 @container library-bar (max-width: 520px) {
   .library-search, .library-search:focus-within { flex-basis: 100%; }
+}
+
+/*
+ * The catalog's header, as the library's: the search on the left; sort,
+ * Filters and Add an app on the right, all one height. Narrow, the search
+ * takes the row and the tools the next.
+ */
+.browse-bar { container: browse-bar / inline-size; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin-bottom: 18px; }
+.browse-search {
+  flex: 1 1 320px; max-width: 520px; height: 34px; gap: 7px; padding: 0 8px 0 11px; transition: border-color 0.15s;
+}
+.browse-search:focus-within { border-color: var(--accent); }
+.browse-search input { min-width: 0; height: 100%; font-size: 13px; color: var(--fg); }
+.browse-search input::placeholder { color: var(--muted); }
+.browse-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+@container browse-bar (max-width: 640px) {
+  .browse-search { flex-basis: 100%; max-width: none; }
+  .browse-tools { width: 100%; margin-left: 0; }
+  .browse-tools .add-app { margin-left: auto; }
 }
 
 /* Filters: one slim row of pill dropdowns; a pill that's on is tinted and has its own remove button. */

@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, Compass, Download, FolderOpen, Library, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, ShieldX, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, ChevronDown, Compass, Download, FolderOpen, Library, Pin, Play, Plus, Search, Settings2, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Trash2, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Page } from "@quiverlauncher/api";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, Score } from "@quiverlauncher/ui";
 import { availableOn, hasUpdate, skipped, useLauncher } from "./store";
-import { LibraryPage, withOverrides } from "./library";
+import { FilterPill, LibraryPage, filterLabel, withOverrides } from "./library";
 import { ViewOptions } from "./library-view";
 import { CheckingStatus, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Tags, Versions, checkingOf, useAppDetail, useReleaseHistory, useReleases } from "./detail";
 import { versionLabel } from "./versions";
@@ -300,76 +300,134 @@ function BrowsePage({
     const typed = query.trim();
     if (!typed || loading || error || gamesFor !== query || pages.length !== 1 || pages[0].items.length || reported.current === typed) return;
     reported.current = typed;
-    const filtered = Boolean(filters.projectType || filters.console || filters.ai || filters.os !== config.os);
+    const filtered = filtering > 0;
     track("search_no_results", { query_length: typed.length, results: 0, games: games.length, filtered });
   }, [query, loading, error, gamesFor, pages, games]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const brands = [...new Set(consoles.map((c) => c.brand))];
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // How many filters differ from the defaults: any platform but this computer's counts.
+  const filtering = [filters.projectType, filters.console, filters.ai, filters.os !== config.os].filter(Boolean).length;
+  /** A filter's pill: `on` names it while it differs from the default, and removing it goes back to the default. */
+  const pill = (key: "os" | "console" | "projectType" | "ai", on: string | undefined, select: ReactNode) =>
+    !on && !filtersOpen ? null : (
+      <FilterPill key={key} on={on} onClear={() => setFilters({ ...filters, [key]: key === "os" ? config.os : undefined })}>
+        {select}
+      </FilterPill>
+    );
 
   const inLibrary = new Set(library.map((i) => i.id));
   const entries = pages.flatMap((p) => p.items);
   const last = pages.at(-1);
   return (
     <>
-      <div className="toolbar">
-        <label className="search">
-          <Search size={16} />
+      {/* As the library's: the search, then sort, Filters and Add an app, all one height. */}
+      <div className="browse-bar">
+        <label className="search browse-search">
+          <Search size={15} />
           <input
             autoFocus
+            aria-label="Search the catalog"
             placeholder="Search ports, games and tools"
             value={search}
             onChange={(e) => onSearch(e.target.value)}
           />
+          {search && (
+            <button type="button" className="search-clear" aria-label="Clear search" onClick={() => onSearch("")}>
+              <X size={13} />
+            </button>
+          )}
         </label>
-        <button onClick={onAdd}>
-          <Plus size={15} /> Add an app
-        </button>
+        <div className="browse-tools page-tools">
+          <span className="quiet-select">
+            <select aria-label="Sort" value={searching ? "" : (filters.sort ?? "added")} disabled={searching} onChange={set("sort")}>
+              {searching && <option value="">Most relevant</option>}
+              <option value="added">Recently added</option>
+              <option value="updated">Recently updated</option>
+              <option value="rating">Top rated</option>
+              <option value="name">Name A–Z</option>
+            </select>
+            <ChevronDown size={14} aria-hidden="true" />
+          </span>
+          <button
+            className={`tool${filtersOpen || filtering ? " on" : ""}`}
+            aria-expanded={filtersOpen}
+            aria-controls="browse-filters"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+          >
+            <SlidersHorizontal size={15} /> Filters
+            {filtering > 0 && <span className="tool-count">{filtering}</span>}
+          </button>
+          <button className="primary add-app" onClick={onAdd}>
+            <Plus size={15} /> Add an app
+          </button>
+        </div>
       </div>
-      <div className="toolbar filters">
-        <select aria-label="Sort" value={searching ? "" : (filters.sort ?? "added")} disabled={searching} onChange={set("sort")}>
-          {searching && <option value="">Most relevant</option>}
-          <option value="added">Recently added</option>
-          <option value="updated">Recently updated</option>
-          <option value="rating">Top rated</option>
-          <option value="name">Name A–Z</option>
-        </select>
-        <select aria-label="Project type" value={filters.projectType ?? ""} onChange={set("projectType")}>
-          <option value="">All project types</option>
-          <option value="port">Port</option>
-          <option value="tool">Tool</option>
-          <option value="emulator">Emulator</option>
-          <option value="game">Standalone game</option>
-        </select>
-        <select aria-label="Platform" value={filters.os ?? ""} onChange={set("os")}>
-          <option value="">All platforms</option>
-          {Object.entries(OS_NAMES).map(([id, name]) => (
-            <option key={id} value={id}>
-              {name}
-              {id === config.os ? " (this computer)" : ""}
-            </option>
-          ))}
-        </select>
-        <select aria-label="Console" value={filters.console ?? ""} onChange={set("console")}>
-          <option value="">All consoles</option>
-          {brands.map((brand) => (
-            <optgroup key={brand} label={brand === "OtherPlatforms" ? "Other platforms" : brand}>
-              <option value={`maker:${brand}`}>{brand === "OtherPlatforms" ? "All other platforms" : `All ${brand}`}</option>
-              {consoles
-                .filter((c) => c.brand === brand)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </select>
-        <select aria-label="AI use" value={filters.ai ?? ""} onChange={set("ai")}>
-          <option value="">Show all apps</option>
-          <option value="no-generated">Hide mostly AI-generated apps</option>
-          <option value="no-ai">Hide apps with any AI use</option>
-        </select>
-      </div>
+      {/* Filters: pills to pick from while open; the ones that differ from the defaults stay, each removable, while it's closed. */}
+      {(filtersOpen || filtering > 0) && (
+        <div id="browse-filters" className="filter-bar" role="group" aria-label="Catalog filters">
+          {pill(
+            "os",
+            filters.os === config.os ? undefined : filters.os ? OS_NAMES[filters.os] : "All platforms",
+            <select aria-label="Platform" value={filters.os ?? ""} onChange={set("os")}>
+              <option value="">All platforms</option>
+              {Object.entries(OS_NAMES).map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                  {id === config.os ? " (this computer)" : ""}
+                </option>
+              ))}
+            </select>,
+          )}
+          {pill(
+            "console",
+            filters.console && filterLabel("console", filters.console, consoleNames),
+            <select aria-label="Console" value={filters.console ?? ""} onChange={set("console")}>
+              <option value="">Any console</option>
+              {brands.map((brand) => (
+                <optgroup key={brand} label={brand === "OtherPlatforms" ? "Other platforms" : brand}>
+                  <option value={`maker:${brand}`}>{brand === "OtherPlatforms" ? "All other platforms" : `All ${brand}`}</option>
+                  {consoles
+                    .filter((c) => c.brand === brand)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>,
+          )}
+          {pill(
+            "projectType",
+            filters.projectType && filterLabel("projectType", filters.projectType, consoleNames),
+            <select aria-label="Project type" value={filters.projectType ?? ""} onChange={set("projectType")}>
+              <option value="">Any project type</option>
+              {Object.entries(PROJECT_TYPES).map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>,
+          )}
+          {pill(
+            "ai",
+            filters.ai && filterLabel("ai", filters.ai, consoleNames),
+            <select aria-label="AI use" value={filters.ai ?? ""} onChange={set("ai")}>
+              <option value="">Any AI use</option>
+              <option value="no-generated">Hide mostly AI-generated apps</option>
+              <option value="no-ai">Hide apps with any AI use</option>
+            </select>,
+          )}
+          {filtering > 0 && (
+            <span className="filter-actions">
+              <button type="button" className="text-button" onClick={() => setFilters({ os: config.os, sort: filters.sort })}>
+                Clear all
+              </button>
+            </span>
+          )}
+        </div>
+      )}
       {error ? (
         <div className="empty">
           <p>{error}</p>

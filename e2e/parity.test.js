@@ -27,15 +27,41 @@ const dialog = () => app.$('[role="dialog"]');
 const page = () => app.$(".app-page");
 const open = async (slug) => (await (await card(slug)).$(".card-open")).click();
 
-test("the catalog filters by console and sorts as the website does", async () => {
+test("the catalog's search, sort, Filters and Add an app are one row, all one height", async () => {
   await (await card("tampered-port")).waitForDisplayed({ timeout: 20000 });
-  await (await app.$("select[aria-label=Console]")).selectByVisibleText("Nintendo 64");
+  const tools = await app.execute(() =>
+    [document.querySelector(".browse-search"), ...document.querySelector(".browse-tools").children].map((el) => {
+      const r = el.getBoundingClientRect();
+      return [el.querySelector("input, select")?.getAttribute("aria-label") ?? el.textContent.trim(), Math.round(r.height), Math.round(r.top)];
+    }),
+  );
+  assert.deepEqual(
+    tools.map(([name]) => name),
+    ["Search the catalog", "Sort", "Filters", "Add an app"],
+  );
+  assert.equal(new Set(tools.map(([, height]) => height)).size, 1, `one height: ${JSON.stringify(tools)}`);
+  assert.equal(new Set(tools.map(([, , top]) => top)).size, 1, `one row: ${JSON.stringify(tools)}`);
+  // No filter row until it's asked for: this computer's platform is the default, not a filter.
+  assert.ok(!(await app.$(".filter-bar").isExisting()));
+});
+
+test("the catalog filters by console and sorts as the website does", async () => {
+  await (await app.$("button*=Filters")).click();
+  const pills = () => app.execute(() => [...document.querySelectorAll(".filter-bar select")].map((e) => e.getAttribute("aria-label")));
+  assert.deepEqual(await pills(), ["Platform", "Console", "Project type", "AI use"]);
+  await (await app.$(".filter-bar select[aria-label=Console]")).selectByVisibleText("Nintendo 64");
   await until(async () => !(await (await card("tampered-port")).isExisting()));
   assert.equal(api.lastQuery().get("console"), "n64");
+  assert.equal(await (await app.$(".browse-tools .tool-count")).getText(), "1");
   await (await app.$("select[aria-label=Sort]")).selectByVisibleText("Top rated");
   await until(() => api.lastQuery().get("sort") === "rating");
-  await (await app.$("select[aria-label=Console]")).selectByVisibleText("All consoles");
+  // Closed, only the filters that are on stay, each removable.
+  await (await app.$("button*=Filters")).click();
+  await until(async () => JSON.stringify(await pills()) === '["Console"]');
+  await (await app.$("button[aria-label='Remove filter Nintendo 64']")).click();
   await (await card("tampered-port")).waitForDisplayed();
+  assert.ok(!(await app.$(".filter-bar").isExisting()), "nothing on, no filter row");
+  assert.equal(api.lastQuery().get("sort"), "rating", "the sort stays");
 });
 
 test("cards show what the website's cards show", async () => {
