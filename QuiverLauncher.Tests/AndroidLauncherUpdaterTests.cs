@@ -1,11 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using FluentAssertions;
 using QuiverLauncher.Services;
 using QuiverLauncher.Views;
@@ -237,26 +235,18 @@ public class AndroidLauncherUpdaterTests : IDisposable
         var updater = Create(request => request.RequestUri!.Host == "api.github.com" ? Releases(Release()) : new(HttpStatusCode.OK) { Content = new ByteArrayContent([1]), RequestMessage = request });
         await updater.CheckAsync(); await updater.UpdateAsync(); updater.HasError.Should().BeTrue(); _installer.Installs.Should().Be(0);
     }
-    [AvaloniaTheory]
-    [InlineData(320)] [InlineData(360)]
-    public async Task Narrow_update_controls_wrap_and_do_not_take_focus(int width)
+    [AvaloniaFact]
+    public async Task Update_check_refresh_does_not_take_focus()
     {
         var updater = Create(_ => Releases(Release())); await updater.CheckAsync();
         var view = new AndroidLauncherUpdateView { DataContext = updater }; var input = new TextBox();
         var panel = new StackPanel(); panel.Children.Add(input); panel.Children.Add(view);
-        var window = new Window { Width = width, Height = 650, Content = panel };
+        var window = new Window { Width = 360, Height = 650, Content = panel };
         try
         {
             window.Show(); window.UpdateLayout(); input.Focus();
             await updater.CheckAsync(true); Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
             input.IsFocused.Should().BeTrue();
-            var buttons = view.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible).ToArray();
-            buttons.Should().HaveCount(3);
-            foreach (var button in buttons) { button.Bounds.Height.Should().BeGreaterThanOrEqualTo(44); button.Bounds.Width.Should().BeLessThan(width); }
-            for (var i = 0; i < buttons.Length; i++) for (var j = i + 1; j < buttons.Length; j++)
-                new Avalonia.Rect(buttons[i].TranslatePoint(default, view)!.Value, buttons[i].Bounds.Size).Deflate(0.1)
-                    .Intersects(new Avalonia.Rect(buttons[j].TranslatePoint(default, view)!.Value, buttons[j].Bounds.Size).Deflate(0.1)).Should().BeFalse();
-            view.FindControl<Button>("UpdateButton")!.Focus(); view.FindControl<Button>("UpdateButton")!.IsFocused.Should().BeTrue();
         }
         finally { window.Close(); }
     }

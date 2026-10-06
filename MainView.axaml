@@ -136,32 +136,19 @@
 							</StackPanel>
 						</Button>
 
-						<!-- App Catalog Button -->
-						<Button x:Name="AppCatalogNavButton"
+						<!-- Browse Button -->
+						<Button x:Name="BrowseNavButton"
 								Classes="settings"
 								Margin="0,0,0,4"
 								CornerRadius="8"
 								Width="216"
 								HorizontalAlignment="Left"
-								Click="AppCatalogNavButton_Click">
+								Click="BrowseNavButton_Click">
 							<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
 								<Image Width="32" Height="32"
 									   Source="avares://QuiverLauncher/Assets/AppCatalog.png"
 									   Margin="0,0,2,0"/>
-								<TextBlock Text="App Catalog" VerticalAlignment="Center"/>
-								<Border Background="{DynamicResource ThemeLighter}"
-										CornerRadius="10"
-										MinWidth="20"
-										Height="20"
-										Padding="6,0"
-										VerticalAlignment="Center"
-										IsVisible="{Binding Shell.CatalogReviewBadgeVisible}">
-									<TextBlock Text="{Binding Shell.CatalogReviewBadgeCount}"
-											   FontSize="11"
-											   FontWeight="Bold"
-											   HorizontalAlignment="Center"
-											   VerticalAlignment="Center"/>
-								</Border>
+								<TextBlock Text="Browse" VerticalAlignment="Center"/>
 							</StackPanel>
 						</Button>
 					</StackPanel>
@@ -279,44 +266,13 @@
 								   TextWrapping="NoWrap"
 								   TextTrimming="CharacterEllipsis"
 								   IsHitTestVisible="True"/>
-						<TextBlock x:Name="CatalogReviewCompactSummary"
-								   Grid.Column="1"
-								   FontSize="13"
-								   FontWeight="SemiBold"
-								   Foreground="{DynamicResource ThemeTextSecondary}"
-								   VerticalAlignment="Center"
-								   HorizontalAlignment="Left"
-								   Margin="4,0,8,0"
-								   MaxLines="1"
-								   TextWrapping="NoWrap"
-								   TextTrimming="CharacterEllipsis"
-								   IsVisible="False"/>
-						<services:HoverScrollText x:Name="CatalogReviewHeaderTitleScroll"
-												  Grid.Column="1"
-												  FontSize="24"
-												  FontWeight="Bold"
-												  Foreground="{DynamicResource ThemeText}"
-												  VerticalAlignment="Center"
-												  HorizontalAlignment="Stretch"
-												  Margin="12,0,8,0"
-												  IsVisible="False"/>
 						</Grid>
 						<Grid x:Name="DesktopInlineTopBar"
 										Grid.Column="2"
 										IsVisible="{Binding IsDesktopPlatform}">
 							<views:LibraryToolbarView x:Name="LibraryToolbar"/>
 
-							<WrapPanel x:Name="CatalogReviewTopBarPanel"
-										Orientation="Horizontal"
-										IsVisible="False"/>
 
-							<Button x:Name="CatalogReviewBackButton"
-									Classes="options"
-									Content="← Back to sources"
-									FontSize="13"
-									Margin="0,0,16,0"
-									IsVisible="False"
-									Click="CatalogReviewBack_Click"/>
 							</Grid>
 						<StackPanel x:Name="HeaderFixedActions" Grid.Column="3"
 									Orientation="Horizontal"
@@ -396,56 +352,6 @@
 											<MenuItem Header="Installed First" Tag="Installed" Click="MobileLibrarySortItem_Click"/>
 											<MenuItem Header="Not Installed First" Tag="NotInstalled" Click="MobileLibrarySortItem_Click"/>
 											<MenuItem Header="Last Played" Tag="LastPlayed" Click="MobileLibrarySortItem_Click"/>
-										</MenuFlyout>
-									</Button.Flyout>
-									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
-										<TextBlock Text="↕"
-												   FontSize="16"
-												   Foreground="White"
-												   HorizontalAlignment="Center"
-												   VerticalAlignment="Center"/>
-									</Border>
-								</Button>
-								<Button x:Name="MobileCatalogBackButton"
-										Classes="modern-icon mobile-header-icon"
-										Width="28"
-										Height="28"
-										Margin="8,0,0,0"
-										Padding="0"
-										Background="Transparent"
-										HorizontalContentAlignment="Stretch"
-										VerticalContentAlignment="Stretch"
-										IsVisible="False"
-										PlatformFeedback.FeedbackType="Auto"
-										ToolTip.Tip="Back to sources"
-										Click="CatalogReviewBack_Click">
-									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
-										<TextBlock Text="←"
-												   FontSize="16"
-												   Foreground="White"
-												   HorizontalAlignment="Center"
-												   VerticalAlignment="Center"/>
-									</Border>
-								</Button>
-								<Button x:Name="MobileCatalogSortButton"
-										Classes="modern-icon mobile-header-icon"
-										Width="28"
-										Height="28"
-										Margin="8,0,0,0"
-										Padding="0"
-										Background="Transparent"
-										HorizontalContentAlignment="Stretch"
-										VerticalContentAlignment="Stretch"
-										IsVisible="False"
-										PlatformFeedback.FeedbackType="Auto"
-										ToolTip.Tip="Sort">
-									<Button.Flyout>
-										<MenuFlyout Placement="BottomEdgeAlignedRight"
-													Opening="MobileCatalogSortFlyout_Opening">
-											<MenuItem Header="Name (A-Z)" Tag="Name" Click="MobileCatalogSortItem_Click"/>
-											<MenuItem Header="Name (Z-A)" Tag="NameDesc" Click="MobileCatalogSortItem_Click"/>
-											<MenuItem Header="Repository (A-Z)" Tag="Repository" Click="MobileCatalogSortItem_Click"/>
-											<MenuItem Header="Status" Tag="Status" Click="MobileCatalogSortItem_Click"/>
 										</MenuFlyout>
 									</Button.Flyout>
 									<Border Width="28" Height="28" CornerRadius="8" Background="#2a2a2a">
@@ -596,11 +502,6 @@
 									   Grid.Row="1"
 									   LastChildFill="True"
 									   Margin="0,8,0,0"/>
-							<DockPanel x:Name="MobileCatalogActionsSlot"
-									   Grid.Row="1"
-									   LastChildFill="True"
-									   Margin="0,8,0,0"
-									   IsVisible="False"/>
 						</Grid>
 					</Grid>
 				</Border>
@@ -639,14 +540,8 @@
 <views:ModsView x:Name="ModsPanel" IsVisible="False" Margin="30,20,6,30"/>
 </Grid>
 
-				<!-- App Catalog Content -->
-				<Grid x:Name="CatalogContentPanel" IsVisible="False" Margin="30,20,6,30">
-					<!-- Sources list -->
-					<views:CatalogSourcesView x:Name="CatalogSourcesPanel"/>
-
-					<!-- Source review -->
-					<views:CatalogReviewView x:Name="CatalogReviewPanel" IsVisible="False"/>
-				</Grid>
+				<!-- Browse -->
+				<views:BrowseView x:Name="BrowsePanel" IsVisible="False" Margin="30,20,6,30"/>
 
 				<TextBlock x:Name="GamepadHintsBar"
 						   FontSize="11"
@@ -660,8 +555,8 @@
 				<views:SettingsView x:Name="SettingsPanel" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="400" IsVisible="False" ZIndex="10"/>
                 <views:DocumentView x:Name="ChangelogPanel" Grid.RowSpan="2" IsVisible="False" ZIndex="100"/>
 
-                <!-- Catalog review row details (diffs + secondary actions) -->
-				<views:CatalogDetailsView x:Name="CatalogReviewDetailsPanel" Grid.RowSpan="2" IsVisible="{Binding #ShellRoot.Shell.CatalogDetailsOpen}" ZIndex="110"/>
+				<!-- Browse app details -->
+				<views:BrowseDetailsView x:Name="BrowseDetailsPanel" Grid.RowSpan="2" IsVisible="{Binding #ShellRoot.Shell.BrowseDetailsOpen}" ZIndex="110"/>
 
 				<!-- Mod details (README / Changelog) -->
 				<ContentControl x:Name="ModDetailsPanel" IsVisible="{Binding Shell.ModDetailsOpen}" Grid.RowSpan="2" ZIndex="110" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>

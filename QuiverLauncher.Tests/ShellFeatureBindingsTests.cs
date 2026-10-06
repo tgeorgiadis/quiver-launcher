@@ -23,7 +23,7 @@ public class ShellFeatureBindingsTests
             window.Show();
             var entry = view.FindControl<AppEntryEditorView>("EntryFormOverlay")!;
             var tags = view.FindControl<MetadataEditorView>("TagEditOverlay")!;
-            var details = view.FindControl<CatalogDetailsView>("CatalogReviewDetailsPanel")!;
+            var details = view.FindControl<BrowseDetailsView>("BrowseDetailsPanel")!;
             Dispatcher.UIThread.RunJobs();
             entry.IsVisible.Should().BeFalse();
             tags.IsVisible.Should().BeFalse();
@@ -33,12 +33,12 @@ public class ShellFeatureBindingsTests
             entry.IsVisible.Should().BeTrue();
             tags.IsVisible.Should().BeFalse();
             view.Shell.TagEditorOpen = true;
-            details.DataContext = new CatalogSyncRowItem();
-            view.Shell.CatalogDetailsOpen = true;
+            details.DataContext = details.Model;
+            view.Shell.BrowseDetailsOpen = true;
             Dispatcher.UIThread.RunJobs();
             tags.IsVisible.Should().BeTrue();
             details.IsVisible.Should().BeTrue();
-            view.Shell.EntryEditorOpen = view.Shell.TagEditorOpen = view.Shell.CatalogDetailsOpen = false;
+            view.Shell.EntryEditorOpen = view.Shell.TagEditorOpen = view.Shell.BrowseDetailsOpen = false;
             Dispatcher.UIThread.RunJobs();
             entry.IsVisible.Should().BeFalse();
             tags.IsVisible.Should().BeFalse();
@@ -66,10 +66,10 @@ public class ShellFeatureBindingsTests
             Dispatcher.UIThread.RunJobs();
             host.ApplyTransition(new(GamepadNavigationZone.Library, 0)).Should().BeTrue();
             host.Navigation.ActiveZone.Should().Be(GamepadNavigationZone.Library);
-            view.Shell.Mode = MainViewMode.AppCatalog;
+            view.Shell.Mode = MainViewMode.Browse;
             ((IModsFeatureHost)view).RefreshShell();
-            host.ApplyTransition(new(GamepadNavigationZone.CatalogSources, 0)).Should().BeTrue();
-            host.Navigation.ActiveZone.Should().Be(GamepadNavigationZone.CatalogSourcesToolbar);
+            host.ApplyTransition(new(GamepadNavigationZone.BrowseGrid, 0)).Should().BeTrue();
+            host.Navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseToolbar);
             view.Shell.Mode = MainViewMode.Library;
             view.Shell.AppUpdatesOpen = true;
             ((IModsFeatureHost)view).RefreshShell();
@@ -84,26 +84,6 @@ public class ShellFeatureBindingsTests
             host.Navigation.ActiveZone.Should().Be(GamepadNavigationZone.Sidebar);
         }
         finally { window.Close(); await view.ShutdownAsync(); }
-    }
-
-    [AvaloniaFact]
-    public async Task Shell_shows_extracted_update_review_and_returns_to_catalog_sources()
-    {
-        var view = new MainView(new() { SettingsStore = new Store(), EnableInput = false, EnableMusic = false, InitializeOnOpen = false });
-        try
-        {
-            view.Shell.AppUpdatesOpen = true;
-            ((IModsFeatureHost)view).RefreshShell();
-            view.FindControl<AppUpdateReviewView>("AppUpdatesReviewPanel")!.IsVisible.Should().BeTrue();
-            view.Shell.AppUpdatesOpen = false;
-            view.Shell.Mode = MainViewMode.AppCatalog;
-            view.Shell.CatalogSubView = AppCatalogSubView.Sources;
-            ((IModsFeatureHost)view).RefreshShell();
-            view.FindControl<AppUpdateReviewView>("AppUpdatesReviewPanel")!.IsVisible.Should().BeFalse();
-            view.FindControl<CatalogSourcesView>("CatalogSourcesPanel")!.IsVisible.Should().BeTrue();
-            view.FindControl<CatalogReviewView>("CatalogReviewPanel")!.IsVisible.Should().BeFalse();
-        }
-        finally { await view.ShutdownAsync(); }
     }
 
     [AvaloniaFact]

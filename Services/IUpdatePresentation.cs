@@ -6,7 +6,6 @@ public interface IUpdatePresentation
     bool CanPresentResults { get; }
     bool CanShowFailureSummary { get; }
     void OpenAppUpdatesReview();
-    void OpenCatalogSources();
-    Task OpenCatalogReviewAsync();
+    void OpenBrowse();
     void UpdateStatusChanged();
 }

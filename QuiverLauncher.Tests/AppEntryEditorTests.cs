@@ -1,11 +1,7 @@
-using Avalonia.Controls;
-using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using FluentAssertions;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 using QuiverLauncher.ViewModels;
-using QuiverLauncher.Views;
 
 namespace QuiverLauncher.Tests;
 
@@ -64,21 +60,5 @@ public class AppEntryEditorTests
         operation.Completion.SetResult(true);
         (await model.SaveAsync(TestContext.Current.CancellationToken)).Should().BeTrue();
         operation.Draft!.ManuallyManaged.Should().BeTrue();
-    }
-
-    [AvaloniaFact]
-    public void Entry_form_binds_edit_fields_and_manual_repository_visibility()
-    {
-        var view = new AppEntryEditorView();
-        view.Model.Open(new GameInfo { Name = "Example", Repository = "owner/example", FolderName = "Example" });
-        Dispatcher.UIThread.RunJobs();
-        view.FindControl<TextBox>("NewGameNameTextBox")!.Text.Should().Be("Example");
-        view.FindControl<Button>("CreateEditButton")!.Content.Should().Be("Update Entry");
-        view.FindControl<CheckBox>("NewGameManuallyManagedCheckBox")!.IsChecked = true;
-        Dispatcher.UIThread.RunJobs();
-        view.Model.ManuallyManaged.Should().BeTrue();
-        view.FindControl<TextBox>("NewGameRepoTextBox")!.IsVisible.Should().BeFalse();
-        view.FindControl<TextBox>("NewGameFolderTextBox")!.Text = "NewFolder";
-        view.Model.FolderName.Should().Be("NewFolder");
     }
 }

@@ -15,9 +15,6 @@ public sealed class ShellViewModel : ObservableViewModel
     public float BackgroundOpacity { get => _backgroundOpacity; private set => Set(ref _backgroundOpacity, value); }
     private string _version = "Unknown";
     public string Version { get => _version; set => Set(ref _version, value); }
-    private int _catalogReviewBadgeCount;
-    public int CatalogReviewBadgeCount { get => _catalogReviewBadgeCount; set { if (Set(ref _catalogReviewBadgeCount, value)) Notify(nameof(CatalogReviewBadgeVisible)); } }
-    public bool CatalogReviewBadgeVisible => CatalogReviewBadgeCount > 0;
     public void RefreshPresentation(AppSettings settings)
     {
         var path = settings.BackgroundImagePath;
@@ -57,9 +54,7 @@ public sealed class ShellViewModel : ObservableViewModel
         set { if (Set(ref _lastLauncherCheckNote, value)) NotifyUpdateCheckUiProperties(); }
     }
     private MainViewMode _mode = MainViewMode.Library;
-    private AppCatalogSubView _catalogSubView = AppCatalogSubView.Sources;
     public MainViewMode Mode { get => _mode; set => Set(ref _mode, value); }
-    public AppCatalogSubView CatalogSubView { get => _catalogSubView; set => Set(ref _catalogSubView, value); }
     private bool _appUpdatesOpen;
     public bool AppUpdatesOpen { get => _appUpdatesOpen; set => Set(ref _appUpdatesOpen, value); }
     private bool _settingsOpen;
@@ -70,8 +65,8 @@ public sealed class ShellViewModel : ObservableViewModel
     public bool EntryEditorOpen { get => _entryEditorOpen; set => Set(ref _entryEditorOpen, value); }
     private bool _tagEditorOpen;
     public bool TagEditorOpen { get => _tagEditorOpen; set => Set(ref _tagEditorOpen, value); }
-    private bool _catalogDetailsOpen;
-    public bool CatalogDetailsOpen { get => _catalogDetailsOpen; set => Set(ref _catalogDetailsOpen, value); }
+    private bool _browseDetailsOpen;
+    public bool BrowseDetailsOpen { get => _browseDetailsOpen; set => Set(ref _browseDetailsOpen, value); }
     private bool _modsOpen;
     public bool ModsOpen { get => _modsOpen; set => Set(ref _modsOpen, value); }
     private bool _modDetailsOpen;

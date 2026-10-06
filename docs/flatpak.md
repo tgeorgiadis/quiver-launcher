@@ -33,7 +33,7 @@ The test generates two bundles for a unique test application, verifies the nativ
 
 Run Quiver's packaged AppImage on a Linux desktop, and use [TriAevum's releases](https://github.com/coccofresco/TriAevum/releases):
 
-1. Confirm the Linux x86_64 bundle appears in the download chooser and the catalog Linux filter.
+1. Confirm the Linux x86_64 bundle appears in the download chooser.
 2. Install, launch its setup wizard, and verify desktop and Steam shortcuts. ROM preparation can be checked separately with the user's own supported ROM.
 3. Install a newer bundle and confirm the release tag changes while prepared data remains.
 4. Remove the app outside Quiver and refresh; it should become uninstalled. Reinstall from Quiver, then uninstall from Quiver and confirm its data survives.

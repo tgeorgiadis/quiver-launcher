@@ -290,36 +290,6 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_right_from_sidebar_to_catalog_review_list()
-
-    {
-
-        var transition = _service.TryGetZoneTransition(
-
-            NavigationDirection.Right,
-
-            GamepadNavigationZone.Sidebar,
-
-            GamepadNavigationZone.CatalogReviewList,
-
-            isListLayout: true,
-
-            positions: null,
-
-            currentIndex: 0);
-
-
-
-        transition.Should().NotBeNull();
-
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogReviewList);
-
-    }
-
-
-
-    [Fact]
-
     public void TryGetZoneTransition_moves_left_from_list_layout_to_sidebar()
 
     {
@@ -540,7 +510,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_left_from_catalog_sources_to_sidebar()
+    public void TryGetZoneTransition_moves_left_from_browse_grid_edge_to_sidebar()
 
     {
 
@@ -552,9 +522,9 @@ public class GamepadNavigationServiceTests
 
             NavigationDirection.Left,
 
-            GamepadNavigationZone.CatalogSources,
+            GamepadNavigationZone.BrowseGrid,
 
-            GamepadNavigationZone.CatalogSources,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: false,
 
@@ -574,39 +544,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_left_from_catalog_review_list_to_sidebar()
-
-    {
-
-        var transition = _service.TryGetZoneTransition(
-
-            NavigationDirection.Left,
-
-            GamepadNavigationZone.CatalogReviewList,
-
-            GamepadNavigationZone.CatalogReviewList,
-
-            isListLayout: true,
-
-            positions: null,
-
-            currentIndex: 2,
-
-            itemCount: 5);
-
-
-
-        transition.Should().NotBeNull();
-
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.Sidebar);
-
-    }
-
-
-
-    [Fact]
-
-    public void TryGetZoneTransition_grid_left_from_inner_review_card_stays_in_list()
+    public void TryGetZoneTransition_browse_grid_left_from_inner_card_stays_in_grid()
 
     {
 
@@ -630,9 +568,9 @@ public class GamepadNavigationServiceTests
 
             NavigationDirection.Left,
 
-            GamepadNavigationZone.CatalogReviewList,
+            GamepadNavigationZone.BrowseGrid,
 
-            GamepadNavigationZone.CatalogReviewList,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: false,
 
@@ -652,7 +590,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_down_from_top_bar_to_catalog_review_details()
+    public void TryGetZoneTransition_moves_down_from_top_bar_to_browse_details()
 
     {
 
@@ -662,7 +600,7 @@ public class GamepadNavigationServiceTests
 
             GamepadNavigationZone.TopBar,
 
-            GamepadNavigationZone.CatalogReviewDetailsOverlay,
+            GamepadNavigationZone.BrowseDetailsOverlay,
 
             isListLayout: true,
 
@@ -674,7 +612,7 @@ public class GamepadNavigationServiceTests
 
         transition.Should().NotBeNull();
 
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogReviewDetailsOverlay);
+        transition!.Value.Zone.Should().Be(GamepadNavigationZone.BrowseDetailsOverlay);
 
     }
 
@@ -682,71 +620,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_up_from_top_review_row_to_filters()
-
-    {
-
-        var transition = _service.TryGetZoneTransition(
-
-            NavigationDirection.Up,
-
-            GamepadNavigationZone.CatalogReviewList,
-
-            GamepadNavigationZone.CatalogReviewList,
-
-            isListLayout: true,
-
-            positions: null,
-
-            currentIndex: 0,
-
-            itemCount: 5);
-
-
-
-        transition.Should().NotBeNull();
-
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogReviewFilters);
-
-    }
-
-
-
-    [Fact]
-
-    public void TryGetZoneTransition_moves_down_from_review_filters_to_list()
-
-    {
-
-        var transition = _service.TryGetZoneTransition(
-
-            NavigationDirection.Down,
-
-            GamepadNavigationZone.CatalogReviewFilters,
-
-            GamepadNavigationZone.CatalogReviewList,
-
-            isListLayout: true,
-
-            positions: null,
-
-            currentIndex: 0);
-
-
-
-        transition.Should().NotBeNull();
-
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogReviewList);
-
-        transition.Value.SelectedIndex.Should().Be(0);
-
-    }
-
-
-
-    [Fact]
-
-    public void TryGetZoneTransition_moves_left_from_first_review_filter_to_sidebar()
+    public void TryGetZoneTransition_moves_left_from_first_browse_filter_to_sidebar()
 
     {
 
@@ -754,9 +628,9 @@ public class GamepadNavigationServiceTests
 
             NavigationDirection.Left,
 
-            GamepadNavigationZone.CatalogReviewFilters,
+            GamepadNavigationZone.BrowseFilters,
 
-            GamepadNavigationZone.CatalogReviewList,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: true,
 
@@ -778,7 +652,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_up_from_catalog_sources_top_edge_to_filters()
+    public void TryGetZoneTransition_moves_up_from_browse_grid_top_edge_to_filters()
 
     {
 
@@ -790,9 +664,9 @@ public class GamepadNavigationServiceTests
 
             NavigationDirection.Up,
 
-            GamepadNavigationZone.CatalogSources,
+            GamepadNavigationZone.BrowseGrid,
 
-            GamepadNavigationZone.CatalogSources,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: false,
 
@@ -806,7 +680,7 @@ public class GamepadNavigationServiceTests
 
         transition.Should().NotBeNull();
 
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogSourcesFilters);
+        transition!.Value.Zone.Should().Be(GamepadNavigationZone.BrowseFilters);
 
     }
 
@@ -814,7 +688,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_down_from_top_bar_to_catalog_sources_toolbar()
+    public void TryGetZoneTransition_moves_down_from_top_bar_to_browse_toolbar()
 
     {
 
@@ -824,7 +698,7 @@ public class GamepadNavigationServiceTests
 
             GamepadNavigationZone.TopBar,
 
-            GamepadNavigationZone.CatalogSources,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: true,
 
@@ -836,7 +710,7 @@ public class GamepadNavigationServiceTests
 
         transition.Should().NotBeNull();
 
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogSourcesToolbar);
+        transition!.Value.Zone.Should().Be(GamepadNavigationZone.BrowseToolbar);
 
         transition.Value.SelectedIndex.Should().Be(0);
 
@@ -846,7 +720,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_down_from_catalog_sources_toolbar_to_filters()
+    public void TryGetZoneTransition_moves_down_from_browse_toolbar_to_filters()
 
     {
 
@@ -854,9 +728,9 @@ public class GamepadNavigationServiceTests
 
             NavigationDirection.Down,
 
-            GamepadNavigationZone.CatalogSourcesToolbar,
+            GamepadNavigationZone.BrowseToolbar,
 
-            GamepadNavigationZone.CatalogSources,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: true,
 
@@ -870,7 +744,7 @@ public class GamepadNavigationServiceTests
 
         transition.Should().NotBeNull();
 
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogSourcesFilters);
+        transition!.Value.Zone.Should().Be(GamepadNavigationZone.BrowseFilters);
 
     }
 
@@ -878,7 +752,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_down_from_catalog_sources_filters_to_cards()
+    public void TryGetZoneTransition_moves_down_from_browse_filters_to_cards_only_when_items_exist()
 
     {
 
@@ -886,9 +760,9 @@ public class GamepadNavigationServiceTests
 
             NavigationDirection.Down,
 
-            GamepadNavigationZone.CatalogSourcesFilters,
+            GamepadNavigationZone.BrowseFilters,
 
-            GamepadNavigationZone.CatalogSources,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: true,
 
@@ -902,39 +776,13 @@ public class GamepadNavigationServiceTests
 
         transition.Should().NotBeNull();
 
-        transition!.Value.Zone.Should().Be(GamepadNavigationZone.CatalogSources);
+        transition!.Value.Zone.Should().Be(GamepadNavigationZone.BrowseGrid);
 
         transition.Value.SelectedIndex.Should().Be(0);
 
-    }
-
-
-
-    [Fact]
-
-    public void TryGetZoneTransition_does_not_exit_card_actions_on_left_at_enabled()
-
-    {
-
-        var transition = _service.TryGetZoneTransition(
-
-            NavigationDirection.Left,
-
-            GamepadNavigationZone.CatalogSourceCardActions,
-
-            GamepadNavigationZone.CatalogSources,
-
-            isListLayout: true,
-
-            positions: null,
-
-            currentIndex: 0,
-
-            itemCount: 3);
-
-
-
-        transition.Should().BeNull();
+        _service.TryGetZoneTransition(NavigationDirection.Down, GamepadNavigationZone.BrowseFilters,
+            GamepadNavigationZone.BrowseGrid, isListLayout: true, positions: null, currentIndex: 0, itemCount: 0)
+            .Should().BeNull();
 
     }
 
@@ -942,7 +790,7 @@ public class GamepadNavigationServiceTests
 
     [Fact]
 
-    public void TryGetZoneTransition_moves_up_from_review_filters_to_top_bar()
+    public void TryGetZoneTransition_moves_up_from_browse_toolbar_to_top_bar()
 
     {
 
@@ -950,9 +798,9 @@ public class GamepadNavigationServiceTests
 
             NavigationDirection.Up,
 
-            GamepadNavigationZone.CatalogReviewFilters,
+            GamepadNavigationZone.BrowseToolbar,
 
-            GamepadNavigationZone.CatalogReviewList,
+            GamepadNavigationZone.BrowseGrid,
 
             isListLayout: true,
 
@@ -1241,7 +1089,7 @@ public class GamepadNavigationServiceTests
     {
         _service.ShouldKeepLibraryChromeFocus(GamepadNavigationZone.Library, restoreSearchChrome: false)
             .Should().BeFalse();
-        _service.ShouldKeepLibraryChromeFocus(GamepadNavigationZone.CatalogSources, restoreSearchChrome: false)
+        _service.ShouldKeepLibraryChromeFocus(GamepadNavigationZone.BrowseGrid, restoreSearchChrome: false)
             .Should().BeFalse();
     }
 

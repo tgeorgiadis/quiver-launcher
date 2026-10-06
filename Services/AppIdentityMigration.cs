@@ -22,7 +22,7 @@ public static class AppIdentityMigration
     }
 
     /// <summary>
-    /// Migrates user tags, catalog ignore/hide maps, and clears the old version cache.
+    /// Migrates user tags and display names, and clears the old version cache.
     /// Returns true if settings were modified.
     /// </summary>
     public static bool MigrateIdentity(
@@ -55,7 +55,6 @@ public static class AppIdentityMigration
         {
             settingsChanged |= MigrateUserAppTags(settings, oldRepo, newRepo);
             settingsChanged |= MigrateUserAppDisplayNames(settings, oldRepo, newRepo);
-            settingsChanged |= MigrateCatalogSourceMaps(settings, oldRepo, newRepo);
         }
 
         if (!string.IsNullOrWhiteSpace(oldRepo))
@@ -92,38 +91,5 @@ public static class AppIdentityMigration
             settings.UserAppDisplayNames[newRepository] = displayName;
 
         return true;
-    }
-
-    internal static bool MigrateCatalogSourceMaps(AppSettings settings, string oldRepository, string newRepository)
-    {
-        var changed = false;
-        foreach (var source in settings.AppCatalogSources ?? [])
-        {
-            source.IgnoredChangesAtVersion ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (source.IgnoredChangesAtVersion.TryGetValue(oldRepository, out var ignoredVersion))
-            {
-                source.IgnoredChangesAtVersion.Remove(oldRepository);
-                if (!source.IgnoredChangesAtVersion.ContainsKey(newRepository))
-                    source.IgnoredChangesAtVersion[newRepository] = ignoredVersion;
-                changed = true;
-            }
-
-            source.HiddenFromReviewRepositories ??= [];
-            var hiddenIndex = source.HiddenFromReviewRepositories.FindIndex(r =>
-                r.Equals(oldRepository, StringComparison.OrdinalIgnoreCase));
-            if (hiddenIndex >= 0)
-            {
-                source.HiddenFromReviewRepositories.RemoveAt(hiddenIndex);
-                if (!source.HiddenFromReviewRepositories.Any(r =>
-                        r.Equals(newRepository, StringComparison.OrdinalIgnoreCase)))
-                {
-                    source.HiddenFromReviewRepositories.Add(newRepository);
-                }
-
-                changed = true;
-            }
-        }
-
-        return changed;
     }
 }

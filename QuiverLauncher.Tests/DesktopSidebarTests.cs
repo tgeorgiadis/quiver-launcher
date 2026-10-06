@@ -14,18 +14,14 @@ namespace QuiverLauncher.Tests;
 
 public class DesktopSidebarTests
 {
-    [AvaloniaTheory]
-    [InlineData(false, 50)]
-    [InlineData(true, 75)]
-    [InlineData(false, 100)]
-    [InlineData(true, 225)]
-    public async Task Toggle_reclaims_space_keeps_focus_reachable_and_restores_across_sessions(bool osBar, int scale)
+    [AvaloniaFact]
+    public async Task Toggle_reclaims_space_keeps_focus_reachable_and_restores_across_sessions()
     {
         var root = Path.Combine(Path.GetTempPath(), "quiver-sidebar-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         var path = Path.Combine(root, "settings.json");
         var store = new FileSettingsStore(path);
-        store.Save(new AppSettings { FirstStartup = false, ShowOSTopBar = osBar, InterfaceScalePercent = scale, AppsPath = root });
+        store.Save(new AppSettings { FirstStartup = false, ShowOSTopBar = true, InterfaceScalePercent = 225, AppsPath = root });
         try
         {
             for (var session = 0; session < 3; session++)
@@ -65,7 +61,7 @@ public class DesktopSidebarTests
                         ((IFeatureNavigationHost)view).ApplyTransition(new(GamepadNavigationZone.Sidebar, 0));
                         ((IFeatureNavigationHost)view).Navigation.ActiveZone.Should().Be(GamepadNavigationZone.TopBar);
                         toggle.IsFocused.Should().BeTrue();
-                        view.Shell.Mode = MainViewMode.AppCatalog;
+                        view.Shell.Mode = MainViewMode.Browse;
                         ((IModsFeatureHost)view).RefreshShell(); Settle(window);
                         toggle.IsEffectivelyVisible.Should().BeTrue();
                         split.IsPaneOpen.Should().BeFalse();

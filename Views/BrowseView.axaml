@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             xmlns:converters="using:Avalonia.Data.Converters"
+             xmlns:vm="using:QuiverLauncher.ViewModels"
+             x:Class="QuiverLauncher.Views.BrowseView" x:DataType="vm:BrowseViewModel" x:CompileBindings="True">
+	<UserControl.Resources>
+		<DataTemplate x:Key="BrowseCardTemplate" x:DataType="vm:BrowseItem">
+			<Border Classes="catalog-focus-card"
+					Width="228"
+					CornerRadius="8"
+					Margin="0,0,12,12"
+					Classes.gamepad-focused="{Binding IsGamepadFocused}"
+					Background="{DynamicResource ThemeDarker}"
+					BorderBrush="{DynamicResource ThemeBorder}"
+					BorderThickness="1"
+					ClipToBounds="True"
+					Cursor="Hand"
+					PlatformFeedback.FeedbackType="Auto"
+					Tapped="BrowseCard_Tapped">
+				<Grid RowDefinitions="Auto,*">
+					<Border Grid.Row="0" Height="128" CornerRadius="8,8,0,0" ClipToBounds="True" Background="{DynamicResource ThemeLighter}">
+						<Grid>
+							<Path Width="40" Height="40" Stretch="Uniform"
+								  HorizontalAlignment="Center" VerticalAlignment="Center"
+								  Stroke="{DynamicResource ThemeTextSecondary}" StrokeThickness="1.5"
+								  Data="M 3,3 L 10,3 L 10,10 L 3,10 Z M 14,3 L 21,3 L 21,10 L 14,10 Z M 3,14 L 10,14 L 10,21 L 3,21 Z M 14,14 L 21,14 L 21,21 L 14,21 Z"
+								  IsVisible="{Binding #BrowseCardArt.Source, Converter={x:Static converters:ObjectConverters.IsNull}}"/>
+							<Image x:Name="BrowseCardArt" Stretch="UniformToFill"
+								   asyncImageLoader:ImageLoader.Source="{Binding ImageUrl}"/>
+							<Border Classes="mod-status-chip" CornerRadius="3" Padding="5,2" Margin="8"
+									HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="{Binding HasBadge}">
+								<TextBlock Text="{Binding Badge}" FontSize="9"/>
+							</Border>
+						</Grid>
+					</Border>
+					<StackPanel Grid.Row="1" Margin="10,8,10,10" Spacing="3">
+						<TextBlock Text="{Binding Kind}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"
+								   TextTrimming="CharacterEllipsis" IsVisible="{Binding HasKind}"/>
+						<TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"
+								   TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+						<TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+								   TextTrimming="CharacterEllipsis" IsVisible="{Binding HasSubtitle}"/>
+						<TextBlock Text="{Binding ScoreText}" FontSize="11" Foreground="{DynamicResource ThemeText}"
+								   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ScoreText}"/>
+						<TextBlock Text="{Binding ReleaseText}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"
+								   TextTrimming="CharacterEllipsis"/>
+					</StackPanel>
+				</Grid>
+			</Border>
+		</DataTemplate>
+	</UserControl.Resources>
+	<Grid x:Name="Surface"
+		  XYFocus.NavigationModes="Gamepad,Remote"
+		  XYFocus.UpNavigationStrategy="Projection"
+		  XYFocus.DownNavigationStrategy="Projection"
+		  XYFocus.LeftNavigationStrategy="Projection"
+		  XYFocus.RightNavigationStrategy="Projection"
+		  RowDefinitions="Auto,Auto,*">
+		<WrapPanel x:Name="BrowseToolbarPanel" Grid.Row="0" Orientation="Horizontal" Margin="0,0,30,8">
+			<TextBox x:Name="BrowseSearchTextBox"
+					 Watermark="Search ports, games and tools"
+					 Width="280"
+					 MinHeight="32"
+					 FontSize="12"
+					 VerticalContentAlignment="Center"
+					 Margin="0,0,8,6"
+					 TextChanged="BrowseSearch_TextChanged"/>
+			<ComboBox x:Name="BrowseSortComboBox"
+					  FontSize="12"
+					  MinWidth="170"
+					  MinHeight="32"
+					  Margin="0,0,8,6"
+					  Foreground="{DynamicResource ThemeTextSecondary}"
+					  Background="{DynamicResource ThemeDarker}"
+					  BorderBrush="{DynamicResource ThemeBorder}"
+					  ToolTip.Tip="A search is sorted by relevance"
+					  SelectionChanged="BrowseSort_SelectionChanged"/>
+			<Button x:Name="BrowseRetryButton"
+					Classes="options"
+					Content="Try again"
+					FontSize="12"
+					MinHeight="32"
+					Margin="0,0,8,6"
+					IsVisible="False"
+					Click="BrowseRetry_Click"/>
+		</WrapPanel>
+		<WrapPanel x:Name="BrowseFiltersPanel" Grid.Row="1" Orientation="Horizontal" Margin="0,0,30,8">
+			<Button x:Name="BrowseCatalogTabButton" Classes="catalog-filter selected" Content="Quiver catalog"
+					FontSize="11" MinHeight="32" Margin="0,0,6,6" Click="BrowseSourceTab_Click"/>
+			<Button x:Name="BrowseCustomListTabButton" Classes="catalog-filter" Content="My app list"
+					FontSize="11" MinHeight="32" Margin="0,0,14,6" Click="BrowseSourceTab_Click"/>
+			<Button x:Name="BrowsePlatformButton" Classes="catalog-filter" FontSize="11" MinHeight="32" Margin="0,0,6,6"
+					ToolTip.Tip="Platform">
+				<Button.Flyout>
+					<MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="BrowseFilterFlyout_Opening"/>
+				</Button.Flyout>
+			</Button>
+			<Button x:Name="BrowseConsoleButton" Classes="catalog-filter" FontSize="11" MinHeight="32" Margin="0,0,6,6"
+					ToolTip.Tip="Original console">
+				<Button.Flyout>
+					<MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="BrowseFilterFlyout_Opening"/>
+				</Button.Flyout>
+			</Button>
+			<Button x:Name="BrowseTypeButton" Classes="catalog-filter" FontSize="11" MinHeight="32" Margin="0,0,6,6"
+					ToolTip.Tip="Project type">
+				<Button.Flyout>
+					<MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="BrowseFilterFlyout_Opening"/>
+				</Button.Flyout>
+			</Button>
+			<Button x:Name="BrowseClearFiltersButton" Classes="options" Content="Clear filters"
+					FontSize="11" MinHeight="32" Margin="0,0,6,6" Click="BrowseClearFilters_Click"/>
+		</WrapPanel>
+		<ScrollViewer x:Name="BrowseScrollViewer"
+					  Grid.Row="2"
+					  VerticalScrollBarVisibility="Auto"
+					  HorizontalScrollBarVisibility="Disabled"
+					  ScrollChanged="BrowseScrollViewer_ScrollChanged">
+			<StackPanel x:Name="BrowseContentStack" Margin="0,0,30,0">
+				<StackPanel x:Name="BrowseLoadingPanel" Margin="0,8,0,0" Spacing="8" IsVisible="{Binding IsLoading}">
+					<ProgressBar Width="120" Height="4" HorizontalAlignment="Left" Minimum="0" Maximum="100"
+								 BorderThickness="0" Background="Transparent" IsIndeterminate="True"/>
+					<TextBlock Text="Loading apps…" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+				</StackPanel>
+				<ItemsControl x:Name="BrowseItemsControl" ItemsSource="{Binding Items}">
+					<ItemsControl.ItemsPanel>
+						<ItemsPanelTemplate>
+							<WrapPanel Orientation="Horizontal"/>
+						</ItemsPanelTemplate>
+					</ItemsControl.ItemsPanel>
+					<ItemsControl.ItemTemplate>
+						<StaticResource ResourceKey="BrowseCardTemplate"/>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+				<TextBlock x:Name="BrowseStatusText"
+						   Text="{Binding Status}"
+						   FontSize="12"
+						   Foreground="{DynamicResource ThemeTextSecondary}"
+						   TextWrapping="Wrap"
+						   Margin="0,8,0,8"/>
+				<TextBlock Text="Loading more apps…" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"
+						   Margin="0,0,0,12" IsVisible="{Binding IsLoadingMore}"/>
+			</StackPanel>
+		</ScrollViewer>
+	</Grid>
+</UserControl>

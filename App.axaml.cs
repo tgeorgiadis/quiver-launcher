@@ -52,7 +52,7 @@ public partial class App : Application, INotifyPropertyChanged
 
     /// <summary>
     /// Completes when the startup Quiver self-update check (and any prompt) finishes or is skipped.
-    /// Catalog startup prompts await this so the two dialogs do not stack.
+    /// The first-run welcome awaits this so the two dialogs do not stack.
     /// </summary>
     public Task StartupSelfUpdatePromptCompleted => _startupSelfUpdatePromptCompleted.Task;
 

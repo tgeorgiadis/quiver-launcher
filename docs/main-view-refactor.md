@@ -15,8 +15,7 @@ controller or view model.
 | --- | --- | --- |
 | Shell | `ShellViewModel`, `LauncherSession`, `MainViewDependencies` | `MainView`, `ShellAppearance`, `ShellChromeNavigation`, `LauncherBannerView` |
 | Library | `LibraryViewModel`, `LibraryActions`, `LibraryPersistenceService`, `LibraryCustomizationService` | `LibraryView`, `LibraryToolbarView`, `LibraryNavigation`, `LibraryLaunchController` |
-| Catalog sources | `CatalogViewModel`, `CatalogSourcesService` | `CatalogSourcesView`, `CatalogSourcesNavigation` |
-| Catalog review | `CatalogSyncViewModel`, `CatalogReviewWorkspace`, `CatalogReviewService` | `CatalogReviewView`, `CatalogReviewNavigation`, `CatalogDetailsView` |
+| Browse | `BrowseViewModel`, `BrowseDetailsViewModel`, `QuiverCatalogClient`, `LibraryAddService` | `BrowseView`, `BrowseNavigation`, `BrowseDetailsView` |
 | App updates | `AppUpdateReviewViewModel`, `UpdateCheckCoordinator`, `LauncherUpdateWorkflow`, `BackgroundUpdateScheduler` | `AppUpdateReviewView` |
 | Mods | `ModsViewModel`, `ModsCatalogWorkspace`, `ModsActions`, `ModDetailsViewModel` | `ModsView`, `ModsNavigation`, `ModDetailsView` |
 | Settings | `SettingsViewModel`, `InputBindingsViewModel`, existing `ISettingsStore` | `SettingsView`, `SettingsNavigationController`, `ThemeEditor` |

@@ -29,17 +29,14 @@ public sealed class MobileShellLayout : IDisposable
     private readonly Grid MobileNavOverlay;
     private readonly Grid HeaderTitleColumn;
     private readonly TextBlock HeaderTitleText;
-    private readonly HoverScrollText CatalogReviewHeaderTitleScroll;
     private readonly Button MobileSearchToggleButton;
     private readonly Button MobileNavButton;
     private readonly StackPanel SidebarNavPanel;
     private readonly ScrollViewer SidebarBodyScroller;
     private readonly StackPanel SidebarBodyHost;
-    private readonly Grid CatalogContentPanel;
     private readonly LibraryView LibraryPanel;
-    private readonly CatalogSourcesView CatalogSourcesPanel;
+    private readonly BrowseView BrowsePanel;
     private readonly SettingsView SettingsPanel;
-    private readonly CatalogReviewView CatalogReviewPanel;
     private readonly LibraryFiltersView LibraryFiltersPanel;
     private readonly AppEntryEditorView EntryFormOverlay;
     private readonly AppUpdateReviewView AppUpdatesReviewPanel;
@@ -60,17 +57,14 @@ public sealed class MobileShellLayout : IDisposable
         MobileNavOverlay = root.FindControl<Grid>("MobileNavOverlay")!;
         HeaderTitleColumn = root.FindControl<Grid>("HeaderTitleColumn")!;
         HeaderTitleText = root.FindControl<TextBlock>("HeaderTitleText")!;
-        CatalogReviewHeaderTitleScroll = root.FindControl<HoverScrollText>("CatalogReviewHeaderTitleScroll")!;
         MobileSearchToggleButton = root.FindControl<Button>("MobileSearchToggleButton")!;
         MobileNavButton = root.FindControl<Button>("MobileNavButton")!;
         SidebarNavPanel = root.FindControl<StackPanel>("SidebarNavPanel")!;
         SidebarBodyScroller = root.FindControl<ScrollViewer>("SidebarBodyScroller")!;
         SidebarBodyHost = root.FindControl<StackPanel>("SidebarBodyHost")!;
-        CatalogContentPanel = root.FindControl<Grid>("CatalogContentPanel")!;
         LibraryPanel = root.FindControl<LibraryView>("LibraryPanel")!;
-        CatalogSourcesPanel = root.FindControl<CatalogSourcesView>("CatalogSourcesPanel")!;
+        BrowsePanel = root.FindControl<BrowseView>("BrowsePanel")!;
         SettingsPanel = root.FindControl<SettingsView>("SettingsPanel")!;
-        CatalogReviewPanel = root.FindControl<CatalogReviewView>("CatalogReviewPanel")!;
         LibraryFiltersPanel = root.FindControl<LibraryFiltersView>("LibraryFiltersPanel")!;
         EntryFormOverlay = root.FindControl<AppEntryEditorView>("EntryFormOverlay")!;
         AppUpdatesReviewPanel = root.FindControl<AppUpdateReviewView>("AppUpdatesReviewPanel")!;
@@ -118,7 +112,6 @@ public sealed class MobileShellLayout : IDisposable
                 if (insets != null)
                     _insets.ApplySafeAreaPadding(insets.SafeAreaPadding);
                 LibraryPanel.FitMobileLibraryCardWidth();
-                CatalogReviewPanel.FitMobileCatalogReviewGrid();
             }, DispatcherPriority.Loaded);
     }
 
@@ -139,7 +132,6 @@ public sealed class MobileShellLayout : IDisposable
         _insets.Refresh();
         ApplyMobileHeaderChrome();
         LibraryPanel.FitMobileLibraryCardWidth();
-        CatalogReviewPanel.FitMobileCatalogReviewGrid();
     }
 
     private void Post(Action action, DispatcherPriority priority)
@@ -210,7 +202,6 @@ public sealed class MobileShellLayout : IDisposable
             MoveControlTo(SidebarPanel, MobileNavDrawerHost);
         BypassMobileSplitView();
         ApplyMobileContentInsets();
-        CatalogSourcesPanel.ApplyMobileLayout();
         if (SettingsPanel != null)
         {
             SettingsPanel.Width = double.NaN;
@@ -219,10 +210,8 @@ public sealed class MobileShellLayout : IDisposable
         }
 
         ReparentMobileTopBar();
-        CatalogReviewPanel.ReparentMobileCatalogReviewChrome();
         ReparentMobileSidebarBody();
         LibraryPanel.ApplyMobileLayout();
-        CatalogReviewPanel.FitMobileCatalogReviewGrid();
     }
 
     private void BypassMobileSplitView()
@@ -244,9 +233,11 @@ public sealed class MobileShellLayout : IDisposable
     {
         var content = new Thickness(8, 8, 8, 8);
         LibraryPanel.ApplyContentInsets(content);
-        if (CatalogContentPanel != null)
-            CatalogContentPanel.Margin = content;
-        CatalogSourcesPanel.ApplyMobileLayout();
+        if (BrowsePanel != null)
+        {
+            BrowsePanel.Margin = content;
+            BrowsePanel.ApplyMobileLayout();
+        }
         if (AppUpdatesReviewPanel != null)
             AppUpdatesReviewPanel.Margin = content;
         if (ModsPanel != null)
@@ -262,8 +253,6 @@ public sealed class MobileShellLayout : IDisposable
             HeaderTitleColumn.Margin = new Thickness(8, 0, 4, 0);
         if (HeaderTitleText != null)
             HeaderTitleText.Margin = new Thickness(0);
-        if (CatalogReviewHeaderTitleScroll != null)
-            CatalogReviewHeaderTitleScroll.Margin = new Thickness(0);
         _mobileTopBarReparented = true;
         ApplyMobileSearchChrome();
         ApplyMobileHeaderChrome();
@@ -355,12 +344,9 @@ public sealed class MobileShellLayout : IDisposable
         _root.Classes.Set("mobile-landscape", landscape);
         if (HeaderTitleText != null)
             HeaderTitleText.FontSize = landscape ? 14 : 18;
-        if (CatalogReviewHeaderTitleScroll != null)
-            CatalogReviewHeaderTitleScroll.FontSize = landscape ? 14 : 18;
         if (HeaderTitleColumn != null)
             HeaderTitleColumn.MinHeight = landscape ? 28 : 44;
         _updateHeader();
-        CatalogReviewPanel.FitMobileCatalogReviewGrid();
     }
 
     public void CloseMobileNav()

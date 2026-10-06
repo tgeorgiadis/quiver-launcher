@@ -24,7 +24,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
     private readonly Border SidebarPanel;
     private readonly Button ContinueButton;
     private readonly Button LibraryNavButton;
-    private readonly Button AppCatalogNavButton;
+    private readonly Button BrowseNavButton;
     private readonly LibraryFiltersView LibraryFiltersPanel;
     private readonly Button GitHubFooterButton;
     private readonly Button DiscordFooterButton;
@@ -32,9 +32,6 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
     private readonly Button MobileSearchToggleButton;
     private readonly Button MobileAddButton;
     private readonly Button MobileSortButton;
-    private readonly Button MobileCatalogBackButton;
-    private readonly Button MobileCatalogSortButton;
-    private readonly Button CatalogReviewBackButton;
     private readonly Button CheckForUpdatesButton;
     private readonly Button SettingsButton;
     private readonly Button MinimizeButton;
@@ -56,7 +53,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         SidebarPanel = root.FindControl<Border>("SidebarPanel")!;
         ContinueButton = root.FindControl<Button>("ContinueButton")!;
         LibraryNavButton = root.FindControl<Button>("LibraryNavButton")!;
-        AppCatalogNavButton = root.FindControl<Button>("AppCatalogNavButton")!;
+        BrowseNavButton = root.FindControl<Button>("BrowseNavButton")!;
         LibraryFiltersPanel = root.FindControl<LibraryFiltersView>("LibraryFiltersPanel")!;
         GitHubFooterButton = root.FindControl<Button>("GitHubFooterButton")!;
         DiscordFooterButton = root.FindControl<Button>("DiscordFooterButton")!;
@@ -64,9 +61,6 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         MobileSearchToggleButton = root.FindControl<Button>("MobileSearchToggleButton")!;
         MobileAddButton = root.FindControl<Button>("MobileAddButton")!;
         MobileSortButton = root.FindControl<Button>("MobileSortButton")!;
-        MobileCatalogBackButton = root.FindControl<Button>("MobileCatalogBackButton")!;
-        MobileCatalogSortButton = root.FindControl<Button>("MobileCatalogSortButton")!;
-        CatalogReviewBackButton = root.FindControl<Button>("CatalogReviewBackButton")!;
         CheckForUpdatesButton = root.FindControl<Button>("CheckForUpdatesButton")!;
         SettingsButton = root.FindControl<Button>("SettingsButton")!;
         MinimizeButton = root.FindControl<Button>("MinimizeButton")!;
@@ -286,22 +280,22 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         if (TryMoveUpdateStatus(current, direction, controls)) return true;
         var skipXy = GamepadTextInput.ShouldSkipXyFocusOnHighlight(current);
         if (!PlatformCapabilities.IsMobile && current != null &&
-            !((Shell.ModDetailsOpen || Shell.CatalogDetailsOpen) && direction == NavigationDirection.Down) &&
+            !((Shell.ModDetailsOpen || Shell.BrowseDetailsOpen) && direction == NavigationDirection.Down) &&
             TryMoveBetweenHeaderRows(current, direction, controls))
             return true;
         // Details overlay owns Down: do not XYFocus onto Changelog or stop on the banner.
         // Highlight-only TextBoxes (Search) have no reliable native focus; XY would
         // land on Library. Walk Search → Add instead.
-        if (!skipXy && !((Shell.ModDetailsOpen || Shell.CatalogDetailsOpen) && direction == NavigationDirection.Down) && TryMoveXyFocusInRegion(GetActiveTopBarRoot(), direction, controls, ApplyTopBarGamepadSelection))
+        if (!skipXy && !((Shell.ModDetailsOpen || Shell.BrowseDetailsOpen) && direction == NavigationDirection.Down) && TryMoveXyFocusInRegion(GetActiveTopBarRoot(), direction, controls, ApplyTopBarGamepadSelection))
             return true;
-        if (direction == NavigationDirection.Down && _banners.IsAnnouncementBannerVisible && !Shell.ModDetailsOpen && !Shell.CatalogDetailsOpen)
+        if (direction == NavigationDirection.Down && _banners.IsAnnouncementBannerVisible && !Shell.ModDetailsOpen && !Shell.BrowseDetailsOpen)
         {
             ClearTopBarGamepadFocus();
             _banners.ApplyAnnouncementBannerGamepadSelection(0);
             return true;
         }
 
-        if (direction == NavigationDirection.Down && !Shell.ModDetailsOpen && !Shell.CatalogDetailsOpen &&
+        if (direction == NavigationDirection.Down && !Shell.ModDetailsOpen && !Shell.BrowseDetailsOpen &&
             _root.FindControl<UpdateCheckStatusView>("UpdateCheckStatus") is { } status &&
             controls.FirstOrDefault(c => status.IsVisualAncestorOf(c)) is { } statusEntry)
         {
@@ -336,7 +330,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
 
         Add(ContinueButton);
         Add(LibraryNavButton);
-        Add(AppCatalogNavButton);
+        Add(BrowseNavButton);
         controls.AddRange(LibraryFiltersPanel.CollectNavigationControls());
         Add(GitHubFooterButton);
         Add(DiscordFooterButton);
@@ -370,18 +364,6 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
             else
             {
                 controls.AddRange(_toolbar.NavigationControls());
-            }
-        }
-        else if (Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Review)
-        {
-            if (PlatformCapabilities.IsMobile)
-            {
-                Add(MobileCatalogBackButton);
-                Add(MobileCatalogSortButton);
-            }
-            else
-            {
-                Add(CatalogReviewBackButton);
             }
         }
 
@@ -629,8 +611,6 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
                 _host.ClearFocus();
                 _gamepadNavigation.ActiveZone = GamepadNavigationZone.Sidebar;
                 _gamepadNavigation.LibrarySelectedIndex = -1;
-                _gamepadNavigation.CatalogSelectedIndex = -1;
-                _gamepadNavigation.CatalogReviewSelectedIndex = -1;
                 ApplySidebarGamepadSelection(_gamepadNavigation.SidebarSelectedIndex < 0 ? 0 : _gamepadNavigation.SidebarSelectedIndex);
                 return true;
             case GamepadNavigationZone.TopBar:
@@ -657,7 +637,6 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
                 _host.ClearFocus();
                 _gamepadNavigation.ActiveZone = GamepadNavigationZone.TopBar;
                 _gamepadNavigation.LibrarySelectedIndex = -1;
-                _gamepadNavigation.CatalogReviewSelectedIndex = -1;
                 ApplyTopBarGamepadSelection(_gamepadNavigation.TopBarSelectedIndex < 0 ? 0 : _gamepadNavigation.TopBarSelectedIndex);
                 return true;
             case GamepadNavigationZone.AnnouncementBanner:

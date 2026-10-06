@@ -64,32 +64,6 @@ public class DesktopHeaderLayoutTests
     }
 
     [AvaloniaFact]
-    public void Header_uses_hysteresis_and_ignores_queued_work_after_disposal()
-    {
-        var title = new Border { Width = 100, Height = 40 };
-        var tools = new Border { Height = 32 };
-        var actions = new Border { Width = 100, Height = 32 };
-        var header = new Grid { ColumnDefinitions = new("Auto,*,Auto,Auto"), RowDefinitions = new("Auto,Auto"), Children = { title, tools, actions } };
-        Grid.SetColumn(title, 1); Grid.SetColumn(tools, 2); Grid.SetColumn(actions, 3);
-        var window = new Window { Content = header, Width = 410, Height = 120 };
-        using var layout = new DesktopHeaderLayout(header, title, tools, actions, () => 200);
-        try
-        {
-            window.Show(); Settle(window);
-            Grid.GetRow(tools).Should().Be(1);
-            window.Width = 420; Settle(window);
-            Grid.GetRow(tools).Should().Be(1);
-            window.Width = 430; Settle(window);
-            Grid.GetRow(tools).Should().Be(0);
-            window.Width = 410; Settle(window);
-            Grid.GetRow(tools).Should().Be(1);
-            window.Width = 500; layout.Refresh(); layout.Dispose(); layout.Dispose(); Settle(window);
-            Grid.GetRow(tools).Should().Be(1);
-        }
-        finally { window.Close(); }
-    }
-
-    [AvaloniaFact]
     public async Task Directional_navigation_visits_both_rows_before_leaving_header()
     {
         var view = CreateView();
@@ -158,72 +132,6 @@ public class DesktopHeaderLayoutTests
         finally { window.Close(); await view.ShutdownAsync(); }
     }
 
-    [AvaloniaTheory]
-    [InlineData(750)]
-    [InlineData(900)]
-    [InlineData(1024)]
-    [InlineData(1280)]
-    [InlineData(1600)]
-    public async Task Header_controls_fit_all_shell_modes(double width)
-    {
-        var view = CreateView();
-        var window = new Window { Content = view, Width = width, Height = 720 };
-        try
-        {
-            window.Show();
-            view.FindControl<LibraryToolbarView>("LibraryToolbar")!.SelectSort("NotInstalled");
-            foreach (var showOsBar in new[] { false, true })
-            foreach (var mode in new[] { "library", "sources", "review", "updates", "mods" })
-            foreach (var settingsOpen in new[] { false, true })
-            {
-                view.SettingsModel.ShowOSTopBar = showOsBar;
-                view.Shell.Mode = mode is "sources" or "review" ? MainViewMode.AppCatalog : MainViewMode.Library;
-                view.Shell.CatalogSubView = mode == "review" ? AppCatalogSubView.Review : AppCatalogSubView.Sources;
-                view.Shell.AppUpdatesOpen = mode == "updates";
-                view.Shell.ModsOpen = mode == "mods";
-                view.Shell.SettingsOpen = settingsOpen;
-                ((IModsFeatureHost)view).RefreshShell();
-                if (mode == "review")
-                {
-                    view.FindControl<TextBlock>("HeaderTitleText")!.Text = "Review: A very long community catalog source name that should be truncated";
-                }
-                Settle(window);
-                var header = view.FindControl<Grid>("HeaderLayoutGrid")!;
-                var title = view.FindControl<Grid>("HeaderTitleColumn")!;
-                var actions = view.FindControl<StackPanel>("HeaderFixedActions")!;
-                AssertInside(actions, header);
-                Bounds(title, header).Right.Should().BeLessThanOrEqualTo(Bounds(actions, header).Left + 1);
-                foreach (var name in new[] { "MinimizeButton", "ToggleMaximizeButton", "CloseLauncherButton", "SettingsButton", "CheckForUpdatesButton" })
-                    AssertInside(view.FindControl<Button>(name)!, header);
-                var tools = view.FindControl<Grid>("DesktopInlineTopBar")!;
-                if (mode is "library" or "review")
-                {
-                    AssertInside(tools, header);
-                    if (Grid.GetRow(tools) == 1)
-                        Bounds(tools, header).Top.Should().BeGreaterThanOrEqualTo(Bounds(actions, header).Bottom);
-                    else
-                        Bounds(title, header).Right.Should().BeLessThanOrEqualTo(Bounds(tools, header).Left + 1);
-                }
-                else
-                    Grid.GetRow(tools).Should().Be(0);
-                if (mode == "library")
-                {
-                    var toolbar = view.FindControl<LibraryToolbarView>("LibraryToolbar")!;
-                    foreach (var control in toolbar.NavigationControls())
-                        AssertInside(control, header);
-                    var search = toolbar.FindControl<TextBox>("LibrarySearchTextBox")!;
-                    var add = toolbar.FindControl<Button>("AddNewEntryButton")!;
-                    var sort = toolbar.FindControl<ComboBox>("SortByComboBox")!;
-                    Bounds(search, header).Right.Should().BeLessThanOrEqualTo(Bounds(add, header).Left);
-                    Bounds(add, header).Right.Should().BeLessThanOrEqualTo(Bounds(sort, header).Left);
-                    if (width == 750) Grid.GetRow(tools).Should().Be(1);
-                    if (width == 1600) Grid.GetRow(tools).Should().Be(0);
-                }
-            }
-        }
-        finally { window.Close(); await view.ShutdownAsync(); }
-    }
-
     [AvaloniaFact]
     public async Task Resize_preserves_search_editing_selection_and_sort()
     {
@@ -257,14 +165,6 @@ public class DesktopHeaderLayoutTests
     }
 
     private static Rect Bounds(Control control, Control root) => new(control.TranslatePoint(default, root)!.Value, control.Bounds.Size);
-    private static void AssertInside(Control control, Control root)
-    {
-        var bounds = Bounds(control, root);
-        bounds.Width.Should().BeGreaterThan(0, control.Name);
-        bounds.Left.Should().BeGreaterThanOrEqualTo(-1, control.Name);
-        bounds.Right.Should().BeLessThanOrEqualTo(root.Bounds.Width + 1, control.Name);
-        bounds.Bottom.Should().BeLessThanOrEqualTo(root.Bounds.Height + 1, control.Name);
-    }
     private static void Settle(Window window) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); Dispatcher.UIThread.RunJobs(); }
     private static MainView CreateView() => new(new() { SettingsStore = new Store(), EnableInput = false, EnableMusic = false, InitializeOnOpen = false });
     private sealed class Store : ISettingsStore

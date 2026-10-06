@@ -111,15 +111,7 @@ public class RepositorySourceTests
         };
 
         github.IdentityKey.Should().NotBe(gitlab.IdentityKey);
-
-        var rows = CatalogCompareService.BuildCompareRows(
-            [github],
-            [gitlab]);
-
-        rows.Should().ContainSingle(r =>
-            r.Repository == "owner/app" &&
-            r.Status == CatalogSyncStatus.InExternalOnly &&
-            r.External!.EffectiveRepositorySource == "gitlab");
+        LibraryAddService.FindExisting([github], gitlab).Should().BeNull();
     }
 
     [Fact]

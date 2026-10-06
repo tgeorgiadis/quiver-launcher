@@ -85,8 +85,6 @@ public partial class SettingsView : UserControl
             _host.SetIgnoreArticlesWhenSorting(_settings.IgnoreArticlesWhenSorting);
         if (change.HasFlag(SettingsChange.Tray))
             _host.ApplyTrayAndBackgroundUpdateSettings();
-        if (change.HasFlag(SettingsChange.Badges) && _settings.ShowLibraryAppUpdateBadges)
-            _ = _session.RunAsync(_host.ApplyLibraryCatalogPendingBadgesAsync);
         if (change.HasFlag(SettingsChange.Input))
         {
             if (!_settings.EnableGamepadInput)
@@ -238,6 +236,8 @@ public partial class SettingsView : UserControl
                 GitHubTokenTextBox.Text = _settings.GitHubApiToken;
             if (GitLabTokenTextBox != null)
                 GitLabTokenTextBox.Text = _settings.GitLabApiToken;
+            if (CustomAppListTextBox != null)
+                CustomAppListTextBox.Text = _settings.CustomAppListLocation;
             if (GamePathTextBox != null)
                 GamePathTextBox.Text = _settings.AppsPath;
             if (LinuxWindowsLaunchCommandTextBox != null)
@@ -372,6 +372,47 @@ public partial class SettingsView : UserControl
     {
         if (_context == null || _suppressSettingsUiEvents) return;
         Model.SaveApiToken("gitlab", GitLabTokenTextBox.Text);
+    }
+
+    internal void SaveCustomAppList_Click(object? sender, RoutedEventArgs e) => SaveCustomAppList(CustomAppListTextBox.Text);
+
+    internal void ClearCustomAppList_Click(object? sender, RoutedEventArgs e)
+    {
+        CustomAppListTextBox.Text = string.Empty;
+        SaveCustomAppList("");
+    }
+
+    private void SaveCustomAppList(string? location)
+    {
+        if (_context == null || _suppressSettingsUiEvents) return;
+        if (Model.SaveCustomAppList(location))
+            _host.CustomAppListChanged();
+    }
+
+    private async void BrowseCustomAppList_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_context == null)
+            return;
+        await _session.RunAsync(async () =>
+        {
+            try
+            {
+                var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "Select an app list",
+                    AllowMultiple = false,
+                    FileTypeFilter = [new FilePickerFileType("JSON files") { Patterns = ["*.json"] }],
+                });
+                if (_session.IsClosed || files.Count == 0)
+                    return;
+                CustomAppListTextBox.Text = files[0].Path.LocalPath;
+                SaveCustomAppList(CustomAppListTextBox.Text);
+            }
+            catch (Exception ex) when (!_session.IsClosed)
+            {
+                await _host.ShowMessageBoxAsync($"Failed to select a file: {ex.Message}", "Error");
+            }
+        });
     }
 
     internal void BackgroundPathTextBox_TextChanged(object sender, TextChangedEventArgs e)

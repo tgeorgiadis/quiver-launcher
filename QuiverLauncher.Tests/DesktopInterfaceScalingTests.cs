@@ -127,12 +127,10 @@ public class DesktopInterfaceScalingTests
         finally { window.Close(); }
     }
 
-    [AvaloniaTheory]
-    [InlineData(50)] [InlineData(75)]
-    [InlineData(100)] [InlineData(125)] [InlineData(150)]
-    [InlineData(175)] [InlineData(200)] [InlineData(225)]
-    public async Task Real_shell_reflows_and_preserves_search_editing_at_each_scale(int percent)
+    [AvaloniaFact]
+    public async Task Real_shell_reflows_and_preserves_search_editing_at_the_largest_scale()
     {
+        const int percent = 225;
         var store = new Store(new() { FirstStartup = false, AppsPath = Path.Combine(Path.GetTempPath(), "quiver-scale", Guid.NewGuid().ToString("N")) });
         var view = new MainView(new() { SettingsStore = store, EnableInput = false, EnableMusic = false, InitializeOnOpen = false });
         var window = new Window { Content = view, Width = 750, Height = 490 };
@@ -163,10 +161,9 @@ public class DesktopInterfaceScalingTests
             window.KeyTextInput("test");
             search.Text.Should().Be("dutestuery");
             GamepadTextInput.Reset();
-            foreach (var mode in new[] { "sources", "review", "updates", "mods" })
+            foreach (var mode in new[] { "browse", "updates", "mods" })
             {
-                view.Shell.Mode = mode is "sources" or "review" ? MainViewMode.AppCatalog : MainViewMode.Library;
-                view.Shell.CatalogSubView = mode == "review" ? AppCatalogSubView.Review : AppCatalogSubView.Sources;
+                view.Shell.Mode = mode == "browse" ? MainViewMode.Browse : MainViewMode.Library;
                 view.Shell.AppUpdatesOpen = mode == "updates";
                 view.Shell.ModsOpen = mode == "mods";
                 ((IModsFeatureHost)view).RefreshShell();

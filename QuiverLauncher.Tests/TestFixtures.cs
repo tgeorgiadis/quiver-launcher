@@ -4,30 +4,19 @@ using QuiverLauncher.Services;
 
 internal static class TestFixtures
 {
-    public static string CommunityAppCatalogDirectory =>
-        Path.Combine(AppContext.BaseDirectory, "Fixtures", "community-app-catalog");
-
-    public static string CommunityIndexPath =>
-        Path.Combine(AppContext.BaseDirectory, "Fixtures", "index.json");
-
+    /// <summary>An app list file in the apps.json format, as people point Browse at.</summary>
     public static string N64RecompListPath =>
-        Path.Combine(CommunityAppCatalogDirectory, "N64-Recomps.json");
-
-    public static string ReadCommunityIndexJson() =>
-        File.ReadAllText(CommunityIndexPath);
+        Path.Combine(AppContext.BaseDirectory, "Fixtures", "community-app-catalog", "N64-Recomps.json");
 
     public static string ReadN64RecompListJson() =>
         File.ReadAllText(N64RecompListPath);
-
-    public static string CommunityCatalogPath =>
-        Path.Combine(AppContext.BaseDirectory, "Fixtures", "quiver-community-apps-catalog.json");
 
     public static (AppCatalogService Service, string Directory) CreateIsolatedCatalogService(
         ICatalogLocationReader? locationReader = null,
         string? dataDirectory = null)
     {
         var dir = dataDirectory ?? Path.Combine(Path.GetTempPath(), "QuiverLauncher.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path.Combine(dir, "Cache", "CatalogSources"));
+        Directory.CreateDirectory(dir);
         return (new AppCatalogService(null, locationReader, dir), dir);
     }
 

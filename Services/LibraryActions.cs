@@ -18,10 +18,10 @@ public sealed class LibraryActions
     private readonly Func<IStorageProvider> _storage;
     private readonly Func<string, string, bool, bool, Task<bool>> _prompt;
     private readonly Action<string> _openUrl;
-    private readonly Func<Task> _catalogChanged;
+    private readonly Func<Task> _libraryChanged;
     private AppSettings _settings => _settingsModel.Current;
 
-    public LibraryActions(GameManager manager, LibraryPersistenceService persistence, SettingsViewModel settings, LauncherSession session, LibraryViewModel library, Func<IStorageProvider> storage, Func<string, string, bool, bool, Task<bool>> prompt, Action<string> openUrl, Func<Task> catalogChanged)
+    public LibraryActions(GameManager manager, LibraryPersistenceService persistence, SettingsViewModel settings, LauncherSession session, LibraryViewModel library, Func<IStorageProvider> storage, Func<string, string, bool, bool, Task<bool>> prompt, Action<string> openUrl, Func<Task> libraryChanged)
     {
         _gameManager = manager;
         _libraryPersistence = persistence;
@@ -31,7 +31,7 @@ public sealed class LibraryActions
         _storage = storage;
         _prompt = prompt;
         _openUrl = openUrl;
-        _catalogChanged = catalogChanged;
+        _libraryChanged = libraryChanged;
     }
 
     private Task<bool> ShowMessageBoxAsync(string message, string title, bool isQuestion = false, bool preferCancelDefault = false) => _session.IsClosed ? Task.FromResult(false) : _prompt(message, title, isQuestion, preferCancelDefault);
@@ -299,11 +299,6 @@ public sealed class LibraryActions
                 var confirm = await ShowMessageBoxAsync($"Remove '{game.Name}' from your Library?\n\nYour files will not be deleted.", "Remove from Library", true);
                 if (!confirm || _session.IsClosed)
                     return;
-                if (!string.IsNullOrWhiteSpace(game.Repository))
-                {
-                    await _gameManager.CatalogService.IgnoreRepositoryInMatchingSourcesAsync(_settings, game.Repository);
-                }
-
                 var games = await LoadGamesFromJsonAsync();
                 var gameToRemove = FindMatchingSavedApp(games, game);
                 if (gameToRemove == null)
@@ -319,7 +314,7 @@ public sealed class LibraryActions
                     return;
                 Changed();
                 _settingsModel.SaveCurrent();
-                await _catalogChanged();
+                await _libraryChanged();
                 _ = _session.RunAsync(() => ShowMessageBoxAsync($"'{game.Name}' was removed successfully.", "Removed"));
             }
             catch (Exception ex)

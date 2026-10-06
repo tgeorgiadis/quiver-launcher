@@ -23,7 +23,6 @@ public enum LibraryActionKind
     OpenMods,
     RemoveCustomIcon,
     RemoveGameEntry,
-    ReviewCatalogChanges,
     SelectDifferentExecutable,
     SetCustomIcon,
     ShowChangelog,

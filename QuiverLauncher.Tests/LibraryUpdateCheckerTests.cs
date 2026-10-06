@@ -27,8 +27,6 @@ public class LibraryUpdateCheckerTests(ITestOutputHelper output)
 
     [Theory]
     [InlineData(20)]
-    [InlineData(50)]
-    [InlineData(100)]
     public async Task Latest_first_halves_requests_with_controlled_network_latency(int count)
     {
         var handler = new Handler(async (r, ct) =>

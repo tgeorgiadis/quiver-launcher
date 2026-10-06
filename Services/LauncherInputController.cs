@@ -76,7 +76,7 @@ public sealed class LauncherInputController : IDisposable
 
         /// <summary>
         /// After Space/Enter confirm, suppress the matching KeyUp so a newly focused CheckBox
-        /// (e.g. catalog Enabled) does not also toggle.
+        /// does not also toggle.
         /// </summary>
         private bool _suppressConfirmKeyUp;
 

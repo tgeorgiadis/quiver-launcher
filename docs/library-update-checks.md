@@ -1,6 +1,6 @@
 # Library update checks
 
-The top update button checks the launcher and installed library apps first. It reads installation state locally and updates the existing app objects, including installed apps hidden by search or display filters. It does not reload the library, resort the grid, refresh catalogs, or wait for downloads to finish.
+The top update button checks the launcher and installed library apps first. It reads installation state locally and updates the existing app objects, including installed apps hidden by search or display filters. It does not reload the library, resort the grid, or wait for downloads to finish.
 
 Progress appears beneath the header with Cancel. A foreground pass has a 60-second deadline. Completed results remain available after cancellation, timeouts, or failures; incomplete checks show Retry and do not display an “up to date” badge. Repeated clicks share the current pass.
 
@@ -14,7 +14,7 @@ Progress appears beneath the header with Cancel. A foreground pass has a 60-seco
 
 ## Background work
 
-Uninstalled library entries refresh afterward with a 24-hour cache policy. Catalogs, mods, and artwork refresh separately from foreground completion. Automatic installations retain their existing opt-in policy and session-owned installation gate; automatic candidates are excluded from simultaneous manual-update prompts. Shutdown cancels queued metadata and secondary refreshes.
+Uninstalled library entries refresh afterward with a 24-hour cache policy. Mods and artwork refresh separately from foreground completion. Automatic installations retain their existing opt-in policy and session-owned installation gate; automatic candidates are excluded from simultaneous manual-update prompts. Shutdown cancels queued metadata and secondary refreshes.
 
 The desktop launcher retains its Velopack implementation. Cancelling the foreground wait suppresses late presentation; Velopack's native check may finish internally because its API does not provide the app-request cancellation mechanism.
 

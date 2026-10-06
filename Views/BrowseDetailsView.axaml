@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+             xmlns:vm="using:QuiverLauncher.ViewModels"
+             x:Class="QuiverLauncher.Views.BrowseDetailsView">
+	<Border x:Name="Surface"
+			XYFocus.NavigationModes="Gamepad,Remote"
+			XYFocus.UpNavigationStrategy="Projection"
+			XYFocus.DownNavigationStrategy="Projection"
+			XYFocus.LeftNavigationStrategy="Projection"
+			XYFocus.RightNavigationStrategy="Projection"
+			Background="{DynamicResource ThemeBase}">
+		<Grid RowDefinitions="Auto,*">
+			<Border Grid.Row="0"
+					Background="{DynamicResource ThemeDarker}"
+					BorderBrush="{DynamicResource ThemeBorder}"
+					BorderThickness="0,0,0,1"
+					Padding="24,12,24,12">
+				<DockPanel LastChildFill="True">
+					<Border x:Name="BrowseDetailsArtHost"
+							DockPanel.Dock="Left"
+							Width="160"
+							Height="160"
+							Margin="0,0,16,0"
+							VerticalAlignment="Top"
+							CornerRadius="8"
+							ClipToBounds="True"
+							Background="{DynamicResource ThemeLighter}">
+						<Image x:Name="BrowseDetailsArt" Stretch="UniformToFill"/>
+					</Border>
+					<StackPanel Spacing="4" MinWidth="0">
+						<Grid ColumnDefinitions="*,Auto">
+							<StackPanel Spacing="2" Margin="0,0,12,0">
+								<TextBlock x:Name="BrowseDetailsKind" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+										   TextTrimming="CharacterEllipsis"/>
+								<TextBlock x:Name="BrowseDetailsTitle" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource ThemeText}"
+										   TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+								<TextBlock x:Name="BrowseDetailsSubtitle" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"
+										   TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+							</StackPanel>
+							<Button x:Name="BrowseDetailsCloseButton"
+									Grid.Column="1"
+									Classes="options"
+									Content="Close"
+									MinWidth="90"
+									VerticalAlignment="Top"
+									Click="Close_Click"/>
+						</Grid>
+						<TextBlock x:Name="BrowseDetailsFacts" FontSize="12" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap"/>
+						<TextBlock x:Name="BrowseDetailsNote" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+						<WrapPanel x:Name="BrowseDetailsActions" Orientation="Horizontal" Margin="0,4,0,0">
+							<Button x:Name="BrowseDetailsAddButton" Classes="options catalog-review-add" Content="Add to library"
+									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Add_Click"/>
+							<Button x:Name="BrowseDetailsRemoveButton" Classes="options catalog-remove-from-library" Content="Remove from library"
+									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Remove_Click"/>
+							<Button x:Name="BrowseDetailsReviewButton" Classes="options" Content="Write a review on the website"
+									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Review_Click"
+									ToolTip.Tip="Reviews are written on quiverlauncher.com, where you sign in"/>
+							<Button x:Name="BrowseDetailsRepositoryButton" Classes="options" Content="Open repository"
+									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Repository_Click"/>
+						</WrapPanel>
+					</StackPanel>
+				</DockPanel>
+			</Border>
+			<ScrollViewer x:Name="BrowseDetailsScrollViewer"
+						  Grid.Row="1"
+						  VerticalScrollBarVisibility="Auto"
+						  HorizontalScrollBarVisibility="Disabled"
+						  Margin="24,12,24,24">
+				<StackPanel MaxWidth="900" Spacing="8" HorizontalAlignment="Stretch">
+					<TextBlock x:Name="BrowseDetailsDescription" FontSize="14" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap"/>
+					<TextBlock x:Name="BrowseDetailsReviewsHeading" Text="How it runs for players" FontSize="16" FontWeight="SemiBold"
+							   Foreground="{DynamicResource ThemeText}" Margin="0,8,0,0"/>
+					<TextBlock x:Name="BrowseDetailsReviewsStatus" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+					<ItemsControl x:Name="BrowseDetailsReviews">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate x:DataType="vm:BrowseReviewLine">
+								<Border Background="{DynamicResource ThemeDarker}" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+									<StackPanel Spacing="4">
+										<TextBlock Text="{Binding Heading}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap"/>
+										<TextBlock Text="{Binding Body}" FontSize="12" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap" IsVisible="{Binding HasBody}"/>
+									</StackPanel>
+								</Border>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+					<TextBlock Text="README" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}" Margin="0,8,0,0"/>
+					<ItemsControl x:Name="BrowseDetailsReadme" HorizontalAlignment="Stretch">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<StackPanel HorizontalAlignment="Stretch"/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<ContentControl Content="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"/>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</StackPanel>
+			</ScrollViewer>
+		</Grid>
+	</Border>
+</UserControl>

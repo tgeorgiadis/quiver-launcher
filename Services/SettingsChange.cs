@@ -9,7 +9,6 @@ public enum SettingsChange
     Sorting = 4,
     Tray = 8,
     Input = 16,
-    Badges = 32,
 }
 
 public enum CardLayoutPreset { Landscape, Portrait, Square, SquareCompact, List }

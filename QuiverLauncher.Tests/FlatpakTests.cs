@@ -32,7 +32,6 @@ public sealed class FlatpakTests : IDisposable
         PlatformAssetMatcher.MatchesPlatform(asset, platform).Should().Be(matches);
         PlatformAssetMatcher.IsWindowsAsset(asset).Should().BeFalse();
         GameInfo.GetPlatformIcon(asset).Should().EndWith("platform_lin.png");
-        CatalogPlatformSupport.FromAssetNames([asset]).Should().Be(CatalogPlatformFlags.Linux);
     }
 
     [Fact]

@@ -10,10 +10,10 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
     private IFeatureNavigationHandler? For(GamepadNavigationZone zone) => handlers.TryGetValue(zone, out var handler) ? handler() : null;
     private static bool IsChrome(GamepadNavigationZone zone) => zone is GamepadNavigationZone.Sidebar or GamepadNavigationZone.TopBar or GamepadNavigationZone.AnnouncementBanner;
     public GamepadNavigationZone MainZone => shell.ModDetailsOpen ? GamepadNavigationZone.ModsDetailsOverlay
-        : shell.CatalogDetailsOpen ? GamepadNavigationZone.CatalogReviewDetailsOverlay
+        : shell.BrowseDetailsOpen ? GamepadNavigationZone.BrowseDetailsOverlay
         : shell.Mode == MainViewMode.Library ? shell.ModsOpen ? GamepadNavigationZone.ModsOverlayList
             : shell.AppUpdatesOpen ? GamepadNavigationZone.AppUpdatesReviewList : GamepadNavigationZone.Library
-        : shell.CatalogSubView == AppCatalogSubView.Review ? GamepadNavigationZone.CatalogReviewList : GamepadNavigationZone.CatalogSources;
+        : GamepadNavigationZone.BrowseGrid;
     private IFeatureNavigationHandler? Enter(GamepadNavigationZone zone)
     {
         navigation.ActiveZone = zone;
@@ -42,7 +42,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         }
         // Activation restores selection without re-entering or scrolling the list.
         if (!bringIntoView && !IsChrome(zone) &&
-            MainZone is GamepadNavigationZone.Library or GamepadNavigationZone.CatalogSources or GamepadNavigationZone.CatalogReviewList)
+            MainZone is GamepadNavigationZone.Library or GamepadNavigationZone.BrowseGrid)
         {
             For(MainZone)?.RestoreFocus(bringIntoView: false);
             return;
@@ -50,7 +50,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         if (IsChrome(zone) || zone is GamepadNavigationZone.ModsOverlayToolbar or GamepadNavigationZone.ModsOverlayFilters
             or GamepadNavigationZone.ModsOverlaySourceFilters or GamepadNavigationZone.ModsOverlayList
             or GamepadNavigationZone.ModsOverlayRowActions or GamepadNavigationZone.ModsDetailsOverlay
-            or GamepadNavigationZone.CatalogReviewDetailsOverlay) For(zone)?.RestoreFocus();
+            or GamepadNavigationZone.BrowseDetailsOverlay) For(zone)?.RestoreFocus();
         else restoreMainFocus();
     }
     public bool Navigate(NavigationDirection direction)
@@ -58,7 +58,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         IFeatureNavigationHandler? feature;
         if (displayFilterOpen()) feature = Enter(GamepadNavigationZone.DisplayFilterOverlay);
         else if (shell.DocumentOpen) feature = Enter(GamepadNavigationZone.ChangelogOverlay);
-        else if (shell.ModDetailsOpen || shell.CatalogDetailsOpen) feature = IsChrome(navigation.ActiveZone) ? For(navigation.ActiveZone) : Enter(MainZone);
+        else if (shell.ModDetailsOpen || shell.BrowseDetailsOpen) feature = IsChrome(navigation.ActiveZone) ? For(navigation.ActiveZone) : Enter(MainZone);
         else if (shell.EntryEditorOpen) feature = Enter(GamepadNavigationZone.EntryFormOverlay);
         else if (shell.TagEditorOpen) feature = Enter(GamepadNavigationZone.TagEditOverlay);
         else if (shell.SettingsOpen) feature = Enter(GamepadNavigationZone.Settings);
@@ -70,7 +70,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         var zone = navigation.ActiveZone;
         if ((shell.DocumentOpen && zone == GamepadNavigationZone.ChangelogOverlay)
             || (shell.ModDetailsOpen && zone == GamepadNavigationZone.ModsDetailsOverlay)
-            || (shell.CatalogDetailsOpen && zone == GamepadNavigationZone.CatalogReviewDetailsOverlay))
+            || (shell.BrowseDetailsOpen && zone == GamepadNavigationZone.BrowseDetailsOverlay))
             return For(zone)?.Confirm() ?? false;
         return false;
     }
@@ -78,7 +78,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
     {
         var zone = shell.DocumentOpen ? GamepadNavigationZone.ChangelogOverlay
             : shell.ModDetailsOpen ? GamepadNavigationZone.ModsDetailsOverlay
-            : shell.CatalogDetailsOpen ? GamepadNavigationZone.CatalogReviewDetailsOverlay : (GamepadNavigationZone?)null;
+            : shell.BrowseDetailsOpen ? GamepadNavigationZone.BrowseDetailsOverlay : (GamepadNavigationZone?)null;
         return zone.HasValue && For(zone.Value)?.Options() == true;
     }
     public bool OptionsFeature() => For(navigation.ActiveZone)?.Options() ?? false;
@@ -86,7 +86,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
     {
         GamepadNavigationZone? overlay = displayFilterOpen() ? GamepadNavigationZone.DisplayFilterOverlay
             : shell.DocumentOpen ? GamepadNavigationZone.ChangelogOverlay
-            : shell.CatalogDetailsOpen ? GamepadNavigationZone.CatalogReviewDetailsOverlay
+            : shell.BrowseDetailsOpen ? GamepadNavigationZone.BrowseDetailsOverlay
             : shell.ModDetailsOpen ? GamepadNavigationZone.ModsDetailsOverlay
             : shell.EntryEditorOpen ? GamepadNavigationZone.EntryFormOverlay
             : shell.TagEditorOpen ? GamepadNavigationZone.TagEditOverlay
@@ -104,7 +104,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         if (shell.TagEditorOpen) return Enter(GamepadNavigationZone.TagEditOverlay)?.Confirm() ?? false;
         // Tab/native keyboard focus can reach the banner without entering its
         // controller zone. Confirm the focused banner action, not the stale zone.
-        if (allowChrome && !shell.DocumentOpen && !shell.ModDetailsOpen && !shell.CatalogDetailsOpen &&
+        if (allowChrome && !shell.DocumentOpen && !shell.ModDetailsOpen && !shell.BrowseDetailsOpen &&
             focusedControl != null && For(GamepadNavigationZone.AnnouncementBanner)?.SynchronizePointer(focusedControl) == true)
             return For(GamepadNavigationZone.AnnouncementBanner)?.Confirm() ?? false;
         return allowChrome && (For(navigation.ActiveZone)?.Confirm() ?? false);
@@ -115,8 +115,6 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         if (shell.EntryEditorOpen) return For(GamepadNavigationZone.EntryFormOverlay)?.Cancel() ?? false;
         if (shell.TagEditorOpen) return For(GamepadNavigationZone.TagEditOverlay)?.Cancel() ?? false;
         if (shell.ModsOpen) return For(GamepadNavigationZone.ModsOverlayList)?.Cancel() ?? false;
-        if (allowChrome && navigation.ActiveZone is GamepadNavigationZone.CatalogSourceCardActions or GamepadNavigationZone.CatalogReviewRowActions)
-            return For(navigation.ActiveZone)?.Cancel() ?? false;
         if (shell.SettingsOpen) return For(GamepadNavigationZone.Settings)?.Cancel() ?? false;
         if (!allowChrome) return false;
         if (IsChrome(navigation.ActiveZone))

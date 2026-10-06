@@ -80,31 +80,6 @@ public class AppFilesToAddServiceTests
     }
 
     [Fact]
-    public void Catalog_compare_detects_filesToAdd_changes_and_copies_on_replace()
-    {
-        var local = new GameInfo
-        {
-            Name = "App",
-            Repository = "owner/repo",
-            FolderName = "App",
-            FilesToAdd = [],
-        };
-        var external = new GameInfo
-        {
-            Name = "App",
-            Repository = "owner/repo",
-            FolderName = "App",
-            FilesToAdd = ["portable.txt"],
-        };
-
-        AppCatalogService.AreCatalogFieldsEquivalent(local, external).Should().BeFalse();
-        CatalogCompareService.GetChangedFields(local, external).Should().Contain("filesToAdd");
-
-        var replaced = CatalogCompareService.ReplaceFromExternal(local, external);
-        replaced.FilesToAdd.Should().Equal("portable.txt");
-    }
-
-    [Fact]
     public void SerializeApp_omits_empty_filesToAdd()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), "quiver-files-to-add-ser-" + Guid.NewGuid().ToString("N"));

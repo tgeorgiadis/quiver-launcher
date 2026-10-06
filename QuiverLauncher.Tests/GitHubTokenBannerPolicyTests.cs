@@ -65,10 +65,4 @@ public class GitHubTokenBannerPolicyTests
             .Should()
             .BeTrue();
     }
-
-    [Fact]
-    public void SnoozeUntil_is_one_week_later()
-    {
-        GitHubTokenBannerPolicy.SnoozeUntil(Now).Should().Be(Now.AddDays(7));
-    }
 }

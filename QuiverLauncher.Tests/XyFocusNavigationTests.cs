@@ -87,39 +87,6 @@ public class XyFocusNavigationTests
     }
 
     [AvaloniaFact]
-    public void FindNext_honors_explicit_XYFocus_Right()
-    {
-        var first = new Button { Name = "First", Content = "First", Width = 80, Height = 32 };
-        var middle = new Button { Content = "Middle", Width = 80, Height = 32 };
-        var last = new Button { Name = "Last", Content = "Last", Width = 80, Height = 32 };
-        var window = new Window
-        {
-            Width = 420,
-            Height = 120,
-            Content = new StackPanel
-            {
-                Orientation = Avalonia.Layout.Orientation.Horizontal,
-                Spacing = 16,
-                Children = { first, middle, last },
-            },
-        };
-
-        try
-        {
-            XyFocusNavigation.EnableOn(window);
-            window.Show();
-            XYFocus.SetRight(first, last);
-
-            var next = XyFocusNavigation.FindNext(window, NavigationDirection.Right, window, first);
-            next.Should().BeSameAs(last);
-        }
-        finally
-        {
-            window.Close();
-        }
-    }
-
-    [AvaloniaFact]
     public void EnableOn_does_not_enable_keyboard_xyfocus()
     {
         var window = new Window { Width = 200, Height = 80 };

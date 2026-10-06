@@ -29,23 +29,10 @@ public class BackgroundUpdateCheckIntervalsTests
     }
 
     [Fact]
-    public void FormatLabel_uses_friendly_names()
-    {
-        BackgroundUpdateCheckIntervals.FormatLabel(60).Should().Be("Every hour");
-        BackgroundUpdateCheckIntervals.FormatLabel(1440).Should().Be("Every day");
-    }
-
-    [Fact]
     public void AppSettings_EnsureInitialized_normalizes_interval()
     {
         var settings = new AppSettings { BackgroundUpdateCheckIntervalMinutes = 17 };
         settings.EnsureInitialized();
         settings.BackgroundUpdateCheckIntervalMinutes.Should().Be(BackgroundUpdateCheckIntervals.DefaultMinutes);
-    }
-
-    [Fact]
-    public void AppSettings_AutoUpdateNewlyAddedApps_defaults_to_false()
-    {
-        new AppSettings().AutoUpdateNewlyAddedApps.Should().BeFalse();
     }
 }

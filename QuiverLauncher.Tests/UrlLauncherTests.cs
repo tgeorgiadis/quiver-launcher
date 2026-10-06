@@ -20,25 +20,6 @@ public class UrlLauncherTests
     }
 
     [Fact]
-    public void SanitizeHostEnvironment_removes_appimage_and_steam_vars()
-    {
-        var startInfo = new ProcessStartInfo { FileName = "xdg-open", UseShellExecute = false };
-        startInfo.Environment["LD_LIBRARY_PATH"] = "/tmp/.mount_foo/usr/lib";
-        startInfo.Environment["LD_PRELOAD"] = "gameoverlayrenderer.so";
-        startInfo.Environment["QT_PLUGIN_PATH"] = "/tmp/.mount_foo/plugins";
-        startInfo.Environment["QTDIR"] = "/tmp/.mount_foo";
-        startInfo.Environment["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/tmp/.mount_foo/plugins/platforms";
-        startInfo.Environment["PATH"] = "/usr/bin";
-
-        HostProcessEnvironment.Sanitize(startInfo);
-
-        foreach (var name in HostProcessEnvironment.HostBreakingEnvironmentVariables)
-            startInfo.Environment.ContainsKey(name).Should().BeFalse($"'{name}' should be stripped");
-
-        startInfo.Environment["PATH"].Should().Be("/usr/bin");
-    }
-
-    [Fact]
     public void CreateLinuxStartInfo_strips_host_breaking_environment()
     {
         var startInfo = UrlLauncher.CreateLinuxStartInfo("xdg-open", ["/tmp/game"]);

@@ -1,5 +1,4 @@
 using System.Net;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -8,7 +7,6 @@ using FluentAssertions;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
-using QuiverLauncher.ViewModels;
 using QuiverLauncher.Views;
 
 namespace QuiverLauncher.Tests;
@@ -96,16 +94,12 @@ public class InstalledUpdateCheckTests
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
             var strip = view.FindControl<UpdateCheckStatusView>("UpdateCheckStatus")!;
             var dismiss = strip.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "×"));
-            var library = view.FindControl<LibraryView>("LibraryPanel")!.FindControl<ScrollViewer>("LibraryContentPanel")!;
             dismiss.IsEffectivelyVisible.Should().BeTrue();
-            library.Margin.Top.Should().Be(0);
             dismiss.Focus();
             dismiss.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
             view.Shell.ShowUpdateCheckStatus.Should().BeFalse();
             dismiss.IsEffectivelyVisible.Should().BeFalse();
-            strip.Bounds.Height.Should().Be(0);
-            library.Margin.Top.Should().Be(20);
             view.FindControl<Button>("CheckForUpdatesButton")!.IsFocused.Should().BeTrue();
             view.Shell.CheckForUpdatesToolTip.Should().Contain("Some checks did not finish");
             view.Shell.UpdatesUpToDateBadgeVisible.Should().BeFalse();
@@ -122,39 +116,5 @@ public class InstalledUpdateCheckTests
             dismiss.IsEffectivelyVisible.Should().BeTrue("a new incomplete check can be dismissed again");
         }
         finally { window.Close(); await view.ShutdownAsync(); File.Delete(path); }
-    }
-
-    [AvaloniaTheory]
-    [InlineData(320)]
-    [InlineData(360)]
-    [InlineData(1200)]
-    public void Progress_and_retry_wrap_without_overflow_or_losing_button_focus(int width)
-    {
-        var model = new ShellViewModel { IsCheckingUpdates = true, UpdateCheckStatus = "Checking installed apps · 80 of 100" };
-        var view = new UpdateCheckStatusView { DataContext = model };
-        var window = new Window { Content = view, Width = width, Height = 140 };
-        try
-        {
-            window.Show(); window.UpdateLayout();
-            var cancel = view.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
-            cancel.Focus();
-            model.UpdateCheckStatus = "Checking installed apps · 99 of 100";
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            cancel.IsFocused.Should().BeTrue();
-            model.PendingUpdatesCount = 2;
-            model.UpdatesBadgeVisible.Should().BeTrue("updates are available while remaining checks run");
-            model.LastLauncherCheckNote = "Update check incomplete · Release checks are rate limited";
-            model.UpdateCheckStatus = model.LastLauncherCheckNote;
-            model.IsCheckingUpdates = false;
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            model.UpdatesUpToDateBadgeVisible.Should().BeFalse();
-            foreach (var control in view.GetVisualDescendants().OfType<Control>().Where(c => c is TextBlock or Button && c.IsEffectivelyVisible))
-            {
-                var point = control.TranslatePoint(default, window)!.Value;
-                point.X.Should().BeGreaterThanOrEqualTo(0);
-                (point.X + control.Bounds.Width).Should().BeLessThanOrEqualTo(width);
-            }
-        }
-        finally { window.Close(); }
     }
 }

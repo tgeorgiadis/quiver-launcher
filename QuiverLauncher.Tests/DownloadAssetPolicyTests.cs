@@ -43,7 +43,6 @@ public class DownloadAssetPolicyTests
         var release = Release(name);
         DownloadAssetPolicy.IsAuxiliary(name).Should().BeTrue();
         GitHubReleaseService.GetDownloadableAssets(release, "json").Should().BeEmpty();
-        CatalogPlatformSupport.FromAssetNames([name]).Should().Be(CatalogPlatformFlags.None);
         foreach (var platform in new[] { "Windows", "Linux-X64", "Linux-ARM64", "macOS", "Android" })
         {
             var choices = DownloadAssetPolicy.Select(release, platform);
@@ -62,7 +61,6 @@ public class DownloadAssetPolicyTests
     public void Dedicated_device_builds_are_not_desktop_or_android_downloads(string name)
     {
         PlatformAssetMatcher.IsWindowsAsset(name).Should().BeFalse();
-        CatalogPlatformSupport.FromAssetNames([name]).Should().Be(CatalogPlatformFlags.None);
         foreach (var platform in new[] { "Windows", "Linux-X64", "Linux-ARM64", "macOS", "Android" })
         {
             var choices = DownloadAssetPolicy.Select(Release(name), platform);
@@ -138,10 +136,9 @@ public class DownloadAssetPolicyTests
     [InlineData("game.IPA")]
     [InlineData("game.ipa.zip")]
     [InlineData("game-apple-ios.zip")]
-    public void Ios_builds_are_incompatible_not_uncertain_or_catalog_platform_evidence(string name)
+    public void Ios_builds_are_incompatible_not_uncertain(string name)
     {
         PlatformAssetMatcher.IsWindowsAsset(name).Should().BeFalse();
-        CatalogPlatformSupport.FromAssetNames([name]).Should().Be(CatalogPlatformFlags.None);
         foreach (var platform in new[] { "Windows", "Linux-X64", "Linux-ARM64", "macOS", "Android" })
         {
             var choices = DownloadAssetPolicy.Select(Release(name), platform);
@@ -188,7 +185,6 @@ public class DownloadAssetPolicyTests
     public void Auxiliary_files_never_establish_platform_support(string name)
     {
         DownloadAssetPolicy.IsAuxiliary(name).Should().BeTrue();
-        CatalogPlatformSupport.FromAssetNames([name]).Should().Be(CatalogPlatformFlags.None);
         DownloadAssetPolicy.Select(Release(name), "Windows").Uncertain.Should().BeEmpty();
     }
 

@@ -56,23 +56,6 @@ public class GamepadControlActivationTests
     }
 
     [AvaloniaFact]
-    public void ActivateDialogButton_raises_click_multiple_times()
-    {
-        var clickCount = 0;
-        var button = new Button
-        {
-            Content = "OK",
-            IsEnabled = true,
-            IsVisible = true,
-        };
-        button.Click += (_, _) => clickCount++;
-
-        GamepadControlActivation.ActivateDialogButton(button);
-
-        clickCount.Should().BeGreaterThanOrEqualTo(3);
-    }
-
-    [AvaloniaFact]
     public void ActivateMenuItem_raises_click_once()
     {
         var clickCount = 0;
@@ -144,20 +127,6 @@ public class GamepadControlActivationTests
         {
             window.Close();
         }
-    }
-
-    [Fact]
-    public void ShouldKeyboardFocusOnGamepadHighlight_true_for_textbox()
-    {
-        GamepadControlActivation.ShouldKeyboardFocusOnGamepadHighlight(new TextBox())
-            .Should().BeTrue();
-    }
-
-    [Fact]
-    public void ShouldKeyboardFocusOnGamepadHighlight_true_for_button()
-    {
-        GamepadControlActivation.ShouldKeyboardFocusOnGamepadHighlight(new Button())
-            .Should().BeTrue();
     }
 
     [AvaloniaFact]

@@ -90,94 +90,29 @@ public class SharedRepositoryAppsTests
     }
 
     [Fact]
-    public void BuildCompareRows_shows_both_catalog_apps_from_the_same_repository()
+    public void PlanAdd_adds_another_filter_of_a_shared_repository_but_not_the_same_app_twice()
     {
-        var local = new List<GameInfo>
-        {
-            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue", "EXIT1"),
-        };
-        var external = new List<GameInfo>
-        {
-            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue", "EXIT1"),
-            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT 2", "EXIT2-ReXGlue", "EXIT2"),
-        };
+        var exit1 = CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-Custom", "EXIT1");
+        var local = new List<GameInfo> { exit1 };
 
-        var rows = CatalogCompareService.BuildCompareRows(local, external);
+        var second = LibraryAddService.PlanAdd(local,
+            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT 2", "EXIT2-ReXGlue", "EXIT2"), autoUpdate: false);
+        second.Outcome.Should().Be(LibraryAddOutcome.Added);
+        second.Library.Select(a => a.FolderName).Should().Equal("EXIT-Custom", "EXIT2-ReXGlue");
 
-        rows.Should().HaveCount(2);
-        rows.Should().ContainSingle(r =>
-            r.External!.FolderName == "EXIT-ReXGlue" &&
-            r.Status == CatalogSyncStatus.Unchanged);
-        var addable = rows.Should().ContainSingle(r => r.External!.FolderName == "EXIT2-ReXGlue").Subject;
-        addable.Status.Should().Be(CatalogSyncStatus.InExternalOnly);
-        addable.CanAdd.Should().BeTrue();
-
-        var updated = CatalogCompareService.ApplyRowAdd(local, addable);
-        updated.Select(a => a.FolderName).Should().BeEquivalentTo("EXIT-ReXGlue", "EXIT2-ReXGlue");
+        // Same repository and filter is the same app, even when the library copy lives in another folder.
+        var again = LibraryAddService.PlanAdd(local,
+            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue", " EXIT1 "), autoUpdate: false);
+        again.Outcome.Should().Be(LibraryAddOutcome.AlreadyAdded);
+        again.App.Should().BeSameAs(exit1);
+        again.Library.Should().Equal(local);
     }
 
     [Fact]
-    public void BuildCompareRows_matches_unique_repo_when_local_folder_was_renamed()
-    {
-        var local = new List<GameInfo>
-        {
-            CreateApp("owner/game", "Game", "Game-CustomFolder"),
-        };
-        var external = new List<GameInfo>
-        {
-            CreateApp("owner/game", "Game", "Game-CatalogFolder"),
-        };
-
-        var rows = CatalogCompareService.BuildCompareRows(local, external);
-
-        rows.Should().ContainSingle();
-        rows[0].Local!.FolderName.Should().Be("Game-CustomFolder");
-        rows[0].External!.FolderName.Should().Be("Game-CatalogFolder");
-        rows[0].Status.Should().Be(CatalogSyncStatus.Unchanged);
-    }
-
-    [Fact]
-    public void IndexByInstanceKey_keeps_same_repo_with_different_folders()
-    {
-        var exit1 = CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue");
-        var exit2 = CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT 2", "EXIT2-ReXGlue");
-
-        var indexed = CatalogCompareService.IndexByInstanceKey([exit1, exit2]);
-
-        indexed.Should().HaveCount(2);
-        indexed[exit1.InstanceKey].Name.Should().Be("EXIT");
-        indexed[exit2.InstanceKey].Name.Should().Be("EXIT 2");
-    }
-
-    [Fact]
-    public void GetCatalogDiff_treats_same_repo_different_folders_as_distinct()
-    {
-        var baseline = new List<GameInfo>
-        {
-            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue", "EXIT1"),
-        };
-        var remote = new List<GameInfo>
-        {
-            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue", "EXIT1"),
-            CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT 2", "EXIT2-ReXGlue", "EXIT2"),
-        };
-
-        var diff = AppCatalogService.GetCatalogDiff(baseline, remote);
-
-        diff.Added.Should().ContainSingle(a => a.FolderName == "EXIT2-ReXGlue");
-        diff.Removed.Should().BeEmpty();
-        diff.Changed.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void CloneReplaceMerge_copy_release_asset_filter()
+    public void CloneForLocal_copies_release_asset_filter()
     {
         var external = CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue", "EXIT1");
-        CatalogCompareService.CloneForLocal(external).ReleaseAssetFilter.Should().Be("EXIT1");
-
-        var local = CreateApp("FluffyQuack/ReXGlue-EXIT", "EXIT", "EXIT-ReXGlue");
-        CatalogCompareService.ReplaceFromExternal(local, external).ReleaseAssetFilter.Should().Be("EXIT1");
-        CatalogCompareService.MergeExternalIntoLocal(local, external).ReleaseAssetFilter.Should().Be("EXIT1");
+        LibraryAddService.CloneForLocal(external).ReleaseAssetFilter.Should().Be("EXIT1");
     }
 
     [Fact]

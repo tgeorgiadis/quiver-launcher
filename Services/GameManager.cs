@@ -247,7 +247,7 @@ namespace QuiverLauncher.Services
         }
 
         public Task LoadGamesAsync(bool forceUpdateCheck = false) =>
-            LoadGamesCoreAsync(forceUpdateCheck, refreshRemoteCatalogs: true);
+            LoadGamesCoreAsync(forceUpdateCheck, fullReload: true);
 
         internal async Task RefreshLoadedLibraryMetadataAsync(CancellationToken cancellationToken)
         {
@@ -262,18 +262,18 @@ namespace QuiverLauncher.Services
         }
 
         /// <summary>
-        /// Reloads the library from local apps.json without fetching catalog sources.
+        /// Reloads the library from local apps.json.
         /// Status is preserved for existing apps; only <paramref name="statusCheckIdentityKeys"/>
         /// (or every app when null) are re-checked on disk.
         /// Set <paramref name="allowNetwork"/> to false for catalog mutations: use
         /// cached releases and icons without waiting for remote metadata.
         /// </summary>
         public Task ReloadLibraryFromDiskAsync(IEnumerable<string>? statusCheckIdentityKeys = null, bool allowNetwork = true) =>
-            LoadGamesCoreAsync(forceUpdateCheck: false, refreshRemoteCatalogs: false, statusCheckIdentityKeys, allowNetwork);
+            LoadGamesCoreAsync(forceUpdateCheck: false, fullReload: false, statusCheckIdentityKeys, allowNetwork);
 
         private async Task LoadGamesCoreAsync(
             bool forceUpdateCheck,
-            bool refreshRemoteCatalogs,
+            bool fullReload,
             IEnumerable<string>? statusCheckIdentityKeys = null,
             bool allowNetwork = true)
         {
@@ -290,22 +290,13 @@ namespace QuiverLauncher.Services
             _settings = _settingsStore.Load();
             _settings.EnsureInitialized();
 
-            if (refreshRemoteCatalogs && AppCatalogService.MigrateLegacyCatalogSources(_settings))
-                _settingsStore.Save(_settings);
-
-            if (refreshRemoteCatalogs)
-            {
-                await _catalogService.RefreshAllSourcesAsync(_httpClient, _settings).ConfigureAwait(false);
-                _settingsStore.Save(_settings);
-            }
-
             Games ??= [];
-            var previousByKey = CatalogCompareService.IndexByInstanceKey(_catalogApps);
+            var previousByKey = _catalogApps.Where(a => !string.IsNullOrWhiteSpace(a.InstanceKey)).GroupBy(a => a.InstanceKey, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
             var allApps = await _catalogService.LoadLocalCatalogAsync(_settings).ConfigureAwait(false);
             _catalogApps = allApps.Where(app => app != null).Cast<GameInfo>().ToList();
 
             HashSet<string>? checkKeys = null;
-            if (!refreshRemoteCatalogs && statusCheckIdentityKeys != null)
+            if (!fullReload && statusCheckIdentityKeys != null)
             {
                 checkKeys = new HashSet<string>(
                     statusCheckIdentityKeys.Where(key => !string.IsNullOrWhiteSpace(key)),
@@ -342,19 +333,13 @@ namespace QuiverLauncher.Services
                     {
                         await GameStatusService.CheckStatusAsync(app, _httpClient, _appsFolder, forceUpdateCheck,
                             checkRemoteVersion: allowNetwork, applyCachedRelease: allowNetwork);
-                        if (!allowNetwork) StartupVersionResolver.Apply(app, _settings);
+                        if (!allowNetwork) StartupVersionResolver.Apply(app);
                     }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"Error checking status for {app.Name}: {ex.Message}");
                     }
                 }));
-            }
-
-            if (refreshRemoteCatalogs)
-            {
-                await _catalogService.ApplyPendingCatalogChangeFlagsAsync(_catalogApps, _settings)
-                    .ConfigureAwait(false);
             }
 
             await RebuildVisibleGamesAsync(_settings);
@@ -375,7 +360,6 @@ namespace QuiverLauncher.Services
             app.IsInLocalAppsJson = true;
             AppCatalogService.ApplyUserAppTags(app, settings);
             AppCatalogService.ApplyUserAppDisplayNames(app, settings);
-            app.ShowLibraryUpdateBadges = settings.ShowLibraryAppUpdateBadges;
             app.LibraryCardTagMaxLines = settings.LibraryCardTagMaxLines;
             app.TruncateLibraryCardTitles = settings.TruncateLibraryCardTitles;
             AppCatalogService.RefreshLibraryCardTags([app], settings);
@@ -413,7 +397,6 @@ namespace QuiverLauncher.Services
             target.Status = source.Status;
             target.InstalledVersion = source.InstalledVersion;
             target.LatestVersion = source.LatestVersion;
-            target.HasPendingCatalogChanges = source.HasPendingCatalogChanges;
         }
 
         public async Task ExportGamesAsync()
@@ -581,7 +564,7 @@ namespace QuiverLauncher.Services
             }
 
             if (!string.IsNullOrWhiteSpace(LibrarySearchText))
-                visibleGames = visibleGames.Where(game => CatalogReviewSearch.Matches(game, LibrarySearchText));
+                visibleGames = visibleGames.Where(game => AppSearch.Matches(game, LibrarySearchText));
 
             return visibleGames.ToList();
         }

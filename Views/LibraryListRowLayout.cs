@@ -135,7 +135,6 @@ public sealed class LibraryListRowLayout : Panel
                 buttons[i].MinHeight = 0;
             }
         }
-        Put("Badge", new Rect(12, Math.Max(6, imageSize - 18), 24, 24), game?.ShowUpdateBadge == true);
         Put("Progress", new Rect(0, Math.Max(0, size.Height - 4), size.Width, 4), game?.IsDownloading == true);
     }
 }

@@ -202,6 +202,24 @@ public sealed class LibraryFileSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task Atomic_replacement_failure_retains_original_library_and_allows_retry()
+    {
+        if (!OperatingSystem.IsWindows()) return; // Windows file sharing provides a deterministic replacement failure.
+        static GameInfo App(int i) => new() { Name = $"App {i}", Repository = "owner/app" + i, FolderName = "App" + i };
+        await _service.SaveLocalAppsAsync([App(0)]);
+        var before = await File.ReadAllBytesAsync(LibraryPath);
+        using (var locked = new FileStream(LibraryPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            var save = () => _service.SaveLocalAppsAsync([App(0), App(1)]);
+            await save.Should().ThrowAsync<IOException>();
+            (await File.ReadAllBytesAsync(LibraryPath)).Should().Equal(before);
+            Directory.GetFiles(_root, "*.tmp").Should().BeEmpty();
+        }
+        await _service.SaveLocalAppsAsync([App(0), App(2)]);
+        (await _service.LoadLocalAppsForMutationAsync()).Select(a => a.Repository).Should().Equal("owner/app0", "owner/app2");
+    }
+
+    [Fact]
     public async Task Linux_permission_failures_never_replace_library_and_allow_retry()
     {
         if (!OperatingSystem.IsLinux()) return;

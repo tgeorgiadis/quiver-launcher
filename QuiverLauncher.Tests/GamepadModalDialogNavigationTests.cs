@@ -10,7 +10,7 @@ namespace QuiverLauncher.Tests;
 public class GamepadModalDialogNavigationTests
 {
     [Fact]
-    public void MoveButtonIndex_moves_right_between_horizontal_buttons()
+    public void MoveFocusIndex_moves_right_between_horizontal_buttons()
     {
         var positions = new List<(double X, double Y)>
         {
@@ -18,12 +18,12 @@ public class GamepadModalDialogNavigationTests
             (100, 0),
         };
 
-        GamepadModalDialogNavigation.MoveButtonIndex(0, NavigationDirection.Right, positions).Should().Be(1);
-        GamepadModalDialogNavigation.MoveButtonIndex(1, NavigationDirection.Left, positions).Should().Be(0);
+        GamepadModalDialogNavigation.MoveFocusIndex(0, NavigationDirection.Right, positions).Should().Be(1);
+        GamepadModalDialogNavigation.MoveFocusIndex(1, NavigationDirection.Left, positions).Should().Be(0);
     }
 
     [Fact]
-    public void MoveButtonIndex_stays_on_bottom_row_when_pressing_down()
+    public void MoveFocusIndex_stays_on_bottom_row_when_pressing_down()
     {
         var positions = new List<(double X, double Y)>
         {
@@ -33,12 +33,12 @@ public class GamepadModalDialogNavigationTests
             (100, 100),
         };
 
-        GamepadModalDialogNavigation.MoveButtonIndex(2, NavigationDirection.Down, positions).Should().Be(2);
-        GamepadModalDialogNavigation.MoveButtonIndex(3, NavigationDirection.Down, positions).Should().Be(3);
+        GamepadModalDialogNavigation.MoveFocusIndex(2, NavigationDirection.Down, positions).Should().Be(2);
+        GamepadModalDialogNavigation.MoveFocusIndex(3, NavigationDirection.Down, positions).Should().Be(3);
     }
 
     [Fact]
-    public void MoveButtonIndex_stays_on_top_row_when_pressing_up()
+    public void MoveFocusIndex_stays_on_top_row_when_pressing_up()
     {
         var positions = new List<(double X, double Y)>
         {
@@ -48,12 +48,12 @@ public class GamepadModalDialogNavigationTests
             (100, 100),
         };
 
-        GamepadModalDialogNavigation.MoveButtonIndex(0, NavigationDirection.Up, positions).Should().Be(0);
-        GamepadModalDialogNavigation.MoveButtonIndex(1, NavigationDirection.Up, positions).Should().Be(1);
+        GamepadModalDialogNavigation.MoveFocusIndex(0, NavigationDirection.Up, positions).Should().Be(0);
+        GamepadModalDialogNavigation.MoveFocusIndex(1, NavigationDirection.Up, positions).Should().Be(1);
     }
 
     [Fact]
-    public void MoveButtonIndex_stays_put_at_horizontal_edges()
+    public void MoveFocusIndex_stays_put_at_horizontal_edges()
     {
         var positions = new List<(double X, double Y)>
         {
@@ -61,8 +61,8 @@ public class GamepadModalDialogNavigationTests
             (100, 0),
         };
 
-        GamepadModalDialogNavigation.MoveButtonIndex(0, NavigationDirection.Left, positions).Should().Be(0);
-        GamepadModalDialogNavigation.MoveButtonIndex(1, NavigationDirection.Right, positions).Should().Be(1);
+        GamepadModalDialogNavigation.MoveFocusIndex(0, NavigationDirection.Left, positions).Should().Be(0);
+        GamepadModalDialogNavigation.MoveFocusIndex(1, NavigationDirection.Right, positions).Should().Be(1);
     }
 
     [AvaloniaFact]
@@ -712,7 +712,7 @@ public class GamepadModalDialogNavigationTests
     }
 
     [AvaloniaFact]
-    public void GetDefaultButtonIndex_prefers_ok_and_yes()
+    public void GetDefaultFocusIndex_prefers_ok_and_yes()
     {
         var buttons = new List<Button>
         {
@@ -720,28 +720,28 @@ public class GamepadModalDialogNavigationTests
             new() { Content = "Yes" },
         };
 
-        GamepadModalDialogNavigation.GetDefaultButtonIndex(buttons).Should().Be(1);
+        GamepadModalDialogNavigation.GetDefaultFocusIndex(buttons).Should().Be(1);
 
         var okButtons = new List<Button>
         {
             new() { Content = "OK" },
         };
 
-        GamepadModalDialogNavigation.GetDefaultButtonIndex(okButtons).Should().Be(0);
+        GamepadModalDialogNavigation.GetDefaultFocusIndex(okButtons).Should().Be(0);
     }
 
     [AvaloniaFact]
-    public void GetDefaultButtonIndex_prefers_IsDefault_over_yes_label()
+    public void GetDefaultFocusIndex_prefers_IsDefault_over_yes_label()
     {
         var yes = new Button { Content = "Yes" };
         var no = new Button { Content = "No", IsDefault = true };
         var buttons = new List<Button> { yes, no };
 
-        GamepadModalDialogNavigation.GetDefaultButtonIndex(buttons).Should().Be(1);
+        GamepadModalDialogNavigation.GetDefaultFocusIndex(buttons).Should().Be(1);
     }
 
     [AvaloniaFact]
-    public void FindCancelButtonIndex_prefers_cancel_and_no()
+    public void FindCancelControlIndex_prefers_cancel_and_no()
     {
         var yesNo = new List<Button>
         {
@@ -749,7 +749,7 @@ public class GamepadModalDialogNavigationTests
             new() { Content = "No" },
         };
 
-        GamepadModalDialogNavigation.FindCancelButtonIndex(yesNo).Should().Be(1);
+        GamepadModalDialogNavigation.FindCancelControlIndex(yesNo).Should().Be(1);
 
         var okCancel = new List<Button>
         {
@@ -757,7 +757,7 @@ public class GamepadModalDialogNavigationTests
             new() { Content = "OK" },
         };
 
-        GamepadModalDialogNavigation.FindCancelButtonIndex(okCancel).Should().Be(0);
+        GamepadModalDialogNavigation.FindCancelControlIndex(okCancel).Should().Be(0);
 
         var yesNoCancel = new List<Button>
         {
@@ -766,16 +766,16 @@ public class GamepadModalDialogNavigationTests
             new() { Content = "Cancel" },
         };
 
-        GamepadModalDialogNavigation.FindCancelButtonIndex(yesNoCancel).Should().Be(2);
+        GamepadModalDialogNavigation.FindCancelControlIndex(yesNoCancel).Should().Be(2);
     }
 
     [Fact]
-    public void MoveButtonIndex_keeps_single_button_index()
+    public void MoveFocusIndex_keeps_single_control_index()
     {
         var positions = new List<(double X, double Y)> { (0, 0) };
 
-        GamepadModalDialogNavigation.MoveButtonIndex(0, NavigationDirection.Right, positions).Should().Be(0);
-        GamepadModalDialogNavigation.MoveButtonIndex(0, NavigationDirection.Down, positions).Should().Be(0);
+        GamepadModalDialogNavigation.MoveFocusIndex(0, NavigationDirection.Right, positions).Should().Be(0);
+        GamepadModalDialogNavigation.MoveFocusIndex(0, NavigationDirection.Down, positions).Should().Be(0);
     }
 
     [AvaloniaFact]

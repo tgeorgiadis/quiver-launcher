@@ -228,7 +228,6 @@ public partial class LibraryView : UserControl
     private void OpenMods_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.OpenMods);
     private void RemoveCustomIcon_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.RemoveCustomIcon);
     private void RemoveGameEntry_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.RemoveGameEntry);
-    private void ReviewCatalogChanges_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.ReviewCatalogChanges);
     private void SelectDifferentExecutable_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.SelectDifferentExecutable);
     private void SetCustomIcon_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.SetCustomIcon);
     private void ShowChangelog_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.ShowChangelog);

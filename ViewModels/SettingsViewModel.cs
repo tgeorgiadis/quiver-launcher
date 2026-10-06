@@ -30,6 +30,23 @@ public class SettingsViewModel : ObservableViewModel
         CredentialsChanged?.Invoke(provider);
     }
 
+    /// <summary>Saves the player's own app list location; true when it changed.</summary>
+    public bool SaveCustomAppList(string? draft)
+    {
+        var value = draft?.Trim() ?? "";
+        var previous = Current.CustomAppListLocation;
+        if (previous == value) return false;
+        Current.CustomAppListLocation = value;
+        try { Save(Current); }
+        catch (Exception ex)
+        {
+            Current.CustomAppListLocation = previous;
+            SaveFailed?.Invoke(ex);
+            return false;
+        }
+        return true;
+    }
+
 
     private void Change<T>(T oldValue, T newValue, Action<AppSettings> apply, SettingsChange change)
     {
@@ -157,8 +174,6 @@ public class SettingsViewModel : ObservableViewModel
     public void Refresh() => Notify(null);
 
     public void SaveCurrent() => Save(Current);
-    // Catalog bookkeeping does not change display settings or credentials.
-    public void SaveCatalogState() => _settingsStore.Save(Current);
 
     // Window movement must not refresh bindings or reapply interface scaling.
     internal void SaveWindowPlacement(DesktopWindowPlacement placement)
@@ -244,20 +259,10 @@ public class SettingsViewModel : ObservableViewModel
         get => Current.BackgroundUpdateCheckEnabled;
         set => Change(Current.BackgroundUpdateCheckEnabled, value, s => s.BackgroundUpdateCheckEnabled = value, SettingsChange.Tray);
     }
-    public bool PromptCatalogUpdates
-    {
-        get => Current.PromptCatalogUpdates;
-        set => Change(Current.PromptCatalogUpdates, value, s => s.PromptCatalogUpdates = value, SettingsChange.Presentation);
-    }
     public bool PromptAppUpdateReviews
     {
         get => Current.PromptAppUpdateReviews;
         set => Change(Current.PromptAppUpdateReviews, value, s => s.PromptAppUpdateReviews = value, SettingsChange.Presentation);
-    }
-    public bool ShowLibraryAppUpdateBadges
-    {
-        get => Current.ShowLibraryAppUpdateBadges;
-        set => Change(Current.ShowLibraryAppUpdateBadges, value, s => s.ShowLibraryAppUpdateBadges = value, SettingsChange.LibraryDisplay | SettingsChange.Badges);
     }
     public bool TruncateLibraryCardTitles
     {

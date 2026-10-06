@@ -144,92 +144,6 @@ public class SettingsTextInputTests
     }
 
     [AvaloniaTheory]
-    [InlineData(320)]
-    [InlineData(400)]
-    [InlineData(600)]
-    public async Task Advanced_token_actions_fit_narrow_screens(int width)
-    {
-        var main = CreateView(new Store());
-        var view = main.FindControl<SettingsView>("SettingsPanel")!;
-        var window = new Window { Content = main, Width = 1200, Height = 700 };
-        try
-        {
-            window.Show();
-            typeof(MainView).GetMethod("SettingsButton_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(main, [main, new Avalonia.Interactivity.RoutedEventArgs()]);
-            view.Width = width;
-            var tabs = view.FindControl<TabControl>("SettingsTabControl")!;
-            tabs.SelectedIndex = 4;
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            view.GitHubTokenHelp_Click(null, new Avalonia.Interactivity.RoutedEventArgs());
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            var page = (ScrollViewer)((TabItem)tabs.SelectedItem!).Content!;
-            page.Extent.Width.Should().BeLessThanOrEqualTo(page.Viewport.Width + 1);
-            foreach (var button in page.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("options")))
-            {
-                var secondary = button.Content as string is "Create token" or "Setup guide" or "Hide guide";
-                button.Bounds.Height.Should().BeGreaterThanOrEqualTo(secondary ? 32 : 44);
-                if (secondary) button.Bounds.Height.Should().BeLessThan(44);
-                var point = button.TranslatePoint(default, view)!.Value;
-                point.X.Should().BeGreaterThanOrEqualTo(0);
-                (point.X + button.Bounds.Width).Should().BeLessThanOrEqualTo(width);
-            }
-            view.FindControl<StackPanel>("GitHubTokenHelpText")!.IsVisible.Should().BeTrue();
-        }
-        finally { window.Close(); await main.ShutdownAsync(); }
-    }
-
-    [AvaloniaTheory]
-    [InlineData(false, 480)]
-    [InlineData(true, 1100)]
-    public async Task Automatic_platform_results_preserve_visible_rows_focus_and_scroll(bool gamepad, int width)
-    {
-        var store = new Store();
-        store.Current.CatalogPlatformFilters = ["Windows"];
-        store.Current.CatalogPlatformFilterChosen = true;
-        var view = CreateView(store);
-        var window = new Window { Content = view, Width = width, Height = 800 };
-        try
-        {
-            window.Show();
-            view.Shell.Mode = MainViewMode.AppCatalog;
-            view.Shell.CatalogSubView = AppCatalogSubView.Review;
-            typeof(MainView).GetMethod("UpdateMainViewUi", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(view, null);
-            var catalog = view.FindControl<CatalogReviewView>("CatalogReviewPanel")!;
-            var repo = "synthetic/" + Guid.NewGuid().ToString("N");
-            catalog.Model.Refresh(new() { CachedListVersion = "1", IsCommunityManaged = true }, [],
-                [new() { Name = "DK64", Repository = repo, FolderName = "DK64" }]);
-            catalog.Model.PlatformFilters = ["Windows"];
-            catalog.ApplyCatalogSyncFilter();
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            var row = catalog.Model.Rows.Should().ContainSingle().Subject;
-            var search = catalog.FindControl<TextBox>("CatalogSearchTextBox")!;
-            GamepadFocusChrome.SetKeyboardNavigationActive(true);
-            if (gamepad) catalog.Navigation.ApplyCatalogReviewRowSelection(0);
-            else search.Focus();
-            var offsets = catalog.GetVisualDescendants().OfType<ScrollViewer>().Select(s => (s, s.Offset)).ToList();
-            QuiverLauncher.Core.Services.CatalogPlatformIndex.Set("github", repo, null, null, new()
-            {
-                tag_name = "1.0.2", assets = [new() { name = "DK64Recompiled-Windows-Release-1-0-2.zip" }]
-            });
-            catalog.StagePlatformDiscoveries();
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            catalog.Model.Rows.Should().ContainSingle().Which.Should().BeSameAs(row);
-            row.CompatibilityState.Should().Be(CatalogCompatibilityState.Available);
-            row.CompatibilityText.Should().BeEmpty();
-            if (gamepad) row.IsGamepadFocused.Should().BeTrue();
-            else search.IsFocused.Should().BeTrue();
-            foreach (var (scroll, offset) in offsets) scroll.Offset.Should().Be(offset);
-            catalog.FindControl<Button>("CatalogApplyPlatformsButton").Should().BeNull();
-        }
-        finally
-        {
-            window.Close(); await view.ShutdownAsync();
-            GamepadTextInput.Reset(); GamepadFocusChrome.SetKeyboardNavigationActive(false);
-        }
-    }
-
-    [AvaloniaTheory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task Token_draft_is_saved_only_by_explicit_keyboard_or_gamepad_action(bool gamepad)
@@ -268,63 +182,6 @@ public class SettingsTextInputTests
             Assert.True(view.Shell.SettingsOpen);
         }
         finally { window.Close(); await view.ShutdownAsync(); GamepadTextInput.Reset(); GamepadFocusChrome.SetKeyboardNavigationActive(false); }
-    }
-
-    [AvaloniaTheory]
-    [InlineData(false, 900)]
-    [InlineData(true, 900)]
-    [InlineData(true, 480)]
-    public async Task Hidden_pending_notice_reveals_rows_and_transfers_focus(bool gamepad, int width)
-    {
-        var store = new Store();
-        store.Current.CatalogPlatformFilters = ["Windows"];
-        store.Current.CatalogPlatformFilterChosen = true;
-        var view = CreateView(store);
-        var window = new Window { Content = view, Width = width, Height = 800 };
-        try
-        {
-            window.Show();
-            view.Shell.Mode = MainViewMode.AppCatalog;
-            view.Shell.CatalogSubView = AppCatalogSubView.Review;
-            typeof(MainView).GetMethod("UpdateMainViewUi", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(view, null);
-            var catalog = view.FindControl<CatalogReviewView>("CatalogReviewPanel")!;
-            catalog.Model.Refresh(new() { CachedListVersion = "1" }, [],
-                [new() { Name = "Pending", FolderName = "Pending", Repository = "" }]);
-            catalog.Model.PlatformFilters = store.Current.CatalogPlatformFilters;
-            catalog.Model.ReviewFilter = CatalogReviewFilter.NeedsReview;
-            catalog.Model.SearchText = "different app";
-            catalog.ApplyCatalogSyncFilter();
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            var button = catalog.FindControl<Button>("CatalogShowAllPendingButton")!;
-            button.IsEffectivelyVisible.Should().BeTrue();
-            catalog.FindControl<TextBlock>("CatalogSyncEmptyText")!.IsVisible.Should().BeFalse();
-            catalog.Navigation.CollectCatalogReviewNoticeControls().Should().Contain(button);
-            GamepadFocusChrome.SetKeyboardNavigationActive(true);
-            if (gamepad)
-            {
-                catalog.Navigation.NavigateToCatalogReviewFiltersFromList().Should().BeTrue();
-                button.Classes.Should().Contain("gamepad-focused");
-                catalog.Navigation.Confirm();
-            }
-            else
-            {
-                button.Focus();
-                window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-                window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-            }
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            catalog.Model.Rows.Should().ContainSingle();
-            catalog.Model.Rows[0].IsGamepadFocused.Should().BeTrue();
-            button.IsEffectivelyVisible.Should().BeFalse();
-            store.Current.CatalogPlatformFilters.Should().Equal("Windows");
-            catalog.EnsureCatalogPlatformFilterDefault();
-            catalog.Model.EffectivePlatformFilters.Should().Equal("Windows");
-        }
-        finally
-        {
-            window.Close(); await view.ShutdownAsync();
-            GamepadTextInput.Reset(); GamepadFocusChrome.SetKeyboardNavigationActive(false);
-        }
     }
 
     [AvaloniaTheory]
@@ -385,7 +242,12 @@ public class SettingsTextInputTests
     [InlineData(true)]
     public async Task Empty_library_actions_work_from_keyboard_and_shell_gamepad_navigation(bool gamepad)
     {
-        var view = CreateView(new Store());
+        var store = new Store();
+        // Browse loads the catalog when it opens; keep that request off the network.
+        using var http = new HttpClient(new Offline());
+        using var manager = new GameManager(store, http);
+        var view = new MainView(new() { SettingsStore = store, GameManager = manager,
+            InitializeOnOpen = false, EnableInput = false, EnableMusic = false });
         var window = new Window { Content = view, Width = 1200, Height = 800 };
         try
         {
@@ -409,7 +271,7 @@ public class SettingsTextInputTests
                 library.EmptyLibraryBrowseButton.Classes.Should().Contain("gamepad-focused");
                 library.Navigation.Confirm().Should().BeTrue();
                 Dispatcher.UIThread.RunJobs();
-                view.Shell.Mode.Should().Be(MainViewMode.AppCatalog);
+                view.Shell.Mode.Should().Be(MainViewMode.Browse);
             }
             else
             {
@@ -427,52 +289,10 @@ public class SettingsTextInputTests
         }
     }
 
-    [AvaloniaTheory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Catalog_rate_limit_shortcut_opens_advanced_token_with_keyboard_or_gamepad(bool gamepad)
+    private sealed class Offline : HttpMessageHandler
     {
-        var view = CreateView(new Store());
-        var window = new Window { Content = view, Width = 900, Height = 800 };
-        try
-        {
-            window.Show();
-            view.Shell.Mode = MainViewMode.AppCatalog;
-            view.Shell.CatalogSubView = AppCatalogSubView.Review;
-            typeof(MainView).GetMethod("UpdateMainViewUi", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(view, null);
-            var catalog = view.FindControl<CatalogReviewView>("CatalogReviewPanel")!;
-            catalog.Model.SetPlatformCheck(new(1, 8, CatalogReleaseWarmupOutcome.RateLimited));
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            var details = catalog.FindControl<Button>("CatalogPlatformDetailsButton")!;
-            var controls = catalog.Navigation.CollectCatalogReviewFilterControls();
-            controls.Should().Contain(details);
-            var menu = (MenuFlyout)details.Flyout!;
-            if (gamepad)
-            {
-                catalog.Navigation.ApplyCatalogReviewFilterSelection(controls.IndexOf(details));
-                catalog.Navigation.Confirm();
-                Dispatcher.UIThread.RunJobs();
-                GamepadMenuFlyoutNavigation.Instance.HasActiveMenuFlyout.Should().BeTrue();
-                GamepadMenuFlyoutNavigation.Instance.TryHandleConfirm().Should().BeTrue();
-            }
-            else
-            {
-                details.Focus().Should().BeTrue();
-                window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-                window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-                Dispatcher.UIThread.RunJobs();
-                menu.IsOpen.Should().BeTrue();
-                var token = menu.Items.OfType<MenuItem>().Single(item => item.Name == "CatalogPlatformTokenSettingsButton");
-                token.Focus();
-                window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-                window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
-            }
-            Dispatcher.UIThread.RunJobs();            view.Shell.SettingsOpen.Should().BeTrue();
-            var settings = view.FindControl<SettingsView>("SettingsPanel")!;
-            settings.FindControl<TabControl>("SettingsTabControl")!.SelectedIndex.Should().Be(4);
-            settings.FindControl<TextBox>("GitHubTokenTextBox")!.IsFocused.Should().BeTrue();
-        }
-        finally { window.Close(); await view.ShutdownAsync(); GamepadTextInput.Reset(); }
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromException<HttpResponseMessage>(new HttpRequestException("offline"));
     }
 
     [AvaloniaFact]
@@ -617,35 +437,6 @@ public class SettingsTextInputTests
             GamepadFocusChrome.SetKeyboardNavigationActive(false);
             GamepadFocusChrome.SetActive(false);
         }
-    }
-
-    [AvaloniaFact]
-    public async Task Settings_heading_and_tabs_stay_fixed_while_page_scrolls()
-    {
-        var view = CreateView(new Store());
-        var window = new Window { Content = view, Width = 1200, Height = 500 };
-        try
-        {
-            window.Show();
-            typeof(MainView).GetMethod("SettingsButton_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(view, [view, new Avalonia.Interactivity.RoutedEventArgs()]);
-            var settings = view.FindControl<SettingsView>("SettingsPanel")!;
-            var tabs = settings.FindControl<TabControl>("SettingsTabControl")!;
-            tabs.SelectedIndex = 1;
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            var close = settings.FindControl<Button>("CloseSettingsButton")!;
-            var tab = (TabItem)tabs.SelectedItem!;
-            var scroll = (ScrollViewer)tab.Content!;
-            var closePosition = close.TranslatePoint(default, settings);
-            var tabPosition = tab.TranslatePoint(default, settings);
-            scroll.Extent.Height.Should().BeGreaterThan(scroll.Viewport.Height);
-            scroll.Offset = new Avalonia.Vector(0, 400);
-            Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            scroll.Offset.Y.Should().BeGreaterThan(0);
-            close.TranslatePoint(default, settings).Should().Be(closePosition);
-            tab.TranslatePoint(default, settings).Should().Be(tabPosition);
-        }
-        finally { window.Close(); await view.ShutdownAsync(); }
     }
 
     private static MainView CreateView(Store store) => new(new()

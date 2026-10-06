@@ -65,31 +65,6 @@ public class AppIdentityMigrationTests
     }
 
     [Fact]
-    public void MigrateCatalogSourceMaps_remaps_ignore_and_hide()
-    {
-        var settings = new AppSettings();
-        settings.EnsureInitialized();
-        var source = new AppCatalogSource
-        {
-            Name = "Test",
-            Location = "https://example.com/list.json",
-            IgnoredChangesAtVersion = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["owner/old"] = "v2",
-            },
-            HiddenFromReviewRepositories = ["owner/old", "other/app"],
-        };
-        settings.AppCatalogSources.Add(source);
-
-        AppIdentityMigration.MigrateCatalogSourceMaps(settings, "owner/old", "owner/new")
-            .Should().BeTrue();
-
-        source.IgnoredChangesAtVersion.Should().NotContainKey("owner/old");
-        source.IgnoredChangesAtVersion["owner/new"].Should().Be("v2");
-        source.HiddenFromReviewRepositories.Should().BeEquivalentTo("owner/new", "other/app");
-    }
-
-    [Fact]
     public void MigrateIdentity_source_only_change_clears_old_cache_without_settings_change()
     {
         var cacheDir = Path.Combine(Path.GetTempPath(), "QuiverIdMig_" + Guid.NewGuid().ToString("N"));

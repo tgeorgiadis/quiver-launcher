@@ -1,9 +1,6 @@
-using Avalonia.Controls;
-using Avalonia.Headless.XUnit;
 using FluentAssertions;
 using QuiverLauncher.Services;
 using QuiverLauncher.ViewModels;
-using QuiverLauncher.Views;
 
 namespace QuiverLauncher.Tests;
 
@@ -65,18 +62,5 @@ public class DisplayFilterEditorTests
         model.ExcludeTags = "hidden";
         model.Save().ErrorTitle.Should().Be("Duplicate Filter");
         store.Saves.Should().Be(1);
-    }
-    [AvaloniaFact]
-    public void Extracted_form_binds_fields_and_match_mode_help()
-    {
-        var store = new Store();
-        var model = new DisplayFilterEditorViewModel(new SettingsViewModel(store));
-        var view = new DisplayFilterEditorView { DataContext = model };
-        model.Open(null);
-        view.FindControl<TextBox>("DisplayFilterNameTextBox")!.Text = "Favorites";
-        model.Name.Should().Be("Favorites");
-        view.FindControl<ComboBox>("DisplayFilterMatchModeComboBox")!.SelectedIndex = 1;
-        model.MatchModeIndex.Should().Be(1);
-        view.FindControl<TextBlock>("DisplayFilterMatchModeHelpText")!.Text.Should().Be(model.MatchModeHelp);
     }
 }

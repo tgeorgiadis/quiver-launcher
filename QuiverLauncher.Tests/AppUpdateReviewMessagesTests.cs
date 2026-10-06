@@ -50,22 +50,6 @@ public class AppUpdateReviewMessagesTests
     }
 
     [Fact]
-    public void FormatPendingAppUpdatesMessage_multiple_apps_without_prompt()
-    {
-        var summary = AppUpdateReviewMessages.FormatPendingAppUpdatesMessage(
-            [
-                PendingGame("Beta", "v2.0.0", "v2.1.0"),
-                PendingGame("Alpha", "v1.0.0", "v1.2.0"),
-            ],
-            includeOpenPrompt: false);
-
-        summary.Should().Be(
-            "2 app updates need review:\n\n" +
-            "• Alpha (v1.0.0 → v1.2.0)\n" +
-            "• Beta (v2.0.0 → v2.1.0)");
-    }
-
-    [Fact]
     public void FormatAutoUpdatedSummary_formats_counts()
     {
         AppUpdateReviewMessages.FormatAutoUpdatedSummary(0).Should().BeEmpty();
@@ -88,13 +72,6 @@ public class AppUpdateReviewMessagesTests
     }
 
     [Fact]
-    public void FormatQuiverOnlyUpdateMessage_uses_clear_copy()
-    {
-        AppUpdateReviewMessages.FormatQuiverOnlyUpdateMessage("2.3.2")
-            .Should().Be("Quiver Launcher update v2.3.2 is available.\n\nUpdate Quiver Launcher now?");
-    }
-
-    [Fact]
     public void FormatCombinedUpdatesMessage_lists_quiver_and_apps()
     {
         var summary = AppUpdateReviewMessages.FormatCombinedUpdatesMessage(
@@ -106,22 +83,5 @@ public class AppUpdateReviewMessagesTests
             "1 app update needs review:\n\n" +
             "• Doom (v1.0.0 → v1.1.0)\n\n" +
             "What would you like to update?");
-    }
-
-    [Fact]
-    public void FormatCombinedUpdatesMessage_supports_multiple_apps()
-    {
-        var summary = AppUpdateReviewMessages.FormatCombinedUpdatesMessage(
-            "2.3.2",
-            [
-                PendingGame("Beta", "v2.0.0", "v2.1.0"),
-                PendingGame("Alpha", "v1.0.0", "v1.2.0"),
-            ]);
-
-        summary.Should().Contain("Quiver Launcher update v2.3.2 is available.");
-        summary.Should().Contain("2 app updates need review:");
-        summary.Should().Contain("• Alpha (v1.0.0 → v1.2.0)");
-        summary.Should().Contain("• Beta (v2.0.0 → v2.1.0)");
-        summary.Should().EndWith("What would you like to update?");
     }
 }

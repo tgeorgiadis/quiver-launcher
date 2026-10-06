@@ -92,7 +92,6 @@ public sealed class LibraryViewModel : ObservableViewModel, IDisposable
         foreach (var game in Games)
         {
             game.LibraryNameStyle = settings.LibraryNameStyle;
-            game.ShowLibraryUpdateBadges = settings.ShowLibraryAppUpdateBadges;
             game.LibraryCardTagMaxLines = settings.LibraryCardTagMaxLines;
             game.TruncateLibraryCardTitles = settings.TruncateLibraryCardTitles;
         }

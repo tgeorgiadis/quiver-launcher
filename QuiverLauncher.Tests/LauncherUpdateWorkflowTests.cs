@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.VisualTree;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
@@ -12,48 +11,13 @@ namespace QuiverLauncher.Tests;
 
 public class LauncherUpdateWorkflowTests
 {
-    [AvaloniaFact]
-    public void Update_status_details_can_be_expanded_and_hide_when_retry_starts()
-    {
-        var shell = new ShellViewModel
-        {
-            LastLauncherCheckNote = "Update check incomplete",
-            UpdateCheckStatus = "1 app could not be checked",
-            UpdateCheckDetails = "Ace Combat: Access denied (HTTP 403).",
-        };
-        var view = new UpdateCheckStatusView { DataContext = shell };
-        var window = new Window { Content = view, Width = 600, Height = 400 };
-        try
-        {
-            window.Show();
-            var details = view.GetVisualDescendants().OfType<Expander>().Single();
-            details.IsVisible.Should().BeTrue();
-            details.Classes.Add("gamepad-focused");
-            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-            var headerBorder = details.GetVisualDescendants().OfType<Border>()
-                .Single(border => border.Name == "ToggleButtonBackground");
-            headerBorder.IsEffectivelyVisible.Should().BeTrue();
-            headerBorder.BorderThickness.Should().Be(new Avalonia.Thickness(3));
-            details.IsExpanded = true;
-            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-            headerBorder.IsEffectivelyVisible.Should().BeTrue();
-            headerBorder.BorderThickness.Should().Be(new Avalonia.Thickness(3));
-            view.GetVisualDescendants().OfType<SelectableTextBlock>().Single().Text
-                .Should().Be(shell.UpdateCheckDetails);
-            shell.IsCheckingUpdates = true;
-            details.IsVisible.Should().BeFalse();
-        }
-        finally { window.Close(); }
-    }
-
     private sealed class ReviewPresentation : IUpdatePresentation
     {
         public bool CanPresentResults => true;
         public bool CanShowFailureSummary => false;
         public int ReviewsOpened;
         public void OpenAppUpdatesReview() => ReviewsOpened++;
-        public void OpenCatalogSources() => throw new InvalidOperationException();
-        public Task OpenCatalogReviewAsync() => throw new InvalidOperationException();
+        public void OpenBrowse() => throw new InvalidOperationException();
         public void UpdateStatusChanged() { }
     }
 
@@ -97,40 +61,6 @@ public class LauncherUpdateWorkflowTests
         finally { await session.DisposeAsync(); window.Close(); }
     }
 
-    private sealed class BlockedCatalog : HttpMessageHandler
-    {
-        public TaskCompletionSource Started = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public bool Cancelled;
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
-        {
-            Started.TrySetResult();
-            try { await Task.Delay(Timeout.Infinite, token); }
-            catch (OperationCanceledException) { Cancelled = true; throw; }
-            throw new InvalidOperationException();
-        }
-    }
-
-    [Fact]
-    public async Task Foreground_finishes_while_catalog_is_blocked_and_shutdown_cancels_secondary_work()
-    {
-        var store = new Store();
-        var network = new BlockedCatalog();
-        using var http = new HttpClient(network);
-        using var manager = new GameManager(store, http);
-        using var library = new LibraryViewModel(manager, new SettingsViewModel(store));
-        var session = new LauncherSession();
-        var shell = new ShellViewModel();
-        var workflow = new LauncherUpdateWorkflow(manager, library.Settings, library, shell, session, null!, new Presentation(),
-            () => null, new VelopackUpdateService(), () => Task.CompletedTask, _ => Task.FromResult(false));
-        var coordinator = new UpdateCheckCoordinator(workflow);
-        await coordinator.CheckAsync(false, false, session.Token).WaitAsync(TimeSpan.FromSeconds(2));
-        await network.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
-        coordinator.IsChecking.Should().BeFalse();
-        shell.LastUpdateCheckTime.Should().NotBeNull();
-        await session.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
-        network.Cancelled.Should().BeTrue();
-    }
-
     private sealed class Store : ISettingsStore
     {
         public AppSettings Current { get; } = new() { AppsPath = Path.Combine(Path.GetTempPath(), "quiver-workflow-tests", Guid.NewGuid().ToString("N")) };
@@ -143,8 +73,7 @@ public class LauncherUpdateWorkflowTests
         public bool CanShowFailureSummary => false;
         public int StatusChanges { get; private set; }
         public void OpenAppUpdatesReview() => throw new Exception("Unexpected review");
-        public void OpenCatalogSources() => throw new Exception("Unexpected catalog");
-        public Task OpenCatalogReviewAsync() => throw new Exception("Unexpected catalog review");
+        public void OpenBrowse() => throw new Exception("Unexpected browse");
         public void UpdateStatusChanged() => StatusChanges++;
     }
     [Fact]

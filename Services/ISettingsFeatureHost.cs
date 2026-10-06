@@ -21,7 +21,8 @@ public interface ISettingsFeatureHost : IFeatureNavigationHost
     void FitMobileLibraryCardWidth();
     void ApplySorting();
     void ApplyLibraryDisplaySettingsToGames();
-    Task ApplyLibraryCatalogPendingBadgesAsync();
+    /// <summary>The player saved or cleared their own app list.</summary>
+    void CustomAppListChanged();
     void ApplyTopBanner();
     void ApplyTrayAndBackgroundUpdateSettings();
     void UpdateGamepadHintsBar();

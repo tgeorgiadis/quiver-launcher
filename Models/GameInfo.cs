@@ -41,8 +41,6 @@ namespace QuiverLauncher.Models
         private string? _project;
         private string? _customDisplayName;
         private LibraryNameStyle _libraryNameStyle = LibraryNameStyle.NameAndProject;
-        private bool _showLibraryUpdateBadges = true;
-        private bool _hasPendingCatalogChanges;
         private int _libraryCardTagMaxLines = TagChipHelper.DefaultLibraryCardTagMaxLines;
         private List<string> _libraryCardTags = [];
 
@@ -175,38 +173,6 @@ namespace QuiverLauncher.Models
         public string PreferredVersionLabel =>
             string.IsNullOrWhiteSpace(PreferredVersion) ? "Preferred:" : $"Preferred: {PreferredVersion}";
 
-        /// <summary>Mirrors <see cref="AppSettings.ShowLibraryAppUpdateBadges"/> for card bindings.</summary>
-        public bool ShowLibraryUpdateBadges
-        {
-            get => _showLibraryUpdateBadges;
-            set
-            {
-                if (_showLibraryUpdateBadges == value)
-                    return;
-                _showLibraryUpdateBadges = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(ShowUpdateBadge));
-            }
-        }
-
-        /// <summary>True when this library app has actionable catalog metadata changes to review.</summary>
-        public bool HasPendingCatalogChanges
-        {
-            get => _hasPendingCatalogChanges;
-            set
-            {
-                if (_hasPendingCatalogChanges == value)
-                    return;
-                _hasPendingCatalogChanges = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(ShowUpdateBadge));
-            }
-        }
-
-        /// <summary>True when catalog changes are pending and library catalog badges are enabled.</summary>
-        public bool ShowUpdateBadge =>
-            HasPendingCatalogChanges && ShowLibraryUpdateBadges;
-
         /// <summary>Mirrors <see cref="AppSettings.LibraryCardTagMaxLines"/> for card bindings.</summary>
         public int LibraryCardTagMaxLines
         {
@@ -282,7 +248,6 @@ namespace QuiverLauncher.Models
         public string? GameIconUrl { get; set; }
         public bool IsExperimental { get; set; }
         public bool IsCustom { get; set; }
-        public string? CatalogSourceId { get; set; }
         public List<string> Tags { get; set; } = [];
 
         /// <summary>Tags shown on library cards (empty when tag lines are 0).</summary>
@@ -1610,17 +1575,6 @@ namespace QuiverLauncher.Models
                 DispatchPropertyChanged(property);
             if (fresh) RepositoryCheckError = null;
             RefreshInstalledStatus();
-        }
-
-        internal void ApplyCatalogVersionHint(string version, string? preferredVersion)
-        {
-            // Browsing metadata is a label, not an authoritative release payload.
-            // In particular it must not clear a pinned release or fabricate assets.
-            _latestVersion = version;
-            _preferredVersion = preferredVersion;
-            DispatchPropertyChanged(nameof(LatestVersion));
-            DispatchPropertyChanged(nameof(StatusText));
-            DispatchPropertyChanged(nameof(LatestVersionLabel));
         }
 
         internal async Task CheckLatestVersionAsync(HttpClient httpClient, bool forceCheck = false, CancellationToken cancellationToken = default)

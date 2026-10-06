@@ -40,21 +40,14 @@ public class ShellNavigationRouterTests
     }
     [Theory]
     [InlineData(GamepadNavigationZone.Library)]
-    [InlineData(GamepadNavigationZone.CatalogSources)]
-    [InlineData(GamepadNavigationZone.CatalogSourceCardActions)]
-    [InlineData(GamepadNavigationZone.CatalogSourcesToolbar)]
-    [InlineData(GamepadNavigationZone.CatalogSourcesFilters)]
-    [InlineData(GamepadNavigationZone.CatalogReviewList)]
-    [InlineData(GamepadNavigationZone.CatalogReviewRowActions)]
-    [InlineData(GamepadNavigationZone.CatalogReviewFilters)]
+    [InlineData(GamepadNavigationZone.BrowseGrid)]
+    [InlineData(GamepadNavigationZone.BrowseToolbar)]
+    [InlineData(GamepadNavigationZone.BrowseFilters)]
     public void Passive_restoration_uses_current_feature_without_reentering_view(GamepadNavigationZone zone)
     {
-        var sources = zone is GamepadNavigationZone.CatalogSources or GamepadNavigationZone.CatalogSourceCardActions
-            or GamepadNavigationZone.CatalogSourcesToolbar or GamepadNavigationZone.CatalogSourcesFilters;
         var shell = new ShellViewModel
         {
-            Mode = zone == GamepadNavigationZone.Library ? MainViewMode.Library : MainViewMode.AppCatalog,
-            CatalogSubView = sources ? AppCatalogSubView.Sources : AppCatalogSubView.Review,
+            Mode = zone == GamepadNavigationZone.Library ? MainViewMode.Library : MainViewMode.Browse,
         };
         var navigation = new GamepadNavigationService { ActiveZone = zone };
         var handler = new Handler();
@@ -77,13 +70,13 @@ public class ShellNavigationRouterTests
     [InlineData("tags", GamepadNavigationZone.TagEditOverlay)]
     [InlineData("document", GamepadNavigationZone.ChangelogOverlay)]
     [InlineData("filter", GamepadNavigationZone.DisplayFilterOverlay)]
-    [InlineData("details", GamepadNavigationZone.CatalogReviewDetailsOverlay)]
+    [InlineData("details", GamepadNavigationZone.BrowseDetailsOverlay)]
     public void Passive_restoration_does_not_steal_chrome_or_overlay_focus(string state, GamepadNavigationZone expected)
     {
         var shell = new ShellViewModel
         {
             SettingsOpen = state == "settings", EntryEditorOpen = state == "editor", TagEditorOpen = state == "tags",
-            DocumentOpen = state == "document", CatalogDetailsOpen = state == "details",
+            DocumentOpen = state == "document", BrowseDetailsOpen = state == "details",
         };
         var navigation = new GamepadNavigationService
         {
@@ -112,14 +105,14 @@ public class ShellNavigationRouterTests
         router.Navigate(NavigationDirection.Down);
         features[GamepadNavigationZone.EntryFormOverlay].Moves.Should().Be(1);
         shell.EntryEditorOpen = shell.SettingsOpen = false;
-        shell.CatalogDetailsOpen = true;
+        shell.BrowseDetailsOpen = true;
         navigation.ActiveZone = GamepadNavigationZone.TopBar;
         router.Navigate(NavigationDirection.Right);
         features[GamepadNavigationZone.TopBar].Moves.Should().Be(1);
-        navigation.ActiveZone = GamepadNavigationZone.CatalogReviewList;
+        navigation.ActiveZone = GamepadNavigationZone.BrowseGrid;
         router.Navigate(NavigationDirection.Down);
-        navigation.ActiveZone.Should().Be(GamepadNavigationZone.CatalogReviewDetailsOverlay);
-        features[GamepadNavigationZone.CatalogReviewDetailsOverlay].Moves.Should().Be(1);
+        navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseDetailsOverlay);
+        features[GamepadNavigationZone.BrowseDetailsOverlay].Moves.Should().Be(1);
     }
     [Fact]
     public void Confirmation_uses_open_settings_even_after_an_unrelated_zone_change()

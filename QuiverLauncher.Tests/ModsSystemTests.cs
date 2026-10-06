@@ -396,97 +396,6 @@ public class ModsSystemTests
         }
     }
 
-    [Fact]
-    public void ThunderstoreModProvider_maps_nsfw_flag()
-    {
-        var source = new ModSourceRef
-        {
-            ProviderId = ModProviderIds.Thunderstore,
-            SourceKey = "banjo-recompiled",
-            DisplayLabel = "Thunderstore · banjo-recompiled",
-            SourceUrl = "https://thunderstore.io/c/banjo-recompiled/",
-        };
-
-        var dto = new ThunderstorePackageDto
-        {
-            Uuid4 = "uuid",
-            Name = "Mod",
-            Owner = "Owner",
-            FullName = "Owner-Mod",
-            HasNsfwContent = true,
-            Versions =
-            [
-                new ThunderstorePackageVersionDto
-                {
-                    VersionNumber = "1.0.0",
-                    DownloadUrl = "https://example.com/mod.zip",
-                    IsActive = true,
-                },
-            ],
-        };
-
-        var package = ThunderstoreModProvider.MapPackage(dto, source);
-        package.Should().NotBeNull();
-        package!.HasContentRating.Should().BeTrue();
-    }
-
-    [Fact]
-    public void ThunderstoreModProvider_maps_downloads_rating_and_updated()
-    {
-        var source = new ModSourceRef
-        {
-            ProviderId = ModProviderIds.Thunderstore,
-            SourceKey = "banjo-recompiled",
-            DisplayLabel = "Thunderstore · banjo-recompiled",
-            SourceUrl = "https://thunderstore.io/c/banjo-recompiled/",
-        };
-
-        var updated = new DateTimeOffset(2026, 7, 28, 0, 0, 0, TimeSpan.Zero);
-        var dto = new ThunderstorePackageDto
-        {
-            Uuid4 = "uuid",
-            Name = "Mumbo_Token_Tracker",
-            Owner = "Cloudy",
-            FullName = "Cloudy-Mumbo_Token_Tracker",
-            RatingScore = 7,
-            DateUpdated = updated,
-            Versions =
-            [
-                new ThunderstorePackageVersionDto
-                {
-                    VersionNumber = "1.0.0",
-                    Description = "Tracks Mumbo tokens.",
-                    DownloadUrl = "https://example.com/v1.zip",
-                    Downloads = 300,
-                    IsActive = false,
-                },
-                new ThunderstorePackageVersionDto
-                {
-                    VersionNumber = "1.1.1",
-                    Description = "Tracks Mumbo tokens.",
-                    DownloadUrl = "https://example.com/v2.zip",
-                    Downloads = 500,
-                    IsActive = true,
-                },
-            ],
-        };
-
-        var package = ThunderstoreModProvider.MapPackage(dto, source);
-        package.Should().NotBeNull();
-        package!.DownloadCount.Should().Be(800);
-        package.RatingScore.Should().Be(7);
-        package.UpdatedAtUnix.Should().Be(updated.ToUnixTimeSeconds());
-        package.Description.Should().Be("Tracks Mumbo tokens.");
-        package.LatestVersion!.Version.Should().Be("1.1.1");
-
-        var item = new ModListItem { Package = package };
-        item.AuthorLine.Should().Be("by Cloudy [Thunderstore]");
-        item.DownloadCountText.Should().Be("800");
-        item.RatingText.Should().Be("7");
-        item.HasStatsRow.Should().BeTrue();
-        item.HasDescriptionPreview.Should().BeTrue();
-    }
-
     [Theory]
     [InlineData(45, "just now")]
     [InlineData(90, "1 minute ago")]
@@ -559,37 +468,6 @@ public class ModsSystemTests
             if (Directory.Exists(tempDir))
                 Directory.Delete(tempDir, recursive: true);
         }
-    }
-
-    [Fact]
-    public void Catalog_compare_detects_mods_changes()
-    {
-        var local = new GameInfo
-        {
-            Name = "App",
-            Repository = "owner/repo",
-            FolderName = "App",
-        };
-        var external = new GameInfo
-        {
-            Name = "App",
-            Repository = "owner/repo",
-            FolderName = "App",
-            ModsPath = "mods",
-            ModsLayout = GameModsConfig.LayoutFolderPerMod,
-            ModsSources =
-            [
-                new GameModSource { Provider = "thunderstore", SourceUrl = "banjo-recompiled" },
-            ],
-        };
-
-        AppCatalogService.AreCatalogFieldsEquivalent(local, external).Should().BeFalse();
-        CatalogCompareService.GetChangedFields(local, external).Should().Contain("mods");
-
-        var replaced = CatalogCompareService.ReplaceFromExternal(local, external);
-        replaced.ModsPath.Should().Be("mods");
-        replaced.ModsLayout.Should().Be(GameModsConfig.LayoutFolderPerMod);
-        replaced.ModsSources.Should().ContainSingle();
     }
 
     [Fact]
@@ -892,19 +770,6 @@ public class ModsSystemTests
         ModCatalogListBuilder.RecordMatchesPackageFile(legacy, package, null).Should().BeTrue();
         ModCatalogListBuilder.RecordMatchesPackageFile(legacy, package, "10").Should().BeFalse();
         ModCatalogListBuilder.RecordMatchesPackageFile(fileA, package, null).Should().BeFalse();
-    }
-
-    [Fact]
-    public void ModDownloadFileSelection_preselects_installed_and_preferred_file_ids()
-    {
-        var records = new[]
-        {
-            new InstalledModRecord { DownloadFileId = "10" },
-            new InstalledModRecord { DownloadFileId = "20" },
-        };
-
-        var ids = ModDownloadFileSelection.GetPreselectedFileIds(records, "30");
-        ids.Should().BeEquivalentTo(["10", "20", "30"]);
     }
 
     [Fact]

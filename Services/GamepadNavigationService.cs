@@ -14,21 +14,17 @@ public enum GamepadNavigationZone
 
     Library,
 
-    CatalogSources,
+    BrowseGrid,
 
-    CatalogSourcesToolbar,
+    BrowseToolbar,
 
-    CatalogSourcesFilters,
+    BrowseFilters,
 
-    CatalogSourceCardActions,
 
-    CatalogReviewFilters,
 
-    CatalogReviewList,
 
-    CatalogReviewRowActions,
 
-    CatalogReviewDetailsOverlay,
+    BrowseDetailsOverlay,
 
     AppUpdatesReviewToolbar,
 
@@ -86,31 +82,24 @@ public sealed class GamepadNavigationService
 
 
 
-    public int CatalogSelectedIndex { get; set; } = -1;
 
 
 
-    public int CatalogSourcesToolbarSelectedIndex { get; set; } = -1;
 
 
 
-    public int CatalogSourcesFilterIndex { get; set; } = -1;
 
 
 
-    public int CatalogSourceCardActionIndex { get; set; } = -1;
 
 
 
-    public int CatalogReviewFilterIndex { get; set; } = -1;
 
 
 
-    public int CatalogReviewSelectedIndex { get; set; } = -1;
 
 
 
-    public int CatalogReviewRowActionIndex { get; set; } = -1;
 
 
 
@@ -690,12 +679,6 @@ public sealed class GamepadNavigationService
 
         {
 
-            if (mainContentZone is GamepadNavigationZone.CatalogReviewList or GamepadNavigationZone.CatalogReviewFilters)
-
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewList, 0);
-
-
-
             if (mainContentZone is GamepadNavigationZone.AppUpdatesReviewList
                 or GamepadNavigationZone.AppUpdatesReviewToolbar)
 
@@ -713,9 +696,9 @@ public sealed class GamepadNavigationService
 
 
 
-            if (mainContentZone == GamepadNavigationZone.CatalogSources)
+            if (mainContentZone == GamepadNavigationZone.BrowseGrid)
 
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesToolbar, 0);
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseToolbar, 0);
 
 
 
@@ -725,9 +708,9 @@ public sealed class GamepadNavigationService
 
 
 
-            if (mainContentZone == GamepadNavigationZone.CatalogReviewDetailsOverlay)
+            if (mainContentZone == GamepadNavigationZone.BrowseDetailsOverlay)
 
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewDetailsOverlay, 0);
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseDetailsOverlay, 0);
 
 
 
@@ -751,12 +734,6 @@ public sealed class GamepadNavigationService
 
             {
 
-                if (mainContentZone is GamepadNavigationZone.CatalogReviewList or GamepadNavigationZone.CatalogReviewFilters)
-
-                    return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewList, 0);
-
-
-
                 if (mainContentZone is GamepadNavigationZone.AppUpdatesReviewList
                     or GamepadNavigationZone.AppUpdatesReviewToolbar)
 
@@ -774,9 +751,9 @@ public sealed class GamepadNavigationService
 
 
 
-                if (mainContentZone == GamepadNavigationZone.CatalogSources)
+                if (mainContentZone == GamepadNavigationZone.BrowseGrid)
 
-                    return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesToolbar, 0);
+                    return new GamepadZoneTransition(GamepadNavigationZone.BrowseToolbar, 0);
 
 
 
@@ -786,9 +763,9 @@ public sealed class GamepadNavigationService
 
 
 
-                if (mainContentZone == GamepadNavigationZone.CatalogReviewDetailsOverlay)
+                if (mainContentZone == GamepadNavigationZone.BrowseDetailsOverlay)
 
-                    return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewDetailsOverlay, 0);
+                    return new GamepadZoneTransition(GamepadNavigationZone.BrowseDetailsOverlay, 0);
 
 
 
@@ -806,7 +783,7 @@ public sealed class GamepadNavigationService
 
 
 
-        if (zone == GamepadNavigationZone.CatalogSourcesToolbar)
+        if (zone == GamepadNavigationZone.BrowseToolbar)
 
         {
 
@@ -818,7 +795,7 @@ public sealed class GamepadNavigationService
 
             if (direction == NavigationDirection.Down)
 
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesFilters, null);
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseFilters, null);
 
 
 
@@ -830,19 +807,19 @@ public sealed class GamepadNavigationService
 
 
 
-        if (zone == GamepadNavigationZone.CatalogSourcesFilters)
+        if (zone == GamepadNavigationZone.BrowseFilters)
 
         {
 
             if (direction == NavigationDirection.Up)
 
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesToolbar, null);
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseToolbar, null);
 
 
 
             if (direction == NavigationDirection.Down && itemCount > 0)
 
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogSources, 0);
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseGrid, 0);
 
 
 
@@ -884,7 +861,7 @@ public sealed class GamepadNavigationService
 
 
 
-        if (zone == GamepadNavigationZone.CatalogSources)
+        if (zone == GamepadNavigationZone.BrowseGrid)
 
         {
 
@@ -906,55 +883,9 @@ public sealed class GamepadNavigationService
 
             {
 
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesFilters, null);
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseFilters, null);
 
             }
-
-        }
-
-
-
-        if (zone == GamepadNavigationZone.CatalogReviewList)
-
-        {
-
-            if (direction == NavigationDirection.Left &&
-
-                IsAtContentEdge(direction, isListLayout, positions, currentIndex, itemCount))
-
-                return new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null);
-
-
-
-            if (direction == NavigationDirection.Up &&
-
-                IsAtContentEdge(direction, isListLayout, positions, currentIndex, itemCount))
-
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewFilters, null);
-
-        }
-
-
-
-        if (zone == GamepadNavigationZone.CatalogReviewFilters)
-
-        {
-
-            if (direction == NavigationDirection.Down)
-
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewList, 0);
-
-
-
-            if (direction == NavigationDirection.Up)
-
-                return new GamepadZoneTransition(GamepadNavigationZone.TopBar, null);
-
-
-
-            if (direction == NavigationDirection.Left && currentIndex <= 0)
-
-                return new GamepadZoneTransition(GamepadNavigationZone.Sidebar, null);
 
         }
 
@@ -1136,7 +1067,7 @@ public sealed class GamepadNavigationService
 
 
 
-            if (zone is GamepadNavigationZone.Library or GamepadNavigationZone.CatalogSources or GamepadNavigationZone.CatalogReviewList
+            if (zone is GamepadNavigationZone.Library or GamepadNavigationZone.BrowseGrid
                 or GamepadNavigationZone.AppUpdatesReviewList
                 or GamepadNavigationZone.ModsOverlayList)
 
@@ -1156,27 +1087,21 @@ public sealed class GamepadNavigationService
 
 
 
-            if (zone == GamepadNavigationZone.CatalogSources)
+            if (zone == GamepadNavigationZone.BrowseGrid)
 
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesFilters, null);
-
-
-
-            if (zone == GamepadNavigationZone.CatalogSourcesToolbar)
-
-                return new GamepadZoneTransition(GamepadNavigationZone.TopBar, null);
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseFilters, null);
 
 
 
-            if (zone == GamepadNavigationZone.CatalogSourcesFilters)
-
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogSourcesToolbar, null);
-
-
-
-            if (zone == GamepadNavigationZone.CatalogReviewFilters)
+            if (zone == GamepadNavigationZone.BrowseToolbar)
 
                 return new GamepadZoneTransition(GamepadNavigationZone.TopBar, null);
+
+
+
+            if (zone == GamepadNavigationZone.BrowseFilters)
+
+                return new GamepadZoneTransition(GamepadNavigationZone.BrowseToolbar, null);
 
 
 
@@ -1209,10 +1134,6 @@ public sealed class GamepadNavigationService
                 return new GamepadZoneTransition(GamepadNavigationZone.ModsOverlaySourceFilters, null);
 
 
-
-            if (zone == GamepadNavigationZone.CatalogReviewList && (itemCount == 0 || currentIndex <= 0))
-
-                return new GamepadZoneTransition(GamepadNavigationZone.CatalogReviewFilters, null);
 
         }
 

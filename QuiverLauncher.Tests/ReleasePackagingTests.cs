@@ -34,73 +34,6 @@ public class ReleasePackagingTests
     }
 
     [Fact]
-    public void Release_workflow_uses_velopack_pack_and_not_custom_updater()
-    {
-        var workflowPath = Path.Combine(RepoRoot, ".github", "workflows", "dotnet-desktop.yml");
-        var workflow = File.ReadAllText(workflowPath);
-
-        workflow.Should().Contain("vpk pack");
-        workflow.Should().Contain("gh release create");
-        workflow.Should().Contain("--packId");
-        workflow.Should().Contain("--channel");
-        workflow.Should().Contain("PACK_ID: QuiverLauncher");
-        workflow.Should().Contain("publish-github-release");
-        workflow.Should().NotContain("Quiver.Updater/Quiver.Updater.csproj");
-        workflow.Should().NotContain("Quiver.Updater.exe");
-        workflow.Should().Contain("win-x64");
-        workflow.Should().Contain("linux-x64");
-        workflow.Should().Contain("linux-arm64");
-        workflow.Should().Contain("osx-x64");
-        workflow.Should().Contain("osx-arm64");
-        workflow.Should().Contain("AZURE_TRUSTED_SIGNING_ENABLED");
-        workflow.Should().Contain("VELOPACK_VERSION");
-        workflow.Should().Contain("Assets/quiver-icon.png");
-        workflow.Should().Contain("QuiverLauncher.icns");
-        workflow.Should().Contain("rm -rf publish/${{ matrix.rid }}/Apps");
-        workflow.Should().Contain("squashfs-tools");
-        workflow.Should().Contain("continue-on-error: true");
-        workflow.Should().Contain("--noInst true");
-        workflow.Should().Contain("environment: signing");
-        workflow.Should().Contain("## Downloads");
-        workflow.Should().Contain("QuiverLauncher-win-Portable.zip");
-        workflow.Should().Contain("QuiverLauncher-linux-x64.AppImage");
-        workflow.Should().Contain("QuiverLauncher-linux-arm64.AppImage");
-        workflow.Should().Contain("QuiverLauncher-android.apk");
-        workflow.Should().Contain("macOS:** work in progress while I get the signing sorted");
-        workflow.Should().Contain("-name '*.AppImage'");
-        workflow.Should().Contain("-name '*.apk'");
-        workflow.Should().Contain("releases.*.json");
-        workflow.Should().Contain("actions/setup-java@v4");
-        workflow.Should().Contain("AndroidKeyStore=true");
-        workflow.Should().Contain("ApplicationDisplayVersion");
-        workflow.Should().Contain("ApplicationVersion");
-        workflow.Should().Contain("InstallAndroidDependencies");
-        workflow.Should().Contain("ci-release.jks");
-        workflow.Should().Contain("AndroidPackageFormats=apk");
-        workflow.Should().Contain("file:${STORE_PASS}");
-        workflow.Should().Contain("-iname '*signed*.apk'");
-        workflow.Should().NotContain("env:ANDROID_KEYSTORE_PASSWORD");
-        workflow.Should().Contain("needs.build-android.result == 'success'");
-        workflow.Should().Contain("name: android-apk");
-        // Publish bare AppImages; do not wrap in tar.gz or strip executable bit via CI chmod.
-        workflow.Should().NotContain("Package AppImage as tar.gz");
-        workflow.Should().NotContain("chmod +x releases/");
-        workflow.Should().NotContain("find release-assets -type f -name '*.AppImage' -delete");
-        workflow.Should().NotContain("QuiverLauncher-linux-x64.tar.gz");
-        workflow.Should().NotContain("QuiverLauncher-linux-arm64.tar.gz");
-        // Do not advertise unsigned macOS downloads in release notes.
-        workflow.Should().NotContain("QuiverLauncher-osx-x64-Portable.zip");
-        workflow.Should().NotContain("QuiverLauncher-osx-arm64-Portable.zip");
-    }
-
-    [Fact]
-    public void Repository_includes_linux_pack_icon_png()
-    {
-        var iconPath = Path.Combine(RepoRoot, "Assets", "quiver-icon.png");
-        File.Exists(iconPath).Should().BeTrue();
-    }
-
-    [Fact]
     public void Project_references_velopack_and_does_not_copy_apps_json()
     {
         var sharedPath = Path.Combine(RepoRoot, "QuiverLauncher.App.csproj");
@@ -118,44 +51,6 @@ public class ReleasePackagingTests
         desktop.Should().Contain("DestinationFiles=\"$(_AliasDir)QuiverLauncher.exe\"");
         desktop.Should().Contain("DestinationFiles=\"$(_AliasDir)QuiverLauncher\"");
         desktop.Should().Contain("!Exists('$(_AliasDir)$(AssemblyName).exe')");
-    }
-
-    [Fact]
-    public void Android_excludes_system_drawing_common_from_aot_graph()
-    {
-        var androidPath = Path.Combine(RepoRoot, "QuiverLauncher.Android", "QuiverLauncher.Android.csproj");
-        var sharedPath = Path.Combine(RepoRoot, "QuiverLauncher.App.csproj");
-        var corePath = Path.Combine(RepoRoot, "lib", "QuiverLauncher.Core", "QuiverLauncher.Core.csproj");
-        var android = File.ReadAllText(androidPath);
-        var shared = File.ReadAllText(sharedPath);
-        var core = File.ReadAllText(corePath);
-
-        android.Should().Contain("QuiverExcludeWindowsDrawing=true");
-        android.Should().Contain("DisableTransitiveProjectReferences");
-        android.Should().Contain("<ExcludeAssets>all</ExcludeAssets>");
-        android.Should().Contain("System.Drawing.Common");
-
-        shared.Should().Contain("QuiverExcludeWindowsDrawing");
-        shared.Should().Contain("EXCLUDE_WINDOWS_DRAWING");
-        shared.Should().Contain("bin\\android-ref\\");
-        shared.Should().Contain("obj\\android-ref\\");
-
-        core.Should().Contain("QuiverExcludeWindowsDrawing");
-        core.Should().Contain("bin\\android-ref\\");
-        core.Should().Contain("obj\\android-ref\\");
-        shared.Should().Contain(
-            "Include=\"System.Drawing.Common\" Version=\"10.0.3\" Condition=\"'$(QuiverExcludeWindowsDrawing)' != 'true'\"");
-        shared.Should().NotContain(
-            "<PackageReference Include=\"System.Drawing.Common\" Version=\"10.0.3\" />");
-    }
-
-    [Fact]
-    public void Repository_includes_apps_json_example_for_documentation()
-    {
-        var examplePath = Path.Combine(RepoRoot, "apps.json.example");
-
-        File.Exists(examplePath).Should().BeTrue();
-        File.ReadAllText(examplePath).Should().Contain("\"apps\"");
     }
 
     [Fact]

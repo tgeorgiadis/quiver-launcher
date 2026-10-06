@@ -9,23 +9,23 @@
 [![Join the community on Discord](https://img.shields.io/badge/Join_the_community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/5XRThpWHGk)
 [![Support the project on Ko-fi](https://img.shields.io/badge/Support_on_Ko--fi-B8394A?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/J1I2265MN5)
 
-> **About** - **Quiver Launcher** is a fork of [GithubLauncher](https://github.com/SirDiabo/GithubLauncher), extended with the features I wanted: **tag filters**, **library management with App Catalog**, **mod management support**, **UI improvements** and more. It was rebranded from GithubLauncher to avoid using the GitHub trademark.
+> **About** - **Quiver Launcher** is a fork of [GithubLauncher](https://github.com/SirDiabo/GithubLauncher), extended with the features I wanted: **tag filters**, **library management with the Quiver catalog**, **mod management support**, **UI improvements** and more. It was rebranded from GithubLauncher to avoid using the GitHub trademark.
 
 ![Quiver Launcher Screenshot](Assets/LauncherScreenshot.png)
 
-A modern launcher for downloading, installing, and running apps from GitHub and GitLab releases. With a personal library, community catalog subscriptions, and flexible filtering.
+A modern launcher for downloading, installing, and running apps from GitHub and GitLab releases. With a personal library, the [Quiver catalog](https://quiverlauncher.com), and flexible filtering.
 
 ## Features
 
 - **Tag filters** - Organize and filter your library with custom tags
 - **Library search** - Filter the current list by name, tags, repository, or folder
 - **Manually managed apps** - Add apps with no GitHub/GitLab repository; drop files into the app folder and open it from the library
-- **App Catalog** - Subscribe to community app lists, review changes, and build your library from `apps.json`
+- **Browse** - Search the [quiverlauncher.com](https://quiverlauncher.com) catalog by platform, console and type, see how apps run for other players, and add them to your library
 - **GitHub & GitLab releases** - Install and update apps from GitHub or gitlab.com release assets
 - **Mod Management Support** - Browse, install and update mods from Thunderstore and GameBanana
 - **Automated updates** - Download and install the latest releases automatically
 - **Version management** - Automatic version checking and in-app update checks
-- **UI improvements** - Refined layout, catalog review workflow, and top-bar controls
+- **UI improvements** - Refined layout and top-bar controls
 
 ## Getting Started
 
@@ -104,11 +104,11 @@ on Windows, Linux, macOS, and Android. See [library protection and recovery](doc
 ## Basic Usage
 
 1. Launch the application
-2. On first launch, browse the Quiver Community App Catalog lists (internet required) and use **Review** or **View** to add apps to your library. You can also add apps later with **+ Add New Entry**, including **manually managed** apps that have no GitHub/GitLab repository. Your library is stored in local [`apps.json`](apps.json)
+2. On first launch, open **Browse** (internet required), open an app and choose **Add to library**. You can also add apps later with **+ Add New Entry**, including **manually managed** apps that have no GitHub/GitLab repository. Your library is stored in local [`apps.json`](apps.json)
 3. Browse your app library in the Library view
 4. Click the Download/Launch button on the app/game you want to use
 
-Catalog lists refresh on startup and via **Refresh All Sources**. New lists in the [community catalog repo](https://github.com/tgeorgiadis/quiver-community-app-catalog) appear automatically.
+Browse reads the catalog from the [quiverlauncher.com](https://quiverlauncher.com) API each time you open it. Reviews are written on the website: an app's **Write a review on the website** button opens its page.
 
 ## Configuration
 
@@ -149,61 +149,11 @@ GameBanana URLs are detected automatically (no `gamebanana|` prefix required). O
 - GameBanana mods with multiple download files show a file picker on Install/Update. **Zip**, **7z**, and **RAR** archives are supported.
 - Thunderstore mods that list requirements prompt before install if those mods are not already installed. **Yes** installs the missing requirements (and the selected mod); **No** installs only the selected mod; **Cancel** aborts without installing anything. **Update All** still pulls missing requirements without prompting.
 
-Remote index URL (the only catalog URL built into Quiver Launcher):
+### Your own app list
 
-`https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/index.json`
+Quiver Launcher no longer subscribes to app lists. If you keep your own list, set it in **Settings → Advanced → My app list**: a local JSON file, or a URL such as a GitHub raw link. Its apps appear under **My app list** in Browse, where you can add them to your library. A list you added in an earlier version is carried over automatically.
 
-List files live under `community-app-catalog/` in the [community catalog repo](https://github.com/tgeorgiadis/quiver-community-app-catalog). Quiver Launcher discovers them from the index at runtime. Each list file carries its own metadata (`name`, `description`, `version`) plus an `apps` array.
-
-#### Community catalog index (v2)
-
-The remote index is a registry of list IDs and fetch URLs only:
-
-```json
-{
-  "version": 2,
-  "lists": [
-    {
-      "id": "b4e8c2a1-3f5d-4e9b-8c7a-1d2e3f4a5b6c",
-      "remoteLocation": "https://raw.githubusercontent.com/tgeorgiadis/quiver-community-app-catalog/main/community-app-catalog/N64-Recomps.json"
-    }
-  ]
-}
-```
-
-#### Community catalog list file
-
-Each list file defines the list metadata and its apps:
-
-```json
-{
-  "name": "N64 Recomps",
-  "description": "N64 recompilation ports",
-  "version": "1.0.3",
-  "apps": [
-    {
-      "name": "Example App",
-      "repository": "username/example-app-repo",
-      "folderName": "ExampleApp",
-      "appIconUrl": null
-    }
-  ]
-}
-```
-
-Quiver Launcher reads `name`, `description`, and `version` from the list file when a source is fetched or refreshed.
-
-Use **App Catalog** anytime to review community entries and add the ones you want to your library. Installed app files on disk are never deleted automatically when you remove catalog entries or sources.
-
-#### External catalog sources
-
-You can add more catalogs in **App Catalog → Add Source** (remote raw GitHub URL or local file path). Each source is reviewed separately; your local `apps.json` takes priority when the same repository appears in multiple places.
-
-When a subscribed list changes remotely, Quiver Launcher detects the diff on startup or when you click **Refresh All Sources**, then shows **Review changes** with per-app actions (Add, Replace, Merge, Ignore, Hide). Use **Not in library** to browse catalog apps you haven't added yet (including ignored ones). When every review item is synced or resolved, the catalog version is marked reviewed automatically. Use **Skip & mark reviewed** only to dismiss remaining items without syncing them.
-
-**Merge** applies catalog metadata (name, icon, files, mods, and catalog tags) while keeping extra local tags and version pins (`preferredVersion`). **Replace** applies the same catalog fields but drops extra local tags. Neither overwrites `preferredVersion` unless the app is promoted, demoted, or retargeted to a different repository. Extra local tags and version pins do not keep an app in a "Changed" state.
-
-See the [Quiver Community App Catalog](https://github.com/tgeorgiadis/quiver-community-app-catalog) repo for sample list format and the canonical community catalog.
+The list uses the same format as `apps.json`: an `apps` array of app entries (an older list file's `name`, `description` and `version` are ignored).
 
 #### App Entry Properties
 
@@ -219,20 +169,10 @@ Each app entry requires the following properties:
 - **`tags`** *(optional)* - Freeform tags (classification such as `recomp` / `decomp` lives here, not in the title)
 - **`appIconUrl`** - URL of the app's icon image. If null, a default icon will be used.
 
-Catalog **list** JSON may also include review-chip hints (only shown when present on apps):
-
-- **`preferredTagFilters`** — chips that appear first when reviewing that list, ordered by how often they appear on apps
-- **`hiddenTagFilters`** — chips that never appear in that list's review filters (also omitted from frequency counts)
-- **`featuredTags`** — fallback pin list when `preferredTagFilters` is omitted or empty
-
 #### Example Configuration
 
 ```json
 {
-    "name": "Nintendo 64",
-    "preferredTagFilters": ["recomp", "decomp", "recreation", "ai"],
-    "hiddenTagFilters": ["n64", "nintendo"],
-    "featuredTags": ["recomp", "decomp", "recreation", "ai"],
     "apps": [
         {
             "name": "Majora's Mask",
@@ -304,13 +244,11 @@ Android uses a separate head project (`QuiverLauncher.Android`) that installs an
    dotnet build QuiverLauncher.Android/QuiverLauncher.Android.csproj -c Debug
    ```
 
-Games without an Android `.apk` asset stay in the catalog as “no Android build” rather than a failed download.
-
 User data for unpackaged Windows debug builds still lives beside the build output. Unpackaged macOS/Linux runs (no AppImage / `.app` package) use the OS app-support fallbacks (`~/Library/Application Support/QuiverLauncher/` or `~/.local/share/QuiverLauncher/`).
 
 ### Automated tests
 
-Fast local run (excludes the slow publish integration test; finishes in seconds):
+Fast local run (excludes the slow publish integration test):
 
 ```powershell
 dotnet test QuiverLauncher.sln -c Release --filter "Category!=Slow" --logger "console;verbosity=normal"
@@ -328,7 +266,7 @@ Run only the slow publish packaging test:
 dotnet test QuiverLauncher.sln -c Release --filter "Category=Slow"
 ```
 
-Test categories include catalog merge and sync, settings store round-trip, launcher version helpers, Windows runner command building, download asset selection, game status checks, ViewModel sorting/catalog helpers, GameManager hide/filter behavior, and Avalonia headless smoke tests.
+Test categories include library file safety, adding catalog apps, settings store round-trip, launcher version helpers, Windows runner command building, download asset selection, game status checks, ViewModel sorting/catalog helpers, GameManager hide/filter behavior, and Avalonia headless smoke tests.
 
 Collect coverage locally with:
 

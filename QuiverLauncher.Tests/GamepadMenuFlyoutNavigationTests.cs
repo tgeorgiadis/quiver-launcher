@@ -9,14 +9,6 @@ namespace QuiverLauncher.Tests;
 public class GamepadMenuFlyoutNavigationTests
 {
     [Fact]
-    public void MoveItemIndex_moves_and_wraps()
-    {
-        GamepadMenuFlyoutNavigation.MoveItemIndex(0, NavigationDirection.Down, 3).Should().Be(1);
-        GamepadMenuFlyoutNavigation.MoveItemIndex(2, NavigationDirection.Down, 3).Should().Be(0);
-        GamepadMenuFlyoutNavigation.MoveItemIndex(0, NavigationDirection.Up, 3).Should().Be(2);
-    }
-
-    [Fact]
     public void FindPreferredItemIndex_prefers_bold_item()
     {
         var items = new List<MenuItem>

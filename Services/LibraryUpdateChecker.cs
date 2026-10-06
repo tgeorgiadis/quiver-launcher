@@ -27,12 +27,10 @@ public sealed record LibraryCheckResult(IReadOnlyList<AppCheckResult> Apps)
 public sealed class LibraryUpdateChecker(HttpClient client, AppSettings settings)
 {
     internal async Task<LibraryCheckResult> CheckStartupAsync(IEnumerable<GameInfo> apps, CancellationToken token,
-        TimeSpan? retryDelay = null, TimeSpan? indexTimeout = null)
+        TimeSpan? retryDelay = null)
     {
         var all = apps.Where(app => !app.IsManuallyManaged && !string.IsNullOrWhiteSpace(app.Repository)).ToArray();
-        foreach (var app in all) StartupVersionResolver.Apply(app, settings);
-        await StartupVersionResolver.RefreshIndexAsync(client, settings, token, indexTimeout);
-        var targets = all.Where(app => !StartupVersionResolver.Apply(app, settings)).ToArray();
+        var targets = all.Where(app => !StartupVersionResolver.Apply(app)).ToArray();
         var resolved = all.Except(targets).Select(app => new AppCheckResult(app.InstanceKey, AppCheckOutcome.Successful, app.DisplayName));
         var checkedApps = await CheckAsync(targets, true, TimeSpan.Zero, null, token, preservePreferredVersion: true);
         var first = new LibraryCheckResult(resolved.Concat(checkedApps.Apps).ToArray());
@@ -74,7 +72,7 @@ public sealed class LibraryUpdateChecker(HttpClient client, AppSettings settings
                 else
                 {
                     if (preservePreferredVersion)
-                        app.ApplyStartupVersion(new(selected.tag_name, DateTimeOffset.UtcNow, StartupVersionSource.RepositoryCache, selected));
+                        app.ApplyStartupVersion(new(selected.tag_name, DateTimeOffset.UtcNow, selected));
                     else app.ApplyCachedRelease(selected.tag_name, selected);
                     GitHubApiCache.SetCache(app.RepositorySource, app.Repository!, selected.tag_name, "", selected);
                     app.RefreshInstalledStatus();

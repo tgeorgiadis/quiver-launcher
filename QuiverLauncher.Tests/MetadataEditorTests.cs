@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Threading;
 using FluentAssertions;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
@@ -32,21 +31,6 @@ public class MetadataEditorTests
         model.Text.Should().Be("My title");
         model.Title.Should().Be("Custom Display Name");
         model.CanSave.Should().BeTrue();
-    }
-
-    [AvaloniaFact]
-    public void Editor_binds_mode_and_text_and_disables_save_until_opened()
-    {
-        var view = new MetadataEditorView();
-        view.FindControl<Button>("TagEditSaveButton")!.IsEnabled.Should().BeFalse();
-        view.Model.Open(new GameInfo { Name = "App", CustomDisplayName = "My app" }, MetadataEditMode.CustomDisplayName);
-        Dispatcher.UIThread.RunJobs();
-        view.FindControl<TextBlock>("TagEditTitleText")!.Text.Should().Be("Custom Display Name");
-        var input = view.FindControl<TextBox>("TagEditTextBox")!;
-        input.Text.Should().Be("My app");
-        input.Text = "Edited";
-        view.Model.Text.Should().Be("Edited");
-        view.FindControl<Button>("TagEditSaveButton")!.IsEnabled.Should().BeTrue();
     }
 
     private sealed class NavigationHost : IFeatureNavigationHost

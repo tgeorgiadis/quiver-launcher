@@ -10,9 +10,9 @@ public class CatalogLocationReaderTests
     public async Task ReadAsync_reads_local_file()
     {
         var reader = new CatalogLocationReader();
-        var json = await reader.ReadAsync(new HttpClient(), TestFixtures.CommunityIndexPath);
+        var json = await reader.ReadAsync(new HttpClient(), TestFixtures.N64RecompListPath);
 
-        json.Should().Contain("Nintendo-64");
+        json.Should().Be(TestFixtures.ReadN64RecompListJson());
     }
 
     [Fact]

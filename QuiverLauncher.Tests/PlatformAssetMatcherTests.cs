@@ -16,7 +16,6 @@ public class PlatformAssetMatcherTests
         foreach (var platform in new[] { "Windows", "Linux-X64", "Linux-ARM64", "Android" })
             PlatformAssetMatcher.MatchesPlatform(asset, platform).Should().BeFalse();
         PlatformAssetMatcher.MatchesPlatform(asset, "macOS").Should().BeTrue();
-        CatalogPlatformSupport.FromAssetNames([asset]).Should().Be(CatalogPlatformFlags.Mac);
     }
 
     [Fact]
@@ -48,7 +47,6 @@ public class PlatformAssetMatcherTests
         PlatformAssetMatcher.MatchesPlatform(asset, "Android").Should().BeFalse();
         PlatformAssetMatcher.MatchesPlatform(asset, linuxPlatform).Should().BeTrue();
         PlatformAssetMatcher.MatchesPlatform(asset, otherArchitecture).Should().BeFalse();
-        CatalogPlatformSupport.FromAssetNames([asset]).Should().Be(CatalogPlatformFlags.Linux);
         QuiverLauncher.Models.GameInfo.GetPlatformIcon(asset).Should().EndWith("platform_lin.png");
     }
 

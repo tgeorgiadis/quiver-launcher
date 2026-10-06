@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using FluentAssertions;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
@@ -53,11 +52,7 @@ public class ForegroundScrollTests
 
     private static void Refocus(IFeatureNavigationHandler handler, Host host, LauncherSession session)
     {
-        var shell = new ShellViewModel
-        {
-            Mode = host.MainContentZone == GamepadNavigationZone.Library ? MainViewMode.Library : MainViewMode.AppCatalog,
-            CatalogSubView = host.MainContentZone == GamepadNavigationZone.CatalogSources ? AppCatalogSubView.Sources : AppCatalogSubView.Review,
-        };
+        var shell = new ShellViewModel();
         var router = new ShellNavigationRouter(shell, host.Navigation,
             new Dictionary<GamepadNavigationZone, Func<IFeatureNavigationHandler>> { [host.MainContentZone] = () => handler },
             () => false, () => { }, () => throw new Exception("Unexpected view re-entry"));
@@ -117,102 +112,6 @@ public class ForegroundScrollTests
             navigation.Navigate(NavigationDirection.Down).Should().BeTrue();
             Flush(window);
             view.LibraryContentPanel.Offset.Y.Should().BeLessThan(offset.Y);
-        }
-        finally { window.Close(); }
-    }
-
-    [AvaloniaTheory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task Catalog_sources_preserve_scroll_and_action_selection(bool actions, bool controller)
-    {
-        await using var session = new LauncherSession();
-        var model = new CatalogViewModel();
-        for (var i = 0; i < 50; i++) model.Sources.Add(new CatalogSourceListItem { SourceId = i.ToString(), Name = $"Source {i:D3}" });
-        var host = new Host(controller) { MainContentZone = GamepadNavigationZone.CatalogSources };
-        var view = new CatalogSourcesView();
-        view.Configure(model, session, host, () => true, _ => Task.CompletedTask);
-        host.Clear = () => { foreach (var source in model.Sources) source.IsGamepadFocused = false; };
-        var window = Open(view, host);
-        try
-        {
-            view.Navigation.ApplyCatalogGamepadSelection(0);
-            Flush(window);
-            if (actions) view.Navigation.ApplyCatalogSourceCardActionSelection(1);
-            Flush(window);
-            var zone = host.Navigation.ActiveZone;
-            var scroll = view.GetVisualDescendants().OfType<ScrollViewer>().First(s => s.Extent.Height > s.Viewport.Height + 100);
-            var offset = ScrollAway(scroll, window);
-            Refocus(view.Navigation, host, session);
-            Flush(window);
-            scroll.Offset.Should().Be(offset);
-            host.Navigation.ActiveZone.Should().Be(zone);
-            host.Navigation.CatalogSelectedIndex.Should().Be(0);
-            if (actions) host.Navigation.CatalogSourceCardActionIndex.Should().Be(1);
-            model.Sources[0].IsGamepadFocused.Should().BeTrue();
-            view.Navigation.Navigate(actions ? NavigationDirection.Right : NavigationDirection.Down).Should().BeTrue();
-            Flush(window);
-            scroll.Offset.Y.Should().BeLessThan(offset.Y);
-        }
-        finally { window.Close(); }
-    }
-
-    [AvaloniaTheory]
-    [InlineData(false, false, false)]
-    [InlineData(false, false, true)]
-    [InlineData(false, true, false)]
-    [InlineData(false, true, true)]
-    [InlineData(true, false, false)]
-    [InlineData(true, false, true)]
-    [InlineData(true, true, false)]
-    [InlineData(true, true, true)]
-    public async Task Catalog_apps_preserve_scroll_and_action_selection(bool grid, bool actions, bool controller)
-    {
-        await using var session = new LauncherSession();
-        var store = new Store();
-        store.Current.CatalogReviewUseGridView = grid;
-        var host = new Host(controller) { MainContentZone = GamepadNavigationZone.CatalogReviewList };
-        var view = new CatalogReviewView();
-        view.Configure(view.Model, null!, new SettingsViewModel(store), session, host, null!, () => true, _ => { });
-        var rows = Enumerable.Range(0, 100).Select(i => new CatalogSyncRowItem
-        {
-            IdentityKey = "app/" + i, Status = CatalogSyncStatus.InExternalOnly,
-            External = new GameInfo { Name = $"App {i:D3}", Repository = "example/app" },
-        }).ToArray();
-        view.Model.Rows.UpdateWith(rows);
-        var list = view.Navigation.GetActiveCatalogReviewItemsControl()!;
-        ((Panel)list.Parent!).Children.Remove(list);
-        view.Content = list;
-        list.IsVisible = true;
-        host.Clear = () => { foreach (var row in rows) row.IsGamepadFocused = false; view.Navigation.ClearCatalogReviewRowActionsGamepadFocus(); };
-        var window = Open(view, host);
-        try
-        {
-            view.Navigation.ApplyCatalogReviewRowSelection(0);
-            Flush(window);
-            if (actions) view.Navigation.ApplyCatalogReviewRowActionSelection(0);
-            Flush(window);
-            var zone = host.Navigation.ActiveZone;
-            var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().First();
-            var offset = ScrollAway(scroll, window);
-            Refocus(view.Navigation, host, session);
-            Flush(window);
-            scroll.Offset.Should().Be(offset);
-            host.Navigation.ActiveZone.Should().Be(zone);
-            host.Navigation.CatalogReviewSelectedIndex.Should().Be(0);
-            if (actions) host.Navigation.CatalogReviewRowActionIndex.Should().Be(0);
-            rows[0].IsGamepadFocused.Should().BeTrue();
-            if (actions)
-            {
-                view.Navigation.Navigate(NavigationDirection.Right).Should().BeTrue();
-                Flush(window);
-                scroll.Offset.Y.Should().BeLessThan(offset.Y);
-            }
-            view.Navigation.Navigate(NavigationDirection.Down).Should().BeTrue();
-            Flush(window);
-            scroll.Offset.Y.Should().BeLessThan(offset.Y);
         }
         finally { window.Close(); }
     }

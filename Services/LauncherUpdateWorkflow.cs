@@ -47,7 +47,6 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
 
     private Task ShowMessageBoxAsync(string message, string title) => _prompts.ShowMessageBoxAsync(message, title);
     private Task<bool> ShowMessageBoxAsync(string message, string title, bool question) => _prompts.ShowMessageBoxAsync(message, title, question);
-    public Action? CatalogsRefreshed { get; set; }
     private Task? _secondaryRefresh;
     public Task<int> ApplyAutoUpdatesAsync(bool showFailureSummary)
     {
@@ -82,34 +81,32 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         Shell.PendingUpdatesCount = LauncherUpdateService.ComputePendingUpdatesCount(launcherPending, gamePending);
     }
 
-    public async Task<bool> TryPromptCatalogReviewAsync()
-    {
-        if (!UpdatePromptPolicy.ShouldPromptCatalogUpdates(_settings))
-            return false;
-        if (!_settings.AppCatalogSources.Any(s => s.Enabled && s.UpdateAvailable))
-            return false;
-        var alreadyInAppCatalog = Shell.Mode == MainViewMode.AppCatalog;
-        var openCatalog = await ShowMessageBoxAsync(FormatPendingReviewSourcesMessage(_settings, includeOpenPrompt: true, alreadyInAppCatalog: alreadyInAppCatalog), "Catalog Updates", true);
-        if (openCatalog && !_session.IsClosed)
-            await _presentation.OpenCatalogReviewAsync();
-        return true;
-    }
-
-    public async Task NotifyCatalogUpdatesIfNeededAsync()
+    /// <summary>Welcomes a new player once, after any launcher update prompt, then opens Browse.</summary>
+    public async Task ShowFirstRunWelcomeIfNeededAsync()
     {
         if (_app != null)
             await _app.StartupSelfUpdatePromptCompleted.WaitAsync(_session.Token);
         _session.Token.ThrowIfCancellationRequested();
-        if (!_settings.LocalFirstCatalogMigrationComplete)
-        {
-            await RunLocalFirstCatalogMigrationAsync();
+        // Named for the 3.x catalog migration; it now only marks that the welcome was shown.
+        if (_settings.LocalFirstCatalogMigrationComplete)
             return;
-        }
-
-        if (!UpdatePromptPolicy.ShouldPromptCatalogUpdates(_settings))
+        await _prompts.ShowWelcomeMessageBoxAsync(FirstRunWelcomeMessage, FirstRunWelcomeTitle);
+        if (_session.IsClosed)
             return;
-        await TryPromptCatalogReviewAsync();
+        _presentation.OpenBrowse();
+        _settings.LocalFirstCatalogMigrationComplete = true;
+        _settingsModel.SaveCurrent();
     }
+
+    public const string FirstRunWelcomeTitle = "Welcome to Quiver Launcher";
+    public const string FirstRunWelcomeMessage =
+        """
+        Discover community apps and manage downloads and updates in one place.
+
+        Browse the Quiver catalog, choose what you'd like to add, then download it from your library.
+
+        You'll need an internet connection to browse the catalog and download apps.
+        """;
 
     public List<GameInfo> GetPendingAppUpdates() => _gameManager.LibraryApps.Where(g => g.Status == GameStatus.UpdateAvailable).OrderBy(g => g.Name, StringComparer.OrdinalIgnoreCase).ToList();
     public List<GameInfo> GetAppUpdateReviewRows() => _gameManager.LibraryApps.Where(g => g.Status is GameStatus.UpdateAvailable or GameStatus.Updating or GameStatus.Installing).OrderBy(g => g.Name, StringComparer.OrdinalIgnoreCase).ToList();
@@ -173,36 +170,6 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         return updated;
     }
 
-    private static string FormatPendingReviewSourcesMessage(AppSettings settings, bool includeOpenPrompt, bool alreadyInAppCatalog = false)
-    {
-        var pendingSources = settings.AppCatalogSources.Where(s => s.Enabled && s.PendingReviewCount > 0).OrderByDescending(s => s.PendingReviewCount).ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ToList();
-        if (pendingSources.Count == 0)
-        {
-            if (!includeOpenPrompt)
-                return "Catalog updates are available. Open App Catalog to review and sync apps.";
-            return alreadyInAppCatalog ? "Catalog updates are available. Review changes now?" : "Catalog updates are available. Open App Catalog now to review changes?";
-        }
-
-        var lines = pendingSources.Select(s => $"• {s.Name} ({s.PendingReviewCount})");
-        var body = "Catalog updates are available:\n\n" + string.Join("\n", lines);
-        if (!includeOpenPrompt)
-            return body + "\n\nOpen App Catalog to review and sync apps.";
-        return alreadyInAppCatalog ? body + "\n\nReview these changes now?" : body + "\n\nOpen App Catalog to review these sources?";
-    }
-
-    private async Task RunLocalFirstCatalogMigrationAsync()
-    {
-        AppCatalogService.MigrateLegacyCatalogSources(_settings);
-        _settingsModel.SaveCurrent();
-        await ShowFirstRunWelcomeAsync();
-        if (_session.IsClosed)
-            return;
-        _presentation.OpenCatalogSources();
-        _settings.LocalFirstCatalogMigrationComplete = true;
-        _settingsModel.SaveCurrent();
-    }
-
-    private Task ShowFirstRunWelcomeAsync() => _prompts.ShowWelcomeMessageBoxAsync(CommunityCatalogDefaults.FirstRunWelcomeMessage, CommunityCatalogDefaults.FirstRunWelcomeTitle);
     bool IUpdateCheckWorkflow.CanPresentResults => _presentation.CanPresentResults && !_session.IsClosed;
 
     Task<LibraryCheckResult> IUpdateCheckWorkflow.CheckAppsAsync(bool manual, IProgress<AppCheckProgress> progress, CancellationToken token,
@@ -235,16 +202,6 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
                 System.Diagnostics.Trace.WriteLine($"Background update {name}: elapsedMs={watch.ElapsedMilliseconds}");
             }
             await Stage("uninstalled apps", async () => { await _gameManager.RefreshUninstalledUpdatesAsync(_session.Token); });
-            await Stage("catalogs", async () =>
-            {
-                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(_session.Token);
-                deadline.CancelAfter(TimeSpan.FromSeconds(60));
-                await _gameManager.CatalogService.RefreshAllSourcesAsync(_gameManager.HttpClient, _settings, deadline.Token);
-                _session.Token.ThrowIfCancellationRequested();
-                await _gameManager.CatalogService.ApplyPendingCatalogChangeFlagsAsync(_gameManager.LibraryApps, _settings);
-                _settingsModel.SaveCurrent();
-                CatalogsRefreshed?.Invoke();
-            });
             await Stage("mods", _refreshMods);
             await Stage("artwork", () => _gameManager.LoadCustomAndCachedIconsAsync(cancellationToken: _session.Token));
             if (!_session.IsClosed) RefreshUpdateCheckStatus();

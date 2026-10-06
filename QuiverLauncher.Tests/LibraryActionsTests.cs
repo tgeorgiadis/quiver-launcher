@@ -29,7 +29,7 @@ public class LibraryActionsTests
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var actions = new LibraryActions(manager, new LibraryPersistenceService(manager), library.Settings, session, library,
             () => throw new Exception("Unexpected picker"), (_, _, _, _) => { entered.SetResult(); return prompt.Task; },
-            _ => throw new Exception("Unexpected URL"), () => throw new Exception("Unexpected catalog refresh"));
+            _ => throw new Exception("Unexpected URL"), () => throw new Exception("Unexpected library change"));
         var pending = actions.RemoveEntryAsync(game);
         await entered.Task;
         var shutdown = session.DisposeAsync().AsTask();

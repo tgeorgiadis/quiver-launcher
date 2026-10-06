@@ -1,4 +1,3 @@
-using System.Text.Json;
 using FluentAssertions;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Core.Services;
@@ -35,7 +34,6 @@ public class NonAppArchiveTests
     {
         DownloadAssetPolicy.IsAuxiliary(name).Should().BeTrue();
         PlatformAssetMatcher.IsWindowsAsset(name).Should().BeFalse();
-        CatalogPlatformSupport.FromAssetNames([name]).Should().Be(CatalogPlatformFlags.None);
         GitHubReleaseService.GetDownloadableAssets(Release(name), name).Should().BeEmpty();
         foreach (var platform in new[] { "Windows", "Linux-X64", "Linux-ARM64", "macOS", "Android" })
         {
@@ -66,7 +64,6 @@ public class NonAppArchiveTests
     public void Kartpad_supports_android_and_mac_without_windows_or_linux_downloads()
     {
         var release = Release(KartPadAssets);
-        CatalogPlatformSupport.FromAssetNames(KartPadAssets).Should().Be(CatalogPlatformFlags.Android | CatalogPlatformFlags.Mac);
         GitHubReleaseService.GetDownloadableAssets(release).Select(a => a.name).Should().Equal(KartPadAssets.Take(3));
         DownloadAssetPolicy.Select(release, "Android").Automatic!.name.Should().Be(KartPadAssets[0]);
         DownloadAssetPolicy.Select(release, "macOS").Automatic!.name.Should().Be(KartPadAssets[2]);
@@ -77,50 +74,5 @@ public class NonAppArchiveTests
             choices.Uncertain.Should().BeEmpty();
             choices.Automatic.Should().BeNull();
         }
-    }
-
-    [Fact]
-    public void Existing_local_and_published_metadata_are_reclassified_without_rewriting_cache_files()
-    {
-        var directory = Path.Combine(Path.GetTempPath(), "quiver-archive-policy-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(directory);
-        try
-        {
-            const string repository = "chrissotraidis/kartpad";
-            var checkedAt = DateTimeOffset.UtcNow.AddDays(-2);
-            var local = Path.Combine(directory, "catalog_platform_index_v1.json");
-            var localJson = JsonSerializer.Serialize(new Dictionary<string, CatalogPlatformEntry>
-            {
-                [CatalogPlatformIndex.Key("github", repository)] = new("v0.5.0", KartPadAssets, checkedAt, 2)
-            });
-            File.WriteAllText(local, localJson);
-            var publishedDirectory = Path.Combine(directory, "published-platforms");
-            Directory.CreateDirectory(publishedDirectory);
-            var published = Path.Combine(publishedDirectory, "existing.json");
-            var publishedJson = JsonSerializer.Serialize(new
-            {
-                Url = "https://example.test/platforms.json", ETag = "fixture", Modified = checkedAt,
-                Document = new PublishedPlatformDocument
-                {
-                    GeneratedAt = checkedAt,
-                    Entries = [new("github", repository, null, "v0.5.0", KartPadAssets, checkedAt)]
-                }
-            }, PublishedPlatformDocument.JsonOptions);
-            File.WriteAllText(published, publishedJson);
-            CatalogPlatformIndex.Initialize(directory);
-            CatalogPlatformIndex.TryGet("github", repository, null, null, out var localEntry).Should().BeTrue();
-            PublishedPlatformCache.TryGet("github", repository, null, out var publishedEntry).Should().BeTrue();
-            foreach (var entry in new[] { localEntry!, publishedEntry! })
-            {
-                var flags = CatalogPlatformSupport.FromMetadata(entry, null);
-                flags.Should().Be(CatalogPlatformFlags.Android | CatalogPlatformFlags.Mac);
-                CatalogPlatformSupport.Matches(flags, CatalogPlatformFlags.Windows).Should().BeFalse();
-                CatalogPlatformSupport.Matches(flags, CatalogPlatformFlags.Linux).Should().BeFalse();
-                CatalogPlatformSupport.FromMetadata(entry, "notices").Should().Be(CatalogPlatformFlags.None);
-            }
-            File.ReadAllText(local).Should().Be(localJson);
-            File.ReadAllText(published).Should().Be(publishedJson);
-        }
-        finally { Directory.Delete(directory, true); }
     }
 }

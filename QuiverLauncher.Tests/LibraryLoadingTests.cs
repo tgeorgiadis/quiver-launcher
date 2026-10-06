@@ -1,7 +1,6 @@
 using System.Net;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Rendering.Composition;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -69,31 +68,6 @@ public class LibraryLoadingTests
         }
     }
 
-    [AvaloniaFact]
-    public async Task Loading_animation_uses_compositor_and_detaches_cleanly()
-    {
-        await using var fixture = new Fixture(initializeOnOpen: true);
-        var window = new Window { Width = 1000, Height = 700, Content = fixture.View };
-        try
-        {
-            window.Show(); window.UpdateLayout();
-            var bar = fixture.Library.FindControl<LibraryLoadingBar>("LoadingBar")!;
-            bar.IsActive.Should().BeTrue();
-            var visual = ElementComposition.GetElementChildVisual(bar);
-            visual.Should().BeOfType<CompositionCustomVisual>("the loading animation must run on the compositor, independently of UI layout");
-            fixture.Library.UpdateEmptyState(false);
-            bar.IsActive.Should().BeFalse();
-            fixture.Library.UpdateEmptyState(true);
-            bar.IsActive.Should().BeTrue();
-            window.Content = null;
-            ElementComposition.GetElementChildVisual(bar).Should().BeNull();
-            window.Content = fixture.View; window.UpdateLayout();
-            ElementComposition.GetElementChildVisual(bar).Should().NotBeNull().And.NotBeSameAs(visual);
-            fixture.View.Library.FailInitialLoad();
-            bar.IsActive.Should().BeFalse();
-        }
-        finally { window.Close(); }
-    }
     private sealed class BlockedNetwork : HttpMessageHandler
     {
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -121,7 +95,8 @@ public class LibraryLoadingTests
             Store = new FileSettingsStore();
             Store.Current.FirstStartup = false;
             Store.Current.AppsPath = Path.Combine(Root, "Apps");
-            Store.Current.AppCatalogSources = [];
+            // Keep startup on the library instead of the first-run Browse page.
+            Store.Current.LocalFirstCatalogMigrationComplete = true;
             Store.Save(Store.Current);
             Client = new HttpClient(Network);
             Manager = new GameManager(Store, Client);
@@ -186,11 +161,12 @@ public class LibraryLoadingTests
         var startup = fixture.View.InitializeGamesAsync();
         fixture.View.Library.IsLibraryEmpty.Should().BeFalse();
         fileLock.Dispose();
-        await fixture.Network.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        // An empty library makes no startup requests, so wait for startup itself.
+        await startup.WaitAsync(TimeSpan.FromSeconds(5));
         Dispatcher.UIThread.RunJobs();
         fixture.View.Library.IsInitialLoading.Should().BeFalse();
         fixture.Library.FindControl<StackPanel>("EmptyLibraryPanel")!.IsVisible.Should().BeTrue();
-        await fixture.View.ShutdownAsync(); await startup.WaitAsync(TimeSpan.FromSeconds(5));
+        await fixture.View.ShutdownAsync();
     }
 
     [AvaloniaFact]

@@ -30,7 +30,6 @@ namespace QuiverLauncher.Core.Services
         {
             _cacheFilePath = Path.Combine(cacheDirectory, "version_cache.json");
             LoadFromDisk();
-            CatalogPlatformIndex.Initialize(cacheDirectory);
         }
 
         private static void LoadFromDisk()

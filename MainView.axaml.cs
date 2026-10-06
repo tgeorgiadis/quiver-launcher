@@ -21,13 +21,7 @@ namespace QuiverLauncher
     public enum MainViewMode
     {
         Library,
-        AppCatalog,
-    }
-
-    public enum AppCatalogSubView
-    {
-        Sources,
-        Review,
+        Browse,
     }
 
     public partial class MainView : UserControl, INotifyPropertyChanged, IUpdatePresentation, IAppUpdateReviewActions, IModsFeatureHost, ISettingsFeatureHost
@@ -43,7 +37,6 @@ namespace QuiverLauncher
         private readonly LibraryActions _libraryActions;
         private readonly LibraryCustomizationService _libraryCustomization;
         private readonly Views.LibraryLaunchController _libraryLaunch;
-        private readonly CatalogViewModel _catalogViewModel = new();
         private readonly SettingsViewModel _settingsViewModel;
         private readonly LauncherSession _session = new();
         private readonly Views.MobileShellLayout _mobileLayout;
@@ -64,10 +57,8 @@ namespace QuiverLauncher
         private DesktopHostController? _desktopHost;
         private readonly HashSet<GameInfo> _subscribedGames = [];
         public ObservableCollection<GameInfo> Games => _gameManager?.Games ?? new ObservableCollection<GameInfo>();
-        public ObservableCollection<CatalogSourceListItem> CatalogSources => _catalogViewModel.Sources;
-        public ResettableObservableCollection<CatalogSyncRowItem> CatalogSyncRows => _catalogSyncViewModel.Rows;
         public ObservableCollection<GameInfo> AppUpdateReviewRows => AppUpdatesReviewPanel.Model.Rows;
-        public bool GamepadHintsVisible => IsDesktopPlatform && !Shell.SettingsOpen && !Shell.EntryEditorOpen && !Shell.TagEditorOpen && !Shell.DocumentOpen && !IsDisplayFilterOverlayOpen && !Shell.ModsOpen && !Shell.ModDetailsOpen && !Shell.CatalogDetailsOpen && (Shell.Mode == MainViewMode.Library || (Shell.Mode == MainViewMode.AppCatalog && (Shell.CatalogSubView == AppCatalogSubView.Sources || Shell.CatalogSubView == AppCatalogSubView.Review)));
+        public bool GamepadHintsVisible => IsDesktopPlatform && !Shell.SettingsOpen && !Shell.EntryEditorOpen && !Shell.TagEditorOpen && !Shell.DocumentOpen && !IsDisplayFilterOverlayOpen && !Shell.ModsOpen && !Shell.ModDetailsOpen && !Shell.BrowseDetailsOpen;
         /// <summary>
         /// Gamepad chrome actions (zones, overlays, library confirm) when pad input is enabled,
         /// or after keyboard navigation/actions have activated keyboard chrome.
@@ -75,10 +66,7 @@ namespace QuiverLauncher
         private bool AllowChromeActions => _settings.EnableGamepadInput || GamepadFocusChrome.KeyboardNavigationActive;
 
         private readonly VelopackUpdateService _velopackUpdateService = new();
-        private readonly CatalogSyncViewModel _catalogSyncViewModel = new();
-        private readonly CatalogReviewWorkspace _catalogReview;
-        private readonly CatalogReleasePrefetch _catalogReleasePrefetch;
-        private AppCatalogSource? _activeCatalogSyncSource => _catalogReview.ActiveSource;
+        private readonly LibraryAddService _libraryAdd;
         public AppSettings _settings { get => _settingsViewModel.Current; private set => _settingsViewModel.ReplaceCurrent(value); }
 
         public App _app = null!;
@@ -149,9 +137,8 @@ namespace QuiverLauncher
             {
                 HeaderTitleColumn.ColumnDefinitions = new ColumnDefinitions("*,Auto");
                 HeaderTitleColumn.ClipToBounds = true;
-                CatalogReviewCompactSummary.MaxWidth = 180;
                 _desktopHeader = new Views.DesktopHeaderLayout(HeaderLayoutGrid, HeaderTitleColumn, DesktopInlineTopBar, HeaderFixedActions,
-                    () => LibraryToolbar.IsVisible ? LibraryToolbar.PreferredWidth : CatalogReviewBackButton.IsVisible ? CatalogReviewBackButton.DesiredSize.Width : 0);
+                    () => LibraryToolbar.IsVisible ? LibraryToolbar.PreferredWidth : 0);
                 _session.OnShutdown(_desktopHeader.Dispose);
                 LibraryToolbar.PreferredSizeChanged += _desktopHeader.Refresh;
                 _session.OnShutdown(() => LibraryToolbar.PreferredSizeChanged -= _desktopHeader.Refresh);
@@ -159,7 +146,7 @@ namespace QuiverLauncher
             MessagePromptOverlay.Configure(_session);
             _prompts = new LauncherPromptService(_session, _dialogs, MessagePromptOverlay);
             _mobileLayout = new Views.MobileShellLayout(this, _session, () => _appearance?.ApplyHeader());
-            _appearance = new Views.ShellAppearance(this, Shell, _mobileLayout, _catalogSyncViewModel, () => _catalogReview?.ActiveSource, () => _desktopHeader?.Refresh());
+            _appearance = new Views.ShellAppearance(this, Shell, _mobileLayout, () => _desktopHeader?.Refresh());
             _session.OnShutdown(_mobileLayout.Dispose);
             _chromeNavigation = new Views.ShellChromeNavigation(this, _session, this, Shell, () => _mobileLayout.IsSearchOpen, WireChromeXyFocusEdges);
             if (IsDesktopPlatform)
@@ -173,7 +160,7 @@ namespace QuiverLauncher
                     });
                 _session.OnShutdown(sidebarController.Dispose);
             }
-            _navigationRouter = new ShellNavigationRouter(Shell, _gamepadNavigation, new Dictionary<GamepadNavigationZone, Func<IFeatureNavigationHandler>> { [GamepadNavigationZone.Sidebar] = () => _chromeNavigation, [GamepadNavigationZone.TopBar] = () => _chromeNavigation, [GamepadNavigationZone.AnnouncementBanner] = () => Banners, [GamepadNavigationZone.Library] = () => LibraryPanel.Navigation, [GamepadNavigationZone.CatalogSources] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogSourcesToolbar] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogSourcesFilters] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogSourceCardActions] = () => CatalogSourcesPanel.Navigation, [GamepadNavigationZone.CatalogReviewFilters] = () => CatalogReviewPanel.Navigation, [GamepadNavigationZone.CatalogReviewList] = () => CatalogReviewPanel.Navigation, [GamepadNavigationZone.CatalogReviewRowActions] = () => CatalogReviewPanel.Navigation, [GamepadNavigationZone.CatalogReviewDetailsOverlay] = () => CatalogReviewDetailsPanel, [GamepadNavigationZone.AppUpdatesReviewToolbar] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewList] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewRowActions] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.ModsOverlayToolbar] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlaySourceFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayList] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayRowActions] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsDetailsOverlay] = () => ModsPanel.Details, [GamepadNavigationZone.DisplayFilterOverlay] = () => DisplayFilterOverlay.Navigation, [GamepadNavigationZone.EntryFormOverlay] = () => EntryFormOverlay.Navigation, [GamepadNavigationZone.TagEditOverlay] = () => TagEditOverlay.Navigation, [GamepadNavigationZone.Settings] = () => SettingsPanel.Navigation, [GamepadNavigationZone.ChangelogOverlay] = () => ChangelogPanel, }, () => IsDisplayFilterOverlayOpen, () =>
+            _navigationRouter = new ShellNavigationRouter(Shell, _gamepadNavigation, new Dictionary<GamepadNavigationZone, Func<IFeatureNavigationHandler>> { [GamepadNavigationZone.Sidebar] = () => _chromeNavigation, [GamepadNavigationZone.TopBar] = () => _chromeNavigation, [GamepadNavigationZone.AnnouncementBanner] = () => Banners, [GamepadNavigationZone.Library] = () => LibraryPanel.Navigation, [GamepadNavigationZone.BrowseGrid] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseToolbar] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseFilters] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseDetailsOverlay] = () => BrowseDetailsPanel, [GamepadNavigationZone.AppUpdatesReviewToolbar] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewList] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewRowActions] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.ModsOverlayToolbar] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlaySourceFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayList] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayRowActions] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsDetailsOverlay] = () => ModsPanel.Details, [GamepadNavigationZone.DisplayFilterOverlay] = () => DisplayFilterOverlay.Navigation, [GamepadNavigationZone.EntryFormOverlay] = () => EntryFormOverlay.Navigation, [GamepadNavigationZone.TagEditOverlay] = () => TagEditOverlay.Navigation, [GamepadNavigationZone.Settings] = () => SettingsPanel.Navigation, [GamepadNavigationZone.ChangelogOverlay] = () => ChangelogPanel, }, () => IsDisplayFilterOverlayOpen, () =>
             {
                 _chromeNavigation.ClearSidebarGamepadFocus();
                 _chromeNavigation.ClearTopBarGamepadFocus();
@@ -201,23 +188,6 @@ namespace QuiverLauncher
             }
 
             _gameManager = dependencies.GameManager ?? new GameManager(dependencies.SettingsStore);
-            CatalogPerformance.Enabled = File.Exists(Path.Combine(QuiverLauncherPaths.UserDataRoot, "catalog-performance.enabled"));
-            if (CatalogPerformance.Enabled)
-            {
-                _ = _session.RunAsync(() => Task.Run(async () =>
-                {
-                    while (!_session.Token.IsCancellationRequested)
-                    {
-                        await Task.Delay(50, _session.Token).ConfigureAwait(false);
-                        var queued = Stopwatch.GetTimestamp();
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            var delay = Stopwatch.GetElapsedTime(queued).TotalMilliseconds;
-                            if (delay > 100) CatalogPerformance.Report("ui-dispatch-delay", delay);
-                        }, DispatcherPriority.Send, _session.Token);
-                    }
-                }, _session.Token));
-            }
             Banners.Configure(_session, _settingsViewModel, _gameManager.HttpClient, this, OpenGitHubApiTokenSettings);
             Library = new LibraryViewModel(_gameManager, _settingsViewModel);
             if (_initializeOnOpen) Library.BeginInitialLoad();
@@ -236,7 +206,6 @@ namespace QuiverLauncher
             };
             _updates = new LauncherUpdateWorkflow(_gameManager, _settingsViewModel, Library, Shell, _session, _prompts, this, () => _app, _velopackUpdateService, () => ModsPanel.Workspace.RefreshAllModUpdateBadgesAsync(), game => _libraryLaunch.HandleUpdateNowAsync(this, game, preferAutoPlatform: true, allowAssetPicker: false, interactive: false));
             _updateChecks = new UpdateCheckCoordinator(_updates);
-            _updates.CatalogsRefreshed = RefreshCatalogSources;
             _updateChecks.ProgressChanged += () =>
             {
                 if (_session.IsClosed) return;
@@ -257,11 +226,10 @@ namespace QuiverLauncher
             _session.OnShutdown(Library.Dispose);
             _libraryCustomization = new LibraryCustomizationService(_gameManager, Library, _session, () => StorageProvider, (message, title, question) => ShowMessageBoxAsync(message, title, question));
             _libraryPersistence = new LibraryPersistenceService(_gameManager);
-            _libraryActions = new LibraryActions(_gameManager, _libraryPersistence, _settingsViewModel, _session, Library, () => StorageProvider, (message, title, question, cancel) => ShowMessageBoxAsync(message, title, question, cancel), OpenUrl, async () =>
+            _libraryActions = new LibraryActions(_gameManager, _libraryPersistence, _settingsViewModel, _session, Library, () => StorageProvider, (message, title, question, cancel) => ShowMessageBoxAsync(message, title, question, cancel), OpenUrl, () =>
             {
-                RefreshCatalogSources();
-                if (_activeCatalogSyncSource != null)
-                    await _catalogReview.RefreshAsync(_session.Token);
+                RefreshBrowseLibraryState();
+                return Task.CompletedTask;
             });
             _libraryLaunch = new Views.LibraryLaunchController(_gameManager, _settingsViewModel, _session, _libraryPersistence, LibraryPanel.ResolveDownloadMenuAnchor, _menus.Open, (message, title) => ShowMessageBoxAsync(message, title), _libraryActions.OpenGameFolder, () =>
             {
@@ -299,58 +267,19 @@ namespace QuiverLauncher
             LibraryPanel.ConfigureActions(_libraryActions, _libraryCustomization, ToggleAppAutoUpdateAsync, (message, title) => ShowMessageBoxAsync(message, title));
             LibraryPanel.NavigationRequested += (action, game) => _ = _session.RunAsync(() => HandleLibraryNavigationRequestAsync(action, game));
             ModsPanel.Configure(new ModsFeatureContext(_gameManager, () => _settings, _settingsViewModel, _session, _markdownRenderer, Shell), this);
-            _catalogReview = new CatalogReviewWorkspace(_catalogSyncViewModel, _settingsViewModel, new CatalogReviewService(_gameManager, _settingsViewModel, ApplySorting, _session), (message, title, question) => ShowMessageBoxAsync(message, title, question), async () =>
-            {
-                await _catalogViewModel.RefreshAsync(_session.Token);
-                await ApplyLibraryCatalogPendingBadgesAsync();
-            }, _session.CatalogMutations, () =>
-            {
-                _catalogViewModel.RefreshPresentation();
-                return Task.CompletedTask;
-            });
-            _catalogReleasePrefetch = new CatalogReleasePrefetch(_session, _gameManager, _settingsViewModel, _catalogSyncViewModel, _catalogReview, () => Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Review, action => Dispatcher.UIThread.InvokeAsync(action).GetTask(), CatalogReviewPanel.StagePlatformDiscoveries,
-                reviewStatusChanged: _catalogViewModel.RefreshPresentation);
-            _session.OnShutdown(_catalogReleasePrefetch.Dispose);
-            _catalogReview.SourceOpened += ShowAppCatalogReviewView;
-            _catalogReview.RowsChanged += CatalogRowsChanged;
-            _catalogReview.AdditionRowsChanged += CatalogReviewPanel.RefreshPresentedCatalog;
-            _settingsViewModel.CredentialsChanged += CatalogCredentialsChanged;
-            _session.OnShutdown(() =>
-            {
-                _catalogReview.SourceOpened -= ShowAppCatalogReviewView;
-                _catalogReview.RowsChanged -= CatalogRowsChanged;
-                _catalogReview.AdditionRowsChanged -= CatalogReviewPanel.RefreshPresentedCatalog;
-                _settingsViewModel.CredentialsChanged -= CatalogCredentialsChanged;
-                _catalogReview.Dispose();
-            });
-            CatalogReviewPanel.Configure(_catalogSyncViewModel, _catalogReview, _settingsViewModel, _session, this, CatalogReviewDetailsPanel, () => Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Review, message => LogGamepadDebug(message));
-            CatalogReviewPanel.HeaderChanged += _appearance.ApplyHeader;
-            CatalogReviewPanel.LibraryRequested += ShowLibraryView;
-            CatalogReviewPanel.SourcesRequested += ShowAppCatalogSourcesView;
-            CatalogReviewPanel.GitHubTokenSettingsRequested += OpenGitHubApiTokenSettings;
-            CatalogReviewPanel.GitLabTokenSettingsRequested += OpenGitLabApiTokenSettings;
-            CatalogReviewPanel.PlatformRetryRequested += _catalogReleasePrefetch.Restart;
-            CatalogReviewPanel.DetailsRequested += OpenCatalogReviewDetails;
-            CatalogReviewPanel.DetailsRefreshRequested += RefreshCatalogReviewDetailsBinding;
-            _catalogViewModel.Configure(_settingsViewModel, new CatalogSourcesService(_gameManager), (message, title, cancel) => ShowMessageBoxAsync(message, title, cancel), async () =>
-            {
-                await _gameManager.LoadGamesAsync();
-                if (!_session.IsClosed)
-                    ApplySorting();
-            }, ApplyLibraryCatalogPendingBadgesAsync, async () =>
-            {
-                await _updates.TryPromptCatalogReviewAsync();
-            });
-            CatalogSourcesPanel.Configure(_catalogViewModel, _session, this, () => !Shell.SettingsOpen && Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Sources, async id =>
-            {
-                var source = _settings.AppCatalogSources.FirstOrDefault(s => s.Id == id);
-                await OpenCatalogReviewAsync(id, source is { PendingReviewCount: > 0 } ? CatalogReviewFilter.NeedsReview : CatalogReviewFilter.All);
-            });
-            _catalogViewModel.ListChanged += RefreshCatalogBadgeCounts;
-            _session.OnShutdown(() => _catalogViewModel.ListChanged -= RefreshCatalogBadgeCounts);
-            CatalogReviewDetailsPanel.Configure(_session, this, _markdownRenderer, new CatalogReadmeService(_gameManager, _settingsViewModel).LoadAsync, OpenUrl);
-            CatalogReviewDetailsPanel.CloseRequested += () => CloseCatalogReviewDetails();
-            CatalogReviewDetailsPanel.ActionRequested += (action, id) => _ = _session.RunAsync(() => _catalogReview.ExecuteAsync(action, id, _session.Token));
+            var catalog = new QuiverCatalogClient(_gameManager.HttpClient);
+            _libraryAdd = new LibraryAddService(_gameManager, _settingsViewModel, _session);
+            BrowsePanel.Configure(new BrowseViewModel(catalog, () => _gameManager.LibraryApps, () => _settings.CustomAppListLocation,
+                location => _gameManager.CatalogService.TryLoadListAsync(_gameManager.HttpClient, location, _session.Token)),
+                _session, this, () => !Shell.SettingsOpen && !Shell.BrowseDetailsOpen && Shell.Mode == MainViewMode.Browse);
+            BrowsePanel.DetailsRequested += OpenBrowseDetails;
+            BrowseDetailsPanel.Configure(_session, this, _markdownRenderer, new BrowseDetailsViewModel(catalog,
+                (app, project) => QuiverCatalogMapping.ToGameInfo(_gameManager.CatalogService, app, project), LoadRepositoryReadmeAsync),
+                BrowsePanel.Model.FindInLibrary);
+            BrowseDetailsPanel.CloseRequested += () => CloseBrowseDetails();
+            BrowseDetailsPanel.AddRequested += app => _ = _session.RunAsync(() => AddFromBrowseAsync(app));
+            BrowseDetailsPanel.RemoveRequested += app => _ = _libraryActions.RemoveEntryAsync(app);
+            BrowseDetailsPanel.OpenUrlRequested += OpenUrl;
             SettingsPanel.Configure(new SettingsFeatureContext(() => _settings, _settingsViewModel, _session, _music, _gameManager, () => _inputService), this);
             TagEditOverlay.Configure(_session, this, new LibraryMetadataService(_gameManager, _settingsViewModel), ReloadLibraryAfterEditAsync, message => ShowMessageBoxAsync(message, "Error"), DismissTextInputFocus);
             TagEditOverlay.CloseRequested += CloseTagEditOverlay;
@@ -424,7 +353,7 @@ namespace QuiverLauncher
                     ShowEntryFormOverlay(forCreate: true);
                     break;
                 case Views.LibraryActionKind.EmptyLibraryBrowseCatalog:
-                    await OpenCommunityCatalogFromLibraryAsync();
+                    ShowBrowseView();
                     break;
                 case Views.LibraryActionKind.LibrarySearchClear:
                     LibraryToolbar.ClearSearch();
@@ -440,9 +369,6 @@ namespace QuiverLauncher
                     break;
                 case Views.LibraryActionKind.OpenMods when game?.CanOpenMods == true:
                     await ModsPanel.OpenModsOverlayAsync(game);
-                    break;
-                case Views.LibraryActionKind.ReviewCatalogChanges when game != null:
-                    await OpenCatalogReviewForLibraryAppAsync(game);
                     break;
                 case Views.LibraryActionKind.ShowReadme:
                     if (string.IsNullOrEmpty(game?.Repository))
@@ -474,13 +400,11 @@ namespace QuiverLauncher
                 OpenAppUpdatesReview();
         }
 
-        void IUpdatePresentation.OpenCatalogSources()
+        void IUpdatePresentation.OpenBrowse()
         {
             if (!_session.IsClosed)
-                ShowAppCatalogSourcesView();
+                ShowBrowseView();
         }
-
-        Task IUpdatePresentation.OpenCatalogReviewAsync() => _session.IsClosed ? Task.CompletedTask : OpenAppCatalogForReviewAsync();
         void IUpdatePresentation.UpdateStatusChanged() => _app?.UpdateTrayTooltip(Shell.PendingUpdatesCount, Shell.IsCheckingUpdates);
         private GamepadNavigationZone GetMainContentGamepadZone() => _navigationRouter.MainZone;
         private bool HandleGamepadNavigation(Services.NavigationDirection direction)
@@ -558,9 +482,9 @@ namespace QuiverLauncher
                 return;
             }
 
-            if (Shell.CatalogDetailsOpen)
+            if (Shell.BrowseDetailsOpen)
             {
-                CatalogReviewDetailsPanel.Cancel();
+                BrowseDetailsPanel.Cancel();
                 return;
             }
 
@@ -576,15 +500,11 @@ namespace QuiverLauncher
             SettingsPanel.UpdateSettingsUI();
             Library.SortBy = _settings.SortBy ?? "Name";
             LibraryToolbar.SelectSort(Library.SortBy);
-            CatalogReviewPanel.ApplyCatalogReviewSortSelection(_settings.CatalogReviewSortBy ?? "Name");
-            CatalogReviewPanel.UpdateCatalogReviewPlatformButton();
-            CatalogReviewPanel.UpdateCatalogReviewLayoutVisibility();
             UpdateGridLayoutVisibility();
             Shell.ThemeColorBrush = new SolidColorBrush(Color.Parse(_settings.PrimaryColor ?? "#18181b"));
             Shell.SecondaryColorBrush = new SolidColorBrush(Color.Parse(_settings.SecondaryColor ?? "#404040"));
             UpdateThemeColors();
             UpdateGamepadHintsBar();
-            RefreshCatalogSources();
             Library.RefreshFilters();
             LibraryFiltersPanel.RefreshSidebarFilterSelection();
         }
@@ -604,7 +524,12 @@ namespace QuiverLauncher
         void ISettingsFeatureHost.ApplyLibraryDisplaySettingsToGames() => Library.ApplyDisplaySettings();
         void ISettingsFeatureHost.FitMobileLibraryCardWidth() => LibraryPanel.FitMobileLibraryCardWidth();
         void ISettingsFeatureHost.ApplySorting() => ApplySorting();
-        Task ISettingsFeatureHost.ApplyLibraryCatalogPendingBadgesAsync() => ApplyLibraryCatalogPendingBadgesAsync();
+        void ISettingsFeatureHost.CustomAppListChanged()
+        {
+            BrowsePanel.Model.ForgetCustomList();
+            if (Shell.Mode == MainViewMode.Browse) BrowsePanel.Reload();
+            else BrowsePanel.Model.Items.Clear();
+        }
         void ISettingsFeatureHost.ApplyTrayAndBackgroundUpdateSettings() => ApplyTrayAndBackgroundUpdateSettings();
         void ISettingsFeatureHost.UpdateGamepadHintsBar() => UpdateGamepadHintsBar();
         void ISettingsFeatureHost.UpdateGamepadChromeClass() => UpdateGamepadChromeClass();
@@ -826,14 +751,7 @@ namespace QuiverLauncher
             LibraryToolbar.SortFlyoutOpening(sender as MenuFlyout);
         }
 
-        private void MobileCatalogSortFlyout_Opening(object? sender, EventArgs e)
-        {
-            GamepadMenuFlyoutNavigation.Attach(sender as MenuFlyout);
-            CatalogReviewPanel.SortFlyoutOpening(sender as MenuFlyout);
-        }
-
         private void MobileLibrarySortItem_Click(object? sender, RoutedEventArgs e) => LibraryToolbar.SelectSort((sender as MenuItem)?.Tag as string);
-        private void MobileCatalogSortItem_Click(object? sender, RoutedEventArgs e) => CatalogReviewPanel.SelectSort((sender as MenuItem)?.Tag as string);
         internal async Task InitializeGamesAsync()
         {
             Library.BeginInitialLoad();
@@ -844,16 +762,12 @@ namespace QuiverLauncher
                 if (_session.IsClosed)
                     return;
                 _settings = _settingsViewModel.Load();
-                await RefreshAllCatalogPendingCountsAsync();
-                if (_session.IsClosed)
-                    return;
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     if (_session.IsClosed)
                         return;
                     ApplySorting();
                     Library.RefreshContinue();
-                    RefreshCatalogSources();
                     Library.RefreshFilters();
                     LibraryFiltersPanel.RefreshSidebarFilterSelection();
                     UpdateMainViewUi();
@@ -867,10 +781,10 @@ namespace QuiverLauncher
 
                     Banners.ApplyTopBanner();
                 });
-                // The saved library and cached source counts are already usable.
+                // The saved library is already usable.
                 await RefreshStartupMetadataAsync();
                 if (_session.IsClosed) return;
-                await _updates.NotifyCatalogUpdatesIfNeededAsync();
+                await _updates.ShowFirstRunWelcomeIfNeededAsync();
                 _ = _session.RunAsync(Banners.RefreshAnnouncementBannerAsync);
             }
             catch (Exception ex)
@@ -888,36 +802,10 @@ namespace QuiverLauncher
 
         private async Task RefreshStartupMetadataAsync()
         {
-            async Task RefreshLibraryAsync()
-            {
-                try { await _gameManager.RefreshLoadedLibraryMetadataAsync(_session.Token); }
-                catch (OperationCanceledException) when (_session.IsClosed) { }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Startup library refresh failed: {ex.GetType().Name}"); }
-            }
-            await Task.WhenAll(RefreshLibraryAsync(), RefreshStartupCatalogsAsync());
-        }
-
-        private async Task RefreshStartupCatalogsAsync()
-        {
-            try
-            {
-                await _gameManager.CatalogService.RefreshAllSourcesAsync(_gameManager.HttpClient, _settings, _session.Token);
-                if (_session.IsClosed) return;
-                await _gameManager.CatalogService.EnsureCommunitySourcesCachedAsync(_gameManager.HttpClient, _settings, _session.Token);
-                if (_session.IsClosed) return;
-                _settingsViewModel.Save(_settings);
-                await RefreshAllCatalogPendingCountsAsync();
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    if (!_session.IsClosed) RefreshCatalogSources();
-                });
-            }
+            try { await _gameManager.RefreshLoadedLibraryMetadataAsync(_session.Token); }
             catch (OperationCanceledException) when (_session.IsClosed) { }
-            catch (Exception ex)
-            {
-                // An online refresh failure must not replace a successfully loaded library.
-                System.Diagnostics.Debug.WriteLine($"Startup metadata refresh failed: {ex.GetType().Name}");
-            }
+            // An online refresh failure must not replace a successfully loaded library.
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Startup library refresh failed: {ex.GetType().Name}"); }
         }
 
         private bool IsGamepadFocusActive => GamepadFocusChrome.ShouldShowGamepadChrome(_settings.EnableGamepadInput, _inputService?.HasConnectedGamepad == true, GamepadFocusChrome.KeyboardNavigationActive, SteamDeckEnvironment.IsGamingMode());
@@ -1000,9 +888,9 @@ namespace QuiverLauncher
                     return;
                 }
 
-                if (IsGamepadFocusActive && Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Sources && CatalogSources.Count > 0)
+                if (IsGamepadFocusActive && Shell.Mode == MainViewMode.Browse)
                 {
-                    CatalogSourcesPanel.Navigation.SelectInitialCatalogGamepadItem();
+                    BrowsePanel.Navigation.SelectInitial();
                     return;
                 }
 
@@ -1043,6 +931,12 @@ namespace QuiverLauncher
                 return;
             }
 
+            if (Shell.BrowseDetailsOpen)
+            {
+                CloseBrowseDetails();
+                return;
+            }
+
             if (Shell.EntryEditorOpen)
             {
                 CloseEntryFormOverlay();
@@ -1076,15 +970,14 @@ namespace QuiverLauncher
                 CloseEntryFormOverlay();
             if (Shell.TagEditorOpen)
                 CloseTagEditOverlay();
-            if (Shell.CatalogDetailsOpen)
-                CloseCatalogReviewDetails(restoreReviewSelection: false);
+            if (Shell.BrowseDetailsOpen)
+                CloseBrowseDetails(restoreSelection: false);
             Shell.SettingsOpen = !Shell.SettingsOpen;
             SettingsPanel.IsVisible = Shell.SettingsOpen;
             if (Shell.SettingsOpen)
             {
                 _gamepadNavigation.ActiveZone = GamepadNavigationZone.Settings;
                 NotifyGamepadUiChanged();
-                CatalogSourcesPanel.Navigation.ClearCatalogSourcesToolbarGamepadFocus();
                 ClearGamepadFocus();
                 SettingsPanel.Bindings.RefreshControllers();
                 SettingsPanel.Bindings.Refresh();
@@ -1117,18 +1010,16 @@ namespace QuiverLauncher
                 CloseEntryFormOverlay();
             if (Shell.TagEditorOpen)
                 CloseTagEditOverlay();
-            if (Shell.CatalogDetailsOpen)
-                CloseCatalogReviewDetails(restoreReviewSelection: false);
+            if (Shell.BrowseDetailsOpen)
+                CloseBrowseDetails(restoreSelection: false);
             Shell.SettingsOpen = true;
             SettingsPanel.IsVisible = true;
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.Settings;
             ClearGamepadFocus();
             NotifyGamepadUiChanged();
-            RefreshCatalogSources();
             SettingsPanel.FocusApiToken(focusGitLab);
         }
 
-        private string? _catalogCredentialContext;
         private bool CloseSettingsPanel()
         {
             if (!Shell.SettingsOpen || SettingsPanel == null)
@@ -1138,7 +1029,7 @@ namespace QuiverLauncher
             SettingsPanel.Bindings.Cancel();
             SettingsPanel.Navigation.ClearSettingsGamepadFocusClasses(SettingsPanel.Navigation.CollectSettingsFocusableControls());
             SettingsPanel.Navigation.FocusIndex = -1;
-            _gamepadNavigation.ActiveZone = Shell.Mode == MainViewMode.Library ? GamepadNavigationZone.Library : GamepadNavigationZone.CatalogSources;
+            _gamepadNavigation.ActiveZone = _navigationRouter.MainZone;
             NotifyGamepadUiChanged();
             if (_settings.EnableGamepadInput)
             {
@@ -1164,37 +1055,21 @@ namespace QuiverLauncher
             CloseSettingsPanel();
         }
 
-        private void RefreshCatalogSources() => _ = _session.RunAsync(() => _catalogViewModel.RefreshAsync(_session.Token));
-        private void RefreshCatalogBadgeCounts()
-        {
-            if (_session.IsClosed)
-                return;
-            Shell.CatalogReviewBadgeCount = CatalogSources.Where(source => source.Enabled).Sum(source => source.PendingReviewCount);
-        }
-
         private void LibraryNavButton_Click(object? sender, RoutedEventArgs e)
         {
             ShowLibraryView();
             _mobileLayout.CloseMobileNav();
         }
 
-        private void AppCatalogNavButton_Click(object? sender, RoutedEventArgs e)
+        private void BrowseNavButton_Click(object? sender, RoutedEventArgs e)
         {
-            ShowAppCatalogSourcesView();
+            ShowBrowseView();
             _mobileLayout.CloseMobileNav();
         }
 
-        private void CatalogReviewBack_Click(object? sender, RoutedEventArgs e) => ShowAppCatalogSourcesView();
         private void ShowLibraryView()
         {
-            if (Shell.CatalogSubView == AppCatalogSubView.Review)
-            {
-                _catalogReleasePrefetch.Cancel();
-                _catalogReview.Close();
-            }
-
             Shell.Mode = MainViewMode.Library;
-            Shell.CatalogSubView = AppCatalogSubView.Sources;
             Shell.AppUpdatesOpen = false;
             if (Shell.ModsOpen)
                 ModsPanel.CloseModsOverlay();
@@ -1206,38 +1081,20 @@ namespace QuiverLauncher
                 ClearGamepadFocus();
         }
 
-        private void ShowAppCatalogSourcesView()
+        private void ShowBrowseView()
         {
-            if (Shell.CatalogDetailsOpen)
-                CloseCatalogReviewDetails(restoreReviewSelection: false);
-            _catalogReleasePrefetch.Cancel();
-            _catalogReview.Close();
-            Shell.Mode = MainViewMode.AppCatalog;
-            Shell.CatalogSubView = AppCatalogSubView.Sources;
+            if (Shell.BrowseDetailsOpen)
+                CloseBrowseDetails(restoreSelection: false);
+            Shell.Mode = MainViewMode.Browse;
             Shell.AppUpdatesOpen = false;
             if (Shell.ModsOpen)
                 ModsPanel.CloseModsOverlay();
-            CatalogSyncRows.Clear();
             ResetGamepadNavigationIndices();
             UpdateMainViewUi();
+            BrowsePanel.Model.RefreshLibraryState();
+            BrowsePanel.EnsureLoaded();
             if (IsGamepadFocusActive)
-                CatalogSourcesPanel.Navigation.SelectInitialCatalogGamepadItem();
-            else
-                ClearGamepadFocus();
-        }
-
-        private void ShowAppCatalogReviewView(AppCatalogSource source)
-        {
-            Shell.Mode = MainViewMode.AppCatalog;
-            Shell.CatalogSubView = AppCatalogSubView.Review;
-            Shell.AppUpdatesOpen = false;
-            CatalogReviewPanel.ResetSearch();
-            ResetGamepadNavigationIndices();
-            UpdateMainViewUi();
-            CatalogReviewPanel.ApplyCatalogReviewChrome();
-            _appearance.ApplyHeader();
-            if (IsGamepadFocusActive)
-                CatalogReviewPanel.Navigation.SelectInitialCatalogReviewGamepadItem();
+                BrowsePanel.Navigation.SelectInitial();
             else
                 ClearGamepadFocus();
         }
@@ -1247,7 +1104,6 @@ namespace QuiverLauncher
             if (Shell.ModsOpen)
                 ModsPanel.CloseModsOverlay();
             Shell.Mode = MainViewMode.Library;
-            Shell.CatalogSubView = AppCatalogSubView.Sources;
             Shell.AppUpdatesOpen = true;
             RefreshAppUpdateReviewRows();
             ResetGamepadNavigationIndices();
@@ -1302,8 +1158,8 @@ namespace QuiverLauncher
 
         private void UpdateMainViewUi()
         {
-            if (!(Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Review) && Shell.CatalogDetailsOpen)
-                CloseCatalogReviewDetails(restoreReviewSelection: false);
+            if (Shell.Mode != MainViewMode.Browse && Shell.BrowseDetailsOpen)
+                CloseBrowseDetails(restoreSelection: false);
             _appearance.Refresh();
             UpdateLibraryEmptyState();
             NotifyGamepadUiChanged();
@@ -1315,128 +1171,62 @@ namespace QuiverLauncher
             LibraryToolbar.RefreshClearButton();
         }
 
-        private Task OpenCommunityCatalogFromLibraryAsync()
+        private void OpenBrowseDetails(BrowseItem item)
         {
-            AppCatalogService.MigrateLegacyCatalogSources(_settings);
-            OnSettingChanged();
-            ShowAppCatalogSourcesView();
-            return Task.CompletedTask;
+            Shell.BrowseDetailsOpen = true;
+            BrowseDetailsPanel.Open(item);
+            NotifyGamepadUiChanged();
         }
 
-        private async Task RefreshAllCatalogPendingCountsAsync()
+        private void CloseBrowseDetails(bool restoreSelection = true)
         {
-            foreach (var source in _settings.AppCatalogSources.Where(s => s.Enabled))
-                await _gameManager.CatalogService.RefreshUpdateAvailableAsync(source);
-            RefreshCatalogSources();
-            await ApplyLibraryCatalogPendingBadgesAsync();
-        }
-
-        private async Task ApplyLibraryCatalogPendingBadgesAsync()
-        {
-            if (_gameManager?.Games == null || _settings == null)
+            var restore = restoreSelection && _gamepadNavigation.ActiveZone == GamepadNavigationZone.BrowseDetailsOverlay;
+            Shell.BrowseDetailsOpen = false;
+            BrowseDetailsPanel.Close();
+            NotifyGamepadUiChanged();
+            if (!restore)
                 return;
-            await _gameManager.CatalogService.ApplyPendingCatalogChangeFlagsAsync(_gameManager.Games, _settings);
+            _gamepadNavigation.ActiveZone = GamepadNavigationZone.BrowseGrid;
+            if (IsGamepadFocusActive)
+                BrowsePanel.Navigation.SelectInitial();
         }
 
-        private async Task OpenAppCatalogForReviewAsync()
-        {
-            ShowAppCatalogSourcesView();
-            var source = _settings.AppCatalogSources.Where(s => s.Enabled && s.PendingReviewCount > 0).OrderByDescending(s => s.PendingReviewCount).FirstOrDefault();
-            if (source != null)
-                await OpenCatalogReviewAsync(source.Id, CatalogReviewFilter.NeedsReview);
-        }
-
-        private static string GetCatalogReviewFilterTag(CatalogReviewFilter filter)
-        {
-            if (filter == CatalogReviewFilter.New)
-                return "NotInLibrary";
-            foreach (var(tag, value)in Views.CatalogReviewView.CatalogReviewFilters)
-            {
-                if (value == filter)
-                    return tag;
-            }
-
-            return "All";
-        }
-
-        private async Task OpenCatalogReviewForLibraryAppAsync(GameInfo game)
-        {
-            if (_settings == null || _gameManager == null)
-                return;
-            var sourceId = await _gameManager.CatalogService.FindPendingCatalogSourceIdAsync(game, _settings);
-            if (string.IsNullOrWhiteSpace(sourceId))
-            {
-                await ShowMessageBoxAsync("Could not find this app in a catalog source with pending changes.", "Catalog Review");
-                return;
-            }
-
-            await OpenCatalogReviewAsync(sourceId, CatalogReviewFilter.NeedsReview);
-            var index = CatalogCompareService.FindRowIndexForLibraryApp(CatalogSyncRows, game);
-            if (index < 0)
-                return;
-            CatalogReviewPanel.Navigation.ApplyCatalogReviewRowSelection(index);
-            OpenCatalogReviewDetails(CatalogSyncRows[index]);
-        }
-
-        private async Task OpenCatalogReviewAsync(string sourceId, CatalogReviewFilter? initialFilter = null)
-        {
-            var source = _settings.AppCatalogSources.FirstOrDefault(s => s.Id == sourceId);
-            if (source == null || _session.IsClosed)
-                return;
-            _catalogReleasePrefetch.Cancel();
-            CatalogReviewPanel.ResetSearch();
-            CatalogReviewPanel.EnsureCatalogPlatformFilterDefault();
-            CatalogReviewPanel.ReplaceCatalogSyncRows([]);
-            var filter = initialFilter ?? (source.PendingReviewCount > 0 || source.UpdateAvailable ? CatalogReviewFilter.NeedsReview : CatalogReviewFilter.All);
-            await _catalogReview.OpenAsync(source, filter, _session.Token);
-        }
-
-        private CatalogSyncRowItem? FindCatalogSyncRow(string key) => _catalogReview.FindRow(key);
-        private void CatalogCredentialsChanged(string provider)
-        {
-            if (_session.IsClosed) return;
-            // Remove inaccessible private evidence immediately; accepted public results survive the change.
-            CatalogReviewPanel.RefreshPresentedCatalog();
-        }
-        private void CatalogRowsChanged()
+        private void RefreshBrowseLibraryState()
         {
             if (_session.IsClosed)
                 return;
-            CatalogReviewPanel.RefreshCatalogReviewFilterButtons(GetCatalogReviewFilterTag(_catalogSyncViewModel.ReviewFilter));
-            CatalogReviewPanel.RefreshPresentedCatalog();
-            CatalogReviewPanel.UpdateCatalogReviewPlatformButton();
-            CatalogReviewPanel.UpdateCatalogSyncBulkButtons();
-            _catalogCredentialContext = ReleaseRequestCoordinator.CredentialKey(_settings.GitHubApiToken) + ":" + ReleaseRequestCoordinator.CredentialKey(_settings.GitLabApiToken);
-            _catalogReleasePrefetch.Start();
+            BrowsePanel.Model.RefreshLibraryState();
+            if (Shell.BrowseDetailsOpen)
+                BrowseDetailsPanel.Refresh();
         }
 
-        private void OpenCatalogReviewDetails(CatalogSyncRowItem row)
+        private async Task AddFromBrowseAsync(GameInfo app)
         {
-            Shell.CatalogDetailsOpen = true;
-            CatalogReviewDetailsPanel.Open(row);
-        }
-
-        private void CloseCatalogReviewDetails(bool restoreReviewSelection = true)
-        {
-            Shell.CatalogDetailsOpen = false;
-            CatalogReviewDetailsPanel.Close();
-            if (restoreReviewSelection && _gamepadNavigation.ActiveZone == GamepadNavigationZone.CatalogReviewDetailsOverlay)
+            try
             {
-                _gamepadNavigation.ActiveZone = GamepadNavigationZone.CatalogReviewList;
-                if (IsGamepadFocusActive)
-                    CatalogReviewPanel.Navigation.SelectInitialCatalogReviewGamepadItem();
+                var result = await _libraryAdd.AddAsync(app);
+                if (result.Outcome == LibraryAddOutcome.FolderConflict)
+                    await ShowMessageBoxAsync($"This app wasn't added. {result.Error}", "Could Not Add");
             }
+            catch (Exception ex)
+            {
+                await ShowMessageBoxAsync($"This app wasn't added. {ex.Message}", "Could Not Add");
+            }
+            RefreshBrowseLibraryState();
         }
 
-        private void RefreshCatalogReviewDetailsBinding()
+        private readonly RepositoryReadmeService _browseReadmes = new();
+        private async Task<DocumentContent> LoadRepositoryReadmeAsync(GameInfo app, CancellationToken token)
         {
-            if (!Shell.CatalogDetailsOpen || string.IsNullOrWhiteSpace(CatalogReviewDetailsPanel.Model.Row?.IdentityKey))
-                return;
-            var row = CatalogSyncRows.FirstOrDefault(r => string.Equals(r.IdentityKey, CatalogReviewDetailsPanel.Model.Row?.IdentityKey, StringComparison.OrdinalIgnoreCase));
-            if (row == null)
-                CloseCatalogReviewDetails();
-            else
-                CatalogReviewDetailsPanel.Bind(row);
+            if (string.IsNullOrWhiteSpace(app.Repository)) return new("This app has no repository README.", IsMarkdown: false);
+            var result = await _browseReadmes.GetReadmeAsync(_gameManager.HttpClient, app.EffectiveRepositorySource, app.Repository,
+                _settings.GitHubApiToken, _settings.GitLabApiToken, QuiverLauncherPaths.CacheDirectory, DateTime.UtcNow, token);
+            return result.Status switch
+            {
+                RepositoryReadmeStatus.Markdown when !string.IsNullOrWhiteSpace(result.Markdown) => new(result.Markdown, result.RawRootUrl),
+                RepositoryReadmeStatus.Error => new(result.ErrorMessage ?? "Couldn't load the README.", IsMarkdown: false),
+                _ => new("No README found for this repository.", IsMarkdown: false),
+            };
         }
 
         private void OnSettingChanged()
@@ -1482,8 +1272,6 @@ namespace QuiverLauncher
         /// </summary>
         public Task RunUpdateCheckAsync(bool promptForReview, bool isManualCheck) => _session.RunAsync(async () =>
         {
-            if (isManualCheck && Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Review)
-                _catalogReleasePrefetch.RefreshAll();
             await _updateChecks.CheckAsync(promptForReview, isManualCheck, _session.Token);
         });
         private void GithubButton_Click(object sender, RoutedEventArgs e)
@@ -1590,11 +1378,6 @@ namespace QuiverLauncher
             _settings.IgnoreArticlesWhenSorting = enabled;
             OnSettingChanged();
             ApplySorting();
-            if (Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Review)
-            {
-                _catalogSyncViewModel.IgnoreArticlesWhenSorting = enabled;
-                CatalogReviewPanel.ApplyCatalogSyncFilter();
-            }
         }
 
         private void AddNewEntryButton_Click(object? sender, RoutedEventArgs e)
@@ -1632,8 +1415,10 @@ namespace QuiverLauncher
                 XyFocusNavigation.EnableOn(TagEditOverlay);
             if (ModsPanel != null)
                 XyFocusNavigation.EnableOn(ModsPanel);
-            if (CatalogReviewPanel != null)
-                XyFocusNavigation.EnableOn(CatalogReviewPanel);
+            if (BrowsePanel != null)
+                XyFocusNavigation.EnableOn(BrowsePanel);
+            if (BrowseDetailsPanel != null)
+                XyFocusNavigation.EnableOn(BrowseDetailsPanel);
             if (ModDetailsPanel != null)
                 XyFocusNavigation.EnableOn(ModDetailsPanel);
             var topBarRoot = _chromeNavigation.GetActiveTopBarRoot();
@@ -1656,15 +1441,9 @@ namespace QuiverLauncher
         {
             _gamepadNavigation.SidebarSelectedIndex = -1;
             _gamepadNavigation.TopBarSelectedIndex = -1;
-            _gamepadNavigation.CatalogReviewFilterIndex = -1;
-            _gamepadNavigation.CatalogReviewSelectedIndex = -1;
-            _gamepadNavigation.CatalogReviewRowActionIndex = -1;
             _gamepadNavigation.AppUpdatesReviewToolbarIndex = -1;
             _gamepadNavigation.AppUpdatesReviewSelectedIndex = -1;
             _gamepadNavigation.AppUpdatesReviewRowActionIndex = -1;
-            _gamepadNavigation.CatalogSourcesToolbarSelectedIndex = -1;
-            _gamepadNavigation.CatalogSourcesFilterIndex = -1;
-            _gamepadNavigation.CatalogSourceCardActionIndex = -1;
         }
 
         private void DismissTextInputFocus()
@@ -1696,10 +1475,10 @@ namespace QuiverLauncher
                 AppUpdatesReviewPanel.SelectInitialAppUpdatesReviewGamepadItem();
             else if (Shell.Mode == MainViewMode.Library)
                 LibraryPanel.Navigation.SelectInitialLibraryGamepadItem();
-            else if (Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Sources)
-                CatalogSourcesPanel.Navigation.SelectInitialCatalogGamepadItem();
-            else if (Shell.Mode == MainViewMode.AppCatalog && Shell.CatalogSubView == AppCatalogSubView.Review)
-                CatalogReviewPanel.Navigation.SelectInitialCatalogReviewGamepadItem();
+            else if (Shell.BrowseDetailsOpen)
+                BrowseDetailsPanel.RestoreFocus();
+            else if (Shell.Mode == MainViewMode.Browse)
+                BrowsePanel.Navigation.SelectInitial();
         }
 
         private bool ShouldKeepLibraryChromeFocus() => _gamepadNavigation.ShouldKeepLibraryChromeFocus(_gamepadNavigation.ActiveZone, LibraryToolbar.ShouldRestoreSearchFocus(_gamepadNavigation, _chromeNavigation.CollectTopBarControls()));
@@ -1726,18 +1505,11 @@ namespace QuiverLauncher
         private void ClearGamepadFocus()
         {
             LibraryPanel.Navigation.ClearLibraryCardGamepadFocus();
-            foreach (var source in CatalogSources)
-                source.IsGamepadFocused = false;
-            foreach (var row in CatalogSyncRows)
-                row.IsGamepadFocused = false;
+            BrowsePanel.Navigation?.ClearHighlights();
+            BrowseDetailsPanel.ClearHighlights();
             _chromeNavigation.ClearTopBarGamepadFocusClasses(_chromeNavigation.CollectTopBarControls());
             _chromeNavigation.ClearSidebarGamepadFocusClasses(_chromeNavigation.CollectSidebarFocusableControls());
             Banners.ClearAnnouncementBannerGamepadFocus();
-            CatalogSourcesPanel.Navigation.ClearCatalogSourcesToolbarGamepadFocus();
-            CatalogSourcesPanel.Navigation.ClearCatalogSourcesFiltersGamepadFocus();
-            CatalogSourcesPanel.Navigation.ClearCatalogSourceCardActionsGamepadFocus();
-            CatalogReviewPanel.Navigation.ClearCatalogReviewRowActionsGamepadFocus();
-            CatalogReviewPanel.Navigation.ClearCatalogReviewEmptyActionGamepadFocus();
             AppUpdatesReviewPanel.ClearAppUpdatesReviewToolbarGamepadFocus();
             AppUpdatesReviewPanel.ClearAppUpdatesReviewRowActionsGamepadFocus();
             AppUpdatesReviewPanel.ClearAppUpdatesReviewRowFocus();
@@ -1748,13 +1520,6 @@ namespace QuiverLauncher
         private void FocusSidebarNav()
         {
             _chromeNavigation.ApplySidebarGamepadSelection(0);
-        }
-
-        private async Task ReviewCatalogSourceByIdAsync(string sourceId)
-        {
-            var source = _settings.AppCatalogSources.FirstOrDefault(s => s.Id == sourceId);
-            var filter = source is { PendingReviewCount: > 0 } ? CatalogReviewFilter.NeedsReview : CatalogReviewFilter.All;
-            await OpenCatalogReviewAsync(sourceId, filter);
         }
 
         private void HandleOptionsAction()
@@ -1816,8 +1581,7 @@ namespace QuiverLauncher
             LibraryFiltersPanel.EndTagFilterDragSession();
             _mobileLayout.Detach();
             ChangelogPanel.Model.Cancel();
-            _catalogReleasePrefetch.Cancel();
-            CatalogReviewDetailsPanel.Model.Document.Cancel();
+            BrowseDetailsPanel.Model.Readme.Cancel();
             ModsPanel.Details.Model.Close();
             ModsPanel.Workspace.Cancel();
             SettingsPanel.CancelPendingWork();

@@ -17,15 +17,11 @@ public class ExistingInstallationRecoveryTests
     }
 
     [AvaloniaTheory]
-    [InlineData(false, "installed")]
-    [InlineData(true, "installed")]
-    [InlineData(false, "no-version")]
-    [InlineData(true, "no-version")]
-    [InlineData(false, "empty")]
-    [InlineData(true, "empty")]
-    [InlineData(false, "incomplete")]
-    [InlineData(true, "incomplete")]
-    public async Task Readding_to_empty_library_reuses_complete_installations_without_downloading(bool bulk, string fixture)
+    [InlineData("installed")]
+    [InlineData("no-version")]
+    [InlineData("empty")]
+    [InlineData("incomplete")]
+    public async Task Readding_to_empty_library_reuses_complete_installations_without_downloading(string fixture)
     {
         var previous = QuiverLauncherPaths.OverrideUserDataRoot;
         var root = Path.Combine(Path.GetTempPath(), "quiver-readd-" + Guid.NewGuid().ToString("N"));
@@ -39,7 +35,10 @@ public class ExistingInstallationRecoveryTests
             using var http = new HttpClient(handler);
             using var manager = new GameManager(store, http);
             manager.UiThreadInvoker = action => Dispatcher.UIThread.InvokeAsync(action).GetTask();
-            var service = new CatalogReviewService(manager, new SettingsViewModel(store), () => { });
+            // A closed session skips the background release lookup, so any request would come from the Add itself.
+            var session = new LauncherSession();
+            await session.DisposeAsync();
+            var service = new LibraryAddService(manager, new SettingsViewModel(store), session);
             var external = new GameInfo { Name = "Recovery fixture", Repository = "recovery-fixture/app", FolderName = "RecoveryApp" };
             var install = Path.Combine(manager.GamesFolder, external.FolderName);
             Directory.CreateDirectory(install);
@@ -54,15 +53,7 @@ public class ExistingInstallationRecoveryTests
                 File.WriteAllText(Path.Combine(install, QuiverLauncher.Core.Services.GameInstallationService.IncompleteInstallFileName), "unfinished");
             var originalFiles = Directory.GetFiles(install).ToDictionary(path => Path.GetFileName(path)!, File.ReadAllBytes);
             await manager.CatalogService.SaveLocalAppsAsync([]);
-            var source = new AppCatalogSource { Id = "recovery" };
-            if (bulk)
-                await service.SaveLocalAsync([external], source, TestContext.Current.CancellationToken);
-            else
-            {
-                var commit = await service.CommitAddAsync(source, external, false);
-                commit.Outcome.Should().Be(CatalogAddOutcome.Added);
-                await service.PresentAddedAsync(commit.App!);
-            }
+            (await service.AddAsync(external)).Outcome.Should().Be(LibraryAddOutcome.Added);
             var added = manager.Games.Should().ContainSingle().Subject;
             var complete = fixture is "installed" or "no-version";
             added.CanDownload.Should().Be(!complete);
