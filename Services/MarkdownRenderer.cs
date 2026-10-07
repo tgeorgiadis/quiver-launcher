@@ -394,7 +394,7 @@ public sealed class MarkdownRenderer
                     ? new Thickness(0, 2, 8, 2)
                     : new Thickness(0, 8, 0, 8),
             };
-            ImageLoader.SetSource(image, resolved);
+            ImageLoader.SetSource(image, LauncherArtworkLoader.FullSize(resolved));
 
             var resolvedLink = MarkdownImageLine.ResolveLinkUrl(linkUrl ?? string.Empty, imageBaseUrl);
             if (string.IsNullOrWhiteSpace(resolvedLink))

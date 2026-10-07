@@ -891,10 +891,20 @@ namespace QuiverLauncher
         protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
         {
             base.OnAttachedToVisualTree(e);
+            LauncherArtworkLoader.DisplayScale = ArtworkDisplayScale;
             UpdateGamepadChromeClass();
             _mobileLayout.Attach();
             if (HostWindow == null && !_hasInitializedFocus)
                 HandleOpened();
+        }
+
+        /// <summary>The sharpest any screen shows the interface, so artwork is decoded large enough for it.</summary>
+        private double ArtworkDisplayScale()
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            var screen = topLevel?.Screens?.All.Select(s => s.Scaling).DefaultIfEmpty(1).Max() ?? 1;
+            var interfaceScale = PlatformCapabilities.IsMobile ? 1 : _settingsViewModel.InterfaceScalePercent / 100d;
+            return Math.Max(topLevel?.RenderScaling ?? 1, screen) * Math.Max(1, interfaceScale);
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

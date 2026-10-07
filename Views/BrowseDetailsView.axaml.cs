@@ -206,7 +206,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         _libraryApp = entry == null ? null : _findInLibrary(entry);
 
         var hero = FirstText(app?.LibraryArt?.Hero, app?.LibraryArt?.Header);
-        AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsHero, hero);
+        AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsHero, LauncherArtworkLoader.FullSize(hero));
         BrowseDetailsHero.IsVisible = hero != null;
         AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsArt, app == null ? entry?.GameIconUrl
             : FirstText(app.ArtworkFromGame ? null : app.Artwork, app.LibraryArt?.Logo, app.LibraryArt?.Capsule, app.Artwork, app.LibraryArt?.Header));
@@ -286,7 +286,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         var game = _game?.Game;
         var art = game?.LibraryArt;
         var hero = FirstText(art?.Hero, art?.Header);
-        AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsHero, hero);
+        AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsHero, LauncherArtworkLoader.FullSize(hero));
         BrowseDetailsHero.IsVisible = hero != null;
         SetArtShape(boxArt: !string.IsNullOrWhiteSpace(art?.Capsule));
         AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsArt, game == null ? null : FirstText(art?.Capsule, game.Artwork, art?.Logo));
