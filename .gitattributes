@@ -1,2 +1,3 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+packaging/flatpak/quiver-launcher text eol=lf

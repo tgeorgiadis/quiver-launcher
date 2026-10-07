@@ -8,6 +8,18 @@ namespace QuiverLauncher.Tests;
 
 public sealed class FlatpakTests : IDisposable
 {
+    [Fact]
+    public void Sandboxed_and_portable_copies_share_host_flatpak_ownership_records()
+    {
+        var home = Path.GetTempPath();
+        var hostData = Path.Combine(home, "custom-data");
+        var sandboxData = Path.Combine(home, ".var", "app", "Quiver", "data");
+        FlatpakService.OwnerDirectory(true, sandboxData, hostData, home).Should()
+            .Be(FlatpakService.OwnerDirectory(false, hostData, null, home));
+        FlatpakService.OwnerDirectory(true, sandboxData, null, home).Should()
+            .Be(FlatpakService.OwnerDirectory(false, null, null, home));
+    }
+
     private readonly string _root = Path.Combine(Path.GetTempPath(), "quiver-flatpak-" + Guid.NewGuid());
     private readonly FakeRunner _runner = new();
     private readonly FakeBundles _bundles = new();
@@ -240,7 +252,7 @@ public sealed class FlatpakTests : IDisposable
         var dialogs = new RecordingDialogs();
         var release = Release("v1", "Game.flatpak");
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, _root, release,
-            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.NotInstalled, dialogs, Service());
+            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.NotInstalled, dialogs, Service(), releaseMode: ReleaseInstallMode.ExplicitRelease);
         dialogs.Error.Should().BeNull();
         game.IsFlatpak.Should().BeTrue();
         game.IsInstallIndeterminate.Should().BeFalse();
@@ -250,7 +262,7 @@ public sealed class FlatpakTests : IDisposable
         _runner.InstallError = "Runtime unavailable";
         _bundles.Receipt = _bundles.Receipt with { Commit = new string('b', 64) };
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, _root, Release("v2", "Game.flatpak"),
-            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.UpdateAvailable, dialogs, Service());
+            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.UpdateAvailable, dialogs, Service(), releaseMode: ReleaseInstallMode.ExplicitRelease);
         dialogs.Error.Should().Contain("Runtime unavailable");
         game.InstalledVersion.Should().Be("v1");
         game.Status.Should().Be(GameStatus.UpdateAvailable);
@@ -266,10 +278,35 @@ public sealed class FlatpakTests : IDisposable
         var dialogs = new RecordingDialogs();
         var game = new GameInfo { Name = "Game", FolderName = "game", Repository = "flatpak/" + Guid.NewGuid() };
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, _root, Release("v1", "Game.flatpak"),
-            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.NotInstalled, dialogs, Service());
+            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.NotInstalled, dialogs, Service(), releaseMode: ReleaseInstallMode.ExplicitRelease);
         handler.Requests.Should().Be(0);
         dialogs.Error.Should().Contain("Install Flatpak");
         game.Status.Should().Be(GameStatus.NotInstalled);
+    }
+
+    [Fact]
+    public async Task Sandboxed_download_is_staged_in_host_visible_cache_and_cleaned_up()
+    {
+        var previousId = Environment.GetEnvironmentVariable("FLATPAK_ID");
+        var previousRoot = QuiverLauncherPaths.OverrideUserDataRoot;
+        try
+        {
+            Environment.SetEnvironmentVariable("FLATPAK_ID", "io.github.tgeorgiadis.QuiverLauncher");
+            QuiverLauncherPaths.OverrideUserDataRoot = Path.Combine(_root, "launcher-data");
+            using var client = new HttpClient(new BundleDownload());
+            var dialogs = new RecordingDialogs();
+            var game = new GameInfo { Name = "Game", FolderName = "game", Repository = "flatpak/" + Guid.NewGuid() };
+            await GameDownloadInstallService.DownloadAndInstallAsync(game, client, _root, Release("v1", "Game.flatpak"),
+                new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.NotInstalled, dialogs, Service(), releaseMode: ReleaseInstallMode.ExplicitRelease);
+            dialogs.Error.Should().BeNull();
+            _bundles.ReadPath.Should().StartWith(Path.Combine(QuiverLauncherPaths.CacheDirectory, "Downloads") + Path.DirectorySeparatorChar);
+            File.Exists(_bundles.ReadPath).Should().BeFalse("staged bundle bytes are removed after installation");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("FLATPAK_ID", previousId);
+            QuiverLauncherPaths.OverrideUserDataRoot = previousRoot;
+        }
     }
 
     [Fact]
@@ -284,7 +321,7 @@ public sealed class FlatpakTests : IDisposable
         var portableExecutable = Path.Combine(GamePath, OperatingSystem.IsMacOS() ? "game" : "game.exe");
         File.WriteAllText(portableExecutable, "#!/bin/sh\nexit 0\n");
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, _root, Release("v1", "Game.flatpak"),
-            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.Installed, dialogs, Service());
+            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.Installed, dialogs, Service(), releaseMode: ReleaseInstallMode.ExplicitRelease);
         dialogs.Error.Should().Contain("Uninstall");
         handler.Requests.Should().Be(0);
         game.IsInstalled.Should().BeTrue();
@@ -293,7 +330,7 @@ public sealed class FlatpakTests : IDisposable
         File.Delete(portableExecutable);
         await Service().InstallAsync("Game.flatpak", "v1", GamePath);
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, _root, Release("v2", "Game.AppImage"),
-            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.UpdateAvailable, dialogs, Service());
+            new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.UpdateAvailable, dialogs, Service(), releaseMode: ReleaseInstallMode.ExplicitRelease);
         handler.Requests.Should().Be(0);
         game.IsInstalled.Should().BeTrue();
     }
@@ -354,8 +391,13 @@ public sealed class FlatpakTests : IDisposable
     {
         public FlatpakReceipt Receipt = new("io.github.example.Game", "x86_64", "stable", new string('a', 64), "v1");
         public Exception? Error;
+        public string? ReadPath;
         public void CheckAvailable() { if (Error != null) throw Error; }
-        public FlatpakReceipt Read(string path, string releaseTag) => Receipt with { ReleaseTag = releaseTag };
+        public FlatpakReceipt Read(string path, string releaseTag)
+        {
+            ReadPath = path;
+            return Receipt with { ReleaseTag = releaseTag };
+        }
     }
 
     private sealed class FakeRunner : IFlatpakProcessRunner

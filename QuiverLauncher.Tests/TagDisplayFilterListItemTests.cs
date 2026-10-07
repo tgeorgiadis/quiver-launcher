@@ -5,6 +5,31 @@ namespace QuiverLauncher.Tests;
 
 public class TagDisplayFilterListItemTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Refresh_notifies_renamed_label_without_replacing_the_menu_item(bool replaceFilter)
+    {
+        var filter = new TagDisplayFilter { Name = "Old name" };
+        var item = TagDisplayFilterListItem.FromFilter(filter, true);
+        var items = new List<TagDisplayFilterListItem> { item };
+        // Model a UI binding: it only rereads the label on PropertyChanged.
+        var displayedName = item.Name;
+        item.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(item.Name)) displayedName = item.Name;
+        };
+        if (replaceFilter) filter = new TagDisplayFilter { Id = filter.Id, Name = "New name" };
+        else filter.Name = "New name";
+
+        TagDisplayFilterListItem.TryUpdateSelection(items, [filter], filter.Id).Should().BeTrue();
+
+        displayedName.Should().Be("New name");
+        items[0].Should().BeSameAs(item);
+        item.Filter.Should().BeSameAs(filter);
+        item.IsSelected.Should().BeTrue();
+    }
+
     [Fact]
     public void TryUpdateSelection_updates_selected_flags_without_replacing_items()
     {
@@ -38,18 +63,5 @@ public class TagDisplayFilterListItemTests
 
         TagDisplayFilterListItem.TryUpdateSelection(items, [a, b], a.Id).Should().BeFalse();
         TagDisplayFilterListItem.TryUpdateSelection(items, [b], a.Id).Should().BeFalse();
-    }
-
-    [Fact]
-    public void TryUpdateSelection_rebuilds_when_a_filter_name_changed()
-    {
-        var filter = new TagDisplayFilter { Name = "Old name" };
-        var item = TagDisplayFilterListItem.FromFilter(filter, true);
-        var items = new List<TagDisplayFilterListItem> { item };
-
-        filter.Name = "New name";
-
-        TagDisplayFilterListItem.TryUpdateSelection(items, [filter], filter.Id).Should().BeFalse();
-        item.Name.Should().Be("Old name");
     }
 }

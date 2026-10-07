@@ -458,6 +458,9 @@ namespace QuiverLauncher.Services
 
         public static bool IsSteamRunning()
         {
+            if (OperatingSystem.IsLinux() && HostProcessEnvironment.IsSandboxed())
+                return IsHostSteamRunning(RunSteamProcessProbe);
+
             try
             {
                 return Process.GetProcessesByName("steam").Length > 0;
@@ -466,6 +469,44 @@ namespace QuiverLauncher.Services
             {
                 return false;
             }
+        }
+
+        internal static bool IsHostSteamRunning(Func<ProcessStartInfo, int> run)
+        {
+            var probe = new ProcessStartInfo("pgrep")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            probe.ArgumentList.Add("-x");
+            probe.ArgumentList.Add("steam");
+            HostProcessEnvironment.Sanitize(probe);
+            HostProcessEnvironment.WrapForHost(probe);
+            // pgrep distinguishes no match (1) from errors (2+). Never treat a
+            // failed host probe as permission to overwrite Steam's live config.
+            return run(probe) switch
+            {
+                0 => true,
+                1 => false,
+                _ => throw new InvalidOperationException("Could not check whether Steam is running on the host. No shortcuts were changed."),
+            };
+        }
+
+        private static int RunSteamProcessProbe(ProcessStartInfo startInfo)
+        {
+            using var process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Could not check whether Steam is running.");
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            if (!process.WaitForExit(3000))
+            {
+                process.Kill();
+                throw new InvalidOperationException("Checking whether Steam is running timed out. No shortcuts were changed.");
+            }
+            Task.WhenAll(stdout, stderr).GetAwaiter().GetResult();
+            return process.ExitCode;
         }
 
         public static bool IsRunningUnderSteam()

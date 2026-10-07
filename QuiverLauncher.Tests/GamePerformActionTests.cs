@@ -48,9 +48,11 @@ public class GamePerformActionTests
             };
             game.ApplyCachedRelease("v1.2.3", release);
 
-            using var client = new HttpClient(new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            using var client = new HttpClient(new StubHttpMessageHandler(request => new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new ByteArrayContent(CreateMinimalZipWithExe()),
+                Content = request.RequestUri!.Host == "api.github.com"
+                    ? new StringContent(System.Text.Json.JsonSerializer.Serialize(release))
+                    : new ByteArrayContent(CreateMinimalZipWithExe()),
             }));
 
             var launched = await game.PerformActionAsync(

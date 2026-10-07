@@ -46,7 +46,7 @@ public partial class LibraryFiltersView : UserControl
             return controls;
         controls.AddRange(new Control[] { UnhideAllGamesButton, HideNonInstalledButton, ShowHiddenGamesButton }.Where(c => c.IsVisible && c.IsEnabled));
         controls.AddRange(TagDisplayFiltersItemsControl.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("display-filter-row") && b.IsVisible && b.IsEnabled));
-        var add = Surface.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsVisible && b.IsEnabled && b.Content is string text && string.Equals(text, "Add Display Filter", StringComparison.Ordinal));
+        var add = Surface.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsVisible && b.IsEnabled && b.Content is string text && string.Equals(text, "Add Filter", StringComparison.Ordinal));
         if (add != null)
             controls.Add(add);
         return controls;

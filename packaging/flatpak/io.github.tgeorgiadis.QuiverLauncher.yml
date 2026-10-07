@@ -1,6 +1,6 @@
 app-id: io.github.tgeorgiadis.QuiverLauncher
 runtime: org.freedesktop.Platform
-runtime-version: '24.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 command: quiver-launcher
 
@@ -18,12 +18,11 @@ command: quiver-launcher
 # writeup.
 
 finish-args:
-  # Broad permission set, as requested, rather than a minimally-scoped
-  # one. See this directory's README.md for what each grant is for.
+  # Libraries, host game launching and controller support need broad access.
+  # See this directory's README.md for what each grant is for.
   - --share=ipc
   - --share=network
   - --socket=x11
-  - --socket=wayland
   - --socket=pulseaudio
   - --device=all
   - --filesystem=host
@@ -31,10 +30,12 @@ finish-args:
   # per-app isolation boundary) - grant Steam's explicitly so Proton detection
   # (Services/WindowsRunnerService.cs) can see steamapps/common/Proton* there.
   - --filesystem=~/.var/app/com.valvesoftware.Steam:ro
+  # Quiver only writes Steam's shortcut/config data, not its installed games.
+  - --filesystem=~/.var/app/com.valvesoftware.Steam/.local/share/Steam/userdata
   - --talk-name=org.freedesktop.Flatpak
-  - --system-talk-name=org.freedesktop.Flatpak.SystemHelper
 
 modules:
+  - libflatpak.yml
   - name: quiver-launcher
     buildsystem: simple
     build-commands:

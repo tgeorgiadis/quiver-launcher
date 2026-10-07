@@ -13,6 +13,14 @@ public static class GameShortcutLaunch
     {
         await game.CatalogPreparation.WaitAsync(cancellationToken);
         var gamePath = game.GetInstallPath(gamesFolder);
+        if (WindowsInstallerService.HasReceipt(gamePath))
+        {
+            if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This installation requires Windows desktop.");
+            var linked = WindowsInstallerService.ReadReceipt(gamePath)?.ExecutablePath;
+            if (!WindowsInstallerService.IsExecutable(linked))
+                throw new FileNotFoundException("Select the installed executable in Quiver before creating a shortcut.");
+            return new(linked!, [], Path.GetDirectoryName(linked)!);
+        }
         if (FlatpakService.HasReceipt(gamePath))
         {
             if (!OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
@@ -20,8 +28,7 @@ public static class GameShortcutLaunch
             var state = await FlatpakService.Current.GetStateAsync(gamePath, cancellationToken).ConfigureAwait(false);
             if (state?.Installed != true)
                 throw new InvalidOperationException("Install this Flatpak app before creating a shortcut.");
-            return new(FlatpakService.StartInfo([], capture: false).FileName, FlatpakService.LaunchArguments(state.Receipt),
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            return FlatpakService.ShortcutTarget(state.Receipt, HostProcessEnvironment.IsSandboxed());
         }
         if (!Directory.Exists(gamePath))
             throw new DirectoryNotFoundException($"Install {game.Name} before creating a shortcut. Its app folder was not found.");

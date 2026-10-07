@@ -572,7 +572,7 @@ namespace QuiverLauncher
 
         private async Task ReloadLibraryAfterEditAsync()
         {
-            await _gameManager.LoadGamesAsync();
+            await _gameManager.ReloadLibraryFromDiskAsync(allowNetwork: false);
             if (!_session.IsClosed)
                 ApplySorting();
         }

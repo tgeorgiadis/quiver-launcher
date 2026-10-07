@@ -347,7 +347,7 @@ namespace QuiverLauncher.Models
         }
 
         public bool CanOpenMods =>
-            PlatformCapabilities.SupportsModsFolder &&
+            !IsWindowsInstaller && PlatformCapabilities.SupportsModsFolder &&
             GameModsConfig.HasUsableConfig(ModsPath, ModsSources);
         private bool _isInLocalAppsJson;
         public bool IsInLocalAppsJson
@@ -485,11 +485,12 @@ namespace QuiverLauncher.Models
             }
         }
 
-        public bool HasMultipleExecutables => !IsFlatpak && AvailableExecutables?.Count > 1;
+        public bool HasMultipleExecutables => !IsWindowsInstaller && !IsFlatpak && AvailableExecutables?.Count > 1;
         public bool HasExecutableChoice
         {
             get
             {
+                if (IsWindowsInstaller) return true;
                 if (IsFlatpak) return false;
                 if (HasMultipleExecutables)
                     return true;
@@ -554,18 +555,18 @@ namespace QuiverLauncher.Models
 
         public bool CanLaunch => Status == GameStatus.Installed;
         public bool CanDownload => Status == GameStatus.NotInstalled && !IsManuallyManaged;
-        public bool CanLocateInstall => Status == GameStatus.NotInstalled;
+        public bool CanLocateInstall => !IsWindowsInstaller && Status == GameStatus.NotInstalled;
         public bool CanUpdate => Status == GameStatus.UpdateAvailable;
         public bool CanSkipUpdate => Status == GameStatus.UpdateAvailable;
         public bool CanChangeVersion => !IsFlatpak && (IsInstalled || Status == GameStatus.NotInstalled) && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
         public bool CanVersionOptions => !IsManuallyManaged && (CanSkipUpdate || CanChangeVersion || IsInstalled);
         public bool CanLaunchOptions =>
             !IsFlatpak && !PlatformCapabilities.IsMobile && (HasExecutableChoice || IsInstalled);
-        public bool CanToggleAutoUpdate => !IsManuallyManaged;
+        public bool CanToggleAutoUpdate => !IsWindowsInstaller && !IsManuallyManaged;
         public bool CanOpenFolder =>
             !PlatformCapabilities.IsMobile && (IsManuallyManaged || IsInstalled);
         public bool CanAddToSteam => PlatformCapabilities.SupportsSteamShortcuts && IsInstalled;
-        public bool CanManageMods => !IsFlatpak && PlatformCapabilities.SupportsModsFolder && IsInstalled;
+        public bool CanManageMods => !IsWindowsInstaller && !IsFlatpak && PlatformCapabilities.SupportsModsFolder && IsInstalled;
         public bool ShowDesktopOnlyActions => !PlatformCapabilities.IsMobile;
         public bool ShowReleaseVersionInfo => !IsManuallyManaged;
         public bool IsWaitingForFiles => IsManuallyManaged && Status == GameStatus.NotInstalled;
@@ -592,7 +593,26 @@ namespace QuiverLauncher.Models
                     DispatchPropertyChanged(property);
             }
         }
-        public string InstalledAppRemovalLabel => IsFlatpak ? "Uninstall" : PlatformCapabilities.InstalledAppRemovalLabel;
+        private bool _isWindowsInstaller;
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsWindowsInstaller
+        {
+            get => _isWindowsInstaller;
+            set
+            {
+                if (_isWindowsInstaller == value) return;
+                _isWindowsInstaller = value;
+                foreach (var property in new[] { nameof(IsWindowsInstaller), nameof(HasExecutableChoice),
+                    nameof(CanLaunchOptions), nameof(CanLocateInstall), nameof(CanManageMods),
+                    nameof(CanOpenMods), nameof(InstalledAppRemovalLabel), nameof(CanRemoveInstalledApp),
+                    nameof(CanRunWindowsInstaller), nameof(HasMultipleExecutables), nameof(CanToggleAutoUpdate), nameof(ExecutableSelectionLabel) })
+                    DispatchPropertyChanged(property);
+            }
+        }
+        public bool CanRemoveInstalledApp => IsInstalled || IsWindowsInstaller;
+        public string ExecutableSelectionLabel => IsWindowsInstaller ? "Change executable" : "Select Different Executable";
+        public bool CanRunWindowsInstaller => IsWindowsInstaller && Status is not (GameStatus.Downloading or GameStatus.Installing or GameStatus.Updating);
+        public string InstalledAppRemovalLabel => IsWindowsInstaller ? "Uninstall in Windows…" : IsFlatpak ? "Uninstall" : PlatformCapabilities.InstalledAppRemovalLabel;
         private bool _isInstallIndeterminate;
         public bool IsInstallIndeterminate
         {
@@ -766,6 +786,8 @@ namespace QuiverLauncher.Models
                     DispatchPropertyChanged(nameof(ButtonColor));
                     DispatchPropertyChanged(nameof(StatusText));
                     DispatchPropertyChanged(nameof(IsInstalled));
+                    DispatchPropertyChanged(nameof(CanRemoveInstalledApp));
+                    DispatchPropertyChanged(nameof(CanRunWindowsInstaller));
                     DispatchPropertyChanged(nameof(CanLaunch));
                     DispatchPropertyChanged(nameof(CanDownload));
                     DispatchPropertyChanged(nameof(CanLocateInstall));
@@ -821,6 +843,7 @@ namespace QuiverLauncher.Models
                 return Status switch
                 {
                     GameStatus.NotInstalled => "Download",
+                    GameStatus.NeedsExecutable => "Select executable",
                     GameStatus.Installed => "Launch",
                     GameStatus.UpdateAvailable => "Update",
                     GameStatus.Downloading => "Downloading...",
@@ -839,6 +862,7 @@ namespace QuiverLauncher.Models
                 var imagePath = Status switch
                 {
                     GameStatus.NotInstalled => "avares://QuiverLauncher/Assets/Icons/button_download.png",
+                    GameStatus.NeedsExecutable => "avares://QuiverLauncher/Assets/Icons/button_launch.png",
                     GameStatus.Installed => "avares://QuiverLauncher/Assets/Icons/button_launch.png",
                     GameStatus.UpdateAvailable => "avares://QuiverLauncher/Assets/Icons/button_update.png",
                     GameStatus.Downloading => "avares://QuiverLauncher/Assets/Icons/button_loading.png",
@@ -900,6 +924,7 @@ namespace QuiverLauncher.Models
                 return Status switch
                 {
                     GameStatus.NotInstalled => "Not installed",
+                    GameStatus.NeedsExecutable => "Needs executable",
                     GameStatus.Downloading => "Downloading...",
                     GameStatus.Installing => "Installing...",
                     GameStatus.Updating => "Updating...",
@@ -973,6 +998,12 @@ namespace QuiverLauncher.Models
         {
             executables = [];
             needsWine = false;
+
+            if (IsWindowsInstaller)
+            {
+                if (WindowsInstallerService.IsExecutable(SelectedExecutable)) executables.Add(SelectedExecutable!);
+                return executables.Count > 0;
+            }
 
             if (!IsInstalled || string.IsNullOrWhiteSpace(FolderName) || GameManager == null)
                 return false;
@@ -1069,6 +1100,7 @@ namespace QuiverLauncher.Models
                 return false;
 
             if (Status is GameStatus.NotInstalled
+                or GameStatus.NeedsExecutable
                 or GameStatus.Downloading
                 or GameStatus.Installing
                 or GameStatus.Updating)
@@ -1333,6 +1365,11 @@ namespace QuiverLauncher.Models
             try
             {
                 var gamePath = GetInstallPath(gamesFolder);
+                if (WindowsInstallerService.HasReceipt(gamePath))
+                {
+                    var linked = WindowsInstallerService.ReadReceipt(gamePath)?.ExecutablePath;
+                    return WindowsInstallerService.IsExecutable(linked) ? linked : null;
+                }
                 var selectedExePath = Path.Combine(gamePath, "selected_executable.txt");
 
                 if (File.Exists(selectedExePath))
@@ -1580,6 +1617,10 @@ namespace QuiverLauncher.Models
 
             switch (Status)
             {
+                case GameStatus.NeedsExecutable:
+                    await WindowsInstallerService.SelectExecutableAsync(this, GetInstallPath(gamesFolder),
+                        dialogs ?? AvaloniaGameDownloadDialogs.Instance);
+                    return false;
                 case GameStatus.NotInstalled:
                     if (IsManuallyManaged)
                         return false;
@@ -1731,6 +1772,7 @@ namespace QuiverLauncher.Models
 
         internal void RefreshInstalledStatus()
         {
+            if (IsWindowsInstaller && Status == GameStatus.NeedsExecutable) return;
             if (Status is GameStatus.Downloading or GameStatus.Installing or GameStatus.Updating) return;
             if (ShouldSuggestUpdate())
                 Status = GameStatus.UpdateAvailable;
@@ -1806,13 +1848,14 @@ namespace QuiverLauncher.Models
                 GetReleaseApiToken(), cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         /// <param name="automatic">An automatic update: it never installs a release Quiver hasn't verified.</param>
+        /// <param name="releaseMode">An explicit pick installs that release; an automatic one checks which release to install first.</param>
         public async Task InstallReleaseAsync(HttpClient httpClient, string gamesFolder, AppSettings settings, GitHubRelease release, GitHubAsset selectedAsset,
-            bool automatic = false)
+            bool automatic = false, ReleaseInstallMode releaseMode = ReleaseInstallMode.ExplicitRelease)
         {
             GameDownloadService.SelectExplicit(this, release, settings, selectedAsset);
             await GameDownloadInstallService.DownloadAndInstallAsync(
                 this, httpClient, gamesFolder, release, settings, Status,
-                automatic ? new AutomaticGameDownloadDialogs(AvaloniaGameDownloadDialogs.Instance) : null);
+                automatic ? new AutomaticGameDownloadDialogs(AvaloniaGameDownloadDialogs.Instance) : null, releaseMode: releaseMode);
         }
 
         public static string? GetPlatformIcon(string assetName)

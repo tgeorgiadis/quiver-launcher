@@ -7,12 +7,61 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.Platform.Storage;
 using QuiverLauncher;
 
 namespace QuiverLauncher.Services;
 
 public static class GameDialogService
 {
+    public static async Task<bool> ConfirmWindowsInstallerAsync(string appName)
+    {
+        return await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            if (TryGetDesktopMainWindow() is not Window)
+                throw new InvalidOperationException("MSI installation requires Quiver's Windows desktop interface.");
+            var accepted = false;
+            var window = new Window
+            {
+                Title = "Windows Installer", Width = 480, SizeToContent = SizeToContent.Height,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            var run = new Button { Content = "Run installer" };
+            var cancel = new Button { Content = "Cancel" };
+            run.Click += (_, _) => { accepted = true; window.Close(); };
+            cancel.Click += (_, _) => window.Close();
+            window.Content = new StackPanel
+            {
+                Margin = new Thickness(20), Spacing = 16,
+                Children =
+                {
+                    new TextBlock { Text = $"Install {appName} using its Windows setup wizard. You can use its default location; installing into Quiver’s app folder is optional.\n\nAfter setup, select the installed .exe so Quiver can launch it. Uninstall this app through Windows Settings.", TextWrapping = TextWrapping.Wrap },
+                    new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, HorizontalAlignment = HorizontalAlignment.Right, Children = { run, cancel } },
+                },
+            };
+            GamepadModalDialogNavigation.Attach(window, choice => accepted = choice);
+            await ShowWindowAsync(window);
+            return accepted;
+        });
+    }
+
+    public static async Task<string?> PickWindowsExecutableAsync(string appName, string? previousPath)
+    {
+        return await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            var owner = TryGetDesktopMainWindow()
+                ?? throw new InvalidOperationException("Open Quiver's Windows desktop interface to select an executable.");
+            var folder = Path.GetDirectoryName(previousPath);
+            var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = $"Select installed executable for {appName}", AllowMultiple = false,
+                SuggestedStartLocation = folder != null ? await owner.StorageProvider.TryGetFolderFromPathAsync(folder) : null,
+                FileTypeFilter = [new FilePickerFileType("Windows executable") { Patterns = ["*.exe"] }],
+            });
+            return files.FirstOrDefault()?.TryGetLocalPath();
+        });
+    }
+
     public static bool IsGitHubRateLimitError(Exception ex) => IsRateLimitError(ex);
 
     public static bool IsRateLimitError(Exception ex)

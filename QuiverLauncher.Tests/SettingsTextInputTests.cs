@@ -16,6 +16,53 @@ namespace QuiverLauncher.Tests;
 public class SettingsTextInputTests
 {
     [AvaloniaFact]
+    public async Task Hosted_entry_save_reveals_persisted_app_without_network_or_install_folder()
+    {
+        var previousRoot = QuiverLauncherPaths.OverrideUserDataRoot;
+        var root = Path.Combine(Path.GetTempPath(), "quiver-entry-save-" + Guid.NewGuid().ToString("N"));
+        QuiverLauncherPaths.OverrideUserDataRoot = root;
+        var store = new Store();
+        store.Current.AppsPath = Path.Combine(root, "Apps");
+        using var handler = new EntryNetworkProbe();
+        using var http = new HttpClient(handler);
+        using var manager = new GameManager(store, http);
+        var view = new MainView(new() { SettingsStore = store, GameManager = manager,
+            InitializeOnOpen = false, EnableInput = false, EnableMusic = false });
+        try
+        {
+            var editor = view.FindControl<AppEntryEditorView>("EntryFormOverlay")!;
+            editor.Model.Open();
+            editor.Model.Name = "jakdexter";
+            editor.Model.FolderName = "jakanddexter";
+            editor.Model.Repository = "https://github.com/open-goal/launcher";
+            var created = new TaskCompletionSource<string>();
+            editor.EntryCreated += folder => created.TrySetResult(folder);
+            editor.CreateNewEntry_Click(null, new Avalonia.Interactivity.RoutedEventArgs());
+            (await created.Task.WaitAsync(TimeSpan.FromSeconds(5))).Should().Be("jakanddexter");
+            manager.LibraryApps.Should().ContainSingle(app => app.FolderName == "jakanddexter");
+            (await manager.CatalogService.LoadLocalAppsAsync()).Should().ContainSingle(app => app.FolderName == "jakanddexter");
+            Directory.Exists(Path.Combine(store.Current.AppsPath, "jakanddexter")).Should().BeFalse();
+            handler.Calls.Should().Be(0);
+        }
+        finally
+        {
+            await view.ShutdownAsync();
+            QuiverLauncherPaths.OverrideUserDataRoot = previousRoot;
+            TestFixtures.CleanupDirectory(root);
+        }
+    }
+
+    private sealed class EntryNetworkProbe : HttpMessageHandler
+    {
+        public int Calls;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            Interlocked.Increment(ref Calls);
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable));
+        }
+    }
+
+    [AvaloniaFact]
     public async Task Manual_add_waits_for_notice_dismissal_before_revealing_library_card()
     {
         var main = CreateView(new Store());

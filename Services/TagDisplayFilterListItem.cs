@@ -7,9 +7,14 @@ namespace QuiverLauncher.Services
     public class TagDisplayFilterListItem : INotifyPropertyChanged
     {
         private bool _isSelected;
-        private string _name = "";
+        private TagDisplayFilter _filter = null!;
+        private string _name = string.Empty;
 
-        public TagDisplayFilter Filter { get; init; } = null!;
+        public TagDisplayFilter Filter
+        {
+            get => _filter;
+            init { _filter = value; _name = value.Name; }
+        }
         public string Id => Filter.Id;
         public string Name => _name;
 
@@ -32,13 +37,12 @@ namespace QuiverLauncher.Services
             new()
             {
                 Filter = filter,
-                _name = filter.Name,
                 IsSelected = isSelected,
             };
 
         /// <summary>
-        /// Updates <see cref="IsSelected"/> in place when the filter ids, names, and order match.
-        /// Returns false when the list must be rebuilt (add, delete, reorder, or rename).
+        /// Updates filter data and selection in place when the filter ids and order match.
+        /// Returns false when the list must be rebuilt (add, delete, or reorder).
         /// </summary>
         public static bool TryUpdateSelection(
             IList<TagDisplayFilterListItem> items,
@@ -52,16 +56,19 @@ namespace QuiverLauncher.Services
             {
                 if (!string.Equals(items[i].Id, filters[i].Id, StringComparison.OrdinalIgnoreCase))
                     return false;
-
-                // The filter object is edited in place. Rebuild the row when its
-                // display name changed so the binding does not keep showing the
-                // old name until the application is restarted.
-                if (!string.Equals(items[i].Name, filters[i].Name, StringComparison.Ordinal))
-                    return false;
             }
 
-            foreach (var item in items)
+            for (var i = 0; i < items.Count; i++)
             {
+                var item = items[i];
+                item._filter = filters[i];
+                // The editor mutates the existing filter, so retain the last
+                // displayed name to detect renames and notify the menu binding.
+                if (item._name != filters[i].Name)
+                {
+                    item._name = filters[i].Name;
+                    item.OnPropertyChanged(nameof(Name));
+                }
                 item.IsSelected = string.Equals(
                     item.Id,
                     activeFilterId,

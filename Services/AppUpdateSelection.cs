@@ -6,10 +6,10 @@ namespace QuiverLauncher.Services;
 public static class AppUpdateSelection
 {
     public static bool IsManualPendingUpdate(GameInfo game) =>
-        game.Status == GameStatus.UpdateAvailable && !game.AutoUpdate;
+        game.Status == GameStatus.UpdateAvailable && (!game.AutoUpdate || game.IsWindowsInstaller);
 
     public static bool IsAutoPendingUpdate(GameInfo game) =>
-        game.Status == GameStatus.UpdateAvailable && game.AutoUpdate;
+        game.Status == GameStatus.UpdateAvailable && game.AutoUpdate && !game.IsWindowsInstaller;
 
     public static List<GameInfo> GetManualPendingUpdates(IEnumerable<GameInfo> games) =>
         games

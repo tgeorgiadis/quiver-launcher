@@ -1,80 +1,102 @@
-# Flatpak packaging (unofficial, not published)
+# Flatpak packaging (experimental)
 
-This repackages the self-contained Linux `dotnet publish` output as a
-Flatpak. It is not wired into CI or Flathub — build it locally.
+Based on [PR #39](https://github.com/tgeorgiadis/quiver-launcher/pull/39) by
+jeffsmith82. The pack-flatpak workflow produces an x86_64 Flatpak bundle
+as a CI artifact and attaches it to tagged GitHub Releases. It is not published
+to Flathub. CI tests native game install/update/uninstall, then installs the
+launcher bundle and checks both CLI startup and desktop startup under Xvfb.
 
 ## Build
 
-```bash
-# 1. From the repo root: produce the self-contained publish output.
-#    (The Flatpak build sandbox has no network access, so this can't
-#    happen inside flatpak-builder — it has to be a prebuilt input.)
+Run these commands on Linux, from the repository root, with .NET 10 and Flatpak.
+Use the current official builder: older distribution packages cannot compose
+AppStream metadata with the 25.08 SDK.
+
+~~~bash
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 org.flatpak.Builder
 dotnet publish QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj \
   -c Release -r linux-x64 --self-contained true \
   -p:PublishTrimmed=false -o publish/linux-x64
-
-# 2. Build and install for the current user.
-flatpak-builder --user --install --force-clean \
+flatpak run org.flatpak.Builder --user --install --force-clean --repo=packaging/flatpak/repo \
   packaging/flatpak/build packaging/flatpak/io.github.tgeorgiadis.QuiverLauncher.yml
-
-# 3. Run it.
 flatpak run io.github.tgeorgiadis.QuiverLauncher
-```
+flatpak build-bundle --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
+  packaging/flatpak/repo QuiverLauncher.flatpak \
+  io.github.tgeorgiadis.QuiverLauncher master
+~~~
 
-Requires `flatpak` and `flatpak-builder`, plus the `org.freedesktop.Platform`
-and `org.freedesktop.Sdk` runtimes (24.08) from Flathub:
+On a headless machine or WSL without a session bus, prefix the builder command
+with `dbus-run-session --` (as CI does), so it can invoke host Flatpak commands.
 
-```bash
-flatpak install flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
-```
+Use a clean publish directory, without personal library files. CI removes these
+before packaging. The manifest consumes prebuilt .NET output; it builds pinned
+libflatpak, OSTree and FUSE sources inside the SDK. Only the native libraries
+are retained, for reading downloaded bundles. Flatpak installs and launches
+are performed by the host's CLI, never by a nested package manager.
 
-## Permissions (`finish-args`)
+## Storage, launching and updates
 
-Requested as a broad, permissive set rather than tightly scoped:
+Library data uses $XDG_DATA_HOME/QuiverLauncher, normally
+~/.var/app/io.github.tgeorgiadis.QuiverLauncher/data/QuiverLauncher.
+Downloads use its cache rather than sandbox-private /tmp, so the host
+installer can read them. Existing AppImage libraries are not imported automatically.
+Flatpak ownership records use the host data directory so portable and Flatpak
+copies cannot silently claim the same installed app.
 
-| Grant | Why |
+Games, Wine/Proton probes, Flatpak commands, file openers and Steam's keyboard
+opener use flatpak-spawn --host. Its local sandbox environment is kept separate
+from the game's environment. Sandbox-specific audio, D-Bus and XDG paths are
+removed from the host environment; the X11 auth cookie is copied to persistent
+storage. Debug logs redact environment arguments outside the existing allowlist.
+
+Desktop and Steam game shortcuts target host commands directly. Steam-running
+checks query the host and fail closed if the check fails. Flatpak Steam's game
+files are read-only; its userdata directory is writable for shortcut creation.
+
+The wrapper disables automatic Velopack self-updates. This experimental bundle
+must be updated by installing a newer bundle. Automatic store updates require a
+future Flatpak repository/Flathub release.
+
+## Permissions
+
+| Grant | Purpose |
 |---|---|
-| `--share=network` | catalog/release downloads |
-| `--socket=x11` (unconditional, not `fallback-x11`) | the app only ships Avalonia's X11 backend (no `Avalonia.Wayland` package), so it needs X11/XWayland even in a Wayland session — `fallback-x11` would withhold it there |
-| `--socket=wayland` | granted for when/if a Wayland backend is added later; currently unused |
-| `--socket=pulseaudio` | audio for launched games |
-| `--device=all` | GPU (`dri`) plus controllers/joysticks for games |
-| `--filesystem=host` | read/write anywhere a user picks a library or game install folder |
-| `--filesystem=~/.var/app/com.valvesoftware.Steam:ro` | `--filesystem=host` deliberately excludes *other apps'* `~/.var/app/<id>` data (Flatpak's per-app isolation) — needed explicitly so Proton detection (`Services/WindowsRunnerService.cs`) can see `steamapps/common/Proton*` when Steam itself is Flatpak-installed |
-| `--talk-name=org.freedesktop.Flatpak` | needed for `flatpak-spawn --host`, see gap below |
-| `--system-talk-name=org.freedesktop.Flatpak.SystemHelper` | system-wide Flatpak installs, if ever used |
+| Network | Catalogs, release downloads and mods |
+| IPC and X11 | Avalonia's X11 backend, including XWayland sessions |
+| PulseAudio | Launcher audio |
+| All devices | Launcher graphics and controller access |
+| Host filesystem | Existing libraries and user-selected install folders |
+| Flatpak Steam directory, read-only | Installed Proton discovery |
+| Flatpak Steam userdata, read/write | Non-Steam shortcut configuration |
+| org.freedesktop.Flatpak session bus | Host command execution |
 
-## Game launching is now sandbox-aware
+Host execution grants broad access; this package does not isolate downloaded
+games from the host. There is no system-helper permission. These permissions
+still need review and justification before a Flathub submission. That submission
+also needs a reproducible source/dependency build (or pinned downloadable release
+inputs), a reviewed application ID and completed store metadata.
 
-The packaged app installs, launches, and its own UI (catalog browsing,
-settings, library) comes up — [Services/QuiverLauncherPaths.cs](../../Services/QuiverLauncherPaths.cs)
-already falls back to `XDG_DATA_HOME` when it isn't running as a
-Velopack-managed AppImage, so under Flatpak it correctly lands in
-`~/.var/app/io.github.tgeorgiadis.QuiverLauncher/data/` — no code
-changes needed for that part.
+## Validation
 
-Launching games, the `flatpak` CLI (used both to manage Flatpak-packaged
-games and to launch them), `xdg-open`/`gio`/`kde-open`/`dolphin` (Open
-Folder, links), and the `which wine`/`which wine64` runner-detection probe
-all go through [Services/HostProcessEnvironment.cs](../../Services/HostProcessEnvironment.cs)'s
-`RouteToHostIfSandboxed`, which — only when `FLATPAK_ID` is set — rewraps
-the command as `flatpak-spawn --host --clear-env --env=... -- <command>
-<args>` so it resolves and runs against the **host's** `PATH` and shared
-libraries instead of the sandboxed runtime's. This is a no-op on every
-other install method (AppImage, portable, Windows, macOS).
+Run the normal test suite plus the opt-in native bundle test in
+[docs/flatpak.md](../../docs/flatpak.md). Before release, test the installed
+package on a Linux desktop and Steam Deck:
 
-### Known remaining gap: process-group exit detection
+1. Download and launch a native game, AppImage and Wine/Proton game; check audio,
+   controller input, files with spaces in their names and external-drive installs.
+2. Install, update and uninstall a Flatpak game; check that saves survive.
+3. Launch generated desktop and Steam shortcuts after closing Quiver.
+4. Add games with native and Flatpak Steam, both open and closed. Confirm the
+   queued worker waits for Steam to exit and that restarting Steam retains entries.
+5. Verify Open Folder, links, the Steam keyboard and persistent library storage.
+6. Verify launcher updates are handled through Flatpak, with AppImage/MSI paths unchanged.
 
-`CLIHandler.cs` and `LauncherForegroundController.cs` poll `ps -o pgid=`/
-`-o pid= -g <pgid>` **locally** to detect when a launched game's whole
-process group (including Wine/Proton helper subprocesses) has fully
-exited. Since the real game process now runs host-side via
-`flatpak-spawn --host`, the sandbox's local `ps` can't see it or its
-host-side children (separate PID namespace). Basic exit detection
-(`Process.Exited`/`HasExited`) still works correctly, since `flatpak-spawn`
-blocks until the host command exits and mirrors its exit code — but the
-process-*group*-drain polling used to catch lingering helper processes
-will effectively always see an empty group as soon as the local
-`flatpak-spawn` proxy exits, regardless of real host stragglers. Fixing
-this would need `ps` itself routed through `flatpak-spawn --host`, or a
-different exit-tracking strategy — not done here.
+### Game process groups
+
+Native games and Wine/Proton commands run in a dedicated host session using
+setsid. A host-visible PID receipt lets CLI and foreground tracking wait for
+remaining processes in that session after the initial command exits. The host
+provides setsid and ps (normally installed by the distribution). Processes that
+deliberately detach into a new session cannot be followed by process-group
+tracking. Flatpak games use the host flatpak run command's own lifetime.

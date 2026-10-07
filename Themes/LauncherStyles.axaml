@@ -365,6 +365,12 @@
 		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
 	</Style>
 
+	<Style Selector="Button.catalog-filter.platform-filter-active">
+		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
+	</Style>
+
 	<Style Selector="Button.catalog-tag-chip">
 		<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
 		<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
@@ -803,7 +809,7 @@
 	</Style>
 
 	<Style Selector="Button.display-filter-row">
-		<Setter Property="ToolTip.Tip" Value="Click to apply tag filter"/>
+		<Setter Property="ToolTip.Tip" Value="Click to apply filter"/>
 		<Setter Property="ToolTip.ShowDelay" Value="1000"/>
 		<Setter Property="ToolTip.BetweenShowDelay" Value="-1"/>
 	</Style>
@@ -812,6 +818,12 @@
 		<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
 		<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
 		<Setter Property="ToolTip.Tip" Value="Click again to clear"/>
+	</Style>
+
+	<!-- Selection stays distinct from the grey hover/keyboard-focus background. -->
+	<Style Selector="Button.display-filter-row.selected TextBlock.display-filter-name">
+		<Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
 	</Style>
 
 	<Style Selector="Button.display-filter-row.dragging">

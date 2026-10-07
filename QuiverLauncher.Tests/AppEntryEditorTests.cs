@@ -7,6 +7,30 @@ namespace QuiverLauncher.Tests;
 
 public class AppEntryEditorTests
 {
+    [Fact]
+    public async Task Save_stays_busy_until_the_library_refresh_finishes()
+    {
+        var operation = new SaveOperation();
+        operation.Completion.SetResult(true);
+        var model = new AppEntryEditorViewModel();
+        model.Configure(operation);
+        model.Open();
+        model.Name = "jakdexter";
+        model.FolderName = "jakanddexter";
+        model.Repository = "https://github.com/open-goal/launcher";
+        var refreshed = new TaskCompletionSource();
+        var saving = model.SaveAsync(TestContext.Current.CancellationToken, () => refreshed.Task);
+        try
+        {
+            model.CanSave.Should().BeFalse();
+            (await model.SaveAsync(TestContext.Current.CancellationToken)).Should().BeFalse();
+            operation.Calls.Should().Be(1);
+        }
+        finally { refreshed.TrySetResult(); }
+        (await saving).Should().BeTrue();
+        model.CanSave.Should().BeTrue();
+    }
+
     private sealed class SaveOperation : IAppEntryService
     {
         public AppEntryDraft? Draft { get; private set; }

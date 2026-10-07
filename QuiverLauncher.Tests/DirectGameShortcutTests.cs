@@ -246,6 +246,44 @@ public class DirectGameShortcutTests : IDisposable
         File.ReadAllBytes(path).Should().Equal(255, 0);
     }
 
+    [Fact]
+    public void Flatpak_shortcuts_target_the_host_cli_without_a_sandbox_proxy()
+    {
+        var receipt = new FlatpakReceipt("org.example.Game", "x86_64", "stable", new string('a', 64), "v1");
+        var target = FlatpakService.ShortcutTarget(receipt, sandboxed: true);
+        target.FileName.Should().Be("/usr/bin/env");
+        target.Arguments.Should().Equal("flatpak", "run", "--user", "--arch=x86_64", "--branch=stable", "org.example.Game");
+        var desktop = ShortcutHelper.BuildLinuxDesktopFile("Game", target, null);
+        desktop.Should().NotContain("flatpak-spawn");
+        var path = Path.Combine(_root, "shortcuts.vdf");
+        ShortcutHelper.WriteGameToSteamFile(path, _game, target, null, out _);
+        var entry = (Dictionary<string, object>)((Dictionary<string, object>)ReadVdf(path)["shortcuts"])["0"];
+        entry["LaunchOptions"].ToString().Should().StartWith("\"flatpak\" \"run\"");
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    public void Sandboxed_steam_detection_queries_the_host(int exitCode, bool running)
+    {
+        ShortcutHelper.IsHostSteamRunning(info =>
+        {
+            info.FileName.Should().Be("flatpak-spawn");
+            info.ArgumentList.Should().Contain("--host");
+            info.ArgumentList.TakeLast(3).Should().Equal("pgrep", "-x", "steam");
+            return exitCode;
+        }).Should().Be(running);
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(127)]
+    public void A_failed_host_steam_probe_never_permits_a_shortcut_write(int exitCode)
+    {
+        var act = () => ShortcutHelper.IsHostSteamRunning(_ => exitCode);
+        act.Should().Throw<InvalidOperationException>().WithMessage("*No shortcuts were changed*");
+    }
+
     private static Dictionary<string, object> ReadVdf(string path)
     {
         using var reader = new BinaryReader(File.OpenRead(path), Encoding.UTF8);

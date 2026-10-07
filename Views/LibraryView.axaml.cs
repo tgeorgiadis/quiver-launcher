@@ -152,6 +152,8 @@ public partial class LibraryView : UserControl
                     break;
                 case LibraryActionKind.ForceUpdate:
                     await _actions.ForceUpdateAsync(game);
+                    if (game?.IsWindowsInstaller == true && anchor != null)
+                        _libraryLaunch.TryShowPendingSelectionMenus(anchor, game);
                     break;
                 case LibraryActionKind.LocateExistingInstall:
                     await _actions.LocateInstallAsync(game);

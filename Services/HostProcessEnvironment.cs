@@ -114,6 +114,15 @@ internal static class HostProcessEnvironment
         if (!OperatingSystem.IsLinux() || !IsSandboxed(getEnvironmentVariable))
             return;
 
+        WrapForHost(startInfo);
+    }
+
+    // Separate from detection so command construction is tested on every platform.
+    internal static void WrapForHost(ProcessStartInfo startInfo)
+    {
+        if (startInfo.UseShellExecute || !string.IsNullOrEmpty(startInfo.Arguments))
+            throw new ArgumentException("Host commands must use ArgumentList and UseShellExecute=false.", nameof(startInfo));
+
         // Capture before stripping: the sandbox's XAUTHORITY (e.g.
         // /run/flatpak/Xauthority) is a working cookie for the current X11
         // socket, but that path is a per-sandbox-instance proxy invisible on
@@ -124,13 +133,16 @@ internal static class HostProcessEnvironment
         // host-visible file instead of trying to locate the host's.
         var hostXauthority = TryCopyXauthorityForHost(startInfo);
 
+        // flatpak-spawn itself still runs inside the sandbox and needs its bus
+        // and runtime environment. Only clean the environment sent to the host.
+        var hostEnvironment = new Dictionary<string, string?>(startInfo.Environment, StringComparer.Ordinal);
         foreach (var name in SandboxIdentityEnvironmentVariables)
-            startInfo.Environment.Remove(name);
+            hostEnvironment.Remove(name);
         // The sandbox's own PATH (e.g. "/app/bin:/usr/bin") is meaningless on the
         // host; give the host process a normal one instead of forwarding it as-is.
-        startInfo.Environment["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+        hostEnvironment["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
         if (hostXauthority != null)
-            startInfo.Environment["XAUTHORITY"] = hostXauthority;
+            hostEnvironment["XAUTHORITY"] = hostXauthority;
 
         var hostArgs = new List<string> { "--host" };
         if (!string.IsNullOrWhiteSpace(startInfo.WorkingDirectory))
@@ -140,7 +152,7 @@ internal static class HostProcessEnvironment
         // rather than letting flatpak-spawn forward the sandbox's own ambient
         // env (full of /app paths) by default.
         hostArgs.Add("--clear-env");
-        foreach (var pair in startInfo.Environment)
+        foreach (var pair in hostEnvironment)
         {
             if (pair.Value != null)
                 hostArgs.Add($"--env={pair.Key}={pair.Value}");

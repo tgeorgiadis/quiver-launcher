@@ -357,7 +357,9 @@ namespace QuiverLauncher
             }
 
             // Auto-update if update is available
-            if (game.Status == GameStatus.UpdateAvailable)
+            if (game.Status == GameStatus.NeedsExecutable)
+                return PrintError("Open Quiver's Windows desktop interface and select the installed executable.");
+            if (game.Status == GameStatus.UpdateAvailable && !game.IsWindowsInstaller)
             {
                 WriteColor($"→ Update available for {game.Name}. Updating first...", ColorWarning);
                 Console.WriteLine();
@@ -378,6 +380,8 @@ namespace QuiverLauncher
 
             // Check if need to select executable
             var storedExe = game.LoadSelectedExecutable(gamesFolder);
+            if (game.IsWindowsInstaller && !WindowsInstallerService.IsExecutable(storedExe))
+                return PrintError("The installed executable is missing. Open Quiver's Windows desktop interface and select it again.");
 
             if (string.IsNullOrEmpty(storedExe) && !FlatpakService.HasReceipt(game.GetInstallPath(gamesFolder)))
             {
@@ -462,10 +466,10 @@ namespace QuiverLauncher
             try
             {
                 game.GameProcessStarted += OnGameProcessStarted;
-                await game.PerformActionAsync(
-                    _gameManager.HttpClient,
-                    gamesFolder,
-                    settings);
+                if (game.IsWindowsInstaller)
+                    await GameLaunchService.LaunchAsync(game, gamesFolder);
+                else
+                    await game.PerformActionAsync(_gameManager.HttpClient, gamesFolder, settings);
 
                 game.GameProcessStarted -= OnGameProcessStarted;
 
@@ -487,6 +491,12 @@ namespace QuiverLauncher
         {
             if (process == null)
                 return;
+
+            if (HostGameSession.ExitTask(process) is { } hostSession)
+            {
+                await hostSession;
+                return;
+            }
 
             int? processGroupId = null;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -620,11 +630,13 @@ namespace QuiverLauncher
                 }
 
                 var isFlatpakDownload = GameInstallationService.IsFlatpakAsset(game.SelectedDownload.name);
+                if (game.IsWindowsInstaller || GameInstallationService.IsWindowsInstallerAsset(game.SelectedDownload.name))
+                    return PrintError("MSI installation requires the Windows desktop interface. Open Quiver and run the installer there.");
                 var expectedVersion = game.LatestVersion;
                 var downloadTask = game.PerformActionAsync(
                     _gameManager.HttpClient,
                     _gameManager.GamesFolder,
-                    settings);
+                    settings, HeadlessGameDownloadDialogs.Instance);
 
                 // Monitor progress and version changes
                 double lastProgress = 0;
@@ -859,6 +871,8 @@ namespace QuiverLauncher
 
                 var gamePath = game.GetInstallPath(_gameManager.GamesFolder);
 
+                if (WindowsInstallerService.HasReceipt(gamePath))
+                    return PrintError("Uninstall this application in Windows Settings → Apps → Installed apps. Quiver does not delete Windows Installer application folders.");
                 if (FlatpakService.HasReceipt(gamePath))
                 {
                     await FlatpakService.Current.UninstallAsync(gamePath);

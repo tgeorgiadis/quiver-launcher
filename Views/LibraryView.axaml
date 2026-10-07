@@ -51,6 +51,7 @@
 												  Click="LaunchGameMenu_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanDownload}"/>
+										<MenuItem Header="Run installer again" Click="ForceUpdate_Click" CommandParameter="{Binding}" IsVisible="{Binding CanRunWindowsInstaller}"/>
 										<MenuItem Header="Locate Existing Install"
 												  Click="LocateExistingInstall_Click"
 												  CommandParameter="{Binding}"
@@ -86,7 +87,7 @@
 										</MenuItem>
 											<MenuItem Header="Launch Options"
 												  IsVisible="{Binding CanLaunchOptions}">
-											<MenuItem Header="Select Different Executable"
+											<MenuItem Header="{Binding ExecutableSelectionLabel}"
 													  CommandParameter="{Binding}"
 													  Click="SelectDifferentExecutable_Click"
 													  IsVisible="{Binding HasExecutableChoice}"/>
@@ -151,7 +152,7 @@
 										</MenuItem>
 										<MenuItem Header="{Binding InstalledAppRemovalLabel}"
 												  Click="DeleteGameFromLibrary_Click"
-												  IsVisible="{Binding IsInstalled}"
+												  IsVisible="{Binding CanRemoveInstalledApp}"
 												  CommandParameter="{Binding}"/>
 									</ContextMenu>
 								</Button.ContextMenu>        </Button>
@@ -216,6 +217,7 @@
 											  Click="LaunchGameMenu_Click"
 											  CommandParameter="{Binding}"
 											  IsVisible="{Binding CanDownload}"/>
+									<MenuItem Header="Run installer again" Click="ForceUpdate_Click" CommandParameter="{Binding}" IsVisible="{Binding CanRunWindowsInstaller}"/>
 									<MenuItem Header="Locate Existing Install"
 											  Click="LocateExistingInstall_Click"
 											  CommandParameter="{Binding}"
@@ -251,7 +253,7 @@
 									</MenuItem>
 									<MenuItem Header="Launch Options"
 											  IsVisible="{Binding CanLaunchOptions}">
-										<MenuItem Header="Select Different Executable"
+										<MenuItem Header="{Binding ExecutableSelectionLabel}"
 												  CommandParameter="{Binding}"
 												  Click="SelectDifferentExecutable_Click"
 												  IsVisible="{Binding HasExecutableChoice}"/>
@@ -316,7 +318,7 @@
 									</MenuItem>
 									<MenuItem Header="{Binding InstalledAppRemovalLabel}"
 											  Click="DeleteGameFromLibrary_Click"
-											  IsVisible="{Binding IsInstalled}"
+											  IsVisible="{Binding CanRemoveInstalledApp}"
 											  CommandParameter="{Binding}"/>
 								</ContextMenu>
 							</Button.ContextMenu>
@@ -548,6 +550,7 @@
 										  Click="LaunchGameMenu_Click"
 										  CommandParameter="{Binding}"
 										  IsVisible="{Binding CanDownload}"/>
+								<MenuItem Header="Run installer again" Click="ForceUpdate_Click" CommandParameter="{Binding}" IsVisible="{Binding CanRunWindowsInstaller}"/>
 								<MenuItem Header="Locate Existing Install"
 										  Click="LocateExistingInstall_Click"
 										  CommandParameter="{Binding}"
@@ -583,7 +586,7 @@
 								</MenuItem>
 								<MenuItem Header="Launch Options"
 										  IsVisible="{Binding CanLaunchOptions}">
-									<MenuItem Header="Select Different Executable"
+									<MenuItem Header="{Binding ExecutableSelectionLabel}"
 											  CommandParameter="{Binding}"
 											  Click="SelectDifferentExecutable_Click"
 											  IsVisible="{Binding HasExecutableChoice}"/>
@@ -648,7 +651,7 @@
 								</MenuItem>
 								<MenuItem Header="{Binding InstalledAppRemovalLabel}"
 										  Click="DeleteGameFromLibrary_Click"
-										  IsVisible="{Binding IsInstalled}"
+										  IsVisible="{Binding CanRemoveInstalledApp}"
 										  CommandParameter="{Binding}"/>
 							</ContextMenu>
 						</Button.ContextMenu>

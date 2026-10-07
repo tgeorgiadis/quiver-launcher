@@ -8,6 +8,8 @@ using QuiverLauncher.Models;
 
 namespace QuiverLauncher.Services;
 
+public enum ReleaseInstallMode { Automatic, ExplicitRelease }
+
 public static class GameDownloadInstallService
 {
     public static async Task DownloadAndInstallAsync(
@@ -18,7 +20,9 @@ public static class GameDownloadInstallService
         AppSettings settings,
         GameStatus triggerStatus,
         IGameDownloadDialogs? dialogs = null,
-        FlatpakService? flatpakService = null)
+        FlatpakService? flatpakService = null,
+        WindowsInstallerService? windowsInstallerService = null,
+        ReleaseInstallMode releaseMode = ReleaseInstallMode.Automatic)
     {
         dialogs ??= AvaloniaGameDownloadDialogs.Instance;
         flatpakService ??= FlatpakService.Current;
@@ -59,54 +63,24 @@ public static class GameDownloadInstallService
             var gamePath = game.GetInstallPath(gamesFolder);
             var versionFile = Path.Combine(gamePath, "version.txt");
 
+            if (releaseMode == ReleaseInstallMode.Automatic)
+            {
+                // Revalidate endpoint payloads even inside a background cache scope.
+                // A supplied/cached selection is not proof that it is still latest.
+                using var revalidate = ReleaseRequestCoordinator.AllowCachedMetadata(TimeSpan.Zero);
+                game.DownloadProgress = 5;
+                // The release to install: the player's pin, else the one Quiver verified, else the newest.
+                latestRelease = await CatalogReleaseSelection.FetchSelectedAsync(httpClient,
+                    game.RepositorySource, game.Repository, game.ReleaseTarget, apiToken,
+                    LauncherSession.OperationCancellation).ConfigureAwait(false);
+                if (latestRelease != null)
+                    GitHubApiCache.SetCache(game.RepositorySource, game.Repository, latestRelease.tag_name, "", latestRelease);
+            }
             if (latestRelease == null)
             {
-                if (GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) &&
-                    cache?.CachedRelease != null &&
-                    (string.IsNullOrWhiteSpace(game.LatestVersion) || ReleaseVersionIdentity.AreVersionsEquivalent(game.LatestVersion, cache.CachedRelease.tag_name)) &&
-                    game.MatchesReleaseTarget(cache.CachedRelease.tag_name))
-                {
-                    latestRelease = cache.CachedRelease;
-                }
-                else
-                {
-                    game.DownloadProgress = 5;
-                    var releaseResult = await ReleaseSourceRegistry.Default.FetchReleasesAsync(
-                        httpClient,
-                        game.RepositorySource,
-                        game.Repository,
-                        apiToken, cancellationToken: LauncherSession.OperationCancellation).ConfigureAwait(false);
-
-                    // An unsuccessful request has no releases too; it is not evidence
-                    // that the repository has no downloads (for any platform).
-                    releaseResult.EnsureSuccess();
-                    if (releaseResult.Releases.Count == 0)
-                    {
-                        ResetNotInstalled(game);
-                        await dialogs.ShowErrorAsync($"No releases found for {game.Name}.", "No Releases");
-                        return;
-                    }
-
-                    latestRelease = GameInfo.SelectLatestRelease(
-                        releaseResult.Releases,
-                        game.ReleaseTarget,
-                        game.InstalledVersion,
-                        releaseResult.LatestTag);
-
-                    if (latestRelease == null)
-                    {
-                        ResetNotInstalled(game);
-                        await dialogs.ShowErrorAsync($"No valid releases found for {game.Name}.", "No Releases");
-                        return;
-                    }
-
-                    GitHubApiCache.SetCache(
-                        game.RepositorySource,
-                        game.Repository,
-                        latestRelease.tag_name,
-                        releaseResult.ETag ?? string.Empty,
-                        latestRelease);
-                }
+                ResetNotInstalled(game);
+                await dialogs.ShowErrorAsync($"No valid releases found for {game.Name}.", "No Releases");
+                return;
             }
 
             game.DownloadProgress = 10;
@@ -125,6 +99,8 @@ public static class GameDownloadInstallService
             }
 
             var flatpakDownload = GameInstallationService.IsFlatpakAsset(asset.name);
+            if (GameInstallationService.IsWindowsInstallerAsset(asset.name) && !OperatingSystem.IsWindows())
+                throw new PlatformNotSupportedException("MSI installation requires Windows desktop. Choose a native download for this platform.");
             var oldFlatpak = FlatpakService.HasReceipt(gamePath)
                 ? await flatpakService.GetStateAsync(gamePath).ConfigureAwait(false) : null;
             if ((!flatpakDownload && oldFlatpak?.Installed == true) ||
@@ -134,7 +110,7 @@ public static class GameDownloadInstallService
                 throw FormatSwitchError();
             if (flatpakDownload)
                 await flatpakService.CheckAvailableAsync().ConfigureAwait(false);
-            else if (oldFlatpak == null && File.Exists(versionFile) &&
+            else if (!GameInstallationService.IsWindowsInstallerAsset(asset.name) && !WindowsInstallerService.HasReceipt(gamePath) && oldFlatpak == null && File.Exists(versionFile) &&
                 (OperatingSystem.IsAndroid() || GameInstallationService.HasCompletePortableInstallation(
                     gamePath, game.GetInstallationOptions())) &&
                 (await File.ReadAllTextAsync(versionFile).ConfigureAwait(false)).Trim() == latestRelease.tag_name)
@@ -212,6 +188,13 @@ public static class GameDownloadInstallService
                 var effectiveAssetName = GameInstallationService.ResolveEffectiveAssetName(
                     asset.name,
                     dispositionFileName);
+                var msiDownload = GameInstallationService.IsWindowsInstallerAsset(effectiveAssetName);
+                if (msiDownload && !OperatingSystem.IsWindows())
+                    throw new PlatformNotSupportedException("MSI installation requires Windows desktop. Choose a native download for this platform.");
+                var hasMsiReceipt = WindowsInstallerService.HasReceipt(gamePath);
+                if ((hasMsiReceipt && !msiDownload) || (msiDownload && !hasMsiReceipt &&
+                    (FlatpakService.HasReceipt(gamePath) || GameInstallationService.HasCompletePortableInstallation(gamePath, game.GetInstallationOptions()))))
+                    throw new InvalidOperationException("Remove this library entry before switching between Windows Installer and portable or Flatpak installations. Existing application files will not be removed.");
                 // A Content-Disposition filename can reveal the package type after selection.
                 if (GameInstallationService.IsFlatpakAsset(effectiveAssetName) != flatpakDownload)
                 {
@@ -223,7 +206,7 @@ public static class GameDownloadInstallService
                     if (flatpakDownload) await flatpakService.CheckAvailableAsync().ConfigureAwait(false);
                 }
 
-                var downloadRoot = OperatingSystem.IsAndroid()
+                var downloadRoot = OperatingSystem.IsAndroid() || HostProcessEnvironment.IsSandboxed()
                     ? Path.Combine(QuiverLauncherPaths.CacheDirectory, "Downloads")
                     : DownloadStaging.GetDesktopRoot();
                 Directory.CreateDirectory(downloadRoot);
@@ -262,6 +245,24 @@ public static class GameDownloadInstallService
 
                 game.DownloadProgress = 90;
                 game.Status = GameStatus.Installing;
+
+                if (msiDownload)
+                {
+                    game.IsInstallIndeterminate = true;
+                    game.IsLoading = true;
+                    try
+                    {
+                        await (windowsInstallerService ?? WindowsInstallerService.Current).InstallAsync(
+                            game, downloadPath, latestRelease.tag_name, gamePath, dialogs).ConfigureAwait(false);
+                    }
+                    finally { game.IsLoading = false; }
+                    if (WindowsInstallerService.HasReceipt(gamePath)) WindowsInstallerService.ApplyState(game, gamePath);
+                    else ResetNotInstalled(game);
+                    game.DownloadProgress = 0;
+                    game.ClearDownloadSelection();
+                    game.AvailableDownloads = null;
+                    return;
+                }
 
                 if (GameInstallationService.IsFlatpakAsset(effectiveAssetName))
                 {
@@ -445,7 +446,13 @@ public static class GameDownloadInstallService
         {
             game.IsInstallIndeterminate = false;
             var path = game.GetInstallPath(gamesFolder);
-            if (FlatpakService.HasReceipt(path))
+            if (WindowsInstallerService.HasReceipt(path))
+            {
+                game.DownloadProgress = 0;
+                await GameStatusService.CheckStatusAsync(game, httpClient, gamesFolder,
+                    checkRemoteVersion: false, applyCachedRelease: false).ConfigureAwait(false);
+            }
+            else if (FlatpakService.HasReceipt(path))
             {
                 if (game.Status == GameStatus.NotInstalled && !string.IsNullOrWhiteSpace(previousVersion))
                 {

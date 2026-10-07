@@ -22,6 +22,9 @@ public static class GameLaunchService
             if (FlatpakService.HasReceipt(gamePath))
                 return await LaunchFlatpakAsync(game, gamePath);
 
+            if (WindowsInstallerService.HasReceipt(gamePath))
+                return await LaunchWindowsInstallerAppAsync(game, gamePath);
+
             if (!Directory.Exists(gamePath))
             {
                 await GameDialogService.ShowMessageBoxAsync($"App directory not found: {gamePath}", "Directory Not Found");
@@ -154,7 +157,7 @@ public static class GameLaunchService
                 ? gamePath
                 : (Path.GetDirectoryName(executablePath) ?? gamePath));
 
-            var gameProcess = Process.Start(startInfo);
+            var gameProcess = HostGameSession.Start(startInfo);
             if (gameProcess == null)
             {
                 WriteLaunchReport(
@@ -216,6 +219,23 @@ public static class GameLaunchService
 
             return false;
         }
+    }
+
+    private static async Task<bool> LaunchWindowsInstallerAppAsync(GameInfo game, string gamePath)
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This installation requires Windows desktop.");
+        WindowsInstallerService.ApplyState(game, gamePath);
+        var executable = game.SelectedExecutable;
+        if (!WindowsInstallerService.IsExecutable(executable))
+        {
+            await GameDialogService.ShowMessageBoxAsync("The installed executable is missing. Select it again or run the installer again from the app menu.", "Executable Not Found");
+            return false;
+        }
+        var info = new ProcessStartInfo(executable!) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(executable)! };
+        var process = Process.Start(info) ?? throw new InvalidOperationException("Windows could not start the installed app.");
+        game.UpdateLastPlayedTime(gamePath);
+        game.RaiseGameProcessStarted(process);
+        return true;
     }
 
     private static async Task<bool> LaunchFlatpakAsync(GameInfo game, string gamePath)

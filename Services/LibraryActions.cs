@@ -113,6 +113,13 @@ public sealed class LibraryActions
             {
                 await _libraryPersistence.SaveVersionPreferencesAsync(game, null, null);
                 _session.Token.ThrowIfCancellationRequested();
+                if (WindowsInstallerService.HasReceipt(game.GetInstallPath(_gameManager.GamesFolder)))
+                {
+                    await GameDownloadInstallService.DownloadAndInstallAsync(game, _gameManager.HttpClient,
+                        _gameManager.GamesFolder, game.GetLatestRelease(), _settings, game.Status);
+                    Changed();
+                    return;
+                }
                 await game.ForceUpdateAsync(_gameManager.HttpClient, _gameManager.GamesFolder);
                 Changed();
             }
@@ -202,6 +209,17 @@ public sealed class LibraryActions
             if (game == null)
                 return;
             var flatpakPath = game.GetInstallPath(_gameManager.GamesFolder);
+            if (WindowsInstallerService.HasReceipt(flatpakPath))
+            {
+                if (!OperatingSystem.IsWindows())
+                {
+                    await ShowMessageBoxAsync("Uninstall this application using Installed apps on Windows.", "Windows Installation");
+                    return;
+                }
+                try { OpenUrl(WindowsInstallerService.InstalledAppsUri); }
+                catch (Exception ex) { await ShowMessageBoxAsync($"Open Windows Settings → Apps → Installed apps to uninstall {game.Name}. {ex.Message}", "Windows Settings"); }
+                return;
+            }
             if (FlatpakService.HasReceipt(flatpakPath))
             {
                 if (!await ShowMessageBoxAsync($"Uninstall {game.Name}?\n\nYour saves and application data will be preserved.",
@@ -319,6 +337,10 @@ public sealed class LibraryActions
 
                 games.Remove(gameToRemove);
                 await SaveGamesToJsonAsync(games);
+                // Drop only Quiver's link; Windows continues to own the installed application.
+                var metadataPath = game.GetInstallPath(_gameManager.GamesFolder);
+                if (WindowsInstallerService.HasReceipt(metadataPath))
+                    File.Delete(Path.Combine(metadataPath, WindowsInstallerService.ReceiptFileName));
                 await _gameManager.LoadGamesAsync();
                 if (_session.IsClosed)
                     return;

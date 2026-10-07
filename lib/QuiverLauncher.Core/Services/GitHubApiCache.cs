@@ -6,6 +6,8 @@ namespace QuiverLauncher.Core.Services
 {
     public class GameVersionCache
     {
+        public const int CurrentSelectionRevision = 1;
+        public int SelectionRevision { get; set; }
         public string Version { get; set; } = string.Empty;
         public DateTime LastChecked { get; set; }
         public string ETag { get; set; } = string.Empty;
@@ -48,8 +50,11 @@ namespace QuiverLauncher.Core.Services
                         kvp.Value.ETag = string.Empty; // Legacy validators have no endpoint identity.
                         if (kvp.Value.CachedRelease != null)
                             kvp.Value.AssetNames = ExtractAssetNames(kvp.Value.CachedRelease);
-                        else
+                        if (kvp.Value.CachedRelease == null || kvp.Value.SelectionRevision != GameVersionCache.CurrentSelectionRevision)
+                        {
                             kvp.Value.LastChecked = DateTime.MinValue;
+                            kvp.Value.LastUpdateCheck = DateTime.MinValue;
+                        }
                         _cache.TryAdd(kvp.Key, kvp.Value);
                     }
                 }
@@ -117,6 +122,7 @@ namespace QuiverLauncher.Core.Services
 
             if (TryResolveCacheEntry(repositorySource, repository, out _, out var foundCache) &&
                 foundCache != null &&
+                foundCache.SelectionRevision == GameVersionCache.CurrentSelectionRevision &&
                 DateTime.UtcNow - foundCache.LastChecked < CacheExpiry)
             {
                 cache = foundCache;
@@ -149,6 +155,8 @@ namespace QuiverLauncher.Core.Services
             if (!TryResolveCacheEntry(repositorySource, repository, out _, out var cache) || cache == null)
                 return true;
 
+            if (cache.SelectionRevision != GameVersionCache.CurrentSelectionRevision) return true;
+
             var interval = isInstalledGame ? InstalledGameUpdateInterval : NotInstalledGameUpdateInterval;
             return DateTime.UtcNow - cache.LastUpdateCheck >= interval;
         }
@@ -173,6 +181,7 @@ namespace QuiverLauncher.Core.Services
                     var assetNames = ExtractAssetNames(release);
                     return new GameVersionCache
                     {
+                        SelectionRevision = GameVersionCache.CurrentSelectionRevision,
                         Version = version,
                         LastChecked = DateTime.UtcNow,
                         LastUpdateCheck = DateTime.UtcNow,
@@ -189,6 +198,7 @@ namespace QuiverLauncher.Core.Services
                         assetNames = old.AssetNames;
                     return new GameVersionCache
                     {
+                        SelectionRevision = GameVersionCache.CurrentSelectionRevision,
                         Version = version,
                         LastChecked = DateTime.UtcNow,
                         LastUpdateCheck = DateTime.UtcNow,

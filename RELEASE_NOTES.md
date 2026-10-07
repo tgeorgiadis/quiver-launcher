@@ -17,6 +17,20 @@ This is a prerelease for testing before 3.5.0.
 - Library cards show when a newer release is out but not verified yet.
 - Apps in your library pick up the catalog's current name, icon and tags. Your own names, covers and tags stay.
 
+## Kiosk mode
+
+- New in **Settings → General**: Quiver starts fullscreen with only browsing and launching, for arcade cabinets and shared PCs.
+- Press **Ctrl+Alt+K** to unlock it, and again to lock it. You can set a PIN for unlocking.
+
+## Windows MSI installs
+
+- Apps that release a `.msi` install through the Windows setup wizard, then you pick the program it installed.
+- Updates for these apps always ask first.
+
+## Flatpak on Linux (experimental)
+
+- A Linux x64 Flatpak download is included again. Install a newer bundle to update it.
+
 ## macOS
 
 - macOS downloads are available for Apple Silicon and Intel Macs.
@@ -26,6 +40,7 @@ This is a prerelease for testing before 3.5.0.
 ## Other fixes
 
 - The window no longer jumps while you move or resize it.
+- Before an update installs, Quiver checks again which release to install, so an out-of-date saved choice isn't used.
 - Release tags like `Version1.0.4` are no longer mixed up with other versions.
 - Fixes for renamed filters and text contrast in the light theme.
 

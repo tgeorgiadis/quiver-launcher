@@ -62,6 +62,7 @@ public static class GameInstallationService
                assetName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+               IsWindowsInstallerAsset(assetName) ||
                assetName.EndsWith(".appimage", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase) || IsFlatpakAsset(assetName) ||
                IsDiskImageAsset(assetName);
@@ -73,6 +74,9 @@ public static class GameInstallationService
     public static bool IsAndroidPackageAsset(string? assetName)
         => !string.IsNullOrWhiteSpace(assetName)
            && assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsWindowsInstallerAsset(string? assetName) =>
+        !string.IsNullOrWhiteSpace(assetName) && assetName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsFlatpakAsset(string? assetName) =>
         !string.IsNullOrWhiteSpace(assetName) && assetName.EndsWith(".flatpak", StringComparison.OrdinalIgnoreCase);

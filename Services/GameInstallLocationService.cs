@@ -9,6 +9,8 @@ public static class GameInstallLocationService
 {
     public static void ApplyLocatedPath(GameInfo game, string selectedPath)
     {
+        if (game.IsWindowsInstaller)
+            throw new InvalidOperationException("Use Change executable for Windows Installer apps. Their Quiver metadata folder cannot be relocated to the installed program directory.");
         game.InstallPath = selectedPath;
     }
 

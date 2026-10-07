@@ -137,7 +137,8 @@ public sealed class LibraryLaunchController
 
     public bool TryShowPendingSelectionMenus(Control anchor, GameInfo game)
     {
-        if ((game.Status == GameStatus.NotInstalled || game.Status == GameStatus.UpdateAvailable) && game.HasMultipleDownloads && game.SelectedDownload == null)
+        if ((game.Status == GameStatus.NotInstalled || game.Status == GameStatus.UpdateAvailable ||
+             game.IsWindowsInstaller && game.AvailableDownloads != null) && game.HasMultipleDownloads && game.SelectedDownload == null)
         {
             ShowDownloadSelectionMenu(anchor, game);
             return true;
@@ -269,6 +270,7 @@ public sealed class LibraryLaunchController
     private async Task<bool> HandleUpdateNowCoreAsync(Control anchor, GameInfo game, bool preferAutoPlatform = false, bool allowAssetPicker = true, bool interactive = true)
     {
         using var priority = interactive ? ReleaseRequestCoordinator.PrioritizeInteractiveChecks() : null;
+        using var revalidate = ReleaseRequestCoordinator.AllowCachedMetadata(TimeSpan.Zero);
         try
         {
             game.IsLoading = true;
@@ -295,6 +297,8 @@ public sealed class LibraryLaunchController
             var choices = GameDownloadService.Prepare(game, latestRelease, _settings);
             if (choices.Automatic is { } automatic)
             {
+                // Install the release just revalidated above. Resolving again after
+                // applying it can lose the pin that selected this exact release.
                 await game.InstallReleaseAsync(_gameManager.HttpClient, _gameManager.GamesFolder, _settings, latestRelease, automatic, automatic: !interactive);
                 await _persistence.SaveVersionPreferencesAsync(game, game.PreferredVersion, null);
                 Changed();
@@ -607,6 +611,13 @@ public sealed class LibraryLaunchController
             if (game == null)
             {
                 _ = _session.RunAsync(() => ShowMessageBoxAsync("Unable to identify the selected app.", "Error"));
+                return;
+            }
+
+            if (WindowsInstallerService.HasReceipt(game.GetInstallPath(_gameManager.GamesFolder)))
+            {
+                await WindowsInstallerService.SelectExecutableAsync(game, game.GetInstallPath(_gameManager.GamesFolder), AvaloniaGameDownloadDialogs.Instance);
+                Changed();
                 return;
             }
 

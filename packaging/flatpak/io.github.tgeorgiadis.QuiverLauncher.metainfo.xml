@@ -6,7 +6,7 @@
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <developer id="io.github.tgeorgiadis">
-    <name>SirDiabo</name>
+    <name>tgeorgiadis</name>
   </developer>
   <description>
     <p>
@@ -19,6 +19,6 @@
   <url type="bugtracker">https://github.com/tgeorgiadis/quiver-launcher/issues</url>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="3.4.5" date="2026-09-21" />
+    <release version="3.5.0-rc.2" date="2026-10-07" type="development" />
   </releases>
 </component>

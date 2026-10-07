@@ -44,7 +44,7 @@
 
 							<Grid ColumnDefinitions="*,Auto" Margin="12,0,8,8">
 								<TextBlock Grid.Column="0"
-										   Text="TAG FILTERS"
+										   Text="FILTERS"
 										   FontSize="10"
 										   FontWeight="Bold"
 										   Foreground="{DynamicResource ThemeTextSecondary}"
@@ -54,7 +54,7 @@
 										Classes="iconbutton tag-filter-add"
 										Width="24"
 										Height="24"
-										ToolTip.Tip="Add tag filter"
+										ToolTip.Tip="Add filter"
 										Click="AddDisplayFilter_Click">
 									<TextBlock Text="+"
 											   FontSize="16"
@@ -77,10 +77,14 @@
 												Click="TagDisplayFilterButton_Click"
 												Tag="{Binding Id}">
 											<Grid ColumnDefinitions="*,Auto,Auto">
-													<TextBlock Grid.Column="0"
+                                            <Grid Grid.Column="0" ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                                                <TextBlock Grid.Column="1" Text="✓" IsVisible="{Binding IsSelected}" Margin="8,0,0,0"
+                                                           Foreground="{DynamicResource ThemeAccent}" FontWeight="Bold" VerticalAlignment="Center"/>
+													<TextBlock Grid.Column="0" Classes="display-filter-name"
 															   Text="{Binding Name}"
 															   TextTrimming="CharacterEllipsis"
 															   VerticalAlignment="Center"/>
+                                            </Grid>
 													<Border Grid.Column="1"
 															Classes="display-filter-reorder"
 															Width="28"
@@ -130,7 +134,7 @@
 							</ItemsControl>
 
 							<Button Classes="options"
-									Content="Add Display Filter"
+									Content="Add Filter"
 									HorizontalAlignment="Stretch"
 									Margin="0,8,0,0"
 									Click="AddDisplayFilter_Click"/>

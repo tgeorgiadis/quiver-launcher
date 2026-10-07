@@ -14,7 +14,6 @@ public partial class AppEntryEditorView : UserControl
     private IFeatureNavigationHost _host = null!;
     private Func<Task> _reloadLibrary = null!;
     private Action _dismissTextInput = null!;
-    private Func<string, string, Task> _showMessage = null!;
     private int _generation;
     private Task _notices = Task.CompletedTask;
     public AppEntryEditorViewModel Model { get; } = new();
@@ -36,7 +35,6 @@ public partial class AppEntryEditorView : UserControl
         _host = host;
         _reloadLibrary = reloadLibrary;
         _dismissTextInput = dismissTextInput;
-        _showMessage = showMessage;
         Model.Configure(service);
         Model.Notice += notice =>
         {
@@ -127,25 +125,19 @@ public partial class AppEntryEditorView : UserControl
         var folder = Model.FolderName.Trim();
         await _session.RunAsync(async () =>
         {
-            var saved = await Model.SaveAsync(_session.Token);
-            // Dialogs retain navigation ownership until dismissed; only then reveal the card.
-            await _notices;
-            if (!saved || _session.IsClosed || generation != _generation)
-                return;
-            try
+            await Model.SaveAsync(_session.Token, async () =>
             {
+                // Dialogs retain navigation ownership until dismissed; only then reveal the card.
+                await _notices;
+                if (_session.IsClosed || generation != _generation) return;
                 await _reloadLibrary();
                 if (!_session.IsClosed && generation == _generation)
                 {
                     CloseRequested?.Invoke();
                     if (creating) EntryCreated?.Invoke(folder);
                 }
-            }
-            catch (Exception ex)
-            {
-                if (!_session.IsClosed)
-                    await _showMessage($"Error saving app entry: {ex.Message}", "Error");
-            }
+            });
+            await _notices;
         });
     }
 }

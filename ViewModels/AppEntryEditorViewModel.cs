@@ -72,7 +72,7 @@ public sealed class AppEntryEditorViewModel : ObservableViewModel
         IconUrl.Trim(), Project.Trim(), CustomDisplayName.Trim(), Tags, FilesToAdd, ReleaseAssetFilter, ModsPath,
         ModsSources, ModsFolderPerMod, ManuallyManaged, _editing?.InstanceKey, _editing?.Repository);
 
-    public async Task<bool> SaveAsync(CancellationToken token)
+    public async Task<bool> SaveAsync(CancellationToken token, Func<Task>? onSaved = null)
     {
         if (IsBusy || _service == null) return false;
         var generation = _generation;
@@ -94,7 +94,11 @@ public sealed class AppEntryEditorViewModel : ObservableViewModel
             var saved = await _service.SaveAsync(draft,
                 notice => { if (!token.IsCancellationRequested && generation == _generation) Notice?.Invoke(notice); },
                 game => { if (!token.IsCancellationRequested && generation == _generation) OpenFolderRequested?.Invoke(game); }, token);
-            return saved && !token.IsCancellationRequested && generation == _generation;
+            if (!saved || token.IsCancellationRequested || generation != _generation) return false;
+            // Keep the save disabled until the library and dialog have caught up
+            // with persistence; a second click must not submit the same entry.
+            if (onSaved != null) await onSaved();
+            return true;
         }
         catch (Exception ex)
         {

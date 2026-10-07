@@ -59,7 +59,7 @@ public class GameDownloadInstallServiceTests
                 release,
                 new AppSettings { Platform = TestPlatforms.ForWindowsPayload },
                 GameStatus.NotInstalled,
-                dialogs);
+                dialogs, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
             dialogs.LastError.Should().BeNull("install failed with: {0}", dialogs.LastError);
             game.Status.Should().Be(GameStatus.Installed);
@@ -125,7 +125,7 @@ public class GameDownloadInstallServiceTests
                 release,
                 new AppSettings { Platform = TestPlatforms.ForWindowsPayload },
                 GameStatus.NotInstalled,
-                dialogs);
+                dialogs, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
             dialogs.LastError.Should().BeNull("install failed with: {0}", dialogs.LastError);
             game.Status.Should().Be(GameStatus.Installed);
@@ -175,7 +175,7 @@ public class GameDownloadInstallServiceTests
                 release,
                 new AppSettings(),
                 GameStatus.NotInstalled,
-                HeadlessGameDownloadDialogs.Instance);
+                HeadlessGameDownloadDialogs.Instance, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
             game.Status.Should().Be(GameStatus.NotInstalled);
             game.DownloadProgress.Should().Be(0);
@@ -222,7 +222,7 @@ public class GameDownloadInstallServiceTests
                 release,
                 new AppSettings { Platform = QuiverLauncher.Core.Models.TargetOS.LinuxX64 },
                 GameStatus.NotInstalled,
-                HeadlessGameDownloadDialogs.Instance);
+                HeadlessGameDownloadDialogs.Instance, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
             game.Status.Should().Be(GameStatus.NotInstalled);
             game.AvailableDownloads.Should().HaveCount(2);
@@ -284,7 +284,7 @@ public class GameDownloadInstallServiceTests
                 release,
                 new AppSettings(),
                 GameStatus.NotInstalled,
-                dialogs);
+                dialogs, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
             game.Status.Should().Be(GameStatus.NotInstalled);
             game.SelectedDownload.Should().BeNull();
@@ -325,7 +325,7 @@ public class GameDownloadInstallServiceTests
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, Path.GetTempPath(), null,
             new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.NotInstalled, dialogs);
 
-        requests.Should().Be(1);
+        requests.Should().Be(status == 404 ? 2 : 1);
         dialogs.RateLimitShown.Should().Be(rateLimited);
         if (rateLimited) dialogs.LastError.Should().BeNull();
         else dialogs.LastError.Should().Contain($"HTTP {status}").And.NotContain("No Releases");
@@ -366,7 +366,7 @@ public class GameDownloadInstallServiceTests
         var dialogs = new RecordingDialogs();
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")), null,
             new AppSettings { Platform = TargetOS.LinuxX64 }, GameStatus.NotInstalled, dialogs);
-        requests.Should().Be(2);
+        requests.Should().Be(1);
         dialogs.LastError.Should().BeNull();
         game.AvailableDownloads.Select(a => a.name).Should().Equal(
             "ygofm-0.5.9-linux-x64.zip", "ygofm-0.5.9-win-x64.zip");
@@ -400,7 +400,7 @@ public class GameDownloadInstallServiceTests
         var dialogs = new RecordingDialogs();
         await GameDownloadInstallService.DownloadAndInstallAsync(game, client, Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")),
             game.GetLatestRelease(), new AppSettings { Platform = TargetOS.Windows }, GameStatus.NotInstalled, dialogs);
-        calls.Should().Be(2); dialogs.LastError.Should().BeNull();
+        calls.Should().Be(1); dialogs.LastError.Should().BeNull();
         game.AvailableDownloads.Select(asset => asset.name).Should().Equal("app-win64.zip", "app-win32.zip");
         game.GetLatestRelease()!.tag_name.Should().Be("2.0");
     }

@@ -33,6 +33,17 @@ public static class GameStatusService
         {
             var gamePath = game.GetInstallPath(gamesFolder);
             var versionFile = Path.Combine(gamePath, "version.txt");
+            game.IsWindowsInstaller = WindowsInstallerService.HasReceipt(gamePath);
+            if (game.IsWindowsInstaller)
+            {
+                WindowsInstallerService.ApplyState(game, gamePath);
+                if (checkRemoteVersion)
+                    await game.CheckLatestVersionAsync(httpClient, forceCheck: forceUpdateCheck).ConfigureAwait(false);
+                else if (applyCachedRelease && GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var msiCache) && msiCache != null)
+                    game.ApplyCachedRelease(msiCache.Version, msiCache.CachedRelease);
+                if (game.IsInstalled) game.RefreshInstalledStatus();
+                return;
+            }
 
             var directoryExists = Directory.Exists(gamePath);
             var versionFileExists = File.Exists(versionFile);

@@ -310,8 +310,7 @@ jobs:
         path: releases/${{ matrix.rid }}/**
         retention-days: 14
 
-  # Flatpak packaging (packaging/flatpak/) is a CI-artifact-only build for now,
-  # not wired into the GitHub Release step below — see packaging/flatpak/README.md.
+  # Build and smoke-test the experimental Linux x64 Flatpak release bundle.
   pack-flatpak:
     needs: test
     runs-on: ubuntu-latest
@@ -330,18 +329,18 @@ jobs:
     - name: Install Flatpak tooling
       run: |
         sudo apt-get update
-        sudo apt-get install -y flatpak flatpak-builder
+        sudo apt-get install -y flatpak libflatpak0 dbus xvfb
 
     - name: Cache Flatpak runtimes
       uses: actions/cache@v4
       with:
         path: ~/.local/share/flatpak
-        key: flatpak-runtimes-24.08-${{ runner.os }}
+        key: flatpak-runtimes-25.08-${{ runner.os }}
 
     - name: Install Flatpak runtime + SDK
       run: |
         flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-        flatpak install --user --noninteractive flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+        flatpak install --user --noninteractive flathub org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 org.flatpak.Builder
 
     - name: Publish linux-x64
       run: |
@@ -354,29 +353,63 @@ jobs:
               publish/linux-x64/crash.log
         rm -rf publish/linux-x64/Apps publish/linux-x64/Cache
 
+    - name: Test native Flatpak install, update, launch and uninstall
+      env:
+        QUIVER_FLATPAK_TEST_RUNTIME: org.freedesktop.Platform/x86_64/25.08
+      run: |
+        dbus-run-session -- dotnet test QuiverLauncher.Tests/QuiverLauncher.Tests.csproj -c Release \
+          --filter FullyQualifiedName~FlatpakLinuxIntegrationTests --logger "console;verbosity=normal"
+
     - name: flatpak-builder
       run: |
-        flatpak-builder --force-clean --repo=packaging/flatpak/repo \
+        dbus-run-session -- flatpak run org.flatpak.Builder --user --force-clean --repo=packaging/flatpak/repo \
           packaging/flatpak/build packaging/flatpak/io.github.tgeorgiadis.QuiverLauncher.yml
 
     - name: Build .flatpak bundle
       run: |
-        flatpak build-bundle packaging/flatpak/repo QuiverLauncher.flatpak \
+        flatpak build-bundle --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
+          packaging/flatpak/repo QuiverLauncher.flatpak \
           io.github.tgeorgiadis.QuiverLauncher master
 
+    - name: Verify bundle reader dependencies in the runtime
+      run: |
+        flatpak build --runtime packaging/flatpak/build sh -ec '
+          test -x /app/bin/quiver-launcher
+          dependencies="$(ldd /app/lib/libflatpak.so.0)"
+          printf "%s\n" "$dependencies"
+          if printf "%s\n" "$dependencies" | grep -q "not found"; then exit 1; fi
+        '
+        flatpak build --runtime --env=XDG_DATA_HOME=/tmp/quiver-package-smoke \
+          packaging/flatpak/build /app/bin/quiver-launcher --help
+
+    - name: Install and smoke-test the release bundle
+      run: |
+        set -euo pipefail
+        flatpak install --user --noninteractive ./QuiverLauncher.flatpak
+        flatpak info --user io.github.tgeorgiadis.QuiverLauncher
+        dbus-run-session -- flatpak run io.github.tgeorgiadis.QuiverLauncher --help
+        # Exercise the actual desktop entry point in a headless X11 session.
+        # timeout=124 means the UI stayed running for the observation window.
+        status=0
+        dbus-run-session -- xvfb-run -a timeout 20s flatpak run io.github.tgeorgiadis.QuiverLauncher > flatpak-ui-smoke.log 2>&1 || status=$?
+        cat flatpak-ui-smoke.log
+        test "$status" -eq 124
+
     - name: Upload Flatpak artifact
+      # Only upload a bundle after the installed-package smoke check succeeds.
       uses: actions/upload-artifact@v4
       with:
         name: flatpak-linux-x64
         path: QuiverLauncher.flatpak
+        if-no-files-found: error
         retention-days: 14
 
   # Publish Velopack packages to a GitHub Release when a v* tag is pushed.
   # Runs even if some desktop packs fail so successful channels still ship.
-  # Android is required: tags must include a signed APK.
+  # Android and Flatpak are required: tags must include a signed APK and a tested bundle.
   publish-github-release:
-    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.test.result == 'success' && needs.build-android.result == 'success'
-    needs: [test, pack-windows, pack-linux, pack-macos, build-android]
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.test.result == 'success' && needs.build-android.result == 'success' && needs.pack-flatpak.result == 'success'
+    needs: [test, pack-windows, pack-linux, pack-macos, pack-flatpak, build-android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -412,6 +445,12 @@ jobs:
         name: android-apk
         path: release-assets/android
 
+    - name: Download Flatpak bundle
+      uses: actions/download-artifact@v4
+      with:
+        name: flatpak-linux-x64
+        path: release-assets/flatpak
+
     - name: Publish GitHub Release with user + Velopack feed assets
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -433,7 +472,8 @@ jobs:
             -name 'releases.*.json' -o \
             -name '*Portable.zip' -o \
             -name '*.AppImage' -o \
-            -name '*.apk' \
+            -name '*.apk' -o \
+            -name '*.flatpak' \
           \) | sort
         )
         if [[ ${#FILES[@]} -eq 0 ]]; then
@@ -449,6 +489,7 @@ jobs:
           echo "- **Windows:** [${BASE}/QuiverLauncher-win-Portable.zip](${BASE}/QuiverLauncher-win-Portable.zip)"
           echo "- **Linux x64:** [${BASE}/QuiverLauncher-linux-x64.AppImage](${BASE}/QuiverLauncher-linux-x64.AppImage)"
           echo "- **Linux ARM64:** [${BASE}/QuiverLauncher-linux-arm64.AppImage](${BASE}/QuiverLauncher-linux-arm64.AppImage)"
+          echo "- **Linux x64 Flatpak (experimental):** [QuiverLauncher.flatpak](${BASE}/QuiverLauncher.flatpak)"
           echo "- **Android:** [${BASE}/QuiverLauncher-android.apk](${BASE}/QuiverLauncher-android.apk)"
           echo "- **macOS (Apple Silicon):** [${BASE}/QuiverLauncher-osx-arm64-Portable.zip](${BASE}/QuiverLauncher-osx-arm64-Portable.zip)"
           echo "- **macOS (Intel):** [${BASE}/QuiverLauncher-osx-x64-Portable.zip](${BASE}/QuiverLauncher-osx-x64-Portable.zip)"

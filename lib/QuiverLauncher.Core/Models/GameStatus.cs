@@ -7,6 +7,7 @@ namespace QuiverLauncher.Core.Models
         UpdateAvailable,
         Downloading,
         Installing,
-        Updating
+        Updating,
+        NeedsExecutable
     }
 }

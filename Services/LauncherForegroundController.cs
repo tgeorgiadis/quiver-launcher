@@ -179,6 +179,11 @@ public sealed class LauncherForegroundController : IDisposable
     // detection here is unreliable (see packaging/flatpak/README.md).
     private static async Task WaitForGameExitAsync(Process process, CancellationToken token)
     {
+        if (HostGameSession.ExitTask(process) is { } hostSession)
+        {
+            await hostSession.WaitAsync(token);
+            return;
+        }
         int? group = null;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {

@@ -69,4 +69,36 @@ public class LibraryActionsTests
         var action = () => GameDialogService.ShowLinuxWindowsRunnerDialogAsync("unused", cancellationToken: cancellation.Token);
         await action.Should().ThrowAsync<OperationCanceledException>();
     }
+
+    [Fact]
+    public async Task Msi_uninstall_opens_windows_settings_without_deleting_any_files()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var directory = Path.Combine(Path.GetTempPath(), "quiver-action-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var store = new Store(directory);
+            var catalog = new AppCatalogService(dataDirectory: directory);
+            using var manager = new GameManager(store, catalogService: catalog);
+            using var library = new LibraryViewModel(manager, new SettingsViewModel(store));
+            await using var session = new LauncherSession();
+            var game = new GameInfo { Name = "MSI", FolderName = "MSI" };
+            var metadata = game.GetInstallPath(store.Current.AppsPath);
+            var executable = Path.Combine(directory, "external.exe");
+            File.WriteAllText(executable, "keep installed app");
+            WindowsInstallerService.WriteReceipt(metadata, new("Linked", "v1", executable));
+            var opened = new List<string>();
+            var actions = new LibraryActions(manager, new LibraryPersistenceService(manager), library.Settings, session, library,
+                () => throw new Exception("Unexpected picker"), (_, _, _, _) => throw new Exception("Unexpected delete prompt"),
+                opened.Add, () => throw new Exception("Unexpected catalog refresh"));
+
+            await actions.UninstallAsync(game);
+
+            opened.Should().Equal("ms-settings:appsfeatures");
+            WindowsInstallerService.HasReceipt(metadata).Should().BeTrue();
+            File.ReadAllText(executable).Should().Be("keep installed app");
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
 }

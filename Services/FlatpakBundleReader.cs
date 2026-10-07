@@ -8,7 +8,7 @@ public interface IFlatpakBundleReader
     FlatpakReceipt Read(string path, string releaseTag);
 }
 
-/// <summary>Read the bundle's authoritative identity using the host's libflatpak.</summary>
+/// <summary>Read the bundle's authoritative identity using libflatpak (bundled in the Flatpak edition).</summary>
 public sealed class FlatpakBundleReader : IFlatpakBundleReader
 {
     public void CheckAvailable()

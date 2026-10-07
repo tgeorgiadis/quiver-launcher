@@ -63,6 +63,7 @@ public static class AppFilesToAddService
     {
         if (string.IsNullOrWhiteSpace(installPath) || !Directory.Exists(installPath))
             return;
+        if (WindowsInstallerService.HasReceipt(installPath)) return;
 
         var previousNames = Normalize(previous);
         var nextNames = Normalize(next);
@@ -103,6 +104,7 @@ public static class AppFilesToAddService
             return;
 
         var installPath = game.GetInstallPath(appsFolder);
+        if (WindowsInstallerService.HasReceipt(installPath)) return;
         Sync(installPath, previous, game.FilesToAdd);
     }
 }

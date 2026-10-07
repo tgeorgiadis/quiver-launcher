@@ -184,7 +184,7 @@ public class ReleaseVerificationTests
         var player = new Dialogs(confirm: true);
 
         await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
-            release, launcher.Store.Current, GameStatus.UpdateAvailable, new AutomaticGameDownloadDialogs(player));
+            release, launcher.Store.Current, GameStatus.UpdateAvailable, new AutomaticGameDownloadDialogs(player), releaseMode: ReleaseInstallMode.ExplicitRelease);
 
         launcher.Network.Downloads.Should().Be(0);
         player.Confirmations.Should().BeEmpty("an automatic update never asks, and never installs what Quiver hasn't verified");
@@ -211,7 +211,7 @@ public class ReleaseVerificationTests
         var dialogs = new Dialogs(confirm: true);
 
         await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
-            release, launcher.Store.Current, GameStatus.UpdateAvailable, dialogs);
+            release, launcher.Store.Current, GameStatus.UpdateAvailable, dialogs, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
         launcher.Network.Downloads.Should().Be(1);
         dialogs.Confirmations.Should().BeEmpty("the release itself is verified");
@@ -240,7 +240,7 @@ public class ReleaseVerificationTests
         var player = new Dialogs(confirm: true);
 
         await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
-            release, launcher.Store.Current, GameStatus.NotInstalled, player);
+            release, launcher.Store.Current, GameStatus.NotInstalled, player, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
         player.Errors.Should().BeEmpty();
         if (verified) player.Confirmations.Should().BeEmpty();
@@ -272,7 +272,7 @@ public class ReleaseVerificationTests
         var player = new Dialogs(confirm: false);
 
         await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
-            release, launcher.Store.Current, GameStatus.NotInstalled, player);
+            release, launcher.Store.Current, GameStatus.NotInstalled, player, releaseMode: ReleaseInstallMode.ExplicitRelease);
 
         var asked = player.Confirmations.Should().ContainSingle().Subject;
         asked.Check.State.Should().Be(ReleaseCheckState.Unverified);

@@ -2,6 +2,10 @@ namespace QuiverLauncher.Services;
 
 public interface IGameDownloadDialogs
 {
+    Task<bool> ConfirmWindowsInstallerAsync(string appName) =>
+        throw new InvalidOperationException("MSI installation requires the Windows desktop interface. Open Quiver and run the installer there.");
+    Task<string?> PickWindowsExecutableAsync(string appName, string? previousPath) =>
+        throw new InvalidOperationException("Open Quiver's Windows desktop interface and select the installed executable.");
     Task<bool> ConfirmDownloadWithoutRunnerAsync();
     Task<LinuxWindowsRunnerConfig?> ConfigureWindowsRunnerAsync(
         string gamePath,
@@ -14,9 +18,10 @@ public interface IGameDownloadDialogs
     Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check);
 }
 
-/// <summary>Automatic updates install only verified releases and never ask.</summary>
+/// <summary>Automatic updates install only verified releases and never ask; a Windows setup wizard never runs on its own.</summary>
 public sealed class AutomaticGameDownloadDialogs(IGameDownloadDialogs inner) : IGameDownloadDialogs
 {
+    public Task<bool> ConfirmWindowsInstallerAsync(string appName) => Task.FromResult(false);
     public Task<bool> ConfirmDownloadWithoutRunnerAsync() => inner.ConfirmDownloadWithoutRunnerAsync();
     public Task<LinuxWindowsRunnerConfig?> ConfigureWindowsRunnerAsync(string gamePath, LinuxWindowsRunnerConfig? existing = null, bool isInstall = true) =>
         inner.ConfigureWindowsRunnerAsync(gamePath, existing, isInstall);
@@ -28,6 +33,8 @@ public sealed class AutomaticGameDownloadDialogs(IGameDownloadDialogs inner) : I
 
 public sealed class AvaloniaGameDownloadDialogs : IGameDownloadDialogs
 {
+    public Task<bool> ConfirmWindowsInstallerAsync(string appName) => GameDialogService.ConfirmWindowsInstallerAsync(appName);
+    public Task<string?> PickWindowsExecutableAsync(string appName, string? previousPath) => GameDialogService.PickWindowsExecutableAsync(appName, previousPath);
     public static AvaloniaGameDownloadDialogs Instance { get; } = new();
 
     public Task<bool> ConfirmDownloadWithoutRunnerAsync() =>
@@ -77,7 +84,11 @@ public sealed class HeadlessGameDownloadDialogs : IGameDownloadDialogs
 
     public Task ShowGitLabRateLimitExceededAsync() => Task.CompletedTask;
 
-    public Task ShowErrorAsync(string message, string title) => Task.CompletedTask;
+    public Task ShowErrorAsync(string message, string title)
+    {
+        Console.Error.WriteLine($"{title}: {message}");
+        return Task.CompletedTask;
+    }
 
     // Nobody can confirm, so nothing unverified is installed.
     public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) => Task.FromResult(false);

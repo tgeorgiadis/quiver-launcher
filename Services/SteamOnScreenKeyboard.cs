@@ -101,12 +101,15 @@ internal static class SteamOnScreenKeyboard
 
     private static int? StartProcessAndWait(string fileName, string argument)
     {
-        using var process = Process.Start(new ProcessStartInfo
+        var startInfo = new ProcessStartInfo
         {
             FileName = fileName,
             ArgumentList = { argument },
             UseShellExecute = false,
-        });
+        };
+        HostProcessEnvironment.Sanitize(startInfo);
+        HostProcessEnvironment.RouteToHostIfSandboxed(startInfo);
+        using var process = Process.Start(startInfo);
 
         if (process == null)
             throw new InvalidOperationException($"Failed to start '{fileName}'.");

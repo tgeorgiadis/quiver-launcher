@@ -1,0 +1,109 @@
+# Only the libraries are shipped. Installation and launching use the host CLI.
+# Sources are pinned; the runtime supplies GLib, GPGME, curl, libarchive and AppStream.
+name: libflatpak
+buildsystem: meson
+config-opts:
+  - --libdir=/app/lib
+  - -Dgtkdoc=disabled
+  - -Ddocbook_docs=disabled
+  - -Dman=disabled
+  - -Dgir=disabled
+  - -Dtests=false
+  - -Dsystem_helper=disabled
+  - -Dsystemd=disabled
+  - -Dselinux_module=disabled
+  - -Dmalcontent=disabled
+  - -Dseccomp=disabled
+  - -Dsystem_bubblewrap=bwrap
+  - -Dsystem_dbus_proxy=xdg-dbus-proxy
+  - -Dsystem_fusermount=fusermount3
+cleanup:
+  - /bin
+  - /etc
+  - /include
+  - /lib/pkgconfig
+  - /lib/systemd
+  - /lib/sysusers.d
+  - /lib/tmpfiles.d
+  - /libexec
+  - /share
+sources:
+  - type: git
+    url: https://github.com/flatpak/flatpak.git
+    tag: 1.16.6
+    commit: e761a8885453c217a931281092a641ebbdd0a0c6
+modules:
+  # Required by libflatpak's configure checks; host execution uses host helpers.
+  - name: bubblewrap
+    buildsystem: meson
+    config-opts:
+      - -Dman=disabled
+      - -Dtests=false
+      - -Dselinux=disabled
+    cleanup: ['*']
+    sources:
+      - type: git
+        url: https://github.com/containers/bubblewrap.git
+        tag: v0.11.1
+        commit: 124c4cdf4321f63ef17a1cb0ce8f9dd45bd7adbe
+  - name: xdg-dbus-proxy
+    buildsystem: meson
+    config-opts:
+      - -Dman=disabled
+      - -Dtests=false
+    cleanup: ['*']
+    sources:
+      - type: git
+        url: https://github.com/flatpak/xdg-dbus-proxy.git
+        tag: 0.1.7
+        commit: 6a170fa77e3cbecb48f9dd2478fe5c0a119eb467
+  - name: pyparsing
+    buildsystem: simple
+    build-commands:
+      - pip3 install --no-deps --no-index --prefix=/app pyparsing-3.3.2-py3-none-any.whl
+    cleanup: ['*']
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl
+        sha256: 850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d
+  - name: libfuse
+    buildsystem: meson
+    config-opts:
+      - --libdir=/app/lib
+      - -Dexamples=false
+      - -Dtests=false
+      - -Dutils=false
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+      - /share
+    sources:
+      - type: git
+        url: https://github.com/libfuse/libfuse.git
+        tag: fuse-3.17.4
+        commit: ddcb1a075995500bd6c91327a1dfcee346acd075
+  - name: ostree
+    config-opts:
+      - --libdir=/app/lib
+      - --disable-man
+      - --disable-gtk-doc
+      - --disable-gtk-doc-html
+      - --disable-introspection
+      - --disable-installed-tests
+      - --disable-selinux
+      - --disable-rofiles-fuse
+      - --with-curl
+      - --without-libsystemd
+      - --without-dracut
+      - --without-mkinitcpio
+    cleanup:
+      - /bin
+      - /include
+      - /lib/pkgconfig
+      - /libexec
+      - /share
+    sources:
+      - type: git
+        url: https://github.com/ostreedev/ostree.git
+        tag: v2025.7
+        commit: 134d144cb52ff018cfedfb936b661189bccc76e6

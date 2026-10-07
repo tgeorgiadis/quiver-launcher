@@ -65,6 +65,7 @@ public static class CatalogReleaseSelection
         QuiverLauncher.Core.Services.GitHubReleaseService.GetDownloadableAssets(release).Count > 0;
 
     private static GitHubRelease? FindByTag(IReadOnlyList<GitHubRelease> pool, string tag) =>
+        pool.FirstOrDefault(release => string.Equals(release.tag_name, tag.Trim(), StringComparison.OrdinalIgnoreCase)) ??
         pool.FirstOrDefault(release =>
             ReleaseVersionIdentity.AreVersionsEquivalent(release.tag_name, tag));
 }

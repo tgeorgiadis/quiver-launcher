@@ -58,6 +58,12 @@ public sealed class AppEntryService(GameManager manager, SettingsViewModel setti
                     var oldRepositorySource = appToUpdate.RepositorySource;
                     var oldIdentityKey = appToUpdate.InstanceKey;
                     var oldFolderName = appToUpdate.FolderName;
+                    if (WindowsInstallerService.HasReceipt(appToUpdate.GetInstallPath(_settings.AppsPath)) &&
+                        (appToUpdate.FolderName != folderName || manuallyManaged))
+                    {
+                        Notify("Remove this library entry before changing its installation folder or switching to manual management. The Windows-installed app will be preserved.", "Windows Installation");
+                        return false;
+                    }
                     if (!string.Equals(oldIdentityKey, identityKey, StringComparison.OrdinalIgnoreCase) &&
                         games.Any(g =>
                             !ReferenceEquals(g, appToUpdate) &&
@@ -166,7 +172,7 @@ public sealed class AppEntryService(GameManager manager, SettingsViewModel setti
                             string.Equals(g.InstanceKey, identityKey, StringComparison.OrdinalIgnoreCase)))
                     {
                         Notify(
-                            "An app with this folder name already exists.",
+                            "A library entry already uses this folder name, even if its app has not been installed yet.",
                             "Duplicate Folder");
                         return false;
                     }
@@ -175,7 +181,7 @@ public sealed class AppEntryService(GameManager manager, SettingsViewModel setti
                             string.Equals(g.FolderName, folderName, StringComparison.OrdinalIgnoreCase)))
                     {
                         Notify(
-                            "An app with this folder name already exists.",
+                            "A library entry already uses this folder name, even if its app has not been installed yet.",
                             "Duplicate Folder");
                         return false;
                     }

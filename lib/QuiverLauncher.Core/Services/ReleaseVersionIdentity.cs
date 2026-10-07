@@ -51,21 +51,11 @@ public static class ReleaseVersionIdentity
         if (firstIdentity.Equals(secondIdentity, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        // Only plain numeric tags compare by number ("v1.2" = "1.2.0"). Anything else, like
-        // "Version1.0.4" or "1.0.5beta9", would normalize to a shorter or empty core and match
-        // a different release.
-        if (!IsPlainNumericVersion(firstIdentity) || !IsPlainNumericVersion(secondIdentity))
-            return false;
-
-        try
-        {
-            return new Version(NormalizeVersionString(firstVersion))
-                .Equals(new Version(NormalizeVersionString(secondVersion)));
-        }
-        catch
-        {
-            return false;
-        }
+        // Numeric ordering deliberately extracts a core from labeled tags. That
+        // lossy normalization must never establish release identity: unknown tags
+        // can both normalize to 0.0.0, and beta suffixes can disappear.
+        return TryParseNumericIdentity(firstIdentity, out var first) &&
+            TryParseNumericIdentity(secondIdentity, out var second) && first == second;
     }
 
     public static bool LooksLikePrereleaseTag(string? version)
@@ -95,7 +85,19 @@ public static class ReleaseVersionIdentity
 
     private static string VersionIdentity(string version)
     {
-        return StripBuildMetadata(version.Trim().TrimStart('v', 'V'));
+        var identity = version.Trim();
+        if (identity.Length > 1 && identity[0] is 'v' or 'V' && char.IsAsciiDigit(identity[1]))
+            identity = identity[1..];
+        return StripBuildMetadata(identity);
+    }
+
+    private static bool TryParseNumericIdentity(string identity, out Version? version)
+    {
+        version = null;
+        var parts = identity.Split('.');
+        if (parts.Length > 4 || parts.Any(part => part.Length == 0 || !part.All(char.IsAsciiDigit)))
+            return false;
+        return Version.TryParse(string.Join('.', parts.Concat(Enumerable.Repeat("0", Math.Max(0, 3 - parts.Length)))), out version);
     }
 
     private static bool IsPlainNumericVersion(string identity)

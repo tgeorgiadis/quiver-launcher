@@ -193,7 +193,18 @@ internal static class LaunchDebugReport
         {
             builder.AppendLine("ArgumentList=");
             foreach (var argument in startInfo.ArgumentList)
-                builder.AppendLine($"  {argument}");
+            {
+                // flatpak-spawn carries the environment as command-line options.
+                // Apply the same allowlist as the environment blocks below.
+                var printable = argument;
+                if (argument.StartsWith("--env=", StringComparison.Ordinal))
+                {
+                    var separator = argument.IndexOf('=', 6);
+                    if (separator < 0 || !IsAllowlisted(argument[6..separator]))
+                        printable = "--env=(redacted)";
+                }
+                builder.AppendLine($"  {printable}");
+            }
         }
 
         var removed = KeysRemoved(processEnvBefore, startInfoEnvAfter);

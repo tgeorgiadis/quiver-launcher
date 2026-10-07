@@ -104,9 +104,6 @@ public class HostProcessEnvironmentTests
     [Fact]
     public void RouteToHostIfSandboxed_wraps_via_flatpak_spawn_when_sandboxed()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         var startInfo = new ProcessStartInfo
         {
             FileName = "/games/App/game",
@@ -117,7 +114,7 @@ public class HostProcessEnvironmentTests
         startInfo.Environment["PATH"] = "/app/bin:/usr/bin";
         startInfo.Environment["WINEPREFIX"] = "/games/App/.wine-prefix";
 
-        HostProcessEnvironment.RouteToHostIfSandboxed(startInfo, name => name == "FLATPAK_ID" ? "io.github.tgeorgiadis.QuiverLauncher" : null);
+        HostProcessEnvironment.WrapForHost(startInfo);
 
         startInfo.FileName.Should().Be("flatpak-spawn");
         startInfo.ArgumentList.Should().Contain("--host");
@@ -135,9 +132,6 @@ public class HostProcessEnvironmentTests
     [Fact]
     public void RouteToHostIfSandboxed_strips_sandbox_identity_vars_that_break_host_processes()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         var startInfo = new ProcessStartInfo { FileName = "proton", UseShellExecute = false };
         startInfo.ArgumentList.Add("waitforexitandrun");
         startInfo.Environment["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/run/flatpak/bus";
@@ -157,7 +151,11 @@ public class HostProcessEnvironmentTests
         startInfo.Environment["AT_SPI_BUS_ADDRESS"] = "unix:path=/run/flatpak/at-spi-bus";
         startInfo.Environment["STEAM_COMPAT_APP_ID"] = "12345";
 
-        HostProcessEnvironment.RouteToHostIfSandboxed(startInfo, name => name == "FLATPAK_ID" ? "io.github.tgeorgiadis.QuiverLauncher" : null);
+        HostProcessEnvironment.WrapForHost(startInfo);
+
+        startInfo.Environment["DBUS_SESSION_BUS_ADDRESS"].Should().Be("unix:path=/run/flatpak/bus",
+            "the local flatpak-spawn process must retain access to the sandbox bus");
+        startInfo.Environment["PULSE_SERVER"].Should().Be("unix:/run/flatpak/pulse/native");
 
         foreach (var name in HostProcessEnvironment.SandboxIdentityEnvironmentVariables)
             startInfo.ArgumentList.Should().NotContain(arg => arg.StartsWith($"--env={name}=", StringComparison.Ordinal),
@@ -169,9 +167,6 @@ public class HostProcessEnvironmentTests
     [Fact]
     public void RouteToHostIfSandboxed_copies_xauthority_cookie_to_a_host_visible_path()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         var dataHome = Path.Combine(Path.GetTempPath(), "quiver-xauth-test-" + Guid.NewGuid());
         Directory.CreateDirectory(dataHome);
         var sandboxXauthority = Path.Combine(dataHome, "sandbox-xauthority");
@@ -184,7 +179,7 @@ public class HostProcessEnvironmentTests
             var startInfo = new ProcessStartInfo { FileName = "game", UseShellExecute = false };
             startInfo.Environment["XAUTHORITY"] = sandboxXauthority;
 
-            HostProcessEnvironment.RouteToHostIfSandboxed(startInfo, name => name == "FLATPAK_ID" ? "io.github.tgeorgiadis.QuiverLauncher" : null);
+            HostProcessEnvironment.WrapForHost(startInfo);
 
             var expectedCopy = Path.Combine(dataHome, "flatpak-host-xauthority");
             File.Exists(expectedCopy).Should().BeTrue();
@@ -196,6 +191,18 @@ public class HostProcessEnvironmentTests
             Environment.SetEnvironmentVariable("XDG_DATA_HOME", previousDataHome);
             TestFixtures.CleanupDirectory(dataHome);
         }
+    }
+
+    [Fact]
+    public void Host_wrapper_preserves_literal_arguments_and_rejects_ambiguous_command_strings()
+    {
+        var startInfo = new ProcessStartInfo("/games/my game") { UseShellExecute = false };
+        startInfo.ArgumentList.Add("space's $literal `text` % value");
+        HostProcessEnvironment.WrapForHost(startInfo);
+        startInfo.ArgumentList.TakeLast(2).Should().Equal("/games/my game", "space's $literal `text` % value");
+        var invalid = new ProcessStartInfo("game", "--option value") { UseShellExecute = false };
+        var act = () => HostProcessEnvironment.WrapForHost(invalid);
+        act.Should().Throw<ArgumentException>();
     }
 
     static ProcessStartInfo CreatePollutedStartInfo()

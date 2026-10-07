@@ -7,6 +7,18 @@ namespace QuiverLauncher.Tests;
 
 public class LaunchDebugReportTests
 {
+    [Fact]
+    public void Flatpak_environment_arguments_cannot_leak_secrets_into_launch_logs()
+    {
+        var info = new ProcessStartInfo("game") { UseShellExecute = false };
+        info.Environment["GITHUB_TOKEN"] = "test-secret-value";
+        HostProcessEnvironment.WrapForHost(info);
+        var report = LaunchDebugReport.Build(DateTimeOffset.UtcNow, "Game", "/games", "game", [], null,
+            info, new Dictionary<string, string>(), new Dictionary<string, string>(), 1, null);
+        report.Should().NotContain("test-secret-value").And.NotContain("GITHUB_TOKEN");
+        report.Should().Contain("--env=PATH=").And.Contain("--env=(redacted)");
+    }
+
     [Theory]
     [InlineData("APPDIR", true)]
     [InlineData("APPIMAGE", true)]

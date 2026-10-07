@@ -29,7 +29,10 @@ internal static class StartupVersionResolver
             return null;
         var release = cached.CachedRelease;
         if (release != null && !ReleaseVersionIdentity.AreVersionsEquivalent(release.tag_name, cached.Version)) release = null;
-        return new(cached.Version, new DateTimeOffset(DateTime.SpecifyKind(cached.LastChecked, DateTimeKind.Utc)), release);
+        // A version chosen by older selection rules is shown, but checked again.
+        var checkedAt = cached.SelectionRevision == GameVersionCache.CurrentSelectionRevision
+            ? new DateTimeOffset(DateTime.SpecifyKind(cached.LastChecked, DateTimeKind.Utc)) : DateTimeOffset.MinValue;
+        return new(cached.Version, checkedAt, release);
     }
 
     internal static bool Apply(GameInfo app)
