@@ -333,6 +333,7 @@ namespace QuiverLauncher.Services
                         GameManager = gameManager,
                     };
 
+                    app.CatalogSnapshot = ParseCatalogSnapshot(appElement);
                     if (string.IsNullOrWhiteSpace(app.Project))
                         app.Project = null;
                     if (string.IsNullOrWhiteSpace(app.CustomDisplayName))
@@ -405,6 +406,14 @@ namespace QuiverLauncher.Services
                 return legacyIconElement.GetString();
 
             return null;
+        }
+
+        private static CatalogSnapshot? ParseCatalogSnapshot(JsonElement appElement)
+        {
+            if (!appElement.TryGetProperty("catalog", out var catalog) || catalog.ValueKind != JsonValueKind.Object)
+                return null;
+            string? Text(string name) => catalog.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            return new CatalogSnapshot(Text("name"), Text("project"), Text("appIconUrl"), ParseTagsProperty(catalog));
         }
 
         private static List<string> ParseTagsProperty(JsonElement appElement)
@@ -584,6 +593,16 @@ namespace QuiverLauncher.Services
             var normalizedTags = TagHelper.NormalizeTags(app.Tags);
             if (normalizedTags.Count > 0)
                 payload["tags"] = normalizedTags;
+
+            // What the catalog last set, so its later changes don't overwrite the player's own.
+            if (app.CatalogSnapshot is { } catalog)
+                payload["catalog"] = new Dictionary<string, object?>
+                {
+                    ["name"] = catalog.Name,
+                    ["project"] = catalog.Project,
+                    ["appIconUrl"] = catalog.IconUrl,
+                    ["tags"] = catalog.Tags,
+                };
 
             var normalizedFilesToAdd = AppFilesToAddService.Normalize(app.FilesToAdd);
             if (normalizedFilesToAdd.Count > 0)

@@ -250,6 +250,8 @@ namespace QuiverLauncher.Models
         public string? AndroidPackageName { get; set; }
         public string? InstallPath { get; set; }
         public string? GameIconUrl { get; set; }
+        /// <summary>What the catalog last set on this app, so the player's own changes are told apart from its.</summary>
+        public CatalogSnapshot? CatalogSnapshot { get; set; }
         public bool IsExperimental { get; set; }
         public bool IsCustom { get; set; }
         public List<string> Tags { get; set; } = [];

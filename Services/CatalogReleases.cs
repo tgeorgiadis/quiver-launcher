@@ -44,6 +44,8 @@ public sealed class CatalogReleases
     // link. Saved, so they still link offline.
     private readonly ConcurrentDictionary<string, CatalogLink> _links;
     private readonly SemaphoreSlim _linksRefresh = new(1, 1);
+    // Every catalog app as the listing gave it, for keeping library apps' name, icon and tags current.
+    private Dictionary<string, QuiverCatalogApp> _listing = new(StringComparer.OrdinalIgnoreCase);
     private DateTime _linksAt = DateTime.MinValue;
     private readonly Dictionary<string, (DateTime At, IReadOnlyList<QuiverCatalogRelease> Releases)> _history = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<QuiverCatalogStatus> _status;
@@ -69,10 +71,13 @@ public sealed class CatalogReleases
         await RefreshStatusAsync(force: false, token).ConfigureAwait(false);
         // Apps sharing a repository are told apart by their download filter, and an app whose repository moved since it
         // was added (renamed, or handed to another owner; GitHub still follows the old name) is found by its folder.
-        if (list.Any(a => Candidates(a).Skip(1).Any() || (Linkable(a) && !Candidates(a).Any())))
-            await RefreshLinksAsync(token).ConfigureAwait(false);
+        // The listing also keeps every linked app's name, icon and tags current, so it is read with the status.
+        await RefreshLinksAsync(token).ConfigureAwait(false);
         foreach (var app in list) ApplyKnown(app);
     }
+
+    /// <summary>The app's entry in the catalog listing, once the listing has been read this session.</summary>
+    public QuiverCatalogApp? ListedApp(GameInfo app) => app.CatalogSlug is { } slug ? _listing.GetValueOrDefault(slug) : null;
 
     /// <summary>Links an app from what is already known, without the network.</summary>
     public void ApplyKnown(GameInfo app)
@@ -171,15 +176,20 @@ public sealed class CatalogReleases
         {
             if (DateTime.UtcNow - _linksAt < StatusAge) return;
             var links = new Dictionary<string, CatalogLink>(StringComparer.OrdinalIgnoreCase);
+            var listing = new Dictionary<string, QuiverCatalogApp>(StringComparer.OrdinalIgnoreCase);
             string? cursor = null;
             do
             {
                 var page = await _client.GetAppsAsync(new QuiverCatalogQuery(), cursor, token, QuiverCatalogClient.MaxPageSize).ConfigureAwait(false);
                 foreach (var app in page.Items)
+                {
                     links[app.Slug] = new(QuiverCatalogMapping.FolderFor(app), app.Launcher.ReleaseAssetFilter);
+                    listing[app.Slug] = app;
+                }
                 cursor = page.NextCursor;
             } while (cursor != null);
             foreach (var (slug, link) in links) _links[slug] = link;
+            _listing = listing;
             _linksAt = DateTime.UtcNow;
             Save(_linksPath, links);
         }

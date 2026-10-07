@@ -152,6 +152,7 @@ namespace QuiverLauncher.Services
         {
             var apps = LibraryApps.Where(app => appKeys == null || appKeys.Contains(app.InstanceKey)).ToArray();
             await CatalogReleases.RefreshAsync(apps, token);
+            await SyncCatalogDetailsAsync(apps, token);
             foreach (var app in apps)
             {
                 token.ThrowIfCancellationRequested();
@@ -260,6 +261,7 @@ namespace QuiverLauncher.Services
             // Keep the same app instances and collection while online results arrive.
             var apps = _catalogApps.ToArray();
             await CatalogReleases.RefreshAsync(apps, cancellationToken);
+            await SyncCatalogDetailsAsync(apps, cancellationToken);
             await new LibraryUpdateChecker(_httpClient, _settingsStore.Current).CheckStartupAsync(apps, cancellationToken);
             await Task.WhenAll(apps.Select(async app =>
             {
@@ -376,6 +378,41 @@ namespace QuiverLauncher.Services
                 OnPropertyChanged(nameof(IsLibraryEmpty));
                 OnPropertyChanged(nameof(HasNoLibrarySearchMatches));
             });
+        }
+
+        /// <summary>
+        /// Gives library apps from the catalog its current name, project, icon and tags, keeping what the player changed
+        /// (see <see cref="CatalogLibrarySync"/>), and saves them to apps.json.
+        /// </summary>
+        internal async Task SyncCatalogDetailsAsync(IReadOnlyList<GameInfo> apps, CancellationToken token)
+        {
+            var changed = new List<GameInfo>();
+            void Apply()
+            {
+                foreach (var app in apps)
+                {
+                    if (CatalogReleases.ListedApp(app) is not { } entry || !CatalogLibrarySync.Apply(app, entry)) continue;
+                    changed.Add(app);
+                    app.RefreshLibraryCardTags();
+                }
+            }
+            if (UiThreadInvoker is { } invoker) await invoker(Apply).ConfigureAwait(false);
+            else Apply();
+            if (changed.Count == 0) return;
+            token.ThrowIfCancellationRequested();
+            try
+            {
+                // Saved onto what is on disk now, so changes made meanwhile elsewhere aren't lost.
+                var saved = await _catalogService.LoadLocalAppsAsync().ConfigureAwait(false);
+                var byKey = changed.ToDictionary(a => a.InstanceKey, StringComparer.OrdinalIgnoreCase);
+                foreach (var app in saved)
+                    if (byKey.TryGetValue(app.InstanceKey, out var live)) CatalogLibrarySync.CopyTo(live, app);
+                await _catalogService.SaveLocalAppsAsync(saved).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+            {
+                System.Diagnostics.Debug.WriteLine($"Catalog details not saved: {ex.Message}");
+            }
         }
 
         public async Task ExportGamesAsync()
