@@ -5,8 +5,8 @@ namespace QuiverLauncher.Tests;
 
 public class DetailsGamepadLayoutTests
 {
-    // Back; Add and Open repository; the two tabs.
-    private static readonly int[] Rows = [1, 2, 2];
+    // Back; Add and Open repository; the three tabs.
+    private static readonly int[] Rows = [1, 2, 3];
 
     private static DetailsNav Move(NavigationDirection direction, int row, int column, bool body = false, bool scrolled = false) =>
         DetailsGamepadLayout.Move(direction, Rows, row, column, body, scrolled);
@@ -24,7 +24,9 @@ public class DetailsGamepadLayoutTests
     public void Up_and_down_walk_the_rows_then_the_body_and_back()
     {
         Move(NavigationDirection.Down, 0, 0).Should().Be(new DetailsNav(1, 0));
-        Move(NavigationDirection.Down, 1, 1).Should().Be(new DetailsNav(2, 0));
+        // The column carries over between rows, clamped to the shorter one.
+        Move(NavigationDirection.Down, 1, 1).Should().Be(new DetailsNav(2, 1));
+        Move(NavigationDirection.Up, 2, 2).Should().Be(new DetailsNav(1, 1));
         Move(NavigationDirection.Down, 2, 1).Body.Should().BeTrue();
         Move(NavigationDirection.Down, 2, 1, body: true).ScrollDown.Should().BeTrue();
         // Up scrolls the body back to the top before it returns to the last row.

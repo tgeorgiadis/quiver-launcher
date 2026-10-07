@@ -22,8 +22,12 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     private Dictionary<string, string> _consoleNames = [];
     private int _total;
     private int _catalogTotal;
+    private readonly Dictionary<string, QuiverCatalogGameDetail?> _games = new(StringComparer.OrdinalIgnoreCase);
 
     public ObservableCollection<BrowseItem> Items { get; } = [];
+    /// <summary>Original games a search matched, shown above the apps as on the website (at most four).</summary>
+    public ObservableCollection<BrowseGame> Games { get; } = [];
+    public bool HasGames => Games.Count > 0;
     public IReadOnlyList<QuiverCatalogConsole> Consoles { get; private set; } = [];
     public string Search { get; set; } = "";
     public string Sort { get; set; } = "added";
@@ -67,6 +71,11 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         Status = "";
         Notify(nameof(CanLoadMore));
         Items.Clear();
+        if (Games.Count > 0)
+        {
+            Games.Clear();
+            Notify(nameof(HasGames));
+        }
         try
         {
             if (ShowingCustomList)
@@ -81,6 +90,7 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
             if (generation != _generation) return;
             Show(page);
             if (Items.Count == 0) Status = "Nothing matches that search and those filters.";
+            _ = FindGamesAsync(generation, page.Items, token);
         }
         catch (Exception ex) when (generation == _generation && !token.IsCancellationRequested)
         {
@@ -93,6 +103,39 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
                 IsLoading = false;
                 Notify(nameof(CanLoadMore));
             }
+        }
+    }
+
+    /// <summary>A game and every app that plays it, read once per session.</summary>
+    public async Task<QuiverCatalogGameDetail?> GetGameAsync(string slug, CancellationToken token)
+    {
+        if (_games.TryGetValue(slug, out var known)) return known;
+        var game = await client.GetGameAsync(slug, token);
+        if (game != null) game.Entries.Sort(BrowseText.ByPlayerFeedback);
+        return _games[slug] = game;
+    }
+
+    // The games a search matched: from the apps it found, the games whose title has every word searched for.
+    private async Task FindGamesAsync(int generation, IReadOnlyList<QuiverCatalogApp> apps, CancellationToken token)
+    {
+        var search = Search.Trim();
+        if (search.Length < 2) return;
+        var matched = apps.SelectMany(a => a.Games).Where(g => !string.IsNullOrWhiteSpace(g.Slug) && BrowseText.TitleMatches(g.Title, search))
+            .DistinctBy(g => g.Slug, StringComparer.OrdinalIgnoreCase).Take(4).ToList();
+        if (matched.Count == 0) return;
+        try
+        {
+            var details = await Task.WhenAll(matched.Select(g => GetGameAsync(g.Slug, token)));
+            if (generation != _generation) return;
+            foreach (var detail in details)
+                if (detail is { Entries.Count: > 0 } found)
+                    Games.Add(new BrowseGame(found.Game.Slug, found.Game.Title, BrowseGame.ArtFor(found.Game), found.Entries.Count));
+            Notify(nameof(HasGames));
+        }
+        // The apps still show; the games row is a shortcut to them.
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            System.Diagnostics.Debug.WriteLine($"Matching games unavailable: {ex.Message}");
         }
     }
 
@@ -128,16 +171,30 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     }
 
     /// <summary>Marks the cards of apps already in the library.</summary>
-    public void RefreshLibraryState()
+    public void RefreshLibraryState() => MarkLibraryState(Items);
+
+    /// <summary>Marks cards whose app is already in the library: these, or a game page's.</summary>
+    public void MarkLibraryState(IEnumerable<BrowseItem> items)
     {
         var apps = library();
         var folders = apps.Select(a => a.FolderName?.Trim()).Where(f => !string.IsNullOrEmpty(f))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var item in Items)
+        foreach (var item in items)
             item.InLibrary = item.ListApp != null
                 ? LibraryAddService.FindExisting(apps, item.ListApp) != null
                 : folders.Contains(item.FolderName.Trim());
     }
+
+    /// <summary>A game's apps as cards, best first, as on its page.</summary>
+    public List<BrowseItem> CardsFor(QuiverCatalogGameDetail game)
+    {
+        var cards = game.Entries.Select(app => BrowseItem.FromCatalog(app, _consoleNames)).ToList();
+        MarkLibraryState(cards);
+        return cards;
+    }
+
+    /// <summary>A console's name, as the catalog lists it.</summary>
+    public string ConsoleName(string id) => _consoleNames.GetValueOrDefault(id, id.ToUpperInvariant());
 
     /// <summary>The library app a card stands for, once its repository is known.</summary>
     public GameInfo? FindInLibrary(GameInfo app) => LibraryAddService.FindExisting(library(), app);

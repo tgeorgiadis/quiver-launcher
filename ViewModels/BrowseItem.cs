@@ -4,7 +4,7 @@ using QuiverLauncher.Services;
 namespace QuiverLauncher.ViewModels;
 
 /// <summary>One App Catalog card: a quiverlauncher.com app, or an app from the player's own list.</summary>
-public sealed class BrowseItem : ObservableViewModel
+public sealed class BrowseItem : ObservableViewModel, IBrowseCard
 {
     private bool _inLibrary;
     private bool _isGamepadFocused;
@@ -193,6 +193,29 @@ public static class BrowseText
             SpecialTagWords.TryGetValue(part, out var special) ? special
             : i > 0 && SmallTagWords.Contains(part) ? part
             : string.Join('-', part.Split('-').Select(piece => piece.Length == 0 ? piece : char.ToUpperInvariant(piece[0]) + piece[1..]))));
+    }
+
+    /// <summary>Best first by what players said, as the website and Quiver Launcher 4 order a game's ways to play.</summary>
+    public static int ByPlayerFeedback(QuiverCatalogApp a, QuiverCatalogApp b)
+    {
+        static int Total(QuiverCatalogApp app) => app.Recommended + app.ReportIssues + app.ReportBroken;
+        static double Score(QuiverCatalogApp app) => (app.Recommended + app.ReportIssues / 2.0 + 1) / (Total(app) + 2);
+        var order = Score(b).CompareTo(Score(a));
+        if (order == 0) order = Total(b).CompareTo(Total(a));
+        if (order == 0) order = (b.LastReleaseAt ?? 0).CompareTo(a.LastReleaseAt ?? 0);
+        return order != 0 ? order : string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase);
+    }
+
+    /// <summary>Whether every word of a search is in a game's title, so search can lead to the game.</summary>
+    public static bool TitleMatches(string title, string search)
+    {
+        // Case, accents and punctuation aside: "pokemon" finds "Pokémon Red".
+        static string Fold(string text) => new(text.Normalize(System.Text.NormalizationForm.FormD).ToLowerInvariant()
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray());
+        var words = Fold(search).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var folded = " " + Fold(title).Replace(" ", "") + " " + Fold(title) + " ";
+        return words.Length > 0 && words.All(word => folded.Contains(word, StringComparison.Ordinal));
     }
 
     public static string ReleaseAge(double? releasedAt, DateTimeOffset now)

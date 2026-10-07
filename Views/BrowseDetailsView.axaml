@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:QuiverLauncher.ViewModels"
              xmlns:services="using:QuiverLauncher.Services"
+             xmlns:views="using:QuiverLauncher.Views"
              x:Class="QuiverLauncher.Views.BrowseDetailsView">
 	<UserControl.Styles>
 		<!-- Back link and tabs keep a steady 2px border, coloured only when highlighted, so nothing moves. -->
@@ -25,17 +26,29 @@
 			<Setter Property="LetterSpacing" Value="1.8"/>
 			<Setter Property="Foreground" Value="#94a3b8"/>
 		</Style>
-		<Style Selector="Border.details-chip">
+		<Style Selector="Button.details-chip">
 			<Setter Property="Background" Value="#243044"/>
 			<Setter Property="BorderBrush" Value="#3c516c"/>
-			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="BorderThickness" Value="2"/>
 			<Setter Property="CornerRadius" Value="999"/>
-			<Setter Property="Padding" Value="9,3"/>
+			<Setter Property="Padding" Value="9,2"/>
 			<Setter Property="Margin" Value="0,0,6,6"/>
-		</Style>
-		<Style Selector="Border.details-chip TextBlock">
-			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="Cursor" Value="Hand"/>
 			<Setter Property="Foreground" Value="#f4f6f8"/>
+		</Style>
+		<Style Selector="Button.details-chip:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="#243044"/>
+			<Setter Property="BorderBrush" Value="#0ea5e9"/>
+			<Setter Property="Foreground" Value="#f4f6f8"/>
+		</Style>
+		<Style Selector="Button.details-chip TextBlock">
+			<Setter Property="FontSize" Value="12"/>
+		</Style>
+		<Style Selector="Border.details-tag">
+			<Setter Property="Background" Value="{DynamicResource ThemeLighter}"/>
+			<Setter Property="CornerRadius" Value="4"/>
+			<Setter Property="Padding" Value="8,3"/>
+			<Setter Property="Margin" Value="0,0,6,6"/>
 		</Style>
 		<Style Selector="Path.details-os">
 			<Setter Property="Height" Value="14"/>
@@ -130,7 +143,7 @@
 			<Setter Property="Background" Value="#1ae38c87"/>
 		</Style>
 		<!-- Last, so the highlight wins over the back link and tab styles above. -->
-		<Style Selector="Button.details-back.gamepad-focused, Button.details-tab.gamepad-focused">
+		<Style Selector="Button.details-back.gamepad-focused, Button.details-tab.gamepad-focused, Button.details-chip.gamepad-focused">
 			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 			<Setter Property="BorderThickness" Value="2"/>
 			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
@@ -177,7 +190,7 @@
 							<StackPanel Orientation="Horizontal" Spacing="8">
 								<Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" StrokeThickness="2" StrokeLineCap="Round"
 									  Stroke="{Binding $parent[Button].Foreground}" Data="M 19,12 L 5,12 M 12,19 L 5,12 L 12,5"/>
-								<TextBlock Text="App Catalog" VerticalAlignment="Center"/>
+								<TextBlock x:Name="BrowseDetailsBackText" Text="App Catalog" VerticalAlignment="Center"/>
 							</StackPanel>
 						</Button>
 						<Grid x:Name="BrowseDetailsHeroRow" ColumnDefinitions="Auto,*" Margin="0,28,0,0">
@@ -211,14 +224,15 @@
 											</ItemsPanelTemplate>
 										</ItemsControl.ItemsPanel>
 										<ItemsControl.ItemTemplate>
-											<DataTemplate x:DataType="x:String">
-												<Border Classes="details-chip">
-													<TextBlock Text="{Binding}"/>
-												</Border>
+											<DataTemplate x:DataType="services:QuiverCatalogGame">
+												<Button Classes="details-chip" Click="GameChip_Click" ToolTip.Tip="Every way to play it">
+													<TextBlock Text="{Binding Title}"/>
+												</Button>
 											</DataTemplate>
 										</ItemsControl.ItemTemplate>
 									</ItemsControl>
 								</WrapPanel>
+								<WrapPanel x:Name="BrowseDetailsSystems" Orientation="Horizontal" IsVisible="False"/>
 								<WrapPanel x:Name="BrowseDetailsFacts" Orientation="Horizontal">
 									<StackPanel x:Name="BrowseDetailsPlatforms" Orientation="Horizontal" Spacing="8" Margin="0,0,16,6" Background="Transparent">
 										<Path x:Name="BrowseDetailsWindows" Classes="details-os" Data="{x:Static services:PlatformIcons.Windows}"/>
@@ -284,6 +298,33 @@
 						</Button>
 					</StackPanel>
 				</Border>
+				<!-- A game's page: every app that plays it, best first by player feedback. -->
+				<StackPanel x:Name="BrowseDetailsGamePanel" Margin="24,8,24,24" IsVisible="False">
+					<Grid ColumnDefinitions="Auto,*" Margin="0,0,0,16">
+						<StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+							<TextBlock Text="Ways to play" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}" VerticalAlignment="Center"/>
+							<Border CornerRadius="5" Padding="7,2" BorderThickness="1" VerticalAlignment="Center"
+									Background="{DynamicResource ThemeLighter}" BorderBrush="{DynamicResource ThemeBorder}">
+								<TextBlock x:Name="BrowseDetailsWaysCount" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+							</Border>
+						</StackPanel>
+						<TextBlock x:Name="BrowseDetailsWaysNote" Grid.Column="1" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"
+								   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+					</Grid>
+					<TextBlock x:Name="BrowseDetailsGameStatus" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+					<ItemsControl x:Name="BrowseDetailsWays">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel Orientation="Horizontal"/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate x:DataType="vm:BrowseItem">
+								<views:BrowseCard Tapped="WayToPlay_Tapped"/>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</StackPanel>
 				<Grid x:Name="BrowseDetailsColumns" ColumnDefinitions="*,300" RowDefinitions="Auto,Auto" Margin="24">
 					<StackPanel x:Name="BrowseDetailsOverview" Grid.Column="0" Margin="0,0,28,0">
 						<ItemsControl x:Name="BrowseDetailsReadme" HorizontalAlignment="Stretch">
