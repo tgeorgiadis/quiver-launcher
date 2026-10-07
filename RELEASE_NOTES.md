@@ -1,21 +1,32 @@
-# Quiver Launcher 3.4.5
+# Quiver Launcher 3.5.0-rc.2
 
-## More reliable startup version checks
+This is a prerelease for testing before 3.5.0.
 
-- Show saved latest-version information as your library loads. Versions awaiting verification stay visible with **(pending check)** instead of going blank; the hint clears after a successful check.
-- Use the shared platform index from enabled catalog sources to refresh version information for matching apps, including manually added repositories. Only apps without matching information verified within the last 24 hours need an individual repository check at startup.
-- Preserve preferred release selections and use the most recently verified information. Downloads still fetch release details when needed.
-- Check library versions independently of catalog-list refreshes, so a slow or unavailable catalog does not stop library checks. Allow up to five seconds for the shared index before falling back to repositories.
-- Retry temporary connection, timeout, and server failures once, checking only the affected apps. Manual update checks still contact repositories directly; scheduled checks keep their existing behavior.
+## New App Catalog
 
-## Library loading and app actions
+- The App Catalog now comes from [quiverlauncher.com](https://quiverlauncher.com). Search, sort and filter it like the website, including by project type, platform, console and AI use.
+- Searching shows the games that match. Each game has a page with every way to play it.
+- Each app has a page with its README, its releases and player feedback. To leave feedback, use the button that opens the website.
+- App lists are gone. If you keep your own list, add it in **Settings → Advanced → My app list** (a JSON file or a URL).
 
-- Show an animated indicator and **Loading your library…** while the local library loads, then replace it with your apps without waiting for network refreshes.
-- Keep the loading animation on the render thread so it can continue while app cards are being prepared. Preserve the existing card loading and scrolling behavior.
-- Prioritize **Download**, **Update Now**, and **Change Version** over queued background release requests while respecting active requests and provider rate limits.
-- Preserve active download and installation states during startup checks, and cancel pending startup work when Quiver closes.
+## Safer installs and updates
 
-## Platform detection fixes
+- Updates go to the release quiverlauncher.com has verified, not just the newest one.
+- Downloads are checked against the file the site recorded, and refused if it changed.
+- Installing a release that isn't verified asks first. A blocked release asks twice. Automatic updates never install either.
+- Library cards show when a newer release is out but not verified yet.
+- Apps in your library pick up the catalog's current name, icon and tags. Your own names, covers and tags stay.
 
-- Exclude notices and source archives from platform detection and download choices. Files such as `KartPad-v0.5.0-notices.zip` no longer incorrectly imply Windows or Linux support.
-- Apply the fix to existing cached and published asset metadata without clearing caches. Ordinary app ZIP packages remain supported.
+## macOS
+
+- macOS downloads are available for Apple Silicon and Intel Macs.
+- The app isn't notarized yet, so macOS asks you to confirm the first time you open it. If it says the app can't be opened, go to **System Settings → Privacy & Security** and choose **Open Anyway**.
+- A native menu bar, Apple Silicon support, and fixes for installing `.dmg` apps.
+
+## Other fixes
+
+- The window no longer jumps while you move or resize it.
+- Release tags like `Version1.0.4` are no longer mixed up with other versions.
+- Fixes for renamed filters and text contrast in the light theme.
+
+Thanks to sdelavega, jeffsmith82 and MarllonMenezes for their fixes.
