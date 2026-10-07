@@ -36,6 +36,19 @@
 		</None>
 	</ItemGroup>
 
+	<!-- ppy.SDL2-CS only ships an x86_64 macOS libSDL2, so Apple Silicon gets the arm64 slice of the
+	     official SDL2 2.32.10 framework. Also covers RID-less `dotnet run` on an arm64 Mac. -->
+	<ItemGroup Condition="'$(RuntimeIdentifier)' == 'osx-arm64' or ('$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64')">
+		<None Include="native\osx-arm64\libSDL2.dylib" Link="libSDL2.dylib">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+		<None Include="native\osx-arm64\SDL2-License.txt" Link="SDL2-License.txt">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\QuiverLauncher.App.csproj" />
 	</ItemGroup>
