@@ -232,4 +232,29 @@ public class ReleaseRequestCoordinatorTests
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, true); }
     }
+    [Fact]
+    public void Endpoint_cache_keeps_validators_from_the_single_file_cache_and_revalidates_without_rewriting()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "QuiverReleaseCacheTests", Guid.NewGuid().ToString("N"));
+        const string key = "github:anonymous:https://api.github.com/repos/a/b/releases";
+        try
+        {
+            Directory.CreateDirectory(path);
+            var entry = new ReleaseEndpointCache.Entry("[{\"tag_name\":\"v1\"}]", "W/\"old\"", DateTimeOffset.UtcNow.AddDays(-3));
+            File.WriteAllText(Path.Combine(path, "release_endpoints_v1.json"),
+                System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, ReleaseEndpointCache.Entry> { [key] = entry }));
+
+            var cache = new ReleaseEndpointCache(path);
+            Assert.Equal(entry, cache.Get(key));
+            Assert.False(File.Exists(Path.Combine(path, "release_endpoints_v1.json")));
+
+            var body = Directory.GetFiles(Path.Combine(path, "release_endpoints_v2"), "*.json").Single(f => !f.EndsWith("index.json"));
+            var written = File.GetLastWriteTimeUtc(body);
+            var now = DateTimeOffset.UtcNow;
+            cache.Revalidate(key, "W/\"new\"", now);
+            Assert.Equal(written, File.GetLastWriteTimeUtc(body));
+            Assert.Equal(entry with { ETag = "W/\"new\"", ValidatedAt = now }, new ReleaseEndpointCache(path).Get(key));
+        }
+        finally { if (Directory.Exists(path)) Directory.Delete(path, true); }
+    }
 }

@@ -78,8 +78,8 @@ public sealed class ReleaseRequestCoordinator
         token = token?.Trim();
         var context = provider + ":" + CredentialKey(token);
         var key = context + ":" + endpoint.AbsoluteUri;
-        if (CacheAge.Value is { } age && _cache.Get(key) is { } cached &&
-            Clock.GetUtcNow() - cached.ValidatedAt < age)
+        if (CacheAge.Value is { } age && _cache.ValidatedAt(key) is { } validated &&
+            Clock.GetUtcNow() - validated < age && _cache.Get(key) is { } cached)
         {
             try { return new() { StatusCode = HttpStatusCode.OK, Releases = parse(cached.Body), ETag = cached.ETag, Provider = provider }; }
             catch (JsonException) { /* Revalidate an unreadable payload. */ }
@@ -129,7 +129,8 @@ public sealed class ReleaseRequestCoordinator
         {
             lock (_gate)
                 if (_cooldowns.TryGetValue(context, out var paused) && paused.RetryAt > Clock.GetUtcNow()) return paused;
-            var cached = _cache.Get(key);
+            // The payload itself is read only if the server says it is still current.
+            var cachedETag = _cache.ETag(key);
             Uri url;
             lock (_gate) url = _redirects.GetValueOrDefault(key) ?? endpoint;
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -146,8 +147,8 @@ public sealed class ReleaseRequestCoordinator
                     if (provider == "github") request.Headers.Authorization = new("Bearer", token);
                     else request.Headers.TryAddWithoutValidation("PRIVATE-TOKEN", token);
                 }
-                if (!unconditionalRetry && !string.IsNullOrEmpty(cached?.ETag))
-                    request.Headers.TryAddWithoutValidation("If-None-Match", cached.ETag);
+                if (!unconditionalRetry && !string.IsNullOrEmpty(cachedETag))
+                    request.Headers.TryAddWithoutValidation("If-None-Match", cachedETag);
                 Interlocked.Increment(ref _requestCount);
                 using var response = await client.SendAsync(request, ct).ConfigureAwait(false);
                 if (provider == "github" && response.StatusCode is HttpStatusCode.MovedPermanently or HttpStatusCode.Found
@@ -175,6 +176,7 @@ public sealed class ReleaseRequestCoordinator
                 }
                 if (response.StatusCode == HttpStatusCode.NotModified)
                 {
+                    var cached = unconditionalRetry ? null : _cache.Get(key);
                     if (cached == null)
                     {
                         if (unconditionalRetry) throw new HttpRequestException("Release endpoint returned 304 without a cached payload.");
@@ -186,8 +188,9 @@ public sealed class ReleaseRequestCoordinator
                 }
                 if (result.StatusCode != HttpStatusCode.OK) return result;
                 var releases = parse(body);
-                var etag = response.Headers.ETag?.ToString() ?? (result.WasNotModified ? cached?.ETag : null);
-                _cache.Set(key, new(body, etag, Clock.GetUtcNow()));
+                var etag = response.Headers.ETag?.ToString() ?? (result.WasNotModified ? cachedETag : null);
+                if (result.WasNotModified) _cache.Revalidate(key, etag, Clock.GetUtcNow());
+                else _cache.Set(key, new(body, etag, Clock.GetUtcNow()));
                 lock (_gate) { _cooldowns.Remove(context); _secondaryFailures.Remove(context); }
                 return result with { Releases = releases, ETag = etag };
             }
