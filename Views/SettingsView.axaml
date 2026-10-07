@@ -184,7 +184,7 @@
                                                 <ComboBoxItem Content="3×"/>
                                                 <ComboBoxItem Content="5×"/>
                                             </ComboBox>
-                                            <TextBlock Text="Scroll amount per wheel tick in the library and Browse."
+                                            <TextBlock Text="Scroll amount per wheel tick in the library and App Catalog."
                                                        FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
                                         </StackPanel>
 
@@ -197,7 +197,7 @@
 													  Foreground="{DynamicResource ThemeText}"
 													  FontSize="13" FontWeight="SemiBold"
 													  IsChecked="{Binding AutoUpdateNewlyAddedApps, Mode=TwoWay}"/>
-											<TextBlock Text="New apps from Browse or Add Entry start with Auto Update enabled"
+											<TextBlock Text="New apps from the App Catalog or Add Entry start with Auto Update enabled"
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   Margin="20,0,0,0"
@@ -913,7 +913,7 @@
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   LetterSpacing="1"
 												   Margin="0,0,0,4"/>
-										<TextBlock Text="Optional. A JSON file or URL (such as a GitHub raw link) in the apps.json format. Its apps show under My app list in Browse."
+										<TextBlock Text="Optional. A JSON file or URL (such as a GitHub raw link) in the apps.json format. Its apps show under My app list in the App Catalog."
 												   FontSize="11"
 												   Foreground="{DynamicResource ThemeTextSecondary}"
 												   TextWrapping="Wrap"

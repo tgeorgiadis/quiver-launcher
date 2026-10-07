@@ -1,6 +1,6 @@
 # Local-first library startup
 
-Startup loads apps.json, local installation state, and cached artwork before making online release requests. This allows the Library to populate even when the network is unavailable or a release request is paused. Startup makes no catalog requests; Browse loads the catalog when it is opened.
+Startup loads apps.json, local installation state, and cached artwork before making online release requests. This allows the Library to populate even when the network is unavailable or a release request is paused. Startup makes no catalog requests; the App Catalog loads when it is opened.
 
 Local library validation never rewrites an existing `apps.json`. An unreadable or
 malformed library stops loading and reports the error instead of becoming an empty

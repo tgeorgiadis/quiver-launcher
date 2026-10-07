@@ -151,7 +151,7 @@ public sealed class QuiverCatalogRelease
 }
 
 public sealed record QuiverCatalogQuery(string? Search = null, string? Os = null, string? Console = null,
-    string? ProjectType = null, string Sort = "added");
+    string? ProjectType = null, string Sort = "added", string? Ai = null);
 
 /// <summary>Reads the public quiverlauncher.com catalog API. Every call is a plain GET.</summary>
 public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
@@ -180,6 +180,7 @@ public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
         if (query.Console?.StartsWith("maker:", StringComparison.Ordinal) == true) Add("maker", query.Console["maker:".Length..]);
         else Add("console", query.Console);
         Add("projectType", query.ProjectType);
+        Add("ai", query.Ai);
         // A search is ordered by relevance; the API ignores sort then.
         if (string.IsNullOrWhiteSpace(query.Search)) Add("sort", query.Sort);
         Add("cursor", cursor);

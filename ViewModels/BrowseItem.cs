@@ -76,11 +76,14 @@ public sealed class BrowseItem : ObservableViewModel
 public static class BrowseText
 {
     public static readonly IReadOnlyList<(string? Id, string Name)> Sorts =
-        [("added", "Recently added"), ("updated", "Recently updated"), ("rating", "Top rated"), ("name", "Name (A-Z)")];
+        [("added", "Recently added"), ("updated", "Recently updated"), ("rating", "Top rated"), ("name", "Name A–Z")];
     public static readonly IReadOnlyList<(string? Id, string Name)> Platforms =
         [(null, "All platforms"), ("windows", "Windows"), ("linux", "Linux"), ("macos", "macOS"), ("android", "Android"), ("ios", "iOS")];
     public static readonly IReadOnlyList<(string? Id, string Name)> ProjectTypes =
-        [(null, "All types"), ("port", "Port"), ("tool", "Tool"), ("emulator", "Emulator"), ("game", "Standalone game")];
+        [(null, "All project types"), ("port", "Port"), ("tool", "Tool"), ("emulator", "Emulator"), ("game", "Standalone game")];
+
+    public static readonly IReadOnlyList<(string? Id, string Name)> AiFilters =
+        [(null, "Show all apps"), ("no-generated", "Hide mostly AI-generated apps"), ("no-ai", "Hide apps with any AI use")];
 
     public static string? CurrentPlatform =>
         OperatingSystem.IsAndroid() ? "android" : OperatingSystem.IsWindows() ? "windows"

@@ -69,7 +69,7 @@ public class ShellFeatureBindingsTests
             view.Shell.Mode = MainViewMode.Browse;
             ((IModsFeatureHost)view).RefreshShell();
             host.ApplyTransition(new(GamepadNavigationZone.BrowseGrid, 0)).Should().BeTrue();
-            host.Navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseToolbar);
+            host.Navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
             view.Shell.Mode = MainViewMode.Library;
             view.Shell.AppUpdatesOpen = true;
             ((IModsFeatureHost)view).RefreshShell();

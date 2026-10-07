@@ -8,7 +8,8 @@ using QuiverLauncher.ViewModels;
 namespace QuiverLauncher.Views;
 
 /// <summary>
-/// Controller and keyboard movement on Browse: the search row, the filter row, then the cards.
+/// Controller and keyboard movement on the App Catalog: the title row (list tabs and sort), the
+/// search and filter row, then the cards.
 /// Moving down past the last row of cards loads the next page.
 /// </summary>
 public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost host, Func<bool> isActive) : IFeatureNavigationHandler
@@ -84,7 +85,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             return;
         }
         _selectFirstCardWhenLoaded = Items.Count == 0;
-        if (Items.Count == 0) ApplyToolbarSelection(Math.Max(0, ToolbarIndex), bringIntoView);
+        if (Items.Count == 0) ApplyFilterSelection(0, bringIntoView);
         else SelectCard(CardIndex < 0 ? 0 : CardIndex, bringIntoView: bringIntoView);
     }
 
@@ -92,7 +93,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     internal void SyncSelection()
     {
         if (!host.IsFocusActive || !isActive()) return;
-        if (_selectFirstCardWhenLoaded && Items.Count > 0 && Service.ActiveZone == GamepadNavigationZone.BrowseToolbar && !GamepadTextInput.IsEditing)
+        if (_selectFirstCardWhenLoaded && Items.Count > 0 && Service.ActiveZone == GamepadNavigationZone.BrowseFilters && !GamepadTextInput.IsEditing)
         {
             _selectFirstCardWhenLoaded = false;
             SelectCard(0);
@@ -112,9 +113,9 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     /// <summary>"Try again" hides while it loads: keep the search box highlighted, then move to the cards.</summary>
     internal void AfterRetry()
     {
-        if (Service.ActiveZone != GamepadNavigationZone.BrowseToolbar || !host.IsFocusActive) return;
+        if (Service.ActiveZone != GamepadNavigationZone.BrowseFilters || !host.IsFocusActive) return;
         _selectFirstCardWhenLoaded = true;
-        Dispatcher.UIThread.Post(() => ApplyToolbarSelection(0), DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(() => ApplyFilterSelection(0), DispatcherPriority.Loaded);
     }
 
     /// <summary>"Clear filters" disappears once used; stay on the filter row.</summary>
@@ -124,10 +125,10 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             Dispatcher.UIThread.Post(() => ApplyFilterSelection(Math.Max(0, FilterIndex - 1)), DispatcherPriority.Loaded);
     }
 
-    internal List<Control> ToolbarControls() => Visible(view.BrowseSearchTextBox, view.BrowseSortComboBox, view.BrowseRetryButton);
+    internal List<Control> ToolbarControls() => Visible(view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox);
 
-    internal List<Control> FilterControls() => Visible(view.BrowseCatalogTabButton, view.BrowseCustomListTabButton,
-        view.BrowsePlatformButton, view.BrowseConsoleButton, view.BrowseTypeButton, view.BrowseClearFiltersButton);
+    internal List<Control> FilterControls() => Visible(view.BrowseSearchTextBox, view.BrowseTypeComboBox, view.BrowsePlatformComboBox,
+        view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseRetryButton, view.BrowseClearFiltersButton);
 
     private static List<Control> Visible(params Control[] controls) => controls.Where(c => c.IsVisible && c.IsEnabled).ToList();
 
@@ -137,6 +138,9 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             return direction == NavigationDirection.Down && zone == GamepadNavigationZone.BrowseToolbar
                 ? host.ApplyTransition(new GamepadZoneTransition(GamepadNavigationZone.BrowseFilters, null))
                 : false;
+        // While searching with no list tabs the title row has nothing to select: Up goes to the top bar.
+        if (zone == GamepadNavigationZone.BrowseFilters && direction == NavigationDirection.Up && ToolbarControls().Count == 0)
+            return host.ApplyTransition(new GamepadZoneTransition(GamepadNavigationZone.TopBar, null));
         var transition = Service.TryGetZoneTransition(direction, zone, host.MainContentZone, isListLayout: true, positions: null, index, Items.Count);
         if (transition.HasValue)
             return host.ApplyTransition(transition.Value);
@@ -191,16 +195,19 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     }
 
     internal void ApplyToolbarSelection(int index) => ApplyToolbarSelection(index, bringIntoView: true);
-    private void ApplyToolbarSelection(int index, bool bringIntoView) =>
-        ToolbarIndex = ApplyRowSelection(GamepadNavigationZone.BrowseToolbar, ToolbarControls(), index, bringIntoView);
+    private void ApplyToolbarSelection(int index, bool bringIntoView)
+    {
+        var controls = ToolbarControls();
+        // The sort hides while searching; with no list tabs either, the search row takes over.
+        if (controls.Count == 0) ApplyFilterSelection(Math.Max(0, FilterIndex), bringIntoView);
+        else ToolbarIndex = ApplyRowSelection(GamepadNavigationZone.BrowseToolbar, controls, index, bringIntoView);
+    }
 
     internal void ApplyFilterSelection(int index) => ApplyFilterSelection(index, bringIntoView: true);
     private void ApplyFilterSelection(int index, bool bringIntoView)
     {
         var controls = FilterControls();
-        // Every filter can be hidden (my list, no filters to clear); fall back to the search row.
-        if (controls.Count == 0) ApplyToolbarSelection(Math.Max(0, ToolbarIndex), bringIntoView);
-        else FilterIndex = ApplyRowSelection(GamepadNavigationZone.BrowseFilters, controls, index, bringIntoView);
+        FilterIndex = ApplyRowSelection(GamepadNavigationZone.BrowseFilters, controls, index, bringIntoView);
     }
 
     private int ApplyRowSelection(GamepadNavigationZone zone, List<Control> controls, int index, bool bringIntoView)
@@ -230,7 +237,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     {
         if (Items.Count == 0)
         {
-            ApplyToolbarSelection(Math.Max(0, ToolbarIndex), bringIntoView);
+            ApplyFilterSelection(Math.Max(0, FilterIndex), bringIntoView);
             return;
         }
         index = Service.ClampIndex(index, Items.Count);
@@ -262,8 +269,9 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         foreach (var item in Items)
             item.IsGamepadFocused = false;
         // Every control, including hidden ones, so one that reappears doesn't still look highlighted.
-        Control[] controls = [view.BrowseSearchTextBox, view.BrowseSortComboBox, view.BrowseRetryButton, view.BrowseCatalogTabButton,
-            view.BrowseCustomListTabButton, view.BrowsePlatformButton, view.BrowseConsoleButton, view.BrowseTypeButton, view.BrowseClearFiltersButton];
+        Control[] controls = [view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox, view.BrowseSearchTextBox,
+            view.BrowseTypeComboBox, view.BrowsePlatformComboBox, view.BrowseConsoleComboBox, view.BrowseAiComboBox,
+            view.BrowseRetryButton, view.BrowseClearFiltersButton];
         foreach (var control in controls)
             control.Classes.Set("gamepad-focused", false);
         var focus = TopLevel.GetTopLevel(view)?.FocusManager;
@@ -311,7 +319,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
                 ApplyFilterSelection(Math.Max(0, FilterIndex));
                 return true;
             case GamepadNavigationZone.BrowseGrid:
-                if (Items.Count == 0) ApplyToolbarSelection(Math.Max(0, ToolbarIndex));
+                if (Items.Count == 0) ApplyFilterSelection(Math.Max(0, FilterIndex));
                 else SelectCard(transition.SelectedIndex ?? Math.Max(0, CardIndex));
                 return true;
             default:

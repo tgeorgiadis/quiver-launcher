@@ -20,7 +20,7 @@ A modern launcher for downloading, installing, and running apps from GitHub and 
 - **Tag filters** - Organize and filter your library with custom tags
 - **Library search** - Filter the current list by name, tags, repository, or folder
 - **Manually managed apps** - Add apps with no GitHub/GitLab repository; drop files into the app folder and open it from the library
-- **Browse** - Search the [quiverlauncher.com](https://quiverlauncher.com) catalog by platform, console and type, see how apps run for other players, and add them to your library
+- **App Catalog** - Search the [quiverlauncher.com](https://quiverlauncher.com) catalog by project type, platform, console and AI use, see how apps run for other players, and add them to your library
 - **GitHub & GitLab releases** - Install and update apps from GitHub or gitlab.com release assets
 - **Mod Management Support** - Browse, install and update mods from Thunderstore and GameBanana
 - **Automated updates** - Download and install the latest releases automatically
@@ -104,11 +104,11 @@ on Windows, Linux, macOS, and Android. See [library protection and recovery](doc
 ## Basic Usage
 
 1. Launch the application
-2. On first launch, open **Browse** (internet required), open an app and choose **Add to library**. You can also add apps later with **+ Add New Entry**, including **manually managed** apps that have no GitHub/GitLab repository. Your library is stored in local [`apps.json`](apps.json)
+2. On first launch, open the **App Catalog** (internet required), open an app and choose **Add to library**. You can also add apps later with **+ Add New Entry**, including **manually managed** apps that have no GitHub/GitLab repository. Your library is stored in local [`apps.json`](apps.json)
 3. Browse your app library in the Library view
 4. Click the Download/Launch button on the app/game you want to use
 
-Browse reads the catalog from the [quiverlauncher.com](https://quiverlauncher.com) API the first time you open it, and again whenever you search, sort or filter. Reviews are written on the website: an app's **Write a review on the website** button opens its page.
+The App Catalog reads the catalog from the [quiverlauncher.com](https://quiverlauncher.com) API the first time you open it, and again whenever you search, sort or filter. Reviews are written on the website: an app's **Write a review on the website** button opens its page.
 
 ## Configuration
 
@@ -160,7 +160,7 @@ Apps from the Quiver catalog follow what [quiverlauncher.com](https://quiverlaun
 
 ### Your own app list
 
-Quiver Launcher no longer subscribes to app lists. If you keep your own list, set it in **Settings → Advanced → My app list**: a local JSON file, or a URL such as a GitHub raw link. Its apps appear under **My app list** in Browse, where you can add them to your library. A list you added in an earlier version is carried over automatically; if you had several, the first enabled one is kept.
+Quiver Launcher no longer subscribes to app lists. If you keep your own list, set it in **Settings → Advanced → My app list**: a local JSON file, or a URL such as a GitHub raw link. Its apps appear under **My app list** in the App Catalog, where you can add them to your library. A list you added in an earlier version is carried over automatically; if you had several, the first enabled one is kept.
 
 The list uses the same format as `apps.json`: an `apps` array of app entries (an older list file's `name`, `description` and `version` are ignored).
 

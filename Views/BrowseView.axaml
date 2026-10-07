@@ -4,6 +4,16 @@
              xmlns:converters="using:Avalonia.Data.Converters"
              xmlns:vm="using:QuiverLauncher.ViewModels"
              x:Class="QuiverLauncher.Views.BrowseView" x:DataType="vm:BrowseViewModel" x:CompileBindings="True">
+	<UserControl.Styles>
+		<Style Selector="ComboBox.browse-filter">
+			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="MinHeight" Value="40"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+			<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+		</Style>
+	</UserControl.Styles>
 	<UserControl.Resources>
 		<DataTemplate x:Key="BrowseCardTemplate" x:DataType="vm:BrowseItem">
 			<Border Classes="catalog-focus-card"
@@ -57,60 +67,63 @@
 		  XYFocus.LeftNavigationStrategy="Projection"
 		  XYFocus.RightNavigationStrategy="Projection"
 		  RowDefinitions="Auto,Auto,*">
-		<WrapPanel x:Name="BrowseToolbarPanel" Grid.Row="0" Orientation="Horizontal" Margin="0,0,30,8">
-			<TextBox x:Name="BrowseSearchTextBox"
-					 Watermark="Search ports, games and tools"
-					 Width="280"
-					 MinHeight="32"
+		<!-- Laid out like the website's catalog: title and sort, then search and the four filters. -->
+		<Grid x:Name="BrowseToolbarPanel" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,30,14">
+			<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+				<TextBlock x:Name="BrowseTitleText" Text="Explore the catalog" FontSize="18" FontWeight="SemiBold"
+						   Foreground="{DynamicResource ThemeText}" VerticalAlignment="Center"/>
+				<Border CornerRadius="5" Padding="7,2" VerticalAlignment="Center" BorderThickness="1"
+						Background="{DynamicResource ThemeLighter}" BorderBrush="{DynamicResource ThemeBorder}">
+					<TextBlock x:Name="BrowseCountText" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+				</Border>
+				<Button x:Name="BrowseCatalogTabButton" Classes="catalog-filter selected" Content="Quiver catalog"
+						FontSize="11" MinHeight="32" Margin="14,0,0,0" Click="BrowseSourceTab_Click"/>
+				<Button x:Name="BrowseCustomListTabButton" Classes="catalog-filter" Content="My app list"
+						FontSize="11" MinHeight="32" Click="BrowseSourceTab_Click"/>
+			</StackPanel>
+			<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+				<TextBlock x:Name="BrowseSortLabel" Text="Sort by" FontSize="11" VerticalAlignment="Center"
+						   Foreground="{DynamicResource ThemeTextSecondary}"/>
+				<TextBlock x:Name="BrowseRelevantText" Text="Most relevant ↓" FontSize="11" VerticalAlignment="Center"
+						   Foreground="{DynamicResource ThemeTextSecondary}" IsVisible="False"/>
+				<ComboBox x:Name="BrowseSortComboBox" Classes="browse-filter" MinWidth="150"
+						  SelectionChanged="BrowseSort_SelectionChanged"/>
+			</StackPanel>
+		</Grid>
+		<Grid x:Name="BrowseFiltersPanel" Grid.Row="1" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Margin="0,0,30,14">
+			<TextBox x:Name="BrowseSearchTextBox" Grid.Column="0"
+					 Watermark="Search games, projects, or tags…"
+					 MinWidth="200"
+					 MinHeight="40"
 					 FontSize="12"
 					 VerticalContentAlignment="Center"
-					 Margin="0,0,8,6"
-					 TextChanged="BrowseSearch_TextChanged"/>
-			<ComboBox x:Name="BrowseSortComboBox"
-					  FontSize="12"
-					  MinWidth="170"
-					  MinHeight="32"
-					  Margin="0,0,8,6"
-					  Foreground="{DynamicResource ThemeTextSecondary}"
-					  Background="{DynamicResource ThemeDarker}"
-					  BorderBrush="{DynamicResource ThemeBorder}"
-					  ToolTip.Tip="A search is sorted by relevance"
-					  SelectionChanged="BrowseSort_SelectionChanged"/>
-			<Button x:Name="BrowseRetryButton"
-					Classes="options"
-					Content="Try again"
-					FontSize="12"
-					MinHeight="32"
-					Margin="0,0,8,6"
-					IsVisible="False"
-					Click="BrowseRetry_Click"/>
-		</WrapPanel>
-		<WrapPanel x:Name="BrowseFiltersPanel" Grid.Row="1" Orientation="Horizontal" Margin="0,0,30,8">
-			<Button x:Name="BrowseCatalogTabButton" Classes="catalog-filter selected" Content="Quiver catalog"
-					FontSize="11" MinHeight="32" Margin="0,0,6,6" Click="BrowseSourceTab_Click"/>
-			<Button x:Name="BrowseCustomListTabButton" Classes="catalog-filter" Content="My app list"
-					FontSize="11" MinHeight="32" Margin="0,0,14,6" Click="BrowseSourceTab_Click"/>
-			<Button x:Name="BrowsePlatformButton" Classes="catalog-filter" FontSize="11" MinHeight="32" Margin="0,0,6,6"
-					ToolTip.Tip="Platform">
-				<Button.Flyout>
-					<MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="BrowseFilterFlyout_Opening"/>
-				</Button.Flyout>
-			</Button>
-			<Button x:Name="BrowseConsoleButton" Classes="catalog-filter" FontSize="11" MinHeight="32" Margin="0,0,6,6"
-					ToolTip.Tip="Original console">
-				<Button.Flyout>
-					<MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="BrowseFilterFlyout_Opening"/>
-				</Button.Flyout>
-			</Button>
-			<Button x:Name="BrowseTypeButton" Classes="catalog-filter" FontSize="11" MinHeight="32" Margin="0,0,6,6"
-					ToolTip.Tip="Project type">
-				<Button.Flyout>
-					<MenuFlyout Placement="BottomEdgeAlignedLeft" Opening="BrowseFilterFlyout_Opening"/>
-				</Button.Flyout>
-			</Button>
-			<Button x:Name="BrowseClearFiltersButton" Classes="options" Content="Clear filters"
-					FontSize="11" MinHeight="32" Margin="0,0,6,6" Click="BrowseClearFilters_Click"/>
-		</WrapPanel>
+					 Margin="0,0,18,0"
+					 TextChanged="BrowseSearch_TextChanged">
+				<TextBox.InnerLeftContent>
+					<Path Width="15" Height="15" Margin="12,0,2,0" Stretch="Uniform" VerticalAlignment="Center"
+						  Stroke="{DynamicResource ThemeTextSecondary}" StrokeThickness="1.6" StrokeLineCap="Round"
+						  Data="M 11,4 A 7,7 0 1 1 10.99,4 Z M 16,16 L 21,21"/>
+				</TextBox.InnerLeftContent>
+			</TextBox>
+			<WrapPanel x:Name="BrowseFilterSelects" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+				<Path Width="17" Height="17" Margin="0,0,10,0" Stretch="Uniform" VerticalAlignment="Center"
+					  Stroke="{DynamicResource ThemeTextSecondary}" StrokeThickness="1.6" StrokeLineCap="Round"
+					  Data="M 21,4 L 14,4 M 10,4 L 3,4 M 21,12 L 12,12 M 8,12 L 3,12 M 21,20 L 16,20 M 12,20 L 3,20 M 14,2 L 14,6 M 8,10 L 8,14 M 16,18 L 16,22"/>
+				<ComboBox x:Name="BrowseTypeComboBox" Classes="browse-filter" MinWidth="140" Margin="0,0,10,0"
+						  ToolTip.Tip="Project type" SelectionChanged="BrowseFilter_SelectionChanged"/>
+				<ComboBox x:Name="BrowsePlatformComboBox" Classes="browse-filter" MinWidth="130" Margin="0,0,10,0"
+						  ToolTip.Tip="Operating system" SelectionChanged="BrowseFilter_SelectionChanged"/>
+				<ComboBox x:Name="BrowseConsoleComboBox" Classes="browse-filter" MinWidth="180" Margin="0,0,10,0"
+						  ToolTip.Tip="Console" SelectionChanged="BrowseFilter_SelectionChanged"/>
+				<ComboBox x:Name="BrowseAiComboBox" Classes="browse-filter" MinWidth="150"
+						  ToolTip.Tip="Labels are based on the developer's answer, the README and repository signals"
+						  SelectionChanged="BrowseFilter_SelectionChanged"/>
+				<Button x:Name="BrowseRetryButton" Classes="options" Content="Try again" FontSize="12" MinHeight="40"
+						Margin="10,0,0,0" IsVisible="False" Click="BrowseRetry_Click"/>
+				<Button x:Name="BrowseClearFiltersButton" Classes="options" Content="Clear filters" FontSize="12" MinHeight="40"
+						Margin="10,0,0,0" IsVisible="False" Click="BrowseClearFilters_Click"/>
+			</WrapPanel>
+		</Grid>
 		<ScrollViewer x:Name="BrowseScrollViewer"
 					  Grid.Row="2"
 					  VerticalScrollBarVisibility="Auto"

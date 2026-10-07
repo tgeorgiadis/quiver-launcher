@@ -868,7 +868,7 @@
 									FontSize="13"
 									Click="EmptyLibraryAddApp_Click"/>
 							<Button x:Name="EmptyLibraryBrowseButton" Classes="options" Focusable="True" GotFocus="EmptyLibraryAction_GotFocus"
-									Content="Browse Apps"
+									Content="Browse App Catalog"
 									FontSize="13"
 									Click="EmptyLibraryBrowseCatalog_Click"/>
 						</StackPanel>

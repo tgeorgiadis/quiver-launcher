@@ -83,7 +83,7 @@ public sealed class ShellAppearance
         BrowseNavButton?.Classes.Set("selected", isBrowse);
         if (_root.FindControl<TextBlock>("HeaderTitleText")is TextBlock headerTitle)
         {
-            headerTitle.Text = isModsOverlay ? "Mods" : isAppUpdatesReview ? "App Updates" : isLibrary ? "Library" : "Browse";
+            headerTitle.Text = isModsOverlay ? "Mods" : isAppUpdatesReview ? "App Updates" : isLibrary ? "Library" : "App Catalog";
         }
 
         ApplyHeader();

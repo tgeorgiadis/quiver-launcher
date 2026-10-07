@@ -136,7 +136,7 @@ public sealed class LauncherPromptService(LauncherSession session, LauncherDialo
     {
         var browseButton = new Button
         {
-            Content = "Browse apps",
+            Content = "Browse app catalog",
             MinWidth = 190,
             MinHeight = 44,
             Padding = new Thickness(20, 10),

@@ -136,7 +136,7 @@
 							</StackPanel>
 						</Button>
 
-						<!-- Browse Button -->
+						<!-- App Catalog Button -->
 						<Button x:Name="BrowseNavButton"
 								Classes="settings"
 								Margin="0,0,0,4"
@@ -148,7 +148,7 @@
 								<Image Width="32" Height="32"
 									   Source="avares://QuiverLauncher/Assets/AppCatalog.png"
 									   Margin="0,0,2,0"/>
-								<TextBlock Text="Browse" VerticalAlignment="Center"/>
+								<TextBlock Text="App Catalog" VerticalAlignment="Center"/>
 							</StackPanel>
 						</Button>
 					</StackPanel>

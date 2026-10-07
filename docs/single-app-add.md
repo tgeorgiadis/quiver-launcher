@@ -1,6 +1,6 @@
-# Adding an app from Browse
+# Adding an app from the App Catalog
 
-**Add to library** in an app's Browse details saves one app through the session's FIFO write queue (`LauncherSession.CatalogMutations`), so an Add and a Remove never interleave. Navigation does not cancel an accepted save, and the launcher session drains the queue before disposing services.
+**Add to library** in an app's App Catalog details saves one app through the session's FIFO write queue (`LauncherSession.CatalogMutations`), so an Add and a Remove never interleave. Navigation does not cancel an accepted save, and the launcher session drains the queue before disposing services.
 
 A catalog app becomes a library entry through the same parser as `apps.json` (`QuiverCatalogMapping.ToGameInfo`): the repository comes from the app's project on quiverlauncher.com, and the folder name, files to add, release filter and mods come from its launcher settings. An app from the player's own list is already in that format.
 

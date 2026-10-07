@@ -68,14 +68,14 @@ public class QuiverCatalogClientTests : IDisposable
     {
         var client = Client((HttpStatusCode.OK, $$"""{"items":[{{G1RDeluxe}}],"nextCursor":"c2","isDone":false}"""));
 
-        var page = await client.GetAppsAsync(new QuiverCatalogQuery(Os: "windows", Console: "maker:Nintendo", ProjectType: "port"),
+        var page = await client.GetAppsAsync(new QuiverCatalogQuery(Os: "windows", Console: "maker:Nintendo", ProjectType: "port", Ai: "no-ai"),
             null, TestContext.Current.CancellationToken);
 
         _requests.Should().ContainSingle().Which.AbsolutePath.Should().Be("/api/v1/apps");
         Query(_requests[0]).Should().BeEquivalentTo(new Dictionary<string, string?>
         {
             ["limit"] = QuiverCatalogClient.PageSize.ToString(), ["os"] = "windows", ["maker"] = "Nintendo",
-            ["projectType"] = "port", ["sort"] = "added",
+            ["projectType"] = "port", ["ai"] = "no-ai", ["sort"] = "added",
         });
         page.NextCursor.Should().Be("c2");
         page.IsDone.Should().BeFalse();

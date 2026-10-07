@@ -11,23 +11,69 @@ using QuiverLauncher.ViewModels;
 
 namespace QuiverLauncher.Views;
 
-/// <summary>The Browse page: search, sort and filter the catalog, then open an app's details.</summary>
+/// <summary>The App Catalog page: search, sort and filter the catalog, then open an app's details.</summary>
 public partial class BrowseView : UserControl
 {
     private LauncherSession? _session;
     private CancellationTokenSource? _searchDelay;
     private bool _updatingControls;
+    private int _consoleChoices = -1;
     private CancellationToken Token => _session?.Token ?? CancellationToken.None;
     public BrowseViewModel Model { get; private set; } = null!;
     public BrowseNavigation Navigation { get; private set; } = null!;
     public event Action<BrowseItem>? DetailsRequested;
+    /// <summary>The player chose an AI filter; the shell keeps it for next time, as the website does.</summary>
+    public event Action<string?>? AiFilterChosen;
 
     public BrowseView()
     {
         InitializeComponent();
-        GamepadComboBoxNavigation.Attach(BrowseSortComboBox);
-        foreach (var (id, name) in BrowseText.Sorts)
-            BrowseSortComboBox.Items.Add(new ComboBoxItem { Content = name, Tag = id });
+        Fill(BrowseSortComboBox, BrowseText.Sorts);
+        Fill(BrowseTypeComboBox, BrowseText.ProjectTypes);
+        Fill(BrowsePlatformComboBox, BrowseText.Platforms.Select(p =>
+            (p.Id, p.Id != null && p.Id == BrowseText.CurrentPlatform ? $"{p.Name} (this device)" : p.Name)));
+        Fill(BrowseAiComboBox, BrowseText.AiFilters);
+        foreach (var combo in new[] { BrowseSortComboBox, BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox })
+            GamepadComboBoxNavigation.Attach(combo);
+    }
+
+    private const string Heading = "#heading";
+
+    private static void Fill(ComboBox combo, IEnumerable<(string? Id, string Name)> choices)
+    {
+        foreach (var (id, name) in choices)
+            combo.Items.Add(new ComboBoxItem { Content = name, Tag = id });
+    }
+
+    /// <summary>The console list, grouped by maker like the website: a heading, "All Nintendo", then each console.</summary>
+    private void FillConsoles()
+    {
+        BrowseConsoleComboBox.Items.Clear();
+        BrowseConsoleComboBox.Items.Add(new ComboBoxItem { Content = "All consoles", Tag = null });
+        foreach (var brand in Model.Consoles.GroupBy(c => c.Brand))
+        {
+            BrowseConsoleComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = BrowseViewModel.BrandName(brand.Key), Tag = Heading, IsEnabled = false,
+                FontWeight = FontWeight.SemiBold, FontSize = 11,
+            });
+            BrowseConsoleComboBox.Items.Add(new ComboBoxItem { Content = BrowseViewModel.AllOfBrand(brand.Key), Tag = "maker:" + brand.Key, Padding = new Thickness(22, 6, 12, 6) });
+            foreach (var console in brand)
+                BrowseConsoleComboBox.Items.Add(new ComboBoxItem { Content = console.Name, Tag = console.Id, Padding = new Thickness(22, 6, 12, 6) });
+        }
+        _consoleChoices = Model.Consoles.Count;
+    }
+
+    private static void Select(ComboBox combo, string? id)
+    {
+        var item = combo.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string?)i.Tag == id);
+        // A console the facets don't list (they failed to load) still shows as chosen.
+        if (item == null && id != null)
+        {
+            item = new ComboBoxItem { Content = id, Tag = id };
+            combo.Items.Add(item);
+        }
+        combo.SelectedItem = item;
     }
 
     public void Configure(BrowseViewModel model, LauncherSession session, IFeatureNavigationHost host, Func<bool> isActive)
@@ -67,8 +113,14 @@ public partial class BrowseView : UserControl
         BrowseContentStack.Margin = new Thickness(0);
         BrowseToolbarPanel.Margin = new Thickness(0, 0, 0, 8);
         BrowseFiltersPanel.Margin = new Thickness(0, 0, 0, 8);
-        BrowseSearchTextBox.Width = double.NaN;
-        BrowseSearchTextBox.MinWidth = 200;
+        // Narrow screens: the filters wrap below the search, as on the website.
+        BrowseSearchTextBox.Margin = new Thickness(0, 0, 0, 8);
+        Grid.SetColumnSpan(BrowseSearchTextBox, 2);
+        Grid.SetRow(BrowseFilterSelects, 1);
+        Grid.SetColumn(BrowseFilterSelects, 0);
+        Grid.SetColumnSpan(BrowseFilterSelects, 2);
+        foreach (var combo in BrowseFilterSelects.Children.OfType<ComboBox>())
+            combo.Margin = new Thickness(0, 0, 8, 8);
     }
 
     internal Task<bool> LoadMoreAsync() => _session?.RunAsync(() => Model.LoadMoreAsync(Token)) ?? Task.FromResult(false);
@@ -82,7 +134,7 @@ public partial class BrowseView : UserControl
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (_session?.IsClosed != false) return;
-        if (e.PropertyName is nameof(BrowseViewModel.Status) or nameof(BrowseViewModel.IsLoading))
+        if (e.PropertyName is nameof(BrowseViewModel.Status) or nameof(BrowseViewModel.IsLoading) or nameof(BrowseViewModel.Total))
             UpdateControls();
     }
 
@@ -101,20 +153,28 @@ public partial class BrowseView : UserControl
         try
         {
             var custom = Model.ShowingCustomList;
+            var searching = !string.IsNullOrWhiteSpace(Model.Search);
+            if (_consoleChoices != Model.Consoles.Count) FillConsoles();
+            BrowseTitleText.Text = custom ? "My app list" : "Explore the catalog";
+            BrowseCountText.Text = custom || Model.Total > 0 ? Model.Total.ToString() : "—";
             BrowseCatalogTabButton.IsVisible = BrowseCustomListTabButton.IsVisible = Model.HasCustomList;
             BrowseCatalogTabButton.Classes.Set("selected", !custom);
             BrowseCustomListTabButton.Classes.Set("selected", custom);
-            BrowsePlatformButton.IsVisible = BrowseConsoleButton.IsVisible = BrowseTypeButton.IsVisible = !custom;
-            BrowseSortComboBox.IsVisible = !custom;
-            BrowseClearFiltersButton.IsVisible = !custom && Model.HasFilters;
-            BrowsePlatformButton.Content = BrowseText.Platforms.FirstOrDefault(p => p.Id == Model.Platform).Name ?? Model.Platform;
-            BrowseConsoleButton.Content = Model.ConsoleName(Model.Console);
-            BrowseTypeButton.Content = Model.ProjectType == null ? "All types" : BrowseText.ProjectTypeName(Model.ProjectType);
-            BrowseSortComboBox.SelectedItem = BrowseSortComboBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string?)i.Tag == Model.Sort);
-            // A search is ordered by relevance, so the sort would only mislead.
-            BrowseSortComboBox.IsEnabled = string.IsNullOrWhiteSpace(Model.Search);
+            foreach (var combo in new[] { BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox })
+                combo.IsVisible = !custom;
+            // A search is ordered by relevance, so the website shows that instead of the sort.
+            BrowseSortComboBox.IsVisible = BrowseSortLabel.IsVisible = !custom && !searching;
+            BrowseRelevantText.IsVisible = !custom && searching;
+            Select(BrowseSortComboBox, Model.Sort);
+            Select(BrowseTypeComboBox, Model.ProjectType);
+            Select(BrowsePlatformComboBox, Model.Platform);
+            Select(BrowseConsoleComboBox, Model.Console);
+            Select(BrowseAiComboBox, Model.Ai);
+            var empty = !Model.IsLoading && Model.Items.Count == 0;
+            var failed = empty && Model.Status.StartsWith("Couldn't", StringComparison.Ordinal);
+            BrowseClearFiltersButton.IsVisible = !custom && empty && !failed && (searching || Model.HasFilters);
             BrowseStatusText.IsVisible = !string.IsNullOrEmpty(Model.Status);
-            BrowseRetryButton.IsVisible = !Model.IsLoading && Model.Items.Count == 0 && !string.IsNullOrEmpty(Model.Status);
+            BrowseRetryButton.IsVisible = failed;
         }
         finally { _updatingControls = false; }
     }
@@ -123,6 +183,7 @@ public partial class BrowseView : UserControl
     {
         if (Model == null || _updatingControls) return;
         Model.Search = BrowseSearchTextBox.Text ?? "";
+        UpdateControls();
         _searchDelay?.Cancel();
         var delay = _searchDelay = new CancellationTokenSource();
         Run(async () =>
@@ -138,6 +199,23 @@ public partial class BrowseView : UserControl
         if (Model == null || _updatingControls || BrowseSortComboBox.SelectedItem is not ComboBoxItem { Tag: string sort } || sort == Model.Sort)
             return;
         Model.Sort = sort;
+        Reload();
+    }
+
+    private void BrowseFilter_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (Model == null || _updatingControls || sender is not ComboBox { SelectedItem: ComboBoxItem item } combo) return;
+        var id = (string?)item.Tag;
+        if (id == Heading) return;
+        if (ReferenceEquals(combo, BrowseTypeComboBox)) { if (id == Model.ProjectType) return; Model.ProjectType = id; }
+        else if (ReferenceEquals(combo, BrowsePlatformComboBox)) { if (id == Model.Platform) return; Model.Platform = id; }
+        else if (ReferenceEquals(combo, BrowseConsoleComboBox)) { if (id == Model.Console) return; Model.Console = id; }
+        else if (ReferenceEquals(combo, BrowseAiComboBox))
+        {
+            if (id == Model.Ai) return;
+            Model.Ai = id;
+            AiFilterChosen?.Invoke(id);
+        }
         Reload();
     }
 
@@ -161,46 +239,11 @@ public partial class BrowseView : UserControl
     private void BrowseClearFilters_Click(object? sender, RoutedEventArgs e)
     {
         Model.ClearFilters();
+        _updatingControls = true;
+        try { BrowseSearchTextBox.Text = ""; }
+        finally { _updatingControls = false; }
         Navigation.KeepFilterFocusAfterClear();
         Reload();
-    }
-
-    /// <summary>Fills a filter's menu with its choices, the current one in bold.</summary>
-    private void BrowseFilterFlyout_Opening(object? sender, EventArgs e)
-    {
-        if (sender is not MenuFlyout flyout) return;
-        flyout.Items.Clear();
-        void Add(string label, string? value, string? current, Action<string?> apply)
-        {
-            var item = new MenuItem { Header = label, FontWeight = value == current ? FontWeight.Bold : FontWeight.Normal };
-            item.Click += (_, _) =>
-            {
-                apply(value);
-                Reload();
-            };
-            flyout.Items.Add(item);
-        }
-        if (ReferenceEquals(flyout, BrowsePlatformButton.Flyout))
-        {
-            foreach (var (id, name) in BrowseText.Platforms)
-                Add(id == BrowseText.CurrentPlatform ? $"{name} (this device)" : name, id, Model.Platform, v => Model.Platform = v);
-        }
-        else if (ReferenceEquals(flyout, BrowseConsoleButton.Flyout))
-        {
-            Add("All consoles", null, Model.Console, v => Model.Console = v);
-            foreach (var brand in Model.Consoles.GroupBy(c => c.Brand))
-            {
-                Add($"All {BrowseViewModel.BrandName(brand.Key)}", "maker:" + brand.Key, Model.Console, v => Model.Console = v);
-                foreach (var console in brand)
-                    Add("    " + console.Name, console.Id, Model.Console, v => Model.Console = v);
-            }
-        }
-        else
-        {
-            foreach (var (id, name) in BrowseText.ProjectTypes)
-                Add(name, id, Model.ProjectType, v => Model.ProjectType = v);
-        }
-        GamepadMenuFlyoutNavigation.Attach(flyout);
     }
 
     private void BrowseScrollViewer_ScrollChanged(object? sender, ScrollChangedEventArgs e)

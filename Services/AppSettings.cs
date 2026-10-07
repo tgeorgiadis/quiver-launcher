@@ -83,6 +83,8 @@ namespace QuiverLauncher
         public string SortBy { get; set; } = "LastPlayed";
         /// <summary>The player's own app list for Browse: a local JSON file or a URL, in the apps.json format.</summary>
         public string CustomAppListLocation { get; set; } = string.Empty;
+        /// <summary>The App Catalog's AI filter ("no-generated" or "no-ai"), kept like the website keeps it; empty shows every app.</summary>
+        public string CatalogAiFilter { get; set; } = string.Empty;
         public string ModsSortBy { get; set; } = "InstalledFirst";
         public bool ModsIncludeNsfw { get; set; }
         public List<string> DismissedAnnouncementIds { get; set; } = new List<string>();
@@ -160,6 +162,7 @@ namespace QuiverLauncher
             KeyboardBindingDefaults.EnsureComplete(KeyboardBindings);
 
             CustomAppListLocation ??= string.Empty;
+            CatalogAiFilter ??= string.Empty;
             if (AppCatalogSources != null)
             {
                 // The catalog now comes from quiverlauncher.com. A list the player added themselves

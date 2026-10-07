@@ -273,6 +273,12 @@ namespace QuiverLauncher
                 location => _gameManager.CatalogService.TryLoadListAsync(_gameManager.HttpClient, location, _session.Token)),
                 _session, this, () => !Shell.SettingsOpen && !Shell.BrowseDetailsOpen && Shell.Mode == MainViewMode.Browse);
             BrowsePanel.DetailsRequested += OpenBrowseDetails;
+            BrowsePanel.Model.Ai = BrowseText.AiFilters.Any(f => f.Id != null && f.Id == _settings.CatalogAiFilter) ? _settings.CatalogAiFilter : null;
+            BrowsePanel.AiFilterChosen += ai =>
+            {
+                _settings.CatalogAiFilter = ai ?? "";
+                _settingsViewModel.Save(_settings);
+            };
             BrowseDetailsPanel.Configure(_session, this, _markdownRenderer, new BrowseDetailsViewModel(catalog,
                 (app, project) => QuiverCatalogMapping.ToGameInfo(_gameManager.CatalogService, app, project), LoadRepositoryReadmeAsync),
                 BrowsePanel.Model.FindInLibrary);

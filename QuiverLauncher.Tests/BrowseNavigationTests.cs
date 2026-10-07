@@ -36,7 +36,7 @@ public class BrowseNavigationTests
             window.Show(); Dispatcher.UIThread.RunJobs();
             GamepadFocusChrome.SetKeyboardNavigationActive(true);
             view.FindControl<Button>("BrowseNavButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseToolbar);
+            navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
             await Until(() => browse.Model.Items.Count == 3);
             window.UpdateLayout();
 
@@ -48,9 +48,10 @@ public class BrowseNavigationTests
             browse.Model.Items.Select(i => i.IsGamepadFocused).Should().Equal(false, true, false);
             Move(NavigationDirection.Up).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
+            browse.BrowseSearchTextBox.Classes.Should().Contain("gamepad-focused");
             Move(NavigationDirection.Up).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseToolbar);
-            browse.BrowseSearchTextBox.Classes.Should().Contain("gamepad-focused");
+            browse.BrowseSortComboBox.Classes.Should().Contain("gamepad-focused");
             Move(NavigationDirection.Down).Should().BeTrue();
             Move(NavigationDirection.Down).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseGrid);

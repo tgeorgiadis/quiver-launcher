@@ -20,6 +20,8 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     private List<GameInfo>? _customApps;
     private string? _customAppsLocation;
     private Dictionary<string, string> _consoleNames = [];
+    private int _total;
+    private int _catalogTotal;
 
     public ObservableCollection<BrowseItem> Items { get; } = [];
     public IReadOnlyList<QuiverCatalogConsole> Consoles { get; private set; } = [];
@@ -29,6 +31,10 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     /// <summary>A console id, or "maker:Brand" for every console a maker made.</summary>
     public string? Console { get; set; }
     public string? ProjectType { get; set; }
+    /// <summary>"no-generated" or "no-ai" hides apps by AI use; null shows every app.</summary>
+    public string? Ai { get; set; }
+    /// <summary>How many apps the catalog has, or the player's list when it shows.</summary>
+    public int Total { get => _total; private set => Set(ref _total, value); }
     public bool HasCustomList => !string.IsNullOrWhiteSpace(customListLocation());
     public bool ShowingCustomList { get => _showingCustomList && HasCustomList; set => Set(ref _showingCustomList, value); }
     public bool HasFilters => Platform != BrowseText.CurrentPlatform || Console != null || ProjectType != null;
@@ -38,18 +44,18 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     /// <summary>Why nothing shows: an error, or an empty result.</summary>
     public string Status { get => _status; private set => Set(ref _status, value); }
 
+    /// <summary>Clears the search and filters, like the website's Clear filters; the AI filter is a preference and stays.</summary>
     public void ClearFilters()
     {
+        Search = "";
         Platform = BrowseText.CurrentPlatform;
         Console = null;
         ProjectType = null;
     }
 
-    public string ConsoleName(string? id) => id == null ? "All consoles"
-        : id.StartsWith("maker:", StringComparison.Ordinal) ? $"All {BrandName(id["maker:".Length..])}"
-        : _consoleNames.GetValueOrDefault(id, id);
-
-    public static string BrandName(string brand) => brand == "OtherPlatforms" ? "other platforms" : brand;
+    /// <summary>A maker's heading in the console list, as the website words it.</summary>
+    public static string BrandName(string brand) => brand == "OtherPlatforms" ? "Other platforms" : brand;
+    public static string AllOfBrand(string brand) => brand == "OtherPlatforms" ? "All other platforms" : $"All {brand}";
 
     /// <summary>Loads the first page for the current search and filters, replacing the cards.</summary>
     public async Task ReloadAsync(CancellationToken token)
@@ -69,7 +75,8 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
                 return;
             }
             if (Consoles.Count == 0) await LoadFacetsAsync(token);
-            var query = new QuiverCatalogQuery(Search, Platform, Console, ProjectType, Sort);
+            Total = _catalogTotal;
+            var query = new QuiverCatalogQuery(Search, Platform, Console, ProjectType, Sort, Ai);
             var page = await client.GetAppsAsync(query, null, token);
             if (generation != _generation) return;
             Show(page);
@@ -98,7 +105,7 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         Notify(nameof(CanLoadMore));
         try
         {
-            var query = new QuiverCatalogQuery(Search, Platform, Console, ProjectType, Sort);
+            var query = new QuiverCatalogQuery(Search, Platform, Console, ProjectType, Sort, Ai);
             var page = await client.GetAppsAsync(query, _cursor, token);
             if (generation != _generation) return false;
             Show(page);
@@ -166,6 +173,7 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         {
             var facets = await client.GetFacetsAsync(token);
             Consoles = facets.Consoles;
+            _catalogTotal = facets.Total;
             _consoleNames = facets.Consoles.ToDictionary(c => c.Id, c => c.Name, StringComparer.OrdinalIgnoreCase);
         }
         // Without console names the cards show console ids; the catalog itself still loads.
@@ -191,6 +199,7 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
             _customApps = apps;
             _customAppsLocation = location;
         }
+        Total = _customApps.Count;
         var search = Search.Trim();
         foreach (var app in _customApps.Where(a => search.Length == 0 || AppSearch.Matches(a, search))
                      .OrderBy(a => a.DisplayName, StringComparer.OrdinalIgnoreCase))
