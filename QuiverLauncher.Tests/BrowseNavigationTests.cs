@@ -77,6 +77,9 @@ public class BrowseNavigationTests
             Shell(view, "HandleConfirmAction");
             details.BrowseDetailsFeedback.IsVisible.Should().BeTrue();
             details.BrowseDetailsReviewButton.IsVisible.Should().BeTrue();
+            // Up lands on whatever sits nearest above: from Overview, Add.
+            Move(NavigationDirection.Left).Should().BeTrue();
+            Move(NavigationDirection.Left).Should().BeTrue();
             Move(NavigationDirection.Up).Should().BeTrue();
             details.BrowseDetailsAddButton.Classes.Should().Contain("gamepad-focused");
 

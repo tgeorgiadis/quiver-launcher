@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using QuiverLauncher.Core.Services;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
@@ -14,8 +15,9 @@ namespace QuiverLauncher.Views;
 /// <summary>
 /// An app's page over the App Catalog, laid out like Quiver Launcher 4's: the app's header over its artwork, then
 /// Overview (the README), Releases (notes and what Quiver says about each) and Player feedback tabs, with its project
-/// details beside them. Feedback is read here and
-/// written on quiverlauncher.com.
+/// details beside them. Feedback is read here and written on quiverlauncher.com.
+/// It also shows an original game's page: the game, then every app that plays it. Pages stack, so Back returns from an
+/// app to the game it was opened from.
 /// </summary>
 public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
 {
@@ -25,12 +27,23 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     private Func<GameInfo, GameInfo?> _findInLibrary = _ => null;
     private GamepadNavigationService Nav => _host.Navigation;
     private GameInfo? _libraryApp;
+    private BrowseViewModel _browse = null!;
+    // An app (Item) or a game (Slug, Title); the last is shown, and Back returns to the one before.
+    private sealed record Page(BrowseItem? Item, string? Slug, string? Title);
+    private readonly List<Page> _pages = [];
+    private Page? Current => _pages.Count > 0 ? _pages[^1] : null;
+    private QuiverCatalogGameDetail? _game;
+    private List<BrowseItem> _ways = [];
+    private string _gameStatus = "";
+    private int _gameGeneration;
     private enum Tab { Overview, Releases, Feedback }
     private Tab _tab;
     private IReadOnlyList<QuiverCatalogRelease>? _shownReleases;
     // The first action was asked for before the actions arrived (they need the app's page): take it when they do.
     private bool _awaitingAction;
     internal int FocusIndex = -1;
+    // The highlighted control itself: rows appear as the page loads (Based on, actions), which moves its index.
+    private Control? _focused;
     internal bool BodyFocused;
     public BrowseDetailsViewModel Model { get; private set; } = null!;
 
@@ -57,8 +70,9 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     }
 
     public void Configure(LauncherSession session, IFeatureNavigationHost host, MarkdownRenderer renderer,
-        BrowseDetailsViewModel model, Func<GameInfo, GameInfo?> findInLibrary)
+        BrowseDetailsViewModel model, Func<GameInfo, GameInfo?> findInLibrary, BrowseViewModel browse)
     {
+        _browse = browse;
         _session = session;
         _host = host;
         _renderer = renderer;
@@ -74,30 +88,115 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         });
     }
 
+    /// <summary>Opens an app's page from the App Catalog.</summary>
     public void Open(BrowseItem item)
+    {
+        _pages.Clear();
+        Show(new Page(item, null, null));
+    }
+
+    /// <summary>Opens an original game's page from the App Catalog.</summary>
+    public void OpenGame(string slug, string title)
+    {
+        _pages.Clear();
+        Show(new Page(null, slug, title));
+    }
+
+    private void Show(Page page)
+    {
+        ClearHighlights();
+        _pages.Add(page);
+        ShowCurrent();
+    }
+
+    /// <summary>Back: to the page this one was opened from, or out to the App Catalog.</summary>
+    public void Back()
+    {
+        if (_pages.Count <= 1)
+        {
+            CloseRequested?.Invoke();
+            return;
+        }
+        ClearHighlights();
+        _pages.RemoveAt(_pages.Count - 1);
+        ShowCurrent();
+    }
+
+    private void ShowCurrent()
     {
         BrowseDetailsScrollViewer.Offset = default;
         BodyFocused = false;
+        FocusIndex = -1;
         _tab = Tab.Overview;
-        _ = _session.RunAsync(() => Model.OpenAsync(item, _session.Token));
+        var page = Current!;
+        if (page.Item is { } item)
+        {
+            _ = _session.RunAsync(() => Model.OpenAsync(item, _session.Token));
+            Refresh();
+            if (_host.IsFocusActive)
+                SelectFirstAction();
+            return;
+        }
+        Model.Close();
+        BrowseDetailsReadme.ItemsSource = null;
+        _game = null;
+        _ways = [];
+        _gameStatus = "Loading…";
+        var generation = ++_gameGeneration;
         Refresh();
         if (_host.IsFocusActive)
-            SelectFirstAction();
+            ApplySelection(0);
+        _ = _session.RunAsync(async () =>
+        {
+            QuiverCatalogGameDetail? game = null;
+            string status;
+            try
+            {
+                game = await _browse.GetGameAsync(page.Slug!, _session.Token);
+                status = game == null ? "This game is no longer in the catalog." : game.Entries.Count == 0 ? "No apps play this game yet." : "";
+            }
+            catch (Exception ex) when (!_session.Token.IsCancellationRequested)
+            {
+                status = $"Couldn't reach quiverlauncher.com. {ex.Message}";
+            }
+            if (generation != _gameGeneration || _session.IsClosed) return;
+            _game = game;
+            _ways = game == null ? [] : _browse.CardsFor(game);
+            _gameStatus = status;
+            Refresh();
+        });
     }
 
     public void Close()
     {
         ClearHighlights();
         Model.Close();
+        _pages.Clear();
+        _game = null;
+        _ways = [];
+        ++_gameGeneration;
         FocusIndex = -1;
         BodyFocused = false;
         BrowseDetailsReadme.ItemsSource = null;
+        BrowseDetailsWays.ItemsSource = null;
     }
 
-    /// <summary>Shows the app, and its library state again after it was added or removed.</summary>
+    /// <summary>Shows the page, and its library state again after an app was added or removed.</summary>
     public void Refresh()
     {
         if (_session.IsClosed) return;
+        // Back names the page it returns to.
+        BrowseDetailsBackText.Text = _pages.Count > 1 ? _pages[^2].Item?.Title ?? _pages[^2].Title ?? "Back" : "App Catalog";
+        var gamePage = Current is { Slug: not null };
+        BrowseDetailsGamePanel.IsVisible = gamePage;
+        BrowseDetailsSystems.IsVisible = gamePage;
+        BrowseDetailsFacts.IsVisible = BrowseDetailsActions.IsVisible = !gamePage;
+        if (gamePage)
+        {
+            RefreshGame();
+            return;
+        }
+        SetArtShape(boxArt: false);
         var item = Model.Item;
         var app = item?.App;
         var entry = Model.Entry;
@@ -112,7 +211,9 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         BrowseDetailsTitle.Text = item?.Title;
         BrowseDetailsTagline.Text = app?.Description;
         BrowseDetailsTagline.IsVisible = !string.IsNullOrWhiteSpace(app?.Description);
-        BrowseDetailsGames.ItemsSource = item?.BasedOn;
+        // Each opens the game's page, as on the website.
+        BrowseDetailsGames.ItemsSource = app?.Games.Where(g => !string.IsNullOrWhiteSpace(g.Title)).ToList()
+            ?? item?.BasedOn.Select(title => new QuiverCatalogGame { Title = title }).ToList();
         BrowseDetailsBasedOn.IsVisible = item?.HasBasedOn == true;
 
         BrowseDetailsPlatforms.IsVisible = app?.SupportedOS.Count > 0;
@@ -146,6 +247,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         // An app from the player's own list has no page on the site: no releases or feedback, only its README.
         var tab = app == null ? Tab.Overview : _tab;
         BrowseDetailsTabsBar.IsVisible = app != null;
+        BrowseDetailsColumns.IsVisible = true;
         BrowseDetailsOverviewTab.Classes.Set("selected", tab == Tab.Overview);
         BrowseDetailsReleasesTab.Classes.Set("selected", tab == Tab.Releases);
         BrowseDetailsFeedbackTab.Classes.Set("selected", tab == Tab.Feedback);
@@ -171,8 +273,53 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         if (_host.IsFocusActive && !BodyFocused && FocusIndex >= 0 && Nav.ActiveZone == GamepadNavigationZone.BrowseDetailsOverlay)
         {
             if (_awaitingAction && FirstActionIndex() > 0) SelectFirstAction(bringIntoView: false);
-            else ApplySelection(FocusIndex, bringIntoView: false);
+            else ApplySelection(CurrentIndex(), bringIntoView: false);
         }
+    }
+
+    /// <summary>A game's page: the game over its artwork, then every app that plays it, best first.</summary>
+    private void RefreshGame()
+    {
+        var game = _game?.Game;
+        var art = game?.LibraryArt;
+        var hero = FirstText(art?.Hero, art?.Header);
+        AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsHero, hero);
+        BrowseDetailsHero.IsVisible = hero != null;
+        SetArtShape(boxArt: !string.IsNullOrWhiteSpace(art?.Capsule));
+        AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsArt, game == null ? null : FirstText(art?.Capsule, game.Artwork, art?.Logo));
+        BrowseDetailsKind.Text = "THE ORIGINAL GAME";
+        BrowseDetailsTitle.Text = game?.Title ?? Current?.Title;
+        BrowseDetailsTagline.Text = game?.Description;
+        BrowseDetailsTagline.IsVisible = !string.IsNullOrWhiteSpace(game?.Description);
+        BrowseDetailsBasedOn.IsVisible = false;
+        BrowseDetailsSystems.Children.Clear();
+        foreach (var system in (game?.OriginalSystems ?? []).Distinct(StringComparer.OrdinalIgnoreCase))
+            BrowseDetailsSystems.Children.Add(new Border
+            {
+                Classes = { "details-tag" },
+                Child = new TextBlock { Text = _browse.ConsoleName(system), FontSize = 11, Foreground = Brush("ThemeTextSecondary") },
+            });
+        BrowseDetailsNote.IsVisible = false;
+        BrowseDetailsTabsBar.IsVisible = false;
+        BrowseDetailsColumns.IsVisible = false;
+        _browse.MarkLibraryState(_ways);
+        BrowseDetailsWays.ItemsSource = _ways;
+        BrowseDetailsWaysCount.Text = _ways.Count.ToString();
+        BrowseDetailsWaysNote.Text = _ways.Count > 1 ? "Best first, by player feedback" : "Community ports and recreations";
+        BrowseDetailsGameStatus.Text = _gameStatus;
+        BrowseDetailsGameStatus.IsVisible = _gameStatus.Length > 0;
+        if (_host.IsFocusActive && !BodyFocused && FocusIndex >= 0 && Nav.ActiveZone == GamepadNavigationZone.BrowseDetailsOverlay)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplySelection(CurrentIndex(), bringIntoView: false), Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    // A game's box art is tall; an app's icon is square.
+    private void SetArtShape(bool boxArt)
+    {
+        var mobile = PlatformCapabilities.IsMobile;
+        BrowseDetailsArtHost.Width = boxArt ? (mobile ? 72 : 120) : (mobile ? 72 : 104);
+        BrowseDetailsArtHost.Height = boxArt ? (mobile ? 108 : 180) : (mobile ? 72 : 104);
+        BrowseDetailsArtHost.Padding = new Thickness(boxArt ? 0 : 12);
+        BrowseDetailsArt.Stretch = boxArt ? Stretch.UniformToFill : Stretch.Uniform;
     }
 
     /// <summary>Each release as a card, as on the website: version, date and what Quiver says, its reasons, then its notes.</summary>
@@ -267,7 +414,21 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         };
     }
 
-    private void Close_Click(object? sender, RoutedEventArgs e) => CloseRequested?.Invoke();
+    private void Close_Click(object? sender, RoutedEventArgs e) => Back();
+
+    private void GameChip_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { DataContext: QuiverCatalogGame { Slug.Length: > 0 } game }) return;
+        // The game this app was opened from: go back to it rather than open it again.
+        if (_pages.Count > 1 && string.Equals(_pages[^2].Slug, game.Slug, StringComparison.OrdinalIgnoreCase)) Back();
+        else Show(new Page(null, game.Slug, game.Title));
+    }
+
+    private void WayToPlay_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (sender is Control { DataContext: BrowseItem item })
+            Show(new Page(item, null, null));
+    }
 
     private void Tab_Click(object? sender, RoutedEventArgs e)
     {
@@ -302,9 +463,30 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
 
     // Controller and keyboard: rows from the top (back, the actions, the tabs, the website button on Player feedback),
     // then the page scrolls (the README and feedback are read-only).
-    private List<List<Control>> Rows() => new List<List<Control>>
+    private List<List<Control>> Rows()
+    {
+        if (Current is { Slug: not null })
+            return [Visible([BrowseDetailsCloseButton]), .. WayRows()];
+        return AppRows();
+    }
+
+    private List<Control> GameChips() => BrowseDetailsBasedOn.IsVisible
+        ? BrowseDetailsGames.GetVisualDescendants().OfType<Button>().Where(b => b.DataContext is QuiverCatalogGame { Slug.Length: > 0 }).Cast<Control>().ToList()
+        : [];
+
+    private List<Control> WayCards() => BrowseDetailsWays.GetVisualDescendants().OfType<BrowseCard>().Cast<Control>().ToList();
+
+    // The cards wrap, so each line of them is a row.
+    private List<List<Control>> WayRows() => WayCards()
+        .GroupBy(card => Math.Round(card.TranslatePoint(default, BrowseDetailsWays)?.Y ?? 0))
+        .OrderBy(row => row.Key)
+        .Select(row => row.OrderBy(card => card.TranslatePoint(default, BrowseDetailsWays)?.X ?? 0).ToList())
+        .ToList();
+
+    private List<List<Control>> AppRows() => new List<List<Control>>
     {
         Visible([BrowseDetailsCloseButton]),
+        GameChips(),
         Visible(BrowseDetailsActions.Children),
         BrowseDetailsTabsBar.IsVisible ? Visible([BrowseDetailsOverviewTab, BrowseDetailsReleasesTab, BrowseDetailsFeedbackTab]) : [],
         BrowseDetailsFeedback.IsVisible ? Visible([BrowseDetailsReviewButton]) : [],
@@ -319,7 +501,12 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         ApplySelection(index, bringIntoView);
     }
 
-    private int FirstActionIndex() => Rows() is { Count: > 1 } rows && rows[1].Any(c => BrowseDetailsActions.Children.Contains(c)) ? rows[0].Count : 0;
+    private int FirstActionIndex()
+    {
+        var rows = Rows();
+        var actions = rows.FindIndex(row => row.Any(c => BrowseDetailsActions.Children.Contains(c)));
+        return actions < 0 ? 0 : rows.Take(actions).Sum(row => row.Count);
+    }
 
     private static (int Row, int Column) Locate(List<List<Control>> rows, int index)
     {
@@ -334,7 +521,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     public bool Navigate(NavigationDirection direction)
     {
         var rows = Rows();
-        var (row, column) = Locate(rows, FocusIndex);
+        var (row, column) = Locate(rows, CurrentIndex());
         // Up from the page returns to the controls once the last row is back in view.
         var lastRow = rows.Count > 0 ? rows[^1][0] : null;
         var rowAbove = lastRow?.TranslatePoint(default, BrowseDetailsScrollViewer) is { } at && at.Y < 0;
@@ -358,19 +545,32 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
             }
             return true;
         }
+        var from = BodyFocused || rows.Count == 0 ? null : rows[row][Math.Min(column, rows[row].Count - 1)];
         BodyFocused = false;
-        // Entering the tabs lands on the open one.
         var column2 = nav.Column;
-        if (nav.Row != row && rows[nav.Row].Contains(BrowseDetailsFeedbackTab))
-            column2 = Math.Max(0, rows[nav.Row].IndexOf(_tab switch
-            {
-                Tab.Releases => BrowseDetailsReleasesTab,
-                Tab.Feedback => BrowseDetailsFeedbackTab,
-                _ => BrowseDetailsOverviewTab,
-            }));
+        if (nav.Row != row)
+        {
+            // Entering the tabs lands on the open one; any other row, on what sits nearest above or below.
+            if (rows[nav.Row].Contains(BrowseDetailsFeedbackTab))
+                column2 = Math.Max(0, rows[nav.Row].IndexOf(_tab switch
+                {
+                    Tab.Releases => BrowseDetailsReleasesTab,
+                    Tab.Feedback => BrowseDetailsFeedbackTab,
+                    _ => BrowseDetailsOverviewTab,
+                }));
+            else if (from != null && CentreX(from) is { } x)
+                column2 = rows[nav.Row].Select((control, i) => (i, distance: Math.Abs((CentreX(control) ?? 0) - x)))
+                    .OrderBy(c => c.distance).First().i;
+        }
         ApplySelection(rows.Take(nav.Row).Sum(r => r.Count) + column2);
         return true;
     }
+
+    /// <summary>Where the highlighted control is now; its old place if it has gone.</summary>
+    private int CurrentIndex() => _focused != null && Controls().IndexOf(_focused) is >= 0 and var index ? index : FocusIndex;
+
+    private double? CentreX(Control control) =>
+        control.TranslatePoint(new Point(control.Bounds.Width / 2, 0), BrowseDetailsScrollViewer)?.X;
 
     public bool Confirm()
     {
@@ -382,15 +582,18 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
             return true;
         }
         var controls = Controls();
-        var index = Nav.ClampIndex(FocusIndex, controls.Count);
-        if (!BodyFocused && index >= 0 && controls[index] is Button button)
+        var index = Nav.ClampIndex(CurrentIndex(), controls.Count);
+        if (BodyFocused || index < 0) return true;
+        if (controls[index] is BrowseCard { DataContext: BrowseItem item })
+            Show(new Page(item, null, null));
+        else if (controls[index] is Button button)
             GamepadControlActivation.ActivateButton(button);
         return true;
     }
 
     public bool Cancel()
     {
-        CloseRequested?.Invoke();
+        Back();
         return true;
     }
 
@@ -409,11 +612,13 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         var controls = Controls();
         index = Nav.ClampIndex(index, controls.Count);
         FocusIndex = index;
+        _focused = index >= 0 ? controls[index] : null;
         Nav.ActiveZone = GamepadNavigationZone.BrowseDetailsOverlay;
         _host.ClearFocus();
         ClearHighlights();
         if (index < 0) return;
-        controls[index].Classes.Set("gamepad-focused", true);
+        if (controls[index] is BrowseCard { DataContext: BrowseItem card }) card.IsGamepadFocused = true;
+        else controls[index].Classes.Set("gamepad-focused", true);
         controls[index].Focus();
         if (bringIntoView) controls[index].BringIntoView();
     }
@@ -422,12 +627,14 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     {
         Control[] controls = [BrowseDetailsCloseButton, .. BrowseDetailsActions.Children, BrowseDetailsOverviewTab, BrowseDetailsReleasesTab, BrowseDetailsFeedbackTab,
             BrowseDetailsReviewButton];
-        foreach (var control in controls)
+        foreach (var control in controls.Concat(GameChips()))
             control.Classes.Set("gamepad-focused", false);
+        foreach (var way in _ways)
+            way.IsGamepadFocused = false;
     }
 
     public bool SynchronizePointer(object? source) =>
-        GamepadPointerFocusSync.Hit(Nav, Controls(), GamepadNavigationZone.BrowseDetailsOverlay, FocusIndex, ApplySelection, source);
+        GamepadPointerFocusSync.Hit(Nav, Controls(), GamepadNavigationZone.BrowseDetailsOverlay, CurrentIndex(), ApplySelection, source);
 
     public void LeaveZone(GamepadNavigationZone nextZone)
     {

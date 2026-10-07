@@ -186,6 +186,52 @@ public class BrowseTests : IDisposable
         handler.AppQueries.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task A_search_lists_the_games_it_matched_with_their_ways_to_play()
+    {
+        var token = TestContext.Current.CancellationToken;
+        static object App(string slug, params (string Slug, string Title)[] games) =>
+            new { id = slug, slug, name = slug, launcher = new { folderName = slug }, games = games.Select(g => new { slug = g.Slug, title = g.Title }) };
+        static string Game(string slug, string title, params string[] apps) => JsonSerializer.Serialize(new
+        {
+            game = new { slug, title, libraryArt = new { capsule = $"https://art.test/{slug}.png" } },
+            entries = apps.Select(app => new { id = app, slug = app, name = app, launcher = new { folderName = app }, recommended = app.Length }),
+        });
+        var handler = new Handler(request => Task.FromResult(request.RequestUri!.AbsolutePath switch
+        {
+            "/api/v1/apps" => Json(JsonSerializer.Serialize(new
+            {
+                items = new[]
+                {
+                    App("banjo-recompiled", ("banjo-kazooie", "Banjo-Kazooie")),
+                    App("lighthouse", ("banjo-kazooie", "Banjo-Kazooie")),
+                    App("renut", ("banjo-kazooie-nuts-bolts", "Banjo-Kazooie: Nuts & Bolts")),
+                    // Found by its description, not its game: its game doesn't match the search.
+                    App("party-pack", ("mario-party", "Mario Party")),
+                },
+                nextCursor = (string?)null,
+                isDone = true,
+            })),
+            "/api/v1/games/banjo-kazooie" => Json(Game("banjo-kazooie", "Banjo-Kazooie", "lighthouse", "banjo-recompiled", "banjo-android")),
+            "/api/v1/games/banjo-kazooie-nuts-bolts" => Json(Game("banjo-kazooie-nuts-bolts", "Banjo-Kazooie: Nuts & Bolts", "renut")),
+            _ => Json("", HttpStatusCode.NotFound),
+        }));
+        var browse = Browse(handler);
+        browse.Search = "banjo";
+
+        await browse.ReloadAsync(token);
+        for (var i = 0; i < 100 && browse.Games.Count == 0; i++) await Task.Delay(10, token);
+
+        browse.Games.Select(g => (g.Title, g.Ways, g.WaysText)).Should().Equal(
+            ("Banjo-Kazooie", 3, "3 ways to play \u2192"), ("Banjo-Kazooie: Nuts & Bolts", 1, "1 way to play \u2192"));
+        browse.Games[0].Art.Should().Be("https://art.test/banjo-kazooie.png");
+        // The game page lists its ways to play best first, from the same read.
+        var game = await browse.GetGameAsync("banjo-kazooie", token);
+        game!.Entries.Select(e => e.Slug).Should().Equal("banjo-recompiled", "banjo-android", "lighthouse");
+        handler.AppQueries.Count(q => q.Length == 0).Should().Be(2, "each matched game's page is read once");
+        BrowseText.TitleMatches("Pokémon Red", "pokemon red").Should().BeTrue();
+    }
+
     [Theory]
     [InlineData(0, 0, 0, "Not rated yet")]
     [InlineData(5, 1, 0, "Mostly runs · 5 run well, 1 with issues")]

@@ -273,6 +273,7 @@ namespace QuiverLauncher
                 location => _gameManager.CatalogService.TryLoadListAsync(_gameManager.HttpClient, location, _session.Token)),
                 _session, this, () => !Shell.SettingsOpen && !Shell.BrowseDetailsOpen && Shell.Mode == MainViewMode.Browse);
             BrowsePanel.DetailsRequested += OpenBrowseDetails;
+            BrowsePanel.GameRequested += OpenBrowseGame;
             BrowsePanel.Model.Ai = BrowseText.AiFilters.Any(f => f.Id != null && f.Id == _settings.CatalogAiFilter) ? _settings.CatalogAiFilter : null;
             BrowsePanel.AiFilterChosen += ai =>
             {
@@ -281,7 +282,7 @@ namespace QuiverLauncher
             };
             BrowseDetailsPanel.Configure(_session, this, _markdownRenderer, new BrowseDetailsViewModel(catalog,
                 (app, project) => QuiverCatalogMapping.ToGameInfo(_gameManager.CatalogService, app, project), LoadRepositoryReadmeAsync),
-                BrowsePanel.Model.FindInLibrary);
+                BrowsePanel.Model.FindInLibrary, BrowsePanel.Model);
             BrowseDetailsPanel.CloseRequested += () => CloseBrowseDetails();
             BrowseDetailsPanel.AddRequested += app => _ = _session.RunAsync(() => AddFromBrowseAsync(app));
             BrowseDetailsPanel.RemoveRequested += app => _ = _libraryActions.RemoveEntryAsync(app);
@@ -1180,6 +1181,13 @@ namespace QuiverLauncher
         {
             Shell.BrowseDetailsOpen = true;
             BrowseDetailsPanel.Open(item);
+            NotifyGamepadUiChanged();
+        }
+
+        private void OpenBrowseGame(BrowseGame game)
+        {
+            Shell.BrowseDetailsOpen = true;
+            BrowseDetailsPanel.OpenGame(game.Slug, game.Title);
             NotifyGamepadUiChanged();
         }
 

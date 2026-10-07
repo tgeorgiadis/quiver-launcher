@@ -22,6 +22,8 @@ public partial class BrowseView : UserControl
     public BrowseViewModel Model { get; private set; } = null!;
     public BrowseNavigation Navigation { get; private set; } = null!;
     public event Action<BrowseItem>? DetailsRequested;
+    /// <summary>A matched game was opened: its page compares the apps that play it.</summary>
+    public event Action<BrowseGame>? GameRequested;
     /// <summary>The player chose an AI filter; the shell keeps it for next time, as the website does.</summary>
     public event Action<string?>? AiFilterChosen;
 
@@ -84,10 +86,12 @@ public partial class BrowseView : UserControl
         Navigation = new(this, host, () => !session.IsClosed && isActive());
         model.PropertyChanged += ModelChanged;
         model.Items.CollectionChanged += ItemsChanged;
+        model.Games.CollectionChanged += ItemsChanged;
         session.OnShutdown(() =>
         {
             model.PropertyChanged -= ModelChanged;
             model.Items.CollectionChanged -= ItemsChanged;
+            model.Games.CollectionChanged -= ItemsChanged;
             _searchDelay?.Cancel();
         });
         UpdateControls();
@@ -141,7 +145,7 @@ public partial class BrowseView : UserControl
     private void ItemsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
         if (_session?.IsClosed != false) return;
-        if (Model.Items.Count == 0) BrowseScrollViewer.Offset = default;
+        if (Model.Items.Count == 0 && Model.Games.Count == 0) BrowseScrollViewer.Offset = default;
         Navigation.SyncSelection();
     }
 
@@ -255,22 +259,20 @@ public partial class BrowseView : UserControl
             _ = LoadMoreAsync();
     }
 
-    private void BrowseCard_PointerEntered(object? sender, PointerEventArgs e)
-    {
-        if (sender is Control { DataContext: BrowseItem item }) item.IsHovered = true;
-    }
-
-    private void BrowseCard_PointerExited(object? sender, PointerEventArgs e)
-    {
-        if (sender is Control { DataContext: BrowseItem item }) item.IsHovered = false;
-    }
-
     private void BrowseCard_Tapped(object? sender, TappedEventArgs e)
     {
         if (sender is not Control { DataContext: BrowseItem item }) return;
-        Navigation.TrackPointerCard(Model.Items.IndexOf(item));
+        Navigation.TrackPointerCard(Navigation.CardIndexOf(item));
         DetailsRequested?.Invoke(item);
     }
 
     internal void OpenDetails(BrowseItem item) => DetailsRequested?.Invoke(item);
+    internal void OpenGame(BrowseGame game) => GameRequested?.Invoke(game);
+
+    private void BrowseGame_Tapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not Control { DataContext: BrowseGame game }) return;
+        Navigation.TrackPointerCard(Navigation.CardIndexOf(game));
+        GameRequested?.Invoke(game);
+    }
 }

@@ -13,6 +13,23 @@ public sealed class QuiverCatalogGame
     public string Title { get; set; } = "";
 }
 
+/// <summary>An original game on quiverlauncher.com: what it is, and every app that plays it.</summary>
+public sealed class QuiverCatalogGameDetail
+{
+    public QuiverCatalogGameInfo Game { get; set; } = new();
+    public List<QuiverCatalogApp> Entries { get; set; } = [];
+}
+
+public sealed class QuiverCatalogGameInfo
+{
+    public string Slug { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string? Artwork { get; set; }
+    public QuiverCatalogArt? LibraryArt { get; set; }
+    public List<string> OriginalSystems { get; set; } = [];
+}
+
 public sealed class QuiverCatalogArt
 {
     public string? Capsule { get; set; }
@@ -205,6 +222,10 @@ public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
 
     public async Task<QuiverCatalogFacets> GetFacetsAsync(CancellationToken token) =>
         await GetAsync<QuiverCatalogFacets>("/facets", token) ?? new();
+
+    /// <summary>A game and the apps that play it; null when the catalog has no such game.</summary>
+    public Task<QuiverCatalogGameDetail?> GetGameAsync(string slug, CancellationToken token) =>
+        GetAsync<QuiverCatalogGameDetail>($"/games/{Uri.EscapeDataString(slug)}", token);
 
     public async Task<QuiverCatalogDetail> GetDetailAsync(string slug, CancellationToken token) =>
         await GetAsync<QuiverCatalogDetail>($"/apps/{Uri.EscapeDataString(slug)}", token)

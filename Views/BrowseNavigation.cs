@@ -16,6 +16,9 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
 {
     private GamepadNavigationService Service => host.Navigation;
     private IList<BrowseItem> Items => view.Model.Items;
+    // The grid's cards: the games a search matched (a row above), then the apps.
+    private List<IBrowseCard> Cards => [.. view.Model.Games, .. view.Model.Items];
+    internal int CardIndexOf(IBrowseCard card) => Cards.IndexOf(card);
     internal int ToolbarIndex { get; private set; } = -1;
     internal int FilterIndex { get; private set; } = -1;
     internal int CardIndex { get; private set; } = -1;
@@ -47,9 +50,11 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
                 Activate(FilterControls(), FilterIndex);
                 return true;
             default:
-                var index = Service.ClampIndex(CardIndex, Items.Count);
+                var cards = Cards;
+                var index = Service.ClampIndex(CardIndex, cards.Count);
                 if (index < 0) return false;
-                view.OpenDetails(Items[index]);
+                if (cards[index] is BrowseGame game) view.OpenGame(game);
+                else view.OpenDetails((BrowseItem)cards[index]);
                 return true;
         }
     }
@@ -57,7 +62,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     public bool Cancel()
     {
         if (!isActive()) return false;
-        if (Service.ActiveZone is not (GamepadNavigationZone.BrowseToolbar or GamepadNavigationZone.BrowseFilters) || Items.Count == 0)
+        if (Service.ActiveZone is not (GamepadNavigationZone.BrowseToolbar or GamepadNavigationZone.BrowseFilters) || Cards.Count == 0)
             return false;
         SelectCard(CardIndex < 0 ? 0 : CardIndex);
         return true;
@@ -84,8 +89,8 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             host.ClearFocus();
             return;
         }
-        _selectFirstCardWhenLoaded = Items.Count == 0;
-        if (Items.Count == 0) ApplyFilterSelection(0, bringIntoView);
+        _selectFirstCardWhenLoaded = Cards.Count == 0;
+        if (Cards.Count == 0) ApplyFilterSelection(0, bringIntoView);
         else SelectCard(CardIndex < 0 ? 0 : CardIndex, bringIntoView: bringIntoView);
     }
 
@@ -93,14 +98,14 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     internal void SyncSelection()
     {
         if (!host.IsFocusActive || !isActive()) return;
-        if (_selectFirstCardWhenLoaded && Items.Count > 0 && Service.ActiveZone == GamepadNavigationZone.BrowseFilters && !GamepadTextInput.IsEditing)
+        if (_selectFirstCardWhenLoaded && Cards.Count > 0 && Service.ActiveZone == GamepadNavigationZone.BrowseFilters && !GamepadTextInput.IsEditing)
         {
             _selectFirstCardWhenLoaded = false;
             SelectCard(0);
             return;
         }
         if (Service.ActiveZone != GamepadNavigationZone.BrowseGrid) return;
-        if (Items.Count == 0)
+        if (Cards.Count == 0)
         {
             CardIndex = -1;
             // Searching or filtering away every card keeps the player on the controls they used.
@@ -141,7 +146,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         // While searching with no list tabs the title row has nothing to select: Up goes to the top bar.
         if (zone == GamepadNavigationZone.BrowseFilters && direction == NavigationDirection.Up && ToolbarControls().Count == 0)
             return host.ApplyTransition(new GamepadZoneTransition(GamepadNavigationZone.TopBar, null));
-        var transition = Service.TryGetZoneTransition(direction, zone, host.MainContentZone, isListLayout: true, positions: null, index, Items.Count);
+        var transition = Service.TryGetZoneTransition(direction, zone, host.MainContentZone, isListLayout: true, positions: null, index, Cards.Count);
         if (transition.HasValue)
             return host.ApplyTransition(transition.Value);
         if (direction is not (NavigationDirection.Left or NavigationDirection.Right))
@@ -154,14 +159,15 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     {
         var current = CardIndex;
         var positions = CardPositions();
-        var transition = Service.TryGetZoneTransition(direction, GamepadNavigationZone.BrowseGrid, host.MainContentZone, isListLayout: false, positions, current, Items.Count);
+        var count = Cards.Count;
+        var transition = Service.TryGetZoneTransition(direction, GamepadNavigationZone.BrowseGrid, host.MainContentZone, isListLayout: false, positions, current, count);
         if (transition.HasValue)
             return host.ApplyTransition(transition.Value);
-        if (Items.Count == 0) return false;
-        var next = Service.MoveCatalogIndex(current, direction, Items.Count, positions);
+        if (count == 0) return false;
+        var next = Service.MoveCatalogIndex(current, direction, count, positions);
         if (next == current && direction is NavigationDirection.Left or NavigationDirection.Up)
         {
-            var blocked = Service.TryGetBlockedMoveZoneTransition(direction, GamepadNavigationZone.BrowseGrid, host.MainContentZone, isListLayout: false, current, Items.Count);
+            var blocked = Service.TryGetBlockedMoveZoneTransition(direction, GamepadNavigationZone.BrowseGrid, host.MainContentZone, isListLayout: false, current, count);
             if (blocked.HasValue)
                 return host.ApplyTransition(blocked.Value);
         }
@@ -179,7 +185,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             if (!await view.LoadMoreAsync()) return;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
             if (!isActive() || Service.ActiveZone != GamepadNavigationZone.BrowseGrid || CardIndex != from) return;
-            SelectCard(Service.MoveCatalogIndex(from, NavigationDirection.Down, Items.Count, CardPositions()));
+            SelectCard(Service.MoveCatalogIndex(from, NavigationDirection.Down, Cards.Count, CardPositions()));
         }
     }
 
@@ -235,24 +241,25 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
 
     internal void SelectCard(int index, bool stealFocus = true, bool bringIntoView = true)
     {
-        if (Items.Count == 0)
+        var cards = Cards;
+        if (cards.Count == 0)
         {
             ApplyFilterSelection(Math.Max(0, FilterIndex), bringIntoView);
             return;
         }
-        index = Service.ClampIndex(index, Items.Count);
+        index = Service.ClampIndex(index, cards.Count);
         Service.ActiveZone = GamepadNavigationZone.BrowseGrid;
         host.ClearSidebarFocus();
         host.ClearFocus();
         host.FocusCard(stealFocus);
         CardIndex = index;
-        var item = Items[index];
-        item.IsGamepadFocused = true;
+        var card = cards[index];
+        card.IsGamepadFocused = true;
         if (!bringIntoView) return;
         Dispatcher.UIThread.Post(() =>
         {
-            if (isActive() && Items.Contains(item))
-                FindCard(item)?.BringIntoView();
+            if (isActive() && Cards.Contains(card))
+                FindCard(card)?.BringIntoView();
         }, DispatcherPriority.Loaded);
     }
 
@@ -266,8 +273,8 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     /// <summary>Removes every Browse highlight; the shell calls this before highlighting anything.</summary>
     internal void ClearHighlights()
     {
-        foreach (var item in Items)
-            item.IsGamepadFocused = false;
+        foreach (var card in Cards)
+            card.IsGamepadFocused = false;
         // Every control, including hidden ones, so one that reappears doesn't still look highlighted.
         Control[] controls = [view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox, view.BrowseSearchTextBox,
             view.BrowseTypeComboBox, view.BrowsePlatformComboBox, view.BrowseConsoleComboBox, view.BrowseAiComboBox,
@@ -282,7 +289,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     private List<(double X, double Y)> CardPositions()
     {
         var positions = new List<(double X, double Y)>();
-        foreach (var item in Items)
+        foreach (var item in Cards)
         {
             var card = FindCard(item);
             var topLeft = card?.TranslatePoint(new Point(0, 0), view);
@@ -291,15 +298,16 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         return positions;
     }
 
-    private Border? FindCard(BrowseItem item) =>
-        view.BrowseItemsControl.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => ReferenceEquals(b.DataContext, item));
+    private Border? FindCard(IBrowseCard card) =>
+        (card is BrowseGame ? view.BrowseGamesControl : view.BrowseItemsControl)
+            .GetVisualDescendants().OfType<Border>().FirstOrDefault(b => ReferenceEquals(b.DataContext, card));
 
     public bool SynchronizePointer(object? source)
     {
         if (GamepadPointerFocusSync.Hit(Service, ToolbarControls(), GamepadNavigationZone.BrowseToolbar, ToolbarIndex, ApplyToolbarSelection, source) ||
             GamepadPointerFocusSync.Hit(Service, FilterControls(), GamepadNavigationZone.BrowseFilters, FilterIndex, ApplyFilterSelection, source))
             return true;
-        return GamepadPointerFocusSync.Card(Service, Items.ToList(), GamepadNavigationZone.BrowseGrid, CardIndex, i => SelectCard(i, stealFocus: false), source);
+        return GamepadPointerFocusSync.Card(Service, Cards, GamepadNavigationZone.BrowseGrid, CardIndex, i => SelectCard(i, stealFocus: false), source);
     }
 
     public void LeaveZone(GamepadNavigationZone nextZone)
@@ -319,7 +327,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
                 ApplyFilterSelection(Math.Max(0, FilterIndex));
                 return true;
             case GamepadNavigationZone.BrowseGrid:
-                if (Items.Count == 0) ApplyFilterSelection(Math.Max(0, FilterIndex));
+                if (Cards.Count == 0) ApplyFilterSelection(Math.Max(0, FilterIndex));
                 else SelectCard(transition.SelectedIndex ?? Math.Max(0, CardIndex));
                 return true;
             default:

@@ -42,9 +42,10 @@ public static class DetailsGamepadLayout
             NavigationDirection.Left when column > 0 => new(row, column - 1),
             NavigationDirection.Left => new(0, 0, LeaveSidebar: true),
             NavigationDirection.Right => new(row, Math.Min(column + 1, rowLengths[row] - 1)),
-            NavigationDirection.Down when row < last => new(row + 1, 0),
+            // Between rows the column carries over, so a grid of cards moves straight up and down.
+            NavigationDirection.Down when row < last => new(row + 1, Math.Min(column, rowLengths[row + 1] - 1)),
             NavigationDirection.Down => new(row, column, Body: true),
-            NavigationDirection.Up when row > 0 => new(row - 1, 0),
+            NavigationDirection.Up when row > 0 => new(row - 1, Math.Min(column, rowLengths[row - 1] - 1)),
             NavigationDirection.Up => new(0, 0, LeaveTopBar: true),
             _ => new(row, column),
         };
