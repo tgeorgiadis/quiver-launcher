@@ -282,6 +282,27 @@ jobs:
           --noInst true \
           --outputDir releases/${{ matrix.rid }}
 
+    # Until the app is signed with a Developer ID, give the downloadable app a complete
+    # ad-hoc signature. vpk leaves the bundle's seal broken, which macOS reports as
+    # "damaged" with no way to open it; an intact ad-hoc signature gets the usual
+    # "Open Anyway" prompt instead.
+    - name: Ad-hoc sign the portable macOS app
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd releases/${{ matrix.rid }}
+        ZIP=$(ls *-Portable.zip)
+        rm -rf adhoc
+        mkdir adhoc
+        ditto -x -k "$ZIP" adhoc
+        APP=$(find adhoc -maxdepth 2 -name '*.app' -type d | head -n1)
+        test -n "$APP"
+        codesign --force --deep --sign - "$APP"
+        codesign --verify --deep --strict "$APP"
+        rm "$ZIP"
+        ditto -c -k --sequesterRsrc adhoc "$ZIP"
+        rm -rf adhoc
+
     - name: Upload macOS Velopack artifacts
       uses: actions/upload-artifact@v4
       with:
