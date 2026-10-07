@@ -112,6 +112,14 @@ The App Catalog reads the catalog from the [quiverlauncher.com](https://quiverla
 
 ## Configuration
 
+### Kiosk mode
+
+**Settings → General → Kiosk mode** keeps the next launch fullscreen and limited to browsing and launching. Settings, the app catalog, add, update, and exit controls are hidden. Press **Ctrl+Alt+K** to unlock this session, and press it again to lock it without restarting. An optional PIN can be set in that same section; Quiver stores only a hash of the PIN, and the PIN is required only to unlock.
+
+`--kiosk` starts one locked session without changing `settings.json`, for a cabinet shortcut.
+
+Kiosk mode does not block the Windows key, Alt+Tab, or Ctrl+Alt+Del. For a public machine, make Quiver the session: Windows Assigned Access or shell replacement, or a Linux Gamescope or cage session that only runs Quiver. Steam Deck Gaming Mode already keeps the desktop away.
+
 ### GitHub / GitLab API Tokens
 To avoid hitting API rate limits, you can provide personal access tokens in **Settings → Advanced**.
 

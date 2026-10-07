@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using QuiverLauncher.Models;
 using QuiverLauncher.Views;
 
@@ -113,6 +114,80 @@ public sealed class LauncherPromptService(LauncherSession session, LauncherDialo
             DesktopInterfaceScaling.PrepareDialog(messageBox, desktop.MainWindow);
             await messageBox.ShowDialog(desktop.MainWindow);
             return choice;
+        });
+    }
+
+    internal static void FocusKioskPinWhenOpened(Window window, TextBox pinBox)
+    {
+        window.Opened += (_, _) =>
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!pinBox.IsAttachedToVisualTree())
+                    return;
+                GamepadModalDialogNavigation.Instance.FocusDialogControl(pinBox);
+                pinBox.Focus();
+            }, DispatcherPriority.ContextIdle);
+    }
+
+    public async Task<string?> PromptKioskPinAsync()
+    {
+        return await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            if (_session.IsClosed)
+                return null;
+            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop || desktop.MainWindow == null)
+                return null;
+
+            var accepted = false;
+            var pinBox = new TextBox
+            {
+                PasswordChar = '•',
+                PlaceholderText = "PIN",
+                MinWidth = 240,
+            };
+            var unlockButton = new Button { Content = "Unlock", MinWidth = 100, IsDefault = true };
+            var cancelButton = new Button { Content = "Cancel", MinWidth = 100, IsCancel = true };
+            var window = new Window
+            {
+                Title = "Unlock kiosk mode",
+                Width = 420,
+                SizeToContent = SizeToContent.Height,
+                CanResize = false,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(24),
+                    Spacing = 12,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = "Enter the kiosk PIN.",
+                            TextWrapping = TextWrapping.Wrap,
+                        },
+                        pinBox,
+                        new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            HorizontalAlignment = HorizontalAlignment.Right,
+                            Spacing = 8,
+                            Children = { unlockButton, cancelButton },
+                        },
+                    },
+                },
+            };
+            unlockButton.Click += (_, _) =>
+            {
+                accepted = true;
+                window.Close();
+            };
+            cancelButton.Click += (_, _) => window.Close();
+            FocusKioskPinWhenOpened(window, pinBox);
+            _dialogs.Track(window);
+            GamepadModalDialogNavigation.Attach(window);
+            DesktopInterfaceScaling.PrepareDialog(window, desktop.MainWindow);
+            await window.ShowDialog(desktop.MainWindow);
+            return accepted ? pinBox.Text ?? "" : null;
         });
     }
 

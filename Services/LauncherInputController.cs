@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -22,6 +23,7 @@ public sealed class LauncherInputController : IDisposable
     private readonly LauncherInputActions _actions;
     private bool _disposed;
     public InputService? Service { get; }
+    public Action? OnKioskUnlock { get; set; }
     public LauncherInputController(Control view, Func<AppSettings> settings, InputBindingsViewModel bindings,
         Func<bool> hostActive, Func<bool> promptOpen, Action dismissPrompt, LauncherInputActions actions, bool enableInput)
     {
@@ -48,11 +50,18 @@ public sealed class LauncherInputController : IDisposable
         view.AddHandler(InputElement.KeyDownEvent, MainWindow_KeyDown, RoutingStrategies.Tunnel);
         view.AddHandler(InputElement.KeyUpEvent, MainWindow_KeyUp, RoutingStrategies.Tunnel);
         view.AddHandler(InputElement.GotFocusEvent, OnTextBoxGotFocusForSteamOsk, RoutingStrategies.Bubble);
+        view.AttachedToVisualTree += OnViewAttached;
+        view.DetachedFromVisualTree += OnViewDetached;
+        if (view.IsAttachedToVisualTree())
+            AttachKeyboardRoot();
     }
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        _view.AttachedToVisualTree -= OnViewAttached;
+        _view.DetachedFromVisualTree -= OnViewDetached;
+        DetachKeyboardRoot();
         _view.RemoveHandler(InputElement.KeyDownEvent, MainWindow_KeyDown);
         _view.RemoveHandler(InputElement.KeyUpEvent, MainWindow_KeyUp);
         _view.RemoveHandler(InputElement.GotFocusEvent, OnTextBoxGotFocusForSteamOsk);
@@ -69,7 +78,34 @@ public sealed class LauncherInputController : IDisposable
             input.OnOptions -= _actions.Options; input.OnGamepadConnectionChanged -= _actions.ConnectionChanged;
             input.Dispose();
         }
-    }        private Func<Key, KeyModifiers, GamepadAction?>? _keyboardActionResolver;
+    }
+    private Func<Key, KeyModifiers, GamepadAction?>? _keyboardActionResolver;
+    private TopLevel? _keyboardRoot;
+
+    private void OnViewAttached(object? sender, VisualTreeAttachmentEventArgs e) => AttachKeyboardRoot();
+
+    private void OnViewDetached(object? sender, VisualTreeAttachmentEventArgs e) => DetachKeyboardRoot();
+
+    /// <summary>
+    /// With no focused control, Avalonia delivers keys to the window rather than the view.
+    /// Kiosk can start that way when no gamepad is connected and the keyboard has not been used yet.
+    /// </summary>
+    private void AttachKeyboardRoot()
+    {
+        if (TopLevel.GetTopLevel(_view) is not TopLevel root || ReferenceEquals(root, _view) || ReferenceEquals(root, _keyboardRoot))
+            return;
+        DetachKeyboardRoot();
+        _keyboardRoot = root;
+        root.AddHandler(InputElement.KeyDownEvent, MainWindow_KeyDown, RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+
+    private void DetachKeyboardRoot()
+    {
+        if (_keyboardRoot == null)
+            return;
+        _keyboardRoot.RemoveHandler(InputElement.KeyDownEvent, MainWindow_KeyDown);
+        _keyboardRoot = null;
+    }
 
 
         private bool _isProcessingInput = false;
@@ -116,6 +152,15 @@ public sealed class LauncherInputController : IDisposable
 
             try
             {
+                if (e.Key == Key.K &&
+                    e.KeyModifiers.HasFlag(KeyModifiers.Control) &&
+                    e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+                {
+                    OnKioskUnlock?.Invoke();
+                    e.Handled = true;
+                    return;
+                }
+
                 if (_promptOpen() &&
                     (e.Key == Key.Escape || e.Key == Key.BrowserBack))
                 {

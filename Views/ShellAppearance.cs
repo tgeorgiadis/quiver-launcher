@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using QuiverLauncher;
 using QuiverLauncher.Services;
 using QuiverLauncher.ViewModels;
 
@@ -63,7 +64,7 @@ public sealed class ShellAppearance
         if (MobileSearchToggleButton != null)
             MobileSearchToggleButton.IsVisible = showLibraryTools;
         if (MobileAddButton != null)
-            MobileAddButton.IsVisible = showLibraryTools;
+            MobileAddButton.IsVisible = showLibraryTools && _root is not MainView { KioskLocked: true };
         if (MobileSortButton != null)
             MobileSortButton.IsVisible = showLibraryTools;
         if (PlatformCapabilities.IsMobile)

@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = View;
+        App.CurrentHostedMainView = new WeakReference<MainView>(View);
 
         _ = new DesktopHostController(this, View);
     }

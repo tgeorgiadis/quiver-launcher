@@ -129,6 +129,25 @@ public partial class SettingsView : UserControl
 
     internal void RequestClose() => _host.CloseSettings();
     private void CloseSettingsPanel_Click(object? sender, RoutedEventArgs e) => RequestClose();
+
+    private void SetKioskPin_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SettingsViewModel model)
+            return;
+        var pin = KioskPinTextBox.Text?.Trim() ?? "";
+        if (pin.Length == 0)
+            return;
+        model.SetKioskPin(pin);
+        KioskPinTextBox.Text = "";
+    }
+
+    private void ClearKioskPin_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SettingsViewModel model)
+            return;
+        model.SetKioskPin(null);
+        KioskPinTextBox.Text = "";
+    }
     private void ThemeColorPicker_Click(object? sender, RoutedEventArgs e) => _host.EditTheme(false);
     private void SecondaryColorPicker_Click(object? sender, RoutedEventArgs e) => _host.EditTheme(true);
     private void ApplyPreset(CardLayoutPreset preset)

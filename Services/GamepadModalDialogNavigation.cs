@@ -133,6 +133,18 @@ public sealed class GamepadModalDialogNavigation
         dialog.Closed += OnDialogClosed;
     }
 
+    public bool FocusDialogControl(Control control)
+    {
+        if (ActiveDialog == null)
+            return false;
+        var index = _dialogControls.IndexOf(control);
+        if (index < 0)
+            return false;
+        _focusedControlIndex = index;
+        FocusCurrentControl();
+        return true;
+    }
+
     public void RefreshDialogButtons()
     {
         var activeDialog = ActiveDialog;

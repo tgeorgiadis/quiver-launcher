@@ -138,6 +138,7 @@
 
 						<!-- App Catalog Button -->
 						<Button x:Name="BrowseNavButton"
+								IsVisible="{Binding ShowCatalogNavigation}"
 								Classes="settings"
 								Margin="0,0,0,4"
 								CornerRadius="8"
@@ -165,7 +166,7 @@
 				<views:LibraryFiltersView x:Name="LibraryFiltersPanel" Grid.Row="2"/>
 
 				<!-- Footer Links -->
-				<StackPanel Grid.Row="3" Margin="12,0,12,8">
+				<StackPanel x:Name="ExternalLinksHost" Grid.Row="3" Margin="12,0,12,8" IsVisible="{Binding ShowExternalLinks}">
 						<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="-12,0,-12,8"/>
 					<StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
 						<Button x:Name="GitHubFooterButton"
@@ -375,6 +376,7 @@
 								   IsVisible="{Binding IsDesktopPlatform}"/>
 
 							<Button x:Name="CheckForUpdatesButton"
+									IsVisible="{Binding ShowUpdateCheckButton}"
 									Classes="modern-icon"
 									Width="32"
 									Height="32"
@@ -438,6 +440,7 @@
 							</Button>
 
 							<Button x:Name="SettingsButton"
+									IsVisible="{Binding ShowSettingsButton}"
 									Classes="modern-icon"
 									Width="28"
 									Height="28"
@@ -467,7 +470,7 @@
 									Width="28"
 									Margin="8,0,0,0"
 									ClickMode="Press"
-									IsVisible="{Binding IsDesktopPlatform}"
+									IsVisible="{Binding ShowWindowChromeButtons}"
 									ToolTip.Tip="{Binding MaximizeButtonTip}"
 									Click="ToggleMaximize_Click">
 								<Image Width="28"
@@ -481,7 +484,7 @@
 									Width="28"
 									Margin="8,0,10,0"
 									ClickMode="Press"
-									IsVisible="{Binding IsDesktopPlatform}"
+									IsVisible="{Binding ShowWindowChromeButtons}"
 									Click="CloseLauncher_Click">
 								<Image Width="28"
 									   Height="28"

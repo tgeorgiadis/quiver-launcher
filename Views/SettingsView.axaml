@@ -161,6 +161,28 @@
 													   TextWrapping="Wrap"/>
 										</StackPanel>
 
+										<StackPanel Spacing="2" Margin="0,8,0,0" IsVisible="{Binding IsDesktopPlatform}">
+											<CheckBox x:Name="KioskModeCheckBox"
+													  Content="Kiosk mode"
+													  Foreground="{DynamicResource ThemeText}"
+													  FontSize="13" FontWeight="SemiBold"
+													  IsChecked="{Binding KioskMode, Mode=TwoWay}"/>
+											<TextBlock Text="Next launch stays fullscreen and only browses and launches games. Settings, catalog, and exit controls are hidden. Press Ctrl+Alt+K to unlock this session, and press it again to lock it. A PIN, if set, is required only to unlock. A cabinet should also make Quiver the Windows shell or a Linux Gamescope/cage session, so Alt+Tab and the Windows key cannot reach the desktop."
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   Margin="20,0,0,0"
+													   TextWrapping="Wrap"/>
+											<TextBox x:Name="KioskPinTextBox"
+													 PasswordChar="•"
+													 Watermark="Optional PIN"
+													 Margin="20,8,0,0"/>
+											<StackPanel Orientation="Horizontal" Spacing="8" Margin="20,8,0,0">
+												<Button x:Name="SetKioskPinButton" Classes="options" Content="Set PIN" Click="SetKioskPin_Click"/>
+												<Button x:Name="ClearKioskPinButton" Classes="options" Content="Clear PIN"
+														IsVisible="{Binding HasKioskPin}" Click="ClearKioskPin_Click"/>
+											</StackPanel>
+										</StackPanel>
+
 										<StackPanel Spacing="2" Margin="0,8,0,0">
 											<CheckBox x:Name="IgnoreArticlesWhenSortingCheckBox"
 													  Content="Ignore The/A/An when sorting by name"

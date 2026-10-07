@@ -42,6 +42,9 @@ internal static class Program
         QuiverLauncherPaths.VelopackPackageDirectoryProvider = ResolveVelopackPackageDirectory;
         QuiverLauncherPaths.EnsureUserDataRootExists();
 
+        var launch = KioskLaunch.Parse(args);
+        args = launch.Args;
+
         if (args.Length > 0 && args[0].StartsWith("-"))
         {
             if (OperatingSystem.IsWindows())
@@ -66,6 +69,8 @@ internal static class Program
 #endif
 
         DefaultMenuInteractionHandler.MenuShowDelay = TimeSpan.Zero;
+        if (launch.Kiosk)
+            KioskLaunch.ArmProcess();
 
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);

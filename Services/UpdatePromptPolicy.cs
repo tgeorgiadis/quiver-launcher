@@ -6,7 +6,9 @@ namespace QuiverLauncher.Services
     /// </summary>
     public static class UpdatePromptPolicy
     {
-        public static bool ShouldPromptAppUpdateReviews(AppSettings? settings) =>
-            settings?.PromptAppUpdateReviews == true;
+        public static bool ShouldPromptAppUpdateReviews(AppSettings? settings, bool kioskLocked = false) =>
+            !kioskLocked && settings?.PromptAppUpdateReviews == true;
+
+        public static bool ShouldPromptLauncherSelfUpdate(bool kioskLocked) => !kioskLocked;
     }
 }

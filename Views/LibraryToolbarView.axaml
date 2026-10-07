@@ -30,6 +30,7 @@
 									Click="LibrarySearchClear_Click"/>
 							</Grid>
 							<Button x:Name="AddNewEntryButton" Grid.Column="1"
+									IsVisible="{Binding ShowLibraryManagement}"
 									Classes="options"
 									Content="+ Add"
 									ToolTip.Tip="Add New Entry"

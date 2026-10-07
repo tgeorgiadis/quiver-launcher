@@ -120,9 +120,17 @@ public partial class LibraryView : UserControl
             _openMenu(anchor, menu);
     }
 
+    private void LibraryCardMenu_Opening(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (sender is ContextMenu menu && Model != null)
+            LibraryKioskMenu.Apply(menu, Model.Settings.KioskLocked);
+    }
+
     private async void Request(object? sender, LibraryActionKind action)
     {
         if (_session.IsClosed || sender is not Control control)
+            return;
+        if (Model.Settings.KioskLocked && !KioskLock.AllowsLibraryAction(action))
             return;
         var game = (control as MenuItem)?.CommandParameter as GameInfo ?? (control as Button)?.CommandParameter as GameInfo ?? control.DataContext as GameInfo;
         await _session.RunAsync(async () =>

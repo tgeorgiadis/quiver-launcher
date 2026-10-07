@@ -10,6 +10,7 @@ public class SettingsViewModel : ObservableViewModel
     public AndroidLauncherUpdater? AndroidUpdates => AndroidLauncherUpdater.Current;
     public bool HasAndroidUpdates => AndroidUpdates != null;
     private readonly ISettingsStore _settingsStore;
+    private readonly KioskSession _kioskSession;
     public event Action<SettingsChange>? Changed;
     public event Action<Exception>? SaveFailed;
     public event Action<string>? CredentialsChanged;
@@ -114,6 +115,34 @@ public class SettingsViewModel : ObservableViewModel
     public SettingsViewModel(ISettingsStore? settingsStore = null)
     {
         _settingsStore = settingsStore ?? SettingsStoreProvider.Default;
+        _kioskSession = new KioskSession(KioskLaunch.IsStartupLocked(_settingsStore.Current));
+    }
+
+    public bool KioskLocked => _kioskSession.IsLocked;
+
+    public void UnlockKioskSession()
+    {
+        if (!_kioskSession.IsLocked)
+            return;
+        _kioskSession.Unlock();
+        Notify(nameof(KioskLocked));
+    }
+
+    public void LockKioskSession()
+    {
+        if (!_kioskSession.Armed || _kioskSession.IsLocked)
+            return;
+        _kioskSession.Lock();
+        Notify(nameof(KioskLocked));
+    }
+
+    public bool HasKioskPin => KioskLock.HasPin(Current);
+
+    public void SetKioskPin(string? pin)
+    {
+        KioskLock.SetPin(Current, string.IsNullOrEmpty(pin) ? null : pin);
+        Commit(SettingsChange.Presentation);
+        Notify(nameof(HasKioskPin));
     }
 
     public AppSettings Current => _fallbackSettings ?? _settingsStore.Current;
@@ -278,6 +307,11 @@ public class SettingsViewModel : ObservableViewModel
     {
         get => Current.StartFullscreen;
         set => Change(Current.StartFullscreen, value, s => s.StartFullscreen = value, SettingsChange.Presentation);
+    }
+    public bool KioskMode
+    {
+        get => Current.KioskMode;
+        set => Change(Current.KioskMode, value, s => s.KioskMode = value, SettingsChange.Presentation);
     }
     public bool ShowOSTopBar
     {

@@ -34,6 +34,7 @@ public sealed class LibraryActions
         _libraryChanged = libraryChanged;
     }
 
+    private bool RefuseKiosk() => _settingsModel.KioskLocked;
     private Task<bool> ShowMessageBoxAsync(string message, string title, bool isQuestion = false, bool preferCancelDefault = false) => _session.IsClosed ? Task.FromResult(false) : _prompt(message, title, isQuestion, preferCancelDefault);
     private void OpenUrl(string url)
     {
@@ -50,16 +51,20 @@ public sealed class LibraryActions
         }
     }
 
-    public Task OpenRepositoryAsync(GameInfo? game) => _session.RunAsync(async () =>
+    public Task OpenRepositoryAsync(GameInfo? game)
+    {
+        if (RefuseKiosk()) return Task.CompletedTask;
+        return _session.RunAsync(async () =>
     {
         if (string.IsNullOrEmpty(game?.Repository)) { await ShowMessageBoxAsync("Failed to open repository page", "Error"); return; }
         try { OpenUrl(RepositorySourceHelper.GetRepositoryPageUrl(game.RepositorySource, game.Repository)); }
         catch (Exception ex) { await ShowMessageBoxAsync($"Failed to open repository page: {ex.Message}", "Error"); }
     });
+    }
 
     public void OpenGameFolder(GameInfo game)
     {
-        if (_session.IsClosed) return;
+        if (RefuseKiosk() || _session.IsClosed) return;
         if (string.IsNullOrEmpty(game.FolderName) && string.IsNullOrWhiteSpace(game.InstallPath))
         {
             _ = _session.RunAsync(() => ShowMessageBoxAsync("Unable to identify the game folder.", "Action Error"));
@@ -95,6 +100,7 @@ public sealed class LibraryActions
 
     public async Task ForceUpdateAsync(GameInfo? game)
     {
+        if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
         {
             if (game == null)
@@ -119,6 +125,7 @@ public sealed class LibraryActions
 
     public async Task ConfigureRunnerAsync(GameInfo? game)
     {
+        if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
         {
             if (game == null || string.IsNullOrWhiteSpace(game.FolderName))
@@ -160,6 +167,7 @@ public sealed class LibraryActions
 
     public async Task LocateInstallAsync(GameInfo? game)
     {
+        if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
         {
             if (game == null)
@@ -188,6 +196,7 @@ public sealed class LibraryActions
 
     public async Task UninstallAsync(GameInfo? game)
     {
+        if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
         {
             if (game == null)
@@ -280,6 +289,7 @@ public sealed class LibraryActions
     private static GameInfo? FindMatchingSavedApp(IEnumerable<GameInfo> apps, GameInfo game) => apps.FirstOrDefault(g => string.Equals(g.InstanceKey, game.InstanceKey, StringComparison.OrdinalIgnoreCase));
     public async Task RemoveEntryAsync(GameInfo? game)
     {
+        if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
         {
             if (game == null || string.IsNullOrEmpty(game.Name))
@@ -326,6 +336,7 @@ public sealed class LibraryActions
 
     public async Task CreateShortcutAsync(GameInfo? game)
     {
+        if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
         {
             if (game == null)
@@ -349,6 +360,7 @@ public sealed class LibraryActions
 
     public async Task AddToSteamAsync(GameInfo? game)
     {
+        if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
         {
             if (game == null)

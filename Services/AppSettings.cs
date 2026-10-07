@@ -117,6 +117,12 @@ namespace QuiverLauncher
         /// <summary>User-pinned tags preferred for quick-filter chips when present in the current set.</summary>
         public List<string> PinnedFilterTags { get; set; } = new List<string>();
         public bool StartFullscreen { get; set; } = false;
+        /// <summary>When true, the next launch is limited to browsing and launching. Ctrl+Alt+K unlocks that session and locks it again.</summary>
+        public bool KioskMode { get; set; }
+        /// <summary>Base64 salt for <see cref="KioskPinHash"/>. Empty when no PIN is set.</summary>
+        public string KioskPinSalt { get; set; } = "";
+        /// <summary>Base64 PBKDF2 hash of the optional kiosk PIN. The PIN itself is never stored.</summary>
+        public string KioskPinHash { get; set; } = "";
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public DesktopWindowPlacement? DesktopWindowPlacement { get; set; }
@@ -157,6 +163,8 @@ namespace QuiverLauncher
         public void EnsureInitialized()
         {
             InterfaceScalePercent = InterfaceScale.Normalize(InterfaceScalePercent);
+            KioskPinSalt ??= "";
+            KioskPinHash ??= "";
             ListRowHeight = Math.Clamp(ListRowHeight ?? (UseGridView ? 96 : SlotSize), 72, 400);
             HiddenApps ??= new List<string>();
             ManuallyHiddenApps ??= new List<string>();

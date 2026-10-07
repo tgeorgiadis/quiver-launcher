@@ -42,6 +42,7 @@ namespace QuiverLauncher
         private readonly Views.MobileShellLayout _mobileLayout;
         public bool CanOpenMobileNavigation => _mobileLayout?.CanOpenNavigation == true;
         private readonly Views.DesktopHeaderLayout? _desktopHeader;
+        private Views.DesktopSidebarController? _sidebarController;
         private readonly Views.ShellAppearance _appearance;
         private readonly Views.ShellChromeNavigation _chromeNavigation;
         private readonly ShellNavigationRouter _navigationRouter;
@@ -74,7 +75,13 @@ namespace QuiverLauncher
         public AndroidLauncherUpdater? AndroidUpdates => AndroidLauncherUpdater.Current;
         public IBrush WindowBackground => this.Resources["ThemeDarker"] as IBrush ?? Brushes.Transparent;
         public bool IsDesktopPlatform => !PlatformCapabilities.IsMobile;
-        public bool ShowMinimizeButton => IsDesktopPlatform && !SteamDeckEnvironment.IsGamingMode();
+        public bool KioskLocked => _settingsViewModel.KioskLocked;
+        public bool ShowSettingsButton => !KioskLocked;
+        public bool ShowCatalogNavigation => !KioskLocked;
+        public bool ShowExternalLinks => !KioskLocked;
+        public bool ShowUpdateCheckButton => !KioskLocked;
+        public bool ShowWindowChromeButtons => IsDesktopPlatform && !KioskLocked;
+        public bool ShowMinimizeButton => ShowWindowChromeButtons && !SteamDeckEnvironment.IsGamingMode();
         public string MaximizeButtonTip => GetHostWindowState()is WindowState.Maximized or WindowState.FullScreen ? "Restore" : "Maximize";
         public bool IsMobile => PlatformCapabilities.IsMobile;
 
@@ -151,14 +158,14 @@ namespace QuiverLauncher
             _chromeNavigation = new Views.ShellChromeNavigation(this, _session, this, Shell, () => _mobileLayout.IsSearchOpen, WireChromeXyFocusEdges);
             if (IsDesktopPlatform)
             {
-                var sidebarController = new Views.DesktopSidebarController(MainSplitView, SidebarPanel, DesktopSidebarToggleButton,
+                _sidebarController = new Views.DesktopSidebarController(MainSplitView, SidebarPanel, DesktopSidebarToggleButton,
                     _settingsViewModel, () =>
                     {
                         if (IsGamepadFocusActive) _chromeNavigation.ApplyTopBarGamepadSelection(0);
                         else DesktopSidebarToggleButton.Focus();
                         WireChromeXyFocusEdges();
                     });
-                _session.OnShutdown(sidebarController.Dispose);
+                _session.OnShutdown(_sidebarController.Dispose);
             }
             _navigationRouter = new ShellNavigationRouter(Shell, _gamepadNavigation, new Dictionary<GamepadNavigationZone, Func<IFeatureNavigationHandler>> { [GamepadNavigationZone.Sidebar] = () => _chromeNavigation, [GamepadNavigationZone.TopBar] = () => _chromeNavigation, [GamepadNavigationZone.AnnouncementBanner] = () => Banners, [GamepadNavigationZone.Library] = () => LibraryPanel.Navigation, [GamepadNavigationZone.BrowseGrid] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseToolbar] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseFilters] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseDetailsOverlay] = () => BrowseDetailsPanel, [GamepadNavigationZone.AppUpdatesReviewToolbar] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewList] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewRowActions] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.ModsOverlayToolbar] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlaySourceFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayList] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayRowActions] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsDetailsOverlay] = () => ModsPanel.Details, [GamepadNavigationZone.DisplayFilterOverlay] = () => DisplayFilterOverlay.Navigation, [GamepadNavigationZone.EntryFormOverlay] = () => EntryFormOverlay.Navigation, [GamepadNavigationZone.TagEditOverlay] = () => TagEditOverlay.Navigation, [GamepadNavigationZone.Settings] = () => SettingsPanel.Navigation, [GamepadNavigationZone.ChangelogOverlay] = () => ChangelogPanel, }, () => IsDisplayFilterOverlayOpen, () =>
             {
@@ -175,8 +182,8 @@ namespace QuiverLauncher
             ChangelogPanel.NavigationHost = this;
             ChangelogPanel.ConfigureRenderer(_markdownRenderer);
             ChangelogPanel.CloseRequested += CloseChangelog;
-            if (MinimizeButton != null)
-                MinimizeButton.IsVisible = !SteamDeckEnvironment.IsGamingMode();
+            _settingsViewModel.PropertyChanged += OnKioskLockChanged;
+            _session.OnShutdown(() => _settingsViewModel.PropertyChanged -= OnKioskLockChanged);
             try
             {
                 _settings = _settingsViewModel.Load();
@@ -192,6 +199,7 @@ namespace QuiverLauncher
             Library = new LibraryViewModel(_gameManager, _settingsViewModel);
             if (_initializeOnOpen) Library.BeginInitialLoad();
             LibraryToolbar.Configure(Library, _session, OnSettingChanged);
+            ApplyKioskChrome(refreshShell: false);
             LibraryToolbar.AddRequested += () => ShowEntryFormOverlay(forCreate: true);
             LibraryToolbar.SearchChanged += () =>
             {
@@ -323,6 +331,7 @@ namespace QuiverLauncher
             }
 
             _input = new LauncherInputController(this, () => _settings, SettingsPanel.Bindings, () => IsHostActive, () => MessagePromptOverlay.IsVisible, () => MessagePromptOverlay.Dismiss(), new(HandleGamepadNavigation, HandleConfirmAction, HandleCancelAction, HandleOptionsAction, HandleGamepadConnectionChanged, ActivateKeyboardNavChrome), dependencies.EnableInput);
+            _input.OnKioskUnlock = () => _ = ToggleKioskFromChordAsync();
             UpdateGamepadChromeClass();
             UpdateGamepadHintsBar();
             SettingsPanel.Bindings.Refresh();
@@ -354,6 +363,8 @@ namespace QuiverLauncher
 
         private async Task HandleLibraryNavigationRequestAsync(Views.LibraryActionKind action, GameInfo? game)
         {
+            if (KioskLocked && !KioskLock.AllowsLibraryAction(action))
+                return;
             switch (action)
             {
                 case Views.LibraryActionKind.EmptyLibraryAddApp:
@@ -566,8 +577,76 @@ namespace QuiverLauncher
                 ApplySorting();
         }
 
+        private void OnKioskLockChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.KioskLocked))
+                ApplyKioskChrome(refreshShell: true);
+        }
+
+        private void ApplyKioskChrome(bool refreshShell)
+        {
+            OnPropertyChanged(nameof(KioskLocked));
+            OnPropertyChanged(nameof(ShowSettingsButton));
+            OnPropertyChanged(nameof(ShowMinimizeButton));
+            OnPropertyChanged(nameof(ShowWindowChromeButtons));
+            OnPropertyChanged(nameof(ShowUpdateCheckButton));
+            OnPropertyChanged(nameof(ShowCatalogNavigation));
+            OnPropertyChanged(nameof(ShowExternalLinks));
+            if (SettingsButton != null) SettingsButton.IsVisible = ShowSettingsButton;
+            if (MinimizeButton != null) MinimizeButton.IsVisible = ShowMinimizeButton;
+            if (ToggleMaximizeButton != null) ToggleMaximizeButton.IsVisible = ShowWindowChromeButtons;
+            if (CloseLauncherButton != null) CloseLauncherButton.IsVisible = ShowWindowChromeButtons;
+            if (CheckForUpdatesButton != null) CheckForUpdatesButton.IsVisible = ShowUpdateCheckButton;
+            if (BrowseNavButton != null) BrowseNavButton.IsVisible = ShowCatalogNavigation;
+            if (ExternalLinksHost != null) ExternalLinksHost.IsVisible = ShowExternalLinks;
+            if (HeaderFixedActions != null)
+                HeaderFixedActions.Margin = new Thickness(0, 0, KioskLocked ? 16 : 0, 0);
+            if (!refreshShell && KioskLocked)
+                _sidebarController?.CollapseForKioskStartup();
+            if (!KioskLocked)
+                _sidebarController?.ReleaseKioskSidebar();
+            Library?.ApplyDisplaySettings();
+            if (refreshShell && _appearance != null)
+                UpdateMainViewUi();
+        }
+
+        private int _kioskUnlockBusy;
+        private async Task ToggleKioskFromChordAsync()
+        {
+            if (_session.IsClosed || Interlocked.CompareExchange(ref _kioskUnlockBusy, 1, 0) != 0)
+                return;
+            try
+            {
+                if (!KioskLocked)
+                {
+                    _settingsViewModel.LockKioskSession();
+                    return;
+                }
+
+                if (KioskLock.HasPin(_settings))
+                {
+                    var pin = await _prompts.PromptKioskPinAsync();
+                    if (pin == null || _session.IsClosed)
+                        return;
+                    if (!KioskLock.VerifyPin(_settings, pin))
+                    {
+                        await ShowMessageBoxAsync("Incorrect PIN.", "Kiosk mode");
+                        return;
+                    }
+                }
+
+                _settingsViewModel.UnlockKioskSession();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _kioskUnlockBusy, 0);
+            }
+        }
+
         private void ShowTagEditOverlay(GameInfo game, MetadataEditMode mode = MetadataEditMode.Tags)
         {
+            if (KioskLocked)
+                return;
             Shell.TagEditorOpen = true;
             ClearGamepadFocus();
             _chromeNavigation.ClearSidebarGamepadFocus();
@@ -592,6 +671,8 @@ namespace QuiverLauncher
 
         private void ShowEntryFormOverlay(bool forCreate, GameInfo? gameToEdit = null)
         {
+            if (KioskLocked)
+                return;
             if (Shell.SettingsOpen)
                 CloseSettingsPanel();
             if (Shell.DocumentOpen)
@@ -882,6 +963,9 @@ namespace QuiverLauncher
             });
         }
 
+        private static bool TryFocus(Control? control) =>
+            control is { IsVisible: true, IsEnabled: true, Focusable: true } && control.Focus();
+
         private void SetInitialFocus()
         {
             // Small delay to ensure UI is fully rendered
@@ -901,23 +985,16 @@ namespace QuiverLauncher
                     return;
                 }
 
-                // Try to focus the Continue button if visible
-                if (Library.IsContinueVisible && this.FindControl<Button>("ContinueButton")is Button continueBtn)
-                {
-                    continueBtn.Focus();
+                // The sidebar nav button exists while kiosk has the pane collapsed, but it cannot take focus.
+                if (Library.IsContinueVisible && TryFocus(this.FindControl<Button>("ContinueButton")))
                     return;
-                }
-
-                // Try Library nav button
-                if (this.FindControl<Button>("LibraryNavButton")is Button libraryBtn)
-                {
-                    libraryBtn.Focus();
+                if (TryFocus(this.FindControl<Button>("LibraryNavButton")))
                     return;
-                }
+                if (TryFocus(DesktopSidebarToggleButton))
+                    return;
 
-                // Fallback to first focusable control
                 var firstFocusable = this.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.IsVisible && c.IsEnabled && c.Focusable);
-                firstFocusable?.Focus();
+                TryFocus(firstFocusable);
             }, DispatcherPriority.Loaded);
         }
 
@@ -971,7 +1048,7 @@ namespace QuiverLauncher
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            if (SettingsPanel == null)
+            if (KioskLocked || SettingsPanel == null)
                 return;
             if (Shell.EntryEditorOpen)
                 CloseEntryFormOverlay();
@@ -1096,6 +1173,8 @@ namespace QuiverLauncher
 
         private void ShowBrowseView()
         {
+            if (KioskLocked)
+                return;
             if (Shell.BrowseDetailsOpen)
                 CloseBrowseDetails(restoreSelection: false);
             Shell.Mode = MainViewMode.Browse;
@@ -1114,6 +1193,8 @@ namespace QuiverLauncher
 
         private void OpenAppUpdatesReview()
         {
+            if (KioskLocked)
+                return;
             if (Shell.ModsOpen)
                 ModsPanel.CloseModsOverlay();
             Shell.Mode = MainViewMode.Library;
@@ -1282,7 +1363,12 @@ namespace QuiverLauncher
             }
         }
 
-        private async void CheckforUpdates_Click(object sender, RoutedEventArgs e) => await RunUpdateCheckAsync(promptForReview: true, isManualCheck: true);
+        private async void CheckforUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            if (KioskLocked)
+                return;
+            await RunUpdateCheckAsync(promptForReview: true, isManualCheck: true);
+        }
         private void CancelUpdateCheck_Click(object? sender, EventArgs e) { CheckForUpdatesButton.Focus(); _updateChecks.Cancel(); }
         private void DismissUpdateCheck_Click(object? sender, EventArgs e)
         {
@@ -1300,6 +1386,8 @@ namespace QuiverLauncher
         });
         private void GithubButton_Click(object sender, RoutedEventArgs e)
         {
+            if (KioskLocked)
+                return;
             try
             {
                 string url = "https://github.com/tgeorgiadis/quiver-launcher/";
@@ -1313,6 +1401,8 @@ namespace QuiverLauncher
 
         private void DiscordButton_Click(object sender, RoutedEventArgs e)
         {
+            if (KioskLocked)
+                return;
             try
             {
                 OpenUrl("https://discord.gg/5XRThpWHGk");
@@ -1325,6 +1415,8 @@ namespace QuiverLauncher
 
         private void KofiButton_Click(object sender, RoutedEventArgs e)
         {
+            if (KioskLocked)
+                return;
             try
             {
                 OpenUrl("https://ko-fi.com/magicturt1e");
@@ -1406,6 +1498,8 @@ namespace QuiverLauncher
 
         private void AddNewEntryButton_Click(object? sender, RoutedEventArgs e)
         {
+            if (KioskLocked)
+                return;
             ShowEntryFormOverlay(forCreate: true);
         }
 

@@ -148,6 +148,20 @@ public partial class App
             AvailableLauncherVersion = availableLauncherVersion,
         };
 
+    private bool IsKioskLocked()
+    {
+        if (TryGetHostedMainView() is { } view)
+            return view.SettingsModel.KioskLocked;
+        try
+        {
+            return KioskLaunch.IsStartupLocked(AppSettings.Load());
+        }
+        catch
+        {
+            return KioskLaunch.IsProcessArmed;
+        }
+    }
+
     private async Task CheckForUpdatesAndApplyAsync(bool isManualCheck = false)
     {
         if (!PlatformCapabilities.SupportsVelopack)
@@ -230,6 +244,9 @@ public partial class App
                 launcherUpdatePending: true,
                 availableLauncherVersion: result.AvailableVersion);
         }
+
+        if (!UpdatePromptPolicy.ShouldPromptLauncherSelfUpdate(IsKioskLocked()))
+            return null;
 
         await PromptAndApplyVelopackUpdateAsync(
             result.UpdateInfo,

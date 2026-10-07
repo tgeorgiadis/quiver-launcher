@@ -45,7 +45,7 @@ internal sealed class DesktopWindowPlacementController : IDisposable
         // Capture the normal size before maximizing; Avalonia retains it for Restore Down.
         _placement ??= new DesktopWindowPlacement(_window.Width, _window.Height,
             _window.Position.X, _window.Position.Y, false);
-        _window.WindowState = _settings.Current.StartFullscreen
+        _window.WindowState = _settings.KioskLocked || _settings.Current.StartFullscreen
             ? SteamDeckEnvironment.DesktopFullscreenWindowState()
             : _placement.Maximized ? WindowState.Maximized : WindowState.Normal;
         if (_window.WindowState != WindowState.Normal && _initialPlacement != null)

@@ -26,6 +26,7 @@ public sealed class LibraryViewModel : ObservableViewModel, IDisposable
     public bool HasNoSearchMatches => !_initialLoading && !_initialLoadFailed && _manager.HasNoLibrarySearchMatches;
     public string SearchText => _manager.LibrarySearchText;
     public double CardPixelSize => PlatformCapabilities.IsMobile ? double.NaN : Settings.SlotSize;
+    public bool ShowLibraryManagement => !Settings.KioskLocked;
 
     public LibraryViewModel(GameManager manager, SettingsViewModel settings)
     {
@@ -57,7 +58,14 @@ public sealed class LibraryViewModel : ObservableViewModel, IDisposable
         _initialLoadFailed = !_manager.HasLoadedLibrary;
         Notify(null);
     }
-    private void SettingsChanged(object? sender, PropertyChangedEventArgs e) => Notify(nameof(CardPixelSize));
+    private void SettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is null or nameof(SettingsViewModel.KioskLocked))
+            Notify(nameof(ShowLibraryManagement));
+        if (e.PropertyName == nameof(SettingsViewModel.KioskLocked))
+            ApplyDisplaySettings();
+        Notify(nameof(CardPixelSize));
+    }
     public void RefreshContinue()
     {
         if (_closed) return;

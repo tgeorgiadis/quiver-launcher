@@ -42,7 +42,7 @@
                 <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
                 <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
             </StackPanel><Button.ContextMenu>
-									<ContextMenu>
+									<ContextMenu Opening="LibraryCardMenu_Opening">
 										<MenuItem Header="Launch"
 												  Click="LaunchGameMenu_Click"
 												  CommandParameter="{Binding}"
@@ -207,7 +207,7 @@
 								Tag="{Binding}">
 							<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
 							<Button.ContextMenu>
-								<ContextMenu>
+								<ContextMenu Opening="LibraryCardMenu_Opening">
 									<MenuItem Header="Launch"
 											  Click="LaunchGameMenu_Click"
 											  CommandParameter="{Binding}"
@@ -539,7 +539,7 @@
 							Tag="{Binding}">
 						<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
 						<Button.ContextMenu>
-							<ContextMenu>
+							<ContextMenu Opening="LibraryCardMenu_Opening">
 								<MenuItem Header="Launch"
 										  Click="LaunchGameMenu_Click"
 										  CommandParameter="{Binding}"
@@ -876,10 +876,12 @@
 									HorizontalAlignment="Center"
 									Margin="0,8,0,0">
 							<Button x:Name="EmptyLibraryAddButton" Classes="options" Focusable="True" GotFocus="EmptyLibraryAction_GotFocus"
+									IsVisible="{Binding ShowLibraryManagement}"
 									Content="Add App Manually"
 									FontSize="13"
 									Click="EmptyLibraryAddApp_Click"/>
 							<Button x:Name="EmptyLibraryBrowseButton" Classes="options" Focusable="True" GotFocus="EmptyLibraryAction_GotFocus"
+									IsVisible="{Binding ShowLibraryManagement}"
 									Content="Browse App Catalog"
 									FontSize="13"
 									Click="EmptyLibraryBrowseCatalog_Click"/>

@@ -90,6 +90,12 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         // Named for the 3.x catalog migration; it now only marks that the welcome was shown.
         if (_settings.LocalFirstCatalogMigrationComplete)
             return;
+        if (_settingsModel.KioskLocked)
+        {
+            _settings.LocalFirstCatalogMigrationComplete = true;
+            _settingsModel.SaveCurrent();
+            return;
+        }
         await _prompts.ShowWelcomeMessageBoxAsync(FirstRunWelcomeMessage, FirstRunWelcomeTitle);
         if (_session.IsClosed)
             return;
@@ -112,7 +118,7 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
     public List<GameInfo> GetAppUpdateReviewRows() => _gameManager.LibraryApps.Where(g => g.Status is GameStatus.UpdateAvailable or GameStatus.Updating or GameStatus.Installing).OrderBy(g => g.Name, StringComparer.OrdinalIgnoreCase).ToList();
     private async Task<bool> TryPromptAppUpdatesReviewAsync()
     {
-        if (!UpdatePromptPolicy.ShouldPromptAppUpdateReviews(_settings))
+        if (!UpdatePromptPolicy.ShouldPromptAppUpdateReviews(_settings, _settingsModel.KioskLocked))
             return false;
         // After auto-updates run, anything still pending needs review (including auto apps
         // that could not resolve a platform asset).
@@ -162,7 +168,7 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
 
         RefreshUpdateCheckStatus();
         NotifyUpdateCheckUiProperties();
-        if (_showAutoFailures && failures.Count > 0 && _presentation.CanShowFailureSummary)
+        if (_showAutoFailures && failures.Count > 0 && _presentation.CanShowFailureSummary && !_settingsModel.KioskLocked)
         {
             await ShowMessageBoxAsync("Some automatic updates could not be completed:\n\n" + string.Join('\n', failures), "Auto Update");
         }
@@ -255,7 +261,9 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         var pendingApps = AppUpdateSelection.GetManualPendingUpdates(_gameManager.LibraryApps);
         var launcherApp = _app;
         var launcherPending = AndroidLauncherUpdater.Current == null && launcherResult.LauncherUpdatePending && launcherApp != null;
-        var promptApps = isManualCheck || UpdatePromptPolicy.ShouldPromptAppUpdateReviews(_settings);
+        if (_settingsModel.KioskLocked)
+            return;
+        var promptApps = isManualCheck || UpdatePromptPolicy.ShouldPromptAppUpdateReviews(_settings, kioskLocked: false);
         var reviewableApps = promptApps ? pendingApps : new List<GameInfo>();
         if (launcherPending && launcherApp != null && reviewableApps.Count > 0)
         {

@@ -15,6 +15,7 @@ internal sealed class DesktopSidebarController : IDisposable
     private readonly Button _toggle;
     private readonly SettingsViewModel _settings;
     private readonly Action _focusToggle;
+    private bool? _sessionCollapsed;
 
     public DesktopSidebarController(SplitView split, Border sidebar, Button toggle,
         SettingsViewModel settings, Action focusToggle)
@@ -31,8 +32,31 @@ internal sealed class DesktopSidebarController : IDisposable
         settings.PropertyChanged += SettingsChanged;
     }
 
+    public void CollapseForKioskStartup()
+    {
+        _sessionCollapsed = true;
+        Apply();
+    }
+
+    public void ReleaseKioskSidebar()
+    {
+        if (_sessionCollapsed == null)
+            return;
+        _sessionCollapsed = null;
+        Apply();
+    }
+
     private void Toggle(object? sender, RoutedEventArgs e)
     {
+        if (_settings.KioskLocked)
+        {
+            _sessionCollapsed = !(_sessionCollapsed ?? _settings.DesktopSidebarCollapsed);
+            Apply();
+            _focusToggle();
+            return;
+        }
+
+        _sessionCollapsed = null;
         _settings.DesktopSidebarCollapsed = !_settings.DesktopSidebarCollapsed;
         _focusToggle();
     }
@@ -45,7 +69,7 @@ internal sealed class DesktopSidebarController : IDisposable
 
     private void Apply()
     {
-        var collapsed = _settings.DesktopSidebarCollapsed;
+        var collapsed = _sessionCollapsed ?? _settings.DesktopSidebarCollapsed;
         if (collapsed && _sidebar.IsKeyboardFocusWithin) _focusToggle();
         // Fluent SplitView supplies the short eased open/close animation.
         _split.IsPaneOpen = !collapsed;

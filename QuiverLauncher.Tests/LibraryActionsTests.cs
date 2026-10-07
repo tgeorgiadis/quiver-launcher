@@ -39,6 +39,28 @@ public class LibraryActionsTests
         await shutdown;
         (await catalog.LoadLocalAppsAsync()).Should().ContainSingle(g => g.Repository == "owner/example");
     }
+
+    [Fact]
+    public async Task Kiosk_lock_refuses_remove_without_prompting()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "quiver-action-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var store = new Store(directory);
+        store.Current.KioskMode = true;
+        var catalog = new AppCatalogService(dataDirectory: directory);
+        var game = new GameInfo { Name = "Example", Repository = "owner/example", FolderName = "Example", IsInLocalAppsJson = true };
+        await catalog.SaveLocalAppsAsync([game]);
+        using var manager = new GameManager(store, catalogService: catalog);
+        using var library = new LibraryViewModel(manager, new SettingsViewModel(store));
+        library.Settings.KioskLocked.Should().BeTrue();
+        var actions = new LibraryActions(manager, new LibraryPersistenceService(manager), library.Settings, new LauncherSession(), library,
+            () => throw new Exception("Unexpected picker"), (_, _, _, _) => throw new Exception("Unexpected prompt"),
+            _ => throw new Exception("Unexpected URL"), () => throw new Exception("Unexpected catalog refresh"));
+        await actions.RemoveEntryAsync(game);
+        KioskLock.AllowsLibraryAction(Views.LibraryActionKind.LaunchGameMenu).Should().BeTrue();
+        KioskLock.AllowsLibraryAction(Views.LibraryActionKind.RemoveGameEntry).Should().BeFalse();
+        (await catalog.LoadLocalAppsAsync()).Should().ContainSingle(g => g.Repository == "owner/example");
+    }
     [Fact]
     public async Task Runner_prompt_respects_already_cancelled_host_lifetime()
     {

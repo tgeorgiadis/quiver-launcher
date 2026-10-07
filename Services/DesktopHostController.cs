@@ -51,13 +51,29 @@ public sealed class DesktopHostController : IDisposable
 
     private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!_disposed && (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(_view.SettingsModel.ShowOSTopBar)))
-            ApplyWindowChrome();
+        if (_disposed || (!string.IsNullOrEmpty(e.PropertyName)
+            && e.PropertyName != nameof(_view.SettingsModel.ShowOSTopBar)
+            && e.PropertyName != nameof(_view.SettingsModel.KioskLocked)))
+            return;
+
+        ApplyWindowChrome();
+        if (e.PropertyName == nameof(_view.SettingsModel.KioskLocked) && _view.SettingsModel.KioskLocked)
+            EnforceKioskWindowState();
+    }
+
+    private void EnforceKioskWindowState()
+    {
+        var kioskState = SteamDeckEnvironment.DesktopFullscreenWindowState();
+        if (Window.WindowState == kioskState)
+            return;
+        _rewritingState = true;
+        try { Window.WindowState = kioskState; }
+        finally { _rewritingState = false; }
     }
 
     private void ApplyWindowChrome()
     {
-        var showTopBar = _view.SettingsModel.ShowOSTopBar;
+        var showTopBar = !_view.SettingsModel.KioskLocked && _view.SettingsModel.ShowOSTopBar;
         Window.WindowDecorations = showTopBar ? WindowDecorations.Full : WindowDecorations.BorderOnly;
         Window.ExtendClientAreaToDecorationsHint = !showTopBar;
     }
@@ -65,6 +81,15 @@ public sealed class DesktopHostController : IDisposable
     public void HandleStateChanged(WindowState state)
     {
         if (_disposed || _rewritingState) return;
+        var kioskState = SteamDeckEnvironment.DesktopFullscreenWindowState();
+        if (_view.SettingsModel.KioskLocked && state != kioskState)
+        {
+            _rewritingState = true;
+            try { Window.WindowState = kioskState; }
+            finally { _rewritingState = false; }
+            _view.NotifyHostWindowStateChanged();
+            return;
+        }
         if (state == WindowState.FullScreen && SteamDeckEnvironment.DisallowsExclusiveFullscreen())
         {
             _rewritingState = true;
@@ -82,6 +107,12 @@ public sealed class DesktopHostController : IDisposable
         _placement.Flush();
         // Quit from the macOS app menu (⌘Q), logout and OS shutdown must exit, not hide to tray.
         var isShutdown = e.CloseReason is WindowCloseReason.ApplicationShutdown or WindowCloseReason.OSShutdown;
+        // A locked kiosk can't be closed by the player, but never holds up logout or shutdown.
+        if (_view.SettingsModel.KioskLocked && !_forceExit && !isShutdown)
+        {
+            e.Cancel = true;
+            return;
+        }
         if (!_forceExit && !isShutdown && _view.SettingsModel.Current.CloseToTray)
         {
             e.Cancel = true;
@@ -94,6 +125,7 @@ public sealed class DesktopHostController : IDisposable
 
     public void HideToTray()
     {
+        if (_view.SettingsModel.KioskLocked) return;
         _placement.Suspend();
         _view.DismissInputForHost();
         Window.Hide();
@@ -122,7 +154,7 @@ public sealed class DesktopHostController : IDisposable
 
     public void CloseAfterLaunch(bool launched)
     {
-        if (!launched || !_view.SettingsModel.Current.CloseAfterLaunch) return;
+        if (!launched || _view.SettingsModel.KioskLocked || !_view.SettingsModel.Current.CloseAfterLaunch) return;
         _view.DismissInputForHost();
         if (_view.SettingsModel.Current.CloseToTray) { HideToTray(); return; }
         _placement.Suspend();
