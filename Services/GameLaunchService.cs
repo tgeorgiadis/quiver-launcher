@@ -214,6 +214,7 @@ public static class GameLaunchService
         }
         catch (Exception ex)
         {
+            Telemetry.Current.CaptureException(ex, handled: true, "app_launch");
             if (Avalonia.Application.Current != null)
                 await GameDialogService.ShowMessageBoxAsync($"Error launching {game.Name}: {ex.Message}", "Launch Error");
 

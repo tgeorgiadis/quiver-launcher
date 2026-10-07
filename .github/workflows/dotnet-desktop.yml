@@ -13,12 +13,17 @@ permissions:
 
 env:
   VELOPACK_VERSION: "1.2.0"
+  # Anonymous usage data: the same PostHog project as the website and v4, built into release builds.
+  POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
   PACK_ID: QuiverLauncher
   REPO_URL: https://github.com/${{ github.repository }}
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # Tests never send usage data, and never see the question about it.
+      POSTHOG_PROJECT_TOKEN: ""
 
     steps:
     - name: Checkout

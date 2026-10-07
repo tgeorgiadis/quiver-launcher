@@ -1635,7 +1635,19 @@ namespace QuiverLauncher.Models
                     return false;
 
                 case GameStatus.Installed:
-                    return await AppInstallLaunch.Current.LaunchAsync(this, gamesFolder);
+                    bool launched;
+                    try { launched = await AppInstallLaunch.Current.LaunchAsync(this, gamesFolder); }
+                    catch (Exception ex)
+                    {
+                        var failed = Telemetry.AppRef(this);
+                        failed["reason"] = Telemetry.ReasonOf(ex);
+                        Telemetry.Current.Track("app_launch_failed", failed);
+                        throw;
+                    }
+                    var usage = Telemetry.AppRef(this);
+                    usage["version"] = InstalledVersion;
+                    Telemetry.Current.Track(launched ? "app_launched" : "app_launch_failed", usage);
+                    return launched;
 
                 default:
                     return false;

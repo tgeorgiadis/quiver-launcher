@@ -225,7 +225,11 @@ public sealed class LibraryActions
                 if (!await ShowMessageBoxAsync($"Uninstall {game.Name}?\n\nYour saves and application data will be preserved.",
                     "Uninstall Flatpak", isQuestion: true, preferCancelDefault: true) || _session.IsClosed) return;
                 game.IsLoading = true;
-                try { await FlatpakService.Current.UninstallAsync(flatpakPath); }
+                try
+                {
+                    await FlatpakService.Current.UninstallAsync(flatpakPath);
+                    TrackUninstalled(game);
+                }
                 catch (Exception ex) { await ShowMessageBoxAsync($"Could not uninstall {game.Name}: {ex.Message}", "Uninstall Failed"); }
                 finally
                 {
@@ -246,6 +250,7 @@ public sealed class LibraryActions
                 try
                 {
                     await AndroidLibraryUninstall.RunAsync(game, game.GetInstallPath(_gameManager.GamesFolder), AppInstallLaunch.Current);
+                    TrackUninstalled(game);
                 }
                 catch (Exception ex)
                 {
@@ -274,6 +279,7 @@ public sealed class LibraryActions
                     {
                         await Task.Run(() => RecycleBinHelper.MoveToRecycleBin(gamePath));
                     }
+                    TrackUninstalled(game);
 
                     game.IsLoading = false;
                     await game.CheckStatusAsync(_gameManager.HttpClient, _gameManager.GamesFolder);
@@ -287,6 +293,8 @@ public sealed class LibraryActions
             }
         });
     }
+
+    private static void TrackUninstalled(GameInfo game) => Telemetry.Current.Track("app_uninstalled", Telemetry.AppRef(game));
 
     private Task<List<GameInfo>> LoadGamesFromJsonAsync() => _gameManager.CatalogService.LoadLocalAppsAsync();
     private async Task SaveGamesToJsonAsync(List<GameInfo> appsToSave)
@@ -337,6 +345,7 @@ public sealed class LibraryActions
 
                 games.Remove(gameToRemove);
                 await SaveGamesToJsonAsync(games);
+                Telemetry.Current.Track("app_removed", Telemetry.AppRef(game));
                 // Drop only Quiver's link; Windows continues to own the installed application.
                 var metadataPath = game.GetInstallPath(_gameManager.GamesFolder);
                 if (WindowsInstallerService.HasReceipt(metadataPath))

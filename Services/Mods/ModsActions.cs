@@ -1,3 +1,4 @@
+using QuiverLauncher.Models;
 using QuiverLauncher.ViewModels;
 using QuiverLauncher.Services.Mods.Providers.GameBanana;
 using QuiverLauncher.Services.Mods.Providers.Thunderstore;
@@ -19,6 +20,14 @@ public sealed class ModsActions(GameManager _gameManager, LauncherSession _sessi
         _session.RunAsync(() => InstallCoreAsync(item, updateInstalledFilesOnly, promptForDependencies));
     public Task UninstallModAsync(ModListItem item) => _session.RunAsync(() => UninstallCoreAsync(item));
     public Task UpdateAllVisibleModsAsync() => _session.RunAsync(UpdateAllCoreAsync);
+    /// <summary>Usage data: the app by its catalog slug, and where the mod comes from (never which mod).</summary>
+    private static Dictionary<string, object?> ModUsage(GameInfo game, ModListItem item)
+    {
+        var usage = Telemetry.AppRef(game);
+        usage["provider"] = item.ProviderId;
+        return usage;
+    }
+
     private async Task InstallCoreAsync(
         ModListItem item,
         bool updateInstalledFilesOnly = false,
@@ -163,11 +172,16 @@ public sealed class ModsActions(GameManager _gameManager, LauncherSession _sessi
             await Workspace.RefreshModUpdateFlagsForGameAsync(game).ConfigureAwait(true);
             if (!Current()) return;
             SetModsStatus(isUpdate ? $"Updated {item.DisplayName}" : $"Installed {item.DisplayName}");
+            Telemetry.Current.Track(isUpdate ? "mod_updated" : "mod_installed", ModUsage(game, item));
         }
         catch (Exception) when (!Current()) { }
         catch (Exception ex)
         {
             SetModsStatus($"{actionLabel} failed: {ex.Message}");
+            var usage = ModUsage(game, item);
+            usage["update"] = isUpdate;
+            usage["reason"] = Telemetry.ReasonOf(ex);
+            Telemetry.Current.Track("mod_install_failed", usage);
             await ShowMessageBoxAsync($"Failed to install mod:\n{ex.Message}", "Mods");
         }
         finally

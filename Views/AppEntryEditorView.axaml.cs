@@ -123,6 +123,8 @@ public partial class AppEntryEditorView : UserControl
         var generation = _generation;
         var creating = Model.IsCreating;
         var folder = Model.FolderName.Trim();
+        var manual = Model.ManuallyManaged;
+        var host = RepositorySourceHelper.Normalize(Model.RepositorySource);
         await _session.RunAsync(async () =>
         {
             await Model.SaveAsync(_session.Token, async () =>
@@ -134,7 +136,17 @@ public partial class AppEntryEditorView : UserControl
                 if (!_session.IsClosed && generation == _generation)
                 {
                     CloseRequested?.Invoke();
-                    if (creating) EntryCreated?.Invoke(folder);
+                    if (creating)
+                    {
+                        Telemetry.Current.Track("app_added", new Dictionary<string, object?>
+                        {
+                            ["slug"] = null,
+                            ["source"] = manual ? "local" : "custom",
+                            ["host"] = manual ? null : host,
+                            ["from"] = "add_entry",
+                        });
+                        EntryCreated?.Invoke(folder);
+                    }
                 }
             });
             await _notices;

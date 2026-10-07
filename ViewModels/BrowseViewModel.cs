@@ -89,11 +89,21 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
             var page = await client.GetAppsAsync(query, null, token);
             if (generation != _generation) return;
             Show(page);
-            if (Items.Count == 0) Status = "Nothing matches that search and those filters.";
+            if (Items.Count == 0)
+            {
+                Status = "Nothing matches that search and those filters.";
+                // Usage data: what players look for and don't find, by length only (never the words typed).
+                Telemetry.Current.Track("search_no_results", new Dictionary<string, object?>
+                {
+                    ["query_length"] = Search.Trim().Length,
+                    ["filtered"] = query.Os != BrowseText.CurrentPlatform || query.Console != null || query.ProjectType != null || query.Ai != null,
+                });
+            }
             _ = FindGamesAsync(generation, page.Items, token);
         }
         catch (Exception ex) when (generation == _generation && !token.IsCancellationRequested)
         {
+            Telemetry.Current.Track("catalog_load_failed", new Dictionary<string, object?> { ["reason"] = Telemetry.ReasonOf(ex) });
             Status = $"Couldn't reach quiverlauncher.com. {ex.Message}";
         }
         finally

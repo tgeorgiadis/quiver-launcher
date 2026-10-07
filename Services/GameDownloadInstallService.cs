@@ -28,6 +28,20 @@ public static class GameDownloadInstallService
         flatpakService ??= FlatpakService.Current;
         var previousVersion = game.InstalledVersion;
         var rejectedFormatSwitch = false;
+        var isUpdate = triggerStatus == GameStatus.UpdateAvailable;
+        string? installingVersion = null;
+        // Usage data: which app, which release, and how it went.
+        Dictionary<string, object?> Usage(params (string Key, object? Value)[] more)
+        {
+            var properties = Telemetry.AppRef(game);
+            properties["version"] = installingVersion;
+            properties["update"] = isUpdate;
+            foreach (var (key, value) in more)
+                properties[key] = value;
+            return properties;
+        }
+        void Failed(string kind, Exception ex) =>
+            Telemetry.Current.Track("app_install_failed", Usage(("error", kind), ("reason", Telemetry.ReasonOf(ex))));
         InvalidOperationException FormatSwitchError()
         {
             rejectedFormatSwitch = true;
@@ -132,9 +146,11 @@ public static class GameDownloadInstallService
                     Reasons = [.. check.Reasons, $"Quiver checked this release's other files, not {asset.name}."],
                     Checksums = new Dictionary<string, string>(),
                 };
+            installingVersion = latestRelease.tag_name;
             if (check is { State: not ReleaseCheckState.Verified } &&
                 !await dialogs.ConfirmUnverifiedReleaseAsync(game.DisplayName, latestRelease.tag_name, check))
             {
+                Telemetry.Current.Track("app_install_cancelled", Usage(("stage", "not_verified"), ("blocked", check.State == ReleaseCheckState.Blocked)));
                 game.Status = triggerStatus;
                 game.DownloadProgress = 0;
                 return;
@@ -171,6 +187,11 @@ public static class GameDownloadInstallService
                     await PersistLinuxRunnerSettingsAsync(game).ConfigureAwait(false);
                 }
             }
+
+            Telemetry.Current.Track("app_install_started", Usage(
+                ("verified", check == null ? null : check.State == ReleaseCheckState.Verified),
+                ("blocked", check?.State == ReleaseCheckState.Blocked),
+                ("format", InstallFormat(asset.name))));
 
             string? downloadPath = null;
             string? stagingDir = null;
@@ -366,6 +387,10 @@ public static class GameDownloadInstallService
                 game.DownloadProgress = 0;
                 game.ClearDownloadSelection();
                 game.AvailableDownloads = null;
+                Telemetry.Current.Track(isUpdate ? "app_updated" : "app_installed", Usage(
+                    ("from", isUpdate ? previousVersion : null),
+                    ("verified", check == null ? null : check.State == ReleaseCheckState.Verified),
+                    ("format", InstallFormat(effectiveAssetName))));
             }
             finally
             {
@@ -404,6 +429,7 @@ public static class GameDownloadInstallService
         }
         catch (DownloadMismatchException ex)
         {
+            Failed("checksum_mismatch", ex);
             // Nothing was installed or removed: the app stays as it was.
             game.Status = triggerStatus;
             game.DownloadProgress = 0;
@@ -411,6 +437,7 @@ public static class GameDownloadInstallService
         }
         catch (HttpRequestException ex)
         {
+            Failed(GameDialogService.IsRateLimitError(ex) ? "rate_limited" : "network", ex);
             // Stop the card's downloading indicator while the error dialog is open.
             ResetNotInstalled(game);
             if (GameDialogService.IsRateLimitError(ex))
@@ -430,6 +457,7 @@ public static class GameDownloadInstallService
         }
         catch (UnauthorizedAccessException ex)
         {
+            Failed("permission", ex);
             await dialogs.ShowErrorAsync(
                 $"Permission error installing {game.Name}: {ex.Message}\n\nPlease check folder permissions.",
                 "Permission Error");
@@ -437,6 +465,9 @@ public static class GameDownloadInstallService
         }
         catch (Exception ex)
         {
+            Failed(ex is OperationCanceledException ? "cancelled" : "other", ex);
+            if (ex is not OperationCanceledException)
+                Telemetry.Current.CaptureException(ex, handled: true, "app_install");
             await dialogs.ShowErrorAsync(
                 InstallationErrorMessages.FormatInstallationError(game.Name, ex.Message),
                 "Installation Error");
@@ -468,6 +499,15 @@ public static class GameDownloadInstallService
                     checkRemoteVersion: false, applyCachedRelease: false).ConfigureAwait(false);
         }
     }
+
+    /// <summary>The kind of file a release was installed from, for usage data.</summary>
+    static string InstallFormat(string assetName) =>
+        GameInstallationService.IsFlatpakAsset(assetName) ? "flatpak"
+        : GameInstallationService.IsWindowsInstallerAsset(assetName) ? "msi"
+        : assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase) ? "apk"
+        : assetName.EndsWith(".appimage", StringComparison.OrdinalIgnoreCase) ? "appimage"
+        : GameInstallationService.IsSingleFileExecutableAsset(assetName) ? "executable"
+        : "archive";
 
     static void ResetNotInstalled(GameInfo game)
     {

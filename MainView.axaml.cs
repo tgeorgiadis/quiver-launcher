@@ -309,6 +309,7 @@ namespace QuiverLauncher
             Shell.SecondaryColorBrush = new SolidColorBrush(Color.Parse(_settings?.SecondaryColor ?? "#404040"));
             UpdateThemeColors();
             _settings.EnsureInitialized();
+            StartUsageData();
             if (_settings.FirstStartup)
             {
                 _settingsViewModel.ApplyCardLayout(CardLayoutPreset.Square, persist: false);
@@ -344,6 +345,75 @@ namespace QuiverLauncher
             _gameManager.PropertyChanged += OnGameManagerPropertyChanged;
             DataContext = this;
             _mobileLayout.ApplyMobileShell();
+        }
+
+        /// <summary>Usage data follows the saved choice from the start; the start itself is sent once the player has said yes.</summary>
+        private void StartUsageData()
+        {
+            var telemetry = Telemetry.Current;
+            telemetry.SetFolders(_gameManager.GamesFolder, QuiverLauncherPaths.UserDataRoot);
+            _settingsViewModel.ApplyUsageData();
+            telemetry.TrackStartup(new Dictionary<string, object?>
+            {
+                ["first_run"] = _settings.FirstStartup,
+                ["kiosk"] = _settingsViewModel.KioskLocked,
+                ["view"] = _settings.UseGridView ? "grid" : "list",
+                ["interface_scale"] = _settings.InterfaceScalePercent,
+                ["gamepad_input"] = _settings.EnableGamepadInput,
+                ["background_update_checks"] = _settings.BackgroundUpdateCheckEnabled,
+                ["close_to_tray"] = _settings.CloseToTray,
+                ["custom_theme"] = !string.Equals(_settings.PrimaryColor, "#18181b", StringComparison.OrdinalIgnoreCase),
+                ["background_image"] = !string.IsNullOrWhiteSpace(_settings.BackgroundImagePath),
+                ["background_music"] = !string.IsNullOrWhiteSpace(_settings.LauncherMusicPath),
+                ["github_token"] = !string.IsNullOrWhiteSpace(_settings.GitHubApiToken),
+                ["custom_app_list"] = !string.IsNullOrWhiteSpace(_settings.CustomAppListLocation),
+                ["preview_updates"] = _settings.AllowPrereleaseLauncherUpdates,
+            });
+            Shell.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(ShellViewModel.Mode) or nameof(ShellViewModel.SettingsOpen) or nameof(ShellViewModel.AppUpdatesOpen)
+                    or nameof(ShellViewModel.BrowseDetailsOpen) or nameof(ShellViewModel.ModsOpen) or nameof(ShellViewModel.ModDetailsOpen))
+                    TrackScreen();
+            };
+        }
+
+        /// <summary>Usage data: how big the library is once it has loaded, never which apps are in it.</summary>
+        private void TrackLibraryLoaded()
+        {
+            var apps = _gameManager.LibraryApps.ToList();
+            Telemetry.Current.Track("library_loaded", new Dictionary<string, object?>
+            {
+                ["apps"] = apps.Count,
+                ["installed"] = apps.Count(a => a.Status is GameStatus.Installed or GameStatus.UpdateAvailable),
+                ["updates_available"] = apps.Count(a => a.Status == GameStatus.UpdateAvailable),
+                ["catalog_apps"] = apps.Count(a => !a.IsManuallyManaged && !string.IsNullOrWhiteSpace(a.CatalogSlug)),
+                ["local_apps"] = apps.Count(a => a.IsManuallyManaged),
+                ["auto_update"] = apps.Count(a => a.AutoUpdate),
+                ["flatpak"] = apps.Count(a => a.IsFlatpak),
+            });
+        }
+
+        private string? _trackedScreen;
+        /// <summary>The page in an app's or a game's details, by its catalog slug.</summary>
+        private (string Screen, string? Slug)? _detailsScreen;
+
+        /// <summary>Usage data: the screen shown, when it changes.</summary>
+        private void TrackScreen()
+        {
+            var (screen, slug) = Shell.SettingsOpen ? ("settings", null)
+                : Shell.AppUpdatesOpen ? ("app_updates", null)
+                : Shell.ModDetailsOpen ? ("mod", null)
+                : Shell.ModsOpen ? ("mods", null)
+                : Shell.BrowseDetailsOpen && _detailsScreen is { } details ? details
+                : Shell.Mode == MainViewMode.Browse ? ("browse", null)
+                : ("library", (string?)null);
+            var key = $"{screen}:{slug}";
+            if (key == _trackedScreen) return;
+            _trackedScreen = key;
+            var properties = new Dictionary<string, object?> { ["screen"] = screen };
+            if (screen is "app" or "game")
+                properties["slug"] = slug;
+            Telemetry.Current.Track("screen_viewed", properties);
         }
 
         private async Task ToggleAppAutoUpdateAsync(GameInfo game)
@@ -873,6 +943,9 @@ namespace QuiverLauncher
                 await RefreshStartupMetadataAsync();
                 if (_session.IsClosed) return;
                 await _updates.ShowFirstRunWelcomeIfNeededAsync();
+                // After the welcome, so a new player's yes to usage data counts these too.
+                TrackLibraryLoaded();
+                TrackScreen();
                 _ = _session.RunAsync(Banners.RefreshAnnouncementBannerAsync);
             }
             catch (Exception ex)
@@ -928,8 +1001,14 @@ namespace QuiverLauncher
             ClearGamepadFocus();
         }
 
+        private bool _gamepadTracked;
         private void HandleGamepadConnectionChanged(bool hasConnected)
         {
+            if (hasConnected && !_gamepadTracked)
+            {
+                _gamepadTracked = true;
+                Telemetry.Current.Track("gamepad_connected");
+            }
             Dispatcher.UIThread.Post(() =>
             {
                 if (_session.IsClosed)
@@ -1267,14 +1346,18 @@ namespace QuiverLauncher
 
         private void OpenBrowseDetails(BrowseItem item)
         {
+            _detailsScreen = ("app", item.App?.Slug);
             Shell.BrowseDetailsOpen = true;
+            TrackScreen();
             BrowseDetailsPanel.Open(item);
             NotifyGamepadUiChanged();
         }
 
         private void OpenBrowseGame(BrowseGame game)
         {
+            _detailsScreen = ("game", game.Slug);
             Shell.BrowseDetailsOpen = true;
+            TrackScreen();
             BrowseDetailsPanel.OpenGame(game.Slug, game.Title);
             NotifyGamepadUiChanged();
         }
@@ -1306,6 +1389,15 @@ namespace QuiverLauncher
             try
             {
                 var result = await _libraryAdd.AddAsync(app);
+                if (result.Outcome == LibraryAddOutcome.Added)
+                {
+                    // An App Catalog app by its slug; one from the player's own list only by where it's from.
+                    var usage = Telemetry.AppRef(app);
+                    if (_detailsScreen is ("app", { } slug) && !app.IsManuallyManaged)
+                        (usage["slug"], usage["source"]) = (slug, "catalog");
+                    usage["from"] = "app_catalog";
+                    Telemetry.Current.Track("app_added", usage);
+                }
                 if (result.Outcome == LibraryAddOutcome.FolderConflict)
                     await ShowMessageBoxAsync($"This app wasn't added. {result.Error}", "Could Not Add");
             }

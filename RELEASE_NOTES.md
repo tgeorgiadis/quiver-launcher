@@ -22,6 +22,11 @@ This is a prerelease for testing before 3.5.0.
 - New in **Settings → General**: Quiver starts fullscreen with only browsing and launching, for arcade cabinets and shared PCs.
 - Press **Ctrl+Alt+K** to unlock it, and again to lock it. You can set a PIN for unlocking.
 
+## Anonymous usage data
+
+- Quiver asks once whether it may send anonymous usage data: which features get used, which apps are installed and launched, and errors. It's off unless you say yes.
+- It never includes your name, files or folders. Change it any time in **Settings → General → Usage data**.
+
 ## Windows MSI installs
 
 - Apps that release a `.msi` install through the Windows setup wizard, then you pick the program it installed.

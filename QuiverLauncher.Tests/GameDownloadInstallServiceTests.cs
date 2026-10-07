@@ -405,6 +405,59 @@ public class GameDownloadInstallServiceTests
         game.GetLatestRelease()!.tag_name.Should().Be("2.0");
     }
 
+    [Fact]
+    public async Task Usage_data_records_an_install_starting_and_finishing_but_never_its_folder()
+    {
+        var gamesFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(gamesFolder);
+        var sent = new List<System.Text.Json.Nodes.JsonObject>();
+        using var usage = new Telemetry("phc_project", "https://ph.example", async (request, token) =>
+        {
+            var body = System.Text.Json.Nodes.JsonNode.Parse(await request.Content!.ReadAsStringAsync(token))!;
+            lock (sent) sent.AddRange(body["batch"]!.AsArray().Select(e => e!.AsObject()));
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        usage.Configure(enabled: true, installId: "install-1");
+        var previous = Telemetry.Current;
+        Telemetry.Current = usage;
+        try
+        {
+            const string version = "v9.8.7-usage";
+            var release = new GitHubRelease
+            {
+                tag_name = version,
+                assets = [new GitHubAsset { name = "payload.zip", browser_download_url = "https://example.com/download/asset" }],
+            };
+            var game = new GameInfo { Name = "Usage Game", Repository = "owner/usage-game", FolderName = "UsageGame" };
+            using var client = new HttpClient(new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(CreateMinimalZipWithExe()),
+            }));
+
+            await GameDownloadInstallService.DownloadAndInstallAsync(game, client, gamesFolder, release,
+                new AppSettings { Platform = TestPlatforms.ForWindowsPayload }, GameStatus.NotInstalled,
+                new RecordingDialogs(), releaseMode: ReleaseInstallMode.ExplicitRelease);
+            await usage.FlushAsync(TestContext.Current.CancellationToken);
+
+            // Other tests may install at the same time; this one's events carry its own version.
+            List<System.Text.Json.Nodes.JsonObject> mine;
+            lock (sent) mine = sent.Where(e => e["properties"]!["version"]?.GetValue<string>() == version).ToList();
+            mine.Select(e => e["event"]!.GetValue<string>()).Should().Equal("app_install_started", "app_installed");
+            var installed = mine[1]["properties"]!.AsObject();
+            installed["source"]!.GetValue<string>().Should().Be("custom");
+            installed["slug"].Should().BeNull();
+            installed["format"]!.GetValue<string>().Should().Be("archive");
+            installed["update"]!.GetValue<bool>().Should().BeFalse();
+            mine.Select(e => e.ToJsonString()).Should().NotContain(json => json.Contains(gamesFolder));
+        }
+        finally
+        {
+            Telemetry.Current = previous;
+            if (Directory.Exists(gamesFolder))
+                Directory.Delete(gamesFolder, true);
+        }
+    }
+
     private static byte[] CreateMinimalZipWithExe()
     {
         using var ms = new MemoryStream();

@@ -375,6 +375,25 @@
 													   Margin="0,0,0,4"/>
 										</StackPanel>
 
+										<!-- Anonymous usage data (PostHog) -->
+										<StackPanel Spacing="2" IsVisible="{Binding UsageDataAvailable}">
+											<TextBlock Text="USAGE DATA"
+													   FontSize="10" FontWeight="Bold"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   LetterSpacing="1"
+													   Margin="0,8,0,4"/>
+											<CheckBox x:Name="UsageDataCheckBox"
+													  Content="Send anonymous usage data"
+													  Foreground="{DynamicResource ThemeText}"
+													  FontSize="13" FontWeight="SemiBold"
+													  IsChecked="{Binding UsageDataEnabled, Mode=TwoWay}"/>
+											<TextBlock Text="Helps improve Quiver Launcher: which features get used, which apps are installed and launched, and errors. Never your name, files or folders."
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   Margin="20,0,0,0"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
 									</StackPanel>
 								</ScrollViewer></TabItem>
 

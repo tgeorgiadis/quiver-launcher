@@ -87,8 +87,18 @@ public partial class App : Application, INotifyPropertyChanged
             InitializeMacAppMenu();
     }
 
+    private static bool _usageDataHandlersRegistered;
+
     public override void OnFrameworkInitializationCompleted()
     {
+        // Errors nobody caught go to usage data too, when the player said yes to it.
+        if (!_usageDataHandlersRegistered)
+        {
+            _usageDataHandlersRegistered = true;
+            Telemetry.RegisterCrashHandlers();
+            Dispatcher.UIThread.UnhandledException += (_, e) =>
+                Telemetry.Current.CaptureException(e.Exception, handled: false, "ui_thread");
+        }
 #if DEBUG
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
@@ -108,6 +118,7 @@ public partial class App : Application, INotifyPropertyChanged
             else
             {
                 desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                desktop.Exit += (_, _) => Telemetry.Current.FlushBeforeExit();
 
                 var mainWindow = new MainWindow();
                 mainWindow._app = this;

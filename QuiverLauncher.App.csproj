@@ -44,6 +44,15 @@
 		<PackageReference Include="Velopack" Version="1.2.0" />
 	</ItemGroup>
 
+	<!-- Anonymous usage data (Services/Telemetry.cs): the PostHog project token is built in from the
+	     POSTHOG_PROJECT_TOKEN variable by release builds. Without it nothing is ever sent. -->
+	<PropertyGroup>
+		<PostHogProjectToken Condition="'$(PostHogProjectToken)' == ''">$(POSTHOG_PROJECT_TOKEN)</PostHogProjectToken>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(PostHogProjectToken)' != ''">
+		<AssemblyMetadata Include="PostHogProjectToken" Value="$(PostHogProjectToken)" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<AvaloniaResource Include="Assets/**" />
 		<AvaloniaResource Include="Assets/Icons/**" />

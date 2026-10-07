@@ -298,6 +298,39 @@ public class SettingsViewModel : ObservableViewModel
         get => Current.TruncateLibraryCardTitles;
         set => Change(Current.TruncateLibraryCardTitles, value, s => s.TruncateLibraryCardTitles = value, SettingsChange.LibraryDisplay);
     }
+    /// <summary>Whether this build can send usage data at all; without it, the setting is hidden.</summary>
+    public bool UsageDataAvailable => Telemetry.Current.Available;
+    public bool UsageDataEnabled
+    {
+        get => Current.UsageDataEnabled;
+        set => SetUsageData(value, "settings");
+    }
+
+    /// <summary>The player's answer, from Settings or the question after starting: saved, followed at once, and never asked again.</summary>
+    public void SetUsageData(bool enabled, string via)
+    {
+        var changed = Current.UsageDataEnabled != enabled;
+        var wasAsked = Current.UsageDataAsked;
+        Current.UsageDataAsked = true;
+        if (changed || !wasAsked)
+        {
+            if (enabled && changed)
+                Current.UsageDataInstallId = Guid.NewGuid().ToString();
+            if (!enabled)
+                Current.UsageDataInstallId = string.Empty;
+            Current.UsageDataEnabled = enabled;
+            try { Save(Current); }
+            catch (Exception ex) { SaveFailed?.Invoke(ex); }
+        }
+        ApplyUsageData();
+        if (enabled && changed)
+            Telemetry.Current.Track("usage_data_enabled", new Dictionary<string, object?> { ["via"] = via });
+        Notify(nameof(UsageDataEnabled));
+    }
+
+    /// <summary>Has the usage data client follow the saved choice.</summary>
+    public void ApplyUsageData() => Telemetry.Current.Configure(Current.UsageDataEnabled, Current.UsageDataInstallId);
+
     public bool AllowPrereleaseLauncherUpdates
     {
         get => Current.AllowPrereleaseLauncherUpdates;

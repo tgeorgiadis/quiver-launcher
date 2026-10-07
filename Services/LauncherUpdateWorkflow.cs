@@ -89,7 +89,10 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         _session.Token.ThrowIfCancellationRequested();
         // Named for the 3.x catalog migration; it now only marks that the welcome was shown.
         if (_settings.LocalFirstCatalogMigrationComplete)
+        {
+            await AskAboutUsageDataIfNeededAsync();
             return;
+        }
         if (_settingsModel.KioskLocked)
         {
             _settings.LocalFirstCatalogMigrationComplete = true;
@@ -99,10 +102,38 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         await _prompts.ShowWelcomeMessageBoxAsync(FirstRunWelcomeMessage, FirstRunWelcomeTitle);
         if (_session.IsClosed)
             return;
+        await AskAboutUsageDataIfNeededAsync();
+        if (_session.IsClosed)
+            return;
         _presentation.OpenBrowse();
         _settings.LocalFirstCatalogMigrationComplete = true;
         _settingsModel.SaveCurrent();
     }
+
+    /// <summary>
+    /// Asks once whether to send anonymous usage data: after the welcome for a new player, or on the
+    /// first start after updating to a version that has it. Not while kiosk mode is locked.
+    /// </summary>
+    public async Task AskAboutUsageDataIfNeededAsync()
+    {
+        if (!Telemetry.Current.Available || _settings.UsageDataAsked || _settingsModel.KioskLocked || _session.IsClosed)
+            return;
+        var yes = await _prompts.ShowMessageBoxAsync(UsageDataQuestion, UsageDataTitle, isQuestion: true);
+        // Closed before answering: ask again next time.
+        if (_session.IsClosed)
+            return;
+        _settingsModel.SetUsageData(yes, "prompt");
+    }
+
+    public const string UsageDataTitle = "Help improve Quiver Launcher";
+    public const string UsageDataQuestion =
+        """
+        Send anonymous usage data to help make Quiver Launcher better?
+
+        This shares which features get used, which apps are installed and launched, and any errors, so problems can be found and fixed. It never includes your name, files or folders.
+
+        You can change this at any time in Settings → General → Usage data.
+        """;
 
     public const string FirstRunWelcomeTitle = "Welcome to Quiver Launcher";
     public const string FirstRunWelcomeMessage =

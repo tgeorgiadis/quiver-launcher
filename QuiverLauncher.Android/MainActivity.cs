@@ -75,6 +75,13 @@ public class MainActivity : AvaloniaMainActivity
             AndroidAppInstallLaunchService.CompleteUninstall(resultCode == Result.Ok);
     }
 
+    protected override void OnPause()
+    {
+        // The player may not come back before Android ends the process: send usage data now.
+        _ = Telemetry.Current.FlushAsync();
+        base.OnPause();
+    }
+
     protected override void OnResume()
     {
         base.OnResume();

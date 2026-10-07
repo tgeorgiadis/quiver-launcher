@@ -139,6 +139,12 @@ namespace QuiverLauncher
         /// </summary>
         public bool AllowPrereleaseLauncherUpdates { get; set; }
         public bool AutoUpdateNewlyAddedApps { get; set; }
+        /// <summary>The player agreed to send anonymous usage data and errors (see <see cref="Telemetry"/>). Off until they do.</summary>
+        public bool UsageDataEnabled { get; set; }
+        /// <summary>The player answered the usage data question, so it isn't asked again.</summary>
+        public bool UsageDataAsked { get; set; }
+        /// <summary>A random id for this install while usage data is on; a new one each time it's turned back on.</summary>
+        public string UsageDataInstallId { get; set; } = string.Empty;
         public string BackgroundImagePath { get; set; } = string.Empty;
         public string LauncherMusicPath { get; set; } = string.Empty;
         public float MusicVolume { get; set; } = 0.2f;
@@ -179,6 +185,9 @@ namespace QuiverLauncher
             KeyboardBindingDefaults.EnsureComplete(KeyboardBindings);
 
             CustomAppListLocation ??= string.Empty;
+            UsageDataInstallId ??= string.Empty;
+            if (UsageDataEnabled && UsageDataInstallId.Length == 0)
+                UsageDataInstallId = Guid.NewGuid().ToString();
             CatalogAiFilter ??= string.Empty;
             if (AppCatalogSources != null)
             {
