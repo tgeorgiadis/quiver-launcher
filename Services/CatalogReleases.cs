@@ -7,6 +7,9 @@ namespace QuiverLauncher.Services;
 
 public enum ReleaseCheckState { Verified, Unverified, Blocked }
 
+/// <summary>An app's folder and download filter from the catalog, which tell apart entries a repository can't.</summary>
+public sealed record CatalogLink(string? FolderName, string? ReleaseAssetFilter);
+
 /// <summary>What quiverlauncher.com says about one release of a catalog app.</summary>
 public sealed record ReleaseCheck(
     ReleaseCheckState State,
@@ -35,8 +38,13 @@ public sealed class CatalogReleases
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private readonly QuiverCatalogClient _client;
     private readonly string _cachePath;
+    private readonly string _linksPath;
     private readonly SemaphoreSlim _refresh = new(1, 1);
-    private readonly ConcurrentDictionary<string, QuiverCatalogDetail> _details = new(StringComparer.OrdinalIgnoreCase);
+    // Each catalog app's folder and download filter, from the catalog listing, for the apps a repository alone can't
+    // link. Saved, so they still link offline.
+    private readonly ConcurrentDictionary<string, CatalogLink> _links;
+    private readonly SemaphoreSlim _linksRefresh = new(1, 1);
+    private DateTime _linksAt = DateTime.MinValue;
     private readonly Dictionary<string, (DateTime At, IReadOnlyList<QuiverCatalogRelease> Releases)> _history = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<QuiverCatalogStatus> _status;
     private DateTime _statusAt = DateTime.MinValue;
@@ -47,7 +55,9 @@ public sealed class CatalogReleases
     {
         _client = client;
         _cachePath = Path.Combine(cacheDirectory, "catalog-release-status.json");
-        _status = ReadSaved();
+        _linksPath = Path.Combine(cacheDirectory, "catalog-release-links.json");
+        _status = ReadSaved<List<QuiverCatalogStatus>>(_cachePath) ?? [];
+        _links = new(ReadSaved<Dictionary<string, CatalogLink>>(_linksPath) ?? [], StringComparer.OrdinalIgnoreCase);
         if (_status.Count > 0) _statusCheckedAt = File.GetLastWriteTimeUtc(_cachePath);
     }
 
@@ -57,14 +67,10 @@ public sealed class CatalogReleases
         var list = apps.ToList();
         if (!list.Any(a => !a.IsManuallyManaged && !string.IsNullOrWhiteSpace(a.Repository))) return;
         await RefreshStatusAsync(force: false, token).ConfigureAwait(false);
-        // Apps sharing a repository are told apart by their download filter, which only the app's page has.
-        foreach (var slug in list.SelectMany(Candidates).GroupBy(c => (c.Provider, Repo: c.Repository?.ToLowerInvariant()))
-                     .Where(g => g.Count() > 1).SelectMany(g => g).Select(c => c.Slug).Distinct().ToList())
-        {
-            if (_details.ContainsKey(slug)) continue;
-            try { _details[slug] = await _client.GetDetailAsync(slug, token).ConfigureAwait(false); }
-            catch (Exception ex) when (!token.IsCancellationRequested) { System.Diagnostics.Debug.WriteLine($"Catalog app {slug} unavailable: {ex.Message}"); }
-        }
+        // Apps sharing a repository are told apart by their download filter, and an app whose repository moved since it
+        // was added (renamed, or handed to another owner; GitHub still follows the old name) is found by its folder.
+        if (list.Any(a => Candidates(a).Skip(1).Any() || (Linkable(a) && !Candidates(a).Any())))
+            await RefreshLinksAsync(token).ConfigureAwait(false);
         foreach (var app in list) ApplyKnown(app);
     }
 
@@ -140,7 +146,7 @@ public sealed class CatalogReleases
             _status = items;
             _statusAt = DateTime.UtcNow;
             _statusCheckedAt = DateTimeOffset.UtcNow;
-            Save(items);
+            Save(_cachePath, items);
         }
         catch (Exception ex) when (!token.IsCancellationRequested)
         {
@@ -151,9 +157,40 @@ public sealed class CatalogReleases
         finally { _refresh.Release(); }
     }
 
+    private async Task RefreshLinksAsync(CancellationToken token)
+    {
+        if (DateTime.UtcNow - _linksAt < StatusAge) return;
+        await _linksRefresh.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            if (DateTime.UtcNow - _linksAt < StatusAge) return;
+            var links = new Dictionary<string, CatalogLink>(StringComparer.OrdinalIgnoreCase);
+            string? cursor = null;
+            do
+            {
+                var page = await _client.GetAppsAsync(new QuiverCatalogQuery(), cursor, token, QuiverCatalogClient.MaxPageSize).ConfigureAwait(false);
+                foreach (var app in page.Items)
+                    links[app.Slug] = new(QuiverCatalogMapping.FolderFor(app), app.Launcher.ReleaseAssetFilter);
+                cursor = page.NextCursor;
+            } while (cursor != null);
+            foreach (var (slug, link) in links) _links[slug] = link;
+            _linksAt = DateTime.UtcNow;
+            Save(_linksPath, links);
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            // Offline: keep the links this launcher saved, and try again later.
+            System.Diagnostics.Debug.WriteLine($"Catalog listing unavailable: {ex.Message}");
+            _linksAt = DateTime.UtcNow - StatusAge + TimeSpan.FromMinutes(2);
+        }
+        finally { _linksRefresh.Release(); }
+    }
+
+    private static bool Linkable(GameInfo app) => !app.IsManuallyManaged && !string.IsNullOrWhiteSpace(app.Repository);
+
     private IEnumerable<QuiverCatalogStatus> Candidates(GameInfo app)
     {
-        if (app.IsManuallyManaged || string.IsNullOrWhiteSpace(app.Repository)) return [];
+        if (!Linkable(app)) return [];
         var source = app.EffectiveRepositorySource;
         var repository = app.Repository.Trim();
         return _status.Where(s => string.Equals(s.Provider, source, StringComparison.OrdinalIgnoreCase) &&
@@ -163,35 +200,46 @@ public sealed class CatalogReleases
     private QuiverCatalogStatus? Find(GameInfo app)
     {
         var candidates = Candidates(app).ToList();
-        if (candidates.Count <= 1) return candidates.FirstOrDefault();
+        if (candidates.Count == 0)
+        {
+            // The repository moved since the app was added; the catalog sets each app's folder, so the folder says which.
+            if (!Linkable(app)) return null;
+            var source = app.EffectiveRepositorySource;
+            var moved = _status.Where(s => string.Equals(s.Provider, source, StringComparison.OrdinalIgnoreCase) && SameFolder(s, app)).ToList();
+            return moved.Count == 1 ? moved[0] : null;
+        }
+        if (candidates.Count == 1) return candidates[0];
         var filter = RepositorySourceHelper.NormalizeReleaseAssetFilter(app.ReleaseAssetFilter) ?? "";
-        var byFilter = candidates.Where(c => _details.TryGetValue(c.Slug, out var d) && string.Equals(
-            RepositorySourceHelper.NormalizeReleaseAssetFilter(d.Entry.Launcher.ReleaseAssetFilter) ?? "", filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        var byFilter = candidates.Where(c => _links.TryGetValue(c.Slug, out var link) && string.Equals(
+            RepositorySourceHelper.NormalizeReleaseAssetFilter(link.ReleaseAssetFilter) ?? "", filter, StringComparison.OrdinalIgnoreCase)).ToList();
         if (byFilter.Count == 1) return byFilter[0];
-        var byFolder = candidates.Where(c => _details.TryGetValue(c.Slug, out var d) &&
-            string.Equals(d.Entry.Launcher.FolderName?.Trim(), app.FolderName?.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+        var byFolder = candidates.Where(c => SameFolder(c, app)).ToList();
         // Still ambiguous: better unlinked than checked against another app's files.
         return byFolder.Count == 1 ? byFolder[0] : null;
     }
 
-    private IReadOnlyList<QuiverCatalogStatus> ReadSaved()
+    private bool SameFolder(QuiverCatalogStatus status, GameInfo app) =>
+        _links.TryGetValue(status.Slug, out var link) && !string.IsNullOrWhiteSpace(link.FolderName) &&
+        string.Equals(link.FolderName.Trim(), app.FolderName?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private static T? ReadSaved<T>(string path) where T : class
     {
-        try { return File.Exists(_cachePath) ? JsonSerializer.Deserialize<List<QuiverCatalogStatus>>(File.ReadAllText(_cachePath), Json) ?? [] : []; }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { return []; }
+        try { return File.Exists(path) ? JsonSerializer.Deserialize<T>(File.ReadAllText(path), Json) : null; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { return null; }
     }
 
-    private void Save(List<QuiverCatalogStatus> items)
+    private static void Save<T>(string path, T value)
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_cachePath)!);
-            var temporary = _cachePath + ".tmp";
-            File.WriteAllText(temporary, JsonSerializer.Serialize(items, Json));
-            File.Move(temporary, _cachePath, overwrite: true);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            var temporary = path + ".tmp";
+            File.WriteAllText(temporary, JsonSerializer.Serialize(value, Json));
+            File.Move(temporary, path, overwrite: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            System.Diagnostics.Debug.WriteLine($"Catalog release status not saved: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"Catalog release data not saved: {ex.Message}");
         }
     }
 }

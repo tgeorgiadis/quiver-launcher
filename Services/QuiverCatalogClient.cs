@@ -168,9 +168,12 @@ public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
     public static string AppPageUrl(string slug) => $"{WebsiteUrl}/apps/{Uri.EscapeDataString(slug)}";
     public static string ReviewPageUrl(string slug) => AppPageUrl(slug) + "?tab=how-it-runs";
 
-    public Task<QuiverCatalogPage<QuiverCatalogApp>> GetAppsAsync(QuiverCatalogQuery query, string? cursor, CancellationToken token)
+    /// <summary>The most apps the API returns in one page.</summary>
+    public const int MaxPageSize = 100;
+
+    public Task<QuiverCatalogPage<QuiverCatalogApp>> GetAppsAsync(QuiverCatalogQuery query, string? cursor, CancellationToken token, int limit = PageSize)
     {
-        var parameters = new List<string> { $"limit={PageSize}" };
+        var parameters = new List<string> { $"limit={limit}" };
         void Add(string name, string? value)
         {
             if (!string.IsNullOrWhiteSpace(value))

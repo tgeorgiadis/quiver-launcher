@@ -29,17 +29,23 @@ public class ReleaseVerificationTests
         var site = launcher.Network.Site;
         // Two pages: an app listed on the second one still links.
         site["/release-status?limit=100"] = Page([Status("alpha", alphaRepo, "v1.0"), Status("shared-pc", sharedRepo, "v3.0")], next: "c2");
-        site["/release-status?limit=100&cursor=c2"] = Page([Status("shared-android", sharedRepo, "v3.1")]);
-        site["/apps/shared-pc"] = Detail("Shared", "windows", sharedRepo);
-        site["/apps/shared-android"] = Detail("Shared", "android", sharedRepo);
+        site["/release-status?limit=100&cursor=c2"] = Page([Status("shared-android", sharedRepo, "v3.1"),
+            Status("moved", "new-owner/new-name", "v2.0"), Status("sibling", "new-owner/other-app", "v9.0")]);
+        // The listing gives every app's folder and download filter, in pages of up to 100.
+        site["/apps?limit=100&sort=added"] = Page([Listed("alpha", "Alpha"), Listed("shared-pc", "Shared", "windows")], next: "a2");
+        site["/apps?limit=100&sort=added&cursor=a2"] = Page([Listed("shared-android", "Shared", "android"), Listed("moved", "Moved"),
+            Listed("sibling", "Sibling")]);
         var alpha = App("Alpha", alphaRepo);
         var pc = App("Shared PC", sharedRepo, filter: " Windows ");
         var android = App("Shared Android", sharedRepo, filter: "android");
         // Neither filter nor folder picks one entry: better unlinked than checked against another app's files.
         var ambiguous = App("Shared Linux", sharedRepo, filter: "linux", folder: "Shared");
         var outsider = App("Outsider", Repo());
+        // Added before the repository moved to another name and owner: GitHub still follows the old one, and the
+        // catalog's folder says it's the same app.
+        var moved = App("Moved", "old-owner/old-name");
 
-        await launcher.Manager.CatalogReleases.RefreshAsync([alpha, pc, android, ambiguous, outsider], token);
+        await launcher.Manager.CatalogReleases.RefreshAsync([alpha, pc, android, ambiguous, outsider, moved], token);
 
         (alpha.CatalogSlug, alpha.CatalogVerifiedVersion, alpha.ReleaseTarget).Should().Be(("alpha", "v1.0", "v1.0"));
         (pc.CatalogSlug, pc.CatalogVerifiedVersion).Should().Be(("shared-pc", "v3.0"));
@@ -48,14 +54,20 @@ public class ReleaseVerificationTests
         ambiguous.CatalogVerifiedVersion.Should().BeNull();
         outsider.CatalogSlug.Should().BeNull();
         outsider.ReleaseTarget.Should().BeNull();
-        launcher.Network.SitePaths().Should().BeEquivalentTo(
-            new[] { "/api/v1/release-status", "/api/v1/release-status", "/api/v1/apps/shared-pc", "/api/v1/apps/shared-android" },
-            "only apps sharing a repository need their page");
+        (moved.CatalogSlug, moved.ReleaseTarget).Should().Be(("moved", "v2.0"));
+        launcher.Network.SitePaths().Should().Equal("/api/v1/release-status", "/api/v1/release-status", "/api/v1/apps", "/api/v1/apps");
 
         // An app outside the catalog is left alone, and a fresh status is not read again.
         (await launcher.Manager.CatalogReleases.CheckAsync(outsider, "v1.0", token)).Should().BeNull();
         await launcher.Manager.CatalogReleases.RefreshAsync([alpha, pc, android], token);
         launcher.Network.SitePaths().Should().HaveCount(4);
+
+        // What was read is kept, so a moved app still links offline after a restart.
+        var offline = new CatalogReleases(new QuiverCatalogClient(new HttpClient(new Network())),
+            Path.Combine(QuiverLauncherPaths.UserDataRoot, "Cache"));
+        var movedAgain = App("Moved", "old-owner/old-name");
+        offline.ApplyKnown(movedAgain);
+        movedAgain.CatalogSlug.Should().Be("moved");
     }
 
     [Fact]
@@ -368,11 +380,8 @@ public class ReleaseVerificationTests
     private static object Status(string slug, string repository, string? verified) =>
         new { id = "id-" + slug, slug, provider = "github", repository, verified = verified == null ? null : new { version = verified } };
 
-    private static string Detail(string folderName, string releaseAssetFilter, string repository) => Json(new
-    {
-        entry = new { slug = folderName, launcher = new { folderName, releaseAssetFilter } },
-        project = new { provider = "github", repository },
-    });
+    private static object Listed(string slug, string folderName, string? releaseAssetFilter = null) =>
+        new { slug, launcher = new { folderName, releaseAssetFilter } };
 
     private static object History(string version, string state, string[] reasons, (string File, byte[] Bytes)[] files,
         object? scan = null, long? checkEndsAt = null) => new
