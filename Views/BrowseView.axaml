@@ -3,6 +3,7 @@
              xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
              xmlns:converters="using:Avalonia.Data.Converters"
              xmlns:vm="using:QuiverLauncher.ViewModels"
+             xmlns:services="using:QuiverLauncher.Services"
              x:Class="QuiverLauncher.Views.BrowseView" x:DataType="vm:BrowseViewModel" x:CompileBindings="True">
 	<UserControl.Styles>
 		<Style Selector="ComboBox.browse-filter">
@@ -41,13 +42,6 @@
 			<Setter Property="LetterSpacing" Value="0.8"/>
 			<Setter Property="Foreground" Value="#04121b"/>
 		</Style>
-		<Style Selector="TextBlock.browse-card-kind">
-			<Setter Property="FontSize" Value="9"/>
-			<Setter Property="LetterSpacing" Value="0.7"/>
-			<Setter Property="Foreground" Value="#94a3b8"/>
-			<Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-			<Setter Property="VerticalAlignment" Value="Center"/>
-		</Style>
 		<Style Selector="Path.browse-os">
 			<Setter Property="Height" Value="12"/>
 			<Setter Property="Stretch" Value="Uniform"/>
@@ -79,12 +73,10 @@
 			<Setter Property="BorderThickness" Value="1"/>
 			<Setter Property="CornerRadius" Value="999"/>
 			<Setter Property="Padding" Value="9,3"/>
-			<Setter Property="MaxWidth" Value="170"/>
 		</Style>
 		<Style Selector="Border.browse-game-chip TextBlock">
 			<Setter Property="FontSize" Value="11"/>
 			<Setter Property="Foreground" Value="#f4f6f8"/>
-			<Setter Property="TextTrimming" Value="CharacterEllipsis"/>
 		</Style>
 		<Style Selector="Run.browse-score">
 			<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
@@ -124,6 +116,8 @@
 					ClipToBounds="True"
 					Cursor="Hand"
 					PlatformFeedback.FeedbackType="Auto"
+					PointerEntered="BrowseCard_PointerEntered"
+					PointerExited="BrowseCard_PointerExited"
 					Tapped="BrowseCard_Tapped">
 				<Grid RowDefinitions="Auto,*">
 					<Border Grid.Row="0" Height="140" ClipToBounds="True" Background="{DynamicResource ThemeLighter}">
@@ -143,7 +137,8 @@
 					</Border>
 					<StackPanel Grid.Row="1" Margin="14,14,14,11">
 						<Grid ColumnDefinitions="*,Auto,Auto" MinHeight="13" Margin="0,0,0,6">
-							<TextBlock Grid.Column="0" Classes="browse-card-kind" Text="{Binding CardKind}" ToolTip.Tip="{Binding CardKind}"/>
+							<services:HoverScrollText Grid.Column="0" Text="{Binding CardKind}" IsActive="{Binding ShouldScroll}"
+													  FontSize="9" LetterSpacing="0.7" Foreground="#94a3b8" VerticalAlignment="Center"/>
 							<Border Grid.Column="1" Classes="browse-ai-chip" IsVisible="{Binding HasAiChip}">
 								<TextBlock Text="{Binding AiChip}"/>
 							</Border>
@@ -156,10 +151,11 @@
 								<Path Classes="browse-os" Data="{StaticResource BrowseOsIOS}" IsVisible="{Binding RunsOnIOS}"/>
 							</StackPanel>
 						</Grid>
-						<TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"
-								   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}"/>
-						<StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0" ClipToBounds="True" IsVisible="{Binding HasBasedOn}">
-							<TextBlock Classes="browse-based-on" Text="BASED ON"/>
+						<services:HoverScrollText Text="{Binding Title}" IsActive="{Binding ShouldScroll}"
+												  FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"/>
+						<Grid ColumnDefinitions="Auto,*" Margin="0,8,0,0" IsVisible="{Binding HasBasedOn}">
+							<TextBlock Grid.Column="0" Classes="browse-based-on" Text="BASED ON" Margin="0,0,6,0"/>
+							<services:HoverScrollRow Grid.Column="1" IsActive="{Binding ShouldScroll}" HorizontalAlignment="Left">
 							<ItemsControl ItemsSource="{Binding BasedOn}">
 								<ItemsControl.ItemsPanel>
 									<ItemsPanelTemplate>
@@ -174,15 +170,17 @@
 									</DataTemplate>
 								</ItemsControl.ItemTemplate>
 							</ItemsControl>
-						</StackPanel>
+							</services:HoverScrollRow>
+						</Grid>
 						<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,14,0,11" IsVisible="{Binding HasFooter}"/>
 						<Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasFooter}">
-							<TextBlock Grid.Column="0" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"
-									   ToolTip.Tip="{Binding ScoreText}">
+							<services:HoverScrollRow Grid.Column="0" IsActive="{Binding ShouldScroll}" Margin="0,0,8,0" HorizontalAlignment="Left">
+							<TextBlock FontSize="11">
 								<Run Classes="browse-score" Classes.positive="{Binding ScorePositive}" Classes.caution="{Binding ScoreCaution}"
 									 Classes.negative="{Binding ScoreNegative}" Text="{Binding ScoreLabel}"/><Run
 									 FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}" Text="{Binding ScoreCounts}"/>
 							</TextBlock>
+							</services:HoverScrollRow>
 							<TextBlock Grid.Column="1" Classes="browse-release" Classes.stale="{Binding ReleaseStale}" Text="{Binding ReleaseText}"/>
 						</Grid>
 					</StackPanel>

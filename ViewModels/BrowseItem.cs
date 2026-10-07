@@ -8,6 +8,7 @@ public sealed class BrowseItem : ObservableViewModel
 {
     private bool _inLibrary;
     private bool _isGamepadFocused;
+    private bool _isHovered;
 
     private BrowseItem(QuiverCatalogApp? app, GameInfo? listApp, string title, string subtitle, string? imageUrl, string kind,
         string cardKind, IReadOnlyList<string> basedOn)
@@ -85,7 +86,20 @@ public sealed class BrowseItem : ObservableViewModel
         }
     }
 
-    public bool IsGamepadFocused { get => _isGamepadFocused; set => Set(ref _isGamepadFocused, value); }
+    public bool IsGamepadFocused
+    {
+        get => _isGamepadFocused;
+        set { if (Set(ref _isGamepadFocused, value)) Notify(nameof(ShouldScroll)); }
+    }
+
+    public bool IsHovered
+    {
+        get => _isHovered;
+        set { if (Set(ref _isHovered, value)) Notify(nameof(ShouldScroll)); }
+    }
+
+    /// <summary>Cut-off text scrolls while the card is hovered or highlighted, as on the website.</summary>
+    public bool ShouldScroll => IsHovered || IsGamepadFocused;
 
     public static BrowseItem FromCatalog(QuiverCatalogApp app, IReadOnlyDictionary<string, string> consoleNames)
     {

@@ -255,6 +255,16 @@ public partial class BrowseView : UserControl
             _ = LoadMoreAsync();
     }
 
+    private void BrowseCard_PointerEntered(object? sender, PointerEventArgs e)
+    {
+        if (sender is Control { DataContext: BrowseItem item }) item.IsHovered = true;
+    }
+
+    private void BrowseCard_PointerExited(object? sender, PointerEventArgs e)
+    {
+        if (sender is Control { DataContext: BrowseItem item }) item.IsHovered = false;
+    }
+
     private void BrowseCard_Tapped(object? sender, TappedEventArgs e)
     {
         if (sender is not Control { DataContext: BrowseItem item }) return;

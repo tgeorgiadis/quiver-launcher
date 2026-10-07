@@ -157,10 +157,14 @@ namespace QuiverLauncher.Models
         private string? _lastKnownVersion;
         [System.Text.Json.Serialization.JsonIgnore]
         public bool IsLatestVersionCached => string.IsNullOrWhiteSpace(LatestVersion) && !string.IsNullOrWhiteSpace(_lastKnownVersion);
-        public string LatestVersionLabel => IsLatestVersionCached ? $"Latest: {_lastKnownVersion} (pending check)" :
-            string.IsNullOrWhiteSpace(LatestVersion) ? "Latest:" : $"Latest: {LatestVersion}";
+        /// <summary>"Verified: " for a catalog app heading for the release Quiver verified, otherwise "Latest: ".</summary>
+        public string LatestVersionCaption =>
+            !string.IsNullOrWhiteSpace(CatalogVerifiedVersion) && string.IsNullOrWhiteSpace(PreferredVersion) ? "Verified: " : "Latest: ";
+        public string LatestVersionLabel => IsLatestVersionCached ? $"{LatestVersionCaption}{_lastKnownVersion} (pending check)" :
+            string.IsNullOrWhiteSpace(LatestVersion) ? LatestVersionCaption.TrimEnd() : LatestVersionCaption + LatestVersion;
         public string? LatestVersionToolTip => IsLatestVersionCached
-            ? "Last known version. Verification is pending; this value may be out of date." : null;
+            ? "Last known version. Verification is pending; this value may be out of date."
+            : ShowUnverifiedRelease ? UnverifiedReleaseToolTip : null;
 
         internal void ApplyLastKnownVersion(string? version)
         {
@@ -649,6 +653,7 @@ namespace QuiverLauncher.Models
                     _installedVersion = value;
                     DispatchPropertyChanged();
                     DispatchPropertyChanged(nameof(StatusText));
+                    DispatchPropertyChanged(nameof(ShowUnverifiedRelease));
                 }
             }
         }
@@ -657,7 +662,46 @@ namespace QuiverLauncher.Models
         public string? CatalogSlug { get; set; }
 
         /// <summary>The release Quiver verified for this app. Updates go to it unless the player pinned a version.</summary>
-        public string? CatalogVerifiedVersion { get; set; }
+        public string? CatalogVerifiedVersion
+        {
+            get => _catalogVerifiedVersion;
+            set
+            {
+                if (_catalogVerifiedVersion == value) return;
+                _catalogVerifiedVersion = value;
+                DispatchPropertyChanged();
+                DispatchPropertyChanged(nameof(LatestVersionCaption));
+                DispatchPropertyChanged(nameof(LatestVersionLabel));
+            }
+        }
+        private string? _catalogVerifiedVersion;
+
+        /// <summary>
+        /// A release newer than <see cref="CatalogVerifiedVersion"/> that Quiver hasn't verified yet. The library shows it,
+        /// so players know why they weren't updated to it.
+        /// </summary>
+        public string? CatalogUnverifiedVersion
+        {
+            get => _catalogUnverifiedVersion;
+            set
+            {
+                if (_catalogUnverifiedVersion == value) return;
+                _catalogUnverifiedVersion = value;
+                DispatchPropertyChanged();
+                DispatchPropertyChanged(nameof(ShowUnverifiedRelease));
+                DispatchPropertyChanged(nameof(UnverifiedReleaseLabel));
+                DispatchPropertyChanged(nameof(UnverifiedReleaseToolTip));
+                DispatchPropertyChanged(nameof(LatestVersionToolTip));
+            }
+        }
+        private string? _catalogUnverifiedVersion;
+
+        /// <summary>Shown while the newer, unverified release isn't the one installed.</summary>
+        public bool ShowUnverifiedRelease => !string.IsNullOrWhiteSpace(CatalogUnverifiedVersion) &&
+            (string.IsNullOrWhiteSpace(InstalledVersion) || IsNewerVersion(CatalogUnverifiedVersion!, InstalledVersion!));
+        public string UnverifiedReleaseLabel => $"{CatalogUnverifiedVersion} not verified yet";
+        public string UnverifiedReleaseToolTip =>
+            $"Quiver Launcher only updates to releases Quiver has verified. To install {CatalogUnverifiedVersion} now, use Change Version.";
 
         /// <summary>When quiverlauncher.com last confirmed <see cref="CatalogVerifiedVersion"/>.</summary>
         public DateTimeOffset? CatalogVerifiedAt { get; set; }
@@ -686,6 +730,8 @@ namespace QuiverLauncher.Models
                     DispatchPropertyChanged(nameof(PreferredVersionLabel));
                     DispatchPropertyChanged(nameof(ShowWrappedPreferredVersion));
                     DispatchPropertyChanged(nameof(ShowTruncatedPreferredVersion));
+                    DispatchPropertyChanged(nameof(LatestVersionCaption));
+                    DispatchPropertyChanged(nameof(LatestVersionLabel));
                 }
             }
         }

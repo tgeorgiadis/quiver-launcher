@@ -25,6 +25,9 @@ public sealed class HoverScrollText : Decorator
     public static readonly StyledProperty<IBrush?> ForegroundProperty =
         TextBlock.ForegroundProperty.AddOwner<HoverScrollText>();
 
+    public static readonly StyledProperty<double> LetterSpacingProperty =
+        TextBlock.LetterSpacingProperty.AddOwner<HoverScrollText>();
+
     private readonly TextBlock _text;
     private readonly TranslateTransform _transform = new();
     private DispatcherTimer? _timer;
@@ -44,7 +47,7 @@ public sealed class HoverScrollText : Decorator
 
     static HoverScrollText()
     {
-        AffectsMeasure<HoverScrollText>(TextProperty, FontSizeProperty, FontWeightProperty);
+        AffectsMeasure<HoverScrollText>(TextProperty, FontSizeProperty, FontWeightProperty, LetterSpacingProperty);
         AffectsRender<HoverScrollText>(ForegroundProperty);
     }
 
@@ -90,6 +93,12 @@ public sealed class HoverScrollText : Decorator
         set => SetValue(ForegroundProperty, value);
     }
 
+    public double LetterSpacing
+    {
+        get => GetValue(LetterSpacingProperty);
+        set => SetValue(LetterSpacingProperty, value);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -112,6 +121,11 @@ public sealed class HoverScrollText : Decorator
         else if (change.Property == ForegroundProperty)
         {
             _text.Foreground = Foreground;
+        }
+        else if (change.Property == LetterSpacingProperty)
+        {
+            _text.LetterSpacing = LetterSpacing;
+            RestartIfActive();
         }
         else if (change.Property == IsActiveProperty)
         {
@@ -166,6 +180,7 @@ public sealed class HoverScrollText : Decorator
         if (FontSize > 0)
             _text.FontSize = FontSize;
         _text.FontWeight = FontWeight;
+        _text.LetterSpacing = LetterSpacing;
         if (Foreground != null)
             _text.Foreground = Foreground;
     }

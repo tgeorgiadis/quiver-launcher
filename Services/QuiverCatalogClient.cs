@@ -126,6 +126,8 @@ public sealed class QuiverCatalogStatus
     public string Provider { get; set; } = "";
     public string? Repository { get; set; }
     public QuiverCatalogVerified? Verified { get; set; }
+    /// <summary>The newest release the developer published, verified or not.</summary>
+    public QuiverCatalogVerified? LatestUpstream { get; set; }
 }
 
 public sealed class QuiverCatalogAsset

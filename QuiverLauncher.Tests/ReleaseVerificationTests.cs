@@ -28,7 +28,7 @@ public class ReleaseVerificationTests
         string alphaRepo = Repo(), sharedRepo = Repo();
         var site = launcher.Network.Site;
         // Two pages: an app listed on the second one still links.
-        site["/release-status?limit=100"] = Page([Status("alpha", alphaRepo, "v1.0"), Status("shared-pc", sharedRepo, "v3.0")], next: "c2");
+        site["/release-status?limit=100"] = Page([Status("alpha", alphaRepo, "v1.0", latest: "v1.1"), Status("shared-pc", sharedRepo, "v3.0")], next: "c2");
         site["/release-status?limit=100&cursor=c2"] = Page([Status("shared-android", sharedRepo, "v3.1"),
             Status("moved", "new-owner/new-name", "v2.0"), Status("sibling", "new-owner/other-app", "v9.0")]);
         // The listing gives every app's folder and download filter, in pages of up to 100.
@@ -48,6 +48,9 @@ public class ReleaseVerificationTests
         await launcher.Manager.CatalogReleases.RefreshAsync([alpha, pc, android, ambiguous, outsider, moved], token);
 
         (alpha.CatalogSlug, alpha.CatalogVerifiedVersion, alpha.ReleaseTarget).Should().Be(("alpha", "v1.0", "v1.0"));
+        // The library says why it stays on v1.0 while v1.1 is out.
+        (alpha.ShowUnverifiedRelease, alpha.UnverifiedReleaseLabel, alpha.LatestVersionCaption).Should().Be((true, "v1.1 not verified yet", "Verified: "));
+        pc.CatalogUnverifiedVersion.Should().BeNull();
         (pc.CatalogSlug, pc.CatalogVerifiedVersion).Should().Be(("shared-pc", "v3.0"));
         (android.CatalogSlug, android.CatalogVerifiedVersion).Should().Be(("shared-android", "v3.1"));
         ambiguous.CatalogSlug.Should().BeNull();
@@ -271,11 +274,12 @@ public class ReleaseVerificationTests
 
         result.Should().Be(installs);
         asked.Should().HaveCount(questions);
-        asked[0].Title.Should().Be("Install a blocked release?");
-        asked[0].Message.Should().Contain("Quiver blocked Alpha v0.9").And.Contain("• The developer pulled this release.")
-            .And.Contain("The verified release is v1.0");
+        asked[0].Title.Should().Be("Blocked release");
+        asked[0].Message.Should().Be(
+            "Quiver blocked Alpha v0.9, so it shouldn't be installed.\n\n• The developer pulled this release.\n\n" +
+            "The verified version is v1.0.\n\nInstall it anyway?");
         if (questions == 2)
-            asked[1].Message.Should().StartWith("Quiver blocked Alpha v0.9. Install it anyway?");
+            asked[1].Should().Be(("Are you sure? Quiver blocked Alpha v0.9.", "Install a blocked release?"));
     }
 
     [Fact]
@@ -298,19 +302,16 @@ public class ReleaseVerificationTests
         var (result, asked) = await Confirm("v1.1", unseen);
         result.Should().BeTrue();
         var (message, title) = asked.Should().ContainSingle().Subject;
-        title.Should().Be("Install before it's verified?");
-        message.Should().StartWith("Quiver hasn't verified Alpha v1.1.")
-            .And.Contain("• " + CatalogReleases.NotSeen)
-            .And.Contain("downloads them as the developer published them")
-            .And.Contain("verified in about 3 hours")
-            .And.Contain("The verified release is v1.0.")
-            .And.EndWith("Install v1.1 anyway?");
+        title.Should().Be("Not verified yet");
+        message.Should().Be(
+            $"Quiver hasn't verified Alpha v1.1 yet.\n\n• {CatalogReleases.NotSeen}\n\n" +
+            "It should be verified in about 3 hours.\nThe verified version is v1.0.\n\nInstall it anyway?");
 
-        // Pinned files are promised; with nothing verified yet there is no release to point at.
-        var pinned = unseen with { VerifiedVersion = null, VerifiedAt = null, Checksums = new Dictionary<string, string> { [Asset] = "ab12" } };
-        (await Confirm("v1.1", pinned)).Asked.Single().Message.Should()
-            .Contain("refuses any that changed since").And.Contain("No release of this app is verified yet.")
-            .And.NotContain("The verified release is");
+        // With nothing verified yet there is no release to point at; a detection is worth a line.
+        var flagged = unseen with { VerifiedVersion = null, VerifiedAt = null, ScanVerdict = "flagged", ScanEngines = "3 engines" };
+        (await Confirm("v1.1", flagged)).Asked.Single().Message.Should().Be(
+            $"Quiver hasn't verified Alpha v1.1 yet.\n\n• {CatalogReleases.NotSeen}\n• VirusTotal: 3 engines flag one of its files.\n\n" +
+            "No version of this app is verified yet.\n\nInstall it anyway?");
     }
 
     // ---- Fixture ----
@@ -377,8 +378,11 @@ public class ReleaseVerificationTests
     private static string Page(object[] items, string? next = null) =>
         Json(new { items, nextCursor = next, isDone = next == null });
 
-    private static object Status(string slug, string repository, string? verified) =>
-        new { id = "id-" + slug, slug, provider = "github", repository, verified = verified == null ? null : new { version = verified } };
+    private static object Status(string slug, string repository, string? verified, string? latest = null) => new
+    {
+        id = "id-" + slug, slug, provider = "github", repository,
+        verified = verified == null ? null : new { version = verified }, latestUpstream = new { version = latest ?? verified },
+    };
 
     private static object Listed(string slug, string folderName, string? releaseAssetFilter = null) =>
         new { slug, launcher = new { folderName, releaseAssetFilter } };

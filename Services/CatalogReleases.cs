@@ -81,6 +81,12 @@ public sealed class CatalogReleases
         app.CatalogSlug = link?.Slug;
         app.CatalogVerifiedVersion = string.IsNullOrWhiteSpace(link?.Verified?.Version) ? null : link.Verified.Version;
         app.CatalogVerifiedAt = app.CatalogVerifiedVersion == null ? null : _statusCheckedAt;
+        // A newer release Quiver hasn't verified yet, so the library can say why it isn't offered.
+        var latest = link?.LatestUpstream?.Version;
+        app.CatalogUnverifiedVersion = string.IsNullOrWhiteSpace(latest) ||
+            ReleaseVersionIdentity.AreVersionsEquivalent(latest, app.CatalogVerifiedVersion) ||
+            (app.CatalogVerifiedVersion != null && !ReleaseVersionIdentity.IsNewerVersion(latest, app.CatalogVerifiedVersion))
+                ? null : latest;
     }
 
     /// <summary>Says whether Quiver verified this release of the app; null when the app isn't in the catalog.</summary>
