@@ -7,7 +7,7 @@ public static class ReleaseVersionIdentity
         if (string.IsNullOrWhiteSpace(version))
             return "0.0.0";
 
-        var normalized = StripBuildMetadata(version.Trim().TrimStart('v', 'V'));
+        var normalized = StripWordPrefix(StripBuildMetadata(version.Trim().TrimStart('v', 'V')));
         var labelAt = normalized.IndexOfAny(['-', ' ', '\t']);
         if (labelAt >= 0)
             normalized = normalized[..labelAt];
@@ -51,7 +51,10 @@ public static class ReleaseVersionIdentity
         if (firstIdentity.Equals(secondIdentity, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (HasVersionLabel(firstVersion) || HasVersionLabel(secondVersion))
+        // Only plain numeric tags compare by number ("v1.2" = "1.2.0"). Anything else, like
+        // "Version1.0.4" or "1.0.5beta9", would normalize to a shorter or empty core and match
+        // a different release.
+        if (!IsPlainNumericVersion(firstIdentity) || !IsPlainNumericVersion(secondIdentity))
             return false;
 
         try
@@ -73,6 +76,17 @@ public static class ReleaseVersionIdentity
         return HasVersionLabel(version);
     }
 
+    /// <summary>"Version1.0.4" and "r23" compare by their numbers; "release-1.0" keeps its label.</summary>
+    private static string StripWordPrefix(string version)
+    {
+        var letters = 0;
+        while (letters < version.Length && char.IsAsciiLetter(version[letters]))
+            letters++;
+        return letters > 0 && letters < version.Length && char.IsAsciiDigit(version[letters])
+            ? version[letters..]
+            : version;
+    }
+
     internal static string StripBuildMetadata(string version)
     {
         var plus = version.IndexOf('+');
@@ -82,6 +96,12 @@ public static class ReleaseVersionIdentity
     private static string VersionIdentity(string version)
     {
         return StripBuildMetadata(version.Trim().TrimStart('v', 'V'));
+    }
+
+    private static bool IsPlainNumericVersion(string identity)
+    {
+        var parts = identity.Split('.');
+        return parts.Length > 0 && parts.All(part => part.Length > 0 && part.All(char.IsAsciiDigit));
     }
 
     private static bool HasVersionLabel(string version)

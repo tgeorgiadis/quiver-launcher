@@ -162,6 +162,47 @@ public class ReleaseSelectionTests
             .Should().BeFalse();
     }
 
+    [Fact]
+    public void SelectLatestRelease_github_latest_matches_its_own_tag_when_tags_have_a_word_prefix()
+    {
+        // DKR-R: GitHub's latest is Version1.0.4, newer betas are listed first.
+        var beta10 = Release("Version1.0.5beta10", prerelease: true);
+        var beta9 = Release("Version1.0.5beta9", prerelease: true);
+        var stable = Release("Version1.0.4", prerelease: false);
+
+        var selected = ReleaseSelection.SelectLatestRelease(
+            [beta10, beta9, stable],
+            githubLatestTag: "Version1.0.4");
+
+        selected.Should().BeSameAs(stable);
+    }
+
+    [Fact]
+    public void SelectLatestRelease_pin_matches_its_own_tag_when_tags_have_a_word_prefix()
+    {
+        var beta = Release("Version1.0.5beta9", prerelease: true);
+        var stable = Release("Version1.0.4", prerelease: false);
+
+        ReleaseSelection.SelectLatestRelease([beta, stable], preferredVersion: "Version1.0.4")
+            .Should().BeSameAs(stable);
+    }
+
+    [Theory]
+    [InlineData("Version1.0.4", "Version1.0.5beta9", false)]
+    [InlineData("Version1.0.4", "Version1.0.4", true)]
+    [InlineData("version1.0.4", "Version1.0.4", true)]
+    [InlineData("nightly", "latest", false)]
+    [InlineData("1.0.5beta9", "1.0.5", false)]
+    [InlineData("r23", "r24", false)]
+    [InlineData("v1.2", "1.2.0", true)]
+    [InlineData("1.2.3", "v1.2.3+build.5", true)]
+    [InlineData("0.2.0-beta.2", "0.2.0", false)]
+    public void IsSameInstalledRelease_only_compares_numbers_for_plain_numeric_tags(string first, string second, bool expected)
+    {
+        ReleaseSelection.IsSameInstalledRelease(first, second).Should().Be(expected);
+        ReleaseSelection.IsSameInstalledRelease(second, first).Should().Be(expected);
+    }
+
     private static GitHubRelease Release(string tag, bool prerelease) =>
         new()
         {

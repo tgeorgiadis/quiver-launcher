@@ -118,6 +118,31 @@ public class ReleaseVerificationTests
         launcher.Network.SitePaths().Count(p => p.EndsWith("/release-history")).Should().Be(1, "the history is kept for a while");
     }
 
+    [Fact]
+    public async Task Tags_with_a_word_prefix_are_only_verified_for_the_exact_release()
+    {
+        using var launcher = new Launcher();
+        var token = TestContext.Current.CancellationToken;
+        var repo = Repo();
+        // Tags like DKR-R's: no leading number, so they must not all count as the same version.
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("dkr", repo, "Version1.0.4", latest: "Version1.0.5beta9")]);
+        launcher.Network.Site["/apps/dkr/release-history?limit=100"] = Page(
+        [
+            History("Version1.0.4", "verified", [], [(Asset, [2])]),
+            History("Version1.0.5beta9", "unverified", ["Quiver is still checking this release."], [(Asset, [1])]),
+        ]);
+        var app = App("DKR", repo);
+        var releases = launcher.Manager.CatalogReleases;
+
+        (await releases.CheckAsync(app, "Version1.0.4", token))!.State.Should().Be(ReleaseCheckState.Verified);
+        var beta = (await releases.CheckAsync(app, "Version1.0.5beta9", token))!;
+        beta.State.Should().Be(ReleaseCheckState.Unverified);
+        beta.ChecksumFor(Asset).Should().Be(Sha256([1]).ToLowerInvariant());
+        // Not in the history at all: the verified version in the status feed must not vouch for it.
+        (await releases.CheckAsync(app, "Version1.0.6", token))!.State.Should().Be(ReleaseCheckState.Unverified);
+        app.CatalogUnverifiedVersion.Should().Be("Version1.0.5beta9");
+    }
+
     [Theory]
     [InlineData(null, "v1", GameStatus.Installed)]
     [InlineData("v2", "v2", GameStatus.UpdateAvailable)]

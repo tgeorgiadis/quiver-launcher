@@ -15,6 +15,10 @@ public class LauncherVersionServiceTests
     [InlineData("0.1.0 Public Test 16", "0.2.0-beta.2", false)]
     [InlineData("v0.1.0-public-test.16", "0.2.0-beta.2", false)]
     [InlineData("0.2.0-beta.2", "v0.1.0-public-test.16", true)]
+    [InlineData("Version1.0.5beta9", "Version1.0.4", true)]
+    [InlineData("Version1.0.4", "Version1.0.5beta9", false)]
+    [InlineData("r24", "r23", true)]
+    [InlineData("release-2.0", "release-1.0", false)]
     public void IsNewerVersion_compares_semantic_versions(string candidate, string baseline, bool expected)
     {
         LauncherVersionService.IsNewerVersion(candidate, baseline).Should().Be(expected);
