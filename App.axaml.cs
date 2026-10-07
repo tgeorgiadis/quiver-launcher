@@ -82,6 +82,9 @@ public partial class App : Application, INotifyPropertyChanged
     {
         DesktopInterfaceScaling.InitializePopups();
         AvaloniaXamlLoader.Load(this);
+
+        if (OperatingSystem.IsMacOS())
+            InitializeMacAppMenu();
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -109,6 +112,9 @@ public partial class App : Application, INotifyPropertyChanged
                 var mainWindow = new MainWindow();
                 mainWindow._app = this;
                 desktop.MainWindow = mainWindow;
+
+                if (OperatingSystem.IsMacOS())
+                    InitializeMacWindowMenu(mainWindow);
 
                 if (PlatformCapabilities.SupportsTray)
                 {

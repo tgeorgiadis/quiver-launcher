@@ -80,7 +80,9 @@ public sealed class DesktopHostController : IDisposable
     public void HandleClosing(WindowClosingEventArgs e)
     {
         _placement.Flush();
-        if (!_forceExit && _view.SettingsModel.Current.CloseToTray)
+        // Quit from the macOS app menu (⌘Q), logout and OS shutdown must exit, not hide to tray.
+        var isShutdown = e.CloseReason is WindowCloseReason.ApplicationShutdown or WindowCloseReason.OSShutdown;
+        if (!_forceExit && !isShutdown && _view.SettingsModel.Current.CloseToTray)
         {
             e.Cancel = true;
             HideToTray();

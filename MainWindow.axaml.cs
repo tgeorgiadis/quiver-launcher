@@ -32,6 +32,8 @@ public partial class MainWindow : Window
     public Task RunUpdateCheckAsync(bool promptForReview, bool isManualCheck)
         => View.RunUpdateCheckAsync(promptForReview, isManualCheck);
 
+    public void OpenSettings() => View.OpenSettings();
+
     public void OpenGitHubApiTokenSettings() => View.OpenGitHubApiTokenSettings();
 
     public void OpenGitLabApiTokenSettings() => View.OpenGitLabApiTokenSettings();
