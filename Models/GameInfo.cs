@@ -1448,7 +1448,7 @@ namespace QuiverLauncher.Models
                 var cardUrl = LauncherArtworkLoader.CardUrl(defaultUrl);
                 foreach (var sharedPath in new[] { cardUrl, defaultUrl }.Distinct().Select(url => LauncherArtworkLoader.CachedPath(cacheDirectory, url)))
                 {
-                    if (!LauncherIconCache.IsValid(sharedPath)) continue;
+                    if (!LauncherIconCache.HasImageHeader(sharedPath)) continue;
                     _cachedDefaultIconPath = sharedPath;
                     DispatchPropertyChanged(nameof(IconUrl));
                     return;
@@ -1464,7 +1464,7 @@ namespace QuiverLauncher.Models
 
                 var cachedIconPath = Path.Combine(iconsDir, $"{FolderName}_{urlHash}{extension}");
 
-                if (!LauncherIconCache.IsValid(cachedIconPath))
+                if (!LauncherIconCache.HasImageHeader(cachedIconPath))
                 {
                     _cachedDefaultIconPath = null;
                     if (!allowDownload) return;
