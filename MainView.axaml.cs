@@ -900,6 +900,7 @@ namespace QuiverLauncher
         {
             base.OnAttachedToVisualTree(e);
             LauncherArtworkLoader.DisplayScale = ArtworkDisplayScale;
+            LauncherArtworkLoader.ThumbnailBox = ArtworkThumbnailBox;
             UpdateGamepadChromeClass();
             _mobileLayout.Attach();
             if (HostWindow == null && !_hasInitializedFocus)
@@ -913,6 +914,21 @@ namespace QuiverLauncher
             var screen = topLevel?.Screens?.All.Select(s => s.Scaling).DefaultIfEmpty(1).Max() ?? 1;
             var interfaceScale = PlatformCapabilities.IsMobile ? 1 : _settingsViewModel.InterfaceScalePercent / 100d;
             return Math.Max(topLevel?.RenderScaling ?? 1, screen) * Math.Max(1, interfaceScale);
+        }
+
+        // Views/BrowseCard.axaml: a catalog card is 256 wide and its cover band 140-156 tall.
+        private static readonly Size CatalogCardArt = new(256, 156);
+
+        /// <summary>The largest area artwork is shown in: library covers at the current card settings, or catalog cards.</summary>
+        private Size ArtworkThumbnailBox()
+        {
+            // Mobile cards stretch to the screen's width.
+            if (PlatformCapabilities.IsMobile)
+                return new(512, 512);
+            var settings = _settingsViewModel;
+            var row = Math.Min(settings.IconSize, settings.ListRowHeight);
+            var library = settings.UseGridView ? new Size(settings.SlotSize, settings.IconSize) : new Size(row, row);
+            return new(Math.Max(library.Width, CatalogCardArt.Width), Math.Max(library.Height, CatalogCardArt.Height));
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

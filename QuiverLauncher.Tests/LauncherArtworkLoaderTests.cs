@@ -12,12 +12,38 @@ public class LauncherArtworkLoaderTests
     private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7S8AAAAASUVORK5CYII=");
 
     [Theory]
-    [InlineData(600, 900, 512, 341, 512)]
-    [InlineData(920, 430, 512, 512, 239)]
-    [InlineData(256, 256, 512, 256, 256)]
-    [InlineData(600, 900, 1024, 600, 900)]
-    public void Artwork_is_shrunk_to_fit_without_changing_its_shape(int width, int height, int longSide, int expectedWidth, int expectedHeight) =>
-        LauncherArtworkLoader.FittedSize(new PixelSize(width, height), longSide).Should().Be(new PixelSize(expectedWidth, expectedHeight));
+    [InlineData(600, 900, 256, 156, 256, 384)]
+    [InlineData(920, 430, 256, 156, 334, 156)]
+    [InlineData(512, 512, 256, 156, 256, 256)]
+    [InlineData(200, 300, 256, 156, 200, 300)]
+    [InlineData(600, 900, 1024, 1024, 600, 900)]
+    public void Artwork_is_shrunk_to_the_smallest_size_that_fills_its_card(int width, int height, double boxWidth, double boxHeight,
+        int expectedWidth, int expectedHeight) =>
+        LauncherArtworkLoader.FittedSize(new PixelSize(width, height), new Size(boxWidth, boxHeight))
+            .Should().Be(new PixelSize(expectedWidth, expectedHeight));
+
+    [AvaloniaFact]
+    public async Task Decoded_artwork_is_reused_until_cards_grow()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "quiver-artwork-tests", Guid.NewGuid().ToString("N"));
+        var previous = LauncherArtworkLoader.ThumbnailBox;
+        try
+        {
+            using var loader = new LauncherArtworkLoader(Path.Combine(directory, "Images"), new HttpClient(new Handler(HttpStatusCode.OK)));
+            LauncherArtworkLoader.ThumbnailBox = () => new Size(256, 156);
+            var first = await loader.ProvideImageAsync(Grid);
+            (await loader.ProvideImageAsync(Grid)).Should().BeSameAs(first);
+            LauncherArtworkLoader.ThumbnailBox = () => new Size(180, 124);
+            (await loader.ProvideImageAsync(Grid)).Should().BeSameAs(first, "a larger copy serves smaller cards");
+            LauncherArtworkLoader.ThumbnailBox = () => new Size(304, 220);
+            (await loader.ProvideImageAsync(Grid)).Should().NotBeSameAs(first, "bigger cards need a bigger copy");
+        }
+        finally
+        {
+            LauncherArtworkLoader.ThumbnailBox = previous;
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
 
     [Fact]
     public void Full_size_artwork_is_asked_for_once_and_empty_sources_stay_empty()

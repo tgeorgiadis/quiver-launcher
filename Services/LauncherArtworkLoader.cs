@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using AsyncImageLoader.Loaders;
 using Avalonia;
@@ -8,9 +9,11 @@ namespace QuiverLauncher.Services;
 
 /// <summary>The URL cache used by both catalog and library images, including existing cached files.</summary>
 /// <remarks>
-/// Every image this loader decodes stays in memory for the rest of the session, so artwork is decoded
-/// no larger than a card can show it: a 600x900 cover is 2 MB as pixels, and a library of a few hundred
-/// apps reached 1 GB. Large views (the app page's backdrop, README images) ask for <see cref="FullSize"/>,
+/// Artwork is decoded no larger than the cards currently show it (<see cref="ThumbnailBox"/>): a decoded
+/// image costs width x height x 4 bytes however small its file is, and a library of a few hundred apps
+/// reached 1 GB at a fixed 512 px. Decoded images are kept only while something shows them, plus the
+/// most recent few, so pages left behind (catalog pages, app pages) give their memory back.
+/// Large views (the app page's backdrop, README images) ask for <see cref="FullSize"/>,
 /// which is decoded as is and not kept.
 /// SteamGridDB art, often full-size PNGs, is downloaded as the smaller copy quiverlauncher.com makes
 /// for its own pages (Cloudflare image resizing), falling back to the original if that copy fails.
@@ -37,9 +40,20 @@ public sealed class LauncherArtworkLoader : DiskCachedWebImageLoader
         HttpClient.DefaultRequestHeaders.Accept.ParseAdd("image/webp,image/*;q=0.8");
     }
 
-    /// <summary>The longest side, in interface pixels, any card or thumbnail shows artwork at
-    /// (the largest library cover setting).</summary>
-    internal const int ThumbnailLongSide = 512;
+    /// <summary>The largest area, in interface pixels, any card or thumbnail currently shows artwork in.
+    /// MainView sets this from the library card settings and the catalog's card size.</summary>
+    public static Func<Size> ThumbnailBox { get; set; } = () => new(512, 512);
+
+    // How many decoded images are kept after nothing shows them, so going back and forth between
+    // pages doesn't decode the same art again.
+    private const int RecentlyUsed = 64;
+    private readonly object _gate = new();
+    private readonly Dictionary<string, Decoded> _decoded = [];
+    private readonly Dictionary<string, Task<Bitmap?>> _loading = [];
+    private readonly LinkedList<Bitmap> _recent = [];
+    private static readonly ConditionalWeakTable<Bitmap, Pressure> Pressures = new();
+
+    private sealed record Decoded(WeakReference<Bitmap> Bitmap, Size Box);
 
     /// <summary>Screen pixels per interface pixel, including Windows/macOS display scaling and the
     /// launcher's own interface scale.</summary>
@@ -67,11 +81,62 @@ public sealed class LauncherArtworkLoader : DiskCachedWebImageLoader
 
     private static bool IsFullSize(string url) => url.EndsWith(FullSizeMarker, StringComparison.Ordinal);
 
-    public override Task<Bitmap?> ProvideImageAsync(string url) =>
-        IsFullSize(url) ? LoadAsync(url) : base.ProvideImageAsync(url);
+    public override Task<Bitmap?> ProvideImageAsync(string url) => ProvideImageAsync(url, null);
 
-    public override Task<Bitmap?> ProvideImageAsync(string url, IStorageProvider? storageProvider = null) =>
-        IsFullSize(url) ? LoadAsync(url) : base.ProvideImageAsync(url, storageProvider);
+    public override Task<Bitmap?> ProvideImageAsync(string url, IStorageProvider? storageProvider = null)
+    {
+        if (IsFullSize(url))
+            return LoadAsync(url);
+        var box = ThumbnailBox();
+        lock (_gate)
+        {
+            if (_decoded.TryGetValue(url, out var decoded) && decoded.Bitmap.TryGetTarget(out var bitmap) &&
+                decoded.Box.Width >= box.Width && decoded.Box.Height >= box.Height)
+            {
+                Touch(bitmap);
+                return Task.FromResult<Bitmap?>(bitmap);
+            }
+            if (_loading.TryGetValue(url, out var loading))
+                return loading;
+            var task = LoadAndKeepAsync(url, box, storageProvider);
+            if (!task.IsCompleted)
+                _loading[url] = task;
+            return task;
+        }
+    }
+
+    private async Task<Bitmap?> LoadAndKeepAsync(string url, Size box, IStorageProvider? storageProvider)
+    {
+        Bitmap? bitmap = null;
+        try
+        {
+            bitmap = await LoadAsync(url, storageProvider).ConfigureAwait(false);
+            return bitmap;
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _loading.Remove(url);
+                if (bitmap != null)
+                {
+                    if (_decoded.Count > 256)
+                        foreach (var dead in _decoded.Where(d => !d.Value.Bitmap.TryGetTarget(out _)).Select(d => d.Key).ToList())
+                            _decoded.Remove(dead);
+                    _decoded[url] = new(new(bitmap), box);
+                    Touch(bitmap);
+                }
+            }
+        }
+    }
+
+    private void Touch(Bitmap bitmap)
+    {
+        _recent.Remove(bitmap);
+        _recent.AddFirst(bitmap);
+        while (_recent.Count > RecentlyUsed)
+            _recent.RemoveLast();
+    }
 
     // AdvancedImage loads through this overload, which would open plain file paths at full size.
     protected override Task<Bitmap?> LoadAsync(string url, IStorageProvider? storageProvider) =>
@@ -126,20 +191,30 @@ public sealed class LauncherArtworkLoader : DiskCachedWebImageLoader
     {
         if (fullSize)
             return bitmap;
-        var size = FittedSize(bitmap.PixelSize, (int)Math.Ceiling(ThumbnailLongSide * Math.Max(1, DisplayScale())));
-        if (size == bitmap.PixelSize)
-            return bitmap;
-        using (bitmap)
-            return bitmap.CreateScaledBitmap(size, BitmapInterpolationMode.HighQuality);
+        var size = FittedSize(bitmap.PixelSize, ThumbnailBox() * Math.Max(1, DisplayScale()));
+        if (size != bitmap.PixelSize)
+            using (bitmap)
+                bitmap = bitmap.CreateScaledBitmap(size, BitmapInterpolationMode.HighQuality);
+        // The pixels live outside .NET's heap, so tell the GC about them; otherwise images nothing shows
+        // any more can wait a long time to be collected.
+        Pressures.AddOrUpdate(bitmap, new((long)size.Width * size.Height * 4));
+        return bitmap;
     }
 
-    /// <summary>Shrinks a size, keeping its shape, so that neither side is longer than <paramref name="longSide"/>.</summary>
-    internal static PixelSize FittedSize(PixelSize size, int longSide)
+    /// <summary>Shrinks a size, keeping its shape, to the smallest that still fills <paramref name="box"/>
+    /// (cards crop artwork to fill), never enlarging it.</summary>
+    internal static PixelSize FittedSize(PixelSize size, Size box)
     {
-        var longest = Math.Max(size.Width, size.Height);
-        if (longest <= longSide)
+        var scale = Math.Max(box.Width / size.Width, box.Height / size.Height);
+        if (scale >= 1)
             return size;
-        var scale = (double)longSide / longest;
         return new(Math.Max(1, (int)Math.Round(size.Width * scale)), Math.Max(1, (int)Math.Round(size.Height * scale)));
+    }
+
+    private sealed class Pressure
+    {
+        private readonly long _bytes;
+        public Pressure(long bytes) => GC.AddMemoryPressure(_bytes = bytes);
+        ~Pressure() => GC.RemoveMemoryPressure(_bytes);
     }
 }

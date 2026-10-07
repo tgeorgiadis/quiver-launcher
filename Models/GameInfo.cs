@@ -853,7 +853,8 @@ namespace QuiverLauncher.Models
             }
         }
 
-        private Avalonia.Media.Imaging.Bitmap? _buttonImageCache;
+        // Shared by every card: the same few icons, not one copy per app.
+        private static readonly Dictionary<string, Avalonia.Media.Imaging.Bitmap> ButtonImages = [];
 
         public Avalonia.Media.Imaging.Bitmap ButtonImage
         {
@@ -870,25 +871,17 @@ namespace QuiverLauncher.Models
                     _ => "avares://QuiverLauncher/Assets/Icons/button_loading.png"
                 };
 
-                // Only create new bitmap if image path changed
-                if (_buttonImageCache == null || _lastImagePath != imagePath)
+                lock (ButtonImages)
                 {
-                    _buttonImageCache?.Dispose();
-                    _buttonImageCache = new Avalonia.Media.Imaging.Bitmap(
-                        Avalonia.Platform.AssetLoader.Open(new Uri(imagePath)));
-                    _lastImagePath = imagePath;
+                    if (!ButtonImages.TryGetValue(imagePath, out var image))
+                        ButtonImages[imagePath] = image = new Avalonia.Media.Imaging.Bitmap(
+                            Avalonia.Platform.AssetLoader.Open(new Uri(imagePath)));
+                    return image;
                 }
-
-                return _buttonImageCache;
             }
         }
-        public void Dispose()
-        {
-            _buttonImageCache?.Dispose();
-            _buttonImageCache = null;
-        }
-
-        private string? _lastImagePath;
+        // Nothing to release: the button icons are shared.
+        public void Dispose() { }
 
         public IBrush ButtonColor
         {
