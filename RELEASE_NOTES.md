@@ -29,7 +29,8 @@ This is a prerelease for testing before 3.5.0.
 
 ## Flatpak on Linux (experimental)
 
-- A Linux x64 Flatpak download is included again. Install a newer bundle to update it.
+- A Linux x64 Flatpak download is included again. It's experimental, so expect rough edges and please report any problems.
+- The Flatpak doesn't update itself. Install a newer bundle to update it.
 
 ## macOS
 
