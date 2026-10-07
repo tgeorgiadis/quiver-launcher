@@ -22,7 +22,7 @@ internal sealed class DesktopInterfaceScaling : IDisposable
     private readonly LayoutTransformControl _content;
     private readonly Func<Size>? _availableArea;
     private readonly HashSet<ScaledDialog> _dialogs = [];
-    private bool _queued, _disposed, _applying;
+    private bool _queued, _disposed, _applying, _fitWindow;
     internal int AppliedPercent { get; private set; } = 100;
     private static bool _initialized;
 
@@ -77,21 +77,29 @@ internal sealed class DesktopInterfaceScaling : IDisposable
     }
     private void WindowChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property.Name is "RenderScaling" or "WindowState" or "FrameSize" or "WindowDecorations" or "ClientSize") Refresh();
+        // A resize by the player only rechecks the scale; resizing or moving the window back
+        // while it's being dragged makes it jump around (#63, #77).
+        if (e.Property.Name == "ClientSize") Refresh(fitWindow: false);
+        else if (e.Property.Name is "RenderScaling" or "WindowState" or "FrameSize" or "WindowDecorations") Refresh();
     }
-    private void PositionChanged(object? sender, PixelPointEventArgs e) => Refresh();
+    private void PositionChanged(object? sender, PixelPointEventArgs e) => Refresh(fitWindow: false);
     private void ScreensChanged(object? sender, EventArgs e) => Refresh();
     private void Opened(object? sender, EventArgs e) => Refresh();
     private void Closed(object? sender, EventArgs e) => Dispose();
 
-    internal void Refresh()
+    /// <param name="fitWindow">Also shrink the window to fit its display and move it back on screen.</param>
+    internal void Refresh(bool fitWindow = true)
     {
-        if (_queued || _disposed || _applying) return;
+        if (_disposed || _applying) return;
+        _fitWindow |= fitWindow;
+        if (_queued) return;
         _queued = true;
         Dispatcher.UIThread.Post(() =>
         {
             _queued = false;
-            if (!_disposed) Apply();
+            var fit = _fitWindow;
+            _fitWindow = false;
+            if (!_disposed) Apply(fit);
         }, DispatcherPriority.Loaded);
     }
 
@@ -106,13 +114,15 @@ internal sealed class DesktopInterfaceScaling : IDisposable
         var screen = window.Screens.ScreenFromWindow(window) ?? window.Screens.Primary;
         if (screen == null) return new Size(750, 490);
         var pixels = window.WindowState == WindowState.FullScreen ? screen.Bounds : screen.WorkingArea;
-        var dpi = window.IsVisible ? window.RenderScaling : screen.Scaling;
+        // The screen's own scaling matches the units of its bounds. On macOS those are points with
+        // a scaling of 1, while the window renders at 2x on a Retina display.
+        var dpi = screen.Scaling;
         var frame = window.FrameSize ?? window.ClientSize;
         return new Size(Math.Max(0, pixels.Width / dpi - Math.Max(0, frame.Width - window.ClientSize.Width)),
             Math.Max(0, pixels.Height / dpi - Math.Max(0, frame.Height - window.ClientSize.Height)));
     }
 
-    private void Apply()
+    private void Apply(bool fitWindow = true)
     {
         _applying = true;
         try
@@ -124,7 +134,7 @@ internal sealed class DesktopInterfaceScaling : IDisposable
             transform.ScaleX = transform.ScaleY = scale;
             _window.MinWidth = 750 * scale;
             _window.MinHeight = 490 * scale;
-            if (_window.WindowState == WindowState.Normal)
+            if (fitWindow && _window.WindowState == WindowState.Normal)
             {
                 _window.Width = Math.Max(_window.MinWidth, Math.Min(available.Width, _window.Width));
                 _window.Height = Math.Max(_window.MinHeight, Math.Min(available.Height, _window.Height));
@@ -143,7 +153,7 @@ internal sealed class DesktopInterfaceScaling : IDisposable
         if (screen == null) return;
         var work = screen.WorkingArea;
         var frame = window.FrameSize ?? window.ClientSize;
-        var dpi = window.RenderScaling;
+        var dpi = screen.Scaling;
         window.Position = new PixelPoint(
             Math.Clamp(window.Position.X, work.X, Math.Max(work.X, work.Right - (int)Math.Ceiling(frame.Width * dpi))),
             Math.Clamp(window.Position.Y, work.Y, Math.Max(work.Y, work.Bottom - (int)Math.Ceiling(frame.Height * dpi))));
