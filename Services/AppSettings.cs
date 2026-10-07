@@ -94,6 +94,8 @@ namespace QuiverLauncher
         public string CustomAppListLocation { get; set; } = string.Empty;
         /// <summary>The App Catalog's AI filter ("no-generated" or "no-ai"), kept like the website keeps it; empty shows every app.</summary>
         public string CatalogAiFilter { get; set; } = string.Empty;
+        /// <summary>The App Catalog leaves out apps already in the library, so new ones are easier to find.</summary>
+        public bool CatalogHideLibraryApps { get; set; } = true;
         public string ModsSortBy { get; set; } = "InstalledFirst";
         public bool ModsIncludeNsfw { get; set; }
         public List<string> DismissedAnnouncementIds { get; set; } = new List<string>();

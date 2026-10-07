@@ -275,12 +275,19 @@ namespace QuiverLauncher
             LibraryPanel.ConfigureActions(_libraryActions, _libraryCustomization, ToggleAppAutoUpdateAsync, (message, title) => ShowMessageBoxAsync(message, title));
             LibraryPanel.NavigationRequested += (action, game) => _ = _session.RunAsync(() => HandleLibraryNavigationRequestAsync(action, game));
             ModsPanel.Configure(new ModsFeatureContext(_gameManager, () => _settings, _settingsViewModel, _session, _markdownRenderer, Shell), this);
-            var catalog = new QuiverCatalogClient(_gameManager.HttpClient);
+            var catalog = _catalogClient = new QuiverCatalogClient(_gameManager.HttpClient);
             _libraryAdd = new LibraryAddService(_gameManager, _settingsViewModel, _session);
             BrowsePanel.Configure(new BrowseViewModel(catalog, () => _gameManager.LibraryApps, () => _settings.CustomAppListLocation,
                 location => _gameManager.CatalogService.TryLoadListAsync(_gameManager.HttpClient, location, _session.Token)),
                 _session, this, () => !Shell.SettingsOpen && !Shell.BrowseDetailsOpen && Shell.Mode == MainViewMode.Browse);
             BrowsePanel.DetailsRequested += OpenBrowseDetails;
+            BrowsePanel.AddRequested += item => _ = _session.RunAsync(() => AddCardAsync(item));
+            BrowsePanel.Model.HideLibraryApps = _settings.CatalogHideLibraryApps;
+            BrowsePanel.HideLibraryChosen += hide =>
+            {
+                _settings.CatalogHideLibraryApps = hide;
+                _settingsViewModel.Save(_settings);
+            };
             BrowsePanel.GameRequested += OpenBrowseGame;
             BrowsePanel.Model.Ai = BrowseText.AiFilters.Any(f => f.Id != null && f.Id == _settings.CatalogAiFilter) ? _settings.CatalogAiFilter : null;
             BrowsePanel.AiFilterChosen += ai =>
@@ -293,6 +300,7 @@ namespace QuiverLauncher
                 BrowsePanel.Model.FindInLibrary, BrowsePanel.Model);
             BrowseDetailsPanel.CloseRequested += () => CloseBrowseDetails();
             BrowseDetailsPanel.AddRequested += app => _ = _session.RunAsync(() => AddFromBrowseAsync(app));
+            BrowseDetailsPanel.CardAddRequested += item => _ = _session.RunAsync(() => AddCardAsync(item));
             BrowseDetailsPanel.RemoveRequested += app => _ = _libraryActions.RemoveEntryAsync(app);
             BrowseDetailsPanel.OpenUrlRequested += OpenUrl;
             SettingsPanel.Configure(new SettingsFeatureContext(() => _settings, _settingsViewModel, _session, _music, _gameManager, () => _inputService), this);
@@ -1384,7 +1392,44 @@ namespace QuiverLauncher
                 BrowseDetailsPanel.Refresh();
         }
 
-        private async Task AddFromBrowseAsync(GameInfo app)
+        private QuiverCatalogClient _catalogClient = null!;
+
+        /// <summary>
+        /// A card's Add button (or Y on a highlighted card): adds the app as its page's Add would, without opening the page.
+        /// A catalog app's page is read first, for where the app comes from.
+        /// </summary>
+        private async Task AddCardAsync(BrowseItem item)
+        {
+            if (!item.CanAdd || item.IsAdding) return;
+            item.IsAdding = true;
+            try
+            {
+                var app = item.ListApp;
+                if (app == null && item.App is { } listed)
+                {
+                    try
+                    {
+                        var detail = await _catalogClient.GetDetailAsync(listed.Slug, _session.Token);
+                        app = QuiverCatalogMapping.ToGameInfo(_gameManager.CatalogService, detail.Entry, detail.Project);
+                    }
+                    catch (Exception ex) when (!_session.Token.IsCancellationRequested)
+                    {
+                        await ShowMessageBoxAsync($"Couldn't load {item.Title} from quiverlauncher.com, so it wasn't added. {ex.Message}", "Could Not Add");
+                        return;
+                    }
+                }
+                if (app == null) return;
+                await AddFromBrowseAsync(app, "app_catalog_card", item.App?.Slug);
+                // A game page's cards aren't the catalog's: mark this one too.
+                BrowsePanel.Model.MarkLibraryState([item]);
+            }
+            finally
+            {
+                item.IsAdding = false;
+            }
+        }
+
+        private async Task AddFromBrowseAsync(GameInfo app, string from = "app_catalog", string? catalogSlug = null)
         {
             try
             {
@@ -1393,9 +1438,9 @@ namespace QuiverLauncher
                 {
                     // An App Catalog app by its slug; one from the player's own list only by where it's from.
                     var usage = Telemetry.AppRef(app);
-                    if (_detailsScreen is ("app", { } slug) && !app.IsManuallyManaged)
+                    if ((catalogSlug ?? (_detailsScreen is ("app", { } shown) ? shown : null)) is { } slug && !app.IsManuallyManaged)
                         (usage["slug"], usage["source"]) = (slug, "catalog");
-                    usage["from"] = "app_catalog";
+                    usage["from"] = from;
                     Telemetry.Current.Track("app_added", usage);
                 }
                 if (result.Outcome == LibraryAddOutcome.FolderConflict)

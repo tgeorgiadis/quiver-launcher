@@ -27,6 +27,27 @@
 		<Setter Property="Padding" Value="7,3"/>
 		<Setter Property="Margin" Value="10"/>
 	</Style>
+	<!-- Adds the app to the library without opening its page. -->
+	<Style Selector="Button.browse-add">
+		<Setter Property="Background" Value="#0ea5e9"/>
+		<Setter Property="Foreground" Value="#04121b"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="CornerRadius" Value="999"/>
+		<Setter Property="Padding" Value="11,4"/>
+		<Setter Property="Margin" Value="10"/>
+		<Setter Property="MinHeight" Value="0"/>
+		<Setter Property="FontSize" Value="11"/>
+		<Setter Property="FontWeight" Value="SemiBold"/>
+		<Setter Property="Cursor" Value="Hand"/>
+	</Style>
+	<Style Selector="Button.browse-add:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="#38bdf8"/>
+		<Setter Property="Foreground" Value="#04121b"/>
+	</Style>
+	<Style Selector="Button.browse-add:disabled /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="#0b7fb3"/>
+		<Setter Property="Foreground" Value="#04121b"/>
+	</Style>
 	<Style Selector="Border.browse-badge.in-library">
 		<Setter Property="Background" Value="#22c55e"/>
 	</Style>
@@ -179,6 +200,9 @@
 							HorizontalAlignment="Right" VerticalAlignment="Top" IsVisible="{Binding HasBadge}">
 						<TextBlock Text="{Binding BadgeText}"/>
 					</Border>
+					<Button x:Name="BrowseCardAddButton" Classes="browse-add" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+							Focusable="False" Content="{Binding AddText}" ToolTip.Tip="Add to your library"
+							IsVisible="{Binding CanAdd}" IsEnabled="{Binding !IsAdding}" Click="Add_Click"/>
 				</Grid>
 			</Border>
 			<StackPanel Grid.Row="1" Classes="browse-card-body">

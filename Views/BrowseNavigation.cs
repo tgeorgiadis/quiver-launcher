@@ -68,7 +68,16 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         return true;
     }
 
-    public bool Options() => false;
+    /// <summary>Y (Options) on a highlighted card adds its app to the library, like the card's Add button.</summary>
+    public bool Options()
+    {
+        if (!isActive() || Service.ActiveZone != GamepadNavigationZone.BrowseGrid) return false;
+        var cards = Cards;
+        var index = Service.ClampIndex(CardIndex, cards.Count);
+        if (index < 0 || cards[index] is not BrowseItem { CanAdd: true } item) return false;
+        view.RequestAdd(item);
+        return true;
+    }
     public void RestoreFocus() => RestoreFocus(bringIntoView: true);
     public void RestoreFocus(bool bringIntoView)
     {
@@ -133,7 +142,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
     internal List<Control> ToolbarControls() => Visible(view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox);
 
     internal List<Control> FilterControls() => Visible(view.BrowseSearchTextBox, view.BrowseTypeComboBox, view.BrowsePlatformComboBox,
-        view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseRetryButton, view.BrowseClearFiltersButton);
+        view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseHideLibraryCheckBox, view.BrowseRetryButton, view.BrowseClearFiltersButton);
 
     private static List<Control> Visible(params Control[] controls) => controls.Where(c => c.IsVisible && c.IsEnabled).ToList();
 
@@ -232,6 +241,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         switch (controls[index])
         {
             case ComboBox combo: GamepadComboBoxNavigation.Open(combo); break;
+            case CheckBox check: check.IsChecked = check.IsChecked != true; break;
             case TextBox text: GamepadControlActivation.ActivateTextBox(text); break;
             case Button button: GamepadControlActivation.ActivateButton(button); break;
         }
@@ -315,7 +325,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         // Every control, including hidden ones, so one that reappears doesn't still look highlighted.
         Control[] controls = [view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox, view.BrowseSearchTextBox,
             view.BrowseTypeComboBox, view.BrowsePlatformComboBox, view.BrowseConsoleComboBox, view.BrowseAiComboBox,
-            view.BrowseRetryButton, view.BrowseClearFiltersButton];
+            view.BrowseHideLibraryCheckBox, view.BrowseRetryButton, view.BrowseClearFiltersButton];
         foreach (var control in controls)
             control.Classes.Set("gamepad-focused", false);
         var focus = TopLevel.GetTopLevel(view)?.FocusManager;

@@ -88,6 +88,7 @@ public class BrowseTests : IDisposable
             ? Page("c3", isDone: true, "Gamma")
             : Page("c2", isDone: false, "Alpha", "Beta"))));
         var browse = Browse(handler, library: [new GameInfo { FolderName = "beta" }]);
+        browse.HideLibraryApps = false;
         var token = TestContext.Current.CancellationToken;
 
         await browse.ReloadAsync(token);
@@ -101,6 +102,29 @@ public class BrowseTests : IDisposable
         browse.CanLoadMore.Should().BeFalse();
         (await browse.LoadMoreAsync(token)).Should().BeFalse();
         handler.AppQueries.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Apps_already_in_the_library_are_hidden_and_counted_and_the_next_page_is_read_so_new_ones_show()
+    {
+        // The first page is all library apps: rather than show nothing, the next page is read.
+        var handler = new Handler(request => Task.FromResult(Json(request.RequestUri!.Query.Contains("cursor=c2")
+            ? Page(null, isDone: true, "Gamma", "Delta")
+            : Page("c2", isDone: false, "Alpha", "Beta"))));
+        var browse = Browse(handler, library: [new GameInfo { FolderName = "alpha" }, new GameInfo { FolderName = "beta" }]);
+        var token = TestContext.Current.CancellationToken;
+
+        await browse.ReloadAsync(token);
+        browse.Items.Select(i => i.FolderName).Should().Equal("Gamma", "Delta");
+        browse.HiddenInLibrary.Should().Be(2);
+        browse.Items.Should().OnlyContain(i => i.CanAdd);
+
+        // Turned off, they show again, marked as in the library and with nothing to add.
+        browse.HideLibraryApps = false;
+        await browse.ReloadAsync(token);
+        browse.Items.Select(i => i.FolderName).Should().Equal("Alpha", "Beta");
+        browse.HiddenInLibrary.Should().Be(0);
+        browse.Items.Should().OnlyContain(i => i.InLibrary && !i.CanAdd);
     }
 
     [Fact]
@@ -167,6 +191,8 @@ public class BrowseTests : IDisposable
                 reads.Add(l);
                 return Task.FromResult<(List<GameInfo> Apps, string? Error)>(l == myList ? (apps, null) : (new List<GameInfo>(), "File not found."));
             });
+        // This test is about the list itself; hiding library apps has its own test.
+        browse.HideLibraryApps = false;
         browse.ShowingCustomList = true;
         var token = TestContext.Current.CancellationToken;
 

@@ -29,6 +29,10 @@ public partial class BrowseView : UserControl
     public event Action<BrowseItem>? DetailsRequested;
     /// <summary>A matched game was opened: its page compares the apps that play it.</summary>
     public event Action<BrowseGame>? GameRequested;
+    /// <summary>A card's Add button, or Y on a highlighted card: add its app without opening its page.</summary>
+    public event Action<BrowseItem>? AddRequested;
+    /// <summary>The player turned hiding library apps on or off; the shell keeps it for next time.</summary>
+    public event Action<bool>? HideLibraryChosen;
     /// <summary>The player chose an AI filter; the shell keeps it for next time, as the website does.</summary>
     public event Action<string?>? AiFilterChosen;
 
@@ -42,6 +46,15 @@ public partial class BrowseView : UserControl
         Fill(BrowseAiComboBox, BrowseText.AiFilters);
         foreach (var combo in new[] { BrowseSortComboBox, BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox })
             GamepadComboBoxNavigation.Attach(combo);
+        AddHandler(BrowseCard.AddRequestedEvent, (_, e) =>
+        {
+            if (e.Source is Control { DataContext: BrowseItem item }) RequestAdd(item);
+        });
+    }
+
+    internal void RequestAdd(BrowseItem item)
+    {
+        if (item.CanAdd && !item.IsAdding) AddRequested?.Invoke(item);
     }
 
     private const string Heading = "#heading";
@@ -163,7 +176,7 @@ public partial class BrowseView : UserControl
         Grid.SetColumn(BrowseFilterSelects, 0);
         Grid.SetColumnSpan(BrowseFilterSelects, 2);
         BrowseFilterSelects.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
-        BrowseRetryButton.Margin = BrowseClearFiltersButton.Margin = new Thickness(0, 10, 10, 0);
+        BrowseRetryButton.Margin = BrowseClearFiltersButton.Margin = BrowseHideLibraryCheckBox.Margin = new Thickness(0, 10, 10, 0);
 
         BrowseGamesControl.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
         BrowseItemsControl.ItemsPanel = new FuncTemplate<Panel?>(() => new CardColumnsPanel());
@@ -196,7 +209,8 @@ public partial class BrowseView : UserControl
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (_session?.IsClosed != false) return;
-        if (e.PropertyName is nameof(BrowseViewModel.Status) or nameof(BrowseViewModel.IsLoading) or nameof(BrowseViewModel.Total))
+        if (e.PropertyName is nameof(BrowseViewModel.Status) or nameof(BrowseViewModel.IsLoading) or nameof(BrowseViewModel.Total)
+            or nameof(BrowseViewModel.HiddenInLibrary))
             UpdateControls();
     }
 
@@ -229,8 +243,13 @@ public partial class BrowseView : UserControl
             // A phone has no room for the label; the website leaves it out there too.
             BrowseSortLabel.IsVisible = !custom && !searching && !IsMobileLayout;
             BrowseRelevantText.IsVisible = !custom && searching;
-            BrowseResultsText.IsVisible = !custom && searching;
-            BrowseResultsText.Text = searching ? $"Results for “{Model.Search.Trim()}”" : "";
+            BrowseHideLibraryCheckBox.IsChecked = Model.HideLibraryApps;
+            // A search says what it shows, as on the website, and hidden library apps are counted so none seems to be missing.
+            var hidden = Model.HiddenInLibrary == 0 ? ""
+                : Model.HiddenInLibrary == 1 ? "1 app in your library is hidden" : $"{Model.HiddenInLibrary} apps in your library are hidden";
+            var results = searching && !custom ? $"Results for “{Model.Search.Trim()}”" : "";
+            BrowseResultsText.Text = results.Length > 0 && hidden.Length > 0 ? $"{results} · {hidden}" : results + hidden;
+            BrowseResultsText.IsVisible = BrowseResultsText.Text.Length > 0;
             if (_filterGrid != null) _filterGrid.IsVisible = !custom;
             Select(BrowseSortComboBox, Model.Sort);
             Select(BrowseTypeComboBox, Model.ProjectType);
@@ -286,6 +305,16 @@ public partial class BrowseView : UserControl
         Reload();
     }
 
+    private void BrowseHideLibrary_Changed(object? sender, RoutedEventArgs e)
+    {
+        if (Model == null || _updatingControls) return;
+        var hide = BrowseHideLibraryCheckBox.IsChecked == true;
+        if (hide == Model.HideLibraryApps) return;
+        Model.HideLibraryApps = hide;
+        HideLibraryChosen?.Invoke(hide);
+        Reload();
+    }
+
     private void BrowseRetry_Click(object? sender, RoutedEventArgs e)
     {
         if (Model.ShowingCustomList) Model.ForgetCustomList();
@@ -324,7 +353,7 @@ public partial class BrowseView : UserControl
 
     private void BrowseCard_Tapped(object? sender, TappedEventArgs e)
     {
-        if (sender is not Control { DataContext: BrowseItem item }) return;
+        if (sender is not Control { DataContext: BrowseItem item } || BrowseCard.IsOnAddButton(e)) return;
         Navigation.TrackPointerCard(Navigation.CardIndexOf(item));
         DetailsRequested?.Invoke(item);
     }

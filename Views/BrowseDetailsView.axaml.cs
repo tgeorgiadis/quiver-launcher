@@ -49,12 +49,18 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
 
     public event Action? CloseRequested;
     public event Action<GameInfo>? AddRequested;
+    /// <summary>A way to play's Add button: add that app without opening its page.</summary>
+    public event Action<BrowseItem>? CardAddRequested;
     public event Action<GameInfo>? RemoveRequested;
     public event Action<string>? OpenUrlRequested;
 
     public BrowseDetailsView()
     {
         InitializeComponent();
+        AddHandler(BrowseCard.AddRequestedEvent, (_, e) =>
+        {
+            if (e.Source is Control { DataContext: BrowseItem { CanAdd: true, IsAdding: false } item }) CardAddRequested?.Invoke(item);
+        });
         if (PlatformCapabilities.IsMobile)
         {
             BrowseDetailsArtHost.Width = BrowseDetailsArtHost.Height = 72;
@@ -429,7 +435,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
 
     private void WayToPlay_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        if (sender is Control { DataContext: BrowseItem item })
+        if (sender is Control { DataContext: BrowseItem item } && !BrowseCard.IsOnAddButton(e))
             Show(new Page(item, null, null));
     }
 

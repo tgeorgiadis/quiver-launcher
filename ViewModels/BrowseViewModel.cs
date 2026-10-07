@@ -22,6 +22,9 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     private Dictionary<string, string> _consoleNames = [];
     private int _total;
     private int _catalogTotal;
+    private int _hiddenInLibrary;
+    // With library apps hidden, pages are read until at least this many cards show.
+    private const int MinCards = 24;
     private readonly Dictionary<string, QuiverCatalogGameDetail?> _games = new(StringComparer.OrdinalIgnoreCase);
 
     public ObservableCollection<BrowseItem> Items { get; } = [];
@@ -37,6 +40,10 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     public string? ProjectType { get; set; }
     /// <summary>"no-generated" or "no-ai" hides apps by AI use; null shows every app.</summary>
     public string? Ai { get; set; }
+    /// <summary>Leaves apps already in the library out of the cards, so new ones are easier to find.</summary>
+    public bool HideLibraryApps { get; set; } = true;
+    /// <summary>How many of the apps read so far were left out for being in the library.</summary>
+    public int HiddenInLibrary { get => _hiddenInLibrary; private set => Set(ref _hiddenInLibrary, value); }
     /// <summary>How many apps the catalog has, or the player's list when it shows.</summary>
     public int Total { get => _total; private set => Set(ref _total, value); }
     public bool HasCustomList => !string.IsNullOrWhiteSpace(customListLocation());
@@ -71,6 +78,7 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         Status = "";
         Notify(nameof(CanLoadMore));
         Items.Clear();
+        HiddenInLibrary = 0;
         if (Games.Count > 0)
         {
             Games.Clear();
@@ -89,7 +97,10 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
             var page = await client.GetAppsAsync(query, null, token);
             if (generation != _generation) return;
             Show(page);
-            if (Items.Count == 0)
+            if (!await FillAsync(query, generation, MinCards, token)) return;
+            if (Items.Count == 0 && HiddenInLibrary > 0)
+                Status = "Everything that matches is already in your library.";
+            else if (Items.Count == 0)
             {
                 Status = "Nothing matches that search and those filters.";
                 // Usage data: what players look for and don't find, by length only (never the words typed).
@@ -161,9 +172,11 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
             var query = new QuiverCatalogQuery(Search, Platform, Console, ProjectType, Sort, Ai);
             var page = await client.GetAppsAsync(query, _cursor, token);
             if (generation != _generation) return false;
+            var shown = Items.Count;
             Show(page);
+            if (!await FillAsync(query, generation, shown + MinCards / 2, token)) return false;
             Status = "";
-            return page.Items.Count > 0;
+            return Items.Count > shown;
         }
         catch (Exception ex) when (generation == _generation && !token.IsCancellationRequested)
         {
@@ -221,6 +234,7 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         IsLoadingMore = false;
         Status = "";
         Items.Clear();
+        HiddenInLibrary = 0;
         Notify(nameof(CanLoadMore));
         Notify(nameof(HasCustomList));
         Notify(nameof(ShowingCustomList));
@@ -228,10 +242,32 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
 
     private void Show(QuiverCatalogPage<QuiverCatalogApp> page)
     {
-        foreach (var app in page.Items)
-            Items.Add(BrowseItem.FromCatalog(app, _consoleNames));
         _cursor = page.NextCursor;
-        RefreshLibraryState();
+        AddCards(page.Items.Select(app => BrowseItem.FromCatalog(app, _consoleNames)).ToList());
+    }
+
+    private void AddCards(List<BrowseItem> cards)
+    {
+        MarkLibraryState(cards);
+        var hidden = 0;
+        foreach (var card in cards)
+        {
+            if (HideLibraryApps && card.InLibrary) hidden++;
+            else Items.Add(card);
+        }
+        if (hidden > 0) HiddenInLibrary += hidden;
+    }
+
+    // With library apps hidden a page can come back nearly empty: read on until enough cards show. False once a newer load took over.
+    private async Task<bool> FillAsync(QuiverCatalogQuery query, int generation, int wanted, CancellationToken token)
+    {
+        while (HideLibraryApps && Items.Count < wanted && _cursor != null)
+        {
+            var page = await client.GetAppsAsync(query, _cursor, token);
+            if (generation != _generation) return false;
+            Show(page);
+        }
+        return generation == _generation;
     }
 
     private async Task LoadFacetsAsync(CancellationToken token)
@@ -268,11 +304,11 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         }
         Total = _customApps.Count;
         var search = Search.Trim();
-        foreach (var app in _customApps.Where(a => search.Length == 0 || AppSearch.Matches(a, search))
-                     .OrderBy(a => a.DisplayName, StringComparer.OrdinalIgnoreCase))
-            Items.Add(BrowseItem.FromList(app));
-        RefreshLibraryState();
+        AddCards(_customApps.Where(a => search.Length == 0 || AppSearch.Matches(a, search))
+            .OrderBy(a => a.DisplayName, StringComparer.OrdinalIgnoreCase).Select(BrowseItem.FromList).ToList());
         if (Items.Count == 0)
-            Status = _customApps.Count == 0 ? "Your app list has no apps." : "Nothing in your app list matches that search.";
+            Status = _customApps.Count == 0 ? "Your app list has no apps."
+                : HiddenInLibrary > 0 ? "Everything that matches is already in your library."
+                : "Nothing in your app list matches that search.";
     }
 }

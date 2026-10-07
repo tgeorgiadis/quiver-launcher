@@ -7,6 +7,9 @@ This is a prerelease for testing before 3.5.0.
 - The App Catalog now comes from [quiverlauncher.com](https://quiverlauncher.com). Search, sort and filter it like the website, including by project type, platform, console and AI use.
 - Searching shows the games that match. Each game has a page with every way to play it.
 - Each app has a page with its README, its releases and player feedback. To leave feedback, use the button that opens the website.
+- Add an app to your library straight from its card with **+ Add**, or press **Y** on a controller, without opening its page.
+- Apps already in your library are hidden so new ones are easier to find. Untick **Hide apps in my library** to see them again.
+- On Android the catalog is laid out like the website on a phone: filters two by two and cards two to a row.
 - App lists are gone. If you keep your own list, add it in **Settings → Advanced → My app list** (a JSON file or a URL).
 
 ## Safer installs and updates

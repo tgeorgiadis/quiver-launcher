@@ -82,9 +82,26 @@ public sealed class BrowseItem : ObservableViewModel, IBrowseCard
                 Notify(nameof(Badge));
                 Notify(nameof(BadgeText));
                 Notify(nameof(HasBadge));
+                Notify(nameof(CanAdd));
             }
         }
     }
+
+    private bool _isAdding;
+    /// <summary>The card's Add button is adding it to the library.</summary>
+    public bool IsAdding
+    {
+        get => _isAdding;
+        set
+        {
+            if (Set(ref _isAdding, value))
+                Notify(nameof(AddText));
+        }
+    }
+
+    /// <summary>The card can be added to the library straight from the catalog, without opening its page.</summary>
+    public bool CanAdd => !InLibrary && (App != null || ListApp != null);
+    public string AddText => IsAdding ? "Adding…" : "+ Add";
 
     public bool IsGamepadFocused
     {

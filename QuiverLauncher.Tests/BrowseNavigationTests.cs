@@ -96,6 +96,15 @@ public class BrowseNavigationTests
             view.Shell.BrowseDetailsOpen.Should().BeFalse();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseGrid);
             browse.Model.Items[0].IsGamepadFocused.Should().BeTrue();
+
+            // Y on the next card adds it straight from the catalog, without opening its page.
+            browse.Model.Items[1].CanAdd.Should().BeTrue();
+            Move(NavigationDirection.Right).Should().BeTrue();
+            Shell(view, "HandleOptionsAction");
+            await Until(() => browse.Model.Items[1].InLibrary);
+            view.Shell.BrowseDetailsOpen.Should().BeFalse();
+            manager.LibraryApps.Select(a => a.Repository).Should().Contain("sonicdcer/Starship");
+            browse.Model.Items[1].CanAdd.Should().BeFalse();
         }
         finally
         {
@@ -155,10 +164,14 @@ public class BrowseNavigationTests
             (cards[0].X, cards[1].Y, cards[1].Right).Should().Be((0, cards[0].Y, search.Right));
             cards[2].Y.Should().BeGreaterThan(cards[0].Bottom);
 
-            // Up from the second card reaches the filter above it, then the one above that, then the search.
+            // Up from a card reaches the line above it (the hide option, under the filters), then each filter line, then the search.
             Move(NavigationDirection.Right).Should().BeTrue();
             Move(NavigationDirection.Up).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
+            browse.BrowseHideLibraryCheckBox.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Up).Should().BeTrue();
+            browse.BrowseConsoleComboBox.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Right).Should().BeTrue();
             browse.BrowseAiComboBox.Classes.Should().Contain("gamepad-focused");
             Move(NavigationDirection.Up).Should().BeTrue();
             browse.BrowsePlatformComboBox.Classes.Should().Contain("gamepad-focused");
@@ -220,6 +233,7 @@ public class BrowseNavigationTests
                 "/api/v1/facets" => """{"total":3,"consoles":[{"id":"n64","name":"Nintendo 64","brand":"Nintendo"}]}""",
                 "/api/v1/apps" => $$"""{"items":[{{App("2ship", "2 Ship 2 Harkinian", "MajorasMask-2Ship")}},{{App("starship", "Starship", "StarFox64-Starship")}},{{App("zelda", "Zelda 64 Recompiled", "Zelda64")}}],"nextCursor":null,"isDone":true}""",
                 "/api/v1/apps/2ship" => $$"""{"entry":{{App("2ship", "2 Ship 2 Harkinian", "MajorasMask-2Ship")}},"project":{"provider":"github","repository":"HarbourMasters/2ship2harkinian"},"withdrawn":[]}""",
+                "/api/v1/apps/starship" => $$"""{"entry":{{App("starship", "Starship", "StarFox64-Starship")}},"project":{"provider":"github","repository":"sonicdcer/Starship"},"withdrawn":[]}""",
                 "/api/v1/apps/2ship/reviews" => """{"items":[{"author":"Player","result":"runs","body":"Smooth.","createdAt":1787680483000}],"nextCursor":null,"isDone":true}""",
                 _ => null,
             };
