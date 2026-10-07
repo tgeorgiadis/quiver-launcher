@@ -397,6 +397,18 @@ public static class GameInstallationService
             executables.AddRange(FindEntries("*.app", directories: true));
             executables.AddRange(FindEntries("*")
                 .Where(file => IsLikelyExtensionlessExecutable(file, platform)));
+
+            // A Windows build (e.g. Platform set to Windows for use with CrossOver) is still
+            // an installed app; like Linux, fall back to .exe when nothing native exists.
+            if (executables.Count == 0)
+            {
+                var exeFiles = FindEntries("*.exe");
+                if (exeFiles.Length > 0)
+                {
+                    executables.AddRange(exeFiles);
+                    needsWine = true;
+                }
+            }
         }
         else
         {

@@ -54,7 +54,7 @@ public class GamePerformActionTests
             }));
 
             var launched = await game.PerformActionAsync(
-                client, gamesFolder, new AppSettings(), HeadlessGameDownloadDialogs.Instance);
+                client, gamesFolder, new AppSettings { Platform = TestPlatforms.ForWindowsPayload }, HeadlessGameDownloadDialogs.Instance);
 
             launched.Should().BeFalse("downloads must not count as a launch for Close After Launch");
             game.Status.Should().Be(GameStatus.Installed);

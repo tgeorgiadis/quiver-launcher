@@ -85,6 +85,16 @@ public static class GameLaunchService
                 return false;
             }
 
+            if (OperatingSystem.IsMacOS() && executablePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                await GameDialogService.ShowMessageBoxAsync(
+                    "This is a Windows app, and Quiver Launcher can't run Windows apps on macOS yet.\n\n" +
+                    "Open this app's folder to run it with CrossOver or another compatibility tool, " +
+                    "or set the platform in Settings → Platform & Cache to Automatic or MacOS to download a Mac build if one exists.",
+                    "Windows App on macOS");
+                return false;
+            }
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
                 !executablePath.EndsWith(".app") &&
                 !needsWine)

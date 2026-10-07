@@ -15,9 +15,11 @@ public sealed class IncompleteInstallationTests : IDisposable
     private string VersionPath => Path.Combine(GamePath, "version.txt");
     private string IncompletePath => Path.Combine(GamePath, GameInstallationService.IncompleteInstallFileName);
     private static string ExecutableName => OperatingSystem.IsMacOS() ? "game" : "game.exe";
+    // An unlabeled archive counts as a Windows download, which macOS doesn't pick automatically.
+    private static string AssetName => OperatingSystem.IsMacOS() ? "payload-macos.zip" : "payload.zip";
     private static GitHubRelease Release => new()
     {
-        tag_name = "v2", assets = [new GitHubAsset { name = "payload.zip", browser_download_url = "https://example.test/payload.zip" }]
+        tag_name = "v2", assets = [new GitHubAsset { name = AssetName, browser_download_url = "https://example.test/payload.zip" }]
     };
     public IncompleteInstallationTests() => Directory.CreateDirectory(GamePath);
     public void Dispose() => Directory.Delete(_root, true);

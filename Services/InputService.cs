@@ -21,6 +21,10 @@ namespace QuiverLauncher.Services
         private bool _disposed = false;
         private bool _isWindowActive = true;
         private bool _captureMode;
+        // Set when the native SDL2 library cannot be loaded; gamepad input is then unavailable.
+        private bool _sdlLibraryMissing;
+
+        private bool SdlAvailable => PlatformCapabilities.SupportsGamepadSdl && !_sdlLibraryMissing;
 
         // Gamepad deadzone threshold
         private const float DeadZone = 0.3f;
@@ -122,7 +126,7 @@ namespace QuiverLauncher.Services
 
         public IReadOnlyList<ConnectedGamepadInfo> GetConnectedGamepads()
         {
-            if (!PlatformCapabilities.SupportsGamepadSdl)
+            if (!SdlAvailable)
                 return Array.Empty<ConnectedGamepadInfo>();
 
             RefreshConnectedControllers();
@@ -153,7 +157,7 @@ namespace QuiverLauncher.Services
 
         public void RefreshConnectedControllers()
         {
-            if (!PlatformCapabilities.SupportsGamepadSdl)
+            if (!SdlAvailable)
                 return;
 
             var previousCount = _gameControllers.Count;
@@ -200,7 +204,7 @@ namespace QuiverLauncher.Services
         /// </summary>
         public void ReclaimGamepads(bool reinitIfEmpty = false)
         {
-            if (!PlatformCapabilities.SupportsGamepadSdl)
+            if (!SdlAvailable)
                 return;
 
             CloseAllControllers();
@@ -247,13 +251,24 @@ namespace QuiverLauncher.Services
             if (!PlatformCapabilities.SupportsGamepadSdl)
                 return;
 
-            // Desktop Mode: avoid Steam HIDAPI so lizard mode / Steam+X keep working.
-            // Gaming Mode: allow Steam Virtual Gamepad so SDL sees the Deck pad.
-            SteamDeckSdlHints.ApplyBeforeInit((name, value) => SDL.SDL_SetHint(name, value));
-
-            if (SDL.SDL_Init(SDL.SDL_INIT_GAMECONTROLLER) < 0)
+            try
             {
-                System.Diagnostics.Debug.WriteLine($"SDL initialization failed: {SDL.SDL_GetError()}");
+                // Desktop Mode: avoid Steam HIDAPI so lizard mode / Steam+X keep working.
+                // Gaming Mode: allow Steam Virtual Gamepad so SDL sees the Deck pad.
+                SteamDeckSdlHints.ApplyBeforeInit((name, value) => SDL.SDL_SetHint(name, value));
+
+                if (SDL.SDL_Init(SDL.SDL_INIT_GAMECONTROLLER) < 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"SDL initialization failed: {SDL.SDL_GetError()}");
+                    return;
+                }
+            }
+            catch (DllNotFoundException ex)
+            {
+                // No native SDL2 for this platform/architecture: start without gamepad
+                // input rather than failing to open the launcher.
+                _sdlLibraryMissing = true;
+                System.Diagnostics.Debug.WriteLine($"SDL2 unavailable, gamepad input disabled: {ex.Message}");
                 return;
             }
 
@@ -285,6 +300,9 @@ namespace QuiverLauncher.Services
 
         private void GamepadTimer_Tick(object? sender, EventArgs e)
         {
+            if (_sdlLibraryMissing)
+                return;
+
             CheckSDLWindowFocus();
             SDL.SDL_GameControllerUpdate();
             RefreshConnectedControllers();
@@ -820,7 +838,8 @@ namespace QuiverLauncher.Services
                 foreach (var index in _gameControllers.Keys.ToList())
                     CloseControllerAt(index);
 
-                SDL.SDL_Quit();
+                if (!_sdlLibraryMissing)
+                    SDL.SDL_Quit();
                 _disposed = true;
             }
         }
