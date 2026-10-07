@@ -68,9 +68,11 @@ public class BrowseNavigationTests
             await Until(() => details.BrowseDetailsAddButton.IsVisible);
             details.BrowseDetailsAddButton.Classes.Should().Contain("gamepad-focused");
 
-            // Down reaches the tabs; Player feedback has the button to give feedback on the website. Up returns to Add.
+            // Down reaches the tabs (Overview, Releases, Player feedback); Player feedback has the button to give feedback on the website. Up returns to Add.
             Move(NavigationDirection.Down).Should().BeTrue();
             details.BrowseDetailsOverviewTab.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Right).Should().BeTrue();
+            details.BrowseDetailsReleasesTab.Classes.Should().Contain("gamepad-focused");
             Move(NavigationDirection.Right).Should().BeTrue();
             Shell(view, "HandleConfirmAction");
             details.BrowseDetailsFeedback.IsVisible.Should().BeTrue();

@@ -4,12 +4,16 @@
              xmlns:services="using:QuiverLauncher.Services"
              x:Class="QuiverLauncher.Views.BrowseDetailsView">
 	<UserControl.Styles>
+		<!-- Back link and tabs keep a steady 2px border, coloured only when highlighted, so nothing moves. -->
 		<Style Selector="Button.details-back">
 			<Setter Property="Background" Value="Transparent"/>
-			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="BorderBrush" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="6"/>
 			<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
 			<Setter Property="FontSize" Value="13"/>
-			<Setter Property="Padding" Value="6,4"/>
+			<Setter Property="Padding" Value="8,4"/>
+			<Setter Property="Margin" Value="-10,0,0,0"/>
 		</Style>
 		<Style Selector="Button.details-back:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="Transparent"/>
@@ -61,19 +65,33 @@
 		<Style Selector="Button.details-tab">
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="BorderBrush" Value="Transparent"/>
-			<Setter Property="BorderThickness" Value="0,0,0,2"/>
-			<Setter Property="CornerRadius" Value="0"/>
-			<Setter Property="Padding" Value="16,12"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="6"/>
+			<Setter Property="Padding" Value="14,10,14,0"/>
 			<Setter Property="FontSize" Value="14"/>
 			<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		</Style>
+		<Style Selector="Button.details-tab Border.tab-line">
+			<Setter Property="Height" Value="2"/>
+			<Setter Property="Margin" Value="-14,10,-14,0"/>
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+		<Style Selector="Button.details-tab.selected Border.tab-line">
+			<Setter Property="Background" Value="#0ea5e9"/>
 		</Style>
 		<Style Selector="Button.details-tab:pointerover /template/ ContentPresenter">
 			<Setter Property="Background" Value="Transparent"/>
 			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
 		</Style>
 		<Style Selector="Button.details-tab.selected">
-			<Setter Property="BorderBrush" Value="#0ea5e9"/>
 			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		</Style>
+		<Style Selector="Border.release-tag">
+			<Setter Property="CornerRadius" Value="4"/>
+			<Setter Property="Padding" Value="6,1"/>
+			<Setter Property="Margin" Value="8,0,0,0"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="Background" Value="#33d7b56a"/>
 		</Style>
 		<Style Selector="Border.details-panel">
 			<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
@@ -111,6 +129,12 @@
 			<Setter Property="BorderBrush" Value="#66e38c87"/>
 			<Setter Property="Background" Value="#1ae38c87"/>
 		</Style>
+		<!-- Last, so the highlight wins over the back link and tab styles above. -->
+		<Style Selector="Button.details-back.gamepad-focused, Button.details-tab.gamepad-focused">
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		</Style>
 	</UserControl.Styles>
 	<Border x:Name="Surface"
 			XYFocus.NavigationModes="Gamepad,Remote"
@@ -125,7 +149,11 @@
 					  HorizontalScrollBarVisibility="Disabled">
 			<StackPanel>
 				<Grid x:Name="BrowseDetailsBackdrop" ClipToBounds="True">
-					<Image x:Name="BrowseDetailsHero" Stretch="UniformToFill" Opacity="0.35" VerticalAlignment="Center"/>
+					<!-- On a canvas, so the art fills the header without setting its height: the header fits its content. -->
+					<Canvas>
+						<Image x:Name="BrowseDetailsHero" Stretch="UniformToFill" Opacity="0.35"
+							   Width="{Binding #BrowseDetailsBackdrop.Bounds.Width}" Height="{Binding #BrowseDetailsBackdrop.Bounds.Height}"/>
+					</Canvas>
 					<!-- Fades the art into the page, darker on the left where the text is. -->
 					<Border>
 						<Border.Background>
@@ -224,14 +252,34 @@
 				</Grid>
 				<Border x:Name="BrowseDetailsTabsBar" Margin="24,0,24,0" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1">
 					<StackPanel Orientation="Horizontal" Spacing="4">
-						<Button x:Name="BrowseDetailsOverviewTab" Classes="details-tab selected" Content="Overview" Click="Tab_Click"/>
+						<Button x:Name="BrowseDetailsOverviewTab" Classes="details-tab selected" Click="Tab_Click">
+							<StackPanel>
+								<TextBlock Text="Overview" Height="20" VerticalAlignment="Center"/>
+								<Border Classes="tab-line"/>
+							</StackPanel>
+						</Button>
+						<Button x:Name="BrowseDetailsReleasesTab" Classes="details-tab" Click="Tab_Click">
+							<StackPanel>
+								<StackPanel Orientation="Horizontal" Spacing="8" Height="20">
+									<TextBlock Text="Releases" VerticalAlignment="Center"/>
+									<Border x:Name="BrowseDetailsReleasesCountPill" CornerRadius="5" Padding="6,1" BorderThickness="1" VerticalAlignment="Center"
+											Background="{DynamicResource ThemeLighter}" BorderBrush="{DynamicResource ThemeBorder}" IsVisible="False">
+										<TextBlock x:Name="BrowseDetailsReleasesCount" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+									</Border>
+								</StackPanel>
+								<Border Classes="tab-line"/>
+							</StackPanel>
+						</Button>
 						<Button x:Name="BrowseDetailsFeedbackTab" Classes="details-tab" Click="Tab_Click">
-							<StackPanel Orientation="Horizontal" Spacing="8">
-								<TextBlock Text="Player feedback" VerticalAlignment="Center"/>
-								<Border CornerRadius="5" Padding="6,1" BorderThickness="1" VerticalAlignment="Center"
-										Background="{DynamicResource ThemeLighter}" BorderBrush="{DynamicResource ThemeBorder}">
-									<TextBlock x:Name="BrowseDetailsFeedbackCount" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
-								</Border>
+							<StackPanel>
+								<StackPanel Orientation="Horizontal" Spacing="8" Height="20">
+									<TextBlock Text="Player feedback" VerticalAlignment="Center"/>
+									<Border CornerRadius="5" Padding="6,1" BorderThickness="1" VerticalAlignment="Center"
+											Background="{DynamicResource ThemeLighter}" BorderBrush="{DynamicResource ThemeBorder}">
+										<TextBlock x:Name="BrowseDetailsFeedbackCount" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
+									</Border>
+								</StackPanel>
+								<Border Classes="tab-line"/>
 							</StackPanel>
 						</Button>
 					</StackPanel>
@@ -250,6 +298,13 @@
 								</DataTemplate>
 							</ItemsControl.ItemTemplate>
 						</ItemsControl>
+					</StackPanel>
+					<!-- Releases: what Quiver says about each one, and its notes; downloads stay with Change Version. -->
+					<StackPanel x:Name="BrowseDetailsReleases" Grid.Column="0" Margin="0,0,28,0" Spacing="14" IsVisible="False">
+						<TextBlock Text="Quiver Launcher only updates to verified releases. It installs an unverified or blocked one only if you pick it in Change Version and confirm."
+								   FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+						<TextBlock x:Name="BrowseDetailsReleasesStatus" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+						<StackPanel x:Name="BrowseDetailsReleaseList" Spacing="14"/>
 					</StackPanel>
 					<StackPanel x:Name="BrowseDetailsFeedback" Grid.Column="0" Margin="0,0,28,0" Spacing="14" IsVisible="False">
 						<!-- Feedback is written on the website, where players sign in. -->

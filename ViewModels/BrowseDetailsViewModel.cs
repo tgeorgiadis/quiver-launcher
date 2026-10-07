@@ -25,6 +25,9 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
     private BrowseItem? _item;
     private GameInfo? _entry;
     private QuiverCatalogProject? _project;
+    private IReadOnlyList<QuiverCatalogRelease>? _releases;
+    private bool _releasesMore;
+    private string _releasesStatus = "";
     private IReadOnlyList<BrowseReviewLine> _reviews = [];
     private string _reviewsStatus = "";
     private string _error = "";
@@ -35,6 +38,11 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
     /// <summary>Who made the app and where it comes from, once its page has loaded.</summary>
     public QuiverCatalogProject? Project { get => _project; private set => Set(ref _project, value); }
     public IReadOnlyList<BrowseReviewLine> Reviews { get => _reviews; private set => Set(ref _reviews, value); }
+    /// <summary>The app's releases, newest first, once the Releases tab has asked for them.</summary>
+    public IReadOnlyList<QuiverCatalogRelease>? Releases { get => _releases; private set => Set(ref _releases, value); }
+    /// <summary>The site has older releases than the ones shown.</summary>
+    public bool ReleasesMore { get => _releasesMore; private set => Set(ref _releasesMore, value); }
+    public string ReleasesStatus { get => _releasesStatus; private set => Set(ref _releasesStatus, value); }
     public string ReviewsStatus { get => _reviewsStatus; private set => Set(ref _reviewsStatus, value); }
     public string Error { get => _error; private set => Set(ref _error, value); }
     public DocumentViewModel Readme { get; } = new();
@@ -46,6 +54,9 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
         Item = item;
         Entry = item.ListApp;
         Project = null;
+        Releases = null;
+        ReleasesMore = false;
+        ReleasesStatus = "";
         Error = "";
         Reviews = [];
         ReviewsStatus = item.App == null ? "" : "Loading reviews…";
@@ -62,12 +73,34 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
         Item = null;
         Entry = null;
         Project = null;
+        Releases = null;
+        ReleasesStatus = "";
         Reviews = [];
         ReviewsStatus = "";
         Error = "";
     }
 
     public void Dispose() => Close();
+
+    /// <summary>Reads the app's release history the first time its Releases tab opens.</summary>
+    public async Task LoadReleasesAsync(CancellationToken token)
+    {
+        if (Item?.App is not { } app || Releases != null || ReleasesStatus.Length > 0) return;
+        var generation = _generation;
+        ReleasesStatus = "Loading releases…";
+        try
+        {
+            var page = await client.GetReleaseHistoryAsync(app.Slug, token);
+            if (generation != _generation) return;
+            Releases = page.Items;
+            ReleasesMore = !page.IsDone;
+            ReleasesStatus = page.Items.Count == 0 ? "Releases are being cataloged. Check the project's repository for now." : "";
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            if (generation == _generation) ReleasesStatus = $"Couldn't load releases. {ex.Message}";
+        }
+    }
 
     private async Task LoadDetailAsync(QuiverCatalogApp app, int generation, CancellationToken token)
     {

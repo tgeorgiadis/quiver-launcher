@@ -154,6 +154,9 @@ public sealed class QuiverCatalogRelease
 {
     public string Version { get; set; } = "";
     public string State { get; set; } = "";
+    public string Notes { get; set; } = "";
+    public bool Prerelease { get; set; }
+    public double? ReleasedAt { get; set; }
     public List<string> Reasons { get; set; } = [];
     public List<QuiverCatalogAsset> Assets { get; set; } = [];
     public QuiverCatalogScan? Scan { get; set; }

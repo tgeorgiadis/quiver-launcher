@@ -13,7 +13,8 @@ namespace QuiverLauncher.Views;
 
 /// <summary>
 /// An app's page over the App Catalog, laid out like Quiver Launcher 4's: the app's header over its artwork, then
-/// Overview (the README) and Player feedback tabs, with its project details beside them. Feedback is read here and
+/// Overview (the README), Releases (notes and what Quiver says about each) and Player feedback tabs, with its project
+/// details beside them. Feedback is read here and
 /// written on quiverlauncher.com.
 /// </summary>
 public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
@@ -24,7 +25,9 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     private Func<GameInfo, GameInfo?> _findInLibrary = _ => null;
     private GamepadNavigationService Nav => _host.Navigation;
     private GameInfo? _libraryApp;
-    private bool _feedbackTab;
+    private enum Tab { Overview, Releases, Feedback }
+    private Tab _tab;
+    private IReadOnlyList<QuiverCatalogRelease>? _shownReleases;
     // The first action was asked for before the actions arrived (they need the app's page): take it when they do.
     private bool _awaitingAction;
     internal int FocusIndex = -1;
@@ -75,7 +78,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     {
         BrowseDetailsScrollViewer.Offset = default;
         BodyFocused = false;
-        _feedbackTab = false;
+        _tab = Tab.Overview;
         _ = _session.RunAsync(() => Model.OpenAsync(item, _session.Token));
         Refresh();
         if (_host.IsFocusActive)
@@ -103,7 +106,6 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         var hero = FirstText(app?.LibraryArt?.Hero, app?.LibraryArt?.Header);
         AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsHero, hero);
         BrowseDetailsHero.IsVisible = hero != null;
-        BrowseDetailsBackdrop.MinHeight = hero != null && !PlatformCapabilities.IsMobile ? 360 : 0;
         AsyncImageLoader.ImageLoader.SetSource(BrowseDetailsArt, app == null ? entry?.GameIconUrl
             : FirstText(app.ArtworkFromGame ? null : app.Artwork, app.LibraryArt?.Logo, app.LibraryArt?.Capsule, app.Artwork, app.LibraryArt?.Header));
         BrowseDetailsKind.Text = item?.Kind.Replace(" · ", " / ").ToUpperInvariant();
@@ -141,14 +143,21 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         BrowseDetailsRemoveButton.IsVisible = _libraryApp != null;
         BrowseDetailsRepositoryButton.IsVisible = !string.IsNullOrWhiteSpace(entry?.Repository);
 
-        // An app from the player's own list has no page on the site: no feedback, only its README.
-        var feedback = _feedbackTab && app != null;
+        // An app from the player's own list has no page on the site: no releases or feedback, only its README.
+        var tab = app == null ? Tab.Overview : _tab;
         BrowseDetailsTabsBar.IsVisible = app != null;
-        BrowseDetailsOverviewTab.Classes.Set("selected", !feedback);
-        BrowseDetailsFeedbackTab.Classes.Set("selected", feedback);
+        BrowseDetailsOverviewTab.Classes.Set("selected", tab == Tab.Overview);
+        BrowseDetailsReleasesTab.Classes.Set("selected", tab == Tab.Releases);
+        BrowseDetailsFeedbackTab.Classes.Set("selected", tab == Tab.Feedback);
         BrowseDetailsFeedbackCount.Text = said.ToString();
-        BrowseDetailsOverview.IsVisible = !feedback;
-        BrowseDetailsFeedback.IsVisible = feedback;
+        BrowseDetailsOverview.IsVisible = tab == Tab.Overview;
+        BrowseDetailsReleases.IsVisible = tab == Tab.Releases;
+        BrowseDetailsFeedback.IsVisible = tab == Tab.Feedback;
+        BrowseDetailsReleasesCountPill.IsVisible = Model.Releases != null;
+        BrowseDetailsReleasesCount.Text = $"{Model.Releases?.Count}{(Model.ReleasesMore ? "+" : "")}";
+        BrowseDetailsReleasesStatus.Text = Model.ReleasesStatus;
+        BrowseDetailsReleasesStatus.IsVisible = Model.ReleasesStatus.Length > 0;
+        if (!ReferenceEquals(_shownReleases, Model.Releases)) ShowReleases(Model.Releases);
         BrowseDetailsShareTitle.Text = said == 0 ? "Nobody has shared how it runs yet" : "Your experience helps the next person";
         BrowseDetailsReviewButton.IsVisible = Model.ReviewUrl != null;
         BrowseDetailsReviews.ItemsSource = Model.Reviews;
@@ -165,6 +174,61 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
             else ApplySelection(FocusIndex, bringIntoView: false);
         }
     }
+
+    /// <summary>Each release as a card, as on the website: version, date and what Quiver says, its reasons, then its notes.</summary>
+    private void ShowReleases(IReadOnlyList<QuiverCatalogRelease>? releases)
+    {
+        _shownReleases = releases;
+        BrowseDetailsReleaseList.Children.Clear();
+        foreach (var release in releases ?? [])
+        {
+            var (label, color) = release.State switch
+            {
+                "verified" => ("Verified", "#8ac3a2"),
+                "blocked" => ("Blocked", "#e38c87"),
+                _ => ("Unverified", "#d7b56a"),
+            };
+            var brush = new SolidColorBrush(Color.Parse(color));
+            var title = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal };
+            title.Children.Add(new TextBlock { Text = release.Version, FontSize = 15, FontWeight = FontWeight.SemiBold, Foreground = Brush("ThemeText") });
+            if (release.Prerelease)
+                title.Children.Add(new Border { Classes = { "release-tag" }, Child = new TextBlock { Text = "Pre-release", FontSize = 10, Foreground = new SolidColorBrush(Color.Parse("#d7b56a")) } });
+            var heading = new StackPanel();
+            heading.Children.Add(title);
+            if (release.ReleasedAt is { } at)
+                heading.Children.Add(new TextBlock { Text = DateTimeOffset.FromUnixTimeMilliseconds((long)at).LocalDateTime.ToString("d MMM yyyy"), FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#8f929b")), Margin = new Thickness(0, 2, 0, 0) });
+            var badge = new Border
+            {
+                Classes = { "result-badge" }, BorderBrush = new SolidColorBrush(Color.Parse("#66" + color[1..])),
+                Background = new SolidColorBrush(Color.Parse("#1a" + color[1..])),
+                Child = new TextBlock { Text = label, FontSize = 12, FontWeight = FontWeight.SemiBold, Foreground = brush },
+            };
+            var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+            header.Children.Add(heading);
+            Grid.SetColumn(badge, 1);
+            header.Children.Add(badge);
+            var body = new StackPanel { Spacing = 14 };
+            body.Children.Add(header);
+            if (release.State != "verified")
+                foreach (var reason in release.Reasons)
+                    body.Children.Add(new TextBlock { Text = reason, FontSize = 12, Foreground = brush, TextWrapping = TextWrapping.Wrap });
+            var notes = new StackPanel();
+            if (string.IsNullOrWhiteSpace(release.Notes))
+                notes.Children.Add(new TextBlock { Text = "No release notes provided.", FontSize = 13, Foreground = Brush("ThemeTextSecondary") });
+            else
+                foreach (var control in _renderer.Render(release.Notes))
+                    notes.Children.Add(control);
+            body.Children.Add(notes);
+            BrowseDetailsReleaseList.Children.Add(new Border { Classes = { "details-panel" }, Padding = new Thickness(22), Child = body });
+        }
+        if (Model.ReleasesMore)
+            BrowseDetailsReleaseList.Children.Add(new TextBlock
+            {
+                Text = "Older releases are on the app's page on quiverlauncher.com.", FontSize = 12, Foreground = Brush("ThemeTextSecondary"),
+            });
+    }
+
+    private IBrush? Brush(string key) => this.TryFindResource(key, ActualThemeVariant, out var value) ? value as IBrush : null;
 
     /// <summary>Project details, as in Quiver Launcher 4: who made it, where it runs, its latest release and AI use.</summary>
     private void FillAbout(QuiverCatalogApp app)
@@ -207,9 +271,11 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
 
     private void Tab_Click(object? sender, RoutedEventArgs e)
     {
-        var feedback = ReferenceEquals(sender, BrowseDetailsFeedbackTab);
-        if (_feedbackTab == feedback) return;
-        _feedbackTab = feedback;
+        var tab = ReferenceEquals(sender, BrowseDetailsFeedbackTab) ? Tab.Feedback
+            : ReferenceEquals(sender, BrowseDetailsReleasesTab) ? Tab.Releases : Tab.Overview;
+        if (_tab == tab) return;
+        _tab = tab;
+        if (tab == Tab.Releases) _ = _session.RunAsync(() => Model.LoadReleasesAsync(_session.Token));
         Refresh();
     }
 
@@ -240,7 +306,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     {
         Visible([BrowseDetailsCloseButton]),
         Visible(BrowseDetailsActions.Children),
-        BrowseDetailsTabsBar.IsVisible ? Visible([BrowseDetailsOverviewTab, BrowseDetailsFeedbackTab]) : [],
+        BrowseDetailsTabsBar.IsVisible ? Visible([BrowseDetailsOverviewTab, BrowseDetailsReleasesTab, BrowseDetailsFeedbackTab]) : [],
         BrowseDetailsFeedback.IsVisible ? Visible([BrowseDetailsReviewButton]) : [],
     }.Where(r => r.Count > 0).ToList();
 
@@ -296,7 +362,12 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         // Entering the tabs lands on the open one.
         var column2 = nav.Column;
         if (nav.Row != row && rows[nav.Row].Contains(BrowseDetailsFeedbackTab))
-            column2 = Math.Max(0, rows[nav.Row].IndexOf(_feedbackTab ? BrowseDetailsFeedbackTab : BrowseDetailsOverviewTab));
+            column2 = Math.Max(0, rows[nav.Row].IndexOf(_tab switch
+            {
+                Tab.Releases => BrowseDetailsReleasesTab,
+                Tab.Feedback => BrowseDetailsFeedbackTab,
+                _ => BrowseDetailsOverviewTab,
+            }));
         ApplySelection(rows.Take(nav.Row).Sum(r => r.Count) + column2);
         return true;
     }
@@ -349,7 +420,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
 
     internal void ClearHighlights()
     {
-        Control[] controls = [BrowseDetailsCloseButton, .. BrowseDetailsActions.Children, BrowseDetailsOverviewTab, BrowseDetailsFeedbackTab,
+        Control[] controls = [BrowseDetailsCloseButton, .. BrowseDetailsActions.Children, BrowseDetailsOverviewTab, BrowseDetailsReleasesTab, BrowseDetailsFeedbackTab,
             BrowseDetailsReviewButton];
         foreach (var control in controls)
             control.Classes.Set("gamepad-focused", false);
