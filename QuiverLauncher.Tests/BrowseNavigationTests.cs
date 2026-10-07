@@ -1,10 +1,12 @@
 using System.Net;
 using System.Reflection;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using FluentAssertions;
 using QuiverLauncher.Services;
 using QuiverLauncher.Views;
@@ -94,6 +96,76 @@ public class BrowseNavigationTests
             view.Shell.BrowseDetailsOpen.Should().BeFalse();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseGrid);
             browse.Model.Items[0].IsGamepadFocused.Should().BeTrue();
+        }
+        finally
+        {
+            window.Close();
+            await view.ShutdownAsync();
+            manager.Dispose();
+            GamepadFocusChrome.SetKeyboardNavigationActive(false);
+            QuiverLauncherPaths.OverrideUserDataRoot = previousRoot;
+            TestFixtures.CleanupDirectory(root);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task On_a_phone_the_catalog_is_laid_out_like_the_websites_narrow_view()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "quiver-browse-phone-" + Guid.NewGuid().ToString("N"));
+        var previousRoot = QuiverLauncherPaths.OverrideUserDataRoot;
+        Directory.CreateDirectory(root);
+        QuiverLauncherPaths.OverrideUserDataRoot = root;
+        var store = new Store();
+        store.Current.AppsPath = Path.Combine(root, "Apps");
+        using var http = new HttpClient(new Site());
+        var manager = new GameManager(store, http) { UiThreadInvoker = action => Dispatcher.UIThread.InvokeAsync(action).GetTask() };
+        var view = new MainView(new() { SettingsStore = store, GameManager = manager, InitializeOnOpen = false, EnableInput = false, EnableMusic = false });
+        var window = new Window { Content = view, Width = 392, Height = 840 };
+        var browse = view.FindControl<BrowseView>("BrowsePanel")!;
+        var navigation = ((IFeatureNavigationHost)view).Navigation;
+        bool Move(NavigationDirection direction) => (bool)Shell(view, "HandleGamepadNavigation", direction)!;
+        Rect Place(Control control) => new(control.TranslatePoint(default, browse)!.Value, control.Bounds.Size);
+        try
+        {
+            window.Show(); Dispatcher.UIThread.RunJobs();
+            // The phone shell only runs on Android: here the sidebar is closed and the catalog laid out as on a phone.
+            var split = view.FindControl<SplitView>("MainSplitView")!;
+            split.DisplayMode = SplitViewDisplayMode.Overlay;
+            split.IsPaneOpen = false;
+            browse.ApplyMobileLayout();
+            GamepadFocusChrome.SetKeyboardNavigationActive(true);
+            view.FindControl<Button>("BrowseNavButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await Until(() => browse.Model.Items.Count == 3);
+            window.UpdateLayout();
+
+            // The sort shares the title's line; the search spans the width, with the four filters two by two under it.
+            Place(browse.BrowseSortComboBox).Right.Should().BeApproximately(browse.Bounds.Width, 1);
+            browse.BrowseSortLabel.IsVisible.Should().BeFalse();
+            var search = Place(browse.BrowseSearchTextBox);
+            search.Width.Should().BeApproximately(browse.Bounds.Width, 1);
+            var (type, platform, console, ai) = (Place(browse.BrowseTypeComboBox), Place(browse.BrowsePlatformComboBox),
+                Place(browse.BrowseConsoleComboBox), Place(browse.BrowseAiComboBox));
+            (type.Y, platform.Y, console.X, ai.X).Should().Be((platform.Y, type.Y, type.X, platform.X));
+            console.Y.Should().BeGreaterThan(type.Bottom);
+            (type.X, platform.Right).Should().Be((0, search.Right));
+
+            // Two cards to a row, filling the width.
+            var cards = browse.BrowseItemsControl.GetVisualDescendants().OfType<BrowseCard>().Select(Place).ToList();
+            cards.Should().HaveCount(3);
+            (cards[0].X, cards[1].Y, cards[1].Right).Should().Be((0, cards[0].Y, search.Right));
+            cards[2].Y.Should().BeGreaterThan(cards[0].Bottom);
+
+            // Up from the second card reaches the filter above it, then the one above that, then the search.
+            Move(NavigationDirection.Right).Should().BeTrue();
+            Move(NavigationDirection.Up).Should().BeTrue();
+            navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
+            browse.BrowseAiComboBox.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Up).Should().BeTrue();
+            browse.BrowsePlatformComboBox.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Up).Should().BeTrue();
+            browse.BrowseSearchTextBox.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Down).Should().BeTrue();
+            browse.BrowseTypeComboBox.Classes.Should().Contain("gamepad-focused");
         }
         finally
         {

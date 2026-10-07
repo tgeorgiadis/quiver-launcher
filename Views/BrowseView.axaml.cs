@@ -18,8 +18,13 @@ public partial class BrowseView : UserControl
     private CancellationTokenSource? _searchDelay;
     private bool _updatingControls;
     private int _consoleChoices = -1;
+    // On a phone the four filters sit two by two under the search; on a wider screen (a handheld held sideways) on one line.
+    private Grid? _filterGrid;
+    private const double FiltersOnOneLineWidth = 640;
     private CancellationToken Token => _session?.Token ?? CancellationToken.None;
     public BrowseViewModel Model { get; private set; } = null!;
+    /// <summary>Laid out for a phone, like the website's narrow layout.</summary>
+    internal bool IsMobileLayout { get; private set; }
     public BrowseNavigation Navigation { get; private set; } = null!;
     public event Action<BrowseItem>? DetailsRequested;
     /// <summary>A matched game was opened: its page compares the apps that play it.</summary>
@@ -111,20 +116,73 @@ public partial class BrowseView : UserControl
         Run(() => Model.ReloadAsync(Token));
     }
 
+    /// <summary>
+    /// The website's phone layout: the title and count with the sort beside them, the search across the width, the
+    /// four filters two by two, then the cards two to a row filling the width.
+    /// </summary>
     public void ApplyMobileLayout()
     {
-        BrowseItemsControl.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel { Spacing = 12 });
+        if (IsMobileLayout) return;
+        IsMobileLayout = true;
+        Classes.Add("mobile");
         BrowseContentStack.Margin = new Thickness(0);
-        BrowseToolbarPanel.Margin = new Thickness(0, 0, 0, 8);
-        BrowseFiltersPanel.Margin = new Thickness(0, 0, 0, 8);
-        // Narrow screens: the filters wrap below the search, as on the website.
-        BrowseSearchTextBox.Margin = new Thickness(0, 0, 0, 8);
+        BrowseToolbarPanel.Margin = new Thickness(0, 0, 0, 12);
+        BrowseFiltersPanel.Margin = new Thickness(0, 0, 0, 14);
+
+        BrowseToolbarPanel.ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto");
+        BrowseTitleText.FontSize = 16;
+        // The list tabs, when there is a list, go on their own line under the title.
+        Grid.SetRow(BrowseSourceTabs, 1);
+        Grid.SetColumn(BrowseSourceTabs, 0);
+        Grid.SetColumnSpan(BrowseSourceTabs, 3);
+        BrowseSourceTabs.Margin = new Thickness(0, 10, 0, 0);
+        BrowseSortComboBox.MinWidth = 120;
+
+        BrowseSearchTextBox.Margin = new Thickness(0, 0, 0, 10);
+        BrowseSearchTextBox.MinWidth = 0;
         Grid.SetColumnSpan(BrowseSearchTextBox, 2);
-        Grid.SetRow(BrowseFilterSelects, 1);
+        _filterGrid = new Grid { ColumnSpacing = 12, RowSpacing = 10 };
+        foreach (var combo in new[] { BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox })
+        {
+            BrowseFilterSelects.Children.Remove(combo);
+            combo.MinWidth = 0;
+            combo.Margin = new Thickness(0);
+            combo.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
+            _filterGrid.Children.Add(combo);
+        }
+        ArrangeFilters(0);
+        BrowseFiltersPanel.SizeChanged += (_, e) => ArrangeFilters(e.NewSize.Width);
+        Grid.SetRow(_filterGrid, 1);
+        Grid.SetColumnSpan(_filterGrid, 2);
+        BrowseFiltersPanel.Children.Add(_filterGrid);
+        // "Try again" and "Clear filters" follow on a line of their own when they show.
+        BrowseFiltersPanel.RowDefinitions = new RowDefinitions("Auto,Auto,Auto");
+        foreach (var icon in BrowseFilterSelects.Children.OfType<Avalonia.Controls.Shapes.Path>())
+            icon.IsVisible = false;
+        Grid.SetRow(BrowseFilterSelects, 2);
         Grid.SetColumn(BrowseFilterSelects, 0);
         Grid.SetColumnSpan(BrowseFilterSelects, 2);
-        foreach (var combo in BrowseFilterSelects.Children.OfType<ComboBox>())
-            combo.Margin = new Thickness(0, 0, 8, 8);
+        BrowseFilterSelects.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
+        BrowseRetryButton.Margin = BrowseClearFiltersButton.Margin = new Thickness(0, 10, 10, 0);
+
+        BrowseGamesControl.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
+        BrowseItemsControl.ItemsPanel = new FuncTemplate<Panel?>(() => new CardColumnsPanel());
+        BrowseItemsControl.Classes.Add("narrow-cards");
+        UpdateControls();
+    }
+
+    private void ArrangeFilters(double width)
+    {
+        if (_filterGrid == null) return;
+        var columns = width >= FiltersOnOneLineWidth ? 4 : 2;
+        if (_filterGrid.ColumnDefinitions.Count == columns) return;
+        _filterGrid.ColumnDefinitions = new ColumnDefinitions(string.Join(",", Enumerable.Repeat("*", columns)));
+        _filterGrid.RowDefinitions = new RowDefinitions(columns == 4 ? "Auto" : "Auto,Auto");
+        for (var i = 0; i < _filterGrid.Children.Count; i++)
+        {
+            Grid.SetRow(_filterGrid.Children[i], i / columns);
+            Grid.SetColumn(_filterGrid.Children[i], i % columns);
+        }
     }
 
     internal Task<bool> LoadMoreAsync() => _session?.RunAsync(() => Model.LoadMoreAsync(Token)) ?? Task.FromResult(false);
@@ -161,14 +219,19 @@ public partial class BrowseView : UserControl
             if (_consoleChoices != Model.Consoles.Count) FillConsoles();
             BrowseTitleText.Text = custom ? "My app list" : "Explore the catalog";
             BrowseCountText.Text = custom || Model.Total > 0 ? Model.Total.ToString() : "—";
-            BrowseCatalogTabButton.IsVisible = BrowseCustomListTabButton.IsVisible = Model.HasCustomList;
+            BrowseSourceTabs.IsVisible = BrowseCatalogTabButton.IsVisible = BrowseCustomListTabButton.IsVisible = Model.HasCustomList;
             BrowseCatalogTabButton.Classes.Set("selected", !custom);
             BrowseCustomListTabButton.Classes.Set("selected", custom);
             foreach (var combo in new[] { BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox })
                 combo.IsVisible = !custom;
             // A search is ordered by relevance, so the website shows that instead of the sort.
-            BrowseSortComboBox.IsVisible = BrowseSortLabel.IsVisible = !custom && !searching;
+            BrowseSortComboBox.IsVisible = !custom && !searching;
+            // A phone has no room for the label; the website leaves it out there too.
+            BrowseSortLabel.IsVisible = !custom && !searching && !IsMobileLayout;
             BrowseRelevantText.IsVisible = !custom && searching;
+            BrowseResultsText.IsVisible = !custom && searching;
+            BrowseResultsText.Text = searching ? $"Results for “{Model.Search.Trim()}”" : "";
+            if (_filterGrid != null) _filterGrid.IsVisible = !custom;
             Select(BrowseSortComboBox, Model.Sort);
             Select(BrowseTypeComboBox, Model.ProjectType);
             Select(BrowsePlatformComboBox, Model.Platform);

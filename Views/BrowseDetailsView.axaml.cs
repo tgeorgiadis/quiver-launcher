@@ -66,6 +66,9 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
             Grid.SetColumn(BrowseDetailsAbout, 0);
             Grid.SetRow(BrowseDetailsAbout, 1);
             BrowseDetailsAbout.Margin = new Thickness(0, 20, 0, 0);
+            // A game's ways to play, two to a row like the catalog.
+            BrowseDetailsWays.ItemsPanel = new Avalonia.Controls.Templates.FuncTemplate<Panel?>(() => new CardColumnsPanel());
+            BrowseDetailsWays.Classes.Add("narrow-cards");
         }
     }
 

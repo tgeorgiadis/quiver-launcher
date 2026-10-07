@@ -143,6 +143,12 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             return direction == NavigationDirection.Down && zone == GamepadNavigationZone.BrowseToolbar
                 ? host.ApplyTransition(new GamepadZoneTransition(GamepadNavigationZone.BrowseFilters, null))
                 : false;
+        // On a phone the controls sit on more than one line (the filters two by two): Up and Down move between those first.
+        if (view.IsMobileLayout && NearestOnNextLine(controls, index, direction) is { } line)
+        {
+            apply(line);
+            return true;
+        }
         // While searching with no list tabs the title row has nothing to select: Up goes to the top bar.
         if (zone == GamepadNavigationZone.BrowseFilters && direction == NavigationDirection.Up && ToolbarControls().Count == 0)
             return host.ApplyTransition(new GamepadZoneTransition(GamepadNavigationZone.TopBar, null));
@@ -155,6 +161,31 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         return true;
     }
 
+    /// <summary>The control on the nearest line above or below, closest across; null on the first or last line.</summary>
+    private int? NearestOnNextLine(List<Control> controls, int index, NavigationDirection direction) =>
+        index >= 0 && index < controls.Count && Centre(controls[index]) is { } from
+            ? NearestOnNextLine(controls, from, controls[index].Bounds.Height / 2, direction)
+            : null;
+
+    private Point? Centre(Control c) => c.TranslatePoint(new Point(c.Bounds.Width / 2, c.Bounds.Height / 2), view);
+
+    private int? NearestOnNextLine(List<Control> controls, Point from, double lineGap, NavigationDirection direction)
+    {
+        if (direction is not (NavigationDirection.Up or NavigationDirection.Down)) return null;
+        int? best = null;
+        double bestDy = double.MaxValue, bestDx = double.MaxValue;
+        for (var i = 0; i < controls.Count; i++)
+        {
+            if (Centre(controls[i]) is not { } to) continue;
+            var dy = direction == NavigationDirection.Down ? to.Y - from.Y : from.Y - to.Y;
+            if (dy < lineGap) continue;
+            var dx = Math.Abs(to.X - from.X);
+            if (dy < bestDy - 1 || (Math.Abs(dy - bestDy) <= 1 && dx < bestDx))
+                (best, bestDy, bestDx) = (i, dy, dx);
+        }
+        return best;
+    }
+
     private bool MoveInGrid(NavigationDirection direction)
     {
         var current = CardIndex;
@@ -162,7 +193,13 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         var count = Cards.Count;
         var transition = Service.TryGetZoneTransition(direction, GamepadNavigationZone.BrowseGrid, host.MainContentZone, isListLayout: false, positions, current, count);
         if (transition.HasValue)
+        {
+            // On a phone, Up from the cards goes to the filter just above the card.
+            if (view.IsMobileLayout && transition.Value.Zone == GamepadNavigationZone.BrowseFilters && current >= 0 && current < count &&
+                NearestOnNextLine(FilterControls(), new Point(positions[current].X, positions[current].Y), 1, NavigationDirection.Up) is { } above)
+                FilterIndex = above;
             return host.ApplyTransition(transition.Value);
+        }
         if (count == 0) return false;
         var next = Service.MoveCatalogIndex(current, direction, count, positions);
         if (next == current && direction is NavigationDirection.Left or NavigationDirection.Up)

@@ -45,6 +45,11 @@
 			<Setter Property="BorderThickness" Value="3"/>
 			<Setter Property="Padding" Value="10"/>
 		</Style>
+		<!-- On a phone the matched games fill the width, one to a line. -->
+		<Style Selector="views|BrowseView.mobile Border.browse-game-card">
+			<Setter Property="Width" Value="NaN"/>
+			<Setter Property="Margin" Value="0,0,0,10"/>
+		</Style>
 	</UserControl.Styles>
 	<UserControl.Resources>
 		<!-- A card drawn like the website's catalog card; the game page shows the same cards. -->
@@ -60,7 +65,7 @@
 		  XYFocus.RightNavigationStrategy="Projection"
 		  RowDefinitions="Auto,Auto,*">
 		<!-- Laid out like the website's catalog: title and sort, then search and the four filters. -->
-		<Grid x:Name="BrowseToolbarPanel" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,30,14">
+		<Grid x:Name="BrowseToolbarPanel" Grid.Row="0" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" Margin="0,0,30,14">
 			<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
 				<TextBlock x:Name="BrowseTitleText" Text="Explore the catalog" FontSize="18" FontWeight="SemiBold"
 						   Foreground="{DynamicResource ThemeText}" VerticalAlignment="Center"/>
@@ -68,8 +73,11 @@
 						Background="{DynamicResource ThemeLighter}" BorderBrush="{DynamicResource ThemeBorder}">
 					<TextBlock x:Name="BrowseCountText" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
 				</Border>
+			</StackPanel>
+			<StackPanel x:Name="BrowseSourceTabs" Grid.Column="1" Orientation="Horizontal" Spacing="10" Margin="24,0,0,0"
+						VerticalAlignment="Center">
 				<Button x:Name="BrowseCatalogTabButton" Classes="catalog-filter selected" Content="Quiver catalog"
-						FontSize="11" MinHeight="32" Margin="14,0,0,0" Click="BrowseSourceTab_Click"/>
+						FontSize="11" MinHeight="32" Click="BrowseSourceTab_Click"/>
 				<Button x:Name="BrowseCustomListTabButton" Classes="catalog-filter" Content="My app list"
 						FontSize="11" MinHeight="32" Click="BrowseSourceTab_Click"/>
 			</StackPanel>
@@ -122,6 +130,9 @@
 					  HorizontalScrollBarVisibility="Disabled"
 					  ScrollChanged="BrowseScrollViewer_ScrollChanged">
 			<StackPanel x:Name="BrowseContentStack" Margin="0,0,30,0">
+				<!-- As on the website, a search says what it shows. -->
+				<TextBlock x:Name="BrowseResultsText" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
+						   Margin="0,0,0,12" TextTrimming="CharacterEllipsis" IsVisible="False"/>
 				<StackPanel x:Name="BrowseLoadingPanel" Margin="0,8,0,0" Spacing="8" IsVisible="{Binding IsLoading}">
 					<ProgressBar Width="120" Height="4" HorizontalAlignment="Left" Minimum="0" Maximum="100"
 								 BorderThickness="0" Background="Transparent" IsIndeterminate="True"/>
