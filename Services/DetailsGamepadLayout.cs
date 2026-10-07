@@ -1,114 +1,52 @@
 namespace QuiverLauncher.Services;
 
-public enum DetailsRegion
-{
-    Header,
-    Actions,
-    Body,
-}
-
+/// <summary>Where a move on a details page lands: a control in a row, the page body, or out of the page.</summary>
 public readonly record struct DetailsNav(
-    DetailsRegion Region,
-    int Index,
+    int Row,
+    int Column,
+    bool Body = false,
     bool LeaveTopBar = false,
     bool LeaveSidebar = false,
     bool ScrollDown = false,
     bool ScrollUp = false);
 
+/// <summary>
+/// Controller and keyboard movement on a details page: rows of controls from top to bottom (back, actions, tabs…),
+/// then the page body, which scrolls. Left and Right move along a row; Up and Down move between rows.
+/// </summary>
 public static class DetailsGamepadLayout
 {
-    public static DetailsNav Move(
-        NavigationDirection direction,
-        int currentIndex,
-        int headerCount,
-        int totalCount,
-        bool bodyFocused,
-        bool canScrollUp)
+    /// <param name="rowLengths">How many controls each row has, top to bottom; empty rows are left out.</param>
+    /// <param name="canScrollUp">The body is scrolled down, so Up scrolls before it leaves the body.</param>
+    public static DetailsNav Move(NavigationDirection direction, IReadOnlyList<int> rowLengths, int row, int column,
+        bool bodyFocused, bool canScrollUp)
     {
-        if (totalCount <= 0)
+        var last = rowLengths.Count - 1;
+        if (bodyFocused || last < 0)
         {
             return direction switch
             {
-                NavigationDirection.Up when canScrollUp => Stay(DetailsRegion.Body, 0, scrollUp: true),
-                NavigationDirection.Up => LeaveTopBar(),
-                NavigationDirection.Down => Stay(DetailsRegion.Body, 0, scrollDown: true),
-                NavigationDirection.Left => LeaveSidebar(),
-                _ => Stay(DetailsRegion.Body, 0),
+                NavigationDirection.Down => new(row, column, Body: true, ScrollDown: true),
+                NavigationDirection.Up when canScrollUp => new(row, column, Body: true, ScrollUp: true),
+                NavigationDirection.Up when last >= 0 => new(last, 0),
+                NavigationDirection.Up => new(0, 0, LeaveTopBar: true),
+                NavigationDirection.Left => new(0, 0, LeaveSidebar: true),
+                _ => new(row, column, Body: true),
             };
         }
 
-        var index = Math.Clamp(currentIndex, 0, totalCount - 1);
-        var actionStart = headerCount;
-
-        if (bodyFocused)
+        row = Math.Clamp(row, 0, last);
+        column = Math.Clamp(column, 0, rowLengths[row] - 1);
+        return direction switch
         {
-            if (direction == NavigationDirection.Down)
-                return Stay(DetailsRegion.Body, index, scrollDown: true);
-            if (direction == NavigationDirection.Up)
-            {
-                if (canScrollUp)
-                    return Stay(DetailsRegion.Body, index, scrollUp: true);
-
-                var returnIndex = totalCount > headerCount
-                    ? totalCount - 1
-                    : index;
-                var region = returnIndex >= actionStart && totalCount > headerCount
-                    ? DetailsRegion.Actions
-                    : DetailsRegion.Header;
-                return Stay(region, returnIndex);
-            }
-
-            if (direction == NavigationDirection.Left)
-                return LeaveSidebar();
-
-            return Stay(DetailsRegion.Body, index);
-        }
-
-        var inHeader = headerCount > 0 && index < headerCount;
-
-        if (direction == NavigationDirection.Left)
-        {
-            var rowStart = inHeader ? 0 : actionStart;
-            if (index <= rowStart)
-                return LeaveSidebar();
-            return Stay(inHeader ? DetailsRegion.Header : DetailsRegion.Actions, index - 1);
-        }
-
-        if (direction == NavigationDirection.Right)
-        {
-            var rowEnd = inHeader ? headerCount - 1 : totalCount - 1;
-            if (index >= rowEnd)
-                return Stay(inHeader ? DetailsRegion.Header : DetailsRegion.Actions, index);
-            return Stay(inHeader ? DetailsRegion.Header : DetailsRegion.Actions, index + 1);
-        }
-
-        if (direction == NavigationDirection.Down)
-        {
-            if (inHeader && totalCount > headerCount)
-                return Stay(DetailsRegion.Actions, actionStart);
-            return Stay(DetailsRegion.Body, index);
-        }
-
-        if (direction == NavigationDirection.Up)
-        {
-            if (!inHeader && headerCount > 0)
-                return Stay(DetailsRegion.Header, headerCount - 1);
-            return LeaveTopBar();
-        }
-
-        return Stay(inHeader ? DetailsRegion.Header : DetailsRegion.Actions, index);
+            NavigationDirection.Left when column > 0 => new(row, column - 1),
+            NavigationDirection.Left => new(0, 0, LeaveSidebar: true),
+            NavigationDirection.Right => new(row, Math.Min(column + 1, rowLengths[row] - 1)),
+            NavigationDirection.Down when row < last => new(row + 1, 0),
+            NavigationDirection.Down => new(row, column, Body: true),
+            NavigationDirection.Up when row > 0 => new(row - 1, 0),
+            NavigationDirection.Up => new(0, 0, LeaveTopBar: true),
+            _ => new(row, column),
+        };
     }
-
-    private static DetailsNav Stay(
-        DetailsRegion region,
-        int index,
-        bool scrollDown = false,
-        bool scrollUp = false) =>
-        new(region, index, ScrollDown: scrollDown, ScrollUp: scrollUp);
-
-    private static DetailsNav LeaveTopBar() =>
-        new(DetailsRegion.Header, 0, LeaveTopBar: true);
-
-    private static DetailsNav LeaveSidebar() =>
-        new(DetailsRegion.Header, 0, LeaveSidebar: true);
 }

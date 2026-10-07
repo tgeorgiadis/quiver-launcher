@@ -66,6 +66,7 @@ public sealed class QuiverCatalogApp
     public List<string> SupportedOS { get; set; } = [];
     /// <summary>"none", "assisted" or "generated".</summary>
     public string? AiLevel { get; set; }
+    public QuiverCatalogDeveloper? Developer { get; set; }
     public int Recommended { get; set; }
     public int ReportIssues { get; set; }
     public int ReportBroken { get; set; }
@@ -74,6 +75,11 @@ public sealed class QuiverCatalogApp
     public double? LastReleaseAt { get; set; }
     public string? LastReleaseVersion { get; set; }
     public QuiverCatalogVerified? Verified { get; set; }
+}
+
+public sealed class QuiverCatalogDeveloper
+{
+    public string Name { get; set; } = "";
 }
 
 public sealed class QuiverCatalogProject

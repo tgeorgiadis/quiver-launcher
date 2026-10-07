@@ -1,8 +1,117 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
              xmlns:vm="using:QuiverLauncher.ViewModels"
+             xmlns:services="using:QuiverLauncher.Services"
              x:Class="QuiverLauncher.Views.BrowseDetailsView">
+	<UserControl.Styles>
+		<Style Selector="Button.details-back">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+			<Setter Property="FontSize" Value="13"/>
+			<Setter Property="Padding" Value="6,4"/>
+		</Style>
+		<Style Selector="Button.details-back:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		</Style>
+		<Style Selector="TextBlock.details-eyebrow">
+			<Setter Property="FontSize" Value="10"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="LetterSpacing" Value="1.8"/>
+			<Setter Property="Foreground" Value="#94a3b8"/>
+		</Style>
+		<Style Selector="Border.details-chip">
+			<Setter Property="Background" Value="#243044"/>
+			<Setter Property="BorderBrush" Value="#3c516c"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="CornerRadius" Value="999"/>
+			<Setter Property="Padding" Value="9,3"/>
+			<Setter Property="Margin" Value="0,0,6,6"/>
+		</Style>
+		<Style Selector="Border.details-chip TextBlock">
+			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="Foreground" Value="#f4f6f8"/>
+		</Style>
+		<Style Selector="Path.details-os">
+			<Setter Property="Height" Value="14"/>
+			<Setter Property="Stretch" Value="Uniform"/>
+			<Setter Property="Fill" Value="#b7c0cc"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+		</Style>
+		<Style Selector="TextBlock.tone-positive">
+			<Setter Property="Foreground" Value="#8ac3a2"/>
+		</Style>
+		<Style Selector="Run.tone-positive">
+			<Setter Property="Foreground" Value="#8ac3a2"/>
+		</Style>
+		<Style Selector="TextBlock.tone-caution">
+			<Setter Property="Foreground" Value="#d7b56a"/>
+		</Style>
+		<Style Selector="Run.tone-caution">
+			<Setter Property="Foreground" Value="#d7b56a"/>
+		</Style>
+		<Style Selector="TextBlock.tone-negative">
+			<Setter Property="Foreground" Value="#e38c87"/>
+		</Style>
+		<Style Selector="Run.tone-negative">
+			<Setter Property="Foreground" Value="#e38c87"/>
+		</Style>
+		<!-- Tabs underline the open section, as in Quiver Launcher 4 and on the website. -->
+		<Style Selector="Button.details-tab">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderBrush" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0,0,0,2"/>
+			<Setter Property="CornerRadius" Value="0"/>
+			<Setter Property="Padding" Value="16,12"/>
+			<Setter Property="FontSize" Value="14"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondary}"/>
+		</Style>
+		<Style Selector="Button.details-tab:pointerover /template/ ContentPresenter">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		</Style>
+		<Style Selector="Button.details-tab.selected">
+			<Setter Property="BorderBrush" Value="#0ea5e9"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+		</Style>
+		<Style Selector="Border.details-panel">
+			<Setter Property="Background" Value="{DynamicResource ThemeDarker}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="CornerRadius" Value="9"/>
+		</Style>
+		<Style Selector="TextBlock.details-term">
+			<Setter Property="FontSize" Value="11"/>
+			<Setter Property="Foreground" Value="#8f929b"/>
+			<Setter Property="Margin" Value="0,10,0,2"/>
+		</Style>
+		<Style Selector="TextBlock.details-value">
+			<Setter Property="FontSize" Value="13"/>
+			<Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+			<Setter Property="TextWrapping" Value="Wrap"/>
+		</Style>
+		<Style Selector="Border.result-badge">
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="CornerRadius" Value="999"/>
+			<Setter Property="Padding" Value="10,4"/>
+			<Setter Property="VerticalAlignment" Value="Center"/>
+			<Setter Property="BorderBrush" Value="#668f929b"/>
+			<Setter Property="Background" Value="#1a8f929b"/>
+		</Style>
+		<Style Selector="Border.result-badge.tone-positive">
+			<Setter Property="BorderBrush" Value="#668ac3a2"/>
+			<Setter Property="Background" Value="#1a8ac3a2"/>
+		</Style>
+		<Style Selector="Border.result-badge.tone-caution">
+			<Setter Property="BorderBrush" Value="#66d7b56a"/>
+			<Setter Property="Background" Value="#1ad7b56a"/>
+		</Style>
+		<Style Selector="Border.result-badge.tone-negative">
+			<Setter Property="BorderBrush" Value="#66e38c87"/>
+			<Setter Property="Background" Value="#1ae38c87"/>
+		</Style>
+	</UserControl.Styles>
 	<Border x:Name="Surface"
 			XYFocus.NavigationModes="Gamepad,Remote"
 			XYFocus.UpNavigationStrategy="Projection"
@@ -10,95 +119,199 @@
 			XYFocus.LeftNavigationStrategy="Projection"
 			XYFocus.RightNavigationStrategy="Projection"
 			Background="{DynamicResource ThemeBase}">
-		<Grid RowDefinitions="Auto,*">
-			<Border Grid.Row="0"
-					Background="{DynamicResource ThemeDarker}"
-					BorderBrush="{DynamicResource ThemeBorder}"
-					BorderThickness="0,0,0,1"
-					Padding="24,12,24,12">
-				<DockPanel LastChildFill="True">
-					<Border x:Name="BrowseDetailsArtHost"
-							DockPanel.Dock="Left"
-							Width="160"
-							Height="160"
-							Margin="0,0,16,0"
-							VerticalAlignment="Top"
-							CornerRadius="8"
-							ClipToBounds="True"
-							Background="{DynamicResource ThemeLighter}">
-						<Image x:Name="BrowseDetailsArt" Stretch="UniformToFill"/>
+		<!-- The whole page scrolls, as in Quiver Launcher 4: the app's header, its tabs, then the open section. -->
+		<ScrollViewer x:Name="BrowseDetailsScrollViewer"
+					  VerticalScrollBarVisibility="Auto"
+					  HorizontalScrollBarVisibility="Disabled">
+			<StackPanel>
+				<Grid x:Name="BrowseDetailsBackdrop" ClipToBounds="True">
+					<Image x:Name="BrowseDetailsHero" Stretch="UniformToFill" Opacity="0.35" VerticalAlignment="Center"/>
+					<!-- Fades the art into the page, darker on the left where the text is. -->
+					<Border>
+						<Border.Background>
+							<LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+								<GradientStop Color="#5918181b" Offset="0"/>
+								<GradientStop Color="#8c18181b" Offset="0.45"/>
+								<GradientStop Color="#ff18181b" Offset="1"/>
+							</LinearGradientBrush>
+						</Border.Background>
 					</Border>
-					<StackPanel Spacing="4" MinWidth="0">
-						<Grid ColumnDefinitions="*,Auto">
-							<StackPanel Spacing="2" Margin="0,0,12,0">
-								<TextBlock x:Name="BrowseDetailsKind" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
-										   TextTrimming="CharacterEllipsis"/>
-								<TextBlock x:Name="BrowseDetailsTitle" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource ThemeText}"
-										   TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
-								<TextBlock x:Name="BrowseDetailsSubtitle" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"
-										   TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+					<Border>
+						<Border.Background>
+							<LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+								<GradientStop Color="#bf18181b" Offset="0"/>
+								<GradientStop Color="#0018181b" Offset="0.65"/>
+							</LinearGradientBrush>
+						</Border.Background>
+					</Border>
+					<StackPanel Margin="24,16,24,28">
+						<Button x:Name="BrowseDetailsCloseButton" Classes="details-back" HorizontalAlignment="Left" Click="Close_Click">
+							<StackPanel Orientation="Horizontal" Spacing="8">
+								<Path Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" StrokeThickness="2" StrokeLineCap="Round"
+									  Stroke="{Binding $parent[Button].Foreground}" Data="M 19,12 L 5,12 M 12,19 L 5,12 L 12,5"/>
+								<TextBlock Text="App Catalog" VerticalAlignment="Center"/>
 							</StackPanel>
-							<Button x:Name="BrowseDetailsCloseButton"
-									Grid.Column="1"
-									Classes="options"
-									Content="Close"
-									MinWidth="90"
-									VerticalAlignment="Top"
-									Click="Close_Click"/>
-						</Grid>
-						<TextBlock x:Name="BrowseDetailsFacts" FontSize="12" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap"/>
-						<TextBlock x:Name="BrowseDetailsNote" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
-						<WrapPanel x:Name="BrowseDetailsActions" Orientation="Horizontal" Margin="0,4,0,0">
-							<Button x:Name="BrowseDetailsAddButton" Classes="options catalog-review-add" Content="Add to library"
-									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Add_Click"/>
-							<Button x:Name="BrowseDetailsRemoveButton" Classes="options catalog-remove-from-library" Content="Remove from library"
-									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Remove_Click"/>
-							<Button x:Name="BrowseDetailsReviewButton" Classes="options" Content="Write a review on the website"
-									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Review_Click"
-									ToolTip.Tip="Reviews are written on quiverlauncher.com, where you sign in"/>
-							<Button x:Name="BrowseDetailsRepositoryButton" Classes="options" Content="Open repository"
-									FontSize="12" Padding="12,6" Margin="0,0,8,4" Click="Repository_Click"/>
-						</WrapPanel>
-					</StackPanel>
-				</DockPanel>
-			</Border>
-			<ScrollViewer x:Name="BrowseDetailsScrollViewer"
-						  Grid.Row="1"
-						  VerticalScrollBarVisibility="Auto"
-						  HorizontalScrollBarVisibility="Disabled"
-						  Margin="24,12,24,24">
-				<StackPanel MaxWidth="900" Spacing="8" HorizontalAlignment="Stretch">
-					<TextBlock x:Name="BrowseDetailsDescription" FontSize="14" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap"/>
-					<TextBlock x:Name="BrowseDetailsReviewsHeading" Text="How it runs for players" FontSize="16" FontWeight="SemiBold"
-							   Foreground="{DynamicResource ThemeText}" Margin="0,8,0,0"/>
-					<TextBlock x:Name="BrowseDetailsReviewsStatus" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
-					<ItemsControl x:Name="BrowseDetailsReviews">
-						<ItemsControl.ItemTemplate>
-							<DataTemplate x:DataType="vm:BrowseReviewLine">
-								<Border Background="{DynamicResource ThemeDarker}" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
-									<StackPanel Spacing="4">
-										<TextBlock Text="{Binding Heading}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap"/>
-										<TextBlock Text="{Binding Body}" FontSize="12" Foreground="{DynamicResource ThemeText}" TextWrapping="Wrap" IsVisible="{Binding HasBody}"/>
+						</Button>
+						<Grid x:Name="BrowseDetailsHeroRow" ColumnDefinitions="Auto,*" Margin="0,28,0,0">
+							<Border x:Name="BrowseDetailsArtHost"
+									Width="104"
+									Height="104"
+									Margin="0,0,26,0"
+									VerticalAlignment="Center"
+									Padding="12"
+									CornerRadius="16"
+									ClipToBounds="True"
+									BorderThickness="1"
+									BorderBrush="{DynamicResource ThemeBorder}"
+									Background="#d91c1c1f">
+								<Image x:Name="BrowseDetailsArt" Stretch="Uniform"/>
+							</Border>
+							<StackPanel Grid.Column="1" VerticalAlignment="Center">
+								<TextBlock x:Name="BrowseDetailsKind" Classes="details-eyebrow" TextTrimming="CharacterEllipsis"/>
+								<TextBlock x:Name="BrowseDetailsTitle" FontSize="32" FontWeight="Bold" Foreground="{DynamicResource ThemeText}"
+										   TextWrapping="Wrap" Margin="0,6,0,8"/>
+								<TextBlock x:Name="BrowseDetailsTagline" FontSize="14" LineHeight="22" MaxWidth="720" HorizontalAlignment="Left"
+										   Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap" MaxLines="2"
+										   TextTrimming="CharacterEllipsis" Margin="0,0,0,10"/>
+								<WrapPanel x:Name="BrowseDetailsBasedOn" Orientation="Horizontal" Margin="0,0,0,4">
+									<TextBlock Text="BASED ON" FontSize="10" LetterSpacing="0.8" Foreground="#8f929b"
+											   VerticalAlignment="Center" Margin="0,0,8,6"/>
+									<ItemsControl x:Name="BrowseDetailsGames">
+										<ItemsControl.ItemsPanel>
+											<ItemsPanelTemplate>
+												<WrapPanel Orientation="Horizontal"/>
+											</ItemsPanelTemplate>
+										</ItemsControl.ItemsPanel>
+										<ItemsControl.ItemTemplate>
+											<DataTemplate x:DataType="x:String">
+												<Border Classes="details-chip">
+													<TextBlock Text="{Binding}"/>
+												</Border>
+											</DataTemplate>
+										</ItemsControl.ItemTemplate>
+									</ItemsControl>
+								</WrapPanel>
+								<WrapPanel x:Name="BrowseDetailsFacts" Orientation="Horizontal">
+									<StackPanel x:Name="BrowseDetailsPlatforms" Orientation="Horizontal" Spacing="8" Margin="0,0,16,6" Background="Transparent">
+										<Path x:Name="BrowseDetailsWindows" Classes="details-os" Data="{x:Static services:PlatformIcons.Windows}"/>
+										<Path x:Name="BrowseDetailsMacOS" Classes="details-os" Data="{x:Static services:PlatformIcons.MacOS}"/>
+										<Path x:Name="BrowseDetailsLinux" Classes="details-os" Data="{x:Static services:PlatformIcons.Linux}"/>
+										<Path x:Name="BrowseDetailsAndroid" Classes="details-os" Data="{x:Static services:PlatformIcons.Android}"/>
+										<Path x:Name="BrowseDetailsIOS" Classes="details-os" Data="{x:Static services:PlatformIcons.IOS}"/>
 									</StackPanel>
+									<TextBlock x:Name="BrowseDetailsScore" FontSize="13" VerticalAlignment="Center" Margin="0,0,16,6">
+										<Run x:Name="BrowseDetailsScoreLabel"/><Run x:Name="BrowseDetailsScorePlayers" Foreground="#7dd3fc" FontSize="12"/>
+									</TextBlock>
+									<StackPanel x:Name="BrowseDetailsVerified" Orientation="Horizontal" Spacing="5" Margin="0,0,16,6" VerticalAlignment="Center">
+										<Path Width="14" Height="14" Stretch="Uniform" Stroke="#4ade80" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+											  Data="M 12,2 L 20,5 L 20,12 C 20,17 16.5,20.5 12,22 C 7.5,20.5 4,17 4,12 L 4,5 Z M 9,12 L 11,14 L 15,10"/>
+										<TextBlock x:Name="BrowseDetailsVerifiedText" FontSize="13" Foreground="#4ade80" VerticalAlignment="Center"/>
+									</StackPanel>
+								</WrapPanel>
+								<WrapPanel x:Name="BrowseDetailsActions" Orientation="Horizontal" Margin="0,12,0,0">
+									<Button x:Name="BrowseDetailsAddButton" Classes="options catalog-review-add" Content="Add to library"
+											FontSize="13" Padding="18,8" MinWidth="160" Margin="0,0,10,6" Click="Add_Click"/>
+									<Button x:Name="BrowseDetailsRemoveButton" Classes="options catalog-remove-from-library" Content="Remove from library"
+											FontSize="13" Padding="18,8" Margin="0,0,10,6" Click="Remove_Click"/>
+									<Button x:Name="BrowseDetailsRepositoryButton" Classes="options" Content="Open repository"
+											FontSize="13" Padding="18,8" Margin="0,0,10,6" Click="Repository_Click"/>
+								</WrapPanel>
+								<TextBlock x:Name="BrowseDetailsNote" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"
+										   Margin="0,4,0,0"/>
+							</StackPanel>
+						</Grid>
+					</StackPanel>
+				</Grid>
+				<Border x:Name="BrowseDetailsTabsBar" Margin="24,0,24,0" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="0,0,0,1">
+					<StackPanel Orientation="Horizontal" Spacing="4">
+						<Button x:Name="BrowseDetailsOverviewTab" Classes="details-tab selected" Content="Overview" Click="Tab_Click"/>
+						<Button x:Name="BrowseDetailsFeedbackTab" Classes="details-tab" Click="Tab_Click">
+							<StackPanel Orientation="Horizontal" Spacing="8">
+								<TextBlock Text="Player feedback" VerticalAlignment="Center"/>
+								<Border CornerRadius="5" Padding="6,1" BorderThickness="1" VerticalAlignment="Center"
+										Background="{DynamicResource ThemeLighter}" BorderBrush="{DynamicResource ThemeBorder}">
+									<TextBlock x:Name="BrowseDetailsFeedbackCount" FontSize="10" Foreground="{DynamicResource ThemeTextSecondary}"/>
 								</Border>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
-					<TextBlock Text="README" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}" Margin="0,8,0,0"/>
-					<ItemsControl x:Name="BrowseDetailsReadme" HorizontalAlignment="Stretch">
-						<ItemsControl.ItemsPanel>
-							<ItemsPanelTemplate>
-								<StackPanel HorizontalAlignment="Stretch"/>
-							</ItemsPanelTemplate>
-						</ItemsControl.ItemsPanel>
-						<ItemsControl.ItemTemplate>
-							<DataTemplate>
-								<ContentControl Content="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"/>
-							</DataTemplate>
-						</ItemsControl.ItemTemplate>
-					</ItemsControl>
-				</StackPanel>
-			</ScrollViewer>
-		</Grid>
+							</StackPanel>
+						</Button>
+					</StackPanel>
+				</Border>
+				<Grid x:Name="BrowseDetailsColumns" ColumnDefinitions="*,300" RowDefinitions="Auto,Auto" Margin="24">
+					<StackPanel x:Name="BrowseDetailsOverview" Grid.Column="0" Margin="0,0,28,0">
+						<ItemsControl x:Name="BrowseDetailsReadme" HorizontalAlignment="Stretch">
+							<ItemsControl.ItemsPanel>
+								<ItemsPanelTemplate>
+									<StackPanel HorizontalAlignment="Stretch"/>
+								</ItemsPanelTemplate>
+							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<ContentControl Content="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"/>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</StackPanel>
+					<StackPanel x:Name="BrowseDetailsFeedback" Grid.Column="0" Margin="0,0,28,0" Spacing="14" IsVisible="False">
+						<!-- Feedback is written on the website, where players sign in. -->
+						<Border Classes="details-panel" Padding="24,28">
+							<StackPanel Spacing="8" HorizontalAlignment="Center">
+								<Path Width="24" Height="24" Stretch="Uniform" Stroke="#0ea5e9" StrokeThickness="2" StrokeJoin="Round"
+									  HorizontalAlignment="Center" Data="M 21,15 C 21,16.1 20.1,17 19,17 L 7,17 L 3,21 L 3,5 C 3,3.9 3.9,3 5,3 L 19,3 C 20.1,3 21,3.9 21,5 Z"/>
+								<TextBlock x:Name="BrowseDetailsShareTitle" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"
+										   HorizontalAlignment="Center" TextAlignment="Center"/>
+								<TextBlock Text="Feedback is shared on quiverlauncher.com, where you sign in."
+										   FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"
+										   TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+								<Button x:Name="BrowseDetailsReviewButton" Classes="options" HorizontalAlignment="Center"
+										FontSize="13" Padding="18,8" Click="Review_Click"
+										ToolTip.Tip="Opens this app's page on quiverlauncher.com">
+									<StackPanel Orientation="Horizontal" Spacing="8">
+										<TextBlock Text="Give feedback on the website" VerticalAlignment="Center"/>
+										<Path Width="12" Height="12" Stretch="Uniform" StrokeThickness="2" StrokeLineCap="Round" VerticalAlignment="Center"
+											  Stroke="{Binding $parent[Button].Foreground}" Data="M 7,17 L 17,7 M 8,7 L 17,7 L 17,16"/>
+									</StackPanel>
+								</Button>
+							</StackPanel>
+						</Border>
+						<TextBlock x:Name="BrowseDetailsReviewsStatus" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
+						<ItemsControl x:Name="BrowseDetailsReviews">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate x:DataType="vm:BrowseReviewLine">
+									<Border Classes="details-panel" Padding="22" Margin="0,0,0,14">
+										<StackPanel Spacing="16">
+											<Grid ColumnDefinitions="Auto,*,Auto">
+												<Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource ThemeLighter}" VerticalAlignment="Center">
+													<TextBlock Text="{Binding Initial}" FontSize="12" Foreground="{DynamicResource ThemeText}"
+															   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+												</Border>
+												<StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
+													<TextBlock Text="{Binding Author}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"
+															   TextTrimming="CharacterEllipsis"/>
+													<TextBlock Text="{Binding Meta}" FontSize="10" Foreground="#8f929b" TextTrimming="CharacterEllipsis"/>
+												</StackPanel>
+												<Border Grid.Column="2" Classes="result-badge" Classes.tone-positive="{Binding Positive}"
+														Classes.tone-caution="{Binding Caution}" Classes.tone-negative="{Binding Negative}">
+													<TextBlock Text="{Binding Result}" FontSize="12" FontWeight="SemiBold"
+															   Classes.tone-positive="{Binding Positive}" Classes.tone-caution="{Binding Caution}"
+															   Classes.tone-negative="{Binding Negative}"/>
+												</Border>
+											</Grid>
+											<TextBlock Text="{Binding Body}" FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"
+													   IsVisible="{Binding HasBody}"/>
+										</StackPanel>
+									</Border>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</StackPanel>
+					<Border x:Name="BrowseDetailsAbout" Grid.Column="1" Classes="details-panel" Padding="20" VerticalAlignment="Top">
+						<StackPanel>
+							<TextBlock Text="PROJECT DETAILS" Classes="details-eyebrow"/>
+							<StackPanel x:Name="BrowseDetailsAboutRows"/>
+						</StackPanel>
+					</Border>
+				</Grid>
+			</StackPanel>
+		</ScrollViewer>
 	</Border>
 </UserControl>

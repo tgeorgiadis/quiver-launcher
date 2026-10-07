@@ -5,94 +5,39 @@ namespace QuiverLauncher.Tests;
 
 public class DetailsGamepadLayoutTests
 {
-    private const int HeaderCount = 2;
-    private const int TotalCount = 7; // Open Repo, Close, then 5 actions
+    // Back; Add and Open repository; the two tabs.
+    private static readonly int[] Rows = [1, 2, 2];
+
+    private static DetailsNav Move(NavigationDirection direction, int row, int column, bool body = false, bool scrolled = false) =>
+        DetailsGamepadLayout.Move(direction, Rows, row, column, body, scrolled);
 
     [Fact]
-    public void Left_and_right_move_within_the_action_row()
+    public void Left_and_right_move_along_a_row_and_left_of_the_first_leaves_for_the_sidebar()
     {
-        var right = DetailsGamepadLayout.Move(
-            NavigationDirection.Right, currentIndex: 2, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false);
-        right.Index.Should().Be(3);
-        right.Region.Should().Be(DetailsRegion.Actions);
-
-        var left = DetailsGamepadLayout.Move(
-            NavigationDirection.Left, currentIndex: 3, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false);
-        left.Index.Should().Be(2);
-        left.Region.Should().Be(DetailsRegion.Actions);
+        Move(NavigationDirection.Right, 1, 0).Should().Be(new DetailsNav(1, 1));
+        Move(NavigationDirection.Right, 1, 1).Should().Be(new DetailsNav(1, 1));
+        Move(NavigationDirection.Left, 2, 1).Should().Be(new DetailsNav(2, 0));
+        Move(NavigationDirection.Left, 2, 0).LeaveSidebar.Should().BeTrue();
     }
 
     [Fact]
-    public void Up_and_down_do_not_walk_the_action_row()
+    public void Up_and_down_walk_the_rows_then_the_body_and_back()
     {
-        var down = DetailsGamepadLayout.Move(
-            NavigationDirection.Down, currentIndex: 2, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false);
-        down.Region.Should().Be(DetailsRegion.Body);
-        down.Index.Should().Be(2);
-
-        var up = DetailsGamepadLayout.Move(
-            NavigationDirection.Up, currentIndex: 3, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false);
-        up.Region.Should().Be(DetailsRegion.Header);
-        up.Index.Should().Be(1);
+        Move(NavigationDirection.Down, 0, 0).Should().Be(new DetailsNav(1, 0));
+        Move(NavigationDirection.Down, 1, 1).Should().Be(new DetailsNav(2, 0));
+        Move(NavigationDirection.Down, 2, 1).Body.Should().BeTrue();
+        Move(NavigationDirection.Down, 2, 1, body: true).ScrollDown.Should().BeTrue();
+        // Up scrolls the body back to the top before it returns to the last row.
+        Move(NavigationDirection.Up, 2, 1, body: true, scrolled: true).ScrollUp.Should().BeTrue();
+        Move(NavigationDirection.Up, 2, 1, body: true).Should().Be(new DetailsNav(2, 0));
+        Move(NavigationDirection.Up, 1, 1).Should().Be(new DetailsNav(0, 0));
+        Move(NavigationDirection.Up, 0, 0).LeaveTopBar.Should().BeTrue();
     }
 
     [Fact]
-    public void Down_from_header_enters_first_action()
+    public void A_page_with_nothing_to_select_only_scrolls()
     {
-        var nav = DetailsGamepadLayout.Move(
-            NavigationDirection.Down, currentIndex: 0, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false);
-        nav.Region.Should().Be(DetailsRegion.Actions);
-        nav.Index.Should().Be(2);
-    }
-
-    [Fact]
-    public void Up_from_header_leaves_to_top_bar()
-    {
-        DetailsGamepadLayout.Move(
-            NavigationDirection.Up, currentIndex: 0, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false).LeaveTopBar.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Left_from_first_of_a_row_leaves_to_sidebar()
-    {
-        DetailsGamepadLayout.Move(
-            NavigationDirection.Left, currentIndex: 0, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false).LeaveSidebar.Should().BeTrue();
-        DetailsGamepadLayout.Move(
-            NavigationDirection.Left, currentIndex: 2, HeaderCount, TotalCount,
-            bodyFocused: false, canScrollUp: false).LeaveSidebar.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Body_down_scrolls_and_up_scrolls_until_top()
-    {
-        var down = DetailsGamepadLayout.Move(
-            NavigationDirection.Down, currentIndex: 6, HeaderCount, TotalCount,
-            bodyFocused: true, canScrollUp: true);
-        down.ScrollDown.Should().BeTrue();
-        down.Region.Should().Be(DetailsRegion.Body);
-
-        var up = DetailsGamepadLayout.Move(
-            NavigationDirection.Up, currentIndex: 6, HeaderCount, TotalCount,
-            bodyFocused: true, canScrollUp: true);
-        up.ScrollUp.Should().BeTrue();
-        up.Region.Should().Be(DetailsRegion.Body);
-    }
-
-    [Fact]
-    public void Body_up_at_top_returns_to_actions()
-    {
-        var nav = DetailsGamepadLayout.Move(
-            NavigationDirection.Up, currentIndex: 6, HeaderCount, TotalCount,
-            bodyFocused: true, canScrollUp: false);
-        nav.Region.Should().Be(DetailsRegion.Actions);
-        nav.Index.Should().Be(6);
-        nav.ScrollUp.Should().BeFalse();
+        DetailsGamepadLayout.Move(NavigationDirection.Down, [], 0, 0, bodyFocused: false, canScrollUp: false).ScrollDown.Should().BeTrue();
+        DetailsGamepadLayout.Move(NavigationDirection.Up, [], 0, 0, bodyFocused: false, canScrollUp: false).LeaveTopBar.Should().BeTrue();
     }
 }

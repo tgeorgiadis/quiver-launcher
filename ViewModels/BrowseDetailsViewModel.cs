@@ -3,9 +3,14 @@ using QuiverLauncher.Services;
 
 namespace QuiverLauncher.ViewModels;
 
-public sealed record BrowseReviewLine(string Heading, string Body)
+/// <summary>One player's feedback, laid out like the website's: who, when and where, how it ran, and what they said.</summary>
+public sealed record BrowseReviewLine(string Author, string Meta, string Result, string Tone, string Body)
 {
+    public string Initial => Author.Length > 0 ? Author[..1].ToUpperInvariant() : "?";
     public bool HasBody => Body.Length > 0;
+    public bool Positive => Tone == "positive";
+    public bool Caution => Tone == "caution";
+    public bool Negative => Tone == "negative";
 }
 
 /// <summary>
@@ -19,6 +24,7 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
     private int _generation;
     private BrowseItem? _item;
     private GameInfo? _entry;
+    private QuiverCatalogProject? _project;
     private IReadOnlyList<BrowseReviewLine> _reviews = [];
     private string _reviewsStatus = "";
     private string _error = "";
@@ -26,6 +32,8 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
     public BrowseItem? Item { get => _item; private set => Set(ref _item, value); }
     /// <summary>The app as a library entry; null until the catalog says where it comes from.</summary>
     public GameInfo? Entry { get => _entry; private set => Set(ref _entry, value); }
+    /// <summary>Who made the app and where it comes from, once its page has loaded.</summary>
+    public QuiverCatalogProject? Project { get => _project; private set => Set(ref _project, value); }
     public IReadOnlyList<BrowseReviewLine> Reviews { get => _reviews; private set => Set(ref _reviews, value); }
     public string ReviewsStatus { get => _reviewsStatus; private set => Set(ref _reviewsStatus, value); }
     public string Error { get => _error; private set => Set(ref _error, value); }
@@ -37,6 +45,7 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
         var generation = ++_generation;
         Item = item;
         Entry = item.ListApp;
+        Project = null;
         Error = "";
         Reviews = [];
         ReviewsStatus = item.App == null ? "" : "Loading reviews…";
@@ -52,6 +61,7 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
         Readme.Cancel();
         Item = null;
         Entry = null;
+        Project = null;
         Reviews = [];
         ReviewsStatus = "";
         Error = "";
@@ -64,7 +74,9 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
         try
         {
             var detail = await client.GetDetailAsync(app.Slug, token);
-            if (generation == _generation) Entry = toLibraryEntry(detail.Entry, detail.Project);
+            if (generation != _generation) return;
+            Project = detail.Project;
+            Entry = toLibraryEntry(detail.Entry, detail.Project);
         }
         catch (Exception ex) when (!token.IsCancellationRequested)
         {
@@ -79,7 +91,7 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
             var page = await client.GetReviewsAsync(app.Slug, ReviewCount, token);
             if (generation != _generation) return;
             Reviews = page.Items.Select(ToLine).ToList();
-            ReviewsStatus = Reviews.Count == 0 ? "No one has said how it runs yet." : "";
+            ReviewsStatus = "";
         }
         catch (Exception ex) when (!token.IsCancellationRequested)
         {
@@ -106,10 +118,12 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
 
     internal static BrowseReviewLine ToLine(QuiverCatalogReview review)
     {
-        var parts = new List<string> { string.IsNullOrWhiteSpace(review.Author) ? "A player" : review.Author.Trim(), BrowseText.ReviewResult(review.Result) };
-        if (review.Platform is { Length: > 0 } platform) parts.Add(BrowseText.PlatformNames([platform]));
-        if (review.Version is { Length: > 0 } version) parts.Add($"tested on {version}");
-        if (review.CreatedAt > 0) parts.Add(DateTimeOffset.FromUnixTimeMilliseconds((long)review.CreatedAt).LocalDateTime.ToString("d"));
-        return new(string.Join(" · ", parts.Where(p => p.Length > 0)), review.Body.Trim());
+        var meta = new List<string>();
+        if (review.CreatedAt > 0) meta.Add(DateTimeOffset.FromUnixTimeMilliseconds((long)review.CreatedAt).LocalDateTime.ToString("d MMM yyyy"));
+        if (review.Platform is { Length: > 0 } platform) meta.Add(BrowseText.PlatformNames([platform]));
+        if (review.Version is { Length: > 0 } version) meta.Add($"tested on {version}");
+        var tone = review.Result switch { "runs" => "positive", "issues" => "caution", "broken" => "negative", _ => "" };
+        return new(string.IsNullOrWhiteSpace(review.Author) ? "A player" : review.Author.Trim(),
+            string.Join(" · ", meta.Where(p => p.Length > 0)), BrowseText.ReviewResult(review.Result), tone, review.Body.Trim());
     }
 }
