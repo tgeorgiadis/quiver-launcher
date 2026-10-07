@@ -63,8 +63,12 @@ public static class GameInstallationService
                assetName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
                assetName.EndsWith(".appimage", StringComparison.OrdinalIgnoreCase) ||
-               assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase) || IsFlatpakAsset(assetName);
+               assetName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase) || IsFlatpakAsset(assetName) ||
+               IsDiskImageAsset(assetName);
     }
+
+    public static bool IsDiskImageAsset(string? assetName) =>
+        !string.IsNullOrWhiteSpace(assetName) && assetName.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsAndroidPackageAsset(string? assetName)
         => !string.IsNullOrWhiteSpace(assetName)
@@ -243,6 +247,16 @@ public static class GameInstallationService
             if (IsAppImageAsset(destName) || IsAppImageAsset(effectiveName))
                 RemoveStaleAppImages(gamePath, destPath, options);
         }
+        else if (IsDiskImageAsset(effectiveName))
+        {
+            if (!OperatingSystem.IsMacOS())
+            {
+                throw new InvalidOperationException(
+                    $"Disk image '{assetName}' can only be installed on macOS.");
+            }
+
+            InstallFromDiskImage(downloadPath, gamePath);
+        }
         else if (effectiveName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
             await ExtractZipAsync(downloadPath, gamePath).ConfigureAwait(false);
@@ -260,7 +274,7 @@ public static class GameInstallationService
         {
             throw new InvalidOperationException(
                 $"Unsupported release asset type: '{assetName}'. " +
-                "Expected .exe, .appimage, .zip, .tar.gz, .7z, .rar, or an extensionless binary.");
+                "Expected .exe, .appimage, .zip, .tar.gz, .7z, .rar, .dmg, or an extensionless binary.");
         }
 
         try
@@ -485,12 +499,25 @@ public static class GameInstallationService
         foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.TopDirectoryOnly))
         {
             var destFile = Path.Combine(destDir, Path.GetFileName(file));
+            // File.Move falls back to copying the link target when moving across volumes.
+            if (TryCopySymbolicLink(new FileInfo(file), destFile))
+            {
+                File.Delete(file);
+                continue;
+            }
+
             File.Move(file, destFile, overwrite: true);
         }
 
         foreach (var dir in Directory.GetDirectories(sourceDir, "*", SearchOption.TopDirectoryOnly))
         {
             var destSub = Path.Combine(destDir, Path.GetFileName(dir));
+            if (TryCopySymbolicLink(new DirectoryInfo(dir), destSub))
+            {
+                DeleteFileSystemEntry(dir);
+                continue;
+            }
+
             MoveDirectoryPreserveTree(dir, destSub);
         }
     }
@@ -543,6 +570,14 @@ public static class GameInstallationService
                     }
 
                     CopyDirectory(appBundle, destAppPath);
+                    return;
+                }
+
+                // Some macOS releases wrap a drag-to-install disk image in a zip.
+                var diskImages = Directory.GetFiles(tempExtractPath, "*.dmg", SearchOption.AllDirectories);
+                if (diskImages.Length == 1)
+                {
+                    InstallFromDiskImage(diskImages[0], gamePath);
                     return;
                 }
             }
@@ -752,6 +787,87 @@ public static class GameInstallationService
 
             try { File.Delete(nestedZip); } catch { }
         }
+    }
+
+    /// <summary>
+    /// Mounts a macOS disk image read-only and hidden, copies its visible contents into
+    /// <paramref name="gamePath"/>, then detaches it. Top-level symlinks (the usual
+    /// "Applications" drag target) and hidden volume files are skipped.
+    /// </summary>
+    static void InstallFromDiskImage(string diskImagePath, string gamePath)
+    {
+        var mountPoint = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(mountPoint);
+
+        try
+        {
+            // stdin is closed, so images that require accepting a license agreement fail
+            // here instead of hanging on hdiutil's prompt.
+            var attach = RunHdiutil("attach", diskImagePath, "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", mountPoint);
+            if (attach.ExitCode != 0)
+            {
+                throw new InvalidOperationException(
+                    $"Could not open disk image '{Path.GetFileName(diskImagePath)}': {attach.Error.Trim()} " +
+                    "If it asks you to accept a license agreement, open it in Finder and copy the app into the app's folder manually.");
+            }
+
+            try
+            {
+                Directory.CreateDirectory(gamePath);
+                foreach (var entry in Directory.EnumerateFileSystemEntries(mountPoint))
+                {
+                    var name = Path.GetFileName(entry);
+                    if (name.StartsWith('.') || new FileInfo(entry).LinkTarget != null)
+                        continue;
+
+                    var destPath = Path.Combine(gamePath, name);
+                    if (Directory.Exists(entry))
+                    {
+                        // Replace, not merge, so an updated .app keeps no stale files.
+                        DeleteFileSystemEntry(destPath);
+                        CopyDirectory(entry, destPath);
+                    }
+                    else
+                    {
+                        File.Copy(entry, destPath, overwrite: true);
+                    }
+                }
+            }
+            finally
+            {
+                if (RunHdiutil("detach", mountPoint, "-quiet").ExitCode != 0)
+                    RunHdiutil("detach", mountPoint, "-quiet", "-force");
+            }
+        }
+        finally
+        {
+            TryDeleteDirectory(mountPoint);
+        }
+    }
+
+    static (int ExitCode, string Error) RunHdiutil(params string[] arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "hdiutil",
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+        };
+
+        foreach (var argument in arguments)
+            startInfo.ArgumentList.Add(argument);
+
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Could not start hdiutil.");
+        process.StandardInput.Close();
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        outputTask.Wait();
+        return (process.ExitCode, error);
     }
 
     static async Task ExtractTarGzAsync(string sourceFilePath, string destinationDirectoryPath)
@@ -1035,21 +1151,72 @@ public static class GameInstallationService
         }
     }
 
-    static void CopyDirectory(string sourceDir, string destDir)
+    internal static void CopyDirectory(string sourceDir, string destDir)
     {
         Directory.CreateDirectory(destDir);
 
         foreach (var file in Directory.GetFiles(sourceDir))
         {
             var destFile = Path.Combine(destDir, Path.GetFileName(file));
+            if (TryCopySymbolicLink(new FileInfo(file), destFile))
+                continue;
+
             File.Copy(file, destFile, true);
         }
 
         foreach (var dir in Directory.GetDirectories(sourceDir))
         {
             var destSubDir = Path.Combine(destDir, Path.GetFileName(dir));
+            if (TryCopySymbolicLink(new DirectoryInfo(dir), destSubDir))
+                continue;
+
             CopyDirectory(dir, destSubDir);
         }
+    }
+
+    /// <summary>
+    /// Recreates a symlink at <paramref name="destPath"/> with the same target instead of copying
+    /// what it points to. macOS bundles depend on relative links such as
+    /// <c>Engine.framework/Versions/Current</c>; following them duplicates files and breaks the
+    /// bundle's code signature. Returns false for regular entries, or when the link cannot be
+    /// created (e.g. Windows without symlink rights), so the caller copies the contents instead.
+    /// </summary>
+    static bool TryCopySymbolicLink(FileSystemInfo source, string destPath)
+    {
+        var target = source.LinkTarget;
+        if (target == null)
+            return false;
+
+        try
+        {
+            DeleteFileSystemEntry(destPath);
+            if (source is DirectoryInfo)
+                Directory.CreateSymbolicLink(destPath, target);
+            else
+                File.CreateSymbolicLink(destPath, target);
+
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    static void DeleteFileSystemEntry(string path)
+    {
+        // Removes the link itself for symlinks (including links to directories); a real
+        // directory makes File.Delete throw, so fall through to a recursive delete.
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+
+        if (Directory.Exists(path))
+            Directory.Delete(path, true);
     }
 
     static void MakeExecutableIfNeeded(string path)
