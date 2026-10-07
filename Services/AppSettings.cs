@@ -14,6 +14,13 @@ namespace QuiverLauncher
         HiddenOnly,
     }
 
+    public enum ThemeTextMode
+    {
+        Automatic,
+        Light,
+        Dark,
+    }
+
     public enum TagFilterMatchMode
     {
         Any,
@@ -74,6 +81,8 @@ namespace QuiverLauncher
         public bool DesktopSidebarCollapsed { get; set; }
         public string PrimaryColor { get; set; } = "#18181b";
         public string SecondaryColor { get; set; } = "#404040";
+        /// <summary>Controls text contrast for custom theme colors. Automatic preserves the luminance-based choice.</summary>
+        public ThemeTextMode ThemeTextMode { get; set; } = ThemeTextMode.Automatic;
         public TargetOS Platform { get; set; } = TargetOS.Auto;
         public List<string> HiddenApps { get; set; } = new List<string>();
         public List<string> ManuallyHiddenApps { get; set; } = new List<string>();

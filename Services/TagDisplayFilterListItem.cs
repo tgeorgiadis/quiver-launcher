@@ -7,10 +7,11 @@ namespace QuiverLauncher.Services
     public class TagDisplayFilterListItem : INotifyPropertyChanged
     {
         private bool _isSelected;
+        private string _name = "";
 
         public TagDisplayFilter Filter { get; init; } = null!;
         public string Id => Filter.Id;
-        public string Name => Filter.Name;
+        public string Name => _name;
 
         public bool IsSelected
         {
@@ -31,12 +32,13 @@ namespace QuiverLauncher.Services
             new()
             {
                 Filter = filter,
+                _name = filter.Name,
                 IsSelected = isSelected,
             };
 
         /// <summary>
-        /// Updates <see cref="IsSelected"/> in place when the filter ids and order match.
-        /// Returns false when the list must be rebuilt (add, delete, or reorder).
+        /// Updates <see cref="IsSelected"/> in place when the filter ids, names, and order match.
+        /// Returns false when the list must be rebuilt (add, delete, reorder, or rename).
         /// </summary>
         public static bool TryUpdateSelection(
             IList<TagDisplayFilterListItem> items,
@@ -49,6 +51,12 @@ namespace QuiverLauncher.Services
             for (var i = 0; i < items.Count; i++)
             {
                 if (!string.Equals(items[i].Id, filters[i].Id, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                // The filter object is edited in place. Rebuild the row when its
+                // display name changed so the binding does not keep showing the
+                // old name until the application is restarted.
+                if (!string.Equals(items[i].Name, filters[i].Name, StringComparison.Ordinal))
                     return false;
             }
 

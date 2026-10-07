@@ -36,17 +36,23 @@ public sealed class ThemeEditor
             return Color.FromRgb(r, g, b);
         }
 
-        public void ApplyResources(IResourceDictionary resources, Color primaryColor, Color secondaryColor)
+        public void ApplyResources(IResourceDictionary resources, Color primaryColor, Color secondaryColor, ThemeTextMode textMode = ThemeTextMode.Automatic)
         {
             var themeBase = new SolidColorBrush(primaryColor);
             var themeLighter = new SolidColorBrush(GetShadedColor(primaryColor, 1.3));
             var themeDarker = new SolidColorBrush(GetShadedColor(primaryColor, 0.7));
             var themeBorder = new SolidColorBrush(secondaryColor);
 
-            var textColor = CalculateLuminance(primaryColor) > 0.5 ? Colors.Black : Colors.White;
-            var tintedText = new SolidColorBrush(BlendColors(textColor, secondaryColor, 0.08));
+            var useLightText = textMode switch
+            {
+                ThemeTextMode.Light => true,
+                ThemeTextMode.Dark => false,
+                _ => CalculateLuminance(primaryColor) <= 0.5,
+            };
+            var textColor = useLightText ? Colors.White : Colors.Black;
+            var tintedText = new SolidColorBrush(BlendColors(textColor, secondaryColor, textMode == ThemeTextMode.Automatic ? 0.08 : 0));
             var tintedTextSecondary = new SolidColorBrush(
-                CalculateLuminance(primaryColor) > 0.5
+                !useLightText
                     ? BlendColors(Color.FromRgb(70, 70, 70), secondaryColor, 0.15)
                     : BlendColors(Color.FromRgb(200, 200, 200), secondaryColor, 0.15)
             );

@@ -32,6 +32,7 @@ public partial class SettingsView : UserControl
         GamepadComboBoxNavigation.Attach(BackgroundUpdateIntervalComboBox);
         GamepadComboBoxNavigation.Attach(MouseWheelScrollSpeedComboBox);
         GamepadComboBoxNavigation.Attach(InterfaceScaleComboBox);
+        GamepadComboBoxNavigation.Attach(ThemeTextModeComboBox);
     }
 
     public void Configure(SettingsFeatureContext context, ISettingsFeatureHost host)

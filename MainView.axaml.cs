@@ -130,7 +130,7 @@ namespace QuiverLauncher
             _music = new LauncherMusicService(action => Dispatcher.UIThread.Post(action), dependencies.EnableMusic);
             _foreground = new LauncherForegroundController(_session, _music, () => _inputService, () => _settings, () => IsHostActive, DismissTextInputFocus, RestoreForegroundFocus, () => Library.RefreshManualStatusesAsync(_session.Token), LogGamepadDebug, action => Dispatcher.UIThread.InvokeAsync(action).GetTask());
             _menus = new LauncherMenuController(this, () => LibraryPanel.Navigation.PreserveLibraryGamepadFocusWhileOpeningMenu(), () => LibraryPanel.Navigation.RestoreLibraryGamepadFocusAfterMenu());
-            _markdownRenderer = new MarkdownRenderer(OpenUrl);
+            _markdownRenderer = new MarkdownRenderer(OpenUrl, () => Resources);
             _themeEditor = new ThemeEditor(secondary => secondary ? Shell.SecondaryColorBrush.Color : Shell.ThemeColorBrush.Color, ApplyThemeColor, _dialogs);
             InitializeComponent();
             if (IsDesktopPlatform)
@@ -520,6 +520,7 @@ namespace QuiverLauncher
             Shell.RefreshPresentation(_settings);
             _music.Path = _settings.LauncherMusicPath ?? string.Empty;
             _music.Volume = _settings.MusicVolume;
+            UpdateThemeColors();
             OnPropertyChanged(nameof(WindowBackground));
         }
 
@@ -665,7 +666,7 @@ namespace QuiverLauncher
         // Is Theme Color Light
         private void UpdateThemeColors()
         {
-            _themeEditor.ApplyResources(Resources, Shell.ThemeColorBrush.Color, Shell.SecondaryColorBrush.Color);
+            _themeEditor.ApplyResources(Resources, Shell.ThemeColorBrush.Color, Shell.SecondaryColorBrush.Color, _settings.ThemeTextMode);
             OnPropertyChanged(nameof(WindowBackground));
         }
 

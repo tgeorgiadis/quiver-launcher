@@ -39,4 +39,17 @@ public class TagDisplayFilterListItemTests
         TagDisplayFilterListItem.TryUpdateSelection(items, [a, b], a.Id).Should().BeFalse();
         TagDisplayFilterListItem.TryUpdateSelection(items, [b], a.Id).Should().BeFalse();
     }
+
+    [Fact]
+    public void TryUpdateSelection_rebuilds_when_a_filter_name_changed()
+    {
+        var filter = new TagDisplayFilter { Name = "Old name" };
+        var item = TagDisplayFilterListItem.FromFilter(filter, true);
+        var items = new List<TagDisplayFilterListItem> { item };
+
+        filter.Name = "New name";
+
+        TagDisplayFilterListItem.TryUpdateSelection(items, [filter], filter.Id).Should().BeFalse();
+        item.Name.Should().Be("Old name");
+    }
 }
