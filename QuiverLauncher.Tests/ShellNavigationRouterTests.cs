@@ -68,7 +68,6 @@ public class ShellNavigationRouterTests
     [InlineData("settings", GamepadNavigationZone.Settings)]
     [InlineData("editor", GamepadNavigationZone.EntryFormOverlay)]
     [InlineData("tags", GamepadNavigationZone.TagEditOverlay)]
-    [InlineData("document", GamepadNavigationZone.ChangelogOverlay)]
     [InlineData("filter", GamepadNavigationZone.DisplayFilterOverlay)]
     [InlineData("details", GamepadNavigationZone.BrowseDetailsOverlay)]
     public void Passive_restoration_does_not_steal_chrome_or_overlay_focus(string state, GamepadNavigationZone expected)
@@ -76,7 +75,7 @@ public class ShellNavigationRouterTests
         var shell = new ShellViewModel
         {
             SettingsOpen = state == "settings", EntryEditorOpen = state == "editor", TagEditorOpen = state == "tags",
-            DocumentOpen = state == "document", BrowseDetailsOpen = state == "details",
+            BrowseDetailsOpen = state == "details",
         };
         var navigation = new GamepadNavigationService
         {

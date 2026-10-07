@@ -50,7 +50,6 @@ public enum GamepadNavigationZone
 
     TagEditOverlay,
 
-    ChangelogOverlay,
 
     Settings,
 

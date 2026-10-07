@@ -342,7 +342,7 @@
 					</StackPanel>
 					<!-- Releases: what Quiver says about each one, and its notes; downloads stay with Change Version. -->
 					<StackPanel x:Name="BrowseDetailsReleases" Grid.Column="0" Margin="0,0,28,0" Spacing="14" IsVisible="False">
-						<TextBlock Text="Quiver Launcher only updates to verified releases. It installs an unverified or blocked one only if you pick it in Change Version and confirm."
+						<TextBlock x:Name="BrowseDetailsReleasesNote" Text="Quiver Launcher only updates to verified releases. It installs an unverified or blocked one only if you pick it in Change Version and confirm."
 								   FontSize="13" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
 						<TextBlock x:Name="BrowseDetailsReleasesStatus" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}" TextWrapping="Wrap"/>
 						<StackPanel x:Name="BrowseDetailsReleaseList" Spacing="14"/>

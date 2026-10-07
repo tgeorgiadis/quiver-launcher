@@ -31,7 +31,6 @@ namespace QuiverLauncher
 
         private readonly ThemeEditor _themeEditor;
         private readonly MarkdownRenderer _markdownRenderer;
-        private readonly RepositoryReadmeService _repositoryReadmeService = new();
         private readonly GameManager _gameManager;
         private readonly LibraryPersistenceService _libraryPersistence;
         private readonly LibraryActions _libraryActions;
@@ -59,7 +58,7 @@ namespace QuiverLauncher
         private readonly HashSet<GameInfo> _subscribedGames = [];
         public ObservableCollection<GameInfo> Games => _gameManager?.Games ?? new ObservableCollection<GameInfo>();
         public ObservableCollection<GameInfo> AppUpdateReviewRows => AppUpdatesReviewPanel.Model.Rows;
-        public bool GamepadHintsVisible => IsDesktopPlatform && !Shell.SettingsOpen && !Shell.EntryEditorOpen && !Shell.TagEditorOpen && !Shell.DocumentOpen && !IsDisplayFilterOverlayOpen && !Shell.ModsOpen && !Shell.ModDetailsOpen && !Shell.BrowseDetailsOpen;
+        public bool GamepadHintsVisible => IsDesktopPlatform && !Shell.SettingsOpen && !Shell.EntryEditorOpen && !Shell.TagEditorOpen && !IsDisplayFilterOverlayOpen && !Shell.ModsOpen && !Shell.ModDetailsOpen && !Shell.BrowseDetailsOpen;
         /// <summary>
         /// Gamepad chrome actions (zones, overlays, library confirm) when pad input is enabled,
         /// or after keyboard navigation/actions have activated keyboard chrome.
@@ -167,7 +166,7 @@ namespace QuiverLauncher
                     });
                 _session.OnShutdown(_sidebarController.Dispose);
             }
-            _navigationRouter = new ShellNavigationRouter(Shell, _gamepadNavigation, new Dictionary<GamepadNavigationZone, Func<IFeatureNavigationHandler>> { [GamepadNavigationZone.Sidebar] = () => _chromeNavigation, [GamepadNavigationZone.TopBar] = () => _chromeNavigation, [GamepadNavigationZone.AnnouncementBanner] = () => Banners, [GamepadNavigationZone.Library] = () => LibraryPanel.Navigation, [GamepadNavigationZone.BrowseGrid] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseToolbar] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseFilters] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseDetailsOverlay] = () => BrowseDetailsPanel, [GamepadNavigationZone.AppUpdatesReviewToolbar] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewList] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewRowActions] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.ModsOverlayToolbar] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlaySourceFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayList] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayRowActions] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsDetailsOverlay] = () => ModsPanel.Details, [GamepadNavigationZone.DisplayFilterOverlay] = () => DisplayFilterOverlay.Navigation, [GamepadNavigationZone.EntryFormOverlay] = () => EntryFormOverlay.Navigation, [GamepadNavigationZone.TagEditOverlay] = () => TagEditOverlay.Navigation, [GamepadNavigationZone.Settings] = () => SettingsPanel.Navigation, [GamepadNavigationZone.ChangelogOverlay] = () => ChangelogPanel, }, () => IsDisplayFilterOverlayOpen, () =>
+            _navigationRouter = new ShellNavigationRouter(Shell, _gamepadNavigation, new Dictionary<GamepadNavigationZone, Func<IFeatureNavigationHandler>> { [GamepadNavigationZone.Sidebar] = () => _chromeNavigation, [GamepadNavigationZone.TopBar] = () => _chromeNavigation, [GamepadNavigationZone.AnnouncementBanner] = () => Banners, [GamepadNavigationZone.Library] = () => LibraryPanel.Navigation, [GamepadNavigationZone.BrowseGrid] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseToolbar] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseFilters] = () => BrowsePanel.Navigation, [GamepadNavigationZone.BrowseDetailsOverlay] = () => BrowseDetailsPanel, [GamepadNavigationZone.AppUpdatesReviewToolbar] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewList] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.AppUpdatesReviewRowActions] = () => AppUpdatesReviewPanel, [GamepadNavigationZone.ModsOverlayToolbar] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlaySourceFilters] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayList] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsOverlayRowActions] = () => ModsPanel.Navigation, [GamepadNavigationZone.ModsDetailsOverlay] = () => ModsPanel.Details, [GamepadNavigationZone.DisplayFilterOverlay] = () => DisplayFilterOverlay.Navigation, [GamepadNavigationZone.EntryFormOverlay] = () => EntryFormOverlay.Navigation, [GamepadNavigationZone.TagEditOverlay] = () => TagEditOverlay.Navigation, [GamepadNavigationZone.Settings] = () => SettingsPanel.Navigation, }, () => IsDisplayFilterOverlayOpen, () =>
             {
                 _chromeNavigation.ClearSidebarGamepadFocus();
                 _chromeNavigation.ClearTopBarGamepadFocus();
@@ -179,9 +178,6 @@ namespace QuiverLauncher
             AppUpdatesReviewPanel.Model.Configure(this);
             AppUpdatesReviewPanel.NavigationHost = this;
             AppUpdatesReviewPanel.IsActive = () => !_session.IsClosed;
-            ChangelogPanel.NavigationHost = this;
-            ChangelogPanel.ConfigureRenderer(_markdownRenderer);
-            ChangelogPanel.CloseRequested += CloseChangelog;
             _settingsViewModel.PropertyChanged += OnKioskLockChanged;
             _session.OnShutdown(() => _settingsViewModel.PropertyChanged -= OnKioskLockChanged);
             try
@@ -296,7 +292,8 @@ namespace QuiverLauncher
                 _settingsViewModel.Save(_settings);
             };
             BrowseDetailsPanel.Configure(_session, this, _markdownRenderer, new BrowseDetailsViewModel(catalog,
-                (app, project) => QuiverCatalogMapping.ToGameInfo(_gameManager.CatalogService, app, project), LoadRepositoryReadmeAsync),
+                (app, project) => QuiverCatalogMapping.ToGameInfo(_gameManager.CatalogService, app, project), LoadRepositoryReadmeAsync,
+                (app, token) => RepositoryReleaseNotes.FetchAsync(app, _settings, _gameManager.HttpClient, token)),
                 BrowsePanel.Model.FindInLibrary, BrowsePanel.Model);
             BrowseDetailsPanel.CloseRequested += () => CloseBrowseDetails();
             BrowseDetailsPanel.AddRequested += app => _ = _session.RunAsync(() => AddFromBrowseAsync(app));
@@ -466,17 +463,12 @@ namespace QuiverLauncher
                 case Views.LibraryActionKind.OpenMods when game?.CanOpenMods == true:
                     await ModsPanel.OpenModsOverlayAsync(game);
                     break;
-                case Views.LibraryActionKind.ShowReadme:
-                    if (string.IsNullOrEmpty(game?.Repository))
-                        await ShowMessageBoxAsync("Unable to retrieve README.", "Error");
-                    else
-                        await ShowLibraryReadmeAsync(game);
+                // The app's page: its README is the Overview tab and its changelog the Releases tab.
+                case Views.LibraryActionKind.ShowReadme when game != null:
+                    await OpenLibraryAppPageAsync(game, releases: false);
                     break;
-                case Views.LibraryActionKind.ShowChangelog:
-                    if (string.IsNullOrEmpty(game?.Repository))
-                        await ShowMessageBoxAsync("Unable to retrieve changelog information.", "Error");
-                    else
-                        await ShowChangelogAsync(game);
+                case Views.LibraryActionKind.ShowChangelog when game != null:
+                    await OpenLibraryAppPageAsync(game, releases: true);
                     break;
             }
         }
@@ -565,13 +557,6 @@ namespace QuiverLauncher
 
             if (MessagePromptOverlay.Dismiss())
                 return;
-            if (Shell.DocumentOpen)
-            {
-                _inputService?.TryHandleContextMenuOptionsDismiss();
-                ChangelogPanel.Cancel();
-                return;
-            }
-
             if (Shell.ModDetailsOpen)
             {
                 ModsPanel.Details.Cancel();
@@ -753,8 +738,6 @@ namespace QuiverLauncher
                 return;
             if (Shell.SettingsOpen)
                 CloseSettingsPanel();
-            if (Shell.DocumentOpen)
-                CloseChangelog();
             Shell.EntryEditorOpen = true;
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.EntryFormOverlay;
             OnPropertyChanged(nameof(GamepadHintsVisible));
@@ -1115,12 +1098,6 @@ namespace QuiverLauncher
         {
             if (CloseSettingsPanel())
                 return;
-            // Close changelog if open
-            if (Shell.DocumentOpen)
-            {
-                CloseChangelog();
-                return;
-            }
 
             if (Shell.ModDetailsOpen)
             {
@@ -1365,7 +1342,7 @@ namespace QuiverLauncher
 
         private void UpdateMainViewUi()
         {
-            if (Shell.Mode != MainViewMode.Browse && Shell.BrowseDetailsOpen)
+            if (Shell.BrowseDetailsOpen && Shell.Mode != _detailsOpenedFrom)
                 CloseBrowseDetails(restoreSelection: false);
             _appearance.Refresh();
             UpdateLibraryEmptyState();
@@ -1378,18 +1355,50 @@ namespace QuiverLauncher
             LibraryToolbar.RefreshClearButton();
         }
 
-        private void OpenBrowseDetails(BrowseItem item)
+        // The page app details were opened over (the App Catalog, or the Library), which Back returns to.
+        private MainViewMode _detailsOpenedFrom = MainViewMode.Browse;
+
+        private void OpenBrowseDetails(BrowseItem item) => OpenBrowseDetails(item, releases: false);
+
+        private void OpenBrowseDetails(BrowseItem item, bool releases)
         {
             _detailsScreen = ("app", item.App?.Slug);
+            _detailsOpenedFrom = Shell.Mode;
             Shell.BrowseDetailsOpen = true;
             TrackScreen();
-            BrowseDetailsPanel.Open(item);
+            BrowseDetailsPanel.Open(item, releases, Shell.Mode == MainViewMode.Library ? "Library" : "App Catalog");
             NotifyGamepadUiChanged();
+        }
+
+        /// <summary>
+        /// A library app's README and changelog, on its app page (Overview and Releases). An app that isn't in the App Catalog
+        /// opens the same page with its repository's README and releases.
+        /// </summary>
+        private async Task OpenLibraryAppPageAsync(GameInfo game, bool releases)
+        {
+            _inputService?.TryHandleContextMenuOptionsDismiss();
+            QuiverCatalogApp? listed = null;
+            if (!string.IsNullOrWhiteSpace(game.CatalogSlug))
+            {
+                listed = _gameManager.CatalogReleases.ListedApp(game);
+                if (listed == null)
+                {
+                    try { listed = (await _catalogClient.GetDetailAsync(game.CatalogSlug, _session.Token)).Entry; }
+                    // Offline or gone from the catalog: the repository's README and releases still show.
+                    catch (Exception ex) when (!_session.Token.IsCancellationRequested)
+                    {
+                        Debug.WriteLine($"Catalog page unavailable for {game.CatalogSlug}: {ex.Message}");
+                    }
+                }
+            }
+            if (_session.IsClosed) return;
+            OpenBrowseDetails(listed != null ? BrowsePanel.Model.CardFor(listed) : BrowseItem.FromList(game), releases);
         }
 
         private void OpenBrowseGame(BrowseGame game)
         {
             _detailsScreen = ("game", game.Slug);
+            _detailsOpenedFrom = Shell.Mode;
             Shell.BrowseDetailsOpen = true;
             TrackScreen();
             BrowseDetailsPanel.OpenGame(game.Slug, game.Title);
@@ -1404,6 +1413,12 @@ namespace QuiverLauncher
             NotifyGamepadUiChanged();
             if (!restore)
                 return;
+            if (_detailsOpenedFrom == MainViewMode.Library)
+            {
+                _gamepadNavigation.ActiveZone = GetMainContentGamepadZone();
+                LibraryPanel.Navigation.RestoreLibraryGamepadFocusAfterMenu();
+                return;
+            }
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.BrowseGrid;
             if (IsGamepadFocusActive)
                 BrowsePanel.Navigation.SelectInitial();
@@ -1861,7 +1876,6 @@ namespace QuiverLauncher
             LibraryPanel.CancelMobileGameCardHoldTimer();
             LibraryFiltersPanel.EndTagFilterDragSession();
             _mobileLayout.Detach();
-            ChangelogPanel.Model.Cancel();
             BrowseDetailsPanel.Model.Readme.Cancel();
             ModsPanel.Details.Model.Close();
             ModsPanel.Workspace.Cancel();
@@ -1910,43 +1924,6 @@ namespace QuiverLauncher
             UpdateGamepadChromeClass();
             if (IsGamepadFocusActive)
                 _navigationRouter.RestoreCurrentFocus(bringIntoView: false);
-        }
-
-        private Task ShowChangelogAsync(GameInfo game) => ShowLibraryDocumentAsync(game, readme: false);
-        private Task ShowLibraryReadmeAsync(GameInfo game) => ShowLibraryDocumentAsync(game, readme: true);
-        private Task ShowLibraryDocumentAsync(GameInfo game, bool readme) => _session.RunAsync(async () =>
-        {
-            _inputService?.TryHandleContextMenuOptionsDismiss();
-            Shell.DocumentOpen = true;
-            OnPropertyChanged(nameof(GamepadHintsVisible));
-            HeaderTitleText.Text = readme ? $"{game.DisplayName} README" : $"{game.Name} - Version {game.LatestVersion ?? "Unknown"}";
-            try
-            {
-                await ChangelogPanel.OpenAsync(readme ? $"{game.DisplayName} README" : $"{game.Name} Changelog", readme ? "Loading README..." : "Loading changelog...", token => LibraryDocumentService.LoadAsync(game, readme, _settings, _gameManager.HttpClient, _repositoryReadmeService, token), _session.Token);
-            }
-            catch (Exception ex)
-            {
-                if (_session.IsClosed)
-                    return;
-                await ShowMessageBoxAsync($"Failed to load {(readme ? "README" : "changelog")}: {ex.Message}", "Error");
-                CloseChangelog();
-            }
-        });
-        private void CloseChangelog()
-        {
-            ChangelogPanel.Close();
-            Shell.DocumentOpen = false;
-            UpdateMainViewUi();
-            if (_gamepadNavigation.ActiveZone == GamepadNavigationZone.ChangelogOverlay)
-            {
-                _gamepadNavigation.ActiveZone = GetMainContentGamepadZone();
-                if (Shell.Mode == MainViewMode.Library)
-                    LibraryPanel.Navigation.RestoreLibraryGamepadFocusAfterMenu();
-                else
-                    SelectInitialGamepadItemForCurrentView();
-            }
-
-            OnPropertyChanged(nameof(GamepadHintsVisible));
         }
 
         public new event PropertyChangedEventHandler? PropertyChanged;

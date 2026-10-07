@@ -18,7 +18,8 @@ public sealed record BrowseReviewLine(string Author, string Meta, string Result,
 /// reviews are written on quiverlauncher.com) and its README.
 /// </summary>
 public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<QuiverCatalogApp, QuiverCatalogProject, GameInfo> toLibraryEntry,
-    Func<GameInfo, CancellationToken, Task<DocumentContent>> repositoryReadme) : ObservableViewModel, IDisposable
+    Func<GameInfo, CancellationToken, Task<DocumentContent>> repositoryReadme,
+    Func<GameInfo, CancellationToken, Task<IReadOnlyList<QuiverCatalogRelease>>>? repositoryReleases = null) : ObservableViewModel, IDisposable
 {
     public const int ReviewCount = 10;
     private int _generation;
@@ -82,10 +83,18 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
 
     public void Dispose() => Close();
 
+    /// <summary>Whether the app has releases to show: the catalog's history, or for an app not in the catalog, its repository's.</summary>
+    public bool HasReleases => Item?.App != null || (repositoryReleases != null && !string.IsNullOrWhiteSpace(Item?.ListApp?.Repository));
+
     /// <summary>Reads the app's release history the first time its Releases tab opens.</summary>
     public async Task LoadReleasesAsync(CancellationToken token)
     {
-        if (Item?.App is not { } app || Releases != null || ReleasesStatus.Length > 0) return;
+        if (!HasReleases || Releases != null || ReleasesStatus.Length > 0) return;
+        if (Item?.App is not { } app)
+        {
+            await LoadRepositoryReleasesAsync(Item!.ListApp!, token);
+            return;
+        }
         var generation = _generation;
         ReleasesStatus = "Loading releases…";
         try
@@ -99,6 +108,25 @@ public sealed class BrowseDetailsViewModel(QuiverCatalogClient client, Func<Quiv
         catch (Exception ex) when (!token.IsCancellationRequested)
         {
             if (generation == _generation) ReleasesStatus = $"Couldn't load releases. {ex.Message}";
+        }
+    }
+
+    // An app that isn't in the catalog: its latest releases and notes, straight from its repository.
+    private async Task LoadRepositoryReleasesAsync(GameInfo app, CancellationToken token)
+    {
+        var generation = _generation;
+        ReleasesStatus = "Loading releases…";
+        try
+        {
+            var releases = await repositoryReleases!(app, token);
+            if (generation != _generation) return;
+            Releases = releases;
+            ReleasesMore = false;
+            ReleasesStatus = releases.Count == 0 ? "This app's repository has no releases." : "";
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            if (generation == _generation) ReleasesStatus = $"Couldn't load releases from the app's repository. {ex.Message}";
         }
     }
 

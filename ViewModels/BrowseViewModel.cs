@@ -216,6 +216,14 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         return cards;
     }
 
+    /// <summary>An app's card, for opening its page from elsewhere (the Library).</summary>
+    public BrowseItem CardFor(QuiverCatalogApp app)
+    {
+        var card = BrowseItem.FromCatalog(app, _consoleNames);
+        MarkLibraryState([card]);
+        return card;
+    }
+
     /// <summary>A console's name, as the catalog lists it.</summary>
     public string ConsoleName(string id) => _consoleNames.GetValueOrDefault(id, id.ToUpperInvariant());
 

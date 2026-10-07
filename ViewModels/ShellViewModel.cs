@@ -59,8 +59,6 @@ public sealed class ShellViewModel : ObservableViewModel
     public bool AppUpdatesOpen { get => _appUpdatesOpen; set => Set(ref _appUpdatesOpen, value); }
     private bool _settingsOpen;
     public bool SettingsOpen { get => _settingsOpen; set => Set(ref _settingsOpen, value); }
-    private bool _documentOpen;
-    public bool DocumentOpen { get => _documentOpen; set => Set(ref _documentOpen, value); }
     private bool _entryEditorOpen;
     public bool EntryEditorOpen { get => _entryEditorOpen; set => Set(ref _entryEditorOpen, value); }
     private bool _tagEditorOpen;

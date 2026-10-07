@@ -38,6 +38,9 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     private int _gameGeneration;
     private enum Tab { Overview, Releases, Feedback }
     private Tab _tab;
+    // The tab the first page opens on, and the page Back leaves to.
+    private Tab _startTab;
+    private string _home = "App Catalog";
     private IReadOnlyList<QuiverCatalogRelease>? _shownReleases;
     // The first action was asked for before the actions arrived (they need the app's page): take it when they do.
     private bool _awaitingAction;
@@ -97,10 +100,12 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         });
     }
 
-    /// <summary>Opens an app's page from the App Catalog.</summary>
-    public void Open(BrowseItem item)
+    /// <summary>Opens an app's page: from the App Catalog, or from the Library on its README (Overview) or its releases.</summary>
+    public void Open(BrowseItem item, bool releases = false, string home = "App Catalog")
     {
         _pages.Clear();
+        _home = home;
+        _startTab = releases ? Tab.Releases : Tab.Overview;
         Show(new Page(item, null, null));
     }
 
@@ -108,6 +113,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     public void OpenGame(string slug, string title)
     {
         _pages.Clear();
+        _home = "App Catalog";
         Show(new Page(null, slug, title));
     }
 
@@ -136,11 +142,13 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         BrowseDetailsScrollViewer.Offset = default;
         BodyFocused = false;
         FocusIndex = -1;
-        _tab = Tab.Overview;
+        _tab = _startTab;
+        _startTab = Tab.Overview;
         var page = Current!;
         if (page.Item is { } item)
         {
             _ = _session.RunAsync(() => Model.OpenAsync(item, _session.Token));
+            if (_tab == Tab.Releases) _ = _session.RunAsync(() => Model.LoadReleasesAsync(_session.Token));
             Refresh();
             if (_host.IsFocusActive)
                 SelectFirstAction();
@@ -195,7 +203,7 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
     {
         if (_session.IsClosed) return;
         // Back names the page it returns to.
-        BrowseDetailsBackText.Text = _pages.Count > 1 ? _pages[^2].Item?.Title ?? _pages[^2].Title ?? "Back" : "App Catalog";
+        BrowseDetailsBackText.Text = _pages.Count > 1 ? _pages[^2].Item?.Title ?? _pages[^2].Title ?? "Back" : _home;
         var gamePage = Current is { Slug: not null };
         BrowseDetailsGamePanel.IsVisible = gamePage;
         BrowseDetailsSystems.IsVisible = gamePage;
@@ -253,9 +261,10 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         BrowseDetailsRemoveButton.IsVisible = _libraryApp != null;
         BrowseDetailsRepositoryButton.IsVisible = !string.IsNullOrWhiteSpace(entry?.Repository);
 
-        // An app from the player's own list has no page on the site: no releases or feedback, only its README.
-        var tab = app == null ? Tab.Overview : _tab;
-        BrowseDetailsTabsBar.IsVisible = app != null;
+        // An app that isn't in the catalog has no page on the site, so no feedback: its README, and its repository's releases.
+        var tab = app == null && (_tab == Tab.Feedback || !Model.HasReleases) ? Tab.Overview : _tab;
+        BrowseDetailsTabsBar.IsVisible = Model.HasReleases;
+        BrowseDetailsFeedbackTab.IsVisible = app != null;
         BrowseDetailsColumns.IsVisible = true;
         BrowseDetailsOverviewTab.Classes.Set("selected", tab == Tab.Overview);
         BrowseDetailsReleasesTab.Classes.Set("selected", tab == Tab.Releases);
@@ -266,6 +275,8 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
         BrowseDetailsFeedback.IsVisible = tab == Tab.Feedback;
         BrowseDetailsReleasesCountPill.IsVisible = Model.Releases != null;
         BrowseDetailsReleasesCount.Text = $"{Model.Releases?.Count}{(Model.ReleasesMore ? "+" : "")}";
+        // Releases from a repository haven't been checked by Quiver, so the note about verified releases doesn't apply.
+        BrowseDetailsReleasesNote.IsVisible = app != null;
         BrowseDetailsReleasesStatus.Text = Model.ReleasesStatus;
         BrowseDetailsReleasesStatus.IsVisible = Model.ReleasesStatus.Length > 0;
         if (!ReferenceEquals(_shownReleases, Model.Releases)) ShowReleases(Model.Releases);
@@ -362,10 +373,10 @@ public partial class BrowseDetailsView : UserControl, IFeatureNavigationHandler
             var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
             header.Children.Add(heading);
             Grid.SetColumn(badge, 1);
-            header.Children.Add(badge);
+            if (release.State != RepositoryReleaseNotes.RepositoryState) header.Children.Add(badge);
             var body = new StackPanel { Spacing = 14 };
             body.Children.Add(header);
-            if (release.State != "verified")
+            if (release.State is not ("verified" or RepositoryReleaseNotes.RepositoryState))
                 foreach (var reason in release.Reasons)
                     body.Children.Add(new TextBlock { Text = reason, FontSize = 12, Foreground = brush, TextWrapping = TextWrapping.Wrap });
             var notes = new StackPanel();

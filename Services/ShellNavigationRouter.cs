@@ -30,7 +30,6 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         if (!bringIntoView)
         {
             var overlay = displayFilterOpen() ? GamepadNavigationZone.DisplayFilterOverlay
-                : shell.DocumentOpen ? GamepadNavigationZone.ChangelogOverlay
                 : shell.EntryEditorOpen ? GamepadNavigationZone.EntryFormOverlay
                 : shell.TagEditorOpen ? GamepadNavigationZone.TagEditOverlay
                 : shell.SettingsOpen ? GamepadNavigationZone.Settings : (GamepadNavigationZone?)null;
@@ -57,7 +56,6 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
     {
         IFeatureNavigationHandler? feature;
         if (displayFilterOpen()) feature = Enter(GamepadNavigationZone.DisplayFilterOverlay);
-        else if (shell.DocumentOpen) feature = Enter(GamepadNavigationZone.ChangelogOverlay);
         else if (shell.ModDetailsOpen || shell.BrowseDetailsOpen) feature = IsChrome(navigation.ActiveZone) ? For(navigation.ActiveZone) : Enter(MainZone);
         else if (shell.EntryEditorOpen) feature = Enter(GamepadNavigationZone.EntryFormOverlay);
         else if (shell.TagEditorOpen) feature = Enter(GamepadNavigationZone.TagEditOverlay);
@@ -71,16 +69,14 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         // Details opened with the mouse leave the zone behind; Confirm still belongs to the details.
         if (shell.BrowseDetailsOpen && zone != GamepadNavigationZone.BrowseDetailsOverlay && !IsChrome(zone))
             return Enter(GamepadNavigationZone.BrowseDetailsOverlay)?.Confirm() ?? false;
-        if ((shell.DocumentOpen && zone == GamepadNavigationZone.ChangelogOverlay)
-            || (shell.ModDetailsOpen && zone == GamepadNavigationZone.ModsDetailsOverlay)
+        if ((shell.ModDetailsOpen && zone == GamepadNavigationZone.ModsDetailsOverlay)
             || (shell.BrowseDetailsOpen && zone == GamepadNavigationZone.BrowseDetailsOverlay))
             return For(zone)?.Confirm() ?? false;
         return false;
     }
     public bool OptionsPriorityDetails()
     {
-        var zone = shell.DocumentOpen ? GamepadNavigationZone.ChangelogOverlay
-            : shell.ModDetailsOpen ? GamepadNavigationZone.ModsDetailsOverlay
+        var zone = shell.ModDetailsOpen ? GamepadNavigationZone.ModsDetailsOverlay
             : shell.BrowseDetailsOpen ? GamepadNavigationZone.BrowseDetailsOverlay : (GamepadNavigationZone?)null;
         return zone.HasValue && For(zone.Value)?.Options() == true;
     }
@@ -88,7 +84,6 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
     public bool SynchronizePointer(object? source)
     {
         GamepadNavigationZone? overlay = displayFilterOpen() ? GamepadNavigationZone.DisplayFilterOverlay
-            : shell.DocumentOpen ? GamepadNavigationZone.ChangelogOverlay
             : shell.BrowseDetailsOpen ? GamepadNavigationZone.BrowseDetailsOverlay
             : shell.ModDetailsOpen ? GamepadNavigationZone.ModsDetailsOverlay
             : shell.EntryEditorOpen ? GamepadNavigationZone.EntryFormOverlay
@@ -107,7 +102,7 @@ public sealed class ShellNavigationRouter(ShellViewModel shell, GamepadNavigatio
         if (shell.TagEditorOpen) return Enter(GamepadNavigationZone.TagEditOverlay)?.Confirm() ?? false;
         // Tab/native keyboard focus can reach the banner without entering its
         // controller zone. Confirm the focused banner action, not the stale zone.
-        if (allowChrome && !shell.DocumentOpen && !shell.ModDetailsOpen && !shell.BrowseDetailsOpen &&
+        if (allowChrome && !shell.ModDetailsOpen && !shell.BrowseDetailsOpen &&
             focusedControl != null && For(GamepadNavigationZone.AnnouncementBanner)?.SynchronizePointer(focusedControl) == true)
             return For(GamepadNavigationZone.AnnouncementBanner)?.Confirm() ?? false;
         return allowChrome && (For(navigation.ActiveZone)?.Confirm() ?? false);

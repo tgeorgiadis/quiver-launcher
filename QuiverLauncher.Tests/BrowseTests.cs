@@ -128,6 +128,25 @@ public class BrowseTests : IDisposable
     }
 
     [Fact]
+    public async Task A_library_app_not_in_the_catalog_shows_its_repositorys_readme_and_releases_on_its_page()
+    {
+        var handler = new Handler(_ => throw new InvalidOperationException("An app not in the catalog never asks quiverlauncher.com."));
+        var app = new GameInfo { Name = "Ship of Harkinian", Repository = "HarbourMasters/Shipwright", FolderName = "Shipwright" };
+        var details = new BrowseDetailsViewModel(new QuiverCatalogClient(new HttpClient(handler), "https://api.quiverlauncher.test/api/v1"),
+            (_, _) => throw new InvalidOperationException(), (_, _) => Task.FromResult(new DocumentContent("# Shipwright")),
+            (_, _) => Task.FromResult<IReadOnlyList<QuiverCatalogRelease>>([new() { Version = "9.3.0", Notes = "Fixes.", State = RepositoryReleaseNotes.RepositoryState }]));
+        var token = TestContext.Current.CancellationToken;
+
+        await details.OpenAsync(BrowseItem.FromList(app), token);
+        details.HasReleases.Should().BeTrue();
+        await details.LoadReleasesAsync(token);
+
+        details.Releases.Should().ContainSingle().Which.Version.Should().Be("9.3.0");
+        details.ReleasesStatus.Should().BeEmpty();
+        handler.AppQueries.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Unreachable_site_shows_a_status_instead_of_throwing()
     {
         var browse = Browse(new Handler(_ => Task.FromResult(
