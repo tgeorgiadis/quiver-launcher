@@ -1,0 +1,60 @@
+app-id: io.github.tgeorgiadis.QuiverLauncher
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: quiver-launcher
+
+# This does NOT build Quiver Launcher from source inside the Flatpak
+# sandbox (the sandbox has no network access, so `dotnet restore` can't
+# run). Instead it repackages a self-contained `dotnet publish` output.
+# Before running flatpak-builder against this manifest, produce that
+# output from the repo root:
+#
+#   dotnet publish QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj \
+#     -c Release -r linux-x64 --self-contained true \
+#     -p:PublishTrimmed=false -o publish/linux-x64
+#
+# See README.md in this directory for the full build/install/known-gaps
+# writeup.
+
+finish-args:
+  # Broad permission set, as requested, rather than a minimally-scoped
+  # one. See this directory's README.md for what each grant is for.
+  - --share=ipc
+  - --share=network
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=all
+  - --filesystem=host
+  # --filesystem=host does NOT cover other apps' ~/.var/app/<id> data (Flatpak's
+  # per-app isolation boundary) - grant Steam's explicitly so Proton detection
+  # (Services/WindowsRunnerService.cs) can see steamapps/common/Proton* there.
+  - --filesystem=~/.var/app/com.valvesoftware.Steam:ro
+  - --talk-name=org.freedesktop.Flatpak
+  - --system-talk-name=org.freedesktop.Flatpak.SystemHelper
+
+modules:
+  - name: quiver-launcher
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/lib/quiverlauncher
+      - cp -r publish/. /app/lib/quiverlauncher/
+      - chmod +x /app/lib/quiverlauncher/QuiverLauncher
+      - install -Dm755 quiver-launcher /app/bin/quiver-launcher
+      - install -Dm644 io.github.tgeorgiadis.QuiverLauncher.desktop /app/share/applications/io.github.tgeorgiadis.QuiverLauncher.desktop
+      - install -Dm644 io.github.tgeorgiadis.QuiverLauncher.metainfo.xml /app/share/metainfo/io.github.tgeorgiadis.QuiverLauncher.metainfo.xml
+      - install -Dm644 quiver-icon.png /app/share/icons/hicolor/256x256/apps/io.github.tgeorgiadis.QuiverLauncher.png
+    sources:
+      - type: dir
+        path: ../../publish/linux-x64
+        dest: publish
+      - type: file
+        path: quiver-launcher
+      - type: file
+        path: io.github.tgeorgiadis.QuiverLauncher.desktop
+      - type: file
+        path: io.github.tgeorgiadis.QuiverLauncher.metainfo.xml
+      - type: file
+        path: ../../Assets/quiver-icon.png
+        dest-filename: quiver-icon.png

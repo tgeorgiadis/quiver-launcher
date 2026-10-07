@@ -163,6 +163,7 @@ public static class UrlLauncher
             startInfo.ArgumentList.Add(argument);
 
         HostProcessEnvironment.Sanitize(startInfo);
+        HostProcessEnvironment.RouteToHostIfSandboxed(startInfo);
         return startInfo;
     }
 

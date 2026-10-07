@@ -517,6 +517,11 @@ namespace QuiverLauncher
             }
         }
 
+        // Known gap under Flatpak packaging: `ps` here only sees the sandbox's own
+        // PID namespace. Once a launched game runs host-side via
+        // HostProcessEnvironment.RouteToHostIfSandboxed, this can't see the real
+        // game process or its children, so process-group-drain detection is
+        // unreliable there (see packaging/flatpak/README.md).
         private static async Task<int?> TryGetProcessGroupIdAsync(int processId)
         {
             try

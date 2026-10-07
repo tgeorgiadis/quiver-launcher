@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Quiver Launcher
+GenericName=Game Launcher
+Comment=Download and manage GitHub-hosted game ports
+Exec=quiver-launcher
+Icon=io.github.tgeorgiadis.QuiverLauncher
+Terminal=false
+Categories=Game;
+StartupNotify=true

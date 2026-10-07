@@ -472,11 +472,13 @@ public static class WindowsRunnerService
             var process = new ProcessStartInfo
             {
                 FileName = "which",
-                Arguments = command,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true,
             };
+            process.ArgumentList.Add(command);
+            HostProcessEnvironment.Sanitize(process);
+            HostProcessEnvironment.RouteToHostIfSandboxed(process);
 
             using var proc = Process.Start(process);
             if (proc != null)

@@ -45,6 +45,9 @@ bld/
 # Flatpak Build Directory
 .flatpak-builder/
 FlatpakBuild/
+packaging/flatpak/build/
+packaging/flatpak/repo/
+*.flatpak
 
 # Uncomment if you have tasks that create the project's static files in wwwroot
 #wwwroot/

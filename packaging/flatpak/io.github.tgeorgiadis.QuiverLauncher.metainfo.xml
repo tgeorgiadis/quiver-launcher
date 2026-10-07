@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.tgeorgiadis.QuiverLauncher</id>
+  <name>Quiver Launcher</name>
+  <summary>Download and manage GitHub-hosted game ports</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="io.github.tgeorgiadis">
+    <name>SirDiabo</name>
+  </developer>
+  <description>
+    <p>
+      Quiver Launcher browses a catalog of GitHub-hosted game ports, downloads
+      release assets, and keeps installed games up to date.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.tgeorgiadis.QuiverLauncher.desktop</launchable>
+  <url type="homepage">https://github.com/tgeorgiadis/quiver-launcher</url>
+  <url type="bugtracker">https://github.com/tgeorgiadis/quiver-launcher/issues</url>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="3.4.5" date="2026-09-21" />
+  </releases>
+</component>

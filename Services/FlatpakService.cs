@@ -208,15 +208,18 @@ public sealed class FlatpakService
             WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) };
         foreach (var argument in arguments) info.ArgumentList.Add(argument);
         HostProcessEnvironment.Sanitize(info);
-        if (OperatingSystem.IsLinux())
+        if (OperatingSystem.IsLinux() && !HostProcessEnvironment.IsSandboxed())
         {
             // Steam shortcuts need a stable executable path; also avoid resolving through an AppImage mount.
+            // (Skipped when sandboxed: the sandbox's own PATH never has a `flatpak` binary regardless of
+            // AppImage mounts, and RouteToHostIfSandboxed below resolves the bare name on the host instead.)
             info.Environment.TryGetValue("PATH", out var pathValue);
             var searchPath = pathValue ?? "/usr/local/bin:/usr/bin:/bin";
             var executable = searchPath.Split(Path.PathSeparator).Where(Path.IsPathFullyQualified)
                 .Select(directory => Path.Combine(directory, "flatpak")).FirstOrDefault(File.Exists);
             info.FileName = executable ?? throw new InvalidOperationException(SetupGuidance);
         }
+        HostProcessEnvironment.RouteToHostIfSandboxed(info);
         return info;
     }
 

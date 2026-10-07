@@ -142,6 +142,9 @@ public static class GameLaunchService
                     HostProcessEnvironment.Sanitize(startInfo);
             }
 
+            // No-ops unless Quiver itself is running inside a Flatpak sandbox.
+            HostProcessEnvironment.RouteToHostIfSandboxed(startInfo);
+
             var startInfoEnvAfter = startInfo.UseShellExecute
                 ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 : LaunchDebugReport.SnapshotStartInfoEnvironment(startInfo);

@@ -173,6 +173,10 @@ public sealed class LauncherForegroundController : IDisposable
         _reclaim = null;
     }
 
+    // Known gap under Flatpak packaging: the `ps` calls below only see the
+    // sandbox's own PID namespace. Once a launched game runs host-side via
+    // HostProcessEnvironment.RouteToHostIfSandboxed, process-group-drain
+    // detection here is unreliable (see packaging/flatpak/README.md).
     private static async Task WaitForGameExitAsync(Process process, CancellationToken token)
     {
         int? group = null;

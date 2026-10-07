@@ -310,6 +310,67 @@ jobs:
         path: releases/${{ matrix.rid }}/**
         retention-days: 14
 
+  # Flatpak packaging (packaging/flatpak/) is a CI-artifact-only build for now,
+  # not wired into the GitHub Release step below — see packaging/flatpak/README.md.
+  pack-flatpak:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Install Flatpak tooling
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y flatpak flatpak-builder
+
+    - name: Cache Flatpak runtimes
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/share/flatpak
+        key: flatpak-runtimes-24.08-${{ runner.os }}
+
+    - name: Install Flatpak runtime + SDK
+      run: |
+        flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        flatpak install --user --noninteractive flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+
+    - name: Publish linux-x64
+      run: |
+        dotnet publish QuiverLauncher.Desktop/QuiverLauncher.Desktop.csproj -c Release -r linux-x64 --self-contained true -p:PublishTrimmed=false -o publish/linux-x64
+        # Do not bake user-data leftovers into the Flatpak.
+        rm -f publish/linux-x64/apps.json \
+              publish/linux-x64/settings.json \
+              publish/linux-x64/games.json \
+              publish/linux-x64/game.json \
+              publish/linux-x64/crash.log
+        rm -rf publish/linux-x64/Apps publish/linux-x64/Cache
+
+    - name: flatpak-builder
+      run: |
+        flatpak-builder --force-clean --repo=packaging/flatpak/repo \
+          packaging/flatpak/build packaging/flatpak/io.github.tgeorgiadis.QuiverLauncher.yml
+
+    - name: Build .flatpak bundle
+      run: |
+        flatpak build-bundle packaging/flatpak/repo QuiverLauncher.flatpak \
+          io.github.tgeorgiadis.QuiverLauncher master
+
+    - name: Upload Flatpak artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: flatpak-linux-x64
+        path: QuiverLauncher.flatpak
+        retention-days: 14
+
   # Publish Velopack packages to a GitHub Release when a v* tag is pushed.
   # Runs even if some desktop packs fail so successful channels still ship.
   # Android is required: tags must include a signed APK.
