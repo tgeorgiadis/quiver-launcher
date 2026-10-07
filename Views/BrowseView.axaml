@@ -7,6 +7,12 @@
              x:Class="QuiverLauncher.Views.BrowseView" x:DataType="vm:BrowseViewModel" x:CompileBindings="True">
 	<UserControl.Styles>
 		<Style Selector="ComboBox.browse-filter">
+			<!-- Short lists: every row is created, so the scrollbar measures the console list (headings and all) exactly. -->
+			<Setter Property="ItemsPanel">
+				<ItemsPanelTemplate>
+					<StackPanel/>
+				</ItemsPanelTemplate>
+			</Setter>
 			<Setter Property="FontSize" Value="12"/>
 			<Setter Property="MinHeight" Value="40"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>

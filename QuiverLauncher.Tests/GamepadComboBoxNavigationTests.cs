@@ -1,5 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using FluentAssertions;
 using QuiverLauncher.Services;
 
@@ -214,6 +217,48 @@ public class GamepadComboBoxNavigationTests
         finally
         {
             GamepadComboBoxNavigation.Instance.Close(comboBox);
+        }
+    }
+
+    [AvaloniaFact]
+    public void Moving_through_a_long_list_scrolls_the_highlighted_row_into_view()
+    {
+        // Longer than the dropdown, so the rows past the first screen don't exist until scrolled to.
+        var comboBox = new ComboBox { MaxDropDownHeight = 200 };
+        for (var i = 0; i < 40; i++)
+            comboBox.Items.Add(new ComboBoxItem { Content = $"Console {i}", IsEnabled = i % 8 != 0 });
+        comboBox.SelectedIndex = 1;
+        var window = new Window { Content = comboBox, Width = 280, Height = 400 };
+
+        try
+        {
+            window.Show();
+            GamepadComboBoxNavigation.Open(comboBox);
+            Dispatcher.UIThread.RunJobs();
+
+            void Walk(NavigationDirection direction, int steps)
+            {
+                for (var i = 0; i < steps; i++)
+                {
+                    GamepadComboBoxNavigation.Instance.TryHandleNavigation(direction);
+                    Dispatcher.UIThread.RunJobs();
+                }
+                var row = comboBox.Items.OfType<ComboBoxItem>().Single(item => item.Classes.Contains("gamepad-focused"));
+                var viewer = row.GetVisualAncestors().OfType<ScrollViewer>().First();
+                var top = row.TranslatePoint(default, viewer)!.Value.Y;
+                top.Should().BeGreaterThanOrEqualTo(0, "{0} must be scrolled to, not left above the list", row.Content);
+                (top + row.Bounds.Height).Should().BeLessThanOrEqualTo(viewer.Viewport.Height + 1, "{0} must be on screen", row.Content);
+            }
+
+            Walk(NavigationDirection.Down, 25);
+            Walk(NavigationDirection.Up, 20);
+        }
+        finally
+        {
+            comboBox.IsDropDownOpen = false;
+            GamepadComboBoxNavigation.Instance.Close(comboBox);
+            if (window.IsVisible)
+                window.Close();
         }
     }
 

@@ -136,7 +136,11 @@ public sealed class GamepadComboBoxNavigation
         // Highlight only — do not change SelectedItem until Confirm (A / Enter).
         // Cancel restores _originalSelectedIndex if the user browsed away.
         focused.Classes.Set("gamepad-focused", true);
+        // A long list only creates the rows on screen: scroll the highlighted one in first, so it exists to focus
+        // and the list and its scrollbar follow the highlight.
+        _activeComboBox?.ScrollIntoView(focused);
         focused.Focus();
+        focused.BringIntoView();
     }
 
     private void ClearItemHighlights()
