@@ -1,48 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="using:QuiverLauncher" xmlns:models="using:QuiverLauncher.Models" xmlns:services="using:QuiverLauncher.Services" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:views="using:QuiverLauncher.Views" xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia" x:Class="QuiverLauncher.Views.LibraryView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
 <UserControl.Resources>
-<DataTemplate x:Key="ListViewTemplate" x:DataType="models:GameInfo">
-			<Border Classes="gamecard" Classes.gamepad-focused="{Binding IsGamepadFocused}"
-					Height="{Binding $parent[views:LibraryView].Model.Settings.ListRowHeight}" Margin="0,0,0,8"
-					PlatformFeedback.FeedbackType="Auto"
-					InputElement.IsHoldingEnabled="True"
-					PointerEntered="LibraryCard_PointerEntered"
-					PointerExited="LibraryCard_PointerExited"
-					PointerPressed="GameCard_PointerPressed"
-					PointerMoved="GameCard_PointerMoved"
-					PointerReleased="GameCard_PointerReleased"
-					PointerCaptureLost="GameCard_PointerCaptureLost"
-					Tapped="GameCard_Tapped"
-					Holding="GameCard_Holding"
-					ContextRequested="GameCard_ContextRequested">
-				<views:LibraryListRowLayout Settings="{Binding $parent[views:LibraryView].Model.Settings}">
-    <Border views:LibraryListRowLayout.Role="Thumbnail" CornerRadius="8" ClipToBounds="True">
-        <Panel>
-        <asyncImageLoader:AdvancedImage Source="{Binding IconUrl}" Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
-            Stretch="{Binding $parent[views:LibraryView].Model.Settings.IconFill, Converter={StaticResource BooleanToStretchConverter}}"/>
-        <views:RepositoryCheckWarning/>
-        </Panel>
-    </Border>
-    <services:HoverScrollText views:LibraryListRowLayout.Role="Title" Text="{Binding DisplayName}" IsActive="{Binding ShouldScrollTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"/>
-    <services:HoverScrollText views:LibraryListRowLayout.Role="Subtitle" Text="{Binding ProjectSubtitle}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
-    <services:HoverScrollText views:LibraryListRowLayout.Role="Status" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
-    <services:HoverScrollText views:LibraryListRowLayout.Role="Latest" Text="{Binding LatestVersionLabel}" ToolTip.Tip="{Binding LatestVersionToolTip}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
-    <services:HoverScrollText views:LibraryListRowLayout.Role="Preferred" Text="{Binding PreferredVersionLabel}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
-    <Border views:LibraryListRowLayout.Role="Tags" ClipToBounds="True">
-        <ItemsControl ItemsSource="{Binding LibraryCardTags}">
-            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate><DataTemplate><Border Background="{DynamicResource ThemeLighter}" CornerRadius="3" Padding="5,0" Margin="0,0,4,2" Height="16"><TextBlock Text="{Binding}" FontSize="9" Foreground="{DynamicResource ThemeTextSecondary}"/></Border></DataTemplate></ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </Border>
-    <StackPanel views:LibraryListRowLayout.Role="Actions" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <Button Classes="modern" Content="{Binding ButtonText}" FontSize="14" Padding="8,0" IsEnabled="{Binding !IsLoading}" PlatformFeedback.FeedbackType="Auto" Click="GameButton_Click" Tag="{Binding}"/>
-        <Button Classes="options options-listview" Padding="0" ToolTip.Tip="App options" AutomationProperties.Name="App options"
-                IsEnabled="{Binding !IsLoading}" Click="OptionsButton_Click" Tag="{Binding}">
-            <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
-                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
-                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
-                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
-            </StackPanel><Button.ContextMenu>
-									<ContextMenu Opening="LibraryCardMenu_Opening">
+<!-- One menu for every card: built per card, it cost about 0.5 MB of memory per app. -->
+<ContextMenu x:Key="LibraryCardMenu" x:DataType="models:GameInfo" Opening="LibraryCardMenu_Opening">
 										<MenuItem Header="Launch"
 												  Click="LaunchGameMenu_Click"
 												  CommandParameter="{Binding}"
@@ -155,7 +114,49 @@
 												  IsVisible="{Binding CanRemoveInstalledApp}"
 												  CommandParameter="{Binding}"/>
 									</ContextMenu>
-								</Button.ContextMenu>        </Button>
+
+<DataTemplate x:Key="ListViewTemplate" x:DataType="models:GameInfo">
+			<Border Classes="gamecard" Classes.gamepad-focused="{Binding IsGamepadFocused}"
+					Height="{Binding $parent[views:LibraryView].Model.Settings.ListRowHeight}" Margin="0,0,0,8"
+					PlatformFeedback.FeedbackType="Auto"
+					InputElement.IsHoldingEnabled="True"
+					PointerEntered="LibraryCard_PointerEntered"
+					PointerExited="LibraryCard_PointerExited"
+					PointerPressed="GameCard_PointerPressed"
+					PointerMoved="GameCard_PointerMoved"
+					PointerReleased="GameCard_PointerReleased"
+					PointerCaptureLost="GameCard_PointerCaptureLost"
+					Tapped="GameCard_Tapped"
+					Holding="GameCard_Holding"
+					ContextRequested="GameCard_ContextRequested">
+				<views:LibraryListRowLayout Settings="{Binding $parent[views:LibraryView].Model.Settings}">
+    <Border views:LibraryListRowLayout.Role="Thumbnail" CornerRadius="8" ClipToBounds="True">
+        <Panel>
+        <asyncImageLoader:AdvancedImage Source="{Binding IconUrl}" Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
+            Stretch="{Binding $parent[views:LibraryView].Model.Settings.IconFill, Converter={StaticResource BooleanToStretchConverter}}"/>
+        <views:RepositoryCheckWarning/>
+        </Panel>
+    </Border>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Title" Text="{Binding DisplayName}" IsActive="{Binding ShouldScrollTitle}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Subtitle" Text="{Binding ProjectSubtitle}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Status" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Latest" Text="{Binding LatestVersionLabel}" ToolTip.Tip="{Binding LatestVersionToolTip}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <services:HoverScrollText views:LibraryListRowLayout.Role="Preferred" Text="{Binding PreferredVersionLabel}" IsActive="{Binding ShouldScrollTitle}" FontSize="12" Foreground="{DynamicResource ThemeTextSecondary}"/>
+    <Border views:LibraryListRowLayout.Role="Tags" ClipToBounds="True">
+        <ItemsControl ItemsSource="{Binding LibraryCardTags}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate><DataTemplate><Border Background="{DynamicResource ThemeLighter}" CornerRadius="3" Padding="5,0" Margin="0,0,4,2" Height="16"><TextBlock Text="{Binding}" FontSize="9" Foreground="{DynamicResource ThemeTextSecondary}"/></Border></DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Border>
+    <StackPanel views:LibraryListRowLayout.Role="Actions" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button Classes="modern" Content="{Binding ButtonText}" FontSize="14" Padding="8,0" IsEnabled="{Binding !IsLoading}" PlatformFeedback.FeedbackType="Auto" Click="GameButton_Click" Tag="{Binding}"/>
+        <Button Classes="options options-listview" Padding="0" ToolTip.Tip="App options" AutomationProperties.Name="App options"
+                IsEnabled="{Binding !IsLoading}" Click="OptionsButton_Click" Tag="{Binding}">
+            <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
+                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
+                <Ellipse Width="3" Height="3" Fill="{DynamicResource ThemeText}"/>
+            </StackPanel><Button.ContextMenu><StaticResource ResourceKey="LibraryCardMenu"/></Button.ContextMenu>        </Button>
     </StackPanel>
     <Border views:LibraryListRowLayout.Role="Progress" ClipToBounds="True" CornerRadius="0,0,12,12">
         <ProgressBar IsIndeterminate="{Binding IsInstallIndeterminate}" Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="4" Background="Transparent" Foreground="{Binding ProgressBarColor}" BorderThickness="0"/>
@@ -207,121 +208,7 @@
 								Click="OptionsButton_Click"
 								Tag="{Binding}">
 							<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
-							<Button.ContextMenu>
-								<ContextMenu Opening="LibraryCardMenu_Opening">
-									<MenuItem Header="Launch"
-											  Click="LaunchGameMenu_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding CanLaunch}"/>
-									<MenuItem Header="Download"
-											  Click="LaunchGameMenu_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding CanDownload}"/>
-									<MenuItem Header="Run installer again" Click="ForceUpdate_Click" CommandParameter="{Binding}" IsVisible="{Binding CanRunWindowsInstaller}"/>
-									<MenuItem Header="Locate Existing Install"
-											  Click="LocateExistingInstall_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding CanLocateInstall}"/>
-									<MenuItem Header="Update Now"
-											  Click="UpdateNowMenu_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding CanUpdate}"/>
-									<MenuItem Header="Auto Update"
-											  ToggleType="CheckBox"
-											  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
-											  IsVisible="{Binding CanToggleAutoUpdate}"
-											  Click="AutoUpdateMenu_Click"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Open Folder"
-											  Click="OpenFolder_Click"
-											  IsVisible="{Binding CanOpenFolder}"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Versions"
-											  IsVisible="{Binding CanVersionOptions}">
-										<MenuItem Header="Change Version"
-												  Click="ChangeVersion_Click"
-												  CommandParameter="{Binding}"
-												  IsVisible="{Binding CanChangeVersion}"/>
-										<MenuItem Header="Skip Update"
-												  Click="SkipUpdate_Click"
-												  CommandParameter="{Binding}"
-												  IsVisible="{Binding CanSkipUpdate}"/>
-										<MenuItem Header="Force Update"
-												  Click="ForceUpdate_Click"
-												  IsVisible="{Binding IsInstalled}"
-												  CommandParameter="{Binding}"/>
-									</MenuItem>
-									<MenuItem Header="Launch Options"
-											  IsVisible="{Binding CanLaunchOptions}">
-										<MenuItem Header="{Binding ExecutableSelectionLabel}"
-												  CommandParameter="{Binding}"
-												  Click="SelectDifferentExecutable_Click"
-												  IsVisible="{Binding HasExecutableChoice}"/>
-										<MenuItem Header="Windows Runner…"
-												  Click="ConfigureWindowsRunner_Click"
-												  IsVisible="{Binding ShowWindowsRunnerOptions}"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Create Desktop Shortcut"
-												  Click="CreateShortcut_Click"
-												  IsVisible="{Binding ShowDesktopOnlyActions}"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Add to Steam"
-												  Click="AddToSteam_Click"
-												  IsVisible="{Binding CanAddToSteam}"
-												  CommandParameter="{Binding}"/>
-									</MenuItem>
-									<MenuItem Header="Mods"
-											  Click="OpenMods_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding CanOpenMods}"/>
-									<MenuItem Header="Customize">
-										<MenuItem Header="Edit Entry"
-												  Click="EditGameEntry_Click"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Edit Tags"
-												  Click="EditTagsMenu_Click"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Custom Display Name"
-												  Click="EditCustomDisplayNameMenu_Click"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Add Custom Image"
-												  Click="SetCustomIcon_Click"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Remove Custom Image"
-												  Click="RemoveCustomIcon_Click"
-												  CommandParameter="{Binding}"
-												  IsVisible="{Binding HasCustomIcon}"/>
-										<MenuItem Header="Hide App"
-												  Click="HideGame_Click"
-												  CommandParameter="{Binding}"
-												  IsVisible="{Binding !IsManuallyHidden}"/>
-										<MenuItem Header="Unhide App"
-												  Click="HideGame_Click"
-												  CommandParameter="{Binding}"
-												  IsVisible="{Binding IsManuallyHidden}"/>
-										<MenuItem Header="Remove from List"
-												  Click="RemoveGameEntry_Click"
-												  CommandParameter="{Binding}"
-												  IsVisible="{Binding IsInLocalAppsJson}"/>
-									</MenuItem>
-									<MenuItem Header="About"
-											  IsVisible="{Binding CanInfoOptions}">
-										<MenuItem Header="View README"
-												  Click="ShowReadme_Click"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Show Changelog"
-												  Click="ShowChangelog_Click"
-												  CommandParameter="{Binding}"/>
-										<MenuItem Header="Open Repository"
-												  Click="OpenGitHubPage_Click"
-												  CommandParameter="{Binding}"/>
-									</MenuItem>
-									<MenuItem Header="{Binding InstalledAppRemovalLabel}"
-											  Click="DeleteGameFromLibrary_Click"
-											  IsVisible="{Binding CanRemoveInstalledApp}"
-											  CommandParameter="{Binding}"/>
-								</ContextMenu>
-							</Button.ContextMenu>
+							<Button.ContextMenu><StaticResource ResourceKey="LibraryCardMenu"/></Button.ContextMenu>
 						</Button>
 
 						<!-- Progress Bar -->
@@ -540,121 +427,7 @@
 							Click="OptionsButton_Click"
 							Tag="{Binding}">
 						<TextBlock Text="⋯" Foreground="{DynamicResource ThemeText}" TextAlignment="Center" VerticalAlignment="Center"/>
-						<Button.ContextMenu>
-							<ContextMenu Opening="LibraryCardMenu_Opening">
-								<MenuItem Header="Launch"
-										  Click="LaunchGameMenu_Click"
-										  CommandParameter="{Binding}"
-										  IsVisible="{Binding CanLaunch}"/>
-								<MenuItem Header="Download"
-										  Click="LaunchGameMenu_Click"
-										  CommandParameter="{Binding}"
-										  IsVisible="{Binding CanDownload}"/>
-								<MenuItem Header="Run installer again" Click="ForceUpdate_Click" CommandParameter="{Binding}" IsVisible="{Binding CanRunWindowsInstaller}"/>
-								<MenuItem Header="Locate Existing Install"
-										  Click="LocateExistingInstall_Click"
-										  CommandParameter="{Binding}"
-										  IsVisible="{Binding CanLocateInstall}"/>
-								<MenuItem Header="Update Now"
-										  Click="UpdateNowMenu_Click"
-										  CommandParameter="{Binding}"
-										  IsVisible="{Binding CanUpdate}"/>
-								<MenuItem Header="Auto Update"
-										  ToggleType="CheckBox"
-										  IsChecked="{Binding AutoUpdate, Mode=OneWay}"
-										  IsVisible="{Binding CanToggleAutoUpdate}"
-										  Click="AutoUpdateMenu_Click"
-										  CommandParameter="{Binding}"/>
-								<MenuItem Header="Open Folder"
-										  Click="OpenFolder_Click"
-										  IsVisible="{Binding CanOpenFolder}"
-										  CommandParameter="{Binding}"/>
-								<MenuItem Header="Versions"
-										  IsVisible="{Binding CanVersionOptions}">
-									<MenuItem Header="Change Version"
-											  Click="ChangeVersion_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding CanChangeVersion}"/>
-									<MenuItem Header="Skip Update"
-											  Click="SkipUpdate_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding CanSkipUpdate}"/>
-									<MenuItem Header="Force Update"
-											  Click="ForceUpdate_Click"
-											  IsVisible="{Binding IsInstalled}"
-											  CommandParameter="{Binding}"/>
-								</MenuItem>
-								<MenuItem Header="Launch Options"
-										  IsVisible="{Binding CanLaunchOptions}">
-									<MenuItem Header="{Binding ExecutableSelectionLabel}"
-											  CommandParameter="{Binding}"
-											  Click="SelectDifferentExecutable_Click"
-											  IsVisible="{Binding HasExecutableChoice}"/>
-									<MenuItem Header="Windows Runner…"
-											  Click="ConfigureWindowsRunner_Click"
-											  IsVisible="{Binding ShowWindowsRunnerOptions}"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Create Desktop Shortcut"
-											  Click="CreateShortcut_Click"
-											  IsVisible="{Binding ShowDesktopOnlyActions}"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Add to Steam"
-											  Click="AddToSteam_Click"
-											  IsVisible="{Binding CanAddToSteam}"
-											  CommandParameter="{Binding}"/>
-								</MenuItem>
-								<MenuItem Header="Mods"
-										  Click="OpenMods_Click"
-										  CommandParameter="{Binding}"
-										  IsVisible="{Binding CanOpenMods}"/>
-								<MenuItem Header="Customize">
-									<MenuItem Header="Edit Entry"
-											  Click="EditGameEntry_Click"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Edit Tags"
-											  Click="EditTagsMenu_Click"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Custom Display Name"
-											  Click="EditCustomDisplayNameMenu_Click"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Add Custom Image"
-											  Click="SetCustomIcon_Click"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Remove Custom Image"
-											  Click="RemoveCustomIcon_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding HasCustomIcon}"/>
-									<MenuItem Header="Hide App"
-											  Click="HideGame_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding !IsManuallyHidden}"/>
-									<MenuItem Header="Unhide App"
-											  Click="HideGame_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding IsManuallyHidden}"/>
-									<MenuItem Header="Remove from List"
-											  Click="RemoveGameEntry_Click"
-											  CommandParameter="{Binding}"
-											  IsVisible="{Binding IsInLocalAppsJson}"/>
-								</MenuItem>
-								<MenuItem Header="About"
-										  IsVisible="{Binding CanInfoOptions}">
-									<MenuItem Header="View README"
-											  Click="ShowReadme_Click"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Show Changelog"
-											  Click="ShowChangelog_Click"
-											  CommandParameter="{Binding}"/>
-									<MenuItem Header="Open Repository"
-											  Click="OpenGitHubPage_Click"
-											  CommandParameter="{Binding}"/>
-								</MenuItem>
-								<MenuItem Header="{Binding InstalledAppRemovalLabel}"
-										  Click="DeleteGameFromLibrary_Click"
-										  IsVisible="{Binding CanRemoveInstalledApp}"
-										  CommandParameter="{Binding}"/>
-							</ContextMenu>
-						</Button.ContextMenu>
+						<Button.ContextMenu><StaticResource ResourceKey="LibraryCardMenu"/></Button.ContextMenu>
 					</Button>
 
 					<!-- App name, status, and action button -->
