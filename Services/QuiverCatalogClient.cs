@@ -64,6 +64,8 @@ public sealed class QuiverCatalogApp
     public QuiverCatalogLauncher Launcher { get; set; } = new();
     public string ProjectType { get; set; } = "";
     public List<string> SupportedOS { get; set; } = [];
+    /// <summary>"none", "assisted" or "generated".</summary>
+    public string? AiLevel { get; set; }
     public int Recommended { get; set; }
     public int ReportIssues { get; set; }
     public int ReportBroken { get; set; }

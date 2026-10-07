@@ -193,4 +193,23 @@ public class BrowseTests : IDisposable
     [InlineData(2, 2, 1, "Mixed · 2 run well, 2 with issues, 1 doesn't run")]
     public void Score_sums_up_player_reports(int runs, int issues, int broken, string expected) =>
         BrowseText.Score(runs, issues, broken).Should().Be(expected);
+
+    [Fact]
+    public void Card_reads_like_the_website_card()
+    {
+        var app = new QuiverCatalogApp
+        {
+            ProjectName = "Banjo: Recompiled", Tags = ["recomp", "n64", "rare"], SupportedOS = ["linux", "windows", "macos"],
+            Games = [new() { Title = "Banjo-Kazooie" }], Recommended = 2, AiLevel = "assisted",
+        };
+
+        var card = BrowseItem.FromCatalog(app, new Dictionary<string, string> { ["n64"] = "Nintendo 64" });
+
+        card.CardKind.Should().Be("RECOMP · NINTENDO 64");
+        card.BasedOn.Should().Equal("Banjo-Kazooie");
+        (card.ScoreLabel, card.ScoreCounts, card.ScorePositive).Should().Be(("Mostly runs", " · 2 run well", true));
+        card.AiChip.Should().Be("AI-ASSISTED");
+        card.PlatformTip.Should().Be("Windows, macOS, Linux");
+        BrowseText.TagLabel("harbour masters vs the world").Should().Be("Harbour Masters vs the World");
+    }
 }
