@@ -1445,9 +1445,10 @@ namespace QuiverLauncher.Models
 
                 // Catalog thumbnails already use this URL-keyed disk cache. Reuse the
                 // actual file instead of downloading a second folder-specific copy.
-                var sharedPath = LauncherArtworkLoader.CachedPath(cacheDirectory, defaultUrl);
-                if (LauncherIconCache.IsValid(sharedPath))
+                var cardUrl = LauncherArtworkLoader.CardUrl(defaultUrl);
+                foreach (var sharedPath in new[] { cardUrl, defaultUrl }.Distinct().Select(url => LauncherArtworkLoader.CachedPath(cacheDirectory, url)))
                 {
+                    if (!LauncherIconCache.IsValid(sharedPath)) continue;
                     _cachedDefaultIconPath = sharedPath;
                     DispatchPropertyChanged(nameof(IconUrl));
                     return;
@@ -1469,8 +1470,23 @@ namespace QuiverLauncher.Models
                     if (!allowDownload) return;
                     if (File.Exists(cachedIconPath)) File.Delete(cachedIconPath);
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-                    await LauncherIconCache.FetchAsync(httpClient, defaultUrl, cachedIconPath, githubToken,
-                        cancellationToken);
+                    // The website's smaller copy first; the original if Cloudflare won't make one.
+                    var fetched = false;
+                    if (cardUrl != defaultUrl)
+                    {
+                        try
+                        {
+                            await LauncherIconCache.FetchAsync(httpClient, cardUrl, cachedIconPath, githubToken, cancellationToken);
+                            fetched = true;
+                        }
+                        catch (Exception ex) when (!cancellationToken.IsCancellationRequested &&
+                            ex is HttpRequestException or InvalidDataException or TaskCanceledException)
+                        {
+                        }
+                    }
+                    if (!fetched)
+                        await LauncherIconCache.FetchAsync(httpClient, defaultUrl, cachedIconPath, githubToken,
+                            cancellationToken);
                 }
                 cancellationToken.ThrowIfCancellationRequested();
                 _cachedDefaultIconPath = cachedIconPath;
