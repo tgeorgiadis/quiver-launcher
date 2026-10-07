@@ -26,6 +26,9 @@ public sealed class CardColumnsPanel : Panel
 
     private double ColumnWidth(double width, int columns) => Math.Max(0, (width - Spacing * (columns - 1)) / columns);
 
+    /// <summary>How wide each card is at this width.</summary>
+    public double ColumnWidthFor(double width) => ColumnWidth(width, ColumnsFor(width));
+
     protected override Size MeasureOverride(Size availableSize)
     {
         var columns = ColumnsFor(double.IsInfinity(availableSize.Width) ? 0 : availableSize.Width);

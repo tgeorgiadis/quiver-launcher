@@ -152,8 +152,8 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             return direction == NavigationDirection.Down && zone == GamepadNavigationZone.BrowseToolbar
                 ? host.ApplyTransition(new GamepadZoneTransition(GamepadNavigationZone.BrowseFilters, null))
                 : false;
-        // On a phone the controls sit on more than one line (the filters two by two): Up and Down move between those first.
-        if (view.IsMobileLayout && NearestOnNextLine(controls, index, direction) is { } line)
+        // The controls can sit on more than one line (the filters under the search, the library option below them): Up and Down move between those first.
+        if (NearestOnNextLine(controls, index, direction) is { } line)
         {
             apply(line);
             return true;
@@ -203,8 +203,8 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         var transition = Service.TryGetZoneTransition(direction, GamepadNavigationZone.BrowseGrid, host.MainContentZone, isListLayout: false, positions, current, count);
         if (transition.HasValue)
         {
-            // On a phone, Up from the cards goes to the filter just above the card.
-            if (view.IsMobileLayout && transition.Value.Zone == GamepadNavigationZone.BrowseFilters && current >= 0 && current < count &&
+            // Up from the cards goes to the control just above the card.
+            if (transition.Value.Zone == GamepadNavigationZone.BrowseFilters && current >= 0 && current < count &&
                 NearestOnNextLine(FilterControls(), new Point(positions[current].X, positions[current].Y), 1, NavigationDirection.Up) is { } above)
                 FilterIndex = above;
             return host.ApplyTransition(transition.Value);

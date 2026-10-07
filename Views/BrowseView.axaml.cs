@@ -18,9 +18,14 @@ public partial class BrowseView : UserControl
     private CancellationTokenSource? _searchDelay;
     private bool _updatingControls;
     private int _consoleChoices = -1;
-    // On a phone the four filters sit two by two under the search; on a wider screen (a handheld held sideways) on one line.
-    private Grid? _filterGrid;
-    private const double FiltersOnOneLineWidth = 640;
+    // The filters sit beside the search when both fit; otherwise under it, four across, or two by two when narrower still.
+    private enum FilterLayout { BesideSearch, FourAcross, TwoByTwo }
+    private FilterLayout? _filterLayout;
+    private const double FiltersBesideSearchWidth = 1000;
+    private const double FiltersFourAcrossWidth = 640;
+    private readonly double[] _filterMinWidths;
+    // Cards narrower than this are drawn like the website's narrow card.
+    private const double NarrowCardWidth = 250;
     private CancellationToken Token => _session?.Token ?? CancellationToken.None;
     public BrowseViewModel Model { get; private set; } = null!;
     /// <summary>Laid out for a phone, like the website's narrow layout.</summary>
@@ -46,6 +51,9 @@ public partial class BrowseView : UserControl
         Fill(BrowseAiComboBox, BrowseText.AiFilters);
         foreach (var combo in new[] { BrowseSortComboBox, BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox })
             GamepadComboBoxNavigation.Attach(combo);
+        _filterMinWidths = [.. FilterCombos.Select(c => c.MinWidth)];
+        BrowseFiltersPanel.SizeChanged += (_, e) => ArrangeFilters(e.NewSize.Width);
+        BrowseItemsControl.SizeChanged += (_, e) => ArrangeCards(e.NewSize.Width);
         AddHandler(BrowseCard.AddRequestedEvent, (_, e) =>
         {
             if (e.Source is Control { DataContext: BrowseItem item }) RequestAdd(item);
@@ -151,32 +159,10 @@ public partial class BrowseView : UserControl
         BrowseSourceTabs.Margin = new Thickness(0, 10, 0, 0);
         BrowseSortComboBox.MinWidth = 120;
 
-        BrowseSearchTextBox.Margin = new Thickness(0, 0, 0, 10);
-        BrowseSearchTextBox.MinWidth = 0;
-        Grid.SetColumnSpan(BrowseSearchTextBox, 2);
-        _filterGrid = new Grid { ColumnSpacing = 12, RowSpacing = 10 };
-        foreach (var combo in new[] { BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox })
-        {
-            BrowseFilterSelects.Children.Remove(combo);
-            combo.MinWidth = 0;
-            combo.Margin = new Thickness(0);
-            combo.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
-            _filterGrid.Children.Add(combo);
-        }
-        ArrangeFilters(0);
-        BrowseFiltersPanel.SizeChanged += (_, e) => ArrangeFilters(e.NewSize.Width);
-        Grid.SetRow(_filterGrid, 1);
-        Grid.SetColumnSpan(_filterGrid, 2);
-        BrowseFiltersPanel.Children.Add(_filterGrid);
-        // "Try again" and "Clear filters" follow on a line of their own when they show.
-        BrowseFiltersPanel.RowDefinitions = new RowDefinitions("Auto,Auto,Auto");
-        foreach (var icon in BrowseFilterSelects.Children.OfType<Avalonia.Controls.Shapes.Path>())
-            icon.IsVisible = false;
-        Grid.SetRow(BrowseFilterSelects, 2);
-        Grid.SetColumn(BrowseFilterSelects, 0);
-        Grid.SetColumnSpan(BrowseFilterSelects, 2);
-        BrowseFilterSelects.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
-        BrowseRetryButton.Margin = BrowseClearFiltersButton.Margin = BrowseHideLibraryCheckBox.Margin = new Thickness(0, 10, 10, 0);
+        BrowseFilterGrid.ColumnSpacing = 12;
+        // A phone's filters always go under the search, as on the website.
+        _filterLayout = null;
+        ArrangeFilters(BrowseFiltersPanel.Bounds.Width);
 
         BrowseGamesControl.ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel());
         BrowseItemsControl.ItemsPanel = new FuncTemplate<Panel?>(() => new CardColumnsPanel());
@@ -184,18 +170,44 @@ public partial class BrowseView : UserControl
         UpdateControls();
     }
 
-    private void ArrangeFilters(double width)
+    private ComboBox[] FilterCombos => [BrowseTypeComboBox, BrowsePlatformComboBox, BrowseConsoleComboBox, BrowseAiComboBox];
+
+    /// <summary>
+    /// Lays the search and filters out for the width there is: the filters beside the search on a wide window; on a narrower
+    /// one (or a phone) the search on its own line with the filters under it, four across or two by two, filling the width.
+    /// </summary>
+    internal void ArrangeFilters(double width)
     {
-        if (_filterGrid == null) return;
-        var columns = width >= FiltersOnOneLineWidth ? 4 : 2;
-        if (_filterGrid.ColumnDefinitions.Count == columns) return;
-        _filterGrid.ColumnDefinitions = new ColumnDefinitions(string.Join(",", Enumerable.Repeat("*", columns)));
-        _filterGrid.RowDefinitions = new RowDefinitions(columns == 4 ? "Auto" : "Auto,Auto");
-        for (var i = 0; i < _filterGrid.Children.Count; i++)
+        var layout = width >= FiltersBesideSearchWidth && !IsMobileLayout ? FilterLayout.BesideSearch
+            : width >= FiltersFourAcrossWidth ? FilterLayout.FourAcross
+            : FilterLayout.TwoByTwo;
+        if (layout == _filterLayout) return;
+        _filterLayout = layout;
+        var beside = layout == FilterLayout.BesideSearch;
+        var columns = layout == FilterLayout.TwoByTwo ? 2 : 4;
+        BrowseFilterGrid.ColumnDefinitions = new ColumnDefinitions(string.Join(",", Enumerable.Repeat(beside ? "Auto" : "*", columns)));
+        BrowseFilterGrid.RowDefinitions = new RowDefinitions(columns == 4 ? "Auto" : "Auto,Auto");
+        var combos = FilterCombos;
+        for (var i = 0; i < combos.Length; i++)
         {
-            Grid.SetRow(_filterGrid.Children[i], i / columns);
-            Grid.SetColumn(_filterGrid.Children[i], i % columns);
+            Grid.SetRow(combos[i], i / columns);
+            Grid.SetColumn(combos[i], i % columns);
+            combos[i].MinWidth = beside ? _filterMinWidths[i] : 0;
+            combos[i].HorizontalAlignment = beside ? Avalonia.Layout.HorizontalAlignment.Left : Avalonia.Layout.HorizontalAlignment.Stretch;
         }
+        BrowseFiltersIcon.IsVisible = beside;
+        BrowseSearchTextBox.Margin = beside ? new Thickness(0, 0, 18, 0) : new Thickness(0, 0, 0, 10);
+        Grid.SetColumnSpan(BrowseSearchTextBox, beside ? 1 : 3);
+        Grid.SetRow(BrowseFilterGrid, beside ? 0 : 1);
+        Grid.SetColumn(BrowseFilterGrid, beside ? 2 : 0);
+        Grid.SetColumnSpan(BrowseFilterGrid, beside ? 1 : 3);
+    }
+
+    /// <summary>Cards that come out narrow (a small window) are drawn like the website's narrow card.</summary>
+    private void ArrangeCards(double width)
+    {
+        if (IsMobileLayout || BrowseItemsControl.ItemsPanelRoot is not CardColumnsPanel panel || width <= 0) return;
+        BrowseItemsControl.Classes.Set("narrow-cards", panel.ColumnWidthFor(width) < NarrowCardWidth);
     }
 
     internal Task<bool> LoadMoreAsync() => _session?.RunAsync(() => Model.LoadMoreAsync(Token)) ?? Task.FromResult(false);
@@ -250,7 +262,8 @@ public partial class BrowseView : UserControl
             var results = searching && !custom ? $"Results for “{Model.Search.Trim()}”" : "";
             BrowseResultsText.Text = results.Length > 0 && hidden.Length > 0 ? $"{results} · {hidden}" : results + hidden;
             BrowseResultsText.IsVisible = BrowseResultsText.Text.Length > 0;
-            if (_filterGrid != null) _filterGrid.IsVisible = !custom;
+            BrowseFilterGrid.IsVisible = !custom;
+            BrowseFiltersIcon.IsVisible = !custom && _filterLayout == FilterLayout.BesideSearch;
             Select(BrowseSortComboBox, Model.Sort);
             Select(BrowseTypeComboBox, Model.ProjectType);
             Select(BrowsePlatformComboBox, Model.Platform);

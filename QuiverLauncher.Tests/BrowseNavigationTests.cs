@@ -48,14 +48,19 @@ public class BrowseNavigationTests
 
             Move(NavigationDirection.Right).Should().BeTrue();
             browse.Model.Items.Select(i => i.IsGamepadFocused).Should().Equal(false, true, false);
+            // At this width the filters sit under the search, four across, with the library option below them:
+            // Up climbs line by line to the sort, and Down comes back the same way to the cards.
             Move(NavigationDirection.Up).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
+            browse.BrowseHideLibraryCheckBox.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Up).Should().BeTrue();
+            browse.BrowseTypeComboBox.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Up).Should().BeTrue();
             browse.BrowseSearchTextBox.Classes.Should().Contain("gamepad-focused");
             Move(NavigationDirection.Up).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseToolbar);
             browse.BrowseSortComboBox.Classes.Should().Contain("gamepad-focused");
-            Move(NavigationDirection.Down).Should().BeTrue();
-            Move(NavigationDirection.Down).Should().BeTrue();
+            for (var i = 0; i < 4; i++) Move(NavigationDirection.Down).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseGrid);
             Move(NavigationDirection.Left).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.Sidebar);

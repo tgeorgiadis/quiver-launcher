@@ -136,6 +136,10 @@
 	</Style>
 	<!-- Two to a row on a phone, as the website draws a narrow card: the kind on its own line, the AI label and
 	     platforms under it, then the score and the release date on lines of their own. -->
+	<Style Selector=".fill-cards Border.browse-card">
+		<Setter Property="Width" Value="NaN"/>
+		<Setter Property="Margin" Value="0"/>
+	</Style>
 	<Style Selector=".narrow-cards Border.browse-card">
 		<Setter Property="Width" Value="NaN"/>
 		<Setter Property="Margin" Value="0"/>

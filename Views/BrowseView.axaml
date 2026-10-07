@@ -90,10 +90,11 @@
 						  SelectionChanged="BrowseSort_SelectionChanged"/>
 			</StackPanel>
 		</Grid>
-		<Grid x:Name="BrowseFiltersPanel" Grid.Row="1" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Margin="0,0,30,14">
+		<!-- The search, with the four filters beside it when there's room, or on a line of their own (four across, or two by
+		     two when narrower; see ArrangeFilters). The library option and the buttons for an empty result follow below. -->
+		<Grid x:Name="BrowseFiltersPanel" Grid.Row="1" ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto,Auto" Margin="0,0,30,14">
 			<TextBox x:Name="BrowseSearchTextBox" Grid.Column="0"
 					 Watermark="Search games, projects, or tags…"
-					 MinWidth="200"
 					 MinHeight="40"
 					 FontSize="12"
 					 VerticalContentAlignment="Center"
@@ -105,27 +106,30 @@
 						  Data="M 11,4 A 7,7 0 1 1 10.99,4 Z M 16,16 L 21,21"/>
 				</TextBox.InnerLeftContent>
 			</TextBox>
-			<WrapPanel x:Name="BrowseFilterSelects" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-				<Path Width="17" Height="17" Margin="0,0,10,0" Stretch="Uniform" VerticalAlignment="Center"
-					  Stroke="{DynamicResource ThemeTextSecondary}" StrokeThickness="1.6" StrokeLineCap="Round"
-					  Data="M 21,4 L 14,4 M 10,4 L 3,4 M 21,12 L 12,12 M 8,12 L 3,12 M 21,20 L 16,20 M 12,20 L 3,20 M 14,2 L 14,6 M 8,10 L 8,14 M 16,18 L 16,22"/>
-				<ComboBox x:Name="BrowseTypeComboBox" Classes="browse-filter" MinWidth="140" Margin="0,0,10,0"
+			<Path x:Name="BrowseFiltersIcon" Grid.Column="1" Width="17" Height="17" Margin="0,0,10,0" Stretch="Uniform" VerticalAlignment="Center"
+				  Stroke="{DynamicResource ThemeTextSecondary}" StrokeThickness="1.6" StrokeLineCap="Round"
+				  Data="M 21,4 L 14,4 M 10,4 L 3,4 M 21,12 L 12,12 M 8,12 L 3,12 M 21,20 L 16,20 M 12,20 L 3,20 M 14,2 L 14,6 M 8,10 L 8,14 M 16,18 L 16,22"/>
+			<Grid x:Name="BrowseFilterGrid" Grid.Column="2" ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10"
+				  VerticalAlignment="Center">
+				<ComboBox x:Name="BrowseTypeComboBox" Grid.Column="0" Classes="browse-filter" MinWidth="140"
 						  ToolTip.Tip="Project type" SelectionChanged="BrowseFilter_SelectionChanged"/>
-				<ComboBox x:Name="BrowsePlatformComboBox" Classes="browse-filter" MinWidth="130" Margin="0,0,10,0"
+				<ComboBox x:Name="BrowsePlatformComboBox" Grid.Column="1" Classes="browse-filter" MinWidth="130"
 						  ToolTip.Tip="Operating system" SelectionChanged="BrowseFilter_SelectionChanged"/>
-				<ComboBox x:Name="BrowseConsoleComboBox" Classes="browse-filter" MinWidth="180" Margin="0,0,10,0"
+				<ComboBox x:Name="BrowseConsoleComboBox" Grid.Column="2" Classes="browse-filter" MinWidth="180"
 						  ToolTip.Tip="Console" SelectionChanged="BrowseFilter_SelectionChanged"/>
-				<ComboBox x:Name="BrowseAiComboBox" Classes="browse-filter" MinWidth="150"
+				<ComboBox x:Name="BrowseAiComboBox" Grid.Column="3" Classes="browse-filter" MinWidth="150"
 						  ToolTip.Tip="Labels are based on the developer's answer, the README and repository signals"
 						  SelectionChanged="BrowseFilter_SelectionChanged"/>
-				<CheckBox x:Name="BrowseHideLibraryCheckBox" Content="Hide apps in my library" FontSize="12" Margin="14,0,0,0"
+			</Grid>
+			<WrapPanel x:Name="BrowseFilterSelects" Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,10,0,0">
+				<CheckBox x:Name="BrowseHideLibraryCheckBox" Content="Hide apps in my library" FontSize="12" Margin="0,0,14,0"
 						  VerticalAlignment="Center" Foreground="{DynamicResource ThemeText}"
 						  ToolTip.Tip="Leaves out apps you already have, so new ones are easier to find"
 						  IsCheckedChanged="BrowseHideLibrary_Changed"/>
 				<Button x:Name="BrowseRetryButton" Classes="options" Content="Try again" FontSize="12" MinHeight="40"
-						Margin="10,0,0,0" IsVisible="False" Click="BrowseRetry_Click"/>
+						Margin="0,0,10,0" IsVisible="False" Click="BrowseRetry_Click"/>
 				<Button x:Name="BrowseClearFiltersButton" Classes="options" Content="Clear filters" FontSize="12" MinHeight="40"
-						Margin="10,0,0,0" IsVisible="False" Click="BrowseClearFilters_Click"/>
+						Margin="0,0,10,0" IsVisible="False" Click="BrowseClearFilters_Click"/>
 			</WrapPanel>
 		</Grid>
 		<ScrollViewer x:Name="BrowseScrollViewer"
@@ -171,10 +175,11 @@
 					</ItemsControl>
 					<TextBlock Classes="browse-section-label" Text="APPS" Margin="0,10,0,0"/>
 				</StackPanel>
-				<ItemsControl x:Name="BrowseItemsControl" ItemsSource="{Binding Items}">
+				<!-- Cards fill the width in equal columns, as on the website. -->
+				<ItemsControl x:Name="BrowseItemsControl" Classes="fill-cards" ItemsSource="{Binding Items}">
 					<ItemsControl.ItemsPanel>
 						<ItemsPanelTemplate>
-							<WrapPanel Orientation="Horizontal"/>
+							<views:CardColumnsPanel MinColumnWidth="256" Spacing="14"/>
 						</ItemsPanelTemplate>
 					</ItemsControl.ItemsPanel>
 					<ItemsControl.ItemTemplate>
