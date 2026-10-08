@@ -23,23 +23,16 @@ internal static class Program
         AppInstallLaunch.Current = new DesktopAppInstallLaunchService();
 
         var velopack = VelopackApp.Build();
-        if (!OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows())
+            velopack.OnAfterUpdateFastCallback(_ => UserDataRescue.AfterUpdate(ResolveVelopackRootAppDir()));
+        else
             velopack.SetAutoApplyOnStartup(false);
         velopack.Run();
 
-        QuiverLauncherPaths.VelopackRootAppDirProvider = () =>
-        {
-            try
-            {
-                return VelopackLocator.Current?.RootAppDir;
-            }
-            catch
-            {
-                return null;
-            }
-        };
-
+        QuiverLauncherPaths.VelopackRootAppDirProvider = ResolveVelopackRootAppDir;
         QuiverLauncherPaths.VelopackPackageDirectoryProvider = ResolveVelopackPackageDirectory;
+        if (OperatingSystem.IsWindows())
+            UserDataRescue.AtStartup(ResolveVelopackRootAppDir(), AppDomain.CurrentDomain.BaseDirectory);
         QuiverLauncherPaths.EnsureUserDataRootExists();
 
         var launch = KioskLaunch.Parse(args);
@@ -93,6 +86,18 @@ internal static class Program
         };
     }
 #endif
+
+    private static string? ResolveVelopackRootAppDir()
+    {
+        try
+        {
+            return VelopackLocator.Current?.RootAppDir;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private static string? ResolveVelopackPackageDirectory()
     {

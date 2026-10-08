@@ -196,6 +196,13 @@ public static class QuiverLauncherPaths
         return null;
     }
 
-    private static string NormalizeDirectory(string path) =>
-        Path.GetFullPath(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+    internal static string NormalizeDirectory(string path)
+    {
+        var full = Path.GetFullPath(path);
+        // The top of a drive keeps its separator: on Windows "G:" alone means the current folder on G:,
+        // which for Quiver is current\, the folder every update replaces.
+        return string.Equals(full, Path.GetPathRoot(full), StringComparison.Ordinal)
+            ? full
+            : full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
 }
