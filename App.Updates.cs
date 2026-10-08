@@ -109,8 +109,11 @@ public partial class App
         }
     }
 
-    public async Task PromptForPendingLauncherUpdateAsync()
+    public async Task PromptForPendingLauncherUpdateAsync(bool isManualCheck = false)
     {
+        if (await ShowUpdateNotInstalledIfNeededAsync(repeat: isManualCheck))
+            return;
+
         var result = await CheckVelopackUpdatesAsync();
         if (!result.UpdateAvailable || result.UpdateInfo == null)
             return;
@@ -197,6 +200,10 @@ public partial class App
 
     private async Task<ManualLauncherCheckResult?> CheckForUpdatesAndApplyCoreAsync(bool isManualCheck)
     {
+        // Explain an update that just failed instead of offering the same update again.
+        if (!isManualCheck && await ShowUpdateNotInstalledIfNeededAsync(repeat: false))
+            return null;
+
         var result = await CheckVelopackUpdatesAsync();
 
         if (result.IsNotInstalled)
@@ -253,6 +260,42 @@ public partial class App
             result.AvailableVersion ?? "new version",
             result.IncludedPrerelease);
         return null;
+    }
+
+    private bool _updateNotInstalledShown;
+
+    /// <summary>
+    /// True when Quiver was just reopened by an update that didn't install. Explains why once per
+    /// session, or again when <paramref name="repeat"/> (the player checked for updates).
+    /// </summary>
+    private async Task<bool> ShowUpdateNotInstalledIfNeededAsync(bool repeat)
+    {
+        var pendingVersion = _velopackUpdates.PendingRestartVersion;
+        if (!LauncherUpdateFailure.UpdateWasNotInstalled(LauncherUpdateFailure.RestartedByUpdater, pendingVersion))
+            return false;
+
+        Trace.WriteLine($"Launcher update to {pendingVersion} was not installed.");
+        if ((_updateNotInstalledShown && !repeat) || !UpdatePromptPolicy.ShouldPromptLauncherSelfUpdate(IsKioskLocked()))
+            return true;
+        _updateNotInstalledShown = true;
+
+        var logPath = OperatingSystem.IsWindows() ? LauncherUpdateFailure.DefaultLogPath(_velopackUpdates.AppId) : null;
+        var reason = logPath != null ? LauncherUpdateFailure.ReadReason(logPath) : LauncherUpdateFailureReason.Unknown;
+        var message = LauncherUpdateFailure.FormatMessage(
+            pendingVersion!,
+            _velopackUpdates.CurrentVersion,
+            _velopackUpdates.RootAppDir,
+            reason,
+            logPath);
+
+        await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            if (TryGetHostedMainView() is { } view)
+                await view.ShowScrollableMessageAsync(message, LauncherUpdateFailure.Title);
+            else
+                await ShowMessageBoxAsync(message, LauncherUpdateFailure.Title);
+        });
+        return true;
     }
 
     private async Task PromptAndApplyVelopackUpdateAsync(
