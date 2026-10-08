@@ -35,6 +35,8 @@ namespace QuiverLauncher
         ProjectOnly = 2,
         /// <summary>Title is "Name (Project)".</summary>
         NameAndProjectInTitle = 3,
+        /// <summary>Title is the project; the name (the game it's based on) on a separate line under it, as on App Catalog cards.</summary>
+        ProjectAndName = 4,
     }
 
     public enum LibraryTagDisplayMode

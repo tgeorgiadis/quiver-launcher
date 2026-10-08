@@ -309,6 +309,7 @@ public partial class SettingsView : UserControl
             "NameOnly" => LibraryNameStyle.NameOnly,
             "ProjectOnly" => LibraryNameStyle.ProjectOnly,
             "NameAndProjectInTitle" => LibraryNameStyle.NameAndProjectInTitle,
+            "ProjectAndName" => LibraryNameStyle.ProjectAndName,
             _ => LibraryNameStyle.NameAndProject,
         };
         if (_settings.LibraryNameStyle == style)
@@ -367,6 +368,7 @@ public partial class SettingsView : UserControl
             LibraryNameStyle.NameOnly => "NameOnly",
             LibraryNameStyle.ProjectOnly => "ProjectOnly",
             LibraryNameStyle.NameAndProjectInTitle => "NameAndProjectInTitle",
+            LibraryNameStyle.ProjectAndName => "ProjectAndName",
             _ => "NameAndProject",
         };
         foreach (var entry in LibraryNameStyleComboBox.Items)

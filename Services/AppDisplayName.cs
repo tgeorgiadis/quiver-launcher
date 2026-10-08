@@ -20,7 +20,7 @@ public static class AppDisplayName
         return style switch
         {
             LibraryNameStyle.NameOnly => title.Length > 0 ? title : attribution,
-            LibraryNameStyle.ProjectOnly => attribution.Length > 0 ? attribution : title,
+            LibraryNameStyle.ProjectOnly or LibraryNameStyle.ProjectAndName => attribution.Length > 0 ? attribution : title,
             LibraryNameStyle.NameAndProjectInTitle => ComposeNameAndProjectInTitle(title, attribution),
             // NameAndProject: keep the title clean; project is shown via ProjectSubtitle.
             _ => title.Length > 0 ? title : attribution,
@@ -28,8 +28,8 @@ public static class AppDisplayName
     }
 
     /// <summary>
-    /// Secondary library line (project name only) when style is <see cref="LibraryNameStyle.NameAndProject"/>.
-    /// Empty when project should not be shown as a subtitle.
+    /// Secondary library line: the project under the name (<see cref="LibraryNameStyle.NameAndProject"/>), or the name
+    /// under the project (<see cref="LibraryNameStyle.ProjectAndName"/>). Empty when there's nothing more to show.
     /// </summary>
     public static string ResolveProjectSubtitle(
         string? name,
@@ -37,7 +37,7 @@ public static class AppDisplayName
         string? customDisplayName,
         LibraryNameStyle style = LibraryNameStyle.NameAndProject)
     {
-        if (style != LibraryNameStyle.NameAndProject)
+        if (style is not (LibraryNameStyle.NameAndProject or LibraryNameStyle.ProjectAndName))
             return string.Empty;
 
         // Custom title replaces the composed label; do not also show a project subtitle.
@@ -55,7 +55,8 @@ public static class AppDisplayName
             return string.Empty;
         }
 
-        return attribution;
+        // Project as the title: the game it's based on goes underneath.
+        return style == LibraryNameStyle.ProjectAndName ? title : attribution;
     }
 
     public static string ComposeNameAndProjectInTitle(string? name, string? project)

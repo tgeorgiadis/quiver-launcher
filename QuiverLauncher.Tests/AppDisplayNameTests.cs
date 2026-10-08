@@ -34,6 +34,20 @@ public class AppDisplayNameTests
     }
 
     [Fact]
+    public void Project_and_name_style_titles_the_project_with_the_game_below_as_in_the_catalog()
+    {
+        AppDisplayName.Resolve("Banjo-Kazooie", "BanjoRecomp", null, LibraryNameStyle.ProjectAndName).Should().Be("BanjoRecomp");
+        AppDisplayName.ResolveProjectSubtitle("Banjo-Kazooie", "BanjoRecomp", null, LibraryNameStyle.ProjectAndName)
+            .Should().Be("Banjo-Kazooie");
+        // No project: the name is the title, with nothing under it.
+        AppDisplayName.Resolve("Banjo-Kazooie", null, null, LibraryNameStyle.ProjectAndName).Should().Be("Banjo-Kazooie");
+        AppDisplayName.ResolveProjectSubtitle("Banjo-Kazooie", null, null, LibraryNameStyle.ProjectAndName).Should().BeEmpty();
+        // The player's own display name still wins.
+        AppDisplayName.Resolve("Banjo-Kazooie", "BanjoRecomp", "My Banjo", LibraryNameStyle.ProjectAndName).Should().Be("My Banjo");
+        AppDisplayName.ResolveProjectSubtitle("Banjo-Kazooie", "BanjoRecomp", "My Banjo", LibraryNameStyle.ProjectAndName).Should().BeEmpty();
+    }
+
+    [Fact]
     public void ResolveProjectSubtitle_hidden_for_in_title_and_custom_name()
     {
         AppDisplayName.ResolveProjectSubtitle(

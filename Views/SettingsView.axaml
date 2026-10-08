@@ -685,10 +685,11 @@
 													  SelectionChanged="LibraryNameStyleComboBox_SelectionChanged">
 												<ComboBoxItem Content="Name only" Tag="NameOnly"/>
 												<ComboBoxItem Content="Name + project below" Tag="NameAndProject"/>
+												<ComboBoxItem Content="Project + name below (like the App Catalog)" Tag="ProjectAndName"/>
 												<ComboBoxItem Content="Name (project) in title" Tag="NameAndProjectInTitle"/>
 												<ComboBoxItem Content="Project only" Tag="ProjectOnly"/>
 											</ComboBox>
-											<TextBlock Text="How names and projects appear in the Library. “Below” shows the project name under the title. Custom display names always win when set."
+											<TextBlock Text="How names and projects appear in the Library. “Below” shows the other one under the title, in grey. Custom display names always win when set."
 													   FontSize="11"
 													   Foreground="{DynamicResource ThemeTextSecondary}"
 													   TextWrapping="Wrap"/>
