@@ -1276,6 +1276,7 @@ namespace QuiverLauncher
             ResetGamepadNavigationIndices();
             UpdateMainViewUi();
             BrowsePanel.Model.RefreshLibraryState();
+            BrowsePanel.Model.HideAddedApps();
             BrowsePanel.EnsureLoaded();
             if (IsGamepadFocusActive)
                 BrowsePanel.Navigation.SelectInitial();

@@ -194,7 +194,28 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
     }
 
     /// <summary>Marks the cards of apps already in the library.</summary>
-    public void RefreshLibraryState() => MarkLibraryState(Items);
+    public void RefreshLibraryState()
+    {
+        MarkLibraryState(Items);
+        Notify(nameof(JustAdded));
+    }
+
+    /// <summary>
+    /// Apps added from these cards while library apps are hidden: they stay, showing they were added, until the player
+    /// comes back to the catalog (<see cref="HideAddedApps"/>) or the list loads again.
+    /// </summary>
+    public int JustAdded => HideLibraryApps ? Items.Count(i => i.InLibrary) : 0;
+
+    /// <summary>Coming back to the catalog: apps added last time are hidden now, like the rest of the library.</summary>
+    public void HideAddedApps()
+    {
+        if (!HideLibraryApps) return;
+        var added = Items.Where(i => i.InLibrary).ToList();
+        if (added.Count == 0) return;
+        foreach (var item in added) Items.Remove(item);
+        HiddenInLibrary += added.Count;
+        Notify(nameof(JustAdded));
+    }
 
     /// <summary>Marks cards whose app is already in the library: these, or a game page's.</summary>
     public void MarkLibraryState(IEnumerable<BrowseItem> items)

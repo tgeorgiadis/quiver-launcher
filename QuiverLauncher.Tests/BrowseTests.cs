@@ -119,6 +119,17 @@ public class BrowseTests : IDisposable
         browse.HiddenInLibrary.Should().Be(2);
         browse.Items.Should().OnlyContain(i => i.CanAdd);
 
+        // An app added from its card stays, marked, until the player comes back to the catalog.
+        var library = new List<GameInfo> { new() { FolderName = "alpha" }, new() { FolderName = "beta" } };
+        var adding = Browse(handler, library: library);
+        await adding.ReloadAsync(token);
+        library.Add(new GameInfo { FolderName = "gamma" });
+        adding.RefreshLibraryState();
+        (adding.Items.Count, adding.JustAdded).Should().Be((2, 1));
+        adding.HideAddedApps();
+        adding.Items.Select(i => i.FolderName).Should().Equal("Delta");
+        (adding.JustAdded, adding.HiddenInLibrary).Should().Be((0, 3));
+
         // A library app in a folder of its own is still known by its catalog link.
         var renamed = Browse(handler, library: [new GameInfo { FolderName = "My Gamma", CatalogSlug = "gamma" }]);
         await renamed.ReloadAsync(token);

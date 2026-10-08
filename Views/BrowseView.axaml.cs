@@ -251,7 +251,7 @@ public partial class BrowseView : UserControl
     {
         if (_session?.IsClosed != false) return;
         if (e.PropertyName is nameof(BrowseViewModel.Status) or nameof(BrowseViewModel.IsLoading) or nameof(BrowseViewModel.Total)
-            or nameof(BrowseViewModel.HiddenInLibrary))
+            or nameof(BrowseViewModel.HiddenInLibrary) or nameof(BrowseViewModel.JustAdded))
             UpdateControls();
     }
 
@@ -288,8 +288,15 @@ public partial class BrowseView : UserControl
             // A search says what it shows, as on the website, and hidden library apps are counted so none seems to be missing.
             var hidden = Model.HiddenInLibrary == 0 ? ""
                 : Model.HiddenInLibrary == 1 ? "1 app in your library is hidden" : $"{Model.HiddenInLibrary} apps in your library are hidden";
+            // Apps added here stay until the player comes back, so say so: otherwise the option looks broken.
+            var added = Model.JustAdded switch
+            {
+                0 => "",
+                1 => "1 just added, it'll hide when you come back",
+                var n => $"{n} just added, they'll hide when you come back",
+            };
             var results = searching && !custom ? $"Results for “{Model.Search.Trim()}”" : "";
-            BrowseResultsText.Text = results.Length > 0 && hidden.Length > 0 ? $"{results} · {hidden}" : results + hidden;
+            BrowseResultsText.Text = string.Join(" · ", new[] { results, hidden, added }.Where(part => part.Length > 0));
             BrowseResultsText.IsVisible = BrowseResultsText.Text.Length > 0;
             BrowseFilterGrid.IsVisible = !custom;
             BrowseFiltersIcon.IsVisible = !custom && _filterLayout == FilterLayout.BesideSearch;
