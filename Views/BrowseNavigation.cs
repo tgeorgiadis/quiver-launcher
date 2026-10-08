@@ -139,10 +139,16 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
             Dispatcher.UIThread.Post(() => ApplyFilterSelection(Math.Max(0, FilterIndex - 1)), DispatcherPriority.Loaded);
     }
 
-    internal List<Control> ToolbarControls() => Visible(view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox);
+    // "Hide apps in my library" belongs to whichever line it sits on: the title line beside the sort, or its own under the filters.
+    internal List<Control> ToolbarControls() => view.HideOptionInTitle
+        ? Visible(view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseHideLibraryCheckBox, view.BrowseSortComboBox)
+        : Visible(view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox);
 
-    internal List<Control> FilterControls() => Visible(view.BrowseSearchTextBox, view.BrowseTypeComboBox, view.BrowsePlatformComboBox,
-        view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseHideLibraryCheckBox, view.BrowseRetryButton, view.BrowseClearFiltersButton);
+    internal List<Control> FilterControls() => view.HideOptionInTitle
+        ? Visible(view.BrowseSearchTextBox, view.BrowseTypeComboBox, view.BrowsePlatformComboBox,
+            view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseRetryButton, view.BrowseClearFiltersButton)
+        : Visible(view.BrowseSearchTextBox, view.BrowseTypeComboBox, view.BrowsePlatformComboBox,
+            view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseHideLibraryCheckBox, view.BrowseRetryButton, view.BrowseClearFiltersButton);
 
     private static List<Control> Visible(params Control[] controls) => controls.Where(c => c.IsVisible && c.IsEnabled).ToList();
 

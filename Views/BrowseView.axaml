@@ -90,7 +90,8 @@
 				<Button x:Name="BrowseCustomListTabButton" Classes="catalog-filter" Content="My app list"
 						FontSize="11" MinHeight="32" Click="BrowseSourceTab_Click"/>
 			</StackPanel>
-			<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+			<!-- "Hide apps in my library" joins the sort here when the title line has room (see ArrangeHideOption). -->
+			<StackPanel x:Name="BrowseSortPanel" Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
 				<TextBlock x:Name="BrowseSortLabel" Text="Sort by" FontSize="11" VerticalAlignment="Center"
 						   Foreground="{DynamicResource ThemeTextSecondary}"/>
 				<TextBlock x:Name="BrowseRelevantText" Text="Most relevant ↓" FontSize="11" VerticalAlignment="Center"

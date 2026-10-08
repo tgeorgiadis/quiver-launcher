@@ -24,6 +24,11 @@ public partial class BrowseView : UserControl
     private const double FiltersBesideSearchWidth = 1000;
     private const double FiltersFourAcrossWidth = 640;
     private readonly double[] _filterMinWidths;
+    // The title line fits "Hide apps in my library" beside the sort from these widths (more with the list tabs showing).
+    private const double HideOptionInTitleWidth = 720;
+    private const double HideOptionInTitleWithTabsWidth = 980;
+    /// <summary>"Hide apps in my library" sits on the title line beside the sort, rather than on its own line under the filters.</summary>
+    internal bool HideOptionInTitle { get; private set; }
     // Cards narrower than this are drawn like the website's narrow card.
     private const double NarrowCardWidth = 250;
     private CancellationToken Token => _session?.Token ?? CancellationToken.None;
@@ -53,6 +58,7 @@ public partial class BrowseView : UserControl
             GamepadComboBoxNavigation.Attach(combo);
         _filterMinWidths = [.. FilterCombos.Select(c => c.MinWidth)];
         BrowseFiltersPanel.SizeChanged += (_, e) => ArrangeFilters(e.NewSize.Width);
+        BrowseToolbarPanel.SizeChanged += (_, e) => ArrangeHideOption(e.NewSize.Width);
         BrowseItemsControl.SizeChanged += (_, e) => ArrangeCards(e.NewSize.Width);
         AddHandler(BrowseCard.AddRequestedEvent, (_, e) =>
         {
@@ -203,6 +209,23 @@ public partial class BrowseView : UserControl
         Grid.SetColumnSpan(BrowseFilterGrid, beside ? 1 : 3);
     }
 
+    /// <summary>Puts "Hide apps in my library" beside the sort when the title line has room, else on its own line under the filters.</summary>
+    private void ArrangeHideOption(double width)
+    {
+        if (width <= 0) return;
+        var inTitle = width >= (BrowseSourceTabs.IsVisible ? HideOptionInTitleWithTabsWidth : HideOptionInTitleWidth);
+        if (inTitle != HideOptionInTitle)
+        {
+            HideOptionInTitle = inTitle;
+            ((Panel)BrowseHideLibraryCheckBox.Parent!).Children.Remove(BrowseHideLibraryCheckBox);
+            if (inTitle) BrowseSortPanel.Children.Insert(0, BrowseHideLibraryCheckBox);
+            else BrowseFilterSelects.Children.Insert(0, BrowseHideLibraryCheckBox);
+            BrowseHideLibraryCheckBox.Margin = new Thickness(0, 0, 14, 0);
+        }
+        // The line under the filters only shows when something is on it.
+        BrowseFilterSelects.IsVisible = BrowseFilterSelects.Children.Any(c => c.IsVisible);
+    }
+
     /// <summary>Cards that come out narrow (a small window) are drawn like the website's narrow card.</summary>
     private void ArrangeCards(double width)
     {
@@ -273,6 +296,7 @@ public partial class BrowseView : UserControl
             var failed = empty && Model.Status.StartsWith("Couldn't", StringComparison.Ordinal);
             BrowseClearFiltersButton.IsVisible = !custom && empty && !failed && (searching || Model.HasFilters);
             BrowseStatusText.IsVisible = !string.IsNullOrEmpty(Model.Status);
+            ArrangeHideOption(BrowseToolbarPanel.Bounds.Width);
             BrowseRetryButton.IsVisible = failed;
         }
         finally { _updatingControls = false; }
