@@ -119,6 +119,12 @@ public class BrowseTests : IDisposable
         browse.HiddenInLibrary.Should().Be(2);
         browse.Items.Should().OnlyContain(i => i.CanAdd);
 
+        // A library app in a folder of its own is still known by its catalog link.
+        var renamed = Browse(handler, library: [new GameInfo { FolderName = "My Gamma", CatalogSlug = "gamma" }]);
+        await renamed.ReloadAsync(token);
+        renamed.Items.Select(i => i.FolderName).Should().Equal("Alpha", "Beta", "Delta");
+        renamed.HiddenInLibrary.Should().Be(1);
+
         // Turned off, they show again, marked as in the library and with nothing to add.
         browse.HideLibraryApps = false;
         await browse.ReloadAsync(token);
