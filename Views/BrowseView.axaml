@@ -54,7 +54,16 @@
 	<UserControl.Resources>
 		<!-- A card drawn like the website's catalog card; the game page shows the same cards. -->
 		<DataTemplate x:Key="BrowseCardTemplate" x:DataType="vm:BrowseItem">
-			<views:BrowseCard Tapped="BrowseCard_Tapped"/>
+			<!-- The slot always exists so gamepad navigation can find each card; the card itself is built only near the screen. -->
+			<Border Classes="browse-card-slot">
+				<views:LazyCardContent Group="catalog" PlaceholderHeight="300">
+					<views:LazyCardContent.ContentTemplate>
+						<DataTemplate x:DataType="vm:BrowseItem">
+							<views:BrowseCard Tapped="BrowseCard_Tapped"/>
+						</DataTemplate>
+					</views:LazyCardContent.ContentTemplate>
+				</views:LazyCardContent>
+			</Border>
 		</DataTemplate>
 	</UserControl.Resources>
 	<Grid x:Name="Surface"
