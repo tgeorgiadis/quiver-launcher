@@ -289,14 +289,15 @@ public partial class BrowseView : UserControl
             var hidden = Model.HiddenInLibrary == 0 ? ""
                 : Model.HiddenInLibrary == 1 ? "1 app in your library is hidden" : $"{Model.HiddenInLibrary} apps in your library are hidden";
             // Apps added here stay until the player comes back, so say so: otherwise the option looks broken.
-            var added = Model.JustAdded switch
+            BrowseJustAddedText.Text = Model.JustAdded switch
             {
                 0 => "",
                 1 => "1 just added, it'll hide when you come back",
                 var n => $"{n} just added, they'll hide when you come back",
             };
+            BrowseJustAddedText.IsVisible = BrowseJustAddedText.Text.Length > 0;
             var results = searching && !custom ? $"Results for “{Model.Search.Trim()}”" : "";
-            BrowseResultsText.Text = string.Join(" · ", new[] { results, hidden, added }.Where(part => part.Length > 0));
+            BrowseResultsText.Text = string.Join(" · ", new[] { results, hidden }.Where(part => part.Length > 0));
             BrowseResultsText.IsVisible = BrowseResultsText.Text.Length > 0;
             BrowseFilterGrid.IsVisible = !custom;
             BrowseFiltersIcon.IsVisible = !custom && _filterLayout == FilterLayout.BesideSearch;

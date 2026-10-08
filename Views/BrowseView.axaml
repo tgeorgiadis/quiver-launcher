@@ -140,6 +140,9 @@
 						Margin="0,0,10,0" IsVisible="False" Click="BrowseRetry_Click"/>
 				<Button x:Name="BrowseClearFiltersButton" Classes="options" Content="Clear filters" FontSize="12" MinHeight="40"
 						Margin="0,0,10,0" IsVisible="False" Click="BrowseClearFilters_Click"/>
+				<!-- Up here with the filters so it stays in view while scrolling, in the green of the NEW badge. -->
+				<TextBlock x:Name="BrowseJustAddedText" FontSize="12" FontWeight="SemiBold" Foreground="#22c55e"
+						   VerticalAlignment="Center" TextWrapping="Wrap" IsVisible="False"/>
 			</WrapPanel>
 		</Grid>
 		<ScrollViewer x:Name="BrowseScrollViewer"
