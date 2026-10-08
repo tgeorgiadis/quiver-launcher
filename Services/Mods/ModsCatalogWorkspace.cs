@@ -53,6 +53,8 @@ public sealed class ModsCatalogWorkspace
     }
     public Task SearchAsync() => _session.RunAsync(async () =>
     {
+        // Typing stops the list loading; if it was still loading, it has to be loaded again, not just filtered.
+        var interruptedLoad = Model.ListIsLoading;
         Cancel();
         using var debounce = CancellationTokenSource.CreateLinkedTokenSource(_session.Token);
         Model.SearchDebounceCts = debounce;
@@ -60,7 +62,9 @@ public sealed class ModsCatalogWorkspace
         {
             await Task.Delay(300, debounce.Token);
             if (Model.Game == null || debounce.IsCancellationRequested) return;
-            if (string.IsNullOrWhiteSpace(Model.SearchText) && Model.BrowseSession?.IsSearch != true)
+            if (interruptedLoad)
+                await RefreshAsync(false);
+            else if (string.IsNullOrWhiteSpace(Model.SearchText) && Model.BrowseSession?.IsSearch != true)
                 ApplyFilters();
             else if (Model.Tab == "Installed" || !ModCatalog.HasRemoteSearchSources(Model.Game.ModsSources))
                 ApplyFilters();

@@ -186,7 +186,11 @@ public partial class ModsView : UserControl
     {
         if (_context is null)
             return;
-        Model.SearchText = ModsSearchTextBox?.Text?.Trim() ?? string.Empty;
+        // Opening the screen clears the box; when that changes nothing (the box was empty), the first load carries on.
+        var text = ModsSearchTextBox?.Text?.Trim() ?? string.Empty;
+        if (text == Model.SearchText)
+            return;
+        Model.SearchText = text;
         _ = _session.RunAsync(() => Workspace.SearchAsync());
     }
 
