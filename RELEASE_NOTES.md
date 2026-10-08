@@ -1,6 +1,11 @@
-# Quiver Launcher 3.5.0-rc.3
+# Quiver Launcher 3.5.0-rc.4
 
 This is a prerelease for testing before 3.5.0.
+
+## New in rc.4
+
+- Apps from the App Catalog now get their releases and downloads from quiverlauncher.com instead of asking GitHub. Adding, installing, checking for updates and the version list should no longer hit GitHub's request limit.
+- GitHub is only asked about apps that aren't in the catalog, or if quiverlauncher.com can't be reached.
 
 ## New in rc.3
 
