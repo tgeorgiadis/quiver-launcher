@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http;
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -189,11 +190,17 @@ public sealed record QuiverCatalogQuery(string? Search = null, string? Os = null
 public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
 {
     public const string DefaultBaseUrl = "https://api.quiverlauncher.com/api/v1";
+    /// <summary>
+    /// The same API on the Convex deployment's own host. api.quiverlauncher.com is a custom domain in front of it, and
+    /// when that domain's TLS handshake fails for a player the deployment's host still answers.
+    /// </summary>
+    public const string FallbackBaseUrl = "https://famous-wildebeest-660.convex.site/api/v1";
     public const string WebsiteUrl = "https://quiverlauncher.com";
     public const int PageSize = 48;
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private readonly string _base = (baseUrl ?? Environment.GetEnvironmentVariable("QUIVER_API") ?? DefaultBaseUrl).TrimEnd('/');
+    private bool _usingFallback;
 
     public static string AppPageUrl(string slug) => $"{WebsiteUrl}/apps/{Uri.EscapeDataString(slug)}";
     public static string ReviewPageUrl(string slug) => AppPageUrl(slug) + "?tab=how-it-runs";
@@ -255,14 +262,63 @@ public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
         return new(items, done ? null : next, done || next == null);
     }
 
-    /// <summary>Returns null for a 404; any other failure throws with the site's own message.</summary>
+    /// <summary>
+    /// Returns null for a 404; any other failure throws with the site's own message. When api.quiverlauncher.com can't
+    /// be reached at all (a failed TLS handshake or connection, or the 499 its proxy sometimes answers), asks the
+    /// deployment's own host instead, and keeps asking it from then on.
+    /// </summary>
     private async Task<T?> GetAsync<T>(string path, CancellationToken token) where T : class
+    {
+        if (_usingFallback) return await GetAsync<T>(FallbackBaseUrl, path, token).ConfigureAwait(false);
+        try
+        {
+            return await GetAsync<T>(_base, path, token).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex) when (_base == DefaultBaseUrl && Unreachable(ex) && !token.IsCancellationRequested)
+        {
+            T? answer = null;
+            var failed = false;
+            try
+            {
+                answer = await GetAsync<T>(FallbackBaseUrl, path, token).ConfigureAwait(false);
+            }
+            catch (Exception fallback) when (fallback is HttpRequestException or TimeoutException or JsonException)
+            {
+                failed = true;
+            }
+            // The player's real problem is the first one; say that.
+            if (failed) ExceptionDispatchInfo.Throw(ex);
+            _usingFallback = true;
+            Telemetry.Current.Track("catalog_fallback_used", new Dictionary<string, object?>
+            {
+                ["reason"] = Telemetry.ReasonOf(ex),
+                ["cause"] = Telemetry.CauseOf(ex),
+            });
+            return answer;
+        }
+    }
+
+    /// <summary>The request never got a real answer: no status at all, or the proxy's 499.</summary>
+    private static bool Unreachable(HttpRequestException ex) => ex.StatusCode is null || (int)ex.StatusCode == 499;
+
+    /// <summary>What went wrong, in words: the wrapped cause when the message only says to look at it.</summary>
+    public static string Explain(Exception ex)
+    {
+        var inner = ex.InnerException;
+        while (inner?.InnerException != null && inner.Message.Contains("inner exception", StringComparison.OrdinalIgnoreCase))
+            inner = inner.InnerException;
+        return inner != null && ex.Message.Contains("inner exception", StringComparison.OrdinalIgnoreCase)
+            ? $"{ex.Message.Replace(", see inner exception.", ":", StringComparison.OrdinalIgnoreCase)} {inner.Message}"
+            : ex.Message;
+    }
+
+    private async Task<T?> GetAsync<T>(string baseUrl, string path, CancellationToken token) where T : class
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
         timeout.CancelAfter(Timeout);
         try
         {
-            using var response = await http.GetAsync(_base + path, timeout.Token).ConfigureAwait(false);
+            using var response = await http.GetAsync(baseUrl + path, timeout.Token).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound) return null;
             var body = await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)

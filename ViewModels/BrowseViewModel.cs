@@ -114,8 +114,12 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         }
         catch (Exception ex) when (generation == _generation && !token.IsCancellationRequested)
         {
-            Telemetry.Current.Track("catalog_load_failed", new Dictionary<string, object?> { ["reason"] = Telemetry.ReasonOf(ex) });
-            Status = $"Couldn't reach quiverlauncher.com. {ex.Message}";
+            Telemetry.Current.Track("catalog_load_failed", new Dictionary<string, object?>
+            {
+                ["reason"] = Telemetry.ReasonOf(ex),
+                ["cause"] = Telemetry.CauseOf(ex),
+            });
+            Status = $"Couldn't reach quiverlauncher.com. {QuiverCatalogClient.Explain(ex)}";
         }
         finally
         {
