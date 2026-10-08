@@ -140,8 +140,9 @@
 						Margin="0,0,10,0" IsVisible="False" Click="BrowseRetry_Click"/>
 				<Button x:Name="BrowseClearFiltersButton" Classes="options" Content="Clear filters" FontSize="12" MinHeight="40"
 						Margin="0,0,10,0" IsVisible="False" Click="BrowseClearFilters_Click"/>
-				<!-- Up here with the filters so it stays in view while scrolling, in the green of the NEW badge. -->
-				<TextBlock x:Name="BrowseJustAddedText" FontSize="12" FontWeight="SemiBold" Foreground="#22c55e"
+				<!-- What the cards show: a search's results (as on the website), library apps left out, and apps just added. Up here
+				     with the filters, so it stays in view while scrolling. -->
+				<TextBlock x:Name="BrowseResultsText" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
 						   VerticalAlignment="Center" TextWrapping="Wrap" IsVisible="False"/>
 			</WrapPanel>
 		</Grid>
@@ -151,9 +152,6 @@
 					  HorizontalScrollBarVisibility="Disabled"
 					  ScrollChanged="BrowseScrollViewer_ScrollChanged">
 			<StackPanel x:Name="BrowseContentStack" Margin="0,0,30,0">
-				<!-- As on the website, a search says what it shows. -->
-				<TextBlock x:Name="BrowseResultsText" FontSize="11" Foreground="{DynamicResource ThemeTextSecondary}"
-						   Margin="0,0,0,12" TextTrimming="CharacterEllipsis" IsVisible="False"/>
 				<StackPanel x:Name="BrowseLoadingPanel" Margin="0,8,0,0" Spacing="8" IsVisible="{Binding IsLoading}">
 					<ProgressBar Width="120" Height="4" HorizontalAlignment="Left" Minimum="0" Maximum="100"
 								 BorderThickness="0" Background="Transparent" IsIndeterminate="True"/>

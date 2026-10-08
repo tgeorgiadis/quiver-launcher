@@ -289,16 +289,25 @@ public partial class BrowseView : UserControl
             var hidden = Model.HiddenInLibrary == 0 ? ""
                 : Model.HiddenInLibrary == 1 ? "1 app in your library is hidden" : $"{Model.HiddenInLibrary} apps in your library are hidden";
             // Apps added here stay until the player comes back, so say so: otherwise the option looks broken.
-            BrowseJustAddedText.Text = Model.JustAdded switch
+            var added = Model.JustAdded switch
             {
                 0 => "",
-                1 => "1 just added, it'll hide when you come back",
-                var n => $"{n} just added, they'll hide when you come back",
+                var n => $"{n} just added, hides when you come back",
             };
-            BrowseJustAddedText.IsVisible = BrowseJustAddedText.Text.Length > 0;
             var results = searching && !custom ? $"Results for “{Model.Search.Trim()}”" : "";
-            BrowseResultsText.Text = string.Join(" · ", new[] { results, hidden }.Where(part => part.Length > 0));
-            BrowseResultsText.IsVisible = BrowseResultsText.Text.Length > 0;
+            // One line; the just added part in the brighter text colour, since it's about what the player just did.
+            var quiet = string.Join(" · ", new[] { results, hidden }.Where(part => part.Length > 0));
+            BrowseResultsText.Inlines ??= [];
+            BrowseResultsText.Inlines.Clear();
+            if (quiet.Length > 0) BrowseResultsText.Inlines.Add(new Avalonia.Controls.Documents.Run(quiet));
+            if (added.Length > 0)
+            {
+                if (quiet.Length > 0) BrowseResultsText.Inlines.Add(new Avalonia.Controls.Documents.Run(" · "));
+                var run = new Avalonia.Controls.Documents.Run(added);
+                run.Bind(Avalonia.Controls.Documents.TextElement.ForegroundProperty, this.GetResourceObservable("ThemeText"));
+                BrowseResultsText.Inlines.Add(run);
+            }
+            BrowseResultsText.IsVisible = quiet.Length > 0 || added.Length > 0;
             BrowseFilterGrid.IsVisible = !custom;
             BrowseFiltersIcon.IsVisible = !custom && _filterLayout == FilterLayout.BesideSearch;
             Select(BrowseSortComboBox, Model.Sort);
