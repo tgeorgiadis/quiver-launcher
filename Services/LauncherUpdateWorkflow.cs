@@ -306,7 +306,7 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         }
         else if (launcherPending && launcherApp != null)
         {
-            await launcherApp.PromptForPendingLauncherUpdateAsync();
+            await launcherApp.PromptForPendingLauncherUpdateAsync(isManualCheck);
         }
         else if (reviewableApps.Count > 0)
         {

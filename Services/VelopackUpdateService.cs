@@ -46,6 +46,55 @@ public sealed class VelopackUpdateService
         }
     }
 
+    /// <summary>The folder Quiver is installed in (the one holding Update.exe and current).</summary>
+    public string? RootAppDir
+    {
+        get
+        {
+            try
+            {
+                return VelopackLocator.Current?.RootAppDir;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    public string? AppId
+    {
+        get
+        {
+            try
+            {
+                return VelopackLocator.Current?.AppId;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>A downloaded release newer than the running one that hasn't been installed yet.</summary>
+    public string? PendingRestartVersion
+    {
+        get
+        {
+            try
+            {
+                if (!IsInstalled)
+                    return null;
+                return CreateManager(_lastIncludePrerelease).UpdatePendingRestart?.Version.ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
     public bool IsUpdatePendingRestart
     {
         get

@@ -22,6 +22,8 @@ internal static class Program
     {
         AppInstallLaunch.Current = new DesktopAppInstallLaunchService();
 
+        // Run() clears the updater's restart marker, which shows whether an update just failed.
+        LauncherUpdateFailure.CaptureUpdaterRestart();
         var velopack = VelopackApp.Build();
         if (OperatingSystem.IsWindows())
             velopack.OnAfterUpdateFastCallback(_ => UserDataRescue.AfterUpdate(ResolveVelopackRootAppDir()));
