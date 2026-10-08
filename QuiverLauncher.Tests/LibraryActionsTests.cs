@@ -24,6 +24,8 @@ public class LibraryActionsTests
         await catalog.SaveLocalAppsAsync([game]);
         using var manager = new GameManager(store, catalogService: catalog);
         using var library = new LibraryViewModel(manager, new SettingsViewModel(store));
+        // Installed, so removing it asks first.
+        Directory.CreateDirectory(Path.Combine(directory, "Apps", "Example"));
         var session = new LauncherSession();
         var prompt = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -38,6 +40,29 @@ public class LibraryActionsTests
         await pending;
         await shutdown;
         (await catalog.LoadLocalAppsAsync()).Should().ContainSingle(g => g.Repository == "owner/example");
+    }
+
+    [Fact]
+    public async Task An_app_that_isnt_installed_is_removed_without_asking()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "quiver-action-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var store = new Store(directory);
+        var catalog = new AppCatalogService(dataDirectory: directory);
+        var game = new GameInfo { Name = "Example", Repository = "owner/example", FolderName = "Example", IsInLocalAppsJson = true };
+        await catalog.SaveLocalAppsAsync([game]);
+        using var manager = new GameManager(store, catalogService: catalog);
+        using var library = new LibraryViewModel(manager, new SettingsViewModel(store));
+        var changed = false;
+        var actions = new LibraryActions(manager, new LibraryPersistenceService(manager), library.Settings, new LauncherSession(), library,
+            () => throw new Exception("Unexpected picker"), (_, _, _, _) => throw new Exception("Unexpected prompt"),
+            _ => throw new Exception("Unexpected URL"), () => { changed = true; return Task.CompletedTask; });
+
+        await actions.RemoveEntryAsync(game);
+
+        (await catalog.LoadLocalAppsAsync()).Should().BeEmpty();
+        changed.Should().BeTrue();
+        TestFixtures.CleanupDirectory(directory);
     }
 
     [Fact]

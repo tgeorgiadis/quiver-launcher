@@ -283,7 +283,8 @@ public sealed class LibraryActions
     private static GameInfo? FindMatchingSavedApp(IEnumerable<GameInfo> apps, GameInfo game) => apps.FirstOrDefault(g => string.Equals(g.InstanceKey, game.InstanceKey, StringComparison.OrdinalIgnoreCase));
     /// <summary>
     /// Removes the app from the library; its files stay. From the Library it asks first, so a card isn't removed by
-    /// accident. From the App Catalog it doesn't (<paramref name="confirm"/> false): the page shows the change.
+    /// accident, but only for an installed app: one that isn't installed has nothing to keep and is one click to add back.
+    /// From the App Catalog it doesn't ask (<paramref name="confirm"/> false): the page shows the change.
     /// </summary>
     public async Task RemoveEntryAsync(GameInfo? game, bool confirm = true)
     {
@@ -304,7 +305,8 @@ public sealed class LibraryActions
 
             try
             {
-                if (confirm && !await ShowMessageBoxAsync($"Remove '{game.Name}' from your Library?\n\nYour files will not be deleted.", "Remove from Library", true))
+                var installed = game.IsInstalled || Directory.Exists(game.GetInstallPath(_gameManager.GamesFolder));
+                if (confirm && installed && !await ShowMessageBoxAsync($"Remove '{game.Name}' from your Library?\n\nYour files will not be deleted.", "Remove from Library", true))
                     return;
                 if (_session.IsClosed)
                     return;
