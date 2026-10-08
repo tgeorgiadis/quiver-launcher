@@ -1845,6 +1845,9 @@ namespace QuiverLauncher.Models
         /// The release quiverlauncher.com lists for this catalog app (the player's pin, else the verified one); null for
         /// an app the catalog doesn't list or can't answer for, whose repository is asked instead.
         /// </summary>
+        /// <summary>Starts reading this catalog app's releases, so Change Version can show them without waiting.</summary>
+        internal void PrefetchCatalogReleases() => GameManager?.CatalogReleases.Prefetch(this);
+
         internal async Task<GitHubRelease?> CatalogReleaseAsync(CancellationToken cancellationToken) =>
             GameManager?.CatalogReleases is { } catalog ? await catalog.SelectAsync(this, cancellationToken).ConfigureAwait(false) : null;
 

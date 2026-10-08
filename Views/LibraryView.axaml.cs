@@ -124,6 +124,9 @@ public partial class LibraryView : UserControl
     {
         if (sender is ContextMenu menu && Model != null)
             LibraryKioskMenu.Apply(menu, Model.Settings.KioskLocked);
+        // Versions → Change Version is a couple of clicks away: have its releases ready by then.
+        if (sender is ContextMenu { DataContext: GameInfo game } && Model?.Settings.KioskLocked != true)
+            game.PrefetchCatalogReleases();
     }
 
     private async void Request(object? sender, LibraryActionKind action)

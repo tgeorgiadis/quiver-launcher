@@ -166,6 +166,7 @@ public sealed class LibraryLaunchController
 
     public void ShowUpdateActionMenu(Control anchor, GameInfo game)
     {
+        game.PrefetchCatalogReleases();
         var contextMenu = new ContextMenu();
         contextMenu.Items.Add(new MenuItem { Header = $"Update options for {game.Name}:", IsEnabled = false, FontWeight = FontWeight.Bold });
         contextMenu.Items.Add(new Separator());
@@ -380,10 +381,21 @@ public sealed class LibraryLaunchController
         await ShowReleaseDownloadSelectionMenuAsync(_resolveAnchor(game, anchor) ?? anchor, game, release, release.tag_name, acknowledgedVersion);
     }
 
+    /// <summary>
+    /// Change Version: the menu opens at once, with the releases read earlier this session (its card menu starts reading
+    /// them) or "Fetching releases…", and fills in as soon as the app's current releases arrive.
+    /// </summary>
     private async Task HandleChangeVersionCoreAsync(Control anchor, GameInfo game)
     {
         using var priority = ReleaseRequestCoordinator.PrioritizeInteractiveChecks();
         if (game.IsFlatpak) return;
+        anchor = _resolveAnchor(game, anchor) ?? anchor;
+        var contextMenu = new ContextMenu();
+        if (_gameManager.CatalogReleases.Cached(game) is { } cached)
+            FillVersionMenu(contextMenu, anchor, game, cached.Releases, cached.States);
+        else
+            FillVersionMenuNote(contextMenu, game, "Fetching releases…");
+        OpenContextMenu(anchor, contextMenu);
         try
         {
             game.IsLoading = true;
@@ -391,7 +403,7 @@ public sealed class LibraryLaunchController
             _session.Token.ThrowIfCancellationRequested();
             if (releaseResult.Releases.Count == 0)
             {
-                await ShowMessageBoxAsync($"No downloadable releases were found for {game.Name}.", "No Releases");
+                if (contextMenu.IsOpen) RefillVersionMenu(contextMenu, () => FillVersionMenuNote(contextMenu, game, "No downloadable releases were found."));
                 return;
             }
 
@@ -401,12 +413,16 @@ public sealed class LibraryLaunchController
                 if (await _gameManager.CatalogReleases.CheckAsync(game, release.tag_name, _session.Token) is { } check)
                     states[release.tag_name] = check.State;
             _session.Token.ThrowIfCancellationRequested();
-            // The card may have been rebuilt while the releases loaded: open on it as it is now.
-            ShowVersionSelectionMenu(_resolveAnchor(game, anchor) ?? anchor, game, releaseResult.Releases, states);
+            // Closed meanwhile: the player didn't want it after all.
+            if (contextMenu.IsOpen)
+                RefillVersionMenu(contextMenu, () => FillVersionMenu(contextMenu, anchor, game, releaseResult.Releases, states));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await ShowMessageBoxAsync($"Failed to load versions for {game.Name}: {ex.Message}", "Version Selection Error");
+            if (contextMenu.IsOpen)
+                RefillVersionMenu(contextMenu, () => FillVersionMenuNote(contextMenu, game, $"Couldn't load versions: {ex.Message}"));
+            else
+                await ShowMessageBoxAsync($"Failed to load versions for {game.Name}: {ex.Message}", "Version Selection Error");
         }
         finally
         {
@@ -414,11 +430,36 @@ public sealed class LibraryLaunchController
         }
     }
 
+    // Replaces an open menu's items; the controller then moves through the new ones.
+    private static void RefillVersionMenu(ContextMenu menu, Action fill)
+    {
+        fill();
+        GamepadContextMenuNavigation.Instance.RefreshContextMenu(menu);
+    }
+
+    private static void FillVersionMenuNote(ContextMenu menu, GameInfo game, string note)
+    {
+        menu.Items.Clear();
+        menu.Items.Add(new MenuItem { Header = $"Choose a version for {game.Name}:", IsEnabled = false, FontWeight = FontWeight.Bold });
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = note, IsEnabled = false });
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = "Cancel" });
+    }
+
     public void ShowVersionSelectionMenu(Control anchor, GameInfo game, IReadOnlyList<GitHubRelease> releases,
         IReadOnlyDictionary<string, ReleaseCheckState>? states = null)
     {
         if (game.IsFlatpak) return;
         var contextMenu = new ContextMenu();
+        FillVersionMenu(contextMenu, anchor, game, releases, states);
+        OpenContextMenu(anchor, contextMenu);
+    }
+
+    private void FillVersionMenu(ContextMenu contextMenu, Control anchor, GameInfo game, IReadOnlyList<GitHubRelease> releases,
+        IReadOnlyDictionary<string, ReleaseCheckState>? states)
+    {
+        contextMenu.Items.Clear();
         contextMenu.Items.Add(new MenuItem { Header = $"Choose a version for {game.Name}:", IsEnabled = false, FontWeight = FontWeight.Bold });
         contextMenu.Items.Add(new Separator());
         foreach (var release in releases)
@@ -471,7 +512,6 @@ public sealed class LibraryLaunchController
 
         contextMenu.Items.Add(new Separator());
         contextMenu.Items.Add(new MenuItem { Header = "Cancel" });
-        OpenContextMenu(anchor, contextMenu);
     }
 
     public void ShowReleaseDownloadSelectionMenu(Control anchor, GameInfo game, GitHubRelease release, string? preferredVersion, string? skippedUpdateVersion) => _ = _session.RunAsync(() => ShowReleaseDownloadSelectionMenuAsync(anchor, game, release, preferredVersion, skippedUpdateVersion));

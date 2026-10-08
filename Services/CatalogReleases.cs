@@ -185,6 +185,44 @@ public sealed class CatalogReleases
         return listed.Count > 0 ? listed : null;
     }
 
+    /// <summary>
+    /// A catalog app's releases as last read this session, however long ago, with what Quiver says about each: lets the
+    /// version list show at once while a fresh copy loads. Null when they haven't been read yet.
+    /// </summary>
+    public (IReadOnlyList<GitHubRelease> Releases, IReadOnlyDictionary<string, ReleaseCheckState> States)? Cached(GameInfo app)
+    {
+        if (app.CatalogSlug is not { } slug) return null;
+        IReadOnlyList<QuiverCatalogRelease> history;
+        lock (_history)
+        {
+            if (!_history.TryGetValue(slug, out var cached)) return null;
+            history = cached.Releases;
+        }
+        var listed = history.Select(r => (Release: ToRelease(r), r.State)).Where(r => r.Release.assets.Length > 0).ToList();
+        if (listed.Count == 0) return null;
+        var states = new Dictionary<string, ReleaseCheckState>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (release, state) in listed) states[release.tag_name] = StateOf(state);
+        return (listed.Select(r => r.Release).ToList(), states);
+    }
+
+    /// <summary>Reads the app's releases ahead of a menu that may need them (its card menu just opened).</summary>
+    public void Prefetch(GameInfo app)
+    {
+        if (app.CatalogSlug == null) return;
+        _ = Task.Run(async () =>
+        {
+            try { await ListedReleasesAsync(app, CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Release prefetch failed: {ex.Message}"); }
+        });
+    }
+
+    private static ReleaseCheckState StateOf(string state) => state switch
+    {
+        "verified" => ReleaseCheckState.Verified,
+        "blocked" => ReleaseCheckState.Blocked,
+        _ => ReleaseCheckState.Unverified,
+    };
+
     /// <summary>A release from the site in the shape the installer takes; files without an https link are left out.</summary>
     internal static GitHubRelease ToRelease(QuiverCatalogRelease release) => new()
     {
