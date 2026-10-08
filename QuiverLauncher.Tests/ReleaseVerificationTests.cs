@@ -170,6 +170,67 @@ public class ReleaseVerificationTests
         app.Status.Should().Be(expectedStatus);
     }
 
+    [Fact]
+    public async Task Update_checks_and_version_lists_for_catalog_apps_never_ask_GitHub()
+    {
+        using var launcher = new Launcher();
+        var token = TestContext.Current.CancellationToken;
+        var (alphaRepo, betaRepo) = (Repo(), Repo());
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", alphaRepo, "v1", latest: "v2"), Status("beta", betaRepo, "v1", latest: "v2")]);
+        foreach (var slug in new[] { "alpha", "beta" })
+            launcher.Network.Site[$"/apps/{slug}/release-history?limit=100"] = Page(
+            [
+                History("v3", "blocked", ["The developer pulled this release."], [(Asset, Zip("v3.txt"))]),
+                History("v2", "unverified", ["Quiver is still checking this release."], [(Asset, Zip("v2.txt"))]),
+                History("v1", "verified", [], [(Asset, Zip("v1.txt"))]),
+            ]);
+        var alpha = App("Alpha", alphaRepo, manager: launcher.Manager);
+        var beta = App("Beta", betaRepo, manager: launcher.Manager);
+        beta.PreferredVersion = "v2";
+        foreach (var app in new[] { alpha, beta })
+        {
+            InstallOnDisk(app, launcher.Manager.GamesFolder, "v1");
+            launcher.Manager.Games.Add(app);
+        }
+
+        var result = await launcher.Manager.CheckInstalledUpdatesAsync(true, null, token);
+        var versions = await alpha.FetchReleasesAsync(launcher.Manager.HttpClient, token);
+
+        result.Successful.Should().Be(2);
+        (alpha.LatestVersion, alpha.Status).Should().Be(("v1", GameStatus.Installed));
+        (beta.LatestVersion, beta.Status).Should().Be(("v2", GameStatus.UpdateAvailable), "the player pinned v2");
+        beta.GetLatestRelease()!.assets.Single().browser_download_url.Should().Be(SiteLink("v2", Asset));
+        versions.Releases.Select(r => r.tag_name).Should().Equal("v3", "v2", "v1");
+        versions.LatestTag.Should().Be("v1");
+        launcher.Network.Requests.Should().NotContain(u => u.Host == "api.github.com");
+    }
+
+    [AvaloniaFact]
+    public async Task Catalog_app_installs_the_verified_release_from_the_sites_file_link_without_asking_GitHub()
+    {
+        using var launcher = new Launcher();
+        var repo = Repo();
+        var served = Zip("v2.txt");
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", repo, "v2", latest: "v3")]);
+        launcher.Network.Site["/apps/alpha/release-history?limit=100"] = Page(
+        [
+            History("v3", "unverified", ["Quiver is still checking this release."], [(Asset, Zip("v3.txt"))]),
+            History("v2", "verified", [], [(Asset, served)]),
+        ]);
+        launcher.Network.Files[SiteLink("v2", Asset)] = served;
+        var app = App("Alpha", repo, manager: launcher.Manager);
+        var player = new Dialogs(confirm: true);
+
+        await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
+            null, launcher.Store.Current, GameStatus.NotInstalled, player);
+
+        player.Errors.Should().BeEmpty();
+        player.Confirmations.Should().BeEmpty();
+        (app.InstalledVersion, app.Status).Should().Be(("v2", GameStatus.Installed));
+        launcher.Network.Downloads.Should().Be(1);
+        launcher.Network.Requests.Should().NotContain(u => u.Host == "api.github.com");
+    }
+
     [AvaloniaFact]
     public async Task Automatic_update_to_an_unverified_release_downloads_nothing_and_keeps_the_installed_one()
     {
@@ -416,8 +477,11 @@ public class ReleaseVerificationTests
         object? scan = null, long? checkEndsAt = null) => new
     {
         version, state, reasons, scan, checkEndsAt,
-        assets = files.Select(f => new { filename = f.File, checksum = "sha256:" + Sha256(f.Bytes) }).ToArray(),
+        assets = files.Select(f => new { filename = f.File, url = SiteLink(version, f.File), checksum = "sha256:" + Sha256(f.Bytes) }).ToArray(),
     };
+
+    /// <summary>Where quiverlauncher.com says a release file downloads from.</summary>
+    private static string SiteLink(string version, string file) => $"https://files.example/{version}/{file}";
 
     private sealed class Network : HttpMessageHandler
     {

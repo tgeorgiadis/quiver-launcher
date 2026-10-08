@@ -156,6 +156,8 @@ public sealed class QuiverCatalogStatus
 public sealed class QuiverCatalogAsset
 {
     public string Filename { get; set; } = "";
+    /// <summary>Where the file downloads from: the release's own file link, not a GitHub API address.</summary>
+    public string? Url { get; set; }
     /// <summary>"sha256:" and the hex digest of the file Quiver saw when the release came out.</summary>
     public string? Checksum { get; set; }
 }

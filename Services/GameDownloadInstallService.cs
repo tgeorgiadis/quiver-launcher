@@ -83,10 +83,12 @@ public static class GameDownloadInstallService
                 // A supplied/cached selection is not proof that it is still latest.
                 using var revalidate = ReleaseRequestCoordinator.AllowCachedMetadata(TimeSpan.Zero);
                 game.DownloadProgress = 5;
-                // The release to install: the player's pin, else the one Quiver verified, else the newest.
-                latestRelease = await CatalogReleaseSelection.FetchSelectedAsync(httpClient,
-                    game.RepositorySource, game.Repository, game.ReleaseTarget, apiToken,
-                    LauncherSession.OperationCancellation).ConfigureAwait(false);
+                // The release to install: the player's pin, else the one Quiver verified, else the newest. A catalog
+                // app's comes from quiverlauncher.com; only an app outside the catalog asks its repository.
+                latestRelease = await game.CatalogReleaseAsync(LauncherSession.OperationCancellation).ConfigureAwait(false)
+                    ?? await CatalogReleaseSelection.FetchSelectedAsync(httpClient,
+                        game.RepositorySource, game.Repository, game.ReleaseTarget, apiToken,
+                        LauncherSession.OperationCancellation).ConfigureAwait(false);
                 if (latestRelease != null)
                     GitHubApiCache.SetCache(game.RepositorySource, game.Repository, latestRelease.tag_name, "", latestRelease);
             }

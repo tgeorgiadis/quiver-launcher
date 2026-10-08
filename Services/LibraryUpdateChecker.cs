@@ -62,7 +62,16 @@ public sealed class LibraryUpdateChecker(HttpClient client, AppSettings settings
             try
             {
                 token.ThrowIfCancellationRequested();
-                var selected = await pass.SelectAsync(app, app.GetReleaseApiToken(settings), token);
+                // quiverlauncher.com already said which release a catalog app updates to; GitHub isn't asked.
+                if (StartupVersionResolver.FromCatalog(app) is { } listed && listed.IsFresh(DateTimeOffset.UtcNow))
+                {
+                    app.ApplyStartupVersion(listed);
+                    app.RepositoryCheckError = null;
+                    results.Add(new(app.InstanceKey, AppCheckOutcome.Successful, app.DisplayName));
+                    progress?.Report(new(results.Count, targets.Length, results[^1]));
+                    continue;
+                }
+                var selected = await app.CatalogReleaseAsync(token) ?? await pass.SelectAsync(app, app.GetReleaseApiToken(settings), token);
                 token.ThrowIfCancellationRequested();
                 if (selected == null || string.IsNullOrWhiteSpace(selected.tag_name))
                 {

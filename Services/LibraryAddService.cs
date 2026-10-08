@@ -143,6 +143,15 @@ public sealed class LibraryAddService(GameManager manager, SettingsViewModel set
         {
             if (app.IsManuallyManaged || string.IsNullOrWhiteSpace(app.Repository)) return;
             await manager.CatalogReleases.RefreshAsync([app], cancellationToken).ConfigureAwait(false);
+            // quiverlauncher.com already says which release a catalog app gets; its files are looked up when it installs.
+            if (StartupVersionResolver.Apply(app)) return;
+            if (await app.CatalogReleaseAsync(cancellationToken).ConfigureAwait(false) is { } listed)
+            {
+                app.ApplyCachedRelease(listed.tag_name, listed);
+                GitHubApiCache.SetCache(app.RepositorySource, app.Repository, listed.tag_name, "", listed);
+                app.RefreshInstalledStatus();
+                return;
+            }
             for (var attempt = 0; attempt < 3; attempt++)
             {
                 cancellationToken.ThrowIfCancellationRequested();

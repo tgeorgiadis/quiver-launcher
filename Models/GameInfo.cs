@@ -1727,6 +1727,21 @@ namespace QuiverLauncher.Models
 
             try
             {
+                // quiverlauncher.com says which release a catalog app updates to, so GitHub isn't asked.
+                if (StartupVersionResolver.FromCatalog(this) is { } listed && listed.IsFresh(DateTimeOffset.UtcNow))
+                {
+                    ApplyStartupVersion(listed);
+                    return;
+                }
+                if (await CatalogReleaseAsync(cancellationToken).ConfigureAwait(false) is { } catalogRelease)
+                {
+                    RepositoryCheckError = null;
+                    ApplyCachedRelease(catalogRelease.tag_name, catalogRelease);
+                    GitHubApiCache.SetCache(RepositorySource, Repository, catalogRelease.tag_name, "", catalogRelease);
+                    RefreshInstalledStatus();
+                    return;
+                }
+
                 // A cached release chosen for another target (say, before the verified release changed) is stale.
                 var cachedForTarget = GitHubApiCache.TryGetCachedVersion(RepositorySource, Repository, out var cachedData) &&
                     cachedData != null && MatchesReleaseTarget(cachedData.Version);
@@ -1857,10 +1872,23 @@ namespace QuiverLauncher.Models
             }
         }
 
+        /// <summary>
+        /// The release quiverlauncher.com lists for this catalog app (the player's pin, else the verified one); null for
+        /// an app the catalog doesn't list or can't answer for, whose repository is asked instead.
+        /// </summary>
+        internal async Task<GitHubRelease?> CatalogReleaseAsync(CancellationToken cancellationToken) =>
+            GameManager?.CatalogReleases is { } catalog ? await catalog.SelectAsync(this, cancellationToken).ConfigureAwait(false) : null;
+
         public async Task<GitHubReleaseFetchResult> FetchReleasesAsync(HttpClient httpClient, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(Repository))
                 return new GitHubReleaseFetchResult();
+            // A catalog app's releases and their download links come from quiverlauncher.com, which spares the player's
+            // GitHub allowance (60 requests an hour without a token) for apps outside the catalog.
+            if (GameManager?.CatalogReleases is { } catalog &&
+                await catalog.ReleasesAsync(this, cancellationToken).ConfigureAwait(false) is { } listed)
+                return new GitHubReleaseFetchResult { StatusCode = System.Net.HttpStatusCode.OK, Releases = listed,
+                    LatestTag = CatalogVerifiedVersion, Provider = "quiver" };
 
             return await ReleaseSourceRegistry.Default.FetchReleasesWithAssetsAsync(
                 httpClient,

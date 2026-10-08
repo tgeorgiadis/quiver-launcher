@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using QuiverLauncher.Core.Models;
 using QuiverLauncher.Core.Services;
 using QuiverLauncher.Models;
 
@@ -128,6 +129,57 @@ public sealed class CatalogReleases
         return new(state, release.Reasons, verified, checksums, release.Scan?.Verdict, release.Scan?.Engines,
             release.CheckEndsAt is { } ends ? DateTimeOffset.FromUnixTimeMilliseconds((long)ends) : null);
     }
+
+    /// <summary>
+    /// A catalog app's releases as quiverlauncher.com lists them, newest first, each file with its download link. Null
+    /// for an app the catalog doesn't list, or when the site can't answer, so the app's repository is asked instead.
+    /// </summary>
+    public async Task<IReadOnlyList<GitHubRelease>?> ReleasesAsync(GameInfo app, CancellationToken token) =>
+        (await ListedReleasesAsync(app, token).ConfigureAwait(false))?.Select(r => r.Release).ToList();
+
+    /// <summary>
+    /// The release a catalog app installs or updates to, from quiverlauncher.com: the player's pin, else the one Quiver
+    /// verified, else the newest that isn't blocked. Null when the site can't say, so the app's repository is asked.
+    /// </summary>
+    public async Task<GitHubRelease?> SelectAsync(GameInfo app, CancellationToken token)
+    {
+        if (await ListedReleasesAsync(app, token).ConfigureAwait(false) is not { } listed) return null;
+        // A pin the site doesn't list (older than the releases it knows) is for the repository to find.
+        if (app.ReleaseTarget is { Length: > 0 } target)
+            return listed.FirstOrDefault(r => ReleaseVersionIdentity.AreVersionsEquivalent(r.Release.tag_name, target)).Release;
+        return ReleaseSelection.SelectLatestRelease(listed.Where(r => r.State != "blocked").Select(r => r.Release).ToList());
+    }
+
+    private async Task<IReadOnlyList<(GitHubRelease Release, string State)>?> ListedReleasesAsync(GameInfo app, CancellationToken token)
+    {
+        await RefreshAsync([app], token).ConfigureAwait(false);
+        if (app.CatalogSlug is not { } slug) return null;
+        IReadOnlyList<QuiverCatalogRelease> history;
+        try { history = await HistoryAsync(slug, token).ConfigureAwait(false); }
+        catch (Exception ex) when (!token.IsCancellationRequested)
+        {
+            System.Diagnostics.Debug.WriteLine($"Release history for {slug} unavailable: {ex.Message}");
+            return null;
+        }
+        var listed = history.Select(r => (Release: ToRelease(r), r.State)).Where(r => r.Release.assets.Length > 0).ToList();
+        return listed.Count > 0 ? listed : null;
+    }
+
+    /// <summary>A release from the site in the shape the installer takes; files without an https link are left out.</summary>
+    internal static GitHubRelease ToRelease(QuiverCatalogRelease release) => new()
+    {
+        tag_name = release.Version,
+        prerelease = release.Prerelease,
+        assets = release.Assets
+            .Where(a => !string.IsNullOrWhiteSpace(a.Filename) && Uri.TryCreate(a.Url, UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps)
+            .Select(a => new GitHubAsset
+            {
+                name = a.Filename,
+                browser_download_url = a.Url!,
+                digest = a.Checksum?.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) == true ? a.Checksum.ToLowerInvariant() : null,
+            })
+            .ToArray(),
+    };
 
     private async Task<IReadOnlyList<QuiverCatalogRelease>> HistoryAsync(string slug, CancellationToken token)
     {
