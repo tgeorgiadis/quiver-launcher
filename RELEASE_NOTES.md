@@ -1,15 +1,22 @@
-# Quiver Launcher 3.5.0-rc.2
+# Quiver Launcher 3.5.0-rc.3
 
 This is a prerelease for testing before 3.5.0.
+
+## New in rc.3
+
+- Add an app to your library straight from its App Catalog card with **+ Add**, or press **Y** on a controller.
+- Apps already in your library are hidden from the App Catalog so new ones are easier to find. Untick **Hide apps in my library** to see them.
+- The App Catalog fits smaller windows: the search and filters move onto their own lines and the cards fill the width. On Android it looks like the website on a phone.
+- **View README** and **Show Changelog** in the Library now open the app's page, on its Overview and Releases tabs.
+- Quiver uses less memory, especially with a big library: pictures load at the size they're shown, and cards are only built when they're near the screen.
+- Quiver now asks once whether it may send anonymous usage data (see below).
+- Smaller fixes: the "not verified yet" line on library cards scrolls like the rest of the card, and the **NEW** badge is green so it stands apart from **+ Add**.
 
 ## New App Catalog
 
 - The App Catalog now comes from [quiverlauncher.com](https://quiverlauncher.com). Search, sort and filter it like the website, including by project type, platform, console and AI use.
 - Searching shows the games that match. Each game has a page with every way to play it.
 - Each app has a page with its README, its releases and player feedback. To leave feedback, use the button that opens the website.
-- Add an app to your library straight from its card with **+ Add**, or press **Y** on a controller, without opening its page.
-- Apps already in your library are hidden so new ones are easier to find. Untick **Hide apps in my library** to see them again.
-- On Android the catalog is laid out like the website on a phone: filters two by two and cards two to a row.
 - App lists are gone. If you keep your own list, add it in **Settings → Advanced → My app list** (a JSON file or a URL).
 
 ## Safer installs and updates
