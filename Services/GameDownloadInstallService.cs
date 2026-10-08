@@ -22,7 +22,8 @@ public static class GameDownloadInstallService
         IGameDownloadDialogs? dialogs = null,
         FlatpakService? flatpakService = null,
         WindowsInstallerService? windowsInstallerService = null,
-        ReleaseInstallMode releaseMode = ReleaseInstallMode.Automatic)
+        ReleaseInstallMode releaseMode = ReleaseInstallMode.Automatic,
+        bool reinstall = false)
     {
         dialogs ??= AvaloniaGameDownloadDialogs.Instance;
         flatpakService ??= FlatpakService.Current;
@@ -126,7 +127,8 @@ public static class GameDownloadInstallService
                 throw FormatSwitchError();
             if (flatpakDownload)
                 await flatpakService.CheckAvailableAsync().ConfigureAwait(false);
-            else if (!GameInstallationService.IsWindowsInstallerAsset(asset.name) && !WindowsInstallerService.HasReceipt(gamePath) && oldFlatpak == null && File.Exists(versionFile) &&
+            // Already installed: nothing to download, unless the player asked to reinstall it.
+            else if (!reinstall && !GameInstallationService.IsWindowsInstallerAsset(asset.name) && !WindowsInstallerService.HasReceipt(gamePath) && oldFlatpak == null && File.Exists(versionFile) &&
                 (OperatingSystem.IsAndroid() || GameInstallationService.HasCompletePortableInstallation(
                     gamePath, game.GetInstallationOptions())) &&
                 (await File.ReadAllTextAsync(versionFile).ConfigureAwait(false)).Trim() == latestRelease.tag_name)

@@ -4,6 +4,7 @@ public enum LibraryActionKind
 {
     AddToSteam,
     AutoUpdateMenu,
+    BackToVerifiedUpdates,
     ChangeVersion,
     ConfigureWindowsRunner,
     CreateShortcut,
@@ -13,7 +14,6 @@ public enum LibraryActionKind
     EditTagsMenu,
     EmptyLibraryAddApp,
     EmptyLibraryBrowseCatalog,
-    ForceUpdate,
     HideGame,
     InstallUnverifiedRelease,
     LaunchGameMenu,
@@ -22,6 +22,7 @@ public enum LibraryActionKind
     OpenFolder,
     OpenGitHubPage,
     OpenMods,
+    Reinstall,
     RemoveCustomIcon,
     RemoveGameEntry,
     SelectDifferentExecutable,

@@ -153,11 +153,17 @@ public partial class LibraryView : UserControl
                 case LibraryActionKind.DeleteGameFromLibrary:
                     await _actions.UninstallAsync(game);
                     break;
-                case LibraryActionKind.ForceUpdate:
+                case LibraryActionKind.Reinstall:
                     if (game == null)
                         await _message("Unable to identify the selected app.", "Error");
                     else
                         await _libraryLaunch.HandleReinstallAsync(anchor ?? this, game);
+                    break;
+                case LibraryActionKind.BackToVerifiedUpdates:
+                    if (game == null)
+                        await _message("Unable to identify the selected app.", "Error");
+                    else
+                        await _libraryLaunch.HandleReturnToUpdatesAsync(anchor ?? this, game);
                     break;
                 case LibraryActionKind.InstallUnverifiedRelease:
                     if (game == null)
@@ -238,7 +244,8 @@ public partial class LibraryView : UserControl
         if (sender is Button button) Navigation?.SynchronizeEmptyActionFocus(button);
     }
     private void EmptyLibraryBrowseCatalog_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.EmptyLibraryBrowseCatalog);
-    private void ForceUpdate_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.ForceUpdate);
+    private void Reinstall_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.Reinstall);
+    private void BackToVerifiedUpdates_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.BackToVerifiedUpdates);
     private void InstallUnverified_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.InstallUnverifiedRelease);
 
     private void HideGame_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.HideGame);

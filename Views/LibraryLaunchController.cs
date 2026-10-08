@@ -82,17 +82,27 @@ public sealed class LibraryLaunchController
     public Task HandleSkipUpdateAsync(GameInfo game) => _session.RunAsync(() => HandleSkipUpdateCoreAsync(game));
     public Task HandleChangeVersionAsync(Control anchor, GameInfo game) => _session.RunAsync(() => HandleChangeVersionCoreAsync(anchor, game));
     /// <summary>
-    /// Force Update: downloads the app's release again and installs it over the installed one. Nothing changes until the
-    /// new files are in, so a cancelled or failed download leaves the app as it was.
+    /// Reinstall: downloads the installed version again and installs it over the old files, to repair them (for an
+    /// installer, runs it again). A pinned version or skipped update stays as it is. Nothing changes until the new files
+    /// are in, so a cancelled or failed download leaves the app as it was.
     /// </summary>
-    public Task HandleReinstallAsync(Control anchor, GameInfo game) => _session.RunAsync(async () =>
+    public Task HandleReinstallAsync(Control anchor, GameInfo game) => _session.RunAsync(() => HandleReinstallCoreAsync(anchor, game));
+    /// <summary>
+    /// Back to verified updates: forgets a version picked in Change Version and a skipped update, then updates to the
+    /// release the app follows (the verified one) if it isn't installed already.
+    /// </summary>
+    public Task HandleReturnToUpdatesAsync(Control anchor, GameInfo game) => _session.RunAsync(async () =>
     {
         await _persistence.SaveVersionPreferencesAsync(game, null, null);
-        await HandleUpdateNowCoreAsync(anchor, game, reinstall: true);
+        game.RefreshInstalledStatus();
+        Changed();
+        if (game.IsInstalled)
+            await HandleUpdateNowCoreAsync(anchor, game);
     });
     /// <summary>Installs the newer release Quiver hasn't verified yet, as picking it in Change Version does (it asks first).</summary>
     public Task HandleInstallUnverifiedAsync(Control anchor, GameInfo game) => _session.RunAsync(() => HandleInstallUnverifiedCoreAsync(anchor, game));
-    public Task ShowReleaseDownloadSelectionMenuAsync(Control anchor, GameInfo game, GitHubRelease release, string? preferredVersion, string? skippedUpdateVersion) => _session.RunAsync(() => ShowReleaseDownloadSelectionMenuCoreAsync(anchor, game, release, preferredVersion, skippedUpdateVersion));
+    public Task ShowReleaseDownloadSelectionMenuAsync(Control anchor, GameInfo game, GitHubRelease release, string? preferredVersion, string? skippedUpdateVersion,
+        bool reinstall = false) => _session.RunAsync(() => ShowReleaseDownloadSelectionMenuCoreAsync(anchor, game, release, preferredVersion, skippedUpdateVersion, reinstall));
     private void OpenContextMenu(Control anchor, ContextMenu menu)
     {
         if (!_session.IsClosed)
@@ -285,8 +295,7 @@ public sealed class LibraryLaunchController
     }
 
     /// <returns>True when an install was started/completed; false when cancelled or deferred to a picker.</returns>
-    private async Task<bool> HandleUpdateNowCoreAsync(Control anchor, GameInfo game, bool preferAutoPlatform = false, bool allowAssetPicker = true, bool interactive = true,
-        bool reinstall = false)
+    private async Task<bool> HandleUpdateNowCoreAsync(Control anchor, GameInfo game, bool preferAutoPlatform = false, bool allowAssetPicker = true, bool interactive = true)
     {
         using var priority = interactive ? ReleaseRequestCoordinator.PrioritizeInteractiveChecks() : null;
         using var revalidate = ReleaseRequestCoordinator.AllowCachedMetadata(TimeSpan.Zero);
@@ -311,7 +320,7 @@ public sealed class LibraryLaunchController
             }
 
             game.RefreshInstalledStatus();
-            if (!reinstall && game.TryAcknowledgeAlreadyInstalledRelease(latestRelease.tag_name))
+            if (game.TryAcknowledgeAlreadyInstalledRelease(latestRelease.tag_name))
                 return false;
             var choices = GameDownloadService.Prepare(game, latestRelease, _settings);
             if (choices.Automatic is { } automatic)
@@ -349,6 +358,39 @@ public sealed class LibraryLaunchController
         game.SkipLatestUpdate();
         await _persistence.SaveVersionPreferencesAsync(game, game.PreferredVersion, game.SkippedUpdateVersion);
         Changed();
+    }
+
+    private async Task HandleReinstallCoreAsync(Control anchor, GameInfo game)
+    {
+        using var priority = ReleaseRequestCoordinator.PrioritizeInteractiveChecks();
+        GitHubRelease? release;
+        try
+        {
+            game.IsLoading = true;
+            var releaseResult = await game.FetchReleasesAsync(_gameManager.HttpClient, _session.Token);
+            _session.Token.ThrowIfCancellationRequested();
+            // The version installed; if it isn't known or no longer listed, the one the app follows.
+            release = (game.InstalledVersion is { Length: > 0 } installed
+                    ? releaseResult.Releases.FirstOrDefault(r => ReleaseVersionIdentity.AreVersionsEquivalent(r.tag_name, installed))
+                    : null)
+                ?? GameInfo.SelectLatestRelease(releaseResult.Releases, game.ReleaseTarget, game.InstalledVersion, releaseResult.LatestTag);
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageBoxAsync($"Failed to load releases for {game.Name}: {ex.Message}", "Reinstall Error");
+            return;
+        }
+        finally
+        {
+            game.IsLoading = false;
+        }
+        if (release == null)
+        {
+            await ShowMessageBoxAsync($"No downloadable releases were found for {game.Name}.", "No Releases");
+            return;
+        }
+        await ShowReleaseDownloadSelectionMenuAsync(_resolveAnchor(game, anchor) ?? anchor, game, release, game.PreferredVersion,
+            game.SkippedUpdateVersion, reinstall: true);
     }
 
     private async Task HandleInstallUnverifiedCoreAsync(Control anchor, GameInfo game)
@@ -515,11 +557,12 @@ public sealed class LibraryLaunchController
     }
 
     public void ShowReleaseDownloadSelectionMenu(Control anchor, GameInfo game, GitHubRelease release, string? preferredVersion, string? skippedUpdateVersion) => _ = _session.RunAsync(() => ShowReleaseDownloadSelectionMenuAsync(anchor, game, release, preferredVersion, skippedUpdateVersion));
-    private Task ShowReleaseDownloadSelectionMenuCoreAsync(Control anchor, GameInfo game, GitHubRelease release, string? preferredVersion, string? skippedUpdateVersion)
+    private Task ShowReleaseDownloadSelectionMenuCoreAsync(Control anchor, GameInfo game, GitHubRelease release, string? preferredVersion, string? skippedUpdateVersion,
+        bool reinstall = false)
     {
         var choices = GameDownloadService.Prepare(game, release, _settings);
         if (choices.Automatic is { } automatic)
-            return InstallChosenReleaseAsync(game, release, automatic, preferredVersion, skippedUpdateVersion);
+            return InstallChosenReleaseAsync(game, release, automatic, preferredVersion, skippedUpdateVersion, reinstall);
         if (!choices.NeedsChoice)
             return ShowMessageBoxAsync(choices.EmptyReason ?? "No eligible downloads.", "No Matching Assets");
 
@@ -530,7 +573,7 @@ public sealed class LibraryLaunchController
         if (choices.EmptyReason != null)
             contextMenu.Items.Add(new MenuItem { Header = choices.EmptyReason, IsEnabled = false });
         foreach (var item in CreateDownloadChoices(choices, asset =>
-            InstallChosenReleaseAsync(game, release, asset, preferredVersion, skippedUpdateVersion)))
+            InstallChosenReleaseAsync(game, release, asset, preferredVersion, skippedUpdateVersion, reinstall)))
             contextMenu.Items.Add(item);
 
         contextMenu.Items.Add(new Separator());
@@ -554,8 +597,15 @@ public sealed class LibraryLaunchController
     }
 
     private async Task InstallChosenReleaseAsync(GameInfo game, GitHubRelease release, GitHubAsset asset,
-        string? preferredVersion, string? skippedUpdateVersion)
+        string? preferredVersion, string? skippedUpdateVersion, bool reinstall = false)
     {
+        if (reinstall)
+        {
+            // The same version again: the player's version choices stay as they are.
+            await game.InstallReleaseAsync(_gameManager.HttpClient, _gameManager.GamesFolder, _settings, release, asset, reinstall: true);
+            Changed();
+            return;
+        }
         var latestBefore = game.LatestVersion;
         await game.InstallReleaseAsync(_gameManager.HttpClient, _gameManager.GamesFolder, _settings, release, asset);
         // Saying no to an unverified or blocked release (or a download that failed) leaves the app as it was. Pinning it to

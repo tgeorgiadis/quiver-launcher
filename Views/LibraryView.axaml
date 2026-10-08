@@ -10,7 +10,7 @@
 												  Click="LaunchGameMenu_Click"
 												  CommandParameter="{Binding}"
 												  IsVisible="{Binding CanDownload}"/>
-										<MenuItem Header="Run installer again" Click="ForceUpdate_Click" CommandParameter="{Binding}" IsVisible="{Binding CanRunWindowsInstaller}"/>
+										<MenuItem Header="Run installer again" Click="Reinstall_Click" CommandParameter="{Binding}" IsVisible="{Binding CanRunWindowsInstaller}"/>
 										<MenuItem Header="Locate Existing Install"
 												  Click="LocateExistingInstall_Click"
 												  CommandParameter="{Binding}"
@@ -43,8 +43,12 @@
 													  Click="InstallUnverified_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding CanInstallUnverifiedRelease}"/>
-											<MenuItem Header="Force Update"
-													  Click="ForceUpdate_Click"
+											<MenuItem Header="{Binding ReturnToUpdatesLabel}"
+													  Click="BackToVerifiedUpdates_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding CanReturnToUpdates}"/>
+											<MenuItem Header="Reinstall"
+													  Click="Reinstall_Click"
 													  IsVisible="{Binding IsInstalled}"
 													  CommandParameter="{Binding}"/>
 										</MenuItem>

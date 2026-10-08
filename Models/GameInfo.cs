@@ -734,6 +734,10 @@ namespace QuiverLauncher.Models
         /// <summary>The menu item that installs the unverified release (it asks first).</summary>
         public string InstallUnverifiedReleaseLabel => $"Install {CatalogUnverifiedVersion} (not verified)";
         public bool CanInstallUnverifiedRelease => ShowUnverifiedRelease && CanChangeVersion;
+        /// <summary>A version was picked in Change Version, or an update skipped: the app no longer follows updates.</summary>
+        public bool CanReturnToUpdates => !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository) &&
+            (!string.IsNullOrWhiteSpace(PreferredVersion) || !string.IsNullOrWhiteSpace(SkippedUpdateVersion));
+        public string ReturnToUpdatesLabel => string.IsNullOrWhiteSpace(CatalogSlug) ? "Back to latest updates" : "Back to verified updates";
 
         /// <summary>When quiverlauncher.com last confirmed <see cref="CatalogVerifiedVersion"/>.</summary>
         public DateTimeOffset? CatalogVerifiedAt { get; set; }
@@ -764,6 +768,7 @@ namespace QuiverLauncher.Models
                     DispatchPropertyChanged(nameof(ShowTruncatedPreferredVersion));
                     DispatchPropertyChanged(nameof(LatestVersionCaption));
                     DispatchPropertyChanged(nameof(LatestVersionLabel));
+                    DispatchPropertyChanged(nameof(CanReturnToUpdates));
                 }
             }
         }
@@ -778,6 +783,7 @@ namespace QuiverLauncher.Models
                     _skippedUpdateVersion = value;
                     DispatchPropertyChanged();
                     DispatchPropertyChanged(nameof(StatusText));
+                    DispatchPropertyChanged(nameof(CanReturnToUpdates));
                 }
             }
         }
@@ -1876,12 +1882,13 @@ namespace QuiverLauncher.Models
         /// <param name="automatic">An automatic update: it never installs a release Quiver hasn't verified.</param>
         /// <param name="releaseMode">An explicit pick installs that release; an automatic one checks which release to install first.</param>
         public async Task InstallReleaseAsync(HttpClient httpClient, string gamesFolder, AppSettings settings, GitHubRelease release, GitHubAsset selectedAsset,
-            bool automatic = false, ReleaseInstallMode releaseMode = ReleaseInstallMode.ExplicitRelease)
+            bool automatic = false, ReleaseInstallMode releaseMode = ReleaseInstallMode.ExplicitRelease, bool reinstall = false)
         {
             GameDownloadService.SelectExplicit(this, release, settings, selectedAsset);
             await GameDownloadInstallService.DownloadAndInstallAsync(
                 this, httpClient, gamesFolder, release, settings, Status,
-                automatic ? new AutomaticGameDownloadDialogs(AvaloniaGameDownloadDialogs.Instance) : null, releaseMode: releaseMode);
+                automatic ? new AutomaticGameDownloadDialogs(AvaloniaGameDownloadDialogs.Instance) : null, releaseMode: releaseMode,
+                reinstall: reinstall);
         }
 
         public static string? GetPlatformIcon(string assetName)
