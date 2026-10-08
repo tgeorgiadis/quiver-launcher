@@ -129,6 +129,7 @@
 					Tapped="GameCard_Tapped"
 					Holding="GameCard_Holding"
 					ContextRequested="GameCard_ContextRequested">
+				<views:LazyCardContent Group="list" PlaceholderHeight="0"><views:LazyCardContent.ContentTemplate><DataTemplate x:DataType="models:GameInfo">
 				<views:LibraryListRowLayout Settings="{Binding $parent[views:LibraryView].Model.Settings}">
     <Border views:LibraryListRowLayout.Role="Thumbnail" CornerRadius="8" ClipToBounds="True">
         <Panel>
@@ -162,6 +163,7 @@
         <ProgressBar IsIndeterminate="{Binding IsInstallIndeterminate}" Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="4" Background="Transparent" Foreground="{Binding ProgressBarColor}" BorderThickness="0"/>
     </Border>
 </views:LibraryListRowLayout>
+				</DataTemplate></views:LazyCardContent.ContentTemplate></views:LazyCardContent>
 </Border>
 </DataTemplate><DataTemplate x:Key="GridViewTemplate" x:DataType="models:GameInfo">
 			<StackPanel Classes="library-grid-item"
@@ -181,6 +183,7 @@
 					<Border.Width>
 						<Binding RelativeSource="{RelativeSource AncestorType=views:LibraryView}" Path="Model.CardPixelSize"/>
 					</Border.Width>
+					<views:LazyCardContent Group="grid-art" PlaceholderHeight="{Binding $parent[views:LibraryView].Model.Settings.IconSize}"><views:LazyCardContent.ContentTemplate><DataTemplate x:DataType="models:GameInfo">
 					<Grid ClipToBounds="True">
 						<!-- Background Image -->
 						<Panel ClipToBounds="True"
@@ -226,6 +229,7 @@
 										 BorderThickness="0"/>
 						</Border>
 					</Grid>
+					</DataTemplate></views:LazyCardContent.ContentTemplate></views:LazyCardContent>
 				</Border>
 
 				<!-- Info Bar Below Card -->
@@ -233,6 +237,7 @@
 					<Grid.Width>
 						<Binding RelativeSource="{RelativeSource AncestorType=views:LibraryView}" Path="Model.CardPixelSize"/>
 					</Grid.Width>
+					<views:LazyCardContent Group="grid-text" PlaceholderHeight="110"><views:LazyCardContent.ContentTemplate><DataTemplate x:DataType="models:GameInfo">
 					<Grid Margin="10,0,10,20">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="Auto"/>
@@ -367,6 +372,7 @@
 									   IsVisible="{Binding HasModUpdates}"/>
 						</StackPanel>
 					</Grid>
+					</DataTemplate></views:LazyCardContent.ContentTemplate></views:LazyCardContent>
 				</Grid>
 			</StackPanel>
 		</DataTemplate>
@@ -390,6 +396,7 @@
 				<Border.MinHeight>
 					<Binding RelativeSource="{RelativeSource AncestorType=views:LibraryView}" Path="Model.CardPixelSize"/>
 				</Border.MinHeight>
+				<views:LazyCardContent Group="compact" PlaceholderHeight="{Binding $parent[views:LibraryView].Model.CardPixelSize}"><views:LazyCardContent.ContentTemplate><DataTemplate x:DataType="models:GameInfo">
 				<Grid ClipToBounds="True">
 					<Grid.RowDefinitions>
 						<RowDefinition Height="*"/>
@@ -582,6 +589,7 @@
 									 BorderThickness="0"/>
 					</Border>
 				</Grid>
+				</DataTemplate></views:LazyCardContent.ContentTemplate></views:LazyCardContent>
 			</Border>
 		</DataTemplate>
 </UserControl.Resources>
