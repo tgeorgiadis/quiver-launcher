@@ -123,6 +123,84 @@ public class QuiverCatalogClientTests : IDisposable
         (await proxyError.Should().ThrowAsync<HttpRequestException>()).Which.StatusCode.Should().Be(HttpStatusCode.BadGateway);
     }
 
+    private static HttpRequestException TlsFailure() =>
+        new("The SSL connection could not be established, see inner exception.",
+            new System.Security.Authentication.AuthenticationException(
+                "The remote certificate is invalid because of errors in the certificate chain: UntrustedRoot"));
+
+    /// <summary>A client whose requests to api.quiverlauncher.com fail the TLS handshake.</summary>
+    private QuiverCatalogClient ClientBehindBrokenTls(Func<HttpRequestMessage, HttpResponseMessage> deploymentHost)
+    {
+        _http = new HttpClient(new Handler(request =>
+        {
+            _requests.Add(request.RequestUri!);
+            return request.RequestUri!.Host == "api.quiverlauncher.com" ? throw TlsFailure() : deploymentHost(request);
+        }));
+        return new QuiverCatalogClient(_http, QuiverCatalogClient.DefaultBaseUrl);
+    }
+
+    [Fact]
+    public async Task When_the_custom_domain_fails_its_TLS_handshake_the_deployment_host_answers_from_then_on()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var client = ClientBehindBrokenTls(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent($$"""{"items":[{{G1RDeluxe}}],"isDone":true}"""),
+        });
+
+        (await client.GetAppsAsync(new QuiverCatalogQuery(), null, token)).Items.Should().ContainSingle();
+        (await client.GetAppsAsync(new QuiverCatalogQuery(), null, token)).Items.Should().ContainSingle();
+
+        _requests.Select(u => u.Host).Should().Equal(
+            "api.quiverlauncher.com", "famous-wildebeest-660.convex.site", "famous-wildebeest-660.convex.site");
+        _requests[1].AbsolutePath.Should().Be("/api/v1/apps");
+    }
+
+    [Fact]
+    public async Task When_neither_host_answers_the_player_sees_the_first_failure()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var client = ClientBehindBrokenTls(_ => throw new HttpRequestException("No such host is known."));
+
+        Func<Task> load = () => client.GetAppsAsync(new QuiverCatalogQuery(), null, token);
+        var failure = (await load.Should().ThrowAsync<HttpRequestException>()).Which;
+
+        QuiverCatalogClient.Explain(failure).Should().Be(
+            "The SSL connection could not be established: The remote certificate is invalid because of errors in the certificate chain: UntrustedRoot");
+        Telemetry.CauseOf(failure).Should().Be(
+            "AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: UntrustedRoot");
+    }
+
+    [Fact]
+    public async Task A_499_from_the_custom_domain_also_goes_to_the_deployment_host()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _http = new HttpClient(new Handler(request =>
+        {
+            _requests.Add(request.RequestUri!);
+            return request.RequestUri!.Host == "api.quiverlauncher.com"
+                ? new HttpResponseMessage((HttpStatusCode)499) { Content = new StringContent("") }
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"consoles":[]}""") };
+        }));
+        var client = new QuiverCatalogClient(_http, QuiverCatalogClient.DefaultBaseUrl);
+
+        await client.GetFacetsAsync(token);
+
+        _requests.Select(u => u.Host).Should().Equal("api.quiverlauncher.com", "famous-wildebeest-660.convex.site");
+    }
+
+    [Fact]
+    public async Task Another_api_address_never_falls_back()
+    {
+        var token = TestContext.Current.CancellationToken;
+        _http = new HttpClient(new Handler(request => { _requests.Add(request.RequestUri!); throw TlsFailure(); }));
+        var client = new QuiverCatalogClient(_http, "https://staging.example/api/v1");
+
+        Func<Task> load = () => client.GetFacetsAsync(token);
+        await load.Should().ThrowAsync<HttpRequestException>();
+        _requests.Should().ContainSingle();
+    }
+
     [Fact]
     public async Task Missing_readme_is_null_but_a_missing_app_is_an_error()
     {

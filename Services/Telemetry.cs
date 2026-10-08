@@ -269,6 +269,19 @@ public sealed class Telemetry : IDisposable
 
     public static string ReasonOf(string message) => Truncate(Current.Scrub(message), 120);
 
+    /// <summary>
+    /// The innermost cause of a failure that wraps one, as its type and safe message (with the Windows error code when
+    /// there is one); null when nothing is wrapped. "The SSL connection could not be established, see inner exception."
+    /// says nothing on its own; this is the part that does.
+    /// </summary>
+    public static string? CauseOf(Exception exception)
+    {
+        var innermost = Chain(exception).Last();
+        if (ReferenceEquals(innermost, exception)) return null;
+        var code = innermost is System.ComponentModel.Win32Exception win32 ? $" 0x{win32.NativeErrorCode:X8}" : "";
+        return Truncate(Current.Scrub($"{innermost.GetType().Name}{code}: {innermost.Message}"), 200);
+    }
+
     static string Truncate(string text, int length) => text.Length <= length ? text : text[..length];
 
     static IEnumerable<Exception> Chain(Exception exception)
