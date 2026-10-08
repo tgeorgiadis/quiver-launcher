@@ -15,6 +15,7 @@ public enum LibraryActionKind
     EmptyLibraryBrowseCatalog,
     ForceUpdate,
     HideGame,
+    InstallUnverifiedRelease,
     LaunchGameMenu,
     LibrarySearchClear,
     LocateExistingInstall,

@@ -23,8 +23,12 @@ public sealed class LauncherMenuController(Control view, Action preserveFocus, A
         preserveFocus();
         if (PlatformCapabilities.IsMobile)
             foreach (var item in menu.Items.OfType<MenuItem>()) AttachTouch(item, false);
+        // The card a menu belongs to can be rebuilt, scrolled away or hidden while the menu's contents load (Change Version
+        // reads the app's releases), or the menu can come from another page: then it opens over the launcher, not nowhere.
+        var shown = TopLevel.GetTopLevel(anchor) != null && anchor.IsEffectivelyVisible;
+        if (!shown) anchor = view;
         menu.PlacementTarget = anchor;
-        menu.Placement = PlacementMode.BottomEdgeAlignedRight;
+        menu.Placement = shown ? PlacementMode.BottomEdgeAlignedRight : PlacementMode.Center;
         void Closed(object? sender, EventArgs e)
         {
             menu.Closed -= Closed;

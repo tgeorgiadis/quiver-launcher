@@ -98,38 +98,6 @@ public sealed class LibraryActions
         }
     }
 
-    public async Task ForceUpdateAsync(GameInfo? game)
-    {
-        if (RefuseKiosk()) return;
-        await _session.RunAsync(async () =>
-        {
-            if (game == null)
-            {
-                await ShowMessageBoxAsync("Unable to identify the selected app.", "Error");
-                return;
-            }
-
-            try
-            {
-                await _libraryPersistence.SaveVersionPreferencesAsync(game, null, null);
-                _session.Token.ThrowIfCancellationRequested();
-                if (WindowsInstallerService.HasReceipt(game.GetInstallPath(_gameManager.GamesFolder)))
-                {
-                    await GameDownloadInstallService.DownloadAndInstallAsync(game, _gameManager.HttpClient,
-                        _gameManager.GamesFolder, game.GetLatestRelease(), _settings, game.Status);
-                    Changed();
-                    return;
-                }
-                await game.ForceUpdateAsync(_gameManager.HttpClient, _gameManager.GamesFolder);
-                Changed();
-            }
-            catch (Exception ex)
-            {
-                await ShowMessageBoxAsync($"Failed to force update {game.Name}: {ex.Message}", "Force Update Failed");
-            }
-        });
-    }
-
     public async Task ConfigureRunnerAsync(GameInfo? game)
     {
         if (RefuseKiosk()) return;

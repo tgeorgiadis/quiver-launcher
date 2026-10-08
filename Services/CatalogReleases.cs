@@ -77,6 +77,26 @@ public sealed class CatalogReleases
         foreach (var app in list) ApplyKnown(app);
     }
 
+    /// <summary>
+    /// Links the app before its releases are looked up. An app already linked uses what's known straight away, and an old
+    /// status and listing are read again in the background: reading the whole catalog takes seconds, and the player is
+    /// waiting on a menu (Change Version) for one app's releases, which are read fresh anyway.
+    /// </summary>
+    private async Task EnsureLinkedAsync(GameInfo app, CancellationToken token)
+    {
+        if (app.CatalogSlug == null || !Linkable(app))
+        {
+            await RefreshAsync([app], token).ConfigureAwait(false);
+            return;
+        }
+        if (DateTime.UtcNow - _statusAt >= StatusAge || DateTime.UtcNow - _linksAt >= StatusAge)
+            _ = Task.Run(async () =>
+            {
+                try { await RefreshAsync([app], CancellationToken.None).ConfigureAwait(false); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Catalog refresh failed: {ex.Message}"); }
+            }, CancellationToken.None);
+    }
+
     /// <summary>The app's entry in the catalog listing, once the listing has been read this session.</summary>
     public QuiverCatalogApp? ListedApp(GameInfo app) => app.CatalogSlug is { } slug ? _listing.GetValueOrDefault(slug) : null;
 
@@ -98,7 +118,7 @@ public sealed class CatalogReleases
     /// <summary>Says whether Quiver verified this release of the app; null when the app isn't in the catalog.</summary>
     public async Task<ReleaseCheck?> CheckAsync(GameInfo app, string version, CancellationToken token)
     {
-        await RefreshAsync([app], token).ConfigureAwait(false);
+        await EnsureLinkedAsync(app, token).ConfigureAwait(false);
         if (app.CatalogSlug is not { } slug) return null;
         var verified = app.CatalogVerifiedVersion;
         IReadOnlyList<QuiverCatalogRelease>? releases;
@@ -152,7 +172,7 @@ public sealed class CatalogReleases
 
     private async Task<IReadOnlyList<(GitHubRelease Release, string State)>?> ListedReleasesAsync(GameInfo app, CancellationToken token)
     {
-        await RefreshAsync([app], token).ConfigureAwait(false);
+        await EnsureLinkedAsync(app, token).ConfigureAwait(false);
         if (app.CatalogSlug is not { } slug) return null;
         IReadOnlyList<QuiverCatalogRelease> history;
         try { history = await HistoryAsync(slug, token).ConfigureAwait(false); }

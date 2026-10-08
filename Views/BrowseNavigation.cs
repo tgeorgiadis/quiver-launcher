@@ -68,14 +68,19 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         return true;
     }
 
-    /// <summary>Y (Options) on a highlighted card adds its app to the library, like the card's Add button.</summary>
+    /// <summary>
+    /// Y (Options) on a highlighted card adds its app to the library, like the card's Add button; for an app already in the
+    /// library it opens the app's library menu instead.
+    /// </summary>
     public bool Options()
     {
         if (!isActive() || Service.ActiveZone != GamepadNavigationZone.BrowseGrid) return false;
         var cards = Cards;
         var index = Service.ClampIndex(CardIndex, cards.Count);
-        if (index < 0 || cards[index] is not BrowseItem { CanAdd: true } item) return false;
-        view.RequestAdd(item);
+        if (index < 0 || cards[index] is not BrowseItem item) return false;
+        if (item.CanAdd) view.RequestAdd(item);
+        else if (item.InLibrary && FindCard(item) is { } card) view.RequestLibraryMenu(item, card);
+        else return false;
         return true;
     }
     public void RestoreFocus() => RestoreFocus(bringIntoView: true);

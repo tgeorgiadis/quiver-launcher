@@ -278,6 +278,7 @@ namespace QuiverLauncher
                 _session, this, () => !Shell.SettingsOpen && !Shell.BrowseDetailsOpen && Shell.Mode == MainViewMode.Browse);
             BrowsePanel.DetailsRequested += OpenBrowseDetails;
             BrowsePanel.AddRequested += item => _ = _session.RunAsync(() => AddCardAsync(item));
+            BrowsePanel.LibraryMenuRequested += OpenLibraryMenuFromCatalog;
             BrowsePanel.Model.HideLibraryApps = _settings.CatalogHideLibraryApps;
             BrowsePanel.HideLibraryChosen += hide =>
             {
@@ -1342,6 +1343,7 @@ namespace QuiverLauncher
 
         private void UpdateMainViewUi()
         {
+            UpdateGamepadHintsBar();
             if (Shell.BrowseDetailsOpen && Shell.Mode != _detailsOpenedFrom)
                 CloseBrowseDetails(restoreSelection: false);
             _appearance.Refresh();
@@ -1434,6 +1436,15 @@ namespace QuiverLauncher
         }
 
         private QuiverCatalogClient _catalogClient = null!;
+
+        private void OpenLibraryMenuFromCatalog(BrowseItem item, Control anchor)
+        {
+            var game = (item.App?.Slug is { } slug ? _gameManager.LibraryApps.FirstOrDefault(a => a.CatalogSlug == slug) : null)
+                ?? (item.ListApp is { } listed ? BrowsePanel.Model.FindInLibrary(listed) : null)
+                ?? _gameManager.LibraryApps.FirstOrDefault(a => string.Equals(a.FolderName?.Trim(), item.FolderName.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (game != null)
+                LibraryPanel.OpenCardMenu(game, anchor);
+        }
 
         /// <summary>
         /// A card's Add button (or Y on a highlighted card): adds the app as its page's Add would, without opening the page.
@@ -1660,8 +1671,10 @@ namespace QuiverLauncher
             if (GamepadHintsBar == null || _settings == null)
                 return;
             _settings.EnsureInitialized();
-            var padHints = GamepadBindingLabels.FormatHints(_settings.GamepadBindings);
-            var keyHints = KeyboardBindingLabels.FormatHints(_settings.KeyboardBindings);
+            // In the App Catalog the options button adds the highlighted app (or opens its menu when it's already in the library).
+            var options = Shell.Mode == MainViewMode.Browse && !Shell.BrowseDetailsOpen ? "Add to library" : "Options";
+            var padHints = GamepadBindingLabels.FormatHints(_settings.GamepadBindings, options);
+            var keyHints = KeyboardBindingLabels.FormatHints(_settings.KeyboardBindings, options);
             GamepadHintsBar.Text = _settings.EnableGamepadInput ? $"{padHints}  |  {keyHints}" : keyHints;
         }
 

@@ -39,6 +39,10 @@
 													  Click="SkipUpdate_Click"
 													  CommandParameter="{Binding}"
 													  IsVisible="{Binding CanSkipUpdate}"/>
+											<MenuItem Header="{Binding InstallUnverifiedReleaseLabel}"
+													  Click="InstallUnverified_Click"
+													  CommandParameter="{Binding}"
+													  IsVisible="{Binding CanInstallUnverifiedRelease}"/>
 											<MenuItem Header="Force Update"
 													  Click="ForceUpdate_Click"
 													  IsVisible="{Binding IsInstalled}"

@@ -151,9 +151,16 @@ public partial class LibraryView : UserControl
                     await _actions.UninstallAsync(game);
                     break;
                 case LibraryActionKind.ForceUpdate:
-                    await _actions.ForceUpdateAsync(game);
-                    if (game?.IsWindowsInstaller == true && anchor != null)
-                        _libraryLaunch.TryShowPendingSelectionMenus(anchor, game);
+                    if (game == null)
+                        await _message("Unable to identify the selected app.", "Error");
+                    else
+                        await _libraryLaunch.HandleReinstallAsync(anchor ?? this, game);
+                    break;
+                case LibraryActionKind.InstallUnverifiedRelease:
+                    if (game == null)
+                        await _message("Unable to identify the selected app.", "Error");
+                    else
+                        await _libraryLaunch.HandleInstallUnverifiedAsync(anchor ?? this, game);
                     break;
                 case LibraryActionKind.LocateExistingInstall:
                     await _actions.LocateInstallAsync(game);
@@ -229,6 +236,23 @@ public partial class LibraryView : UserControl
     }
     private void EmptyLibraryBrowseCatalog_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.EmptyLibraryBrowseCatalog);
     private void ForceUpdate_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.ForceUpdate);
+    private void InstallUnverified_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.InstallUnverifiedRelease);
+
+    /// <summary>An app's library menu, opened from elsewhere: Y on an App Catalog card for an app already in the library.</summary>
+    internal void OpenCardMenu(GameInfo game, Control anchor)
+    {
+        if (!Resources.TryGetResource("LibraryCardMenu", null, out var resource) || resource is not ContextMenu menu || menu.IsOpen)
+            return;
+        // The menu takes its app from the card it opens on; here that's set, and cleared again so library cards set it as usual.
+        menu.DataContext = game;
+        void Closed(object? sender, RoutedEventArgs e)
+        {
+            menu.Closed -= Closed;
+            menu.ClearValue(DataContextProperty);
+        }
+        menu.Closed += Closed;
+        OpenContextMenu(anchor, menu);
+    }
     private void HideGame_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.HideGame);
     private void LaunchGameMenu_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.LaunchGameMenu);
     private void LibrarySearchClear_Click(object? sender, RoutedEventArgs e) => Request(sender, LibraryActionKind.LibrarySearchClear);

@@ -714,6 +714,8 @@ namespace QuiverLauncher.Models
                 DispatchPropertyChanged(nameof(UnverifiedReleaseLabel));
                 DispatchPropertyChanged(nameof(UnverifiedReleaseToolTip));
                 DispatchPropertyChanged(nameof(LatestVersionToolTip));
+                DispatchPropertyChanged(nameof(InstallUnverifiedReleaseLabel));
+                DispatchPropertyChanged(nameof(CanInstallUnverifiedRelease));
             }
         }
         private string? _catalogUnverifiedVersion;
@@ -723,7 +725,10 @@ namespace QuiverLauncher.Models
             (string.IsNullOrWhiteSpace(InstalledVersion) || IsNewerVersion(CatalogUnverifiedVersion!, InstalledVersion!));
         public string UnverifiedReleaseLabel => $"{CatalogUnverifiedVersion} not verified yet";
         public string UnverifiedReleaseToolTip =>
-            $"Quiver Launcher only updates to releases Quiver has verified. To install {CatalogUnverifiedVersion} now, use Change Version.";
+            $"Quiver Launcher only updates to releases Quiver has verified. To install {CatalogUnverifiedVersion} now, use Versions → {InstallUnverifiedReleaseLabel}.";
+        /// <summary>The menu item that installs the unverified release (it asks first).</summary>
+        public string InstallUnverifiedReleaseLabel => $"Install {CatalogUnverifiedVersion} (not verified)";
+        public bool CanInstallUnverifiedRelease => ShowUnverifiedRelease && CanChangeVersion;
 
         /// <summary>When quiverlauncher.com last confirmed <see cref="CatalogVerifiedVersion"/>.</summary>
         public DateTimeOffset? CatalogVerifiedAt { get; set; }
@@ -1159,42 +1164,6 @@ namespace QuiverLauncher.Models
 
             SkippedUpdateVersion = LatestVersion;
             RefreshInstalledStatus();
-        }
-
-        public async Task ForceUpdateAsync(HttpClient httpClient, string gamesFolder)
-        {
-            if (string.IsNullOrWhiteSpace(FolderName))
-                throw new InvalidOperationException("App configuration is invalid (missing folder name).");
-
-            if (string.IsNullOrWhiteSpace(Repository))
-                throw new InvalidOperationException("App configuration is invalid (missing repository).");
-
-            DeferUpdateTracking = false;
-
-            var gamePath = GetInstallPath(gamesFolder);
-            if (!Directory.Exists(gamePath))
-                throw new DirectoryNotFoundException($"App folder not found: {gamePath}");
-
-            var versionFile = Path.Combine(gamePath, "version.txt");
-
-            IsLoading = true;
-            try
-            {
-                _cachedRelease = null;
-                LatestVersion = string.Empty;
-                GitHubApiCache.RemoveCache(RepositorySource, Repository);
-
-                if (File.Exists(versionFile))
-                {
-                    File.Delete(versionFile);
-                }
-
-                await CheckStatusAsync(httpClient, gamesFolder, forceUpdateCheck: true).ConfigureAwait(false);
-            }
-            finally
-            {
-                IsLoading = false;
-            }
         }
 
         public void SetCustomIcon(string sourcePath, string cacheDirectory)

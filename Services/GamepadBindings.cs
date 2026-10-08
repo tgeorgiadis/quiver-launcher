@@ -183,13 +183,13 @@ public static class GamepadBindingLabels
         return string.Join(" / ", list.Select(Format));
     }
 
-    public static string FormatHints(IReadOnlyDictionary<GamepadAction, List<GamepadBinding>> bindings)
+    public static string FormatHints(IReadOnlyDictionary<GamepadAction, List<GamepadBinding>> bindings, string optionsLabel = "Options")
     {
         var confirm = FormatActionBindings(bindings, GamepadAction.Confirm);
         var options = FormatActionBindings(bindings, GamepadAction.Options);
         var cancel = FormatActionBindings(bindings, GamepadAction.Cancel);
         var nav = FormatNavigationHint(bindings);
-        return $"{confirm} (Select) · {options} (Options) · {cancel} (Back) · {nav} (Navigate)";
+        return $"{confirm} (Select) · {options} ({optionsLabel}) · {cancel} (Back) · {nav} (Navigate)";
     }
 
     private static string FormatNavigationHint(
