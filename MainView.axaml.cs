@@ -278,7 +278,7 @@ namespace QuiverLauncher
                 _session, this, () => !Shell.SettingsOpen && !Shell.BrowseDetailsOpen && Shell.Mode == MainViewMode.Browse);
             BrowsePanel.DetailsRequested += OpenBrowseDetails;
             BrowsePanel.AddRequested += item => _ = _session.RunAsync(() => AddCardAsync(item));
-            BrowsePanel.LibraryMenuRequested += OpenLibraryMenuFromCatalog;
+            BrowsePanel.OpenInLibraryRequested += OpenInLibrary;
             BrowsePanel.Model.HideLibraryApps = _settings.CatalogHideLibraryApps;
             BrowsePanel.HideLibraryChosen += hide =>
             {
@@ -299,6 +299,7 @@ namespace QuiverLauncher
             BrowseDetailsPanel.CloseRequested += () => CloseBrowseDetails();
             BrowseDetailsPanel.AddRequested += app => _ = _session.RunAsync(() => AddFromBrowseAsync(app));
             BrowseDetailsPanel.CardAddRequested += item => _ = _session.RunAsync(() => AddCardAsync(item));
+            BrowseDetailsPanel.OpenInLibraryRequested += OpenInLibrary;
             BrowseDetailsPanel.RemoveRequested += app => _ = _libraryActions.RemoveEntryAsync(app);
             BrowseDetailsPanel.OpenUrlRequested += OpenUrl;
             SettingsPanel.Configure(new SettingsFeatureContext(() => _settings, _settingsViewModel, _session, _music, _gameManager, () => _inputService), this);
@@ -1437,13 +1438,23 @@ namespace QuiverLauncher
 
         private QuiverCatalogClient _catalogClient = null!;
 
-        private void OpenLibraryMenuFromCatalog(BrowseItem item, Control anchor)
+        /// <summary>Open in Library on a catalog card: the Library, with that app highlighted and scrolled to.</summary>
+        private void OpenInLibrary(BrowseItem item)
         {
             var game = (item.App?.Slug is { } slug ? _gameManager.LibraryApps.FirstOrDefault(a => a.CatalogSlug == slug) : null)
                 ?? (item.ListApp is { } listed ? BrowsePanel.Model.FindInLibrary(listed) : null)
                 ?? _gameManager.LibraryApps.FirstOrDefault(a => string.Equals(a.FolderName?.Trim(), item.FolderName.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (game != null)
-                LibraryPanel.OpenCardMenu(game, anchor);
+            if (Shell.BrowseDetailsOpen)
+                CloseBrowseDetails(restoreSelection: false);
+            ShowLibraryView();
+            if (game == null || LibraryPanel.Navigation.SelectGame(game))
+                return;
+            // A library search can hide it: clear the search and look again.
+            LibraryToolbar.ClearSearch();
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!_session.IsClosed) LibraryPanel.Navigation.SelectGame(game);
+            }, DispatcherPriority.Loaded);
         }
 
         /// <summary>
@@ -1671,8 +1682,8 @@ namespace QuiverLauncher
             if (GamepadHintsBar == null || _settings == null)
                 return;
             _settings.EnsureInitialized();
-            // In the App Catalog the options button adds the highlighted app (or opens its menu when it's already in the library).
-            var options = Shell.Mode == MainViewMode.Browse && !Shell.BrowseDetailsOpen ? "Add to library" : "Options";
+            // In the App Catalog the options button adds the highlighted app, or shows it in the library when it's already there.
+            var options = Shell.Mode == MainViewMode.Browse && !Shell.BrowseDetailsOpen ? "Add / Open in Library" : "Options";
             var padHints = GamepadBindingLabels.FormatHints(_settings.GamepadBindings, options);
             var keyHints = KeyboardBindingLabels.FormatHints(_settings.KeyboardBindings, options);
             GamepadHintsBar.Text = _settings.EnableGamepadInput ? $"{padHints}  |  {keyHints}" : keyHints;

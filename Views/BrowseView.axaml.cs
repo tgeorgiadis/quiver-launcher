@@ -41,8 +41,8 @@ public partial class BrowseView : UserControl
     public event Action<BrowseGame>? GameRequested;
     /// <summary>A card's Add button, or Y on a highlighted card: add its app without opening its page.</summary>
     public event Action<BrowseItem>? AddRequested;
-    /// <summary>Y on a card for an app already in the library: open that app's library menu on the card.</summary>
-    public event Action<BrowseItem, Control>? LibraryMenuRequested;
+    /// <summary>Open in Library on a card (or Y) for an app already in the library: show it there.</summary>
+    public event Action<BrowseItem>? OpenInLibraryRequested;
     /// <summary>The player turned hiding library apps on or off; the shell keeps it for next time.</summary>
     public event Action<bool>? HideLibraryChosen;
     /// <summary>The player chose an AI filter; the shell keeps it for next time, as the website does.</summary>
@@ -64,11 +64,13 @@ public partial class BrowseView : UserControl
         BrowseItemsControl.SizeChanged += (_, e) => ArrangeCards(e.NewSize.Width);
         AddHandler(BrowseCard.AddRequestedEvent, (_, e) =>
         {
-            if (e.Source is Control { DataContext: BrowseItem item }) RequestAdd(item);
+            if (e.Source is not Control { DataContext: BrowseItem item }) return;
+            if (item.InLibrary) RequestOpenInLibrary(item);
+            else RequestAdd(item);
         });
     }
 
-    internal void RequestLibraryMenu(BrowseItem item, Control anchor) => LibraryMenuRequested?.Invoke(item, anchor);
+    internal void RequestOpenInLibrary(BrowseItem item) => OpenInLibraryRequested?.Invoke(item);
 
     internal void RequestAdd(BrowseItem item)
     {

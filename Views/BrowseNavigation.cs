@@ -70,7 +70,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
 
     /// <summary>
     /// Y (Options) on a highlighted card adds its app to the library, like the card's Add button; for an app already in the
-    /// library it opens the app's library menu instead.
+    /// library it shows the app there (Open in Library).
     /// </summary>
     public bool Options()
     {
@@ -79,7 +79,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         var index = Service.ClampIndex(CardIndex, cards.Count);
         if (index < 0 || cards[index] is not BrowseItem item) return false;
         if (item.CanAdd) view.RequestAdd(item);
-        else if (item.InLibrary && FindCard(item) is { } card) view.RequestLibraryMenu(item, card);
+        else if (item.InLibrary) view.RequestOpenInLibrary(item);
         else return false;
         return true;
     }

@@ -163,6 +163,15 @@ public sealed class LibraryNavigation : IFeatureNavigationHandler
         ApplyLibraryGamepadSelection(_gamepadNavigation.LibrarySelectedIndex < 0 ? 0 : _gamepadNavigation.LibrarySelectedIndex);
     }
 
+    /// <summary>Highlights an app's card and scrolls to it; false when the current search or filters hide it.</summary>
+    internal bool SelectGame(GameInfo game)
+    {
+        var index = Games.IndexOf(game);
+        if (index < 0) return false;
+        ApplyLibraryGamepadSelection(index, stealFocus: _host.IsFocusActive);
+        return true;
+    }
+
     internal void SyncGamepadLibrarySelection(bool bringIntoView = true)
     {
         if (!_host.IsFocusActive)

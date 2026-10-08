@@ -10,7 +10,10 @@ namespace QuiverLauncher.Views;
 /// <summary>An app's card, drawn like the website's catalog card: in the App Catalog and on a game's page.</summary>
 public partial class BrowseCard : UserControl
 {
-    /// <summary>The card's Add button was pressed: add its app to the library without opening its page.</summary>
+    /// <summary>
+    /// The card's button was pressed: add its app to the library without opening its page, or, for an app already in the
+    /// library, show it there.
+    /// </summary>
     public static readonly RoutedEvent<RoutedEventArgs> AddRequestedEvent =
         RoutedEvent.Register<BrowseCard, RoutedEventArgs>("AddRequested", RoutingStrategies.Bubble);
 

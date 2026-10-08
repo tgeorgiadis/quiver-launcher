@@ -45,6 +45,13 @@
 		<Setter Property="Background" Value="#38bdf8"/>
 		<Setter Property="Foreground" Value="#04121b"/>
 	</Style>
+	<Style Selector="Button.browse-add.in-library">
+		<Setter Property="Background" Value="#e2e8f0"/>
+	</Style>
+	<Style Selector="Button.browse-add.in-library:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="#f8fafc"/>
+		<Setter Property="Foreground" Value="#04121b"/>
+	</Style>
 	<Style Selector="Button.browse-add:disabled /template/ ContentPresenter#PART_ContentPresenter">
 		<Setter Property="Background" Value="#0b7fb3"/>
 		<Setter Property="Foreground" Value="#04121b"/>
@@ -206,8 +213,9 @@
 						<TextBlock Text="{Binding BadgeText}"/>
 					</Border>
 					<Button x:Name="BrowseCardAddButton" Classes="browse-add" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-							Focusable="False" Content="{Binding AddText}" ToolTip.Tip="Add to your library"
-							IsVisible="{Binding CanAdd}" IsEnabled="{Binding !IsAdding}" Click="Add_Click"/>
+							Focusable="False" Content="{Binding CardActionText}" ToolTip.Tip="{Binding CardActionTip}"
+							Classes.in-library="{Binding InLibrary}"
+							IsVisible="{Binding ShowCardAction}" IsEnabled="{Binding !IsAdding}" Click="Add_Click"/>
 				</Grid>
 			</Border>
 			<StackPanel Grid.Row="1" Classes="browse-card-body">

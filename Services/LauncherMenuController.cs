@@ -25,8 +25,10 @@ public sealed class LauncherMenuController(Control view, Action preserveFocus, A
             foreach (var item in menu.Items.OfType<MenuItem>()) AttachTouch(item, false);
         // The card a menu belongs to can be rebuilt, scrolled away or hidden while the menu's contents load (Change Version
         // reads the app's releases), or the menu can come from another page: then it opens over the launcher, not nowhere.
+        // (A menu attached to a control as its ContextMenu can only open on that control.)
         var shown = TopLevel.GetTopLevel(anchor) != null && anchor.IsEffectivelyVisible;
-        if (!shown) anchor = view;
+        if (!shown && !ReferenceEquals(anchor.ContextMenu, menu)) anchor = view;
+        else shown = true;
         menu.PlacementTarget = anchor;
         menu.Placement = shown ? PlacementMode.BottomEdgeAlignedRight : PlacementMode.Center;
         void Closed(object? sender, EventArgs e)
@@ -42,7 +44,18 @@ public sealed class LauncherMenuController(Control view, Action preserveFocus, A
         }
         _menus.Add(menu, Closed);
         menu.Closed += Closed;
-        menu.Open(anchor);
+        try
+        {
+            menu.Open(anchor);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            // Better no menu than closing the launcher.
+            System.Diagnostics.Debug.WriteLine($"Menu not opened: {ex.Message}");
+            menu.Closed -= Closed;
+            _menus.Remove(menu);
+            restoreFocus();
+        }
     }
 
     private void AttachTouch(MenuItem item, bool insideSubmenu)
