@@ -1,6 +1,20 @@
-# Quiver Launcher 3.5.0-rc.4
+# Quiver Launcher 3.5.0-rc.5
 
 This is a prerelease for testing before 3.5.0.
+
+## New in rc.5
+
+- **Change Version** opens straight away and works again. Picking an unverified release and then saying no no longer leaves the app stuck offering that update.
+- New **Install vX (not verified)** under **Versions**, for the newer release Quiver hasn't verified yet. It asks first.
+- **Force Update** is replaced by **Reinstall**, which downloads your version again to fix a broken install, and **Back to verified updates**, which shows when you've picked a version or skipped an update.
+- App Catalog cards for apps already in your library say **Open in Library**, and pressing it (or **Y**) takes you there. This also fixes a crash when pressing **Y** on those cards.
+- **Hide apps in my library** now also recognises apps you added yourself or that sit in a different folder. Apps you add stay visible until you come back to the catalog.
+- Removing an app that isn't installed no longer asks, and there's no "removed" message afterwards.
+- The Mods screen loads mods the first time it opens, instead of saying "No mods found" until you refresh.
+- New library name style, **Project + name below**, which matches the App Catalog cards.
+- If a Quiver update can't be installed, Quiver says why instead of offering the same update again.
+- Quiver installed at the top of a drive (like G:) no longer loses its library when it updates.
+- If quiverlauncher.com can't be reached securely, the App Catalog tries another address, and shows the real reason if that fails too.
 
 ## New in rc.4
 
