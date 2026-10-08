@@ -300,7 +300,12 @@ namespace QuiverLauncher
             BrowseDetailsPanel.AddRequested += app => _ = _session.RunAsync(() => AddFromBrowseAsync(app));
             BrowseDetailsPanel.CardAddRequested += item => _ = _session.RunAsync(() => AddCardAsync(item));
             BrowseDetailsPanel.OpenInLibraryRequested += OpenInLibrary;
-            BrowseDetailsPanel.RemoveRequested += app => _ = _libraryActions.RemoveEntryAsync(app);
+            BrowseDetailsPanel.RemoveRequested += app => _ = _session.RunAsync(async () =>
+            {
+                // The page shows Add to library again straight away, so no questions or messages.
+                await _libraryActions.RemoveEntryAsync(app, confirm: false);
+                RefreshBrowseLibraryState();
+            });
             BrowseDetailsPanel.OpenUrlRequested += OpenUrl;
             SettingsPanel.Configure(new SettingsFeatureContext(() => _settings, _settingsViewModel, _session, _music, _gameManager, () => _inputService), this);
             TagEditOverlay.Configure(_session, this, new LibraryMetadataService(_gameManager, _settingsViewModel), ReloadLibraryAfterEditAsync, message => ShowMessageBoxAsync(message, "Error"), DismissTextInputFocus);

@@ -281,7 +281,11 @@ public sealed class LibraryActions
     }
 
     private static GameInfo? FindMatchingSavedApp(IEnumerable<GameInfo> apps, GameInfo game) => apps.FirstOrDefault(g => string.Equals(g.InstanceKey, game.InstanceKey, StringComparison.OrdinalIgnoreCase));
-    public async Task RemoveEntryAsync(GameInfo? game)
+    /// <summary>
+    /// Removes the app from the library; its files stay. From the Library it asks first, so a card isn't removed by
+    /// accident. From the App Catalog it doesn't (<paramref name="confirm"/> false): the page shows the change.
+    /// </summary>
+    public async Task RemoveEntryAsync(GameInfo? game, bool confirm = true)
     {
         if (RefuseKiosk()) return;
         await _session.RunAsync(async () =>
@@ -300,8 +304,9 @@ public sealed class LibraryActions
 
             try
             {
-                var confirm = await ShowMessageBoxAsync($"Remove '{game.Name}' from your Library?\n\nYour files will not be deleted.", "Remove from Library", true);
-                if (!confirm || _session.IsClosed)
+                if (confirm && !await ShowMessageBoxAsync($"Remove '{game.Name}' from your Library?\n\nYour files will not be deleted.", "Remove from Library", true))
+                    return;
+                if (_session.IsClosed)
                     return;
                 var games = await LoadGamesFromJsonAsync();
                 var gameToRemove = FindMatchingSavedApp(games, game);
@@ -323,8 +328,8 @@ public sealed class LibraryActions
                     return;
                 Changed();
                 _settingsModel.SaveCurrent();
+                // No "removed" message: the card going away says it.
                 await _libraryChanged();
-                _ = _session.RunAsync(() => ShowMessageBoxAsync($"'{game.Name}' was removed successfully.", "Removed"));
             }
             catch (Exception ex)
             {
