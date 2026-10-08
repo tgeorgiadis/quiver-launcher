@@ -21,8 +21,9 @@
 		<Setter Property="BorderBrush" Value="{DynamicResource ThemeFocusRing}"/>
 		<Setter Property="BorderThickness" Value="3"/>
 	</Style>
+	<!-- NEW is green, so it doesn't look like the blue + Add button; IN LIBRARY is a quiet light grey. -->
 	<Style Selector="Border.browse-badge">
-		<Setter Property="Background" Value="#0ea5e9"/>
+		<Setter Property="Background" Value="#22c55e"/>
 		<Setter Property="CornerRadius" Value="4"/>
 		<Setter Property="Padding" Value="7,3"/>
 		<Setter Property="Margin" Value="10"/>
@@ -49,7 +50,7 @@
 		<Setter Property="Foreground" Value="#04121b"/>
 	</Style>
 	<Style Selector="Border.browse-badge.in-library">
-		<Setter Property="Background" Value="#22c55e"/>
+		<Setter Property="Background" Value="#e2e8f0"/>
 	</Style>
 	<Style Selector="Border.browse-badge TextBlock">
 		<Setter Property="FontSize" Value="9"/>
