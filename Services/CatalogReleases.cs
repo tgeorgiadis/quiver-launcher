@@ -325,6 +325,10 @@ public sealed class CatalogReleases
 
     private QuiverCatalogStatus? Find(GameInfo app)
     {
+        // The entry the app was added from, or was last linked to: its id doesn't change when the catalog renames things.
+        if (Linkable(app) && !string.IsNullOrWhiteSpace(app.CatalogEntryId) &&
+            _status.FirstOrDefault(s => string.Equals(s.Id, app.CatalogEntryId, StringComparison.Ordinal)) is { } byId)
+            return byId;
         var candidates = Candidates(app).ToList();
         if (candidates.Count == 0)
         {

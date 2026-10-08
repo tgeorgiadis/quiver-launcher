@@ -291,6 +291,7 @@ public static class QuiverCatalogMapping
         var folder = FolderFor(app);
         var entry = new JsonObject
         {
+            ["catalogEntryId"] = string.IsNullOrWhiteSpace(app.Id) ? null : app.Id,
             ["name"] = app.Name,
             ["project"] = app.ProjectName,
             ["folderName"] = folder,

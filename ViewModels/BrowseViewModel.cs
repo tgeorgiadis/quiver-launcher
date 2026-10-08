@@ -223,14 +223,17 @@ public sealed class BrowseViewModel(QuiverCatalogClient client, Func<IReadOnlyLi
         var apps = library();
         var folders = apps.Select(a => a.FolderName?.Trim()).Where(f => !string.IsNullOrEmpty(f))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        // A library app is linked to its catalog entry by repository (CatalogReleases), so one in a folder of its own (added
-        // before the catalog renamed its folder, or given another name) still counts. The folder is the fallback.
+        // A library app is linked to its catalog entry by the entry's id, else by repository (CatalogReleases), so one in a
+        // folder of its own (added before the catalog renamed its folder, or given another name) still counts. The folder is
+        // the fallback.
         var slugs = apps.Select(a => a.CatalogSlug).Where(s => !string.IsNullOrEmpty(s))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var ids = apps.Select(a => a.CatalogEntryId).Where(id => !string.IsNullOrEmpty(id)).ToHashSet(StringComparer.Ordinal);
         foreach (var item in items)
             item.InLibrary = item.ListApp != null
                 ? LibraryAddService.FindExisting(apps, item.ListApp) != null
-                : (item.App?.Slug is { } slug && slugs.Contains(slug)) || folders.Contains(item.FolderName.Trim());
+                : (item.App?.Id is { Length: > 0 } id && ids.Contains(id)) || (item.App?.Slug is { } slug && slugs.Contains(slug)) ||
+                  folders.Contains(item.FolderName.Trim());
     }
 
     /// <summary>A game's apps as cards, best first, as on its page.</summary>

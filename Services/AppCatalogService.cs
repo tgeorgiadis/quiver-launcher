@@ -334,6 +334,8 @@ namespace QuiverLauncher.Services
                     };
 
                     app.CatalogSnapshot = ParseCatalogSnapshot(appElement);
+                    app.CatalogEntryId = appElement.TryGetProperty("catalogEntryId", out var entryId) && entryId.ValueKind == JsonValueKind.String &&
+                        !string.IsNullOrWhiteSpace(entryId.GetString()) ? entryId.GetString()!.Trim() : null;
                     if (string.IsNullOrWhiteSpace(app.Project))
                         app.Project = null;
                     if (string.IsNullOrWhiteSpace(app.CustomDisplayName))
@@ -595,6 +597,9 @@ namespace QuiverLauncher.Services
                 payload["tags"] = normalizedTags;
 
             // What the catalog last set, so its later changes don't overwrite the player's own.
+            // Older launchers ignore this field, and drop it if they save apps.json; it is filled in again from the repository.
+            if (!string.IsNullOrWhiteSpace(app.CatalogEntryId))
+                payload["catalogEntryId"] = app.CatalogEntryId;
             if (app.CatalogSnapshot is { } catalog)
                 payload["catalog"] = new Dictionary<string, object?>
                 {

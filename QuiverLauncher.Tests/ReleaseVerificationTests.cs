@@ -44,8 +44,11 @@ public class ReleaseVerificationTests
         // Added before the repository moved to another name and owner: GitHub still follows the old one, and the
         // catalog's folder says it's the same app.
         var moved = App("Moved", "old-owner/old-name");
+        // The same, but it remembers the catalog entry it was added from: that settles it.
+        var remembered = App("Shared Linux", sharedRepo, filter: "linux", folder: "Shared");
+        remembered.CatalogEntryId = "id-shared-android";
 
-        await launcher.Manager.CatalogReleases.RefreshAsync([alpha, pc, android, ambiguous, outsider, moved], token);
+        await launcher.Manager.CatalogReleases.RefreshAsync([alpha, pc, android, ambiguous, outsider, moved, remembered], token);
 
         (alpha.CatalogSlug, alpha.CatalogVerifiedVersion, alpha.ReleaseTarget).Should().Be(("alpha", "v1.0", "v1.0"));
         // The library says why it stays on v1.0 while v1.1 is out.
@@ -58,6 +61,7 @@ public class ReleaseVerificationTests
         outsider.CatalogSlug.Should().BeNull();
         outsider.ReleaseTarget.Should().BeNull();
         (moved.CatalogSlug, moved.ReleaseTarget).Should().Be(("moved", "v2.0"));
+        (remembered.CatalogSlug, remembered.CatalogVerifiedVersion).Should().Be(("shared-android", "v3.1"));
         launcher.Network.SitePaths().Should().Equal("/api/v1/release-status", "/api/v1/release-status", "/api/v1/apps", "/api/v1/apps");
 
         // An app outside the catalog is left alone, and a fresh status is not read again.

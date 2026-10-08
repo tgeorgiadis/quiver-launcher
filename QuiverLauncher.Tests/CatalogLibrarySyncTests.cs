@@ -56,13 +56,17 @@ public class CatalogLibrarySyncTests : IDisposable
         Directory.CreateDirectory(_directory);
         var service = new AppCatalogService(dataDirectory: _directory);
         var app = new GameInfo { Name = "Alpha", FolderName = "Alpha", Repository = "owner/alpha", Tags = ["mine"] };
-        CatalogLibrarySync.Apply(app, Entry("Alpha", "Alpha Port", "https://site.test/alpha.png", "port"));
+        var entry = Entry("Alpha", "Alpha Port", "https://site.test/alpha.png", "port");
+        entry.Id = "k1alpha";
+        CatalogLibrarySync.Apply(app, entry);
 
         await service.SaveLocalAppsAsync([app]);
         var loaded = (await service.LoadLocalAppsAsync()).Single();
 
         loaded.CatalogSnapshot.Should().BeEquivalentTo(new CatalogSnapshot("Alpha", "Alpha Port", "https://site.test/alpha.png", ["port"]));
         loaded.Tags.Should().Equal("mine", "port");
+        // The catalog entry it belongs to, which links it first next time.
+        loaded.CatalogEntryId.Should().Be("k1alpha");
         // So a player's later change is still told apart from the catalog's after a restart.
         loaded.Project = "Renamed";
         CatalogLibrarySync.Apply(loaded, Entry("Alpha", "Alpha Port 2", null, "port"));

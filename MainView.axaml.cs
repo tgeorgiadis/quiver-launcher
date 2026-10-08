@@ -1442,7 +1442,8 @@ namespace QuiverLauncher
         /// <summary>Open in Library on a catalog card: the Library, with that app highlighted and scrolled to.</summary>
         private void OpenInLibrary(BrowseItem item)
         {
-            var game = (item.App?.Slug is { } slug ? _gameManager.LibraryApps.FirstOrDefault(a => a.CatalogSlug == slug) : null)
+            var game = (item.App?.Id is { Length: > 0 } id ? _gameManager.LibraryApps.FirstOrDefault(a => a.CatalogEntryId == id) : null)
+                ?? (item.App?.Slug is { } slug ? _gameManager.LibraryApps.FirstOrDefault(a => a.CatalogSlug == slug) : null)
                 ?? (item.ListApp is { } listed ? BrowsePanel.Model.FindInLibrary(listed) : null)
                 ?? _gameManager.LibraryApps.FirstOrDefault(a => string.Equals(a.FolderName?.Trim(), item.FolderName.Trim(), StringComparison.OrdinalIgnoreCase));
             if (Shell.BrowseDetailsOpen)

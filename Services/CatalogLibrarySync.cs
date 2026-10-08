@@ -21,6 +21,12 @@ public static class CatalogLibrarySync
         var next = new CatalogSnapshot(Text(entry.Name), Text(entry.ProjectName), entry.ArtworkFromGame ? null : Text(entry.Artwork),
             TagHelper.NormalizeTags(entry.Tags));
         var changed = false;
+        // The entry's id links the app to it from now on (see GameInfo.CatalogEntryId).
+        if (!string.IsNullOrWhiteSpace(entry.Id) && !string.Equals(app.CatalogEntryId, entry.Id, StringComparison.Ordinal))
+        {
+            app.CatalogEntryId = entry.Id;
+            changed = true;
+        }
 
         void Follow(string? current, string? before, string? value, Action<string> set)
         {
@@ -60,6 +66,7 @@ public static class CatalogLibrarySync
         to.GameIconUrl = from.GameIconUrl;
         to.Tags = [.. from.Tags];
         to.CatalogSnapshot = from.CatalogSnapshot;
+        to.CatalogEntryId = from.CatalogEntryId;
     }
 
     private static string? Text(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
