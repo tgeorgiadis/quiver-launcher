@@ -1,41 +1,14 @@
-# Quiver Launcher 3.5.0-rc.5
+# Quiver Launcher 3.5.0
 
-This is a prerelease for testing before 3.5.0.
+## New App Catalog, powered by QuiverLauncher.com
 
-## New in rc.5
-
-- **Change Version** opens straight away and works again. Picking an unverified release and then saying no no longer leaves the app stuck offering that update.
-- New **Install vX (not verified)** under **Versions**, for the newer release Quiver hasn't verified yet. It asks first.
-- **Force Update** is replaced by **Reinstall**, which downloads your version again to fix a broken install, and **Back to verified updates**, which shows when you've picked a version or skipped an update.
-- App Catalog cards for apps already in your library say **Open in Library**, and pressing it (or **Y**) takes you there. This also fixes a crash when pressing **Y** on those cards.
-- **Hide apps in my library** now also recognises apps you added yourself or that sit in a different folder. Apps you add stay visible until you come back to the catalog.
-- Removing an app that isn't installed no longer asks, and there's no "removed" message afterwards.
-- The Mods screen loads mods the first time it opens, instead of saying "No mods found" until you refresh.
-- New library name style, **Project + name below**, which matches the App Catalog cards.
-- If a Quiver update can't be installed, Quiver says why instead of offering the same update again.
-- Quiver installed at the top of a drive (like G:) no longer loses its library when it updates.
-- If quiverlauncher.com can't be reached securely, the App Catalog tries another address, and shows the real reason if that fails too.
-
-## New in rc.4
-
-- Apps from the App Catalog now get their releases and downloads from quiverlauncher.com instead of asking GitHub. Adding, installing, checking for updates and the version list should no longer hit GitHub's request limit.
-- GitHub is only asked about apps that aren't in the catalog, or if quiverlauncher.com can't be reached.
-
-## New in rc.3
-
-- Add an app to your library straight from its App Catalog card with **+ Add**, or press **Y** on a controller.
-- Apps already in your library are hidden from the App Catalog so new ones are easier to find. Untick **Hide apps in my library** to see them.
-- The App Catalog fits smaller windows: the search and filters move onto their own lines and the cards fill the width. On Android it looks like the website on a phone.
-- **View README** and **Show Changelog** in the Library now open the app's page, on its Overview and Releases tabs.
-- Quiver uses less memory, especially with a big library: pictures load at the size they're shown, and cards are only built when they're near the screen.
-- Quiver now asks once whether it may send anonymous usage data (see below).
-- Smaller fixes: the "not verified yet" line on library cards scrolls like the rest of the card, and the **NEW** badge is green so it stands apart from **+ Add**.
-
-## New App Catalog
-
-- The App Catalog now comes from [quiverlauncher.com](https://quiverlauncher.com). Search, sort and filter it like the website, including by project type, platform, console and AI use.
-- Searching shows the games that match. Each game has a page with every way to play it.
+- The App Catalog now comes from [quiverlauncher.com](https://quiverlauncher.com) and is laid out like the website. Search, sort and filter by project type, platform, console and AI use.
+- Cards show how each app runs from player feedback (**Runs well**, **Has issues**, **Doesn't run**), the game it's based on, its platforms and when it was last updated.
+- Searching shows the games that match. Each game has a page with every way to play it, best first.
 - Each app has a page with its README, its releases and player feedback. To leave feedback, use the button that opens the website.
+- Add an app straight from its card with **+ Add**, or press **Y** on a controller. Apps already in your library say **Open in Library**.
+- Apps already in your library are hidden so new ones are easier to find. Untick **Hide apps in my library** to see them.
+- The catalog fits any window size, and on Android it looks like the website on a phone.
 - App lists are gone. If you keep your own list, add it in **Settings → Advanced → My app list** (a JSON file or a URL).
 
 ## Safer installs and updates
@@ -43,8 +16,16 @@ This is a prerelease for testing before 3.5.0.
 - Updates go to the release quiverlauncher.com has verified, not just the newest one.
 - Downloads are checked against the file the site recorded, and refused if it changed.
 - Installing a release that isn't verified asks first. A blocked release asks twice. Automatic updates never install either.
-- Library cards show when a newer release is out but not verified yet.
+- Library cards show when a newer release is out but not verified yet. **Versions → Install vX (not verified)** installs it if you want it.
+- **Versions** has **Change Version**, **Reinstall** to fix a broken install, and **Back to verified updates** when you've picked a version or skipped an update.
+- Catalog apps get their releases from quiverlauncher.com, so adding, installing and updating no longer hit GitHub's request limit.
+
+## Library
+
 - Apps in your library pick up the catalog's current name, icon and tags. Your own names, covers and tags stay.
+- **View README** and **Show Changelog** open the app's page on its Overview and Releases tabs.
+- New name style, **Project + name below**, to match the App Catalog cards.
+- Removing an app that isn't installed no longer asks first.
 
 ## Kiosk mode
 
@@ -56,27 +37,22 @@ This is a prerelease for testing before 3.5.0.
 - Quiver asks once whether it may send anonymous usage data: which features get used, which apps are installed and launched, and errors. It's off unless you say yes.
 - It never includes your name, files or folders. Change it any time in **Settings → General → Usage data**.
 
-## Windows MSI installs
+## More platforms
 
-- Apps that release a `.msi` install through the Windows setup wizard, then you pick the program it installed.
-- Updates for these apps always ask first.
+- macOS downloads for Apple Silicon and Intel Macs. The app isn't notarized yet, so macOS asks you to confirm the first time you open it. If it says the app can't be opened, go to **System Settings → Privacy & Security** and choose **Open Anyway**.
+- A Linux x64 Flatpak (experimental). It doesn't update itself, so install a newer bundle to update it.
+- Apps that release a `.msi` on Windows install through the setup wizard, then you pick the program it installed. Updates for these apps always ask first.
 
-## Flatpak on Linux (experimental)
+## Other improvements and fixes
 
-- A Linux x64 Flatpak download is included again. It's experimental, so expect rough edges and please report any problems.
-- The Flatpak doesn't update itself. Install a newer bundle to update it.
-
-## macOS
-
-- macOS downloads are available for Apple Silicon and Intel Macs.
-- The app isn't notarized yet, so macOS asks you to confirm the first time you open it. If it says the app can't be opened, go to **System Settings → Privacy & Security** and choose **Open Anyway**.
-- A native menu bar, Apple Silicon support, and fixes for installing `.dmg` apps.
-
-## Other fixes
-
+- A **QuiverLauncher.com** button at the bottom of the sidebar.
+- Quiver uses less memory, especially with a big library.
+- If a Quiver update can't be installed, Quiver says why instead of offering the same update again.
+- Quiver installed at the top of a drive (like G:) no longer loses its library when it updates.
+- If quiverlauncher.com can't be reached securely, the App Catalog tries another address.
+- The Mods screen loads mods the first time it opens.
 - The window no longer jumps while you move or resize it.
-- Before an update installs, Quiver checks again which release to install, so an out-of-date saved choice isn't used.
 - Release tags like `Version1.0.4` are no longer mixed up with other versions.
-- Fixes for renamed filters and text contrast in the light theme.
+- Fixes for text contrast in the light theme.
 
 Thanks to sdelavega, jeffsmith82 and MarllonMenezes for their fixes.

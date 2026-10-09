@@ -1,5 +1,5 @@
 {
-  "id": "2026-09-21-345",
+  "id": "2026-10-09-350",
   "enabled": true,
-  "message": "3.4.5: More reliable startup version checks for apps, a library loading indicator, priority for download and version-selection requests, and fixes for notices/source archives being mistaken for app downloads."
+  "message": "3.5.0: The new App Catalog, powered by QuiverLauncher.com. Player feedback on every port, game pages, AI labels and a catalog built to grow. Updates now go to verified releases only, with every download checked. Plus Mac builds and kiosk mode."
 }

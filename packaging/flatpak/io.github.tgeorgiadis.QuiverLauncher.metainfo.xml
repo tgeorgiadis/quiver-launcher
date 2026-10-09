@@ -19,6 +19,6 @@
   <url type="bugtracker">https://github.com/tgeorgiadis/quiver-launcher/issues</url>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="3.5.0-rc.5" date="2026-10-08" type="development" />
+    <release version="3.5.0" date="2026-10-09" type="stable" />
   </releases>
 </component>
