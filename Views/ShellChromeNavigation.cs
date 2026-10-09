@@ -26,6 +26,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
     private readonly Button LibraryNavButton;
     private readonly Button BrowseNavButton;
     private readonly LibraryFiltersView LibraryFiltersPanel;
+    private readonly Button WebsiteFooterButton;
     private readonly Button GitHubFooterButton;
     private readonly Button DiscordFooterButton;
     private readonly Button KofiFooterButton;
@@ -55,6 +56,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         LibraryNavButton = root.FindControl<Button>("LibraryNavButton")!;
         BrowseNavButton = root.FindControl<Button>("BrowseNavButton")!;
         LibraryFiltersPanel = root.FindControl<LibraryFiltersView>("LibraryFiltersPanel")!;
+        WebsiteFooterButton = root.FindControl<Button>("WebsiteFooterButton")!;
         GitHubFooterButton = root.FindControl<Button>("GitHubFooterButton")!;
         DiscordFooterButton = root.FindControl<Button>("DiscordFooterButton")!;
         KofiFooterButton = root.FindControl<Button>("KofiFooterButton")!;
@@ -261,7 +263,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
     {
         for (var i = 0; i < controls.Count; i++)
         {
-            if (ReferenceEquals(controls[i], GitHubFooterButton) || ReferenceEquals(controls[i], DiscordFooterButton) || ReferenceEquals(controls[i], KofiFooterButton))
+            if (ReferenceEquals(controls[i], WebsiteFooterButton) || ReferenceEquals(controls[i], GitHubFooterButton) || ReferenceEquals(controls[i], DiscordFooterButton) || ReferenceEquals(controls[i], KofiFooterButton))
             {
                 return i;
             }
@@ -332,6 +334,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         Add(LibraryNavButton);
         Add(BrowseNavButton);
         controls.AddRange(LibraryFiltersPanel.CollectNavigationControls());
+        Add(WebsiteFooterButton);
         Add(GitHubFooterButton);
         Add(DiscordFooterButton);
         Add(KofiFooterButton);

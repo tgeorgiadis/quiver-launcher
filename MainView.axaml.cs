@@ -1607,6 +1607,20 @@ namespace QuiverLauncher
             }
         }
 
+        private void WebsiteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (KioskLocked)
+                return;
+            try
+            {
+                OpenUrl(QuiverCatalogClient.WebsiteUrl);
+            }
+            catch (Exception ex)
+            {
+                _ = _session.RunAsync(() => ShowMessageBoxAsync($"Failed to open QuiverLauncher.com: {ex.Message}", "Action Error"));
+            }
+        }
+
         private void DiscordButton_Click(object sender, RoutedEventArgs e)
         {
             if (KioskLocked)

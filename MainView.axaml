@@ -169,6 +169,15 @@
 				<StackPanel x:Name="ExternalLinksHost" Grid.Row="3" Margin="12,0,12,8" IsVisible="{Binding ShowExternalLinks}">
 						<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="-12,0,-12,8"/>
 					<StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+						<Button x:Name="WebsiteFooterButton"
+								Classes="iconbutton"
+								Width="44"
+								Height="44"
+								ToolTip.Tip="QuiverLauncher.com"
+								Click="WebsiteButton_Click">
+							<Image Width="32" Height="32"
+								   Source="avares://QuiverLauncher/Assets/quiver-icon.png"/>
+						</Button>
 						<Button x:Name="GitHubFooterButton"
 								Classes="iconbutton"
 								Width="44"
