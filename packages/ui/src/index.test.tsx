@@ -79,10 +79,14 @@ it("scores only what players said, in words that read naturally", () => {
   const text = (runs: number, issues: number, broken: number) =>
     render(<Score runs={runs} issues={issues} broken={broken} />).container.textContent;
   expect(text(0, 0, 0)).toBe("Not rated yet");
-  expect(text(1, 0, 0)).toBe("Mostly runs · 1 runs well");
-  expect(text(3, 2, 0)).toBe("Mostly runs · 3 run well, 2 with issues");
-  expect(text(0, 1, 1)).toBe("Mixed · 1 with issues, 1 doesn't run");
-  expect(text(0, 0, 2)).toBe("Mostly doesn't run · 2 don't run");
+  expect(text(4, 0, 0)).toBe("Runs well · 4 players");
+  expect(text(0, 1, 0)).toBe("Has issues · 1 player");
+  expect(text(0, 0, 2)).toBe("Doesn't run · 2 players");
+  expect(text(5, 1, 0)).toBe("Runs well · 5 run well, 1 with issues");
+  expect(text(1, 0, 3)).toBe("Doesn't run · 1 runs well, 3 don't run");
+  // A tie shows the more careful answer.
+  expect(text(2, 2, 1)).toBe("Has issues · 2 run well, 2 with issues, 1 doesn't run");
+  expect(text(0, 2, 2)).toBe("Doesn't run · 2 with issues, 2 don't run");
 });
 
 describe("Artwork", () => {
