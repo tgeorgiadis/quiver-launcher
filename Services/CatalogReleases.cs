@@ -19,10 +19,27 @@ public sealed record ReleaseCheck(
     IReadOnlyDictionary<string, string> Checksums,
     string? ScanVerdict = null,
     string? ScanEngines = null,
-    DateTimeOffset? VerifiedAt = null)
+    DateTimeOffset? VerifiedAt = null,
+    IReadOnlyDictionary<string, QuiverCatalogScan>? FileScans = null,
+    string? ScanFile = null)
 {
     /// <summary>The SHA-256 (hex) Quiver pinned for a file of this release, when it knows the file.</summary>
     public string? ChecksumFor(string fileName) => Checksums.GetValueOrDefault(fileName);
+
+    /// <summary>
+    /// The check with VirusTotal's verdict on the one file being downloaded, rather than the release's most worrying
+    /// file: a flagged Windows build says nothing about the Linux one. The release's verdict stands when the site
+    /// gives none per file.
+    /// </summary>
+    public ReleaseCheck ForFile(string fileName)
+    {
+        if (FileScans is not { Count: > 0 }) return this;
+        var scan = FileScans.GetValueOrDefault(fileName);
+        return this with { ScanVerdict = scan?.Verdict, ScanEngines = scan?.Engines, ScanFile = fileName };
+    }
+
+    /// <summary>Several antivirus engines flag it, so the player's own antivirus may block or remove its files.</summary>
+    public bool Flagged => ScanVerdict == "flagged";
 }
 
 /// <summary>
@@ -146,8 +163,12 @@ public sealed class CatalogReleases
             .Where(a => a.Checksum?.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) == true)
             .GroupBy(a => a.Filename, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().Checksum!["sha256:".Length..].ToLowerInvariant(), StringComparer.OrdinalIgnoreCase);
+        var scans = release.Assets
+            .Where(a => a.Scan != null)
+            .GroupBy(a => a.Filename, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Scan!, StringComparer.OrdinalIgnoreCase);
         return new(state, release.Reasons, verified, checksums, release.Scan?.Verdict, release.Scan?.Engines,
-            release.CheckEndsAt is { } ends ? DateTimeOffset.FromUnixTimeMilliseconds((long)ends) : null);
+            release.CheckEndsAt is { } ends ? DateTimeOffset.FromUnixTimeMilliseconds((long)ends) : null, scans);
     }
 
     /// <summary>

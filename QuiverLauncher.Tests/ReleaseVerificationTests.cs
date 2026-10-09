@@ -400,8 +400,114 @@ public class ReleaseVerificationTests
         // With nothing verified yet there is no release to point at; a detection is worth a line.
         var flagged = unseen with { VerifiedVersion = null, VerifiedAt = null, ScanVerdict = "flagged", ScanEngines = "3 engines" };
         (await Confirm("v1.1", flagged)).Asked.Single().Message.Should().Be(
-            $"Quiver hasn't verified Alpha v1.1 yet.\n\n• {CatalogReleases.NotSeen}\n• VirusTotal: 3 engines flag one of its files.\n\n" +
+            $"Quiver hasn't verified Alpha v1.1 yet.\n\n• {CatalogReleases.NotSeen}\n• VirusTotal: 3 engines flag one of its files. " +
+            "Your antivirus may block or remove it.\n\n" +
             "No version of this app is verified yet.\n\nInstall it anyway?");
+    }
+
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Verified_update_whose_download_several_engines_flag_warns_about_antivirus_first(bool confirm)
+    {
+        using var launcher = new Launcher();
+        var repo = Repo();
+        var served = Zip("v2.txt");
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", repo, "v2")]);
+        launcher.Network.Site["/apps/alpha/release-history?limit=100"] = Page(
+            [History("v2", "verified", [], [(Asset, served)], scan: FlaggedScan, fileScans: new() { [Asset] = FlaggedScan })]);
+        launcher.Network.Files[SiteLink("v2", Asset)] = served;
+        var app = InstalledApp(launcher, repo, latest: "v2");
+        var player = new Dialogs(confirm);
+
+        await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
+            null, launcher.Store.Current, GameStatus.UpdateAvailable, player);
+
+        player.Confirmations.Should().BeEmpty("the release itself is verified");
+        var asked = player.Flagged.Should().ContainSingle().Subject;
+        (asked.App, asked.Version, asked.Update).Should().Be(("Alpha", "v2", true));
+        (asked.Check.ScanEngines, asked.Check.ScanFile).Should().Be(("5 of 70 engines", Asset));
+        player.Errors.Should().BeEmpty();
+        if (confirm)
+        {
+            app.InstalledVersion.Should().Be("v2");
+            app.Status.Should().Be(GameStatus.Installed);
+        }
+        else
+        {
+            launcher.Network.Downloads.Should().Be(0);
+            app.Status.Should().Be(GameStatus.UpdateAvailable);
+            AssertStillV1(app, launcher.Manager.GamesFolder);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Automatic_update_to_a_flagged_download_waits_for_the_player()
+    {
+        using var launcher = new Launcher();
+        var repo = Repo();
+        var served = Zip("v2.txt");
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", repo, "v2")]);
+        launcher.Network.Site["/apps/alpha/release-history?limit=100"] = Page(
+            [History("v2", "verified", [], [(Asset, served)], scan: FlaggedScan, fileScans: new() { [Asset] = FlaggedScan })]);
+        launcher.Network.Files[SiteLink("v2", Asset)] = served;
+        var app = InstalledApp(launcher, repo, latest: "v2");
+        var player = new Dialogs(confirm: true);
+
+        await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
+            null, launcher.Store.Current, GameStatus.UpdateAvailable, new AutomaticGameDownloadDialogs(player));
+
+        player.Flagged.Should().BeEmpty("an automatic update never asks");
+        launcher.Network.Downloads.Should().Be(0);
+        app.Status.Should().Be(GameStatus.UpdateAvailable, "the player updates it themselves, after the warning");
+        AssertStillV1(app, launcher.Manager.GamesFolder);
+    }
+
+    [AvaloniaFact]
+    public async Task Flag_on_another_platforms_file_does_not_warn()
+    {
+        using var launcher = new Launcher();
+        var repo = Repo();
+        var served = Zip("v2.txt");
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", repo, "v2")]);
+        // The release's worst file is the Linux build; the Windows one this player downloads is clean.
+        launcher.Network.Site["/apps/alpha/release-history?limit=100"] = Page(
+        [
+            History("v2", "verified", [], [(Asset, served), ("alpha-linux.tar.gz", [3])], scan: FlaggedScan,
+                fileScans: new() { [Asset] = new { verdict = "clean" }, ["alpha-linux.tar.gz"] = FlaggedScan }),
+        ]);
+        launcher.Network.Files[SiteLink("v2", Asset)] = served;
+        var app = App("Alpha", repo, manager: launcher.Manager);
+        var player = new Dialogs(confirm: false);
+
+        await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
+            null, launcher.Store.Current, GameStatus.NotInstalled, player);
+
+        player.Flagged.Should().BeEmpty();
+        player.Errors.Should().BeEmpty();
+        (app.InstalledVersion, app.Status).Should().Be(("v2", GameStatus.Installed));
+    }
+
+    [Fact]
+    public async Task Flagged_warning_names_the_file_and_what_antivirus_may_do()
+    {
+        var check = new ReleaseCheck(ReleaseCheckState.Verified, [], "v2", new Dictionary<string, string>(),
+            "flagged", "5 of 70 engines", ScanFile: Asset);
+        var asked = new List<(string Message, string Title)>();
+
+        var result = await ReleaseWarnings.ConfirmFlaggedAsync("Alpha", "v2", check, update: false, (message, title) =>
+        {
+            asked.Add((message, title));
+            return Task.FromResult(false);
+        });
+
+        result.Should().BeFalse();
+        asked.Should().ContainSingle().Which.Should().Be((
+            $"5 of 70 engines on VirusTotal flag {Asset}, the file Quiver downloads for Alpha v2.\n\n" +
+            "Quiver verified this release, and detections like this are often false alarms. Even so, your antivirus may " +
+            "block the download or remove files once it's installed, which would stop the app from working.\n\n" +
+            "Install anyway?",
+            "Your antivirus may block this"));
     }
 
     // ---- Fixture ----
@@ -478,11 +584,17 @@ public class ReleaseVerificationTests
         new { slug, launcher = new { folderName, releaseAssetFilter } };
 
     private static object History(string version, string state, string[] reasons, (string File, byte[] Bytes)[] files,
-        object? scan = null, long? checkEndsAt = null) => new
+        object? scan = null, long? checkEndsAt = null, Dictionary<string, object>? fileScans = null) => new
     {
         version, state, reasons, scan, checkEndsAt,
-        assets = files.Select(f => new { filename = f.File, url = SiteLink(version, f.File), checksum = "sha256:" + Sha256(f.Bytes) }).ToArray(),
+        assets = files.Select(f => new
+        {
+            filename = f.File, url = SiteLink(version, f.File), checksum = "sha256:" + Sha256(f.Bytes),
+            scan = fileScans?.GetValueOrDefault(f.File),
+        }).ToArray(),
     };
+
+    private static readonly object FlaggedScan = new { verdict = "flagged", engines = "5 of 70 engines" };
 
     /// <summary>Where quiverlauncher.com says a release file downloads from.</summary>
     private static string SiteLink(string version, string file) => $"https://files.example/{version}/{file}";
@@ -523,6 +635,7 @@ public class ReleaseVerificationTests
     {
         public List<(string Message, string Title)> Errors { get; } = [];
         public List<(string App, string Version, ReleaseCheck Check)> Confirmations { get; } = [];
+        public List<(string App, string Version, ReleaseCheck Check, bool Update)> Flagged { get; } = [];
 
         public Task<bool> ConfirmDownloadWithoutRunnerAsync() => Task.FromResult(true);
         public Task<LinuxWindowsRunnerConfig?> ConfigureWindowsRunnerAsync(string gamePath, LinuxWindowsRunnerConfig? existing = null, bool isInstall = true) =>
@@ -537,6 +650,11 @@ public class ReleaseVerificationTests
         public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check)
         {
             Confirmations.Add((appName, version, check));
+            return Task.FromResult(confirm);
+        }
+        public Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update)
+        {
+            Flagged.Add((appName, version, check, update));
             return Task.FromResult(confirm);
         }
     }

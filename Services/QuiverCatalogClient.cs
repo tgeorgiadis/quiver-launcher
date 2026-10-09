@@ -161,6 +161,8 @@ public sealed class QuiverCatalogAsset
     public string? Url { get; set; }
     /// <summary>"sha256:" and the hex digest of the file Quiver saw when the release came out.</summary>
     public string? Checksum { get; set; }
+    /// <summary>VirusTotal's verdict on this file, once the site has one.</summary>
+    public QuiverCatalogScan? Scan { get; set; }
 }
 
 public sealed class QuiverCatalogScan
