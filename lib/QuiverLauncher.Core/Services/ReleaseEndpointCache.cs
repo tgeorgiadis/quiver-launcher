@@ -14,12 +14,15 @@ namespace QuiverLauncher.Core.Services;
 public sealed class ReleaseEndpointCache
 {
     public sealed record Entry(string Body, string? ETag, DateTimeOffset ValidatedAt);
+    public sealed record RateLimitEntry(long? Limit, long Remaining, DateTimeOffset? ResetAt, DateTimeOffset ObservedAt);
     private sealed record Validator(string? ETag, DateTimeOffset ValidatedAt);
 
     private readonly object _gate = new();
     private readonly string? _directory;
     private readonly string? _indexPath;
+    private readonly string? _rateLimitPath;
     private readonly Dictionary<string, Validator> _validators = [];
+    private readonly Dictionary<string, RateLimitEntry> _rateLimits = [];
     // Payloads only for a cache that has nowhere to save them.
     private readonly Dictionary<string, string> _bodies = [];
 
@@ -28,6 +31,7 @@ public sealed class ReleaseEndpointCache
         if (directory == null) return;
         _directory = Path.Combine(directory, "release_endpoints_v2");
         _indexPath = Path.Combine(_directory, "index.json");
+        _rateLimitPath = Path.Combine(directory, "release_rate_limits_v1.json");
         try
         {
             if (File.Exists(_indexPath))
@@ -39,6 +43,15 @@ public sealed class ReleaseEndpointCache
                 Migrate(Path.Combine(directory, "release_endpoints_v1.json"));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { _validators = []; }
+        try
+        {
+            if (File.Exists(_rateLimitPath))
+            {
+                using var stream = File.OpenRead(_rateLimitPath);
+                _rateLimits = JsonSerializer.Deserialize<Dictionary<string, RateLimitEntry>>(stream) ?? [];
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { _rateLimits = []; }
     }
 
     public Entry? Get(string key)
@@ -83,12 +96,48 @@ public sealed class ReleaseEndpointCache
         }
     }
 
+    public RateLimitEntry? GetRateLimit(string key) { lock (_gate) return _rateLimits.GetValueOrDefault(key); }
+
+    public void SetRateLimit(string key, RateLimitEntry entry)
+    {
+        lock (_gate)
+        {
+            _rateLimits[key] = entry;
+            SaveRateLimits();
+        }
+    }
+
+    public RateLimitEntry UpdateRateLimit(string key, Func<RateLimitEntry?, RateLimitEntry> update)
+    {
+        lock (_gate)
+        {
+            var entry = update(_rateLimits.GetValueOrDefault(key));
+            _rateLimits[key] = entry;
+            SaveRateLimits();
+            return entry;
+        }
+    }
+
     private string BodyPath(string key) =>
         Path.Combine(_directory!, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))) + ".json");
 
     private void SaveIndex()
     {
         if (_indexPath != null) TryWrite(_indexPath, JsonSerializer.Serialize(_validators));
+    }
+
+    private void SaveRateLimits()
+    {
+        if (_rateLimitPath == null) return;
+        try
+        {
+            var directory = Path.GetDirectoryName(_rateLimitPath)!;
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(_rateLimitPath + ".tmp", JsonSerializer.Serialize(_rateLimits));
+            File.Move(_rateLimitPath + ".tmp", _rateLimitPath, overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        { System.Diagnostics.Debug.WriteLine("Could not persist release rate-limit cache."); }
     }
 
     private bool TryWrite(string path, string text)

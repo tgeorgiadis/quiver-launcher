@@ -9,8 +9,10 @@ public class AppUpdateReviewViewModelTests
     private sealed class Actions : IAppUpdateReviewActions
     {
         public bool IsReviewOpen { get; set; } = true;
+        public int CheckCalls { get; private set; }
         public IReadOnlyList<GameInfo> GetReviewRows() => [];
         public IReadOnlyList<GameInfo> GetPendingUpdates() => [];
+        public Task CheckForUpdatesAsync() { CheckCalls++; return Task.CompletedTask; }
         public Task UpdateAsync(GameInfo game, bool automaticSelection) => Task.CompletedTask;
         public Task SkipAsync(GameInfo game) => Task.CompletedTask;
         public void ShowVersions(GameInfo game) { }
@@ -27,5 +29,18 @@ public class AppUpdateReviewViewModelTests
         await model.SkipAllAsync();
         actions.IsReviewOpen.Should().BeFalse();
         model.IsBusy.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Recheck_is_explicit_and_does_not_require_leaving_the_review()
+    {
+        var actions = new Actions();
+        var model = new AppUpdateReviewViewModel();
+        model.Configure(actions);
+
+        await model.CheckForUpdatesAsync();
+
+        actions.CheckCalls.Should().Be(1);
+        actions.IsReviewOpen.Should().BeTrue();
     }
 }

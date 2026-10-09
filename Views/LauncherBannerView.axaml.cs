@@ -16,12 +16,13 @@ public partial class LauncherBannerView : UserControl, IFeatureNavigationHandler
 
     private HttpClient _httpClient = null!;
     private IFeatureNavigationHost _host = null!;
-    private Action _openSettings = null!;
+    private Action<string> _openSettings = null!;
+    private string? _rateLimitedProvider;
     private GamepadNavigationService _gamepadNavigation => _host.Navigation;
     private bool IsGamepadFocusActive => _host.IsFocusActive;
 
     public LauncherBannerView() => InitializeComponent();
-    public void Configure(LauncherSession session, SettingsViewModel settings, HttpClient client, IFeatureNavigationHost host, Action openSettings)
+    public void Configure(LauncherSession session, SettingsViewModel settings, HttpClient client, IFeatureNavigationHost host, Action<string> openSettings)
     {
         _session = session;
         _settingsViewModel = settings;
@@ -35,14 +36,20 @@ public partial class LauncherBannerView : UserControl, IFeatureNavigationHandler
 
     private void OnReleaseRequestCompleted(GitHubReleaseFetchResult result)
     {
-        if (result.Provider != "github" || result.IsAuthenticated || !result.IsRateLimited)
+        if (result.Provider is not ("github" or "gitlab") || result.IsAuthenticated || !result.IsRateLimited)
             return;
         Dispatcher.UIThread.Post(() =>
         {
-            if (_session.IsClosed || !string.IsNullOrWhiteSpace(_settings.GitHubApiToken)) return;
+            var provider = result.Provider;
+            var token = provider == "github" ? _settings.GitHubApiToken : _settings.GitLabApiToken;
+            if (_session.IsClosed || !string.IsNullOrWhiteSpace(token)) return;
             AuthenticationRequired = true;
+            _rateLimitedProvider = provider;
+            GitHubTokenBannerSettingsButton.Content = $"Set a {(provider == "github" ? "GitHub" : "GitLab")} token";
             var retry = result.RetryAt ?? result.ResetAt;
-            GitHubTokenBannerText.Text = "GitHub's unauthenticated request limit was reached. Latest versions and some platform checks may be unavailable. Set a GitHub token to use the authenticated allowance."
+            GitHubTokenBannerText.Text = provider == "github"
+                ? "GitHub's unauthenticated request limit was reached. Launcher updates and updates for games hosted on GitHub cannot be checked right now. Set a GitHub token to use the authenticated allowance."
+                : "GitLab's unauthenticated request limit was reached. Updates for games hosted on GitLab cannot be checked right now. Set a GitLab token to use the authenticated allowance."
                 + (retry is { } time ? $" Without a token, retry after {time.ToLocalTime():g}." : "");
             ApplyTopBanner();
         });
@@ -143,7 +150,11 @@ public partial class LauncherBannerView : UserControl, IFeatureNavigationHandler
         _settings.EnsureInitialized();
         var announcementShowing = AnnouncementBanner is { IsVisible: true };
         var tokenWasVisible = GitHubTokenBanner is { IsVisible: true };
-        var showToken = AuthenticationRequired && !announcementShowing && GitHubTokenBannerPolicy.ShouldShow(_settings.GitHubApiToken, _settings.GitHubTokenBannerPermanentlyDismissed, _settings.GitHubTokenBannerSnoozedUntilUtc, DateTimeOffset.UtcNow);
+        var provider = _rateLimitedProvider;
+        var token = provider == "gitlab" ? _settings.GitLabApiToken : _settings.GitHubApiToken;
+        var permanentlyDismissed = provider == "gitlab" ? _settings.GitLabTokenBannerPermanentlyDismissed : _settings.GitHubTokenBannerPermanentlyDismissed;
+        var snoozedUntil = provider == "gitlab" ? _settings.GitLabTokenBannerSnoozedUntilUtc : _settings.GitHubTokenBannerSnoozedUntilUtc;
+        var showToken = AuthenticationRequired && provider != null && !announcementShowing && GitHubTokenBannerPolicy.ShouldShow(token, permanentlyDismissed, snoozedUntil, DateTimeOffset.UtcNow);
         if (GitHubTokenBanner != null)
             GitHubTokenBanner.IsVisible = showToken;
         if (tokenWasVisible && !showToken)
@@ -157,14 +168,22 @@ public partial class LauncherBannerView : UserControl, IFeatureNavigationHandler
 
     private void GitHubTokenBannerSettings_Click(object? sender, RoutedEventArgs e)
     {
-        _openSettings();
+        _openSettings(_rateLimitedProvider ?? "github");
     }
 
     private void GitHubTokenBannerDontShowAgain_Click(object? sender, RoutedEventArgs e)
     {
         _settings.EnsureInitialized();
-        _settings.GitHubTokenBannerPermanentlyDismissed = true;
-        _settings.GitHubTokenBannerSnoozedUntilUtc = null;
+        if (_rateLimitedProvider == "gitlab")
+        {
+            _settings.GitLabTokenBannerPermanentlyDismissed = true;
+            _settings.GitLabTokenBannerSnoozedUntilUtc = null;
+        }
+        else
+        {
+            _settings.GitHubTokenBannerPermanentlyDismissed = true;
+            _settings.GitHubTokenBannerSnoozedUntilUtc = null;
+        }
         _settingsViewModel.Save(_settings);
         ApplyTopBanner();
     }
@@ -172,7 +191,10 @@ public partial class LauncherBannerView : UserControl, IFeatureNavigationHandler
     private void GitHubTokenBannerClose_Click(object? sender, RoutedEventArgs e)
     {
         _settings.EnsureInitialized();
-        _settings.GitHubTokenBannerSnoozedUntilUtc = GitHubTokenBannerPolicy.SnoozeUntil(DateTimeOffset.UtcNow);
+        if (_rateLimitedProvider == "gitlab")
+            _settings.GitLabTokenBannerSnoozedUntilUtc = GitHubTokenBannerPolicy.SnoozeUntil(DateTimeOffset.UtcNow);
+        else
+            _settings.GitHubTokenBannerSnoozedUntilUtc = GitHubTokenBannerPolicy.SnoozeUntil(DateTimeOffset.UtcNow);
         _settingsViewModel.Save(_settings);
         ApplyTopBanner();
     }

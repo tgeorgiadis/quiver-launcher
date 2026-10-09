@@ -59,7 +59,7 @@ public sealed class UpdateCheckCoordinator(IUpdateCheckWorkflow workflow, TimeSp
     {
         using var cancel = CancellationTokenSource.CreateLinkedTokenSource(lifetime);
         _cancel = cancel;
-        cancel.CancelAfter(timeout ?? TimeSpan.FromSeconds(60));
+        if (timeout is { } deadline) cancel.CancelAfter(deadline);
         var token = cancel.Token;
         using var priority = ReleaseRequestCoordinator.PrioritizeInteractiveChecks();
         var watch = Stopwatch.StartNew();

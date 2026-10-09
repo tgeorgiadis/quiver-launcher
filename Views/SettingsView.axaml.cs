@@ -5,6 +5,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Models;
+using QuiverLauncher.Core.Services;
 using QuiverLauncher.Services;
 using QuiverLauncher.ViewModels;
 
@@ -33,6 +34,7 @@ public partial class SettingsView : UserControl
         GamepadComboBoxNavigation.Attach(MouseWheelScrollSpeedComboBox);
         GamepadComboBoxNavigation.Attach(InterfaceScaleComboBox);
         GamepadComboBoxNavigation.Attach(ThemeTextModeComboBox);
+        AttachedToVisualTree += (_, _) => Dispatcher.UIThread.Post(RefreshApiRateLimits);
     }
 
     public void Configure(SettingsFeatureContext context, ISettingsFeatureHost host)
@@ -256,6 +258,9 @@ public partial class SettingsView : UserControl
                 GitHubTokenTextBox.Text = _settings.GitHubApiToken;
             if (GitLabTokenTextBox != null)
                 GitLabTokenTextBox.Text = _settings.GitLabApiToken;
+            if (CodebergTokenTextBox != null)
+                CodebergTokenTextBox.Text = _settings.CodebergApiToken;
+            RefreshApiRateLimits();
             if (CustomAppListTextBox != null)
                 CustomAppListTextBox.Text = _settings.CustomAppListLocation;
             if (GamePathTextBox != null)
@@ -382,18 +387,39 @@ public partial class SettingsView : UserControl
     }
 
     // TextBox contents are drafts. Only explicit save/clear changes the credential context.
-    internal void GitHubTokenTextBox_TextChanged(object sender, TextChangedEventArgs e) { }
-    internal void GitLabTokenTextBox_TextChanged(object sender, TextChangedEventArgs e) { }
-    internal void SaveGitHubToken_Click(object? sender, RoutedEventArgs e)
+    internal void GitHubTokenTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateTokenButton("github");
+    internal void GitLabTokenTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateTokenButton("gitlab");
+    internal void CodebergTokenTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateTokenButton("codeberg");
+    private void UpdateTokenButton(string provider)
     {
-        if (_context == null || _suppressSettingsUiEvents) return;
-        Model.SaveApiToken("github", GitHubTokenTextBox.Text);
-        _host.ApplyTopBanner();
+        if (_context == null) return;
+        var (box, button, saved) = provider switch { "github" => (GitHubTokenTextBox, SaveGitHubTokenButton, _settings.GitHubApiToken), "gitlab" => (GitLabTokenTextBox, SaveGitLabTokenButton, _settings.GitLabApiToken), "codeberg" => (CodebergTokenTextBox, SaveCodebergTokenButton, _settings.CodebergApiToken), _ => throw new ArgumentOutOfRangeException(nameof(provider)) };
+        var unchanged = !string.IsNullOrWhiteSpace(saved) && string.Equals(box.Text?.Trim(), saved, StringComparison.Ordinal);
+        var valid = unchanged && ReleaseRequestCoordinator.For(_gameManager.HttpClient).HasValidatedToken(provider, saved);
+        button.Content = valid ? "Token OK" : unchanged ? "Check saved token" : "Save token";
+        button.Classes.Set("token-ok", valid);
+        button.Classes.Set("token-check", unchanged && !valid);
     }
-    internal void SaveGitLabToken_Click(object? sender, RoutedEventArgs e)
+    private async Task SaveApiTokenAsync(string provider, string? draft)
     {
-        if (_context == null || _suppressSettingsUiEvents) return;
-        Model.SaveApiToken("gitlab", GitLabTokenTextBox.Text);
+        var token = draft?.Trim() ?? string.Empty;
+        if (!string.IsNullOrEmpty(token))
+        {
+            var validation = await ReleaseTokenValidator.ValidateAsync(_gameManager.HttpClient, provider, token, _session.Token);
+            if (!validation.IsValid) { await _host.ShowMessageBoxAsync($"{validation.ErrorMessage}\n\nThe saved {RepositorySourceHelper.DisplayName(provider)} token was left unchanged.", "Token validation failed"); return; }
+        }
+        Model.SaveApiToken(provider, token); UpdateTokenButton(provider); RefreshApiRateLimits();
+        if (provider == "github") _host.ApplyTopBanner();
+    }
+    internal async void SaveGitHubToken_Click(object? sender, RoutedEventArgs e) { if (_context != null && !_suppressSettingsUiEvents) await _session.RunAsync(() => SaveApiTokenAsync("github", GitHubTokenTextBox.Text)); }
+    internal async void SaveGitLabToken_Click(object? sender, RoutedEventArgs e) { if (_context != null && !_suppressSettingsUiEvents) await _session.RunAsync(() => SaveApiTokenAsync("gitlab", GitLabTokenTextBox.Text)); }
+    internal async void SaveCodebergToken_Click(object? sender, RoutedEventArgs e) { if (_context != null && !_suppressSettingsUiEvents) await _session.RunAsync(() => SaveApiTokenAsync("codeberg", CodebergTokenTextBox.Text)); }
+    internal void RefreshApiRateLimits()
+    {
+        if (_context == null) return;
+        var quota = ReleaseRequestCoordinator.For(_gameManager.HttpClient).GetRateLimitSnapshot("github", _settings.GitHubApiToken);
+        GitHubRateLimitText.Text = quota == null ? "Hourly API Quota: not checked yet" : quota.ResetAt is { } reset ? $"Hourly API Quota: {quota.Remaining:N0} requests left · resets {reset.ToLocalTime():t}" : $"Hourly API Quota: {quota.Remaining:N0} requests left";
+        UpdateTokenButton("github"); UpdateTokenButton("gitlab"); UpdateTokenButton("codeberg");
     }
 
     internal void SaveCustomAppList_Click(object? sender, RoutedEventArgs e) => SaveCustomAppList(CustomAppListTextBox.Text);
@@ -483,6 +509,8 @@ public partial class SettingsView : UserControl
             Model.SaveApiToken("github", "");
             if (GitHubTokenTextBox != null)
                 GitHubTokenTextBox.Text = string.Empty;
+            UpdateTokenButton("github");
+            RefreshApiRateLimits();
             OnSettingChanged();
             _host.ApplyTopBanner();
         }
@@ -508,8 +536,18 @@ public partial class SettingsView : UserControl
             Model.SaveApiToken("gitlab", "");
             if (GitLabTokenTextBox != null)
                 GitLabTokenTextBox.Text = string.Empty;
+            UpdateTokenButton("gitlab");
             OnSettingChanged();
         }
+    }
+
+    internal void CreateCodebergToken_Click(object sender, RoutedEventArgs e) => _host.OpenUrl("https://codeberg.org/user/settings/applications/tokens/new");
+    internal void ClearCodebergToken_Click(object sender, RoutedEventArgs e)
+    {
+        if (_context == null) return;
+        Model.SaveApiToken("codeberg", "");
+        CodebergTokenTextBox.Text = string.Empty;
+        UpdateTokenButton("codeberg");
     }
 
     internal async void ClearIconCache_Click(object sender, RoutedEventArgs e)

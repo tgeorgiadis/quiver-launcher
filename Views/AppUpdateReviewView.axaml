@@ -65,14 +65,19 @@
 <Grid
 
 						  RowDefinitions="Auto,Auto,*">
-						<TextBlock x:Name="AppUpdatesReviewHeaderText" Text="{Binding Header}"
-								   Grid.Row="0"
-								   FontSize="15"
-								   FontWeight="SemiBold"
-								   Foreground="{DynamicResource ThemeText}"
-								   TextWrapping="Wrap"
-								   Margin="0,0,30,12"/>
+						<StackPanel Grid.Row="0" Margin="0,0,30,12" Spacing="3">
+							<TextBlock x:Name="AppUpdatesReviewHeaderText" Text="{Binding Header}"
+									   FontSize="15"
+									   FontWeight="SemiBold"
+									   Foreground="{DynamicResource ThemeText}"
+									   TextWrapping="Wrap"/>
+						</StackPanel>
 						<StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,30,12">
+							<Button x:Name="AppUpdatesCheckAgainButton" IsEnabled="{Binding !IsBusy}"
+									Classes="options"
+									Content="Check again"
+									FontSize="11"
+									Click="AppUpdatesCheckAgain_Click"/>
 							<Button x:Name="AppUpdatesUpdateAllButton" IsEnabled="{Binding CanApply}"
 									Classes="options"
 									Content="Update All"

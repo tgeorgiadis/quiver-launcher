@@ -113,18 +113,25 @@ public class ReleaseRequestCoordinatorTests
     }
 
     [Fact]
-    public async Task Serializes_different_github_requests()
+    public async Task Runs_concurrent_github_requests()
     {
         var active = 0; var maximum = 0;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var client = new HttpClient(new Handler(async (_, ct) =>
         {
             maximum = Math.Max(maximum, Interlocked.Increment(ref active));
-            await Task.Delay(10, ct);
+            if (Volatile.Read(ref active) == 8) entered.TrySetResult();
+            await release.Task.WaitAsync(ct);
             Interlocked.Decrement(ref active); return Ok();
         }));
         var coordinator = new ReleaseRequestCoordinator();
-        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => coordinator.FetchAsync(client, new Uri(Endpoint + "?id=" + i), "github", "test", Parse)));
-        Assert.Equal(1, maximum);
+        var requests = Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(i => coordinator.FetchAsync(client, new Uri(Endpoint + "?id=" + i), "github", "test", Parse)));
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(8, maximum);
+        release.TrySetResult();
+        await requests;
     }
 
     [Fact]
@@ -227,7 +234,9 @@ public class ReleaseRequestCoordinatorTests
         try
         {
             var entry = new ReleaseEndpointCache.Entry("[]", "W/\"release\"", DateTimeOffset.UtcNow.AddDays(-3));
-            new ReleaseEndpointCache(path).Set("github:anonymous:https://api.github.com/repos/a/b/releases", entry);
+            var cache = new ReleaseEndpointCache(path);
+            cache.Set("github:anonymous:https://api.github.com/repos/a/b/releases", entry);
+            cache.FlushEntries();
             Assert.Equal(entry, new ReleaseEndpointCache(path).Get("github:anonymous:https://api.github.com/repos/a/b/releases"));
         }
         finally { if (Directory.Exists(path)) Directory.Delete(path, true); }

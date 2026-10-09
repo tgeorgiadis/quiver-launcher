@@ -9,6 +9,7 @@ public interface IAppUpdateReviewActions
     bool IsReviewOpen { get; }
     IReadOnlyList<GameInfo> GetReviewRows();
     IReadOnlyList<GameInfo> GetPendingUpdates();
+    Task CheckForUpdatesAsync();
     Task UpdateAsync(GameInfo game, bool automaticSelection);
     Task SkipAsync(GameInfo game);
     void ShowVersions(GameInfo game);
@@ -65,6 +66,18 @@ public sealed class AppUpdateReviewViewModel : ObservableViewModel
     public void ShowVersions(GameInfo game) => _actions?.ShowVersions(game);
     public void Back() => _actions?.ReturnToLibrary();
 
+    public async Task CheckForUpdatesAsync()
+    {
+        if (_actions == null || IsBusy) return;
+        IsBusy = true;
+        try
+        {
+            await _actions.CheckForUpdatesAsync();
+            Refresh();
+        }
+        finally { IsBusy = false; }
+    }
+
     public async Task UpdateAllAsync()
     {
         if (_actions == null || IsBusy) return;
@@ -102,4 +115,5 @@ public sealed class AppUpdateReviewViewModel : ObservableViewModel
         Refresh();
         if (IsEmpty) Back();
     }
+
 }

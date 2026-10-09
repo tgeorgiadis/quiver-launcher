@@ -9,6 +9,7 @@ using QuiverLauncher.Core.Models;
 namespace QuiverLauncher.Core.Services;
 
 public enum ReleaseRateLimitKind { None, Primary, Secondary }
+public sealed record ProviderRateLimitSnapshot(string Provider, long? Limit, long Remaining, DateTimeOffset? ResetAt);
 
 public sealed class ReleaseFetchException(GitHubReleaseFetchResult result)
     : HttpRequestException(result.ErrorMessage ?? "Release metadata is unavailable.", null, result.StatusCode)
@@ -43,13 +44,55 @@ public sealed class ReleaseRequestCoordinator
     }
     public TimeSpan MetadataTimeout { get; set; } = TimeSpan.FromSeconds(15);
     private long _requestCount;
+    private readonly HashSet<string> _validatedTokens = [];
     public long RequestCount => Interlocked.Read(ref _requestCount);
     private static readonly ConditionalWeakTable<HttpClient, ReleaseRequestCoordinator> Instances = new();
     public static ReleaseRequestCoordinator For(HttpClient client) => Instances.GetValue(client, _ => new());
-    public static void Configure(HttpClient client, string cacheDirectory) => For(client)._cache = new(cacheDirectory);
+    public static void Configure(HttpClient client, string cacheDirectory)
+    {
+        var coordinator = For(client);
+        coordinator._cache = new(cacheDirectory);
+    }
     private static readonly ConditionalWeakTable<string, StrongBox<string>> CredentialKeys = new();
     public static string CredentialKey(string? token) => string.IsNullOrWhiteSpace(token) ? "anonymous"
         : CredentialKeys.GetValue(token, value => new(Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value.Trim()))))).Value!;
+
+    public ProviderRateLimitSnapshot? GetRateLimitSnapshot(string provider, string? token)
+    {
+        var entry = _cache.GetRateLimit(provider + ":" + CredentialKey(token));
+        if (entry == null || entry.ResetAt is { } reset && reset <= Clock.GetUtcNow()) return null;
+        return new(provider, entry.Limit, entry.Remaining, entry.ResetAt);
+    }
+
+    public void RecordRateLimit(string provider, string? token, long? limit, long? remaining, DateTimeOffset? resetAt)
+    {
+        if (remaining == null) return;
+        UpdateRateLimit(provider + ":" + CredentialKey(token), new()
+        {
+            Provider = provider,
+            Limit = limit,
+            Remaining = remaining,
+            ResetAt = resetAt,
+        });
+    }
+
+    public bool HasValidatedToken(string provider, string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return false;
+        lock (_gate) return _validatedTokens.Contains(provider + ":" + CredentialKey(token));
+    }
+
+    public void RecordValidatedToken(string provider, string? token)
+    {
+        if (!string.IsNullOrWhiteSpace(token))
+            lock (_gate) _validatedTokens.Add(provider + ":" + CredentialKey(token));
+    }
+
+    public void InvalidateValidatedToken(string provider, string? token)
+    {
+        if (!string.IsNullOrWhiteSpace(token))
+            lock (_gate) _validatedTokens.Remove(provider + ":" + CredentialKey(token));
+    }
 
     private sealed class Flight
     {
@@ -65,6 +108,7 @@ public sealed class ReleaseRequestCoordinator
     private readonly Dictionary<string, Uri> _redirects = [];
     private readonly ReleaseRequestQueue _github = new();
     private readonly ReleaseRequestQueue _gitlab = new();
+    private readonly ReleaseRequestQueue _codeberg = new();
     private ReleaseEndpointCache _cache = new();
     public event Action<GitHubReleaseFetchResult>? RequestCompleted;
     public TimeProvider Clock { get; private set; } = TimeProvider.System;
@@ -120,13 +164,15 @@ public sealed class ReleaseRequestCoordinator
     private async Task<GitHubReleaseFetchResult> FetchCoreAsync(HttpClient client, Uri endpoint, string provider,
         string? token, Func<string, IReadOnlyList<GitHubRelease>> parse, string context, string key, Flight flight)
     {
-        var semaphore = provider == "github" ? _github : _gitlab;
+        var semaphore = provider switch { "github" => _github, "codeberg" => _codeberg, _ => _gitlab };
         await semaphore.EnterAsync(() => flight.Priority, flight.Cancellation.Token).ConfigureAwait(false);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(flight.Cancellation.Token);
         deadline.CancelAfter(MetadataTimeout);
         var ct = deadline.Token;
         try
         {
+            if (ReserveKnownQuota(context, provider, !string.IsNullOrWhiteSpace(token)) is { } quotaPaused)
+                return quotaPaused;
             lock (_gate)
                 if (_cooldowns.TryGetValue(context, out var paused) && paused.RetryAt > Clock.GetUtcNow()) return paused;
             // The payload itself is read only if the server says it is still current.
@@ -145,6 +191,7 @@ public sealed class ReleaseRequestCoordinator
                 if (!string.IsNullOrWhiteSpace(token))
                 {
                     if (provider == "github") request.Headers.Authorization = new("Bearer", token);
+                    else if (provider == "codeberg") request.Headers.Authorization = new("token", token);
                     else request.Headers.TryAddWithoutValidation("PRIVATE-TOKEN", token);
                 }
                 if (!unconditionalRetry && !string.IsNullOrEmpty(cachedETag))
@@ -169,6 +216,9 @@ public sealed class ReleaseRequestCoordinator
                     throw new HttpRequestException("GitHub API client followed a redirect without preserving authentication.");
                 var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
                 var result = Describe(response, provider, !string.IsNullOrWhiteSpace(token), body, context);
+                UpdateRateLimit(context, result);
+                if (result.IsAuthenticated && response.IsSuccessStatusCode)
+                    RecordValidatedToken(provider, token);
                 if (result.IsRateLimited)
                 {
                     lock (_gate) _cooldowns[context] = result;
@@ -196,6 +246,49 @@ public sealed class ReleaseRequestCoordinator
             }
         }
         finally { semaphore.Release(); }
+    }
+
+    private GitHubReleaseFetchResult? ReserveKnownQuota(string context, string provider, bool authenticated)
+    {
+        var entry = _cache.GetRateLimit(context);
+        var now = Clock.GetUtcNow();
+        if (entry == null || entry.ResetAt is { } reset && reset <= now)
+            return null;
+        if (entry.Remaining > 0)
+        {
+            _cache.SetRateLimit(context, entry with { Remaining = entry.Remaining - 1, ObservedAt = now });
+            return null;
+        }
+
+        var retryAt = entry.ResetAt ?? now.AddMinutes(1);
+        return new()
+        {
+            StatusCode = HttpStatusCode.TooManyRequests,
+            Provider = provider,
+            IsAuthenticated = authenticated,
+            IsRateLimited = true,
+            RateLimitKind = ReleaseRateLimitKind.Primary,
+            Limit = entry.Limit,
+            Remaining = 0,
+            ResetAt = entry.ResetAt,
+            RetryAt = retryAt,
+            ErrorMessage = $"{provider} API rate limit reached.",
+        };
+    }
+
+    private void UpdateRateLimit(string context, GitHubReleaseFetchResult result)
+    {
+        if (result.Remaining is not { } remaining)
+            return;
+
+        var now = Clock.GetUtcNow();
+        _cache.UpdateRateLimit(context, existing =>
+        {
+            // Concurrent API calls can reply out of order. Clamp our cached remaining # to the lowest we've seen in a response until the next reset
+            if (existing?.ResetAt is { } reset && reset > now && existing.Remaining < remaining)
+                remaining = existing.Remaining;
+            return new(result.Limit ?? existing?.Limit, remaining, result.ResetAt ?? existing?.ResetAt, now);
+        });
     }
 
     public static bool IsTrustedGitHubUri(Uri uri) => uri.Scheme == Uri.UriSchemeHttps && uri.IsDefaultPort

@@ -15,6 +15,7 @@ public class RepositorySourceTests
     [InlineData("GitHub", "github", false)]
     [InlineData("gitlab", "gitlab", false)]
     [InlineData("GitLab", "gitlab", false)]
+    [InlineData("codeberg", "codeberg", false)]
     [InlineData("bitbucket", "github", true)]
     public void Normalize_handles_known_and_unknown_sources(string? input, string expected, bool unsupported)
     {
@@ -30,6 +31,8 @@ public class RepositorySourceTests
             .Should().Be("github:owner/app");
         RepositorySourceHelper.GetIdentityKey("gitlab", "group/project")
             .Should().Be("gitlab:group/project");
+        RepositorySourceHelper.GetIdentityKey("codeberg", "owner/project")
+            .Should().Be("codeberg:owner/project");
         RepositorySourceHelper.GetIdentityKey(null, null, "MyFolder")
             .Should().Be("manual:MyFolder");
         RepositorySourceHelper.GetInstanceKey(null, "owner/app", "FolderA")
@@ -60,6 +63,13 @@ public class RepositorySourceTests
                 },
                 new()
                 {
+                    Name = "Codeberg App",
+                    Repository = "owner/codeberg-app",
+                    RepositorySource = "codeberg",
+                    FolderName = "CodebergApp",
+                },
+                new()
+                {
                     Name = "GitLab App",
                     Repository = "bighead.0/ladxhd_updated",
                     RepositorySource = "gitlab",
@@ -81,12 +91,14 @@ public class RepositorySourceTests
 
             array[0].TryGetProperty("repositorySource", out _).Should().BeFalse();
             array[1].GetProperty("repositorySource").GetString().Should().Be("gitlab");
+            array[2].GetProperty("repositorySource").GetString().Should().Be("codeberg");
 
             var loaded = await catalog.LoadLocalAppsAsync();
             loaded.Should().ContainSingle(a => a.Repository == "owner/github-app" && a.RepositorySource == null);
             loaded.Should().ContainSingle(a =>
                 a.Repository == "bighead.0/ladxhd_updated" &&
                 a.EffectiveRepositorySource == "gitlab");
+            loaded.Should().ContainSingle(a => a.Repository == "owner/codeberg-app" && a.EffectiveRepositorySource == "codeberg");
             loaded.Should().ContainSingle(a =>
                 a.Repository == "owner/unknown" &&
                 a.EffectiveRepositorySource == "github" &&
@@ -176,6 +188,7 @@ public class RepositorySourceTests
         var registry = ReleaseSourceRegistry.Default;
         registry.Get(null).Id.Should().Be(RepositorySourceIds.GitHub);
         registry.Get("gitlab").Id.Should().Be(RepositorySourceIds.GitLab);
+        registry.Get("codeberg").Id.Should().Be(RepositorySourceIds.Codeberg);
         registry.Get("gitea").Id.Should().Be(RepositorySourceIds.GitHub);
     }
 }

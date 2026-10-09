@@ -219,6 +219,13 @@ public sealed class LauncherUpdateWorkflow : IUpdateCheckWorkflow
         Shell.UpdateCheckDetails = result.Details;
         Shell.UpdateCheckStatus = result.Note ?? "Installed apps checked";
         NotifyUpdateCheckUiProperties();
+        if (result.Apps.InvalidTokenProviders is { Count: > 0 } providers && _presentation.CanShowFailureSummary)
+        {
+            var providerNames = string.Join(", ", providers.Select(QuiverLauncher.Core.Services.RepositorySourceHelper.DisplayName));
+            _ = _session.RunAsync(() => ShowMessageBoxAsync(
+                $"{providerNames} token was rejected by the server. It may have expired, been revoked, or been replaced.\n\nOpen Advanced Settings and save a valid token.",
+                "API token needs attention"));
+        }
     }
 
     void IUpdateCheckWorkflow.QueuePostCheckWork(UpdateCheckResult result, bool retry)

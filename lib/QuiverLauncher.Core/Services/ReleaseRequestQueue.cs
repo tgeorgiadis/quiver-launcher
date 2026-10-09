@@ -1,12 +1,13 @@
 namespace QuiverLauncher.Core.Services;
 
-/// <summary>Serial provider queue; interactive checks overtake queued background work.</summary>
+/// <summary>Bounded provider queue; interactive checks overtake queued background work.</summary>
 internal sealed class ReleaseRequestQueue
 {
     private sealed record Waiter(Func<bool> Priority, TaskCompletionSource Ready);
     private readonly object _gate = new();
     private readonly List<Waiter> _waiting = [];
-    private bool _busy;
+    private const int MaxConcurrency = 8;
+    private int _active;
 
     public async Task EnterAsync(Func<bool> priority, CancellationToken token)
     {
@@ -14,7 +15,7 @@ internal sealed class ReleaseRequestQueue
         Waiter waiter;
         lock (_gate)
         {
-            if (!_busy) { _busy = true; return; }
+            if (_active < MaxConcurrency) { _active++; return; }
             waiter = new(priority, new(TaskCreationOptions.RunContinuationsAsynchronously));
             _waiting.Add(waiter);
         }
@@ -30,7 +31,7 @@ internal sealed class ReleaseRequestQueue
     {
         lock (_gate)
         {
-            if (_waiting.Count == 0) { _busy = false; return; }
+            if (_waiting.Count == 0) { _active--; return; }
             var next = _waiting.FirstOrDefault(w => w.Priority()) ?? _waiting[0];
             _waiting.Remove(next);
             next.Ready.SetResult();
