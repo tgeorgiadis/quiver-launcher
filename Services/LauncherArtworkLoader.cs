@@ -113,6 +113,12 @@ public sealed class LauncherArtworkLoader : DiskCachedWebImageLoader
             bitmap = await LoadAsync(url, storageProvider).ConfigureAwait(false);
             return bitmap;
         }
+        catch (Exception ex)
+        {
+            // The image loader drops failures silently, so report them to see why artwork is missing.
+            Telemetry.Current.CaptureException(ex, handled: true, "artwork");
+            throw;
+        }
         finally
         {
             lock (_gate)

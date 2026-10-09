@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 using QuiverLauncher.ViewModels;
@@ -51,6 +52,12 @@ public sealed class LibraryListRowLayout : Panel
     }
     private void Changed(object? sender, PropertyChangedEventArgs e)
     {
+        // Downloads report progress from a background thread.
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => Changed(sender, e));
+            return;
+        }
         UpdateDescription();
         InvalidateMeasure();
     }
