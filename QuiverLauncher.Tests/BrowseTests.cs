@@ -296,9 +296,13 @@ public class BrowseTests : IDisposable
 
     [Theory]
     [InlineData(0, 0, 0, "Not rated yet")]
-    [InlineData(5, 1, 0, "Mostly runs · 5 run well, 1 with issues")]
-    [InlineData(1, 0, 3, "Mostly doesn't run · 1 runs well, 3 don't run")]
-    [InlineData(2, 2, 1, "Mixed · 2 run well, 2 with issues, 1 doesn't run")]
+    [InlineData(4, 0, 0, "Runs well · 4 players")]
+    [InlineData(0, 1, 0, "Has issues · 1 player")]
+    [InlineData(5, 1, 0, "Runs well · 5 run well, 1 with issues")]
+    [InlineData(1, 0, 3, "Doesn't run · 1 runs well, 3 don't run")]
+    // A tie shows the more careful answer.
+    [InlineData(2, 2, 1, "Has issues · 2 run well, 2 with issues, 1 doesn't run")]
+    [InlineData(0, 2, 2, "Doesn't run · 2 with issues, 2 don't run")]
     public void Score_sums_up_player_reports(int runs, int issues, int broken, string expected) =>
         BrowseText.Score(runs, issues, broken).Should().Be(expected);
 
@@ -315,7 +319,7 @@ public class BrowseTests : IDisposable
 
         card.CardKind.Should().Be("RECOMP · NINTENDO 64");
         card.BasedOn.Should().Equal("Banjo-Kazooie");
-        (card.ScoreLabel, card.ScoreCounts, card.ScorePositive).Should().Be(("Mostly runs", " · 2 run well", true));
+        (card.ScoreLabel, card.ScoreCounts, card.ScorePositive).Should().Be(("Runs well", " · 2 players", true));
         card.AiChip.Should().Be("AI-ASSISTED");
         card.PlatformTip.Should().Be("Windows, macOS, Linux");
         BrowseText.TagLabel("harbour masters vs the world").Should().Be("Harbour Masters vs the World");

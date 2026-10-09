@@ -189,10 +189,14 @@ public static class BrowseText
     public static (string Label, string Counts, string Tone) ScoreParts(int runs, int issues, int broken)
     {
         if (runs + issues + broken == 0) return ("Not rated yet", "", "muted");
+        // Always one verdict, as ProtonDB always shows one tier: what most players said, and when it's a tie the more
+        // careful of the answers tied (the counts after it show the split).
         var max = Math.Max(runs, Math.Max(issues, broken));
-        var mixed = new[] { runs, issues, broken }.Count(n => n == max) > 1;
-        var (label, tone) = mixed ? ("Mixed", "muted")
-            : runs == max ? ("Mostly runs", "positive") : issues == max ? ("Mostly runs with issues", "caution") : ("Mostly doesn't run", "negative");
+        var (label, tone) = broken == max ? ("Doesn't run", "negative") : issues == max ? ("Has issues", "caution") : ("Runs well", "positive");
+        // Everyone agrees: "Runs well · 4 players", rather than repeating the verdict.
+        var total = runs + issues + broken;
+        if (new[] { runs, issues, broken }.Count(n => n > 0) == 1)
+            return (label, $" · {total} {(total == 1 ? "player" : "players")}", tone);
         var said = new List<string>();
         if (runs > 0) said.Add($"{runs} {(runs == 1 ? "runs" : "run")} well");
         if (issues > 0) said.Add($"{issues} with issues");
