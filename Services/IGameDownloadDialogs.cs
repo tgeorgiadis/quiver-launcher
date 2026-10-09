@@ -16,6 +16,10 @@ public interface IGameDownloadDialogs
     Task ShowErrorAsync(string message, string title);
     /// <summary>Asks before installing a release Quiver hasn't verified or blocked; false keeps what is installed.</summary>
     Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check);
+    /// <summary>
+    /// Offers another release Quiver verified when the files of the one picked are gone; true installs it.
+    /// </summary>
+    Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) => Task.FromResult(false);
 }
 
 /// <summary>Automatic updates install only verified releases and never ask; a Windows setup wizard never runs on its own.</summary>
@@ -29,6 +33,8 @@ public sealed class AutomaticGameDownloadDialogs(IGameDownloadDialogs inner) : I
     public Task ShowGitLabRateLimitExceededAsync() => inner.ShowGitLabRateLimitExceededAsync();
     public Task ShowErrorAsync(string message, string title) => inner.ShowErrorAsync(message, title);
     public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) => Task.FromResult(false);
+    // The automatic pick is already the newest verified release; another is the player's choice.
+    public Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) => Task.FromResult(false);
 }
 
 public sealed class AvaloniaGameDownloadDialogs : IGameDownloadDialogs
@@ -57,6 +63,10 @@ public sealed class AvaloniaGameDownloadDialogs : IGameDownloadDialogs
 
     public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) =>
         ReleaseWarnings.ConfirmAsync(appName, version, check, GameDialogService.ShowQuestionAsync);
+
+    public Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) =>
+        GameDialogService.ShowQuestionAsync(
+            $"{problem}\n\nInstall {version} of {appName} instead? It's the newest version Quiver verified.", "Download Removed");
 }
 
 public sealed class HeadlessGameDownloadDialogs : IGameDownloadDialogs

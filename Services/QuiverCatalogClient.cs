@@ -181,6 +181,11 @@ public sealed class QuiverCatalogRelease
     public List<QuiverCatalogAsset> Assets { get; set; } = [];
     public QuiverCatalogScan? Scan { get; set; }
     public double? CheckEndsAt { get; set; }
+    /// <summary>
+    /// The repository rebuilds this release under the same tag (a nightly): its checksums are of the newest build
+    /// Quiver saw, which can be older than the one upstream.
+    /// </summary>
+    public bool Rolling { get; set; }
 }
 
 public sealed record QuiverCatalogQuery(string? Search = null, string? Os = null, string? Console = null,
@@ -252,6 +257,29 @@ public sealed class QuiverCatalogClient(HttpClient http, string? baseUrl = null)
     /// <summary>Every release the site knows for an app, newest first, each verified, unverified or blocked.</summary>
     public Task<QuiverCatalogPage<QuiverCatalogRelease>> GetReleaseHistoryAsync(string slug, CancellationToken token) =>
         GetPageAsync<QuiverCatalogRelease>($"/apps/{Uri.EscapeDataString(slug)}/release-history?limit=100", token);
+
+    /// <summary>
+    /// Tells quiverlauncher.com that a download of one of an app's files failed: gone ("missing", a 404) or not the
+    /// file it checked ("mismatch"). The site reads that release back from its repository straight away and takes it
+    /// down or pulls it if it should; the report changes nothing by itself. Never throws: it's only a nudge.
+    /// </summary>
+    public async Task ReportDownloadProblemAsync(string slug, string version, string fileName, string problem, CancellationToken token)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeout.CancelAfter(Timeout);
+        try
+        {
+            var body = JsonSerializer.Serialize(new { version, file = fileName, problem });
+            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            using var response = await http.PostAsync(
+                (_usingFallback ? FallbackBaseUrl : _base) + $"/apps/{Uri.EscapeDataString(slug)}/download-problem",
+                content, timeout.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or TimeoutException)
+        {
+            System.Diagnostics.Debug.WriteLine($"Couldn't report a broken download of {slug}: {ex.Message}");
+        }
+    }
 
     private async Task<QuiverCatalogPage<T>> GetPageAsync<T>(string path, CancellationToken token)
     {
