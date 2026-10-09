@@ -292,8 +292,8 @@ public partial class BrowseView : UserControl
             var added = Model.JustAdded switch
             {
                 0 => "",
-                1 => "1 app added to library, hidden from catalog upon refresh",
-                var n => $"{n} apps added to library, hidden from catalog upon refresh",
+                1 => "1 app added to library (hidden on refresh)",
+                var n => $"{n} apps added to library (hidden on refresh)",
             };
             var results = searching && !custom ? $"Results for “{Model.Search.Trim()}”" : "";
             // One line; the just added part in the brighter text colour, since it's about what the player just did.
