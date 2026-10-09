@@ -300,7 +300,7 @@ namespace QuiverLauncher.Services
 
         private void GamepadTimer_Tick(object? sender, EventArgs e)
         {
-            if (_sdlLibraryMissing)
+            if (!SdlAvailable)
                 return;
 
             CheckSDLWindowFocus();
@@ -838,7 +838,7 @@ namespace QuiverLauncher.Services
                 foreach (var index in _gameControllers.Keys.ToList())
                     CloseControllerAt(index);
 
-                if (!_sdlLibraryMissing)
+                if (SdlAvailable)
                     SDL.SDL_Quit();
                 _disposed = true;
             }
