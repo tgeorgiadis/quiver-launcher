@@ -292,7 +292,7 @@ public partial class BrowseView : UserControl
             var added = Model.JustAdded switch
             {
                 0 => "",
-                var n => $"{n} added to your library, hidden from the catalog next time",
+                var n => $"{n} added to your library, hidden from the catalog upon refresh",
             };
             var results = searching && !custom ? $"Results for “{Model.Search.Trim()}”" : "";
             // One line; the just added part in the brighter text colour, since it's about what the player just did.
