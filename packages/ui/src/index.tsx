@@ -246,22 +246,21 @@ export function Score({
   scroll?: boolean;
 }) {
   if (runs + issues + broken === 0) return <span className="score muted">Not rated yet</span>;
+  // Always one verdict, as ProtonDB always shows one tier: what most players
+  // said, and when it's a tie the more careful of the answers tied (the
+  // counts after it show the split).
   const max = Math.max(runs, issues, broken);
-  const mixed = [runs, issues, broken].filter((n) => n === max).length > 1;
-  const [label, tone] = mixed
-    ? ["Mixed", "muted"]
-    : runs === max
-      ? ["Mostly runs", "positive"]
-      : issues === max
-        ? ["Mostly runs with issues", "caution"]
-        : ["Mostly doesn't run", "negative"];
+  const [label, tone] =
+    broken === max ? ["Doesn't run", "negative"] : issues === max ? ["Has issues", "caution"] : ["Runs well", "positive"];
   // Only what people actually said, in words that read naturally.
   const said = [
     runs && `${runs} ${runs === 1 ? "runs" : "run"} well`,
     issues && `${issues} with issues`,
     broken && `${broken} ${broken === 1 ? "doesn't" : "don't"} run`,
   ].filter(Boolean);
-  const counts = ` · ${said.join(", ")}`;
+  // Everyone agrees: "Runs well · 4 players", rather than repeating the verdict.
+  const total = runs + issues + broken;
+  const counts = ` · ${said.length === 1 ? `${total} ${total === 1 ? "player" : "players"}` : said.join(", ")}`;
   const content = (
     <>
       {label}
