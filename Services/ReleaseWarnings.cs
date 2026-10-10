@@ -23,8 +23,8 @@ public static class ReleaseWarnings
 
     internal static string Flagged(string app, string version, ReleaseCheck check, bool update) =>
         $"{check.ScanEngines ?? "Several engines"} on VirusTotal flag {(check.ScanFile is { } file ? file + ", the file Quiver downloads for" : "a file of")} {app} {version}." +
-        "\n\nSome detections are false alarms, but Quiver can't tell you whether this one is. Your antivirus may block " +
-        "the download or remove files once it's installed, which would stop the app from working." +
+        "\n\nQuiver checked that this is the developer's own release, and game ports like this are often flagged by mistake. " +
+        "Even so, your antivirus may block the download or remove files once it's installed, which would stop the app from working." +
         $"\n\n{(update ? "Update" : "Install")} anyway?";
 
     internal static string Unverified(string app, string version, ReleaseCheck check)
