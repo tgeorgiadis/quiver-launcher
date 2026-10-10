@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Avalonia.Threading;
@@ -31,6 +32,8 @@ public static class GameDownloadInstallService
         var rejectedFormatSwitch = false;
         var isUpdate = triggerStatus == GameStatus.UpdateAvailable;
         string? installingVersion = null;
+        // A release to offer instead, when the one picked has lost its files.
+        GitHubRelease? fallback = null;
         // Usage data: which app, which release, and how it went.
         Dictionary<string, object?> Usage(params (string Key, object? Value)[] more)
         {
@@ -216,6 +219,9 @@ public static class GameDownloadInstallService
                 using var request = new HttpRequestMessage(HttpMethod.Get, asset.browser_download_url);
                 using var downloadResponse = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
                     .ConfigureAwait(false);
+                // Deleted by its developer since Quiver listed it.
+                if (downloadResponse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+                    throw new DownloadMissingException(asset.name, latestRelease.tag_name);
                 downloadResponse.EnsureSuccessStatusCode();
 
                 var dispositionFileName =
@@ -276,8 +282,12 @@ public static class GameDownloadInstallService
 
                 // The file must be the one Quiver checked (or, outside the catalog, the one GitHub published).
                 var expected = check?.ChecksumFor(asset.name) ?? DigestOf(asset);
-                if (expected != null && !string.Equals(await Sha256Async(downloadPath).ConfigureAwait(false), expected, StringComparison.OrdinalIgnoreCase))
-                    throw new DownloadMismatchException(asset.name, check?.ChecksumFor(asset.name) != null);
+                if (expected != null && await Sha256Async(downloadPath).ConfigureAwait(false) is var actual &&
+                    !string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase) &&
+                    // A rolling release is rebuilt under the same tag: the build GitHub publishes now is fine too.
+                    !(check?.Rolling == true && string.Equals(actual, await LiveDigestAsync(game, httpClient, apiToken,
+                        latestRelease.tag_name, asset.name).ConfigureAwait(false), StringComparison.OrdinalIgnoreCase)))
+                    throw new DownloadMismatchException(asset.name, latestRelease.tag_name, check?.ChecksumFor(asset.name) != null);
 
                 game.DownloadProgress = 90;
                 game.Status = GameStatus.Installing;
@@ -448,7 +458,21 @@ public static class GameDownloadInstallService
             // Nothing was installed or removed: the app stays as it was.
             game.Status = triggerStatus;
             game.DownloadProgress = 0;
+            await ReportProblemAsync(game, ex.Version, ex.FileName, "mismatch").ConfigureAwait(false);
             await dialogs.ShowErrorAsync(ex.Message, "Download Not Verified");
+        }
+        catch (DownloadMissingException ex)
+        {
+            Failed("file_missing", ex);
+            game.Status = triggerStatus;
+            game.DownloadProgress = 0;
+            // The site reads the release back now, so the next player isn't sent to the same dead link.
+            await ReportProblemAsync(game, ex.Version, ex.FileName, "missing").ConfigureAwait(false);
+            var other = await VerifiedFallbackAsync(game, ex.Version).ConfigureAwait(false);
+            if (other != null && await dialogs.OfferOtherReleaseAsync(game.DisplayName, ex.Message, other.tag_name))
+                fallback = other;
+            else
+                await dialogs.ShowErrorAsync(ex.Message, "Download Removed");
         }
         catch (HttpRequestException ex)
         {
@@ -513,6 +537,13 @@ public static class GameDownloadInstallService
                 await GameStatusService.CheckStatusAsync(game, httpClient, gamesFolder,
                     checkRemoteVersion: false, applyCachedRelease: false).ConfigureAwait(false);
         }
+
+        if (fallback != null)
+        {
+            game.ClearDownloadSelection();
+            await DownloadAndInstallAsync(game, httpClient, gamesFolder, fallback, settings, triggerStatus, dialogs,
+                flatpakService, windowsInstallerService, ReleaseInstallMode.ExplicitRelease, reinstall).ConfigureAwait(false);
+        }
     }
 
     /// <summary>The kind of file a release was installed from, for usage data.</summary>
@@ -572,6 +603,48 @@ public static class GameDownloadInstallService
         }
     }
 
+    /// <summary>Tells the site a catalog app's download failed; never throws.</summary>
+    private static async Task ReportProblemAsync(GameInfo game, string version, string fileName, string problem)
+    {
+        if (game.GameManager?.CatalogReleases is not { } catalog) return;
+        try { await catalog.ReportDownloadProblemAsync(game, version, fileName, problem, LauncherSession.OperationCancellation).ConfigureAwait(false); }
+        catch (Exception ex) { Debug.WriteLine($"Couldn't report a broken download of {game.Name}: {ex.Message}"); }
+    }
+
+    private static async Task<GitHubRelease?> VerifiedFallbackAsync(GameInfo game, string version)
+    {
+        if (game.GameManager?.CatalogReleases is not { } catalog) return null;
+        try { return await catalog.VerifiedFallbackAsync(game, version, LauncherSession.OperationCancellation).ConfigureAwait(false); }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Couldn't find another release of {game.Name}: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// The SHA-256 GitHub publishes now for a file of a rolling release, or null when it can't say. A file the release
+    /// no longer has was removed, not rebuilt.
+    /// </summary>
+    private static async Task<string?> LiveDigestAsync(GameInfo game, HttpClient httpClient, string? token, string tag, string fileName)
+    {
+        if (RepositorySourceHelper.IsGitLab(game.RepositorySource) || string.IsNullOrEmpty(game.Repository)) return null;
+        GitHubRelease? live;
+        try
+        {
+            live = await GitHubReleaseService.FetchReleaseByTagAsync(httpClient, game.Repository, tag, token,
+                LauncherSession.OperationCancellation).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Debug.WriteLine($"Couldn't read {tag} of {game.Name} back from GitHub: {ex.Message}");
+            return null;
+        }
+        var file = live?.assets?.FirstOrDefault(a => string.Equals(a.name, fileName, StringComparison.OrdinalIgnoreCase));
+        if (file == null) throw new DownloadMissingException(fileName, tag);
+        return DigestOf(file);
+    }
+
     private static string? DigestOf(GitHubAsset asset) =>
         asset.digest?.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) == true ? asset.digest["sha256:".Length..].ToLowerInvariant() : null;
 
@@ -583,7 +656,19 @@ public static class GameDownloadInstallService
 }
 
 /// <summary>A download that isn't the file it should be; nothing was installed from it.</summary>
-public sealed class DownloadMismatchException(string fileName, bool checkedByQuiver) : Exception(checkedByQuiver
+public sealed class DownloadMismatchException(string fileName, string version, bool checkedByQuiver) : Exception(checkedByQuiver
     ? $"{fileName} isn't the file Quiver checked for this release, so it wasn't installed. It may have been changed since Quiver saw it."
-    : $"{fileName} doesn't match the checksum its developer published, so it wasn't installed. Try downloading it again.");
+    : $"{fileName} doesn't match the checksum its developer published, so it wasn't installed. Try downloading it again.")
+{
+    public string FileName { get; } = fileName;
+    public string Version { get; } = version;
+}
+
+/// <summary>A release file its developer has deleted since Quiver listed it; nothing was downloaded.</summary>
+public sealed class DownloadMissingException(string fileName, string version)
+    : Exception($"{fileName} was removed from {version} by its developer, so it can't be downloaded.")
+{
+    public string FileName { get; } = fileName;
+    public string Version { get; } = version;
+}
 

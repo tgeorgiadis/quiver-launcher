@@ -49,6 +49,28 @@
 		</None>
 	</ItemGroup>
 
+	<!-- ppy.SDL2-CS's Windows SDL2.dll is SDL 2.0.14, whose controller database predates most recent
+	     DirectInput gamepads, so 64-bit Windows gets the official SDL2 2.32.10 DLL in its place. -->
+	<PropertyGroup>
+		<QuiverBundledWindowsSdl2 Condition="'$(RuntimeIdentifier)' == 'win-x64' or ('$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows')) and '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64')">true</QuiverBundledWindowsSdl2>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(QuiverBundledWindowsSdl2)' == 'true'">
+		<None Include="native\win-x64\SDL2.dll" Link="SDL2.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+		<None Include="native\win-x64\SDL2-License.txt" Link="SDL2-License.txt">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+	<Target Name="DropPackagedWindowsSdl2" AfterTargets="ResolvePackageAssets" Condition="'$(QuiverBundledWindowsSdl2)' == 'true'">
+		<ItemGroup>
+			<NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(NuGetPackageId)' == 'ppy.SDL2-CS'" />
+			<RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)" Condition="'%(NuGetPackageId)' == 'ppy.SDL2-CS' and '%(RuntimeIdentifier)' == 'win-x64'" />
+		</ItemGroup>
+	</Target>
+
 	<ItemGroup>
 		<ProjectReference Include="..\QuiverLauncher.App.csproj" />
 	</ItemGroup>

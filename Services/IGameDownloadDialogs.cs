@@ -21,6 +21,10 @@ public interface IGameDownloadDialogs
     /// antivirus may block or remove it; false keeps what is installed.
     /// </summary>
     Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update) => Task.FromResult(true);
+    /// <summary>
+    /// Offers another release Quiver verified when the files of the one picked are gone; true installs it.
+    /// </summary>
+    Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) => Task.FromResult(false);
 }
 
 /// <summary>Automatic updates install only verified releases and never ask; a Windows setup wizard never runs on its own.</summary>
@@ -36,6 +40,8 @@ public sealed class AutomaticGameDownloadDialogs(IGameDownloadDialogs inner) : I
     public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) => Task.FromResult(false);
     // Left for the player to update by hand, after the warning, rather than broken by their antivirus unseen.
     public Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update) => Task.FromResult(false);
+    // The automatic pick is already the newest verified release; another is the player's choice.
+    public Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) => Task.FromResult(false);
 }
 
 public sealed class AvaloniaGameDownloadDialogs : IGameDownloadDialogs
@@ -67,6 +73,10 @@ public sealed class AvaloniaGameDownloadDialogs : IGameDownloadDialogs
 
     public Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update) =>
         ReleaseWarnings.ConfirmFlaggedAsync(appName, version, check, update, GameDialogService.ShowQuestionAsync);
+
+    public Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) =>
+        GameDialogService.ShowQuestionAsync(
+            $"{problem}\n\nInstall {version} of {appName} instead? It's the newest version Quiver verified.", "Download Removed");
 }
 
 public sealed class HeadlessGameDownloadDialogs : IGameDownloadDialogs

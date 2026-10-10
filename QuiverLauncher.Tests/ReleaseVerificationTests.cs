@@ -283,9 +283,117 @@ public class ReleaseVerificationTests
         var error = dialogs.Errors.Should().ContainSingle().Subject;
         error.Title.Should().Be("Download Not Verified");
         error.Message.Should().Contain($"{Asset} isn't the file Quiver checked");
+        // The site is told, so it reads v2 back from GitHub now instead of at its daily check.
+        launcher.Network.Reports.Should().Equal(("alpha", "v2", Asset, "mismatch"));
         app.InstalledVersion.Should().Be("v1");
         app.Status.Should().Be(GameStatus.UpdateAvailable);
         AssertStillV1(app, launcher.Manager.GamesFolder);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Removed_file_is_reported_and_the_newest_other_verified_release_offered(bool switchRelease)
+    {
+        using var launcher = new Launcher();
+        var repo = Repo();
+        var older = Zip("v2.txt");
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", repo, "v3")]);
+        launcher.Network.Site["/apps/alpha/release-history?limit=100"] = Page(
+        [
+            History("v3", "verified", [], [(Asset, Zip("v3.txt"))]),
+            History("v2", "verified", [], [(Asset, older)]),
+            History("v1", "verified", [], [(Asset, Zip("v1.txt"))]),
+        ]);
+        // The developer deleted v3's file after Quiver verified it: the link is a 404.
+        launcher.Network.Files[SiteLink("v2", Asset)] = older;
+        var app = App("Alpha", repo, manager: launcher.Manager);
+        var player = new Dialogs(confirm: true, switchRelease);
+
+        await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
+            null, launcher.Store.Current, GameStatus.NotInstalled, player);
+
+        launcher.Network.Reports.Should().Equal(("alpha", "v3", Asset, "missing"));
+        var offered = player.Offers.Should().ContainSingle().Subject;
+        (offered.App, offered.Version).Should().Be(("Alpha", "v2"));
+        offered.Problem.Should().Be($"{Asset} was removed from v3 by its developer, so it can't be downloaded.");
+        if (switchRelease)
+        {
+            player.Errors.Should().BeEmpty();
+            (app.InstalledVersion, app.Status).Should().Be(("v2", GameStatus.Installed));
+            File.Exists(Path.Combine(app.GetInstallPath(launcher.Manager.GamesFolder), "v2.txt")).Should().BeTrue();
+        }
+        else
+        {
+            var error = player.Errors.Should().ContainSingle().Subject;
+            (error.Message, error.Title).Should().Be((offered.Problem, "Download Removed"));
+            app.Status.Should().Be(GameStatus.NotInstalled);
+            launcher.Network.Downloads.Should().Be(1);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Removed_file_with_no_other_verified_release_says_so_and_keeps_the_installed_one()
+    {
+        using var launcher = new Launcher();
+        var repo = Repo();
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", repo, "v2")]);
+        launcher.Network.Site["/apps/alpha/release-history?limit=100"] = Page(
+            [History("v2", "verified", [], [(Asset, Zip("v2.txt"))])]);
+        var release = OnGitHub("v2");
+        var app = InstalledApp(launcher, repo, latest: "v2");
+        var player = new Dialogs(confirm: true, switchRelease: true);
+
+        await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
+            release, launcher.Store.Current, GameStatus.UpdateAvailable, player, releaseMode: ReleaseInstallMode.ExplicitRelease);
+
+        launcher.Network.Reports.Should().Equal(("alpha", "v2", Asset, "missing"));
+        player.Offers.Should().BeEmpty();
+        player.Errors.Should().ContainSingle().Which.Title.Should().Be("Download Removed");
+        (app.InstalledVersion, app.Status).Should().Be(("v1", GameStatus.UpdateAvailable));
+        AssertStillV1(app, launcher.Manager.GamesFolder);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Rolling_release_rebuilt_since_Quiver_checked_it_installs_the_build_GitHub_publishes(bool stillOnGitHub)
+    {
+        using var launcher = new Launcher();
+        var repo = Repo();
+        var rebuilt = Zip("nightly-2.txt");
+        launcher.Network.Site["/release-status?limit=100"] = Page([Status("alpha", repo, "nightly")]);
+        // Quiver saw last night's build; the developer has replaced it under the same tag since.
+        launcher.Network.Site["/apps/alpha/release-history?limit=100"] = Page(
+            [History("nightly", "verified", [], [(Asset, Zip("nightly-1.txt"))], rolling: true)]);
+        var release = OnGitHub("nightly");
+        launcher.Network.Files[release.assets[0].browser_download_url] = rebuilt;
+        launcher.Network.GitHub[$"/repos/{repo}/releases/tags/nightly"] = Json(new
+        {
+            tag_name = "nightly",
+            assets = stillOnGitHub
+                ? new[] { new { name = Asset, browser_download_url = release.assets[0].browser_download_url, digest = "sha256:" + Sha256(rebuilt) } }
+                : [],
+        });
+        var app = App("Alpha", repo, manager: launcher.Manager);
+        var player = new Dialogs(confirm: true);
+
+        await GameDownloadInstallService.DownloadAndInstallAsync(app, launcher.Manager.HttpClient, launcher.Manager.GamesFolder,
+            release, launcher.Store.Current, GameStatus.NotInstalled, player, releaseMode: ReleaseInstallMode.ExplicitRelease);
+
+        if (stillOnGitHub)
+        {
+            player.Errors.Should().BeEmpty();
+            launcher.Network.Reports.Should().BeEmpty();
+            (app.InstalledVersion, app.Status).Should().Be(("nightly", GameStatus.Installed));
+        }
+        else
+        {
+            // Not rebuilt but removed.
+            player.Errors.Should().ContainSingle().Which.Title.Should().Be("Download Removed");
+            launcher.Network.Reports.Should().Equal(("alpha", "nightly", Asset, "missing"));
+            app.Status.Should().Be(GameStatus.NotInstalled);
+        }
     }
 
     [AvaloniaTheory]
@@ -584,9 +692,9 @@ public class ReleaseVerificationTests
         new { slug, launcher = new { folderName, releaseAssetFilter } };
 
     private static object History(string version, string state, string[] reasons, (string File, byte[] Bytes)[] files,
-        object? scan = null, long? checkEndsAt = null, Dictionary<string, object>? fileScans = null) => new
+        object? scan = null, long? checkEndsAt = null, bool rolling = false, Dictionary<string, object>? fileScans = null) => new
     {
-        version, state, reasons, scan, checkEndsAt,
+        version, state, reasons, scan, checkEndsAt, rolling,
         assets = files.Select(f => new
         {
             filename = f.File, url = SiteLink(version, f.File), checksum = "sha256:" + Sha256(f.Bytes),
@@ -606,15 +714,24 @@ public class ReleaseVerificationTests
         public Dictionary<string, string> GitHub { get; } = [];
         public Dictionary<string, byte[]> Files { get; } = [];
         public ConcurrentQueue<Uri> Requests { get; } = new();
+        /// <summary>Broken downloads reported to quiverlauncher.com: app, version, file and problem.</summary>
+        public ConcurrentQueue<(string App, string Version, string File, string Problem)> Reports { get; } = new();
         public int Downloads;
 
         public List<string> SitePaths() => Requests.Select(u => u.AbsolutePath).Where(p => p.StartsWith("/api/v1/")).ToList();
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var uri = request.RequestUri!;
             Requests.Enqueue(uri);
             string? body = null;
+            if (request.Method == HttpMethod.Post && uri.AbsolutePath.StartsWith("/api/v1/apps/") && uri.AbsolutePath.EndsWith("/download-problem"))
+            {
+                using var sent = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
+                string Field(string name) => sent.RootElement.GetProperty(name).GetString()!;
+                Reports.Enqueue((uri.Segments[^2].TrimEnd('/'), Field("version"), Field("file"), Field("problem")));
+                return new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new StringContent("{\"status\":\"noted\"}") };
+            }
             if (uri.AbsolutePath.StartsWith("/api/v1/"))
                 Site.TryGetValue(uri.PathAndQuery["/api/v1".Length..], out body);
             else if (uri.Host == "api.github.com")
@@ -623,19 +740,20 @@ public class ReleaseVerificationTests
             {
                 Interlocked.Increment(ref Downloads);
                 if (Files.TryGetValue(uri.AbsoluteUri, out var bytes))
-                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) });
+                    return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
             }
-            return Task.FromResult(body == null
+            return body == null
                 ? new HttpResponseMessage(HttpStatusCode.NotFound)
-                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) });
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) };
         }
     }
 
-    private sealed class Dialogs(bool confirm) : IGameDownloadDialogs
+    private sealed class Dialogs(bool confirm, bool switchRelease = false) : IGameDownloadDialogs
     {
         public List<(string Message, string Title)> Errors { get; } = [];
         public List<(string App, string Version, ReleaseCheck Check)> Confirmations { get; } = [];
         public List<(string App, string Version, ReleaseCheck Check, bool Update)> Flagged { get; } = [];
+        public List<(string App, string Problem, string Version)> Offers { get; } = [];
 
         public Task<bool> ConfirmDownloadWithoutRunnerAsync() => Task.FromResult(true);
         public Task<LinuxWindowsRunnerConfig?> ConfigureWindowsRunnerAsync(string gamePath, LinuxWindowsRunnerConfig? existing = null, bool isInstall = true) =>
@@ -656,6 +774,11 @@ public class ReleaseVerificationTests
         {
             Flagged.Add((appName, version, check, update));
             return Task.FromResult(confirm);
+        }
+        public Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version)
+        {
+            Offers.Add((appName, problem, version));
+            return Task.FromResult(switchRelease);
         }
     }
 

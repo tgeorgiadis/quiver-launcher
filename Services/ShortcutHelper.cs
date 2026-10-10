@@ -104,7 +104,7 @@ namespace QuiverLauncher.Services
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                throw new PlatformNotSupportedException("macOS shortcuts not yet implemented");
+                CreateMacShortcut(desktopPath, target, game, iconPath);
             }
         }
 
@@ -385,6 +385,124 @@ namespace QuiverLauncher.Services
             File.WriteAllText(desktopFilePath, BuildLinuxDesktopFile(game.Name!, target, iconPath));
             if (OperatingSystem.IsLinux())
                 File.SetUnixFileMode(desktopFilePath, File.GetUnixFileMode(desktopFilePath) | UnixFileMode.UserExecute);
+        }
+
+        private const string MacShortcutBundlePrefix = "com.quiverlauncher.shortcut.";
+
+        /// <summary>
+        /// macOS: a .app target gets a symlink, which Finder shows with the app's own icon. Any other
+        /// target gets a small wrapper .app whose script runs it in its working directory; a
+        /// .command script would open a Terminal window instead.
+        /// </summary>
+        private static void CreateMacShortcut(string desktopPath, GameShortcutTarget target, GameInfo game, string? iconPath)
+        {
+            // Finder shows ':' in file names as '/'.
+            var name = SanitizeFileName(game.Name!).Replace(":", "");
+            if (target.Arguments.Count == 0 && IsMacAppBundle(target.FileName))
+            {
+                var linkPath = Path.Combine(desktopPath, name);
+                RemovePreviousMacShortcut(linkPath);
+                Directory.CreateSymbolicLink(linkPath, target.FileName);
+                return;
+            }
+
+            var app = Path.Combine(desktopPath, name + ".app");
+            RemovePreviousMacShortcut(app);
+            var contents = Path.Combine(app, "Contents");
+            var launch = Path.Combine(Directory.CreateDirectory(Path.Combine(contents, "MacOS")).FullName, "launch");
+            File.WriteAllText(launch, BuildMacLaunchScript(target));
+            File.SetUnixFileMode(launch, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                                         UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                                         UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            var hasIcon = TryWriteMacIcon(iconPath, Path.Combine(contents, "Resources", "icon.icns"));
+            File.WriteAllText(Path.Combine(contents, "Info.plist"), BuildMacShortcutInfoPlist(name, game.FolderName, hasIcon));
+        }
+
+        private static bool IsMacAppBundle(string path) =>
+            path.EndsWith(".app", StringComparison.OrdinalIgnoreCase) && Directory.Exists(path);
+
+        /// <summary>Replaces a symlink or a wrapper Quiver created earlier; never a user's own file or app.</summary>
+        private static void RemovePreviousMacShortcut(string path)
+        {
+            var info = new FileInfo(path);
+            if (info.LinkTarget != null)
+            {
+                info.Delete();
+                return;
+            }
+
+            if (!Path.Exists(path))
+                return;
+
+            var plist = Path.Combine(path, "Contents", "Info.plist");
+            if (Directory.Exists(path) && File.Exists(plist) && File.ReadAllText(plist).Contains(MacShortcutBundlePrefix))
+            {
+                Directory.Delete(path, true);
+                return;
+            }
+
+            throw new IOException($"'{Path.GetFileName(path)}' already exists on the Desktop and was not created by Quiver Launcher.");
+        }
+
+        internal static string BuildMacLaunchScript(GameShortcutTarget target)
+        {
+            var command = IsMacAppBundle(target.FileName)
+                ? new[] { "open", target.FileName }.Concat(target.Arguments.Count > 0 ? ["--args", .. target.Arguments] : [])
+                : new[] { target.FileName }.Concat(target.Arguments);
+            return "#!/bin/sh\n" +
+                   $"cd {QuoteUnixArgument(target.WorkingDirectory)} || exit 1\n" +
+                   $"exec {string.Join(" ", command.Select(QuoteUnixArgument))}\n";
+        }
+
+        internal static string BuildMacShortcutInfoPlist(string name, string? folderName, bool hasIcon)
+        {
+            var id = new string((folderName ?? name).Select(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '.' ? c : '-').ToArray());
+            var escapedName = System.Security.SecurityElement.Escape(name);
+            var icon = hasIcon ? "\n  <key>CFBundleIconFile</key><string>icon</string>" : "";
+            return $"""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+                <plist version="1.0">
+                <dict>
+                  <key>CFBundleName</key><string>{escapedName}</string>
+                  <key>CFBundleDisplayName</key><string>{escapedName}</string>
+                  <key>CFBundleIdentifier</key><string>{MacShortcutBundlePrefix}{id}</string>
+                  <key>CFBundleExecutable</key><string>launch</string>
+                  <key>CFBundlePackageType</key><string>APPL</string>{icon}
+                </dict>
+                </plist>
+
+                """;
+        }
+
+        private static bool TryWriteMacIcon(string? imagePath, string icnsPath)
+        {
+            if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+                return false;
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(icnsPath)!);
+                var startInfo = new ProcessStartInfo("sips")
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+                foreach (var argument in new[] { "-z", "512", "512", "-s", "format", "icns", imagePath, "--out", icnsPath })
+                    startInfo.ArgumentList.Add(argument);
+                using var process = Process.Start(startInfo);
+                if (process == null)
+                    return false;
+                process.StandardOutput.ReadToEnd();
+                process.StandardError.ReadToEnd();
+                process.WaitForExit();
+                return process.ExitCode == 0 && File.Exists(icnsPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+            {
+                return false;
+            }
         }
 
         internal static string BuildLinuxDesktopFile(string name, GameShortcutTarget target, string? iconPath)
