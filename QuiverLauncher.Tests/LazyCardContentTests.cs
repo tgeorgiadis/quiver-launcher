@@ -46,4 +46,33 @@ public class LazyCardContentTests
         cards.Take(10).Should().OnlyContain(c => !c.IsBuilt, "cards well above the screen are let go");
         stack.Bounds.Height.Should().Be(3000);
     }
+
+    [AvaloniaFact]
+    public void An_auto_placeholder_height_lays_out_as_empty_instead_of_failing()
+    {
+        // Compact grid cards on a phone bind PlaceholderHeight to an auto (NaN) card size.
+        var cards = Enumerable.Range(0, 30).Select(i => new LazyCardContent
+        {
+            Group = nameof(An_auto_placeholder_height_lays_out_as_empty_instead_of_failing),
+            PlaceholderHeight = double.NaN,
+            DataContext = $"app {i}",
+            ContentTemplate = new FuncDataTemplate<string>((_, _) => new Border { Height = 100 }),
+        }).ToList();
+        var wrap = new WrapPanel();
+        wrap.Children.AddRange(cards);
+        var window = new Window { Content = new ScrollViewer { Content = wrap }, Width = 400, Height = 300 };
+
+        var show = () =>
+        {
+            window.Show();
+            for (var i = 0; i < 4; i++)
+            {
+                Dispatcher.UIThread.RunJobs();
+                window.UpdateLayout();
+            }
+        };
+
+        show.Should().NotThrow();
+        cards.Should().OnlyContain(c => double.IsFinite(c.DesiredSize.Height));
+    }
 }
