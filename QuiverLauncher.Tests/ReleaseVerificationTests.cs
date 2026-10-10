@@ -504,8 +504,8 @@ public class ReleaseVerificationTests
         result.Should().BeFalse();
         asked.Should().ContainSingle().Which.Should().Be((
             $"5 of 70 engines on VirusTotal flag {Asset}, the file Quiver downloads for Alpha v2.\n\n" +
-            "Quiver verified this release, and detections like this are often false alarms. Even so, your antivirus may " +
-            "block the download or remove files once it's installed, which would stop the app from working.\n\n" +
+            "Some detections are false alarms, but Quiver can't tell you whether this one is. Your antivirus may block " +
+            "the download or remove files once it's installed, which would stop the app from working.\n\n" +
             "Install anyway?",
             "Your antivirus may block this"));
     }
