@@ -67,6 +67,21 @@ namespace QuiverLauncher.Core.Services
             return result with { LatestTag = result.Releases.FirstOrDefault()?.tag_name };
         }
 
+        /// <summary>One release by its tag, as GitHub has it now; null when it's gone.</summary>
+        public static async Task<GitHubRelease?> FetchReleaseByTagAsync(
+            HttpClient httpClient, string repository, string tag, string? token = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(repository) || string.IsNullOrWhiteSpace(tag)) return null;
+            var result = await ReleaseRequestCoordinator.For(httpClient).FetchAsync(httpClient,
+                new Uri($"https://api.github.com/repos/{repository}/releases/tags/{Uri.EscapeDataString(tag)}"), "github", token,
+                body => JsonSerializer.Deserialize<GitHubRelease>(body) is { } release ? [release] : [],
+                cancellationToken).ConfigureAwait(false);
+            if (result.StatusCode == HttpStatusCode.NotFound) return null;
+            result.EnsureSuccess();
+            return result.Releases.FirstOrDefault();
+        }
+
         public static async Task<GitHubRelease?> FetchLatestReleaseAsync(
             HttpClient httpClient, string repository, string? token = null, string? etag = null,
             CancellationToken cancellationToken = default)

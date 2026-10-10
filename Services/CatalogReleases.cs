@@ -19,7 +19,9 @@ public sealed record ReleaseCheck(
     IReadOnlyDictionary<string, string> Checksums,
     string? ScanVerdict = null,
     string? ScanEngines = null,
-    DateTimeOffset? VerifiedAt = null)
+    DateTimeOffset? VerifiedAt = null,
+    // Rebuilt under the same tag: a download that doesn't match is checked against the file's digest upstream now.
+    bool Rolling = false)
 {
     /// <summary>The SHA-256 (hex) Quiver pinned for a file of this release, when it knows the file.</summary>
     public string? ChecksumFor(string fileName) => Checksums.GetValueOrDefault(fileName);
@@ -147,7 +149,32 @@ public sealed class CatalogReleases
             .GroupBy(a => a.Filename, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().Checksum!["sha256:".Length..].ToLowerInvariant(), StringComparer.OrdinalIgnoreCase);
         return new(state, release.Reasons, verified, checksums, release.Scan?.Verdict, release.Scan?.Engines,
-            release.CheckEndsAt is { } ends ? DateTimeOffset.FromUnixTimeMilliseconds((long)ends) : null);
+            release.CheckEndsAt is { } ends ? DateTimeOffset.FromUnixTimeMilliseconds((long)ends) : null,
+            release.Rolling);
+    }
+
+    /// <summary>
+    /// Tells the site a download of this catalog app failed ("missing" or "mismatch"), so it reads that release back
+    /// from its repository now rather than at its daily check, and forgets the app's releases so the next look sees
+    /// what the site made of it. Does nothing for an app the catalog doesn't list.
+    /// </summary>
+    public async Task ReportDownloadProblemAsync(GameInfo app, string version, string fileName, string problem, CancellationToken token)
+    {
+        if (app.CatalogSlug is not { } slug) return;
+        await _client.ReportDownloadProblemAsync(slug, version, fileName, problem, token).ConfigureAwait(false);
+        lock (_history) _history.Remove(slug);
+    }
+
+    /// <summary>
+    /// The newest release Quiver verified for the app, other than <paramref name="excluding"/>, that still lists files
+    /// to install: what to offer when that one's files are gone. Null when there's none, or the site can't answer.
+    /// </summary>
+    public async Task<GitHubRelease?> VerifiedFallbackAsync(GameInfo app, string excluding, CancellationToken token)
+    {
+        var listed = await ListedReleasesAsync(app, token).ConfigureAwait(false);
+        return listed == null ? null : ReleaseSelection.SelectLatestRelease(listed
+            .Where(r => r.State == "verified" && !ReleaseVersionIdentity.AreVersionsEquivalent(r.Release.tag_name, excluding))
+            .Select(r => r.Release).ToList());
     }
 
     /// <summary>
