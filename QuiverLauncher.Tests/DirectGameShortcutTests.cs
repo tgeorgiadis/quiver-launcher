@@ -99,15 +99,15 @@ public class DirectGameShortcutTests : IDisposable
         var executable = Executable("game's $ spaced");
         _game.SelectedExecutable = executable;
         var target = await GameShortcutLaunch.PrepareAsync(_game, _root, new());
-        if (OperatingSystem.IsMacOS())
-        {
-            // Desktop shortcuts are not implemented on macOS yet.
-            var create = () => ShortcutHelper.CreateGameShortcutAsync(_game, target!, null, _root);
-            await create.Should().ThrowAsync<PlatformNotSupportedException>();
-            return;
-        }
         await ShortcutHelper.CreateGameShortcutAsync(_game, target!, null, _root);
         if (OperatingSystem.IsWindows()) AssertWindowsShortcut(executable);
+        else if (OperatingSystem.IsMacOS())
+        {
+            var script = File.ReadAllText(Path.Combine(_root, "Banjo's game $ test.app", "Contents", "MacOS", "launch"));
+            script.Should().Contain("cd " + ShortcutHelper.QuoteCommandArgument(GamePath))
+                .And.Contain("exec " + ShortcutHelper.QuoteCommandArgument(executable))
+                .And.NotContain("QuiverLauncher");
+        }
         else if (OperatingSystem.IsLinux())
         {
             var file = Directory.GetFiles(_root, "*.desktop").Single();

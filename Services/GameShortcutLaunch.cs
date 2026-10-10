@@ -54,7 +54,7 @@ public static class GameShortcutLaunch
                 throw new InvalidOperationException("Choose and save an executable in Quiver before creating this shortcut.");
             cancellationToken.ThrowIfCancellationRequested();
             if (executable == null) return null;
-            if (!candidates.Contains(executable) || !File.Exists(executable))
+            if (!candidates.Contains(executable) || !(File.Exists(executable) || Directory.Exists(executable)))
                 throw new FileNotFoundException("The selected executable is no longer available. Choose it again.");
         }
 
@@ -65,7 +65,8 @@ public static class GameShortcutLaunch
         // Persist even a previous in-memory choice before a deferred Steam worker starts.
         await File.WriteAllTextAsync(Path.Combine(gamePath, "selected_executable.txt"), executable, cancellationToken);
         game.SelectedExecutable = executable;
-        if (OperatingSystem.IsLinux() && !executable.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        if (!OperatingSystem.IsWindows() && File.Exists(executable) &&
+            !executable.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             File.SetUnixFileMode(executable, File.GetUnixFileMode(executable) | UnixFileMode.UserExecute);
         return target;
     }

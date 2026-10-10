@@ -1258,8 +1258,12 @@ public static class GameInstallationService
 
     internal static bool IsValidSavedExecutable(string? path, OSPlatform? platform = null)
     {
-        if (!File.Exists(path)) return false;
         var target = platform ?? CurrentDesktopPlatform;
+        // macOS app bundles are directories.
+        if (target == OSPlatform.OSX && path != null &&
+            path.EndsWith(".app", StringComparison.OrdinalIgnoreCase) && Directory.Exists(path))
+            return true;
+        if (!File.Exists(path)) return false;
         return target == OSPlatform.Windows || Path.HasExtension(path) || IsLikelyExtensionlessExecutable(path, target);
     }
 
