@@ -17,6 +17,11 @@ public interface IGameDownloadDialogs
     /// <summary>Asks before installing a release Quiver hasn't verified or blocked; false keeps what is installed.</summary>
     Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check);
     /// <summary>
+    /// Asks before installing a verified release whose download several antivirus engines flag, since the player's
+    /// antivirus may block or remove it; false keeps what is installed.
+    /// </summary>
+    Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update) => Task.FromResult(true);
+    /// <summary>
     /// Offers another release Quiver verified when the files of the one picked are gone; true installs it.
     /// </summary>
     Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) => Task.FromResult(false);
@@ -33,6 +38,8 @@ public sealed class AutomaticGameDownloadDialogs(IGameDownloadDialogs inner) : I
     public Task ShowGitLabRateLimitExceededAsync() => inner.ShowGitLabRateLimitExceededAsync();
     public Task ShowErrorAsync(string message, string title) => inner.ShowErrorAsync(message, title);
     public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) => Task.FromResult(false);
+    // Left for the player to update by hand, after the warning, rather than broken by their antivirus unseen.
+    public Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update) => Task.FromResult(false);
     // The automatic pick is already the newest verified release; another is the player's choice.
     public Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) => Task.FromResult(false);
 }
@@ -63,6 +70,9 @@ public sealed class AvaloniaGameDownloadDialogs : IGameDownloadDialogs
 
     public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) =>
         ReleaseWarnings.ConfirmAsync(appName, version, check, GameDialogService.ShowQuestionAsync);
+
+    public Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update) =>
+        ReleaseWarnings.ConfirmFlaggedAsync(appName, version, check, update, GameDialogService.ShowQuestionAsync);
 
     public Task<bool> OfferOtherReleaseAsync(string appName, string problem, string version) =>
         GameDialogService.ShowQuestionAsync(
@@ -102,4 +112,12 @@ public sealed class HeadlessGameDownloadDialogs : IGameDownloadDialogs
 
     // Nobody can confirm, so nothing unverified is installed.
     public Task<bool> ConfirmUnverifiedReleaseAsync(string appName, string version, ReleaseCheck check) => Task.FromResult(false);
+
+    // Verified, and asked for on the command line: said, then installed.
+    public Task<bool> ConfirmFlaggedReleaseAsync(string appName, string version, ReleaseCheck check, bool update)
+    {
+        Console.Error.WriteLine($"Warning: {check.ScanEngines ?? "several engines"} on VirusTotal flag " +
+            $"{check.ScanFile ?? "one of its files"} ({appName} {version}). Your antivirus may block or remove it.");
+        return Task.FromResult(true);
+    }
 }

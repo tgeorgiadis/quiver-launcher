@@ -153,11 +153,22 @@ public static class GameDownloadInstallService
                     Reasons = [.. check.Reasons, $"Quiver checked this release's other files, not {asset.name}."],
                     Checksums = new Dictionary<string, string>(),
                 };
+            // VirusTotal's verdict on the file downloaded, not the release's other files.
+            check = check?.ForFile(asset.name);
             installingVersion = latestRelease.tag_name;
             if (check is { State: not ReleaseCheckState.Verified } &&
                 !await dialogs.ConfirmUnverifiedReleaseAsync(game.DisplayName, latestRelease.tag_name, check))
             {
                 Telemetry.Current.Track("app_install_cancelled", Usage(("stage", "not_verified"), ("blocked", check.State == ReleaseCheckState.Blocked)));
+                game.Status = triggerStatus;
+                game.DownloadProgress = 0;
+                return;
+            }
+            // Several antivirus engines flag the file: the player's own antivirus may block or remove it.
+            if (check is { State: ReleaseCheckState.Verified, Flagged: true } &&
+                !await dialogs.ConfirmFlaggedReleaseAsync(game.DisplayName, latestRelease.tag_name, check, isUpdate))
+            {
+                Telemetry.Current.Track("app_install_cancelled", Usage(("stage", "antivirus_flagged")));
                 game.Status = triggerStatus;
                 game.DownloadProgress = 0;
                 return;
