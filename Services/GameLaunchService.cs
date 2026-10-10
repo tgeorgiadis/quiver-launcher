@@ -111,10 +111,7 @@ public static class GameLaunchService
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && executablePath.EndsWith(".app"))
             {
-                startInfo.FileName = "open";
-                startInfo.Arguments = $"\"{executablePath}\"";
-                startInfo.UseShellExecute = false;
-                startInfo.WorkingDirectory = gamePath;
+                ConfigureMacAppBundleStart(startInfo, executablePath, gamePath);
             }
             else if (needsWine && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
@@ -237,6 +234,20 @@ public static class GameLaunchService
         game.UpdateLastPlayedTime(gamePath);
         game.RaiseGameProcessStarted(process);
         return true;
+    }
+
+    /// <summary>
+    /// Starts a macOS .app through LaunchServices. Plain <c>open</c> exits as soon as the app
+    /// launches; <c>-W</c> keeps it alive until the app quits, because the returned process is
+    /// what hands gamepad input back to the launcher and what <c>--run</c> waits on.
+    /// </summary>
+    internal static void ConfigureMacAppBundleStart(ProcessStartInfo startInfo, string appPath, string workingDirectory)
+    {
+        startInfo.FileName = "open";
+        startInfo.ArgumentList.Add("-W");
+        startInfo.ArgumentList.Add(appPath);
+        startInfo.UseShellExecute = false;
+        startInfo.WorkingDirectory = workingDirectory;
     }
 
     private static async Task<bool> LaunchFlatpakAsync(GameInfo game, string gamePath)
