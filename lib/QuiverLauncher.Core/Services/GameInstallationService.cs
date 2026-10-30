@@ -446,10 +446,45 @@ public static class GameInstallationService
         }
     }
 
-    public static bool HasCompletePortableInstallation(string path, GameInstallationOptions? options = null) =>
-        Directory.Exists(path) &&
-        !File.Exists(Path.Combine(path, IncompleteInstallFileName)) &&
-        FindExecutableCandidates(path, SearchOption.AllDirectories, options, out _).Count > 0;
+    private static readonly HashSet<string> NonExecutableExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".txt", ".dll", ".so", ".json", ".sh", ".exe", ".appimage", ".x86_64", ".arm64", ".aarch64",
+        // Images
+        ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".ico", ".tga", ".dds", ".svg", ".psd",
+        // Audio & video
+        ".ogg", ".mp3", ".wav", ".flac", ".mid", ".midi", ".mp4", ".mkv", ".webm", ".avi",
+        // Game assets, packages, archives
+        ".pck", ".pak", ".pk3", ".pk4", ".wad", ".dat", ".vpk", ".bsp", ".zip", ".tar", ".gz", ".xz", ".bz2", ".7z", ".rar", ".zst",
+        // Documents & config
+        ".xml", ".yaml", ".yml", ".ini", ".cfg", ".toml", ".md", ".pdf", ".html", ".css", ".js", ".ts",
+        // Libraries, debug, code, fonts
+        ".dylib", ".pdb", ".map", ".ttf", ".otf", ".woff", ".woff2", ".c", ".cpp", ".h", ".hpp", ".cs", ".rs", ".py",
+        // Save data
+        ".sav", ".save", ".srm"
+    };
+
+    public static bool HasCompletePortableInstallation(string path, GameInstallationOptions? options = null)
+    {
+        if (!Directory.Exists(path) || File.Exists(Path.Combine(path, IncompleteInstallFileName)))
+            return false;
+
+        var selectedExePath = Path.Combine(path, "selected_executable.txt");
+        if (File.Exists(selectedExePath))
+        {
+            try
+            {
+                var saved = File.ReadAllText(selectedExePath).Trim();
+                if (IsValidSavedExecutable(saved))
+                    return true;
+            }
+            catch { }
+        }
+
+        if (FindExecutableCandidates(path, SearchOption.TopDirectoryOnly, options, out _).Count > 0)
+            return true;
+
+        return FindExecutableCandidates(path, SearchOption.AllDirectories, options, out _).Count > 0;
+    }
 
     public static List<string> FindExecutableCandidates(
         string path,
@@ -498,10 +533,14 @@ public static class GameInstallationService
 
         if (platform == OSPlatform.Windows)
         {
-            executables.AddRange(FindEntries("*.exe"));
-            executables.AddRange(FindEntries("*.bat"));
-            executables.AddRange(FindEntries("*.cmd"));
-            executables.AddRange(FindEntries("launch.bat"));
+            var winFiles = FindEntries("*");
+            executables.AddRange(winFiles.Where(f =>
+            {
+                var fileName = Path.GetFileName(f);
+                return fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+                       fileName.EndsWith(".bat", StringComparison.OrdinalIgnoreCase) ||
+                       fileName.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase);
+            }));
         }
         else if (platform == OSPlatform.OSX)
         {
@@ -539,11 +578,7 @@ public static class GameInstallationService
             {
                 var fileName = Path.GetFileName(f).ToLowerInvariant();
 
-                if (fileName.EndsWith(".appimage") || fileName.EndsWith(".x86_64") ||
-                    fileName.EndsWith(".arm64") || fileName.EndsWith(".aarch64") ||
-                    fileName.EndsWith(".txt") || fileName.EndsWith(".dll") ||
-                    fileName.EndsWith(".so") || fileName.Contains(".so.") || fileName.EndsWith(".json") ||
-                    fileName.EndsWith(".sh") || fileName.EndsWith(".exe"))
+                if (NonExecutableExtensions.Contains(Path.GetExtension(fileName)) || fileName.Contains(".so."))
                 {
                     return false;
                 }
@@ -571,9 +606,12 @@ public static class GameInstallationService
             .ToList();
     }
 
-    private static bool IsCompatibilityDirectory(string path) =>
-        Path.GetFileName(Path.TrimEndingDirectorySeparator(path)) is ".steam-compat-data" or ".wine-prefix" ||
-        (Directory.Exists(Path.Combine(path, "dosdevices")) && Directory.Exists(Path.Combine(path, "drive_c")));
+    private static bool IsCompatibilityDirectory(string path)
+    {
+        var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+        return name is ".steam-compat-data" or ".wine-prefix" ||
+               (Directory.Exists(Path.Combine(path, "drive_c")) && Directory.Exists(Path.Combine(path, "dosdevices")));
+    }
 
     public static bool IsLauncherMetadataFile(string path, GameInstallationOptions? options = null)
     {

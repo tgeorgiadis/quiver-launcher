@@ -64,10 +64,10 @@ namespace QuiverLauncher.Services
             }
         }
 
-        public async Task<List<GameInfo>> LoadLocalCatalogAsync(AppSettings settings)
+        public async Task<List<GameInfo>> LoadLocalCatalogAsync(AppSettings settings, List<GameInfo>? preloadedApps = null)
         {
             settings.EnsureInitialized();
-            var localApps = await LoadLocalAppsAsync().ConfigureAwait(false);
+            var localApps = preloadedApps ?? await LoadLocalAppsAsync().ConfigureAwait(false);
             foreach (var app in localApps)
             {
                 app.GameManager = _gameManager;
