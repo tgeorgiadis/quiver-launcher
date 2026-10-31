@@ -1,0 +1,70 @@
+name: Live catalog
+# Read-only runs against the real catalog on quiverlauncher.com, on Linux and
+# Windows. The catalog changes on its own, so they run once a day and on
+# demand rather than on every push, and a failure here doesn't hold up a merge.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+  # And on a pull request that changes these runs.
+  pull_request:
+    paths:
+      - .github/workflows/live.yml
+      - e2e/live.test.js
+      - e2e/session.js
+
+concurrency:
+  group: live-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      # Ubuntu's mirror can crawl: apt-install.sh tries a stalled download again, and the step's limit stops one that
+      # stays stuck rather than holding the job.
+      - name: System libraries
+        timeout-minutes: 12
+        run: .github/apt-install.sh libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev webkit2gtk-driver xvfb
+      - run: cargo install tauri-driver --locked
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @quiver/e2e build
+      - name: Live catalog
+        timeout-minutes: 15
+        run: dbus-run-session -- pnpm --filter @quiver/e2e live
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @quiver/e2e build
+      - name: WebDriver for WebView2
+        run: |
+          cargo install --git https://github.com/chippers/msedgedriver-tool
+          msedgedriver-tool.exe
+          .\msedgedriver.exe --version
+          # Verbose driver log, printed after the run.
+          Set-Content msedgedriver-verbose.cmd "@`"$PWD\msedgedriver.exe`" %* --verbose --log-path=`"$env:RUNNER_TEMP\msedgedriver.log`""
+          echo "NATIVE_DRIVER=$PWD\msedgedriver-verbose.cmd" >> $env:GITHUB_ENV
+      - name: Live catalog
+        timeout-minutes: 15
+        run: pnpm --filter @quiver/e2e live
+      - name: Driver log
+        if: always()
+        run: Get-Content "$env:RUNNER_TEMP\msedgedriver.log" -Tail 80 -ErrorAction SilentlyContinue

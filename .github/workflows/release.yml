@@ -1,0 +1,404 @@
+name: Release
+# Builds the Windows installer, the portable Windows zip, the AppImage, the
+# Flatpak, the Mac DMG and the Android APK, signs each for the launcher's
+# self-update (update.rs), and puts them on a draft release. Nothing is public until the draft is published by hand.
+#
+# Run it from the Actions tab (Release, Run workflow, on main), or push a tag
+# such as v4.0.0-alpha.1. The version comes from tauri.conf.json, so bump it
+# there (and in Cargo.toml and package.json) first.
+#
+# Settings it reads (Settings > Secrets and variables > Actions):
+#   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD (secrets):
+#     from `pnpm --filter @quiver/launcher tauri signer generate`. They sign the
+#     downloads; unset, the release has no .sig files and can't update anyone.
+#   QUIVER_UPDATE_PUBKEY (variable): the matching .pub file. Built into the
+#     launcher so it can check those signatures; unset, it can't update itself.
+#   POSTHOG_PROJECT_TOKEN (variable): usage data, as in CI.
+# And in the signing environment (Settings > Environments > signing), for
+# Windows code signing: AZURE_CLIENT_ID, AZURE_TENANT_ID and
+# AZURE_SUBSCRIPTION_ID (secrets); AZURE_TRUSTED_SIGNING_ENDPOINT, _ACCOUNT,
+# _CERTIFICATE_PROFILE and AZURE_TRUSTED_SIGNING_ENABLED (variables).
+# For a signed and notarised Mac build (optional): APPLE_CERTIFICATE (the
+# Developer ID Application .p12, base64), APPLE_CERTIFICATE_PASSWORD,
+# APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD (an app-specific password)
+# and APPLE_TEAM_ID (secrets).
+# For the Android APK: ANDROID_KEYSTORE (a .jks keystore, base64),
+# ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD (secrets).
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+  # And on a pull request that changes it, which builds everything but makes no release.
+  pull_request:
+    paths: [.github/workflows/release.yml, .github/cef-tools.sh, .github/cef-appimage-check.sh, apps/launcher/flatpak/**]
+
+concurrency:
+  group: release-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  QUIVER_UPDATE_PUBKEY: ${{ vars.QUIVER_UPDATE_PUBKEY }}
+  VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: The version, the same in every file and the tag
+        id: version
+        run: |
+          version=$(node -p 'require("./apps/launcher/src-tauri/tauri.conf.json").version')
+          package=$(node -p 'require("./apps/launcher/package.json").version')
+          cargo=$(sed -n 's/^version = "\(.*\)"/\1/p' apps/launcher/src-tauri/Cargo.toml | head -1)
+          echo "tauri.conf.json $version, package.json $package, Cargo.toml $cargo"
+          test "$version" = "$package" && test "$version" = "$cargo"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then test "$GITHUB_REF_NAME" = "v$version"; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 45
+    # Code signing through Azure Artifact Signing, the account 3.x signs with
+    # (spec 3.1). It logs in with GitHub OIDC, whose subject is
+    # repo:tgeorgiadis/quiver-launcher:environment:signing. The
+    # environment holds the AZURE_* secrets and variables;
+    # AZURE_TRUSTED_SIGNING_ENABLED set to true turns it on, and then a
+    # signing failure fails the build rather than shipping it unsigned.
+    environment: signing
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      CODE_SIGNING: ${{ vars.AZURE_TRUSTED_SIGNING_ENABLED }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      # The release build cached by CI's installer job, which compiles the same
+      # crates. Under the default key, named after the job, this got CI's
+      # windows job's cache, a debug build, so every crate was compiled again.
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri, shared-key: windows-release }
+      - run: pnpm install --frozen-lockfile
+      # Built first and bundled after the Azure login: the login's token from
+      # GitHub only lasts about ten minutes, which the compile alone can take.
+      - run: pnpm --filter @quiver/launcher tauri build --no-bundle
+      - name: Azure login for code signing
+        if: env.CODE_SIGNING == 'true'
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # Tauri runs signCommand on the app's exe and on the installer. signtool
+      # hands the signing to Artifact Signing's dlib, which uses the login above.
+      - name: Code signing setup
+        if: env.CODE_SIGNING == 'true'
+        run: |
+          $dir = "$env:RUNNER_TEMP\artifact-signing"
+          Invoke-WebRequest https://www.nuget.org/api/v2/package/Microsoft.ArtifactSigning.Client/1.0.146 -OutFile "$env:RUNNER_TEMP\artifact-signing.zip"
+          Expand-Archive "$env:RUNNER_TEMP\artifact-signing.zip" $dir
+          $dlib = "$dir\bin\x64\Azure.CodeSigning.Dlib.dll"
+          $signtool = (Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.*\x64\signtool.exe" | Sort-Object FullName | Select-Object -Last 1).FullName
+          @{
+            Endpoint = "${{ vars.AZURE_TRUSTED_SIGNING_ENDPOINT }}"
+            CodeSigningAccountName = "${{ vars.AZURE_TRUSTED_SIGNING_ACCOUNT }}"
+            CertificateProfileName = "${{ vars.AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE }}"
+          } | ConvertTo-Json | Set-Content -Encoding ascii "$dir\metadata.json"
+          @{ bundle = @{ windows = @{ signCommand = @{
+            cmd = $signtool
+            args = @("sign", "/v", "/fd", "SHA256", "/tr", "http://timestamp.acs.microsoft.com", "/td", "SHA256", "/dlib", $dlib, "/dmdf", "$dir\metadata.json", "%1")
+          } } } } | ConvertTo-Json -Depth 5 | Set-Content -Encoding ascii "$dir\tauri.sign.json"
+          echo "TAURI_SIGN_CONFIG=--config=$dir\tauri.sign.json" >> $env:GITHUB_ENV
+          echo "SIGNTOOL=$signtool" "SIGN_DLIB=$dlib" "SIGN_METADATA=$dir\metadata.json" >> $env:GITHUB_ENV
+      - name: Warn when not code signed
+        if: env.CODE_SIGNING != 'true'
+        run: echo "::warning::AZURE_TRUSTED_SIGNING_ENABLED isn't true, so the Windows downloads aren't code signed and Windows will warn about them."
+      - run: pnpm --filter @quiver/launcher tauri bundle --bundles nsis $env:TAURI_SIGN_CONFIG
+        # Signing takes seconds; a stuck login shouldn't hold the job for its whole timeout.
+        timeout-minutes: 10
+      # Names without spaces, which GitHub would turn into dots. The installer
+      # keeps "-setup.exe" and the zip its 3.x name, which is how update.rs finds them.
+      - name: Installer and portable zip
+        run: |
+          New-Item -ItemType Directory out | Out-Null
+          $target = "apps\launcher\src-tauri\target\release"
+          Copy-Item (Get-Item "$target\bundle\nsis\*-setup.exe") "out\QuiverLauncher_${env:VERSION}_x64-setup.exe"
+          New-Item -ItemType Directory portable | Out-Null
+          # The exe Tauri leaves in target/release isn't signed after bundling
+          # (only the one in the installer is), so the portable copy is signed here.
+          Copy-Item "$target\quiver-launcher.exe" portable\QuiverLauncher.exe
+          if ($env:CODE_SIGNING -eq "true") {
+            & $env:SIGNTOOL sign /v /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 /dlib $env:SIGN_DLIB /dmdf $env:SIGN_METADATA portable\QuiverLauncher.exe
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+          New-Item -ItemType File portable\portable.txt | Out-Null
+          Compress-Archive portable\* out\QuiverLauncher-win-Portable.zip
+      - name: The exes are code signed
+        if: env.CODE_SIGNING == 'true'
+        run: |
+          foreach ($file in @(Get-Item portable\QuiverLauncher.exe) + @(Get-Item out\*-setup.exe)) {
+            $signature = Get-AuthenticodeSignature $file.FullName
+            "$($file.Name): $($signature.Status), $($signature.SignerCertificate.Subject)"
+            if ($signature.Status -ne "Valid") { exit 1 }
+          }
+      - name: Sign for updates
+        if: env.TAURI_SIGNING_PRIVATE_KEY != ''
+        run: |
+          Get-ChildItem out | ForEach-Object {
+            pnpm --filter @quiver/launcher tauri signer sign --app-version $env:VERSION $_.FullName
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+      - name: Warn when unsigned
+        if: env.TAURI_SIGNING_PRIVATE_KEY == ''
+        run: echo "::warning::TAURI_SIGNING_PRIVATE_KEY isn't set, so the Windows downloads aren't signed and can't update anyone."
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: out/* }
+
+  # On the oldest supported Ubuntu, so it runs on older and newer distros alike.
+  # Linux runs on Chromium (Tauri's CEF runtime, apps/launcher/CEF-SPIKE.md),
+  # which draws the Steam Deck's shelves about three times as fast as
+  # WebKitGTK. The Flatpak is made here too, from the same program.
+  appimage:
+    needs: version
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      # The CEF build and the GNOME SDK the Flatpak builds on don't both fit in the runner's free space: the SDKs it
+      # comes with that this job never uses (Android, .NET, Haskell) make room.
+      - name: Room on the disk
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+          df -h /
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      # Kept when a later step fails too: a build from nothing takes about 20 minutes, and a run that fails after it
+      # would otherwise leave the next one to start from nothing again.
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri, key: cef, cache-on-failure: true }
+      # The CEF build's CLI (built once per revision in cef-tools.sh) and the CEF distribution, saved as soon as each is
+      # there, whatever happens after.
+      - id: cef
+        run: echo "rev=$(sed -n 's/^REV=//p' .github/cef-tools.sh)" >> "$GITHUB_OUTPUT"
+      - id: cli
+        uses: actions/cache/restore@v4
+        with: { path: ~/.cache/tauri-cef-cli, key: "tauri-cef-cli-${{ steps.cef.outputs.rev }}" }
+      - id: dist
+        uses: actions/cache/restore@v4
+        with: { path: ~/.cache/cef, key: "cef-${{ hashFiles('apps/launcher/src-tauri/Cargo.cef.lock') }}" }
+      # Ubuntu's mirror can crawl: apt-install.sh tries a stalled download again, and the step's limit stops one that
+      # stays stuck rather than holding the job.
+      - name: System libraries
+        timeout-minutes: 12
+        run: .github/apt-install.sh libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev libfuse2 xvfb
+      - name: The CEF build's tools
+        timeout-minutes: 25
+        run: .github/cef-tools.sh
+      - if: steps.cli.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with: { path: ~/.cache/tauri-cef-cli, key: "${{ steps.cli.outputs.cache-primary-key }}" }
+      - run: pnpm install --frozen-lockfile
+      # The AppImage, and a deb whose program and Chromium the Flatpak packs.
+      - run: sh apps/launcher/scripts/tauri-cef.sh build --bundles appimage,deb
+      - if: always() && steps.dist.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with: { path: ~/.cache/cef, key: "${{ steps.dist.outputs.cache-primary-key }}" }
+      - name: The AppImage holds what Chromium loads
+        run: .github/cef-appimage-check.sh apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage
+      - name: The AppImage starts
+        run: |
+          export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke QUIVER_POSTHOG_HOST=http://127.0.0.1:9 QUIVER_SKIP_UPDATES=1
+          status=0; xvfb-run -a timeout 15 apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage > $RUNNER_TEMP/app.log 2>&1 || status=$?
+          cat $RUNNER_TEMP/app.log $QUIVER_DATA/quiver.log 2>/dev/null || true
+          test $status -eq 124
+      - name: AppImage
+        run: |
+          mkdir out
+          cp apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage "out/QuiverLauncher_${VERSION}_amd64.AppImage"
+      # The Flatpak packs the program and Chromium beside it, from the deb, on
+      # the GNOME runtime (apps/launcher/flatpak). This Ubuntu's flatpak-builder
+      # is too old for the runtime; Flatpak's PPA has a current one.
+      - name: Flatpak
+        run: |
+          sudo add-apt-repository -y ppa:flatpak/stable
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          dir=apps/launcher/flatpak
+          dpkg-deb -x apps/launcher/src-tauri/target/release/bundle/deb/*.deb $RUNNER_TEMP/deb
+          cp -a "$RUNNER_TEMP/deb/usr/share/Quiver Launcher" $dir/cef
+          sed -i "s/@VERSION@/$VERSION/; s/@DATE@/$(date -u +%F)/" $dir/com.quiverlauncher.QuiverLauncher.metainfo.xml
+          flatpak-builder --user --disable-rofiles-fuse --install-deps-from=flathub --repo=$RUNNER_TEMP/flatpak-repo --force-clean $RUNNER_TEMP/flatpak-build $dir/com.quiverlauncher.QuiverLauncher.yml
+          # Its runtime comes from Flathub when it's installed.
+          flatpak build-bundle $RUNNER_TEMP/flatpak-repo "out/QuiverLauncher_${VERSION}_x86_64.flatpak" com.quiverlauncher.QuiverLauncher --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+      - name: The Flatpak starts
+        run: |
+          flatpak install --user -y --noninteractive --bundle out/*.flatpak
+          export QUIVER_DATA=$RUNNER_TEMP/quiver-flatpak-smoke QUIVER_POSTHOG_HOST=http://127.0.0.1:9 QUIVER_SKIP_UPDATES=1
+          status=0; xvfb-run -a dbus-run-session -- timeout 15 flatpak run com.quiverlauncher.QuiverLauncher > $RUNNER_TEMP/flatpak.log 2>&1 || status=$?
+          cat $RUNNER_TEMP/flatpak.log $QUIVER_DATA/quiver.log 2>/dev/null || true
+          test $status -eq 124
+      - name: Sign for updates
+        if: env.TAURI_SIGNING_PRIVATE_KEY != ''
+        run: |
+          for file in out/*; do
+            pnpm --filter @quiver/launcher tauri signer sign --app-version "$VERSION" "$PWD/$file"
+          done
+      - name: Warn when unsigned
+        if: env.TAURI_SIGNING_PRIVATE_KEY == ''
+        run: echo "::warning::TAURI_SIGNING_PRIVATE_KEY isn't set, so the AppImage and Flatpak aren't signed and can't update anyone."
+      - uses: actions/upload-artifact@v4
+        with: { name: linux, path: out/* }
+
+  # macOS: one universal DMG for Apple silicon and Intel. update.rs sends Mac
+  # players to the release page, so it has no self-update file of its own.
+  # Signed with a Developer ID and notarised when the APPLE_* secrets are
+  # set; without them it's ad-hoc signed, and macOS asks the player to allow
+  # it in System Settings > Privacy & Security the first time.
+  macos:
+    needs: version
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      HAS_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "aarch64-apple-darwin,x86_64-apple-darwin" }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      - run: pnpm install --frozen-lockfile
+      # Tauri reads these from the environment, and an empty one counts as set,
+      # so the signed build is a step of its own.
+      - name: Build, signed with a Developer ID and notarised
+        if: env.HAS_APPLE_CERTIFICATE == 'true'
+        run: pnpm --filter @quiver/launcher tauri build --target universal-apple-darwin --bundles dmg
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Build, ad-hoc signed
+        if: env.HAS_APPLE_CERTIFICATE != 'true'
+        run: |
+          echo "::warning::APPLE_CERTIFICATE isn't set, so the Mac build is only ad-hoc signed and not notarised."
+          pnpm --filter @quiver/launcher tauri build --target universal-apple-darwin --bundles dmg --config '{"bundle":{"macOS":{"signingIdentity":"-"}}}'
+      - name: DMG
+        run: |
+          mkdir out
+          cp apps/launcher/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg "out/QuiverLauncher_${VERSION}_universal.dmg"
+      - name: Sign for updates
+        if: env.TAURI_SIGNING_PRIVATE_KEY != ''
+        run: |
+          for file in out/*; do
+            pnpm --filter @quiver/launcher tauri signer sign --app-version "$VERSION" "$PWD/$file"
+          done
+      - uses: actions/upload-artifact@v4
+        with: { name: macos, path: out/* }
+
+  # Android: an APK for arm64, which nearly every Android phone and handheld
+  # is. Signed with the keystore in ANDROID_KEYSTORE (base64); Android won't
+  # install an unsigned APK, so without it there's no Android file.
+  android:
+    needs: version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-linux-android }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      - run: pnpm install --frozen-lockfile
+      # The runner has the Android SDK and NDK already.
+      - run: echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - name: Keystore
+        if: env.HAS_KEYSTORE == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+      - name: Warn when unsigned
+        if: env.HAS_KEYSTORE != 'true'
+        run: echo "::warning::ANDROID_KEYSTORE isn't set, so the APK can't be signed and the release has no Android file."
+      # Read by gen/android/app/build.gradle.kts.
+      - run: pnpm --filter @quiver/launcher tauri android build --apk --target aarch64
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      - name: APK
+        if: env.HAS_KEYSTORE == 'true'
+        run: |
+          mkdir out
+          cp apps/launcher/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "out/QuiverLauncher_${VERSION}_arm64.apk"
+      - name: Sign for updates
+        if: env.HAS_KEYSTORE == 'true' && env.TAURI_SIGNING_PRIVATE_KEY != ''
+        run: |
+          for file in out/*; do
+            pnpm --filter @quiver/launcher tauri signer sign --app-version "$VERSION" "$PWD/$file"
+          done
+      - uses: actions/upload-artifact@v4
+        if: env.HAS_KEYSTORE == 'true'
+        with: { name: android, path: out/* }
+
+  # A draft, marked as a pre-release when the version has a suffix such as
+  # -alpha.1. Publishing it (and so making the tag, for a run from the
+  # Actions tab) is done by hand on the Releases page.
+  release:
+    if: github.event_name != 'pull_request'
+    needs: [version, windows, appimage, macos, android]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - name: Draft release
+        run: |
+          ls -l out
+          tag="v$VERSION"
+          prerelease=$([[ "$VERSION" == *-* ]] && echo --prerelease || true)
+          if draft=$(gh release view "$tag" -R "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null); then
+            # Built again: a draft's files are replaced and its notes kept. A published release is left alone.
+            if [ "$draft" != true ]; then echo "::error::$tag is already published; bump the version for a new release."; exit 1; fi
+            gh release upload "$tag" out/* --clobber -R "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" out/* -R "$GITHUB_REPOSITORY" --draft $prerelease \
+              --target "$GITHUB_SHA" --title "Quiver Launcher $VERSION" --generate-notes
+          fi

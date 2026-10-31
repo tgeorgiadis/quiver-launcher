@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Quiver Launcher
+Comment=Find, install and play games, emulators and mods
+Exec=quiver-launcher
+Icon=com.quiverlauncher.QuiverLauncher
+Terminal=false
+Categories=Game;
+Keywords=games;emulators;mods;launcher;
+StartupWMClass=com.quiverlauncher.app

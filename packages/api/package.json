@@ -1,0 +1,17 @@
+{
+  "name": "@quiverlauncher/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed client for the quiverlauncher.com catalog API",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": { "typescript": "~5.9.3" }
+}

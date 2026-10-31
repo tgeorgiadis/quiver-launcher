@@ -1,0 +1,933 @@
+/*
+ * The catalog's look, shared by Quiver Launcher and quiverlauncher.com: cards,
+ * their parts, and rendered markdown. Colours come from --ql-* variables, which
+ * each app maps onto its own palette (see the README); nothing here sets them.
+ */
+
+/* A card: EntryCard's <article> holding a .card-open button, or a link with EntryCardContent in it. */
+.entry-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ql-card-line);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--ql-card);
+  transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
+}
+/*
+ * Lifts under the pointer, or with focus on it or a button in it. :focus-within, not :has(:focus-visible): a browser
+ * can tell at once which card that changes for, where :has() inside :is() had WebKit restyle every card on the page
+ * as the focus moved, a large library's worth with each step of a controller.
+ */
+.entry-card:is(:hover:where(:not([data-navigating] *)), :focus-within) {
+  transform: translateY(-4px);
+  border-color: var(--ql-accent);
+  box-shadow: 0 15px 30px var(--ql-card-shadow);
+}
+.card-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+}
+.card-cover {
+  display: block;
+  height: 173px;
+  position: relative;
+  overflow: hidden;
+  background: var(--ql-cover-1);
+}
+.entry-card:nth-child(4n + 2) .card-cover {
+  background: var(--ql-cover-2);
+}
+.entry-card:nth-child(4n + 3) .card-cover {
+  background: var(--ql-cover-3);
+}
+.entry-card:nth-child(4n + 4) .card-cover {
+  background: var(--ql-cover-4);
+}
+.artwork {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ql-artwork-icon);
+  overflow: hidden;
+}
+.card-cover .artwork {
+  height: 100%;
+  padding: 30px 34px 24px;
+}
+.card-cover .artwork.cover-photo {
+  padding: 0;
+}
+.artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 10px var(--ql-artwork-shadow));
+}
+.artwork.cover-photo img {
+  object-fit: cover;
+  filter: none;
+}
+.card-arrow {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  border: 1px solid var(--ql-arrow-line);
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--ql-arrow-bg);
+  color: var(--ql-arrow-fg);
+}
+.cover-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--ql-badge-bg);
+  color: var(--ql-badge-fg);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.card-body {
+  display: block;
+  padding: 17px 15px 13px;
+}
+.card-tags {
+  display: flex;
+  gap: 6px;
+  font-size: 8px;
+  color: var(--ql-card-kind);
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+  min-height: 12px;
+}
+.platform-icons {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ql-platform-icons);
+  font-size: 13px;
+}
+/* The type and console stay on one line, scrolling on hover when cut off. */
+.card-tags > .card-kind {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.card-tags .platform-icons {
+  margin-left: auto;
+  padding-left: 8px;
+}
+.card-tags > span + span:before {
+  content: "·";
+  margin-right: 6px;
+  color: var(--ql-separator);
+}
+.ai-chip {
+  align-self: center;
+  padding: 1px 6px;
+  border: 1px solid var(--ql-ai-chip-line);
+  border-radius: 999px;
+  color: var(--ql-ai-chip-fg);
+  white-space: nowrap;
+}
+.card-tags > .ai-chip {
+  margin-left: auto;
+}
+.card-tags > .ai-chip:before,
+.card-tags > .platform-icons:before {
+  content: none;
+}
+.card-tags > .ai-chip + .platform-icons {
+  margin-left: 0;
+}
+.card-body .card-title {
+  display: block;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* A line about the player's own copy, in place of the catalog's details (the launcher's library). */
+.card-body .card-status {
+  display: block;
+  min-height: 1.5em;
+  margin-top: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  color: var(--ql-card-meta);
+}
+.scrolling-text {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.scrolling-text.active {
+  text-overflow: clip;
+}
+.scrolling-text.active > span {
+  display: inline-block;
+}
+.based-on {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.card-body .based-on {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.card-body .based-on > * {
+  flex-shrink: 0;
+}
+.card-body .based-on > .game-chip:not(.more) {
+  flex-shrink: 1;
+  min-width: 0;
+}
+/* Several games: whole chips in one row that scrolls while the card is hovered. */
+.card-body .based-on > .game-chip-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.game-chip-row .scrolling-text {
+  text-overflow: clip;
+}
+.game-chip-row .scrolling-text.overflows:not(.active) {
+  mask-image: linear-gradient(to right, #000 80%, transparent);
+}
+.game-chip-row .scrolling-text > span,
+.game-chip-row .scrolling-text.active > span {
+  display: inline-flex;
+  gap: 6px;
+  vertical-align: top;
+}
+.game-chip-row .game-chip {
+  flex-shrink: 0;
+  max-width: none;
+}
+.based-on-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ql-based-on-label);
+}
+/* "PlayStation version", after the games an app's page says it's based on. */
+.based-on-version {
+  font-size: 12px;
+  color: var(--ql-based-on-label);
+}
+.game-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ql-chip-fg);
+  background: var(--ql-chip-bg);
+  border: 1px solid var(--ql-chip-line);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--ql-line);
+  margin-top: 15px;
+  padding-top: 12px;
+  font-size: 12px;
+  color: var(--ql-card-meta);
+}
+.score {
+  color: var(--ql-positive);
+  font-size: 11px;
+}
+.score.positive {
+  color: var(--ql-positive);
+}
+.score.caution {
+  color: var(--ql-caution);
+}
+.score.negative {
+  color: var(--ql-negative);
+}
+.score.muted {
+  color: var(--ql-score-muted);
+}
+
+/* Whether Quiver verified a release (ReleaseBadge). */
+.release-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.release-badge svg {
+  flex: none;
+}
+.release-badge.verified {
+  color: var(--ql-positive);
+}
+.release-badge.unverified {
+  color: var(--ql-unverified, var(--ql-caution));
+}
+.release-badge.blocked {
+  color: var(--ql-negative);
+}
+.card-bottom .score {
+  font-size: 12px;
+}
+.card-bottom .score small {
+  font-size: 11px;
+}
+.card-bottom > .score {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.release-age {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.release-age.stale {
+  color: var(--ql-caution);
+}
+.release-age.none {
+  color: var(--ql-release-none);
+}
+.card-action {
+  padding: 0 15px 14px;
+  margin-top: auto;
+}
+
+/*
+ * A box-art card (the default look): the portrait art, which lifts under the pointer or focus, and three short lines
+ * under it, the app's name, its game and console, and what players said. Marks on the art sit on a dark glass of their
+ * own, whatever the theme, so they read over any picture.
+ */
+.entry-card.box {
+  position: relative;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+.entry-card.box .card-cover {
+  height: auto;
+  aspect-ratio: 2 / 3;
+  border: 1px solid var(--ql-card-line);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px var(--ql-card-shadow);
+  transition: transform 0.16s, border-color 0.16s, box-shadow 0.16s;
+}
+.entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-cover {
+  transform: translateY(-4px);
+  border-color: var(--ql-accent);
+  box-shadow: 0 18px 36px var(--ql-card-shadow), 0 0 0 1px var(--ql-accent);
+}
+.entry-card.box .card-cover .artwork {
+  width: 100%;
+  padding: 18%;
+}
+.entry-card.box .card-cover .artwork.cover-photo {
+  padding: 0;
+}
+/* Wide art on a box card: shown whole, over a blurred copy of itself. */
+.box-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.box-fallback-blur {
+  position: absolute;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  object-fit: cover;
+  filter: blur(18px) saturate(1.2) brightness(0.55);
+}
+.box-fallback .artwork {
+  position: relative;
+  padding: 0 8%;
+}
+.entry-card.box .card-arrow {
+  display: none;
+}
+.entry-card.box .cover-badge {
+  top: 8px;
+  right: auto;
+  left: 8px;
+}
+.cover-os,
+.cover-ai {
+  position: absolute;
+  display: flex;
+  border-radius: 6px;
+  color: var(--ql-on-art-fg, #fff);
+  background: var(--ql-on-art-bg, rgb(5 9 16 / 0.7));
+}
+/* The platforms show under the pointer or with focus: Browse lists this computer's apps anyway, and the app's page says. */
+.cover-os {
+  top: 8px;
+  right: 8px;
+  padding: 4px 6px;
+  opacity: 0;
+  transition: opacity 0.14s;
+}
+.entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .cover-os {
+  opacity: 1;
+}
+.cover-os .platform-icons {
+  gap: 6px;
+  color: inherit;
+  font-size: 11px;
+}
+.cover-ai {
+  bottom: 8px;
+  left: 8px;
+}
+.cover-ai .ai-chip {
+  padding: 2px 7px;
+  border: 0;
+  color: inherit;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.entry-card.box .card-body {
+  padding: 11px 2px 2px;
+}
+.entry-card.box .card-title {
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.entry-card.box :is(.card-subtitle, .card-line, .card-status) {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  color: var(--ql-card-meta);
+}
+.entry-card.box .card-line {
+  margin-top: 4px;
+  font-size: 12px;
+}
+.entry-card.box .card-line .score small {
+  font-size: 11.5px;
+}
+
+/*
+ * The catalog's front page (discover.tsx). Featured apps: one at a time, its game's wide art under a shade that keeps
+ * the words on it white and readable in either theme.
+ */
+.featured {
+  position: relative;
+  margin-bottom: 36px;
+}
+/* Whole pixels tall where round() is known (32vw was 409.6 on a Steam Deck), so its foot isn't half a pixel. */
+.featured-slides {
+  position: relative;
+  height: clamp(280px, 32vw, 440px);
+  height: round(clamp(280px, 32vw, 440px), 1px);
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ql-cover-1);
+  box-shadow: 0 24px 60px var(--ql-card-shadow);
+}
+/*
+ * Its frame, drawn over the art from outside what clips it: a border of the slides' own, under the art moving, and
+ * then one over it inside their clip, lost its foot in WebKitGTK in some frames as the art moved, a line that
+ * flickered along the banner's bottom.
+ */
+.featured::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(280px, 32vw, 440px);
+  height: round(clamp(280px, 32vw, 440px), 1px);
+  z-index: 1;
+  border: 1px solid var(--ql-card-line);
+  border-radius: 16px;
+  pointer-events: none;
+}
+/* A slide fading out is hidden once it has, so the focus (and a controller's d-pad) can't land on it. */
+.featured-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+}
+.featured-slide[data-current] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.6s ease, visibility 0s;
+}
+.featured-open {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  color: #fff;
+  text-align: left;
+}
+.featured-open:focus-visible {
+  outline-offset: -4px;
+}
+/*
+ * The art and its shade (FeaturedArt): one box, scaled up slowly as one, so its edges are always past the banner's,
+ * the shade's with the art's. A layer of its own for as long as its slide shows (will-change), not only while it
+ * moves: one made as it starts and dropped as it stops redrew the art each time.
+ */
+.featured-art {
+  position: absolute;
+  inset: -2px;
+  display: block;
+  transition: transform 7s ease-out;
+}
+.featured-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+.featured-slide[data-current] .featured-art {
+  transform: scale(1.04);
+  will-change: transform;
+}
+.featured-art-missing {
+  background: var(--ql-cover-2);
+}
+.featured-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(4 8 15 / 0.88) 0%, rgb(4 8 15 / 0.55) 36%, transparent 68%),
+    linear-gradient(0deg, rgb(4 8 15 / 0.75), transparent 50%);
+}
+.featured-text {
+  position: absolute;
+  z-index: 1;
+  left: clamp(22px, 4vw, 52px);
+  bottom: clamp(22px, 3.6vw, 46px);
+  max-width: min(520px, 62%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+}
+/* Why it's featured: a small pill over the rest, in the accent, so it reads as a label rather than the app's words. */
+.featured-reason {
+  padding: 3px 10px;
+  border: 1px solid rgb(110 200 255 / 0.5);
+  border-radius: 999px;
+  background: rgb(10 40 70 / 0.62);
+  color: rgb(196 232 255);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+.featured-eyebrow {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.78);
+}
+.featured-logo {
+  max-width: min(380px, 100%);
+  max-height: clamp(70px, 9vw, 130px);
+  object-fit: contain;
+  object-position: left bottom;
+  /* A faint light edge, so a dark logo (Black's is black) still reads on the shade; a light one doesn't show it. */
+  filter: drop-shadow(0 0 1px rgb(255 255 255 / 0.6)) drop-shadow(0 0 10px rgb(255 255 255 / 0.18)) drop-shadow(0 6px 18px rgb(0 0 0 / 0.5));
+}
+.featured-title {
+  font-size: clamp(30px, 3.6vw, 50px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 0.5);
+}
+.featured-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.featured-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 0.84);
+}
+.featured-text .score {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgb(4 8 15 / 0.6);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.featured-controls {
+  position: absolute;
+  z-index: 2;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.featured-step {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 50%;
+  color: #fff;
+  background: rgb(4 8 15 / 0.55);
+}
+.featured-step:hover {
+  background: rgb(4 8 15 / 0.82);
+}
+.featured-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.45);
+  transition: width 0.2s, background 0.2s;
+}
+.featured-dot[aria-current] {
+  width: 22px;
+  background: var(--ql-accent);
+}
+
+/* A phone: taller, the words across it, and the dots along its foot (a finger taps them; the arrows go). */
+@media (max-width: 760px) {
+  .featured-slides,
+  .featured::after {
+    height: 440px;
+  }
+  .featured-text {
+    right: 20px;
+    bottom: 54px;
+    max-width: none;
+  }
+  .featured-logo {
+    max-width: 82%;
+    max-height: 96px;
+  }
+  .featured-name {
+    font-size: 16px;
+  }
+  .featured-controls {
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    justify-content: center;
+  }
+  .featured-step {
+    display: none;
+  }
+}
+
+/* A shelf: a titled row of box-art cards that scrolls sideways, its arrows for a mouse. */
+.shelf {
+  margin-bottom: 30px;
+}
+.shelf-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.shelf-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.shelf-arrows {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.shelf-arrows button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--ql-card-line);
+  border-radius: 50%;
+  background: var(--ql-card);
+}
+.shelf-arrows button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+@media (hover: none) {
+  .shelf-arrows {
+    display: none;
+  }
+}
+.shelf-row {
+  display: grid;
+  grid-auto-flow: column;
+  /* --shelf-fit: as wide as fits a whole number of cards (Shelf), from about --shelf-card. */
+  grid-auto-columns: var(--shelf-fit, var(--shelf-card, 176px));
+  gap: 22px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  /* Room for a card's lift, shadow and focus ring, which the row's own scrolling would cut off; a card scrolled to
+     an end keeps that room too. */
+  margin: -10px -8px -16px;
+  padding: 10px 8px 16px;
+  scroll-padding-inline: 8px;
+}
+.shelf-row::-webkit-scrollbar {
+  display: none;
+}
+.shelf-row > * {
+  scroll-snap-align: start;
+}
+/* As tall as a card and its three lines, so the page doesn't jump when they come. */
+.shelf-placeholder {
+  aspect-ratio: 2 / 3;
+  margin-bottom: 66px;
+  border: 1px solid var(--ql-card-line);
+  border-radius: 10px;
+  background: var(--ql-card);
+  animation: shelf-pulse 1.4s ease-in-out infinite;
+}
+@keyframes shelf-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shelf-placeholder {
+    animation: none;
+  }
+  .featured-slide,
+  .featured-art {
+    transition: none;
+  }
+  .featured-slide[data-current] .featured-art {
+    transform: none;
+  }
+}
+
+/* Rendered markdown (READMEs and release notes). */
+.markdown {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ql-md-text);
+  overflow-wrap: anywhere;
+}
+.markdown > :first-child {
+  margin-top: 0;
+}
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+.markdown :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--ql-md-heading);
+  line-height: 1.3;
+  margin: 1.4em 0 0.6em;
+  font-weight: 600;
+}
+.markdown .md-h1 {
+  font-size: 1.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--ql-line);
+}
+.markdown .md-h2 {
+  font-size: 1.3em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--ql-line);
+}
+.markdown .md-h3 {
+  font-size: 1.1em;
+}
+.markdown :is(.md-h4, .md-h5, .md-h6) {
+  font-size: 1em;
+}
+.markdown :is(p, ul, ol, pre, table, blockquote) {
+  margin: 0 0 1em;
+}
+.markdown :is(ul, ol) {
+  padding-left: 1.6em;
+}
+.markdown ul {
+  list-style: disc;
+}
+.markdown ol {
+  list-style: decimal;
+}
+.markdown li + li {
+  margin-top: 0.25em;
+}
+.markdown a {
+  color: var(--ql-link);
+  text-decoration: underline;
+  text-decoration-color: var(--ql-link-underline);
+  text-underline-offset: 2px;
+}
+.markdown a:hover {
+  text-decoration-color: currentColor;
+}
+.markdown img {
+  display: inline-block;
+  height: auto;
+  /* READMEs often ask for huge banners and logos (1360×768, 1254×1254);
+     keep them a sensible size, in proportion, beside the rest of the page. */
+  max-width: min(100%, 640px);
+  max-height: min(400px, 60vh);
+  object-fit: contain;
+  vertical-align: middle;
+}
+.markdown [align="center"] {
+  text-align: center;
+}
+/* An image on its own in a paragraph (markdown.tsx rehypeCentreLoneImages). */
+.markdown .md-lone-image {
+  text-align: center;
+}
+.markdown code {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--ql-code-bg);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+}
+.markdown pre {
+  background: var(--ql-pre-bg);
+  border: 1px solid var(--ql-line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+.markdown pre code {
+  background: none;
+  padding: 0;
+  overflow-wrap: normal;
+}
+.markdown blockquote {
+  border-left: 3px solid var(--ql-line-strong);
+  padding-left: 14px;
+  color: var(--ql-md-quote);
+}
+/* GitHub's [!NOTE]-style alerts (markdown.tsx rehypeAlerts). */
+.markdown .md-alert {
+  margin: 0 0 1em;
+  padding: 8px 16px;
+  border-left: 3px solid var(--md-alert);
+}
+.markdown .md-alert-note {
+  --md-alert: var(--ql-alert-note);
+}
+.markdown .md-alert-tip {
+  --md-alert: var(--ql-alert-tip);
+}
+.markdown .md-alert-important {
+  --md-alert: var(--ql-alert-important);
+}
+.markdown .md-alert-warning {
+  --md-alert: var(--ql-alert-warning);
+}
+.markdown .md-alert-caution {
+  --md-alert: var(--ql-alert-caution);
+}
+.markdown .md-alert > :last-child {
+  margin-bottom: 0;
+}
+.markdown .md-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: var(--md-alert);
+  font-weight: 500;
+  line-height: 1;
+}
+.markdown .md-alert-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.markdown table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  /* Columns as wide as their longest word, so a wide table scrolls on a phone
+     rather than squeezing its words to a letter or two a line. */
+  overflow-wrap: break-word;
+}
+.markdown :is(th, td) {
+  border: 1px solid var(--ql-line);
+  padding: 6px 12px;
+}
+.markdown th {
+  background: var(--ql-md-th);
+}
+.markdown hr {
+  border: 0;
+  border-top: 1px solid var(--ql-line);
+  margin: 1.5em 0;
+}
+.markdown details {
+  margin: 0 0 1em;
+}
+.markdown summary {
+  cursor: pointer;
+}
+.release-notes.markdown {
+  font-size: 13px;
+}

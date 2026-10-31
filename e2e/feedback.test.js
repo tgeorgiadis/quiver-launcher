@@ -1,0 +1,144 @@
+/**
+ * Player feedback on an app's page, as on the website: anyone sees what
+ * players said, the releases and the project's details; sharing how it ran
+ * asks a signed-out player to sign in first, then saves, and saving again
+ * updates it.
+ */
+import { after, before, test } from "node:test";
+import assert from "node:assert/strict";
+import { launch } from "./session.js";
+
+let s, app, api, until;
+
+before(async () => {
+  s = await launch();
+  ({ app, api, until } = s);
+  await (await s.card("test-port")).waitForDisplayed({ timeout: 20000 });
+});
+
+after(() => s?.close());
+
+const page = () => app.$(".page-layer:not([hidden]) .app-page");
+/** A tab of the open page, by its label. */
+const tab = async (name) => {
+  const tabs = await (await page()).$$("button[role=tab]");
+  for (const t of tabs) if ((await t.getText()).startsWith(name)) return t;
+  throw new Error(`no ${name} tab`);
+};
+const rows = () =>
+  app.execute(() =>
+    [...document.querySelectorAll(".page-layer:not([hidden]) .feedback article.review")].map((r) => ({
+      author: r.querySelector(".review-author strong").textContent,
+      said: r.querySelector(".result-badge").textContent.trim(),
+      meta: r.querySelector(".review-author small").textContent,
+    })),
+  );
+
+test("anyone sees what players said, the releases and the project's details", async () => {
+  await (await (await s.card("test-port")).$(".card-open")).click();
+  // What they said, in the box at the page's top; all of it on Player feedback.
+  assert.match(await (await (await page()).$(".feedback-box .score")).getText(), /Runs well · 3 players/);
+  await (await tab("Player feedback")).click();
+  await until(async () => (await (await tab("Player feedback")).getAttribute("aria-selected")) === "true");
+  assert.match(await (await tab("Player feedback")).getText(), /3/);
+  await until(async () => (await rows()).length === 2);
+  assert.deepEqual(
+    (await rows()).map((r) => [r.author, r.said]),
+    [
+      ["ada", "Runs well"],
+      ["lin", "Runs with issues"],
+    ],
+  );
+  assert.match((await rows())[0].meta, /Linux · tested on v1\.0\.0/);
+  assert.ok(api.catalogQueries().some((q) => q.path === "reviews:list" && q.args.slug === "test-port"));
+  // Releases, and the project's details at the top of Overview.
+  await (await tab("Releases")).click();
+  await until(() => app.execute(() => document.querySelector(".page-layer:not([hidden]) .release-summary strong")?.textContent === "1.0.0"));
+  await (await tab("Overview")).click();
+  const details = await (await page()).$("section[aria-label='Project details']");
+  assert.match(await details.getText(), /MADE BY\s+Quiver Tester/i);
+  assert.match(await details.getText(), /No AI use found/);
+});
+
+test("sharing how it ran signs in first, then the form opens and saves", async () => {
+  await (await tab("Player feedback")).click();
+  assert.match(await (await (await page()).$(".share-prompt")).getText(), /Sign in to share how it runs for you/);
+  await (await (await page()).$("button*=Share how it ran")).click();
+  const signIn = await app.$("[role=dialog][aria-label='Sign in']");
+  await signIn.waitForDisplayed({ timeout: 10000 });
+  await (await signIn.$("button=Create an account")).click();
+  await (await signIn.$("input[placeholder=Username]")).setValue("player");
+  const password = await signIn.$("input[placeholder=Password]");
+  await password.setValue("correct horse battery");
+  // Its button shows what was typed, and hides it again.
+  assert.equal(await password.getAttribute("type"), "password");
+  await (await signIn.$("button[aria-label='Show password']")).click();
+  assert.equal(await password.getAttribute("type"), "text");
+  await (await signIn.$("button[aria-label='Hide password']")).click();
+  assert.equal(await password.getAttribute("type"), "password");
+  await (await signIn.$("form button.primary")).click();
+  // Signed in, the form it asked for opens.
+  await (await (await page()).$("h3=How did it go?")).waitForDisplayed({ timeout: 10000 });
+  await (await (await page()).$("button*=It ran, but I had issues")).click();
+  await (await (await page()).$("textarea")).setValue("Needs the controller set up first.");
+  await (await (await page()).$("button=Share")).click();
+  await (await (await page()).$("p*=You've shared how it ran")).waitForDisplayed({ timeout: 10000 });
+  const os = process.platform === "win32" ? "windows" : "linux";
+  assert.deepEqual(api.reviews.at(-1), { entryId: "entry_test-port", result: "issues", body: "Needs the controller set up first.", platform: os, user: "player" });
+  // Theirs is in the list, marked as theirs.
+  await until(async () => (await rows()).some((r) => r.author === "playerYou"));
+  assert.equal((await rows()).find((r) => r.author === "playerYou").said, "Runs with issues");
+});
+
+test("saving again updates the player's feedback instead of adding more", async () => {
+  await (await (await page()).$("button*=Update your notes")).click();
+  await (await (await page()).$("h3=Update your notes")).waitForDisplayed({ timeout: 10000 });
+  // What they said before is there to change.
+  await until(async () => (await (await (await page()).$("textarea")).getValue()) === "Needs the controller set up first.");
+  await (await (await page()).$("button*=It worked well")).click();
+  await (await (await page()).$("button=Update notes")).click();
+  await (await (await page()).$("p*=You've shared how it ran")).waitForDisplayed({ timeout: 10000 });
+  await until(async () => (await rows()).find((r) => r.author === "playerYou")?.said === "Runs well");
+  assert.equal((await rows()).filter((r) => r.author === "playerYou").length, 1);
+});
+
+test("the box at the page's top closes once used, the focus going to the form's answer", async () => {
+  await (await tab("Overview")).click();
+  const box = await (await page()).$(".feedback-box");
+  await (await box.$("button.feedback-box-toggle")).click();
+  await (await box.$("button=Update your feedback")).click();
+  await (await (await page()).$("h3=Update your notes")).waitForDisplayed({ timeout: 10000 });
+  assert.equal(await box.getAttribute("data-open"), null);
+  // Their answer from before.
+  await until(() =>
+    app.execute(() => {
+      const at = document.activeElement;
+      return Boolean(at?.closest(".result-options") && at.getAttribute("aria-pressed") === "true" && at.textContent.startsWith("It worked well"));
+    }),
+  );
+  await (await (await page()).$("button=Cancel")).click();
+  await app.keys("Escape");
+});
+
+test("a newer release still being checked shows as on the website", async () => {
+  await (await (await s.card("test-remake")).$(".card-open")).click();
+  // Over the list of releases.
+  await (await tab("Releases")).click();
+  const line = await (await page()).$(".release-checking-line");
+  await line.waitForDisplayed({ timeout: 10000 });
+  assert.equal(await line.getText(), "Version v1.1.0 is unverified · waiting for a maintainer");
+  // In release order with the verified one, saying why once opened.
+  await until(async () => (await (await page()).$$("article.release")).length === 2);
+  const [newer, verified] = await (await page()).$$("article.release");
+  assert.match(await newer.getAttribute("class"), /release-unverified/);
+  const text = await newer.getText();
+  assert.match(text, /^v1\.1\.0[\s\S]*Unverified/);
+  assert.doesNotMatch(text, /It changes how the app is built\./);
+  assert.match(await verified.getText(), /^1\.0\.0[\s\S]*Verified[\s\S]*Fixes a crash on start\./);
+  await (await newer.$("button.release-summary")).click();
+  await until(async () => /It changes how the app is built\./.test(await newer.getText()));
+  const link = await newer.$("a*=View v1.1.0 on GitHub");
+  await link.waitForDisplayed({ timeout: 10000 });
+  assert.equal(await link.getAttribute("href"), "https://github.com/quiver/test-remake/releases/tag/v1.1.0");
+  await app.keys("Escape");
+});

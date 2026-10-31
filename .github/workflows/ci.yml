@@ -1,0 +1,183 @@
+name: CI
+on:
+  pull_request:
+  # The base branch too, so a break that lands on it shows there.
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push to a pull request replaces the run for the older one.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Each job's time limit is two to three times as long as it usually takes (check 3 minutes, phone 1, windows 5,
+# installer 6, appimage 5), with room for a build with nothing cached, so a stuck run stops instead of running on.
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      # Ubuntu's mirror can crawl: apt-install.sh tries a stalled download again, and the step's limit stops one that
+      # stays stuck rather than holding the job.
+      - name: System libraries
+        timeout-minutes: 12
+        run: .github/apt-install.sh libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      # The translation catalogs list every string in the code: a string added without running extract fails here.
+      - run: pnpm --filter @quiverlauncher/i18n check
+      - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
+      # The end-to-end tests aren't run here: on the runner, slow and drawing without a GPU, one of them or another
+      # failed most runs for reasons of timing, not of the app. They run in WSL (e2e/wsl.sh).
+
+  # Every screen at Android phones' sizes (e2e/phone.test.js): the web side alone, so no Rust build.
+  phone:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # Its system libraries come from Ubuntu's mirror too.
+      - run: pnpm --filter @quiver/e2e exec playwright install --with-deps chromium
+        timeout-minutes: 8
+      - run: pnpm --filter @quiver/e2e phone
+      # To look over, failed or not.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Phone screenshots
+          path: e2e/phone-screenshots/
+
+  # A controller, the keys and the mouse around every screen (e2e/web/): the web side alone in WebKit, the Rust side
+  # stood in for, so no Rust build and no presses waiting on a WebDriver session (about 7 minutes).
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @quiver/e2e exec playwright install --with-deps webkit
+        timeout-minutes: 8
+      - run: pnpm --filter @quiver/e2e web
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri }
+      - run: pnpm install --frozen-lockfile
+      - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
+      - run: pnpm --filter @quiver/launcher tauri build --debug --no-bundle
+      - name: The app starts
+        run: |
+          $env:QUIVER_DATA = "$env:RUNNER_TEMP\quiver-smoke"
+          $app = Start-Process apps\launcher\src-tauri\target\debug\quiver-launcher.exe -PassThru
+          Start-Sleep 10
+          "still running: $(-not $app.HasExited), exit code: $($app.ExitCode)"
+          Get-Content "$env:QUIVER_DATA\quiver.log" -ErrorAction SilentlyContinue
+          Stop-Process $app -ErrorAction SilentlyContinue
+
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      # Shared with the release workflow's Windows build, which starts from it.
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri, shared-key: windows-release }
+      - run: pnpm install --frozen-lockfile
+      # Unsigned until there are signing keys.
+      - run: pnpm --filter @quiver/launcher tauri build --bundles nsis
+        # Usage data (telemetry.ts): the PostHog project token, a repository variable; unset, the build sends nothing.
+        env:
+          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Quiver Launcher Windows installer
+          path: apps/launcher/src-tauri/target/release/bundle/nsis/*.exe
+
+  # For Linux and Steam Deck: runs without installing anything. Built on the
+  # oldest supported Ubuntu so it works on older and newer distros alike, on
+  # Chromium (Tauri's CEF runtime) as the release is.
+  appimage:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      # Kept when a later step fails too: a build from nothing takes about 20 minutes, and a run that fails after it
+      # would otherwise leave the next one to start from nothing again.
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: apps/launcher/src-tauri, key: cef, cache-on-failure: true }
+      # The CEF build's CLI (built once per revision in cef-tools.sh) and the CEF distribution, saved as soon as each is
+      # there, whatever happens after.
+      - id: cef
+        run: echo "rev=$(sed -n 's/^REV=//p' .github/cef-tools.sh)" >> "$GITHUB_OUTPUT"
+      - id: cli
+        uses: actions/cache/restore@v4
+        with: { path: ~/.cache/tauri-cef-cli, key: "tauri-cef-cli-${{ steps.cef.outputs.rev }}" }
+      - id: dist
+        uses: actions/cache/restore@v4
+        with: { path: ~/.cache/cef, key: "cef-${{ hashFiles('apps/launcher/src-tauri/Cargo.cef.lock') }}" }
+      # Ubuntu's mirror can crawl: apt-install.sh tries a stalled download again, and the step's limit stops one that
+      # stays stuck rather than holding the job.
+      - name: System libraries
+        timeout-minutes: 12
+        run: .github/apt-install.sh libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev libfuse2 xvfb
+      - name: The CEF build's tools
+        timeout-minutes: 25
+        run: .github/cef-tools.sh
+      - if: steps.cli.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with: { path: ~/.cache/tauri-cef-cli, key: "${{ steps.cli.outputs.cache-primary-key }}" }
+      - run: pnpm install --frozen-lockfile
+      - run: sh apps/launcher/scripts/tauri-cef.sh build --bundles appimage
+        env:
+          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+      - if: always() && steps.dist.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with: { path: ~/.cache/cef, key: "${{ steps.dist.outputs.cache-primary-key }}" }
+      - name: The AppImage holds what Chromium loads
+        run: .github/cef-appimage-check.sh apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage
+      - name: The AppImage starts
+        run: |
+          export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke
+          # A smoke test isn't usage: its events go nowhere.
+          export QUIVER_POSTHOG_HOST=http://127.0.0.1:9
+          # Output goes to a file so nothing left running holds the step open.
+          status=0; xvfb-run -a timeout 15 apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage > $RUNNER_TEMP/app.log 2>&1 || status=$?
+          cat $RUNNER_TEMP/app.log $QUIVER_DATA/quiver.log 2>/dev/null || true
+          # 124: still running when the timeout stopped it.
+          test $status -eq 124
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Quiver Launcher for Linux (AppImage)
+          path: apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage

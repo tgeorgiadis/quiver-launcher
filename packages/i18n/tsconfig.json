@@ -1,0 +1,1 @@
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "types": ["vite/client", "node"] }, "include": ["src", "lingui.config.ts"] }

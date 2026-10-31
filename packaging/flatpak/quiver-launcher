@@ -1,3 +1,0 @@
-#!/bin/sh
-export QuiverLauncher_SKIP_UPDATES=1
-exec /app/lib/quiverlauncher/QuiverLauncher "$@"

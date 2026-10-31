@@ -1,0 +1,15 @@
+{
+  "bundle": {
+    "linux": {
+      "appimage": {
+        "files": {
+          "bin/00-no-userns-prompt.hook": "appimage/00-no-userns-prompt.hook",
+          "/usr/lib/libsoftokn3.so": "/usr/lib/x86_64-linux-gnu/libsoftokn3.so",
+          "/usr/lib/libfreeblpriv3.so": "/usr/lib/x86_64-linux-gnu/libfreeblpriv3.so",
+          "/usr/lib/libnssckbi.so": "/usr/lib/x86_64-linux-gnu/libnssckbi.so",
+          "/usr/lib/libxkbcommon-x11.so.0": "/usr/lib/x86_64-linux-gnu/libxkbcommon-x11.so.0"
+        }
+      }
+    }
+  }
+}

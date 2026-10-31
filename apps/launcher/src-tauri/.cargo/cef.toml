@@ -1,0 +1,19 @@
+# Cargo config for the Linux CEF build. Cargo doesn't load it on its own:
+# scripts/tauri-cef.sh hands it over with `--config`, so every other build keeps
+# Tauri 2 from crates.io. It takes the Tauri family and the dialog plugin (with
+# the fs plugin it depends on) from the `feat/cef` branches, as Readest builds
+# them: upstream's tauri-cef-v3.0.0-alpha.27 plus Readest's fixes (X focus after
+# Alt-Tab, no-op wry/x11/dbus features, the remote-debugging preference). A
+# config-level patch wins over the one in Cargo.toml.
+[patch.crates-io]
+tauri = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+tauri-build = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+tauri-codegen = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+tauri-macros = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+tauri-plugin = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+tauri-runtime = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+tauri-runtime-cef = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+tauri-utils = { git = "https://github.com/readest/tauri", rev = "d6ef6e4c755228713e7358a27794a89cfd30969f" }
+
+tauri-plugin-dialog = { git = "https://github.com/readest/tauri-plugins-workspace", rev = "835adce473e8f059f6ba84660dd07bcb19fb9030" }
+tauri-plugin-fs = { git = "https://github.com/readest/tauri-plugins-workspace", rev = "835adce473e8f059f6ba84660dd07bcb19fb9030" }

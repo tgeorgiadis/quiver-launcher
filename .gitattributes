@@ -1,3 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-packaging/flatpak/quiver-launcher text eol=lf
+# Shell scripts run in Linux (e2e/wsl.sh, from a Windows checkout too): never with Windows line endings.
+*.sh text eol=lf
+# So is the e2e tests' stand-in browser, which the app runs by its shebang (QUIVER_BROWSER).
+e2e/fake-browser.js text eol=lf
+# And the CEF AppImage's AppRun hooks (apps/launcher/src-tauri/appimage), which it sources.
+*.hook text eol=lf
