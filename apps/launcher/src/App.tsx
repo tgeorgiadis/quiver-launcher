@@ -22,7 +22,7 @@ import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedbac
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
-import { pageArea, toTop } from "./spatial";
+import { FORWARD, pageArea, toTop } from "./spatial";
 import { track } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
@@ -74,7 +74,9 @@ export function App() {
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
   // Where each covered page was scrolled to and what had focus, to put back on the way back.
   const covered = useRef<{ y: number; focus: Element | null }[]>([]);
-  const open = useCallback((view: View) => {
+  // The pages Back left, the last one left last: Forward opens them again, until another page is opened.
+  const ahead = useRef<View[]>([]);
+  const push = useCallback((view: View) => {
     const here = { y: pageArea().scrollTop, focus: document.activeElement };
     setStack((s) => {
       covered.current[s.length] = here;
@@ -83,15 +85,33 @@ export function App() {
       return i >= 0 ? s.slice(0, i + 1) : [...s, view];
     });
   }, []);
+  const open = useCallback(
+    (view: View) => {
+      ahead.current = [];
+      push(view);
+    },
+    [push],
+  );
   const openApp = useCallback((entry: Entry, at?: PageAt) => open({ kind: "app", entry, at }), [open]);
   const openGame = useCallback((game: GameLink) => open({ kind: "game", game }), [open]);
   const openDownloads = useCallback(() => open({ kind: "downloads" }), [open]);
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
-  const goBack = useCallback(() => setStack((s) => s.slice(0, -1)), []);
+  // Read from the stack as shown, not in setStack's updater, which React can run twice.
+  const shown = useRef<View[]>([]);
+  const goBack = useCallback(() => {
+    const left = shown.current.at(-1);
+    if (left) ahead.current.push(left);
+    setStack((s) => s.slice(0, -1));
+  }, []);
+  const goForward = useCallback(() => {
+    const next = ahead.current.pop();
+    if (next) push(next);
+  }, [push]);
   const switchTab = (next: Tab) => {
     setTab(next);
     setStack([]);
     covered.current = [];
+    ahead.current = [];
   };
   const depth = useRef(0);
   useLayoutEffect(() => {
@@ -107,6 +127,7 @@ export function App() {
   const pages = useRef(0);
   useLayoutEffect(() => {
     pages.current = stack.length;
+    shown.current = stack;
   }, [stack]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -115,6 +136,12 @@ export function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [goBack]);
+  // Forward (spatial.ts), as Back: not from under a dialog.
+  useEffect(() => {
+    const onForward = () => void (!document.querySelector('[role="dialog"]') && goForward());
+    window.addEventListener(FORWARD, onForward);
+    return () => window.removeEventListener(FORWARD, onForward);
+  }, [goForward]);
   const top = stack.at(-1);
   // Usage data: the screen shown, a catalog app's or game's by its slug (never one the player added).
   const screen = !top ? tab : top.kind === "app" ? `app:${isOwn(top.entry.id) ? "" : top.entry.slug}` : top.kind === "game" ? `game:${top.game.slug}` : top.kind;

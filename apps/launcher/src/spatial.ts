@@ -15,13 +15,14 @@ import { closePicker, openPicker, pickerPanel } from "./select-picker";
 import { boxZoom, windowBox, zoom as interfaceZoom } from "./zoom";
 
 type Direction = "up" | "down" | "left" | "right";
-export const ACTIONS = ["confirm", "back", "options", "top", "up", "down", "left", "right", "scrollUp", "scrollDown", "prevTab", "nextTab", "prevLetter", "nextLetter"] as const;
+export const ACTIONS = ["confirm", "back", "forward", "options", "top", "up", "down", "left", "right", "scrollUp", "scrollDown", "prevTab", "nextTab", "prevLetter", "nextLetter"] as const;
 export type Action = (typeof ACTIONS)[number];
 export type Bindings = Record<Action, string[]>;
 /** Each action's name, in the language shown when it's read, not when the module loads (before one is picked). */
 export const ACTION_NAMES: Record<Action, string> = {
   get confirm() { return t`Confirm / Select`; },
   get back() { return t`Cancel / Back`; },
+  get forward() { return t({ message: "Forward", comment: "Action that opens again the page Back last left" }); },
   get options() { return t({ message: "Options", comment: "Controller action that opens the focused item's menu" }); },
   get top() { return t`Back to top`; },
   get up() { return t`Navigate up`; },
@@ -38,6 +39,7 @@ export const ACTION_NAMES: Record<Action, string> = {
 export const DEFAULT_KEYS: Bindings = {
   confirm: ["Enter"],
   back: ["Escape", "Alt+ArrowLeft", "MouseBack"],
+  forward: ["Alt+ArrowRight", "MouseForward"],
   options: ["O"],
   top: ["Home"],
   up: ["ArrowUp"],
@@ -55,6 +57,8 @@ export const DEFAULT_KEYS: Bindings = {
 export const DEFAULT_PAD: Bindings = {
   confirm: ["South"],
   back: ["East"],
+  // None: a controller's buttons are all taken. The player can give it one in Settings.
+  forward: [],
   options: ["North"],
   top: ["RightThumb"],
   up: ["DPadUp", "LeftStickUp"],
@@ -961,6 +965,9 @@ export function goBack() {
  * to its list), then its others. Sent to the window itself, Android's webview ran them as they were added instead, the
  * launcher's going back a page first, so Back from a Settings section skipped its list.
  */
+/** Sent to the window by Forward (a mouse's forward button, Alt+→), for the page stack to open what Back left. */
+export const FORWARD = "quiver:forward";
+
 const pressEscape = () => (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 
 /**
@@ -989,6 +996,8 @@ function act(action: Action) {
   // A dropdown's list closes by itself: Escape would reach the page or dialog under it too.
   else if (action === "back" && pickerPanel()) closePicker();
   else if (action === "back") pressEscape();
+  // The pages are App.tsx's: it reopens the one Back last left.
+  else if (action === "forward") window.dispatchEvent(new Event(FORWARD));
   // A library card's or sidebar row's menu, else a card's or an app page's Get (or Play), else the focused app's page.
   else if (action === "options") {
     const owner = focused?.closest("[data-menu]");
