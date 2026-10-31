@@ -22,7 +22,7 @@ name: Release
 # Developer ID Application .p12, base64), APPLE_CERTIFICATE_PASSWORD,
 # APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD (an app-specific password)
 # and APPLE_TEAM_ID (secrets).
-# For the Android APK: ANDROID_KEYSTORE (a .jks keystore, base64),
+# For the Android APK: ANDROID_KEYSTORE_BASE64 (a .jks keystore, base64; Quiver Launcher 3's, the same key),
 # ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD (secrets).
 on:
   workflow_dispatch:
@@ -320,7 +320,7 @@ jobs:
         with: { name: macos, path: out/* }
 
   # Android: an APK for arm64, which nearly every Android phone and handheld
-  # is. Signed with the keystore in ANDROID_KEYSTORE (base64); Android won't
+  # is. Signed with the keystore in ANDROID_KEYSTORE_BASE64; Android won't
   # install an unsigned APK, so without it there's no Android file.
   android:
     needs: version
@@ -330,7 +330,7 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE != '' }}
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -347,12 +347,14 @@ jobs:
       - run: echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
       - name: Keystore
         if: env.HAS_KEYSTORE == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > "$RUNNER_TEMP/release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
       - name: Warn when unsigned
         if: env.HAS_KEYSTORE != 'true'
-        run: echo "::warning::ANDROID_KEYSTORE isn't set, so the APK can't be signed and the release has no Android file."
+        run: echo "::warning::ANDROID_KEYSTORE_BASE64 isn't set, so the APK can't be signed and the release has no Android file."
       # Read by gen/android/app/build.gradle.kts.
       - run: pnpm --filter @quiver/launcher tauri android build --apk --target aarch64
         env:
