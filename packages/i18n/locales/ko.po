@@ -1525,6 +1525,11 @@ msgstr "카탈로그에 없는 앱을 위한 기능이에요. 나만 볼 수 있
 msgid "Forgot your password?"
 msgstr "비밀번호를 잊으셨나요?"
 
+#. Action that opens again the page Back last left
+#: ../../apps/launcher/src/spatial.ts
+msgid "Forward"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "{folder}에서 찾았어요"

@@ -1525,6 +1525,11 @@ msgstr "Pour une app absente du catalogue. Elle n'est qu'à vous ; pour en ajou
 msgid "Forgot your password?"
 msgstr "Mot de passe oublié ?"
 
+#. Action that opens again the page Back last left
+#: ../../apps/launcher/src/spatial.ts
+msgid "Forward"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "Trouvée dans {folder}"
