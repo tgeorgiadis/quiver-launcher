@@ -1,0 +1,17 @@
+{
+  "name": "@quiver/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "e2e": "node --test --test-concurrency=1 --test-force-exit \"!(live|phone).test.js\"",
+    "e2e:ci": "node run.js --concurrency=2 --max-failures=3",
+    "live": "node --test live.test.js",
+    "phone": "node --test --test-force-exit phone.test.js",
+    "web": "node --test --test-force-exit \"web/*.test.js\""
+  },
+  "devDependencies": {
+    "playwright": "1.56.1",
+    "webdriverio": "^9"
+  }
+}

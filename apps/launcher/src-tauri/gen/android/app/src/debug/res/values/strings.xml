@@ -1,0 +1,5 @@
+<resources>
+    <!-- A debug build installs beside the release (build.gradle.kts): its own name, to tell them apart. -->
+    <string name="app_name">"Quiver Dev"</string>
+    <string name="main_activity_title">"Quiver Dev"</string>
+</resources>

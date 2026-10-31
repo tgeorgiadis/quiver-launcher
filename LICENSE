@@ -1,22 +1,123 @@
-MIT License
+Quiver Launcher License
 
-Copyright (c) 2026 SirDiabo
-Copyright (c) 2026 Thomas Georgiadis
+IN SHORT
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+- You can read, build, change and test the code, share it, and send us your
+  changes.
+- You can use Quiver Launcher: an official release, or a copy you built
+  yourself from our code.
+- You can share the source code and modified builds for development and
+  testing. For production use during the first year, use an official release
+  or a copy you build yourself from our published source code. Unofficial
+  builds distributed by others do not have production-use permission.
+- One year after each version comes out, its code becomes MIT licensed. From
+  then on, anyone can do anything MIT allows with that version. A version's
+  year starts on the day it's first published: when its release comes out,
+  or when its code first appears in our public repository.
+- The Quiver name, logo and icons aren't covered by this license. See
+  TRADEMARKS.md.
+- Quiver Launcher 3 and earlier stay MIT licensed, as before.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This summary is here to help. The license itself is below, and if the two ever
+disagree, the license is what counts.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+-----------------------------------------------------------------------------
+
+Business Source License 1.1
+
+Licensor:             Thomas Georgiadis
+
+Licensed Work:        Quiver Launcher 4 and every later version published
+                      under this License: its source code, documentation and
+                      artwork, as published in each release and each commit
+                      of its public source repository.
+
+                      Not included: third-party material, which keeps its own
+                      license, and the Quiver brand assets listed in
+                      TRADEMARKS.md, which that file covers. Anything that
+                      was published under the MIT License before, such as in
+                      Quiver Launcher 3, also stays available under it.
+
+                      (c) 2026 Thomas Georgiadis and contributors
+
+Additional Use Grant: You may make production use of the Licensed Work if
+                      both of the following conditions are met:
+
+                      1. You use either (a) an unmodified official build
+                         distributed by the Licensor through a channel
+                         identified in the README, or (b) a build you make
+                         yourself from source code published by the Licensor,
+                         with or without your own modifications. An
+                         organization may have an employee or authorized
+                         representative make a build on its behalf.
+
+                      2. You use that build for your own personal purposes
+                         or your organization's internal purposes, and do
+                         not offer the Licensed Work to third parties as a
+                         product or service.
+
+                      This Additional Use Grant does not permit production
+                      use of unofficial builds distributed by third parties
+                      or builds based on third-party modifications not
+                      published by the Licensor.
+                      It does not restrict the copying, modification,
+                      redistribution, or non-production use permitted by
+                      the standard Terms below.
+
+Change Date:          One year after each version of the Licensed Work is
+                      first published by the Licensor.
+
+                      Each release, and each commit in the Licensor's public
+                      source repository,
+                      https://github.com/tgeorgiadis/quiver-launcher, is a
+                      version. A version is first published on the day it
+                      first becomes publicly available from the Licensor:
+                      the day its release is published on that repository's
+                      Releases page, or the day its commit first appears in
+                      that repository, whichever is earlier. The date a
+                      commit records for itself doesn't decide this.
+                      Publishing a version again doesn't change its Change
+                      Date.
+
+Change License:       MIT License
+
+Want to use Quiver Launcher in a way this doesn't allow? Ask at
+https://github.com/tgeorgiadis/quiver-launcher/issues
+
+-----------------------------------------------------------------------------
+
+License text copyright © 2024 MariaDB plc, All Rights Reserved. “Business Source License” is a trademark of MariaDB plc.
+
+Terms
+
+The Licensor hereby grants you the right to copy, modify, create derivative works, redistribute, and make non-production use of the Licensed Work. The Licensor may make an Additional Use Grant, above, permitting limited production use.
+
+Effective on the Change Date, or the fourth anniversary of the first publicly available distribution of a specific version of the Licensed Work under this License, whichever comes first, the Licensor hereby grants you rights under the terms of the Change License, and the rights granted in the paragraph above terminate.
+
+If your use of the Licensed Work does not comply with the requirements currently in effect as described in this License, you must purchase a commercial license from the Licensor, its affiliated entities, or authorized resellers, or you must refrain from using the Licensed Work.
+
+All copies of the original and modified Licensed Work, and derivative works of the Licensed Work, are subject to this License. This License applies separately for each version of the Licensed Work and the Change Date may vary for each version of the Licensed Work released by Licensor.
+
+You must conspicuously display this License on each original or modified copy of the Licensed Work. If you receive the Licensed Work in original or modified form from a third party, the terms and conditions set forth in this License apply to your use of that work.
+
+Any use of the Licensed Work in violation of this License will automatically terminate your rights under this License for the current and all other versions of the Licensed Work.
+
+This License does not grant you any right in any trademark or logo of Licensor or its affiliates (provided that you may use a trademark or logo of Licensor as expressly required by this License).
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON AN “AS IS” BASIS. LICENSOR HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.
+
+MariaDB hereby grants you permission to use this License’s text to license your works, and to refer to it using the trademark “Business Source License”, as long as you comply with the Covenants of Licensor below.
+
+Covenants of Licensor
+
+In consideration of the right to use this License’s text and the “Business Source License” name and trademark, Licensor covenants to MariaDB, and to all other recipients of the licensed work to be provided by Licensor:
+
+To specify as the Change License the GPL Version 2.0 or any later version, or a license that is compatible with GPL Version 2.0 or a later version, where “compatible” means that software provided under the Change License can be included in a program with software provided under GPL Version 2.0 or a later version. Licensor may specify additional Change Licenses without limitation.
+
+To either: (a) specify an additional grant of rights to use that does not impose any additional restriction on the right granted in this License, as the Additional Use Grant; or (b) insert the text “None” to specify a Change Date. Not to modify this License in any other way.
+
+Notice
+
+The Business Source License (this document, or the “License”) is not an Open Source license. However, the Licensed Work will eventually be made available under an Open Source License, as stated in this License.
+
+For more information on the use of the Business Source License for MariaDB products, please visit the MariaDB Business Source License FAQ. For more information on the use of the Business Source License generally, please visit the Adopting and Developing Business Source License FAQ.

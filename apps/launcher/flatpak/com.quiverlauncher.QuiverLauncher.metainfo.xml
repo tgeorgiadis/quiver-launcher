@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The release's version and date go in when release.yml builds the Flatpak. -->
+<component type="desktop-application">
+  <id>com.quiverlauncher.QuiverLauncher</id>
+  <name>Quiver Launcher</name>
+  <summary>Find, install and play games, emulators and mods</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <developer id="com.quiverlauncher">
+    <name>Thomas Georgiadis</name>
+  </developer>
+  <description>
+    <p>
+      Browse the quiverlauncher.com catalog, press Get, and the app is added to your library,
+      downloaded, checked and installed. Keep everything you play in one library, start it with a
+      controller, add it to Steam, and browse and install mods.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.quiverlauncher.QuiverLauncher.desktop</launchable>
+  <url type="homepage">https://quiverlauncher.com</url>
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>gamepad</control>
+  </supports>
+  <provides>
+    <binary>quiver-launcher</binary>
+  </provides>
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>

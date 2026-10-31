@@ -1,0 +1,32 @@
+{
+  "name": "@quiverlauncher/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Translations shared by Quiver Launcher and quiverlauncher.com",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./lingui.config": "./lingui.config.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "extract": "lingui extract --clean",
+    "check": "lingui extract --clean && git diff --exit-code -- locales"
+  },
+  "dependencies": {
+    "@lingui/core": "6.10.1",
+    "@lingui/message-utils": "6.10.1"
+  },
+  "devDependencies": {
+    "@lingui/cli": "6.10.1",
+    "@lingui/conf": "6.10.1",
+    "@lingui/format-po": "6.10.1",
+    "@types/node": "^26.6.5",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.7"
+  }
+}

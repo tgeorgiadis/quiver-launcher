@@ -1,0 +1,4357 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-23 23:38+1100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: ko\n"
+
+#. Beside Launch options: the player changed them
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "(changed)"
+msgstr "(변경됨)"
+
+#. placeholder {0}: elsewhere.size
+#: ../../apps/launcher/src/library.tsx
+msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
+msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}}"
+
+#. placeholder {0}: elsewhere.size
+#: ../../apps/launcher/src/library.tsx
+msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
+msgstr "{0, plural, other {플랫폼: 앱 #개 숨김}}"
+
+#. placeholder {0}: elsewhere.size
+#: ../../apps/launcher/src/library.tsx
+msgid "{0, plural, one {Showing # app for other platforms.} other {Showing # apps for other platforms.}}"
+msgstr "{0, plural, other {다른 플랫폼용 앱 #개를 보여 주고 있어요.}}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{active, plural, one {# downloading, {percent}%} other {# downloading, {percent}%}}"
+msgstr "{active, plural, other {#개 다운로드 중, {percent}%}}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{active, plural, one {# downloading} other {# downloading}}"
+msgstr "{active, plural, other {#개 다운로드 중}}"
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "{app} didn't finish downloading."
+msgstr "{app} 다운로드를 완료하지 못했어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{app} has no verified release yet."
+msgstr "{app}에는 아직 검증된 버전이 없어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{app} then stays on this version until you unpin it."
+msgstr "이후 {app}은(는) 고정을 해제할 때까지 이 버전으로 유지돼요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{app} versions"
+msgstr "{app} 버전"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{app}'s folder is now {renamed}."
+msgstr "{app} 폴더 이름이 {renamed}(으)로 바뀌었어요."
+
+#: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "{apps, plural, one {# way to play} other {# ways to play}}"
+msgstr "{apps, plural, other {플레이 방법 #가지}}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{broken, plural, one {# broken} other {# broken}}"
+msgstr "{broken, plural, other {#명 실행 안 됨}}"
+
+#: ../ui/src/index.tsx
+msgid "{broken, plural, one {# doesn't run} other {# don't run}}"
+msgstr "{broken, plural, other {#명 실행 안 됨}}"
+
+#. A version of a game, by the console it came out on: PlayStation version
+#: ../../apps/launcher/src/game.tsx
+msgid "{console} version"
+msgstr "{console} 버전"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
+msgstr "{count, plural, other {앱 #개 숨김}}"
+
+#: ../../apps/launcher/src/tv.tsx
+msgid "{count, plural, one {# app} other {# apps}}"
+msgstr "{count, plural, other {앱 #개}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {Add # app} other {Add # apps}}"
+msgstr "{count, plural, other {앱 #개 추가}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {Move # installed app to {asking}? Its saves and settings go with it. Desktop and Steam shortcuts you made point at the old folder, so make them again after.} other {Move # installed apps to {asking}? Their saves and settings go with them. Desktop and Steam shortcuts you made point at the old folder, so make them again after.}}"
+msgstr "{count, plural, other {설치된 앱 #개를 {asking}(으)로 옮길까요? 저장 데이터와 설정도 함께 옮겨져요. 직접 만든 바탕 화면 및 Steam 바로 가기는 이전 폴더를 가리키므로, 옮긴 후 다시 만들어 주세요.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{count, plural, one {Puts its # app on a page anyone with the link can see, and add to their library.} other {Puts its # apps on a page anyone with the link can see, and add to their library.}}"
+msgstr "{count, plural, other {링크가 있는 누구나 볼 수 있고 자신의 라이브러리에 추가할 수 있는 페이지에 앱 #개를 올려요.}}"
+
+#. A mod's newer version: v1.3 is out
+#: ../../apps/launcher/src/mods.tsx
+msgid "{current} is out"
+msgstr "{current} 출시됨"
+
+#. When a download finished: a day (Today, Yesterday, Sep 3) and a time
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{day} {time}"
+msgstr "{day} {time}"
+
+#: ../ui/src/index.tsx
+msgid "{days, plural, one {# day ago} other {# days ago}}"
+msgstr "{days, plural, other {#일 전}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{days, plural, one {Played # day ago} other {Played # days ago}}"
+msgstr "{days, plural, other {#일 전 플레이}}"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{downloadCount, plural, one {{downloads} download} other {{downloads} downloads}}"
+msgstr "{downloadCount, plural, other {다운로드 {downloads}회}}"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{downloadCount, plural, one {{downloads} view} other {{downloads} views}}"
+msgstr "{downloadCount, plural, other {조회수 {downloads}회}}"
+
+#. Follows “VirusTotal:”; {engines} reads “3 of 70 engines”
+#: ../../apps/launcher/src/detail.tsx
+msgid "{engines} flag one of its files."
+msgstr "{engines}에서 파일 하나를 위험 항목으로 감지했어요."
+
+#. Follows “VirusTotal:”; {engines} reads “1 of 70 engines”
+#: ../../apps/launcher/src/detail.tsx
+msgid "{engines} flag one of its files. A lone detection is often a false alarm."
+msgstr "{engines}에서 파일 하나를 위험 항목으로 감지했어요. 한 엔진만 감지한 경우 오탐일 때가 많아요."
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "{failed, plural, one {# download didn't finish.} other {# downloads didn't finish.}}"
+msgstr "{failed, plural, other {다운로드 #개를 완료하지 못했어요.}}"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "{file} was removed from {listed} by its developer."
+msgstr "개발자가 {listed}에서 {file}을(를) 삭제했어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{files, plural, one {# file} other {# files}}"
+msgstr "{files, plural, other {파일 #개}}"
+
+#. A mod's version on this computer: v1.2 installed
+#: ../../apps/launcher/src/mods.tsx
+msgid "{have} installed"
+msgstr "{have} 설치됨"
+
+#: ../../apps/launcher/src/sidebar.ts
+msgid "{hours, plural, one {# hour} other {# hours}}"
+msgstr "{hours, plural, other {#시간}}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{hours, plural, one {If you wait, it's verified in about # hour and offered as an update then.} other {If you wait, it's verified in about # hours and offered as an update then.}}"
+msgstr "{hours, plural, other {기다리면 약 #시간 후에 검증되고, 그때 업데이트로 제공돼요.}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{hours, plural, one {If you wait, it's verified in about # hour.} other {If you wait, it's verified in about # hours.}}"
+msgstr "{hours, plural, other {기다리면 약 #시간 후에 검증돼요.}}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{hours, plural, one {It's in its 48-hour waiting period and will be verified in about # hour.} other {It's in its 48-hour waiting period and will be verified in about # hours.}}"
+msgstr "{hours, plural, other {48시간 대기 기간 중이며 약 #시간 후에 검증돼요.}}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{hours, plural, one {unverified · verified in about # hour} other {unverified · verified in about # hours}}"
+msgstr "{hours, plural, other {미검증 · 약 #시간 후 검증}}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{issues, plural, one {# has issues} other {# have issues}}"
+msgstr "{issues, plural, other {#명 문제 있음}}"
+
+#: ../ui/src/index.tsx
+msgid "{issues, plural, one {# with issues} other {# with issues}}"
+msgstr "{issues, plural, other {#명 문제 있음}}"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{kb} KB"
+msgstr "{kb} KB"
+
+#: ../../apps/launcher/src/media.tsx
+msgid "{kindName} video"
+msgstr "{kindName} 영상"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{left, plural, one {# app here is already in your library.} other {# apps here are already in your library.}}"
+msgstr "{left, plural, other {여기 있는 앱 중 #개는 이미 라이브러리에 있어요.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{left, plural, one {# you added yourself isn't shared.} other {# you added yourself aren't shared.}}"
+msgstr "{left, plural, other {직접 추가한 #개는 공유되지 않아요.}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{left, plural, one {Show it} other {Show them}}"
+msgstr "{left, plural, other {앱 표시}}"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "{left} of {most} requests left this hour, until {until}."
+msgstr "{until}까지 이번 시간 요청이 {most}회 중 {left}회 남았어요."
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{mb} MB"
+msgstr "{mb} MB"
+
+#: ../../apps/launcher/src/sidebar.ts
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr "{minutes, plural, other {#분}}"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{missing, plural, one {{mod} needs {needed}, which isn't installed yet. Install it as well?} other {{mod} needs {needed}, which aren't installed yet. Install them as well?}}"
+msgstr "{missing, plural, other {{mod}에는 아직 설치되지 않은 {needed}이(가) 필요해요. 함께 설치할까요?}}"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{missing, plural, one {Install both} other {Install all}}"
+msgstr "{missing, plural, other {모두 설치}}"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{modWithFiles} has more than one file. Which one do you want?"
+msgstr "{modWithFiles}에는 파일이 여러 개 있어요. 어떤 파일을 원하세요?"
+
+#: ../ui/src/index.tsx
+msgid "{months, plural, one {# mo ago} other {# mo ago}}"
+msgstr "{months, plural, other {#개월 전}}"
+
+#. mo: months, short
+#: ../../apps/launcher/src/library.tsx
+msgid "{months, plural, one {Played # mo ago} other {Played # mo ago}}"
+msgstr "{months, plural, other {#개월 전 플레이}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{more, plural, one {and # more} other {and # more}}"
+msgstr "{more, plural, other {외 #개}}"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "{n, plural, one {# app} other {# apps}}"
+msgstr "{n, plural, other {앱 #개}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} (this computer)"
+msgstr "{name} (이 컴퓨터)"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} {version} has more than one file for your computer."
+msgstr "{name} {version}에는 이 컴퓨터용 파일이 여러 개 있어요."
+
+#: ../ui/src/index.tsx
+msgid "{name} artwork"
+msgstr "{name} 아트워크"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "{name} box art"
+msgstr "{name} 박스 아트"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since."
+msgstr "Quiver가 {release}을(를) 검증한 뒤 {name}이(가) 바뀌었고, 새 파일은 아직 검증하지 않았어요. Quiver가 확인한 파일만 설치하고, 그 이후 바뀌었다면 거부해요."
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "{name} icon"
+msgstr "{name} 아이콘"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} is installed. Windows says to restart the computer to finish setting it up."
+msgstr "{name}이(가) 설치됐어요. 설정을 마치려면 컴퓨터를 다시 시작해야 한다고 Windows가 알려 왔어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{name} is shared"
+msgstr "{name} 공유됨"
+
+#. An app's menu, named for the app
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "{name} menu"
+msgstr "{name} 메뉴"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "{name}, {pulledLabel} was withdrawn"
+msgstr "{name}, {pulledLabel} 철회됨"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "{name}: controller"
+msgstr "{name}: 컨트롤러"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "{name}: keyboard"
+msgstr "{name}: 키보드"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "{newer} is ready to install: see the banner above the list."
+msgstr "{newer}을(를) 설치할 준비가 됐어요. 목록 위의 배너를 확인하세요."
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "{newerLabel} not verified yet"
+msgstr "{newerLabel} 아직 검증 안 됨"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{newest} is out. You have {yours}."
+msgstr "{newest}이(가) 나왔어요. 지금 버전: {yours}."
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{out} is out. You have {have}."
+msgstr "{out}이(가) 나왔어요. 지금 버전: {have}."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{picked, plural, one {# app picked for it.} other {# apps picked for it.}}"
+msgstr "{picked, plural, other {앱 #개가 선택되어 있어요.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{playlistName} (copy)"
+msgstr "{playlistName} (사본)"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{playlistName} options"
+msgstr "{playlistName} 옵션"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "{pulledLabel} was withdrawn."
+msgstr "{pulledLabel}이(가) 철회됐어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{pulledVersion} was withdrawn"
+msgstr "{pulledVersion} 철회됨"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
+msgstr "{rating, plural, other {좋아요 {likes}개}}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{received} of {size}"
+msgstr "{size} 중 {received}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{received} so far"
+msgstr "지금까지 {received}"
+
+#: ../ui/src/index.tsx
+msgid "{runs, plural, one {# runs well} other {# run well}}"
+msgstr "{runs, plural, other {#명 잘 실행됨}}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{runs, plural, one {# runs well} other {# runs well}}"
+msgstr "{runs, plural, other {#명 잘 실행됨}}"
+
+#. A file's size in gigabytes
+#: ../../apps/launcher/src/downloads.ts
+msgid "{size} GB"
+msgstr "{size} GB"
+
+#. A file's size in kilobytes
+#: ../../apps/launcher/src/downloads.ts
+msgid "{size} KB"
+msgstr "{size} KB"
+
+#. A file's size in megabytes
+#: ../../apps/launcher/src/downloads.ts
+msgid "{size} MB"
+msgstr "{size} MB"
+
+#: ../ui/src/index.tsx
+msgid "{total, plural, one {# player} other {# players}}"
+msgstr "{total, plural, other {플레이어 #명}}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{total, plural, one {From the newest player feedback: # player tested this version} other {From the newest player feedback: # players tested this version}}"
+msgstr "{total, plural, other {최신 플레이어 피드백 기준: 플레이어 #명이 이 버전을 테스트했어요}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{unavailable, plural, one {# of its apps left the catalog.} other {# of its apps left the catalog.}}"
+msgstr "{unavailable, plural, other {앱 중 #개가 카탈로그에서 빠졌어요.}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{unsynced, plural, one {# change hasn't synced yet.} other {# changes haven't synced yet.}}"
+msgstr "{unsynced, plural, other {아직 동기화되지 않은 변경 사항이 #개 있어요.}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "{updateCount, plural, one {# app has an update.} other {# apps have updates.}}"
+msgstr "{updateCount, plural, other {앱 #개에 업데이트가 있어요.}}"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "{updateCount, plural, one {# mod has an update.} other {# mods have updates.}}"
+msgstr "{updateCount, plural, other {모드 #개에 업데이트가 있어요.}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{verifiedVersion} · files can't be verified"
+msgstr "{verifiedVersion} · 파일을 검증할 수 없음"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{verifiedVersion} · not checked by Quiver"
+msgstr "{verifiedVersion} · Quiver에서 확인하지 않음"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{verifiedVersion} · verified"
+msgstr "{verifiedVersion} · 검증됨"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{verifiedVersion} · withdrawn"
+msgstr "{verifiedVersion} · 철회됨"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "{version} can't be installed again: its release isn't available any more."
+msgstr "{version}은(는) 다시 설치할 수 없어요. 이 버전을 더 이상 받을 수 없어요."
+
+#: ../../apps/launcher/src/telemetry.test.ts
+msgid "{version} is gone"
+msgstr "{version}이(가) 사라졌어요"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{version} is unverified"
+msgstr "{version} 미검증"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "{version} of {name} was withdrawn: {reason} Choose another version from its page."
+msgstr "{name}의 {version}이(가) 철회됐어요: {reason} 앱 페이지에서 다른 버전을 선택하세요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "{version} was withdrawn, so it's not meant to be installed."
+msgstr "{version}은(는) 철회되어 설치하지 않는 것이 좋아요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{version} was withdrawn: {reason}"
+msgstr "{version}이(가) 철회됐어요: {reason}"
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "{waiting, plural, one {# update available.} other {# updates available.}}"
+msgstr "{waiting, plural, other {업데이트 #개를 사용할 수 있어요.}}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "{waiting, plural, one {# waiting} other {# waiting}}"
+msgstr "{waiting, plural, other {#개 대기 중}}"
+
+#: ../ui/src/index.tsx
+msgid "{weeks, plural, one {# wk ago} other {# wk ago}}"
+msgstr "{weeks, plural, other {#주 전}}"
+
+#. wk: weeks, short
+#: ../../apps/launcher/src/library.tsx
+msgid "{weeks, plural, one {Played # wk ago} other {Played # wk ago}}"
+msgstr "{weeks, plural, other {#주 전 플레이}}"
+
+#: ../ui/src/index.tsx
+msgid "{years, plural, one {# yr ago} other {# yrs ago}}"
+msgstr "{years, plural, other {#년 전}}"
+
+#: ../ui/src/index.tsx
+msgid "{years, plural, one {No release in # yr+} other {No release in # yr+}}"
+msgstr "{years, plural, other {#년 이상 새 버전 없음}}"
+
+#. yr: years, short
+#: ../../apps/launcher/src/library.tsx
+msgid "{years, plural, one {Played # yr ago} other {Played # yrs ago}}"
+msgstr "{years, plural, other {#년 전 플레이}}"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "+ New playlist…"
+msgstr "+ 새 재생 목록…"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "<0>The newest verified release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
+msgstr "<0>검증된 최신 버전은 미리 보기 빌드예요.</0> 이 프로젝트에 다운로드가 포함된 더 새로운 안정 버전이 없어서 Quiver Launcher가 이 버전을 설치해요. 버그나 미완성 기능이 있을 수 있어요."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "A few quick questions to get you started. You can change any of these later in Settings."
+msgstr "시작하기 전에 몇 가지만 물어볼게요. 나중에 설정에서 언제든 바꿀 수 있어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "A file Quiver keeps is damaged."
+msgstr "Quiver가 보관하는 파일이 손상됐어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "A file Quiver keeps is missing."
+msgstr "Quiver가 보관하는 파일이 없어졌어요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "A folder you fill yourself"
+msgstr "직접 채우는 폴더"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "A moderator hid your feedback, so others can't see it."
+msgstr "운영자가 피드백을 숨겨서 다른 사람에게 보이지 않아요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "A playlist by {owner} · {count, plural, one {# app} other {# apps}}"
+msgstr "{owner}의 재생 목록 · {count, plural, other {앱 #개}}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "A playlist by {owner}, kept up to date with theirs."
+msgstr "{owner}의 재생 목록으로, 원본에 맞춰 최신 상태로 유지돼요."
+
+#: ../../apps/launcher/src/update.tsx
+msgid "A preview of Quiver Launcher {version} is out."
+msgstr "Quiver Launcher {version} 미리 보기 버전이 나왔어요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "A program on this computer"
+msgstr "이 컴퓨터의 프로그램"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "A quote isn't closed."
+msgstr "따옴표가 닫히지 않았어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "About this project"
+msgstr "이 프로젝트 정보"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Account: {name}"
+msgstr "계정: {name}"
+
+#. Heading of the bindings table's column of things to do
+#: ../../apps/launcher/src/controls.tsx
+msgid "Action"
+msgstr "동작"
+
+#. Button that adds an app installed here to the library
+#. Button: add the app to the library
+#: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/own.tsx
+msgid "Add"
+msgstr "추가"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Add a console"
+msgstr "콘솔 추가"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Add a console…"
+msgstr "콘솔 추가…"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Add a playlist"
+msgstr "재생 목록 추가"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Add a shared playlist"
+msgstr "공유 재생 목록 추가"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Add a tag"
+msgstr "태그 추가"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Add a tag…"
+msgstr "태그 추가…"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Add all"
+msgstr "모두 추가"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Add all to library"
+msgstr "모두 라이브러리에 추가"
+
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own.tsx
+msgid "Add an app"
+msgstr "앱 추가"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Add an email"
+msgstr "이메일 추가"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Add and get"
+msgstr "추가 후 받기"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Add apps from each app's menu. It also shows apps that match these filters:"
+msgstr "각 앱의 메뉴에서 앱을 추가하세요. 다음 필터와 일치하는 앱도 표시돼요:"
+
+#. Menu item opening the playlists to add an app to
+#. Menu item opening the playlists to add an app to
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Add to"
+msgstr "추가 위치"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Add to library"
+msgstr "라이브러리에 추가"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Add to my library"
+msgstr "내 라이브러리에 추가"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Add to playlist"
+msgstr "재생 목록에 추가"
+
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Add to Steam"
+msgstr "Steam에 추가"
+
+#. When the player added an app to their library, then a date
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Added"
+msgstr "추가됨"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
+msgstr "프로그램 뒤에 붙어요. 프로그램이 들어갈 자리에 %command%를 쓸 수도 있어요. 맨 앞의 NAME=value는 환경 변수를 설정해요."
+
+#: ../../apps/launcher/src/custom.ts
+msgid "Added from {site}. Quiver hasn't checked this app."
+msgstr "{site}에서 추가됨. Quiver에서 확인하지 않은 앱이에요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Adding {done} of {total}…"
+msgstr "{total}개 중 {done}개 추가하는 중…"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Adding apps"
+msgstr "앱 추가 중"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Advanced"
+msgstr "고급"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "AI use"
+msgstr "AI 사용"
+
+#: ../../apps/launcher/src/detail.tsx
+#: ../ui/src/index.tsx
+msgid "AI-assisted"
+msgstr "AI 보조"
+
+#. Library tab: every app in the library
+#. Library tab: every app in the library
+#. Shows mods from every site
+#. Shows videos of every kind
+#. The library's platform menu while it shows every platform's apps
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/media.tsx
+#: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "All"
+msgstr "전체"
+
+#. Every console a maker made, as in All Nintendo
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "All {brand}"
+msgstr "{brand} 전체"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "All announcements"
+msgstr "모든 공지"
+
+#. Heading over the whole catalog, under the front page's shelves
+#: ../ui/src/discover.tsx
+msgid "All apps"
+msgstr "모든 앱"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "All consoles"
+msgstr "모든 콘솔"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "All done: your Quiver Launcher 3 apps are in your library, and they stay where they are."
+msgstr "완료했어요. Quiver Launcher 3의 앱이 라이브러리에 들어왔고, 그 자리에 그대로 있어요."
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "All other platforms"
+msgstr "기타 모든 플랫폼"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "All platforms"
+msgstr "모든 플랫폼"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "All playlists"
+msgstr "모든 재생 목록"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "All project types"
+msgstr "모든 프로젝트 유형"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "All tags"
+msgstr "모든 태그"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Also known as {matched}"
+msgstr "다른 이름: {matched}"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Also known as <0>{others}</0>"
+msgstr "다른 이름: <0>{others}</0>"
+
+#. TV mode setting
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Always"
+msgstr "항상"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Always stay on {installedVersion}"
+msgstr "항상 {installedVersion} 유지"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Always stay on this version"
+msgstr "항상 이 버전 유지"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "An app"
+msgstr "앱"
+
+#. Follows “VirusTotal:”
+#: ../../apps/launcher/src/detail.tsx
+msgid "an engine flags one of its files. A lone detection is often a false alarm."
+msgstr "엔진 1개에서 파일 하나를 위험 항목으로 감지했어요. 한 엔진만 감지한 경우 오탐일 때가 많아요."
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Announcement"
+msgstr "공지"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Announcements"
+msgstr "공지"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Announcements: {waiting, plural, one {# new} other {# new}}"
+msgstr "공지: {waiting, plural, other {새 항목 #개}}"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Another app in your library uses a folder named {folder}. Choose another name."
+msgstr "라이브러리의 다른 앱이 이미 {folder} 폴더를 쓰고 있어요. 다른 이름을 골라 주세요."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Another Proton…"
+msgstr "다른 Proton…"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Any AI use"
+msgstr "AI 사용 무관"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Any console"
+msgstr "모든 콘솔"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Any project type"
+msgstr "모든 프로젝트 유형"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Any tag"
+msgstr "모든 태그"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Anyone with the link can see it on quiverlauncher.com and add it to their library. Changes you make here reach them when you update it."
+msgstr "링크가 있는 누구나 quiverlauncher.com에서 보고 자신의 라이브러리에 추가할 수 있어요. 여기서 바꾼 내용은 업데이트하면 그 사람들에게도 반영돼요."
+
+#. Which name is the large one on a library card: the app's (the port's)
+#: ../../apps/launcher/src/view.ts
+msgid "App"
+msgstr "앱"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "App page"
+msgstr "앱 페이지"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "App sections"
+msgstr "앱 섹션"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Apps"
+msgstr "앱"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps are installed in {dir}"
+msgstr "앱 설치 위치: {dir}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps folder"
+msgstr "앱 폴더"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Apps in that folder"
+msgstr "그 폴더의 앱"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Apps in your library"
+msgstr "라이브러리에 있는 앱"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Apps in your library are shown here too."
+msgstr "라이브러리에 있는 앱도 여기에 표시돼요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Apps in your library shown"
+msgstr "라이브러리에 있는 앱 표시 중"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Apps installed here always show."
+msgstr "여기에 설치된 앱은 항상 표시돼요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
+msgstr "이 컴퓨터에 설치된 앱은 라이브러리에 그대로 남아요. 손상된 파일은 새 파일 옆에 보관되므로 삭제되는 것은 없어요."
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
+msgstr "GitHub에서 추가한 앱은 GitHub에서 직접 버전을 가져와요. GitHub는 이 네트워크에 시간당 60회, 토큰이 있으면 5,000회까지 요청을 허용해요. 카탈로그의 앱에는 토큰이 필요 없어요."
+
+#. Get is the label of the button that installs an app
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
+msgstr "아직 없는 앱에는 받기가 표시돼요. 누르기 전에는 아무것도 다운로드되지 않아요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Artwork"
+msgstr "아트워크"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Artwork address"
+msgstr "아트워크 주소"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Artwork and consoles from the game"
+msgstr "게임의 아트워크와 콘솔"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Auto Update won't put {verifiedVersion} back. It installs the next new release."
+msgstr "자동 업데이트는 {verifiedVersion}을(를) 다시 설치하지 않아요. 다음 새 버전을 설치해요."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic (Wine for Windows apps)"
+msgstr "자동(Windows 앱은 Wine)"
+
+#. Controller hint: what Back does, closing or going back
+#. The setup's previous step
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/setup.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Back"
+msgstr "뒤로"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Back to results for “{searched}”"
+msgstr "“{searched}” 검색 결과로 돌아가기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Back to top"
+msgstr "맨 위로"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Backups"
+msgstr "백업"
+
+#. Before the game(s) an app is made from
+#: ../../apps/launcher/src/App.tsx
+#: ../ui/src/index.tsx
+msgid "Based on"
+msgstr "원작"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Based on a moderator, checked {date}"
+msgstr "운영자 판단 기준, {date} 확인"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Based on repository signals, checked {date}"
+msgstr "저장소 신호 기준, {date} 확인"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Based on the developer's answer, checked {date}"
+msgstr "개발자 답변 기준, {date} 확인"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Based on the project's README, checked {date}"
+msgstr "프로젝트 README 기준, {date} 확인"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Be the first to say how it went."
+msgstr "어땠는지 처음으로 알려 주세요."
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Best first, by player feedback"
+msgstr "플레이어 피드백 기준 좋은 순"
+
+#. A release Quiver won't install
+#: ../ui/src/index.tsx
+msgid "Blocked"
+msgstr "차단됨"
+
+#. Library card image: the portrait capsule
+#: ../../apps/launcher/src/view.ts
+msgid "Box art"
+msgstr "박스 아트"
+
+#. Tab listing mods to install
+#. The tab with the catalog of apps
+#. The tab with the catalog of apps
+#. The tab with the catalog of apps
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Browse"
+msgstr "둘러보기"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Browse the catalog"
+msgstr "카탈로그 둘러보기"
+
+#: ../ui/src/index.tsx
+msgid "Built with some AI assistance"
+msgstr "일부 AI의 도움을 받아 제작됨"
+
+#. Who made a mod
+#: ../../apps/launcher/src/mods.tsx
+msgid "by {author}"
+msgstr "제작: {author}"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Called {title} in {region}"
+msgstr "{region} 이름: {title}"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Called {title} in the {region}"
+msgstr "{region} 이름: {title}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Can't be added: Quiver Launcher 3 doesn't know where it comes from"
+msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 몰라요"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/file-picker.tsx
+#: ../../apps/launcher/src/launch-options.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Cancel"
+msgstr "취소"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Cancel / Back"
+msgstr "취소 / 뒤로"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Cancel download"
+msgstr "다운로드 취소"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Cancel downloading {name}"
+msgstr "{name} 다운로드 취소"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Card image"
+msgstr "카드 이미지"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Card size"
+msgstr "카드 크기"
+
+#. What the featured apps across the top of Browse are, for screen readers
+#: ../ui/src/discover.tsx
+msgid "carousel"
+msgstr "캐러셀"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Catalog filters"
+msgstr "카탈로그 필터"
+
+#. Heading of a README's caution callout, as on GitHub
+#: ../ui/src/index.tsx
+msgctxt "README callout"
+msgid "Caution"
+msgstr "주의"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Change name or artwork"
+msgstr "이름 또는 아트워크 변경"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Change version"
+msgstr "버전 변경"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Change…"
+msgstr "변경…"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Changed on GitHub after Quiver verified this release."
+msgstr "Quiver가 이 버전을 검증한 뒤 GitHub에서 바뀌었어요."
+
+#. {when} reads “in 31 hours”
+#: ../../apps/launcher/src/detail.tsx
+msgid "Changed on GitHub after Quiver verified this release. Verified by itself {when}"
+msgstr "Quiver가 이 버전을 검증한 뒤 GitHub에서 바뀌었어요. {when} 자동으로 검증돼요"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Check for updates"
+msgstr "업데이트 확인"
+
+#: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/update.tsx
+msgid "Checking…"
+msgstr "확인 중…"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Choose a backup…"
+msgstr "백업 선택…"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Choose a different folder…"
+msgstr "다른 폴더 선택…"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose a download"
+msgstr "다운로드 선택"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Choose a file"
+msgstr "파일 선택"
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Choose a less common password."
+msgstr "흔하지 않은 비밀번호를 선택하세요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a platform"
+msgstr "플랫폼 선택"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Choose a program (.exe) that starts the app."
+msgstr "앱을 실행하는 프로그램(.exe)을 선택하세요."
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version"
+msgstr "버전 선택"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version of {name}"
+msgstr "{name} 버전 선택"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Choose a version…"
+msgstr "버전 선택…"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Choose an app that starts the app."
+msgstr "앱을 실행하는 앱을 선택하세요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Choose an AppImage or another program that starts the app."
+msgstr "앱을 실행하는 AppImage나 다른 프로그램을 선택하세요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Choose another program…"
+msgstr "다른 프로그램 선택…"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Choose another…"
+msgstr "다른 항목 선택…"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Choose Create a token on GitHub, and sign in to GitHub."
+msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인하세요."
+
+#. Generate token is the name of GitHub's button, as GitHub shows it in English
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Choose Generate token, copy it, paste it above and choose Save token."
+msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Choose my Quiver Launcher 3 folder…"
+msgstr "내 Quiver Launcher 3 폴더 선택…"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose program…"
+msgstr "프로그램 선택…"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Choose Quiver Launcher 3's Apps folder"
+msgstr "Quiver Launcher 3의 Apps 폴더 선택"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Choose the Apps folder…"
+msgstr "Apps 폴더 선택…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the platform you tried."
+msgstr "사용해 본 플랫폼을 선택하세요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Choose the program that starts the app."
+msgstr "앱을 실행하는 프로그램을 선택하세요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Choose the program…"
+msgstr "프로그램 선택…"
+
+#: ../../apps/launcher/src/file-picker.tsx
+msgid "Choose this folder"
+msgstr "이 폴더 선택"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Choose when it expires."
+msgstr "만료 시점을 선택하세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose where to install apps"
+msgstr "앱 설치 위치 선택"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Choose your Quiver Launcher 3 folder"
+msgstr "Quiver Launcher 3 폴더 선택"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Clear all"
+msgstr "모두 지우기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Clear search"
+msgstr "검색어 지우기"
+
+#. Window button: close Quiver's window
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/window-bar.tsx
+msgid "Close"
+msgstr "닫기"
+
+#. Close button of a form; {title} is the form's name
+#: ../../apps/launcher/src/detail.tsx
+msgid "Close {title}"
+msgstr "{title} 닫기"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Close filters"
+msgstr "필터 닫기"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Collapse all sections"
+msgstr "모든 섹션 접기"
+
+#: ../../apps/launcher/src/old-library.tsx
+#: ../../apps/launcher/src/setup.tsx
+msgid "Coming from Quiver Launcher 3?"
+msgstr "Quiver Launcher 3에서 오셨나요?"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Coming from Quiver Launcher 3? Show Quiver where its folder is, and your apps will appear here."
+msgstr "Quiver Launcher 3에서 오셨나요? 폴더 위치를 알려 주시면 앱이 여기에 나타나요."
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Community ports and recreations"
+msgstr "커뮤니티 포트 및 재구현"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Confirm / Select"
+msgstr "확인 / 선택"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Console"
+msgstr "콘솔"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Consoles"
+msgstr "콘솔"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Continue playing"
+msgstr "이어서 플레이"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Continue with {service}"
+msgstr "{service}(으)로 계속하기"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Continue without restoring"
+msgstr "복원하지 않고 계속"
+
+#. Heading of the bindings table's column of controller buttons
+#: ../../apps/launcher/src/controls.tsx
+msgid "Controller"
+msgstr "컨트롤러"
+
+#: ../../apps/launcher/src/controls.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Controllers"
+msgstr "컨트롤러"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Copy link"
+msgstr "링크 복사"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Couldn't install"
+msgstr "설치 실패"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Couldn't reach quiverlauncher.com to show this playlist. Check your connection."
+msgstr "quiverlauncher.com에 연결할 수 없어 이 재생 목록을 표시하지 못했어요. 연결 상태를 확인하세요."
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
+msgstr "quiverlauncher.com에 연결할 수 없어요. 연결 상태를 확인하고 다시 시도하세요."
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Couldn't save the token. Try again."
+msgstr "토큰을 저장하지 못했어요. 다시 시도하세요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Couldn't save your feedback. Try again."
+msgstr "피드백을 저장하지 못했어요. 다시 시도하세요."
+
+#. Follows “VirusTotal:”
+#: ../../apps/launcher/src/detail.tsx
+msgid "couldn't scan every file."
+msgstr "일부 파일을 검사하지 못했어요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Couldn't share this playlist. Try again."
+msgstr "이 재생 목록을 공유하지 못했어요. 다시 시도하세요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Couldn't sign in. Check your connection and try again."
+msgstr "로그인하지 못했어요. 연결 상태를 확인하고 다시 시도하세요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Couldn't stop sharing it. Try again."
+msgstr "공유를 중지하지 못했어요. 다시 시도하세요."
+
+#. Library card image: the wide library art
+#: ../../apps/launcher/src/view.ts
+msgid "Cover"
+msgstr "커버"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Crashes, poor performance, broken controls or features, or I had to do extra setup this page didn't mention."
+msgstr "충돌, 낮은 성능, 작동하지 않는 조작이나 기능이 있었거나, 이 페이지에 없는 추가 설정이 필요했어요."
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Create a token on GitHub"
+msgstr "GitHub에서 토큰 만들기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Create account"
+msgstr "계정 만들기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Create an account"
+msgstr "계정 만들기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Create your Quiver account"
+msgstr "Quiver 계정 만들기"
+
+#. Theme
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Dark"
+msgstr "어둡게"
+
+#. Deletes a playlist
+#: ../../apps/launcher/src/library.tsx
+msgid "Delete"
+msgstr "삭제"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Delete (stops sharing it)"
+msgstr "삭제(공유 중지)"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Description"
+msgstr "설명"
+
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Desktop shortcut"
+msgstr "바탕 화면 바로 가기"
+
+#. Controller hint: what Options does on an app card, opening its page
+#: ../../apps/launcher/src/spatial.ts
+msgid "Details"
+msgstr "세부 정보"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Developer says: {says}"
+msgstr "개발자 답변: {says}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Developer states no AI"
+msgstr "개발자: AI 미사용"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Developer wasn't sure"
+msgstr "개발자도 확실하지 않음"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Didn't finish"
+msgstr "완료되지 않음"
+
+#. Hide an announcement
+#. Hide an announcement
+#. Hide an announcement
+#. Menu item that clears a failed download
+#: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Dismiss"
+msgstr "닫기"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Dismiss all"
+msgstr "모두 닫기"
+
+#: ../../apps/launcher/src/feedback.tsx
+#: ../ui/src/index.tsx
+msgid "Doesn't run"
+msgstr "실행 안 됨"
+
+#. Closes a dialog
+#: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Done"
+msgstr "완료"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Done. Your apps are in your library, except these, as Quiver Launcher 3 doesn't know where they come from: {names}."
+msgstr "완료했어요. 앱이 라이브러리에 들어왔어요. 다만 다음 앱은 Quiver Launcher 3이 어디서 받은 앱인지 몰라서 추가하지 못했어요: {names}."
+
+#: ../../apps/launcher/src/versions.ts
+msgid "Downgrade to {version}"
+msgstr "{version}(으)로 다운그레이드"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Downloading"
+msgstr "다운로드 중"
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "Downloading {app}, {percent}%."
+msgstr "{app} 다운로드 중, {percent}%."
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "Downloading {app}."
+msgstr "{app} 다운로드 중."
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "Downloading {count, plural, one {# app} other {# apps}}, {percent}%."
+msgstr "{count, plural, other {앱 #개}} 다운로드 중, {percent}%."
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "Downloading {count, plural, one {# app} other {# apps}}."
+msgstr "{count, plural, other {앱 #개}} 다운로드 중."
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Downloading {percent}%"
+msgstr "다운로드 중 {percent}%"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Downloading…"
+msgstr "다운로드 중…"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Downloads"
+msgstr "다운로드"
+
+#. Followed by a file name: the file that gets downloaded
+#: ../../apps/launcher/src/own.tsx
+msgid "Downloads {only}"
+msgstr "{only} 다운로드"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Downloads that finish while Quiver Launcher is open show here."
+msgstr "Quiver Launcher가 열려 있는 동안 완료된 다운로드가 여기에 표시돼요."
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Downloads: {list}"
+msgstr "다운로드: {list}"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Drag to resize. Double-click to fit the window."
+msgstr "드래그해서 크기를 조절하세요. 두 번 클릭하면 창에 맞춰요."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "e.g. --fullscreen"
+msgstr "예: --fullscreen"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "e.g. gamemoderun %command% --fullscreen"
+msgstr "예: gamemoderun %command% --fullscreen"
+
+#. Edits a playlist
+#: ../../apps/launcher/src/library.tsx
+msgid "Edit"
+msgstr "편집"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Edit playlist"
+msgstr "재생 목록 편집"
+
+#. An announcement changed after it was published
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "edited"
+msgstr "수정됨"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Email or username"
+msgstr "이메일 또는 사용자 이름"
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Email, username or password is incorrect."
+msgstr "이메일, 사용자 이름 또는 비밀번호가 올바르지 않아요."
+
+#. Project type
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Emulator"
+msgstr "에뮬레이터"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address."
+msgstr "GitHub 또는 GitLab 저장소를 입력하세요: owner/name 형식이나 github.com 또는 gitlab.com 주소."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Enter a name for its folder."
+msgstr "폴더 이름을 입력해 주세요."
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Everything is up to date."
+msgstr "모두 최신 상태예요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Evidence"
+msgstr "근거"
+
+#: ../../apps/launcher/src/window-bar.tsx
+msgid "Exit full screen"
+msgstr "전체 화면 종료"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Expand all sections"
+msgstr "모든 섹션 펼치기"
+
+#. Interface size
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Extra large"
+msgstr "아주 크게"
+
+#. Library sidebar width
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Extra wide"
+msgstr "아주 넓게"
+
+#. The apps shown one at a time across the top of Browse and the website's home
+#: ../ui/src/discover.tsx
+msgid "Featured"
+msgstr "추천"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Filters"
+msgstr "필터"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Filters on"
+msgstr "필터 사용 중"
+
+#. Get is the label of the button that installs an app
+#: ../../apps/launcher/src/library.tsx
+msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
+msgstr "카탈로그에서 포트를 찾아 받기를 누르세요. 여기에 추가되고 바로 다운로드돼요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Finish in your browser, then sign in here."
+msgstr "브라우저에서 마친 다음 여기서 로그인하세요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Finish signing in in your browser."
+msgstr "브라우저에서 로그인을 마치세요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Finish your feedback"
+msgstr "피드백 마무리"
+
+#. Library sidebar width
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Fit the window"
+msgstr "창에 맞춤"
+
+#. What VirusTotal said of a release's files, after “VirusTotal:”
+#: ../../apps/launcher/src/detail.tsx
+msgid "flagged"
+msgstr "위험 감지됨"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Folder name"
+msgstr "폴더 이름"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
+msgstr "카탈로그에 없는 앱을 위한 기능이에요. 나만 볼 수 있어요. 모두를 위해 추가하려면 quiverlauncher.com에서 제안하세요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Forgot your password?"
+msgstr "비밀번호를 잊으셨나요?"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Found in {folder}"
+msgstr "{folder}에서 찾았어요"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "From GitHub or GitLab"
+msgstr "GitHub 또는 GitLab에서"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Full screen"
+msgstr "전체 화면"
+
+#. Library sort: by the game an app plays
+#. Which name is the large one on a library card: the game's
+#: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/view.ts
+msgid "Game"
+msgstr "게임"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Game not found"
+msgstr "게임을 찾을 수 없음"
+
+#. A kind of video
+#: ../../apps/launcher/src/media.tsx
+msgid "Gameplay"
+msgstr "게임플레이"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Games"
+msgstr "게임"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "General"
+msgstr "일반"
+
+#. Button that installs an app
+#. Button: download and install the app
+#. Controller hint: what Options does on a catalog card or an app's page, installing the app
+#. Menu item that installs an app
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Get"
+msgstr "받기"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
+msgstr "GitHub에서 토큰을 받아들이지 않아 저장하지 않았어요. 전부 복사했는지 확인하세요."
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "GitHub token"
+msgstr "GitHub 토큰"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Go back"
+msgstr "뒤로 가기"
+
+#. Library layout
+#: ../../apps/launcher/src/view.ts
+msgid "Grid"
+msgstr "격자"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Group by"
+msgstr "그룹 기준"
+
+#: ../../apps/launcher/src/group.ts
+msgid "Group by console"
+msgstr "콘솔별로 그룹화"
+
+#: ../../apps/launcher/src/group.ts
+msgid "Group by console maker"
+msgstr "콘솔 제조사별로 그룹화"
+
+#: ../../apps/launcher/src/group.ts
+msgid "Group by developer"
+msgstr "개발자별로 그룹화"
+
+#: ../../apps/launcher/src/group.ts
+msgid "Group by game"
+msgstr "게임별로 그룹화"
+
+#: ../../apps/launcher/src/feedback.tsx
+#: ../ui/src/index.tsx
+msgid "Has issues"
+msgstr "문제 있음"
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
+msgstr "Quiver Launcher 개선에 도움이 돼요. 어떤 화면과 기능이 쓰이는지, 어떤 오류가 생기는지 보내요. 파일이나 폴더는 절대 보내지 않아요."
+
+#. Library tab: apps the player hid
+#: ../../apps/launcher/src/library.tsx
+msgid "Hidden ({hiddenCount})"
+msgstr "숨김 ({hiddenCount})"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Hide"
+msgstr "숨기기"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Hide any AI use"
+msgstr "AI 사용 앱 숨기기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Hide apps in your library"
+msgstr "라이브러리에 있는 앱 숨기기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Hide apps with any AI use"
+msgstr "AI를 사용한 앱 숨기기"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Hide dismissed"
+msgstr "닫은 공지 숨기기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Hide from library"
+msgstr "라이브러리에서 숨기기"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Hide mostly AI-generated"
+msgstr "대부분 AI 생성 숨기기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Hide mostly AI-generated apps"
+msgstr "대부분 AI로 생성된 앱 숨기기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Hide password"
+msgstr "비밀번호 숨기기"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Hide the steps"
+msgstr "단계 숨기기"
+
+#. Hides the library's apps for other platforms again
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Hide them"
+msgstr "숨기기"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Hide your feedback for {name}"
+msgstr "{name} 피드백 숨기기"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "How did it go?"
+msgstr "어땠나요?"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "How did it run"
+msgstr "어떻게 실행됐나요"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "How to make one"
+msgstr "만드는 방법"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "I already have an account"
+msgstr "이미 계정이 있어요"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "I followed the setup on this page and had no problems."
+msgstr "이 페이지의 설정을 따랐고 문제가 없었어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "I understand Quiver blocked this release"
+msgstr "Quiver가 이 버전을 차단했다는 것을 이해해요"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "I understand this release was withdrawn, and I accept the risk"
+msgstr "이 버전이 철회되었다는 것을 이해하고 위험을 감수해요"
+
+#. Library card image
+#: ../../apps/launcher/src/view.ts
+msgid "Icon"
+msgstr "아이콘"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Icon on its tab"
+msgstr "탭 아이콘"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install a verified release instead."
+msgstr "이미 설치했고 위험을 감수할 수 있다면 계속 사용해도 돼요. 그렇지 않다면 제거하고 검증된 버전을 대신 설치하세요."
+
+#. Heading of a README's important callout, as on GitHub
+#: ../ui/src/index.tsx
+msgctxt "README callout"
+msgid "Important"
+msgstr "중요"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discover.tsx
+#: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "In library"
+msgstr "라이브러리에 있음"
+
+#. TV mode setting: on by itself when the launcher runs in a Steam Deck's Game Mode
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In Steam's Game Mode"
+msgstr "Steam 게임 모드에서"
+
+#: ../../apps/launcher/src/file-picker.tsx
+msgid "In this folder"
+msgstr "이 폴더 안"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Include NSFW"
+msgstr "NSFW 포함"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Include preview updates"
+msgstr "미리 보기 업데이트 포함"
+
+#. Button that installs a mod
+#. Button that installs this version
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Install"
+msgstr "설치"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install {other} instead"
+msgstr "대신 {other} 설치"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {release} before it's verified?"
+msgstr "검증 전에 {release}을(를) 설치할까요?"
+
+#: ../../apps/launcher/src/versions.ts
+msgid "Install {version}"
+msgstr "{version} 설치"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {version} anyway"
+msgstr "그래도 {version} 설치"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install a blocked release"
+msgstr "차단된 버전 설치"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install a blocked release?"
+msgstr "차단된 버전을 설치할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install a file Quiver didn't check?"
+msgstr "Quiver가 확인하지 않은 파일을 설치할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install a release before it's verified"
+msgstr "검증 전 버전 설치"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install a withdrawn release"
+msgstr "철회된 버전 설치"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install a withdrawn release?"
+msgstr "철회된 버전을 설치할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install anyway"
+msgstr "그래도 설치"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Install apps in {asking} from now on?"
+msgstr "앞으로 {asking}에 앱을 설치할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install automatically"
+msgstr "자동으로 설치"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install the verified {installedVersion}"
+msgstr "검증된 {installedVersion} 설치"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install the verified {verifiedVersion}"
+msgstr "검증된 {verifiedVersion} 설치"
+
+#. A mod that's installed
+#. Filter by whether an app is installed
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Installed"
+msgstr "설치됨"
+
+#. The version installed, then a version
+#. This release is the one on this computer
+#. This version is the one on this computer
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgctxt "release"
+msgid "Installed"
+msgstr "설치됨"
+
+#. Library tab
+#. Library tab
+#. Tab listing the mods installed
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgctxt "tab"
+msgid "Installed"
+msgstr "설치됨"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Installed {installedLabel}"
+msgstr "{installedLabel} 설치됨"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Installed {installedVersion}"
+msgstr "{installedVersion} 설치됨"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Installed {version} · {when}"
+msgstr "{version} 설치됨 · {when}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Installed before Quiver verified it"
+msgstr "Quiver가 검증하기 전에 설치됨"
+
+#. Sort order for mods
+#: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/sort.ts
+msgid "Installed first"
+msgstr "설치된 항목 먼저"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Installed in {dir}"
+msgstr "{dir}에 설치됨"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Installed mods"
+msgstr "설치된 모드"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Installed only"
+msgstr "설치된 앱만"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Installed or not"
+msgstr "설치 여부 무관"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Installed, not in your library"
+msgstr "설치됨, 라이브러리에 없음"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Installed, not played yet"
+msgstr "설치됨, 아직 플레이 안 함"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Installing"
+msgstr "설치 중"
+
+#: ../../apps/launcher/src/downloads.ts
+msgid "Installing {app}."
+msgstr "{app} 설치 중."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Installing: confirm it when Android asks"
+msgstr "설치 중: Android에서 확인을 요청하면 승인하세요"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Installing: finish its setup window"
+msgstr "설치 중: 설치 창을 마무리하세요"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Installing…"
+msgstr "설치 중…"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Installs from the repository's releases, and updates like other apps."
+msgstr "저장소에 게시된 버전으로 설치하고, 다른 앱처럼 업데이트돼요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Interface size"
+msgstr "인터페이스 크기"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "It didn't run"
+msgstr "실행되지 않았어요"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
+msgstr "출시 당시 Quiver가 확인한 파일을 설치하고, 그 뒤로 바뀐 파일은 거부해요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "It ran, but I had issues"
+msgstr "실행됐지만 문제가 있었어요"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "It starts where it is, and removing it from your library leaves it there."
+msgstr "현재 위치에서 실행되며, 라이브러리에서 제거해도 그대로 남아 있어요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "It worked well"
+msgstr "잘 작동했어요"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "It wouldn't install, open, or start."
+msgstr "설치, 열기 또는 시작이 되지 않았어요."
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "It's anonymous while you're signed out."
+msgstr "로그아웃 상태에서는 익명이에요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Its files go to the trash, and it leaves your library."
+msgstr "파일은 휴지통으로 이동하고, 라이브러리에서도 제거돼요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Its files go to the trash."
+msgstr "파일은 휴지통으로 이동해요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Its files go to the trash. {name} stays in your library, so you can get it again."
+msgstr "파일은 휴지통으로 이동해요. {name}은(는) 라이브러리에 남아 있어서 다시 받을 수 있어요."
+
+#: ../ui/src/index.tsx
+msgid "Its files have each been out for 48 hours, a maintainer checked any that VirusTotal flagged, and Quiver Launcher checks every download against the file Quiver verified."
+msgstr "모든 파일이 공개된 지 48시간이 지났고, VirusTotal이 탐지한 파일은 관리자가 확인했으며, Quiver Launcher는 모든 다운로드를 Quiver가 검증한 파일과 대조해요."
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Its newest verified version was withdrawn: choose a version"
+msgstr "검증된 최신 버전이 철회됐어요: 버전을 선택하세요"
+
+#. Installs the mod alone, without the ones it needs
+#: ../../apps/launcher/src/mods.tsx
+msgid "Just {mod}"
+msgstr "{mod}만"
+
+#. Puts the library's platforms back to this device's own
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Just this device's"
+msgstr "이 기기의 플랫폼만"
+
+#. A shelf on the catalog's front page: apps with a new release lately
+#: ../ui/src/discover.tsx
+msgid "Just updated"
+msgstr "방금 업데이트됨"
+
+#. On a featured app's slide: it has just had a release
+#: ../ui/src/discover.tsx
+msgctxt "one app"
+msgid "Just updated"
+msgstr "방금 업데이트됨"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Keep {keep}"
+msgstr "{keep} 유지"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Keep the token private. When it expires, make a new one and save it here."
+msgstr "토큰은 비공개로 보관하세요. 만료되면 새로 만들어 여기에 저장하세요."
+
+#. Controller hint: what the button bringing up Steam's on-screen keyboard does
+#: ../../apps/launcher/src/pad-hints.tsx
+msgid "Keyboard"
+msgstr "키보드"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Keyboard and mouse"
+msgstr "키보드 및 마우스"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Language"
+msgstr "언어"
+
+#. Interface size
+#. Library card size
+#: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/view.ts
+msgid "Large"
+msgstr "크게"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Large name"
+msgstr "큰 이름"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Last played"
+msgstr "마지막 플레이"
+
+#. Sort order for mods
+#: ../../apps/launcher/src/mods.tsx
+msgid "Last updated"
+msgstr "최근 업데이트순"
+
+#: ../../apps/launcher/src/detail.tsx
+#: ../ui/src/index.tsx
+msgid "Latest release"
+msgstr "최신 버전"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Latest release {version}"
+msgstr "최신 버전 {version}"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Latest release {version} · {date}"
+msgstr "최신 버전 {version} · {date}"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Launch flags"
+msgstr "실행 인수"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Launch options"
+msgstr "실행 옵션"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Launcher update"
+msgstr "런처 업데이트"
+
+#. Library view option
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Layout"
+msgstr "레이아웃"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Leave every scope unticked: public releases need none."
+msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요."
+
+#. Button: back from TV mode to the usual launcher
+#: ../../apps/launcher/src/tv.tsx
+msgid "Leave TV mode"
+msgstr "TV 모드 나가기"
+
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Let Quiver choose"
+msgstr "Quiver가 선택"
+
+#. Controller hint: what the triggers do in a library listed by name, jump letter to letter
+#. The list of letters beside a library sorted by name, each going to its first app
+#: ../../apps/launcher/src/letter-index.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Letters"
+msgstr "글자"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Library"
+msgstr "라이브러리"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Library filters"
+msgstr "라이브러리 필터"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Library problem"
+msgstr "라이브러리 문제"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Library synced: {fromDevice, plural, one {# app} other {# apps}} from this computer, {fromAccount} from your account."
+msgstr "라이브러리 동기화됨: 이 컴퓨터에서 {fromDevice, plural, other {앱 #개}}, 계정에서 {fromAccount}개를 가져왔어요."
+
+#. Theme
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Light"
+msgstr "밝게"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Link copied."
+msgstr "링크를 복사했어요."
+
+#. Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton
+#: ../../apps/launcher/src/App.tsx
+msgid "Linux and Windows (this computer)"
+msgstr "Linux 및 Windows (이 컴퓨터)"
+
+#. Browse's platform filter on Linux: its own apps, not Windows' too
+#: ../../apps/launcher/src/App.tsx
+msgid "Linux only"
+msgstr "Linux만"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Load more"
+msgstr "더 불러오기"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Loading mods…"
+msgstr "모드 불러오는 중…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Loading player notes"
+msgstr "플레이어 메모 불러오는 중"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Loading releases"
+msgstr "버전 불러오는 중"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Loading the game"
+msgstr "게임 불러오는 중"
+
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own.tsx
+msgid "Look it up"
+msgstr "찾아보기"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Looking for programs…"
+msgstr "프로그램 찾는 중…"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Looking for Quiver Launcher 3…"
+msgstr "Quiver Launcher 3을 찾는 중…"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Looking it up took too long. Check your connection and try again."
+msgstr "찾는 데 너무 오래 걸렸어요. 연결을 확인하고 다시 시도해 주세요."
+
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own.tsx
+msgid "Looking it up…"
+msgstr "찾는 중…"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Made by"
+msgstr "만든 사람"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Make a copy"
+msgstr "사본 만들기"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Make the folder"
+msgstr "폴더 만들기"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Makes a folder in your apps folder to put the app in."
+msgstr "앱 폴더 안에 앱을 넣을 폴더를 만들어요."
+
+#. Menu item opening an app's folder, shortcuts and uninstalling
+#. Menu item opening an app's folder, shortcuts and uninstalling
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Manage"
+msgstr "관리"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Matching games"
+msgstr "일치하는 게임"
+
+#. Window button
+#: ../../apps/launcher/src/window-bar.tsx
+msgid "Maximize"
+msgstr "최대화"
+
+#. Tab of an app's page, with its videos
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/media.tsx
+msgid "Media"
+msgstr "미디어"
+
+#. Library card size
+#: ../../apps/launcher/src/view.ts
+msgid "Medium"
+msgstr "보통"
+
+#. Controller hint: what Options does, opening a menu
+#: ../../apps/launcher/src/spatial.ts
+msgid "Menu"
+msgstr "메뉴"
+
+#. Window button
+#: ../../apps/launcher/src/window-bar.tsx
+msgid "Minimize"
+msgstr "최소화"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Mod requirements"
+msgstr "모드 요구 사항"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Mods"
+msgstr "모드"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Mods for {name}"
+msgstr "{name} 모드"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Mods go in {modsPath} in the app's folder. Files you put there yourself are left alone."
+msgstr "모드는 앱 폴더의 {modsPath}에 들어가요. 직접 넣은 파일은 건드리지 않아요."
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Mods to browse"
+msgstr "둘러볼 모드"
+
+#. A shelf at the foot of an app's page: the best rated apps for other games on its console
+#: ../ui/src/discover.tsx
+msgid "More like this"
+msgstr "비슷한 앱"
+
+#. Picks a playlist that isn't among the tabs
+#: ../../apps/launcher/src/library.tsx
+msgid "More…"
+msgstr "더 보기…"
+
+#. Sort order for mods
+#: ../../apps/launcher/src/mods.tsx
+msgid "Most downloaded"
+msgstr "다운로드 많은 순"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Most relevant"
+msgstr "관련성 높은 순"
+
+#: ../ui/src/index.tsx
+msgid "Mostly AI"
+msgstr "대부분 AI"
+
+#: ../../apps/launcher/src/detail.tsx
+#: ../ui/src/index.tsx
+msgid "Mostly AI-generated"
+msgstr "대부분 AI 생성"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Move apps"
+msgstr "앱 옮기기"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {count, plural, one {# app} other {# apps}}. New apps install here too."
+msgstr "{count, plural, other {앱 #개}}를 옮겼어요. 새 앱도 여기에 설치돼요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving {folder}… ({step} of {total})"
+msgstr "{folder} 옮기는 중… ({total}개 중 {step}개)"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps… ({step} of {total})"
+msgstr "앱 옮기는 중… ({total}개 중 {step}개)"
+
+#. Library sort: by the app's name
+#. Library view option: which name the sidebar shows, the game's or the app's
+#. Sort order for mods
+#. The app's name, a form field
+#. The app's name, a form field
+#. The app's name, a form field
+#. The app's name, a form field
+#. The app's name, a form field
+#. The app's name, a form field
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-view.tsx
+#: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/sort.ts
+msgid "Name"
+msgstr "이름"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Name A–Z"
+msgstr "이름 가나다순"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Name and artwork"
+msgstr "이름 및 아트워크"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Name on top"
+msgstr "이름을 위에"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Name, like Favourites"
+msgstr "이름(예: 즐겨찾기)"
+
+#. Filter: words the apps' names have
+#: ../../apps/launcher/src/library.tsx
+msgid "Names with"
+msgstr "이름에 포함"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Names with, like Zelda"
+msgstr "이름에 포함(예: Zelda)"
+
+#. Library sidebar width
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Narrow"
+msgstr "좁게"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Navigate down"
+msgstr "아래로 이동"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Navigate left"
+msgstr "왼쪽으로 이동"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Navigate right"
+msgstr "오른쪽으로 이동"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Navigate up"
+msgstr "위로 이동"
+
+#. Last played: never
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Never"
+msgstr "없음"
+
+#. Badge on an app added to the catalog lately
+#: ../ui/src/index.tsx
+msgid "New"
+msgstr "신규"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "New apps install here."
+msgstr "새 앱은 여기에 설치돼요."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card."
+msgstr "새 앱은 여기에 설치돼요. 공간이 부족하면 Steam Deck의 microSD 카드처럼 다른 드라이브나 폴더를 선택하세요."
+
+#. A shelf on the catalog's front page: apps added lately
+#: ../ui/src/discover.tsx
+msgid "New in the catalog"
+msgstr "카탈로그 신규"
+
+#. On a featured app's slide: it was added to the catalog lately
+#: ../ui/src/discover.tsx
+msgctxt "one app"
+msgid "New in the catalog"
+msgstr "카탈로그 신규"
+
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "New playlist"
+msgstr "새 재생 목록"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "New playlist…"
+msgstr "새 재생 목록…"
+
+#. On a featured app's slide: it has just had a release, of this version
+#: ../ui/src/discover.tsx
+msgid "New release: {version}"
+msgstr "새 버전: {version}"
+
+#. The setup's next step
+#: ../../apps/launcher/src/setup.tsx
+msgid "Next"
+msgstr "다음"
+
+#: ../ui/src/discover.tsx
+msgid "Next featured app"
+msgstr "다음 추천 앱"
+
+#. Controller action: in the library, the apps under the next letter, or a screen down when it isn't by name
+#: ../../apps/launcher/src/spatial.ts
+msgid "Next letter or page"
+msgstr "다음 글자 또는 페이지"
+
+#. Controller action: the tab after the open one, as on an app's page
+#: ../../apps/launcher/src/spatial.ts
+msgid "Next tab"
+msgstr "다음 탭"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "No AI use found"
+msgstr "AI 사용이 확인되지 않음"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "No AI used"
+msgstr "AI 사용 안 함"
+
+#. Follows “VirusTotal:”
+#: ../../apps/launcher/src/detail.tsx
+msgid "no antivirus engine flags its files."
+msgstr "파일을 탐지한 백신 엔진이 없어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "No approved release yet"
+msgstr "아직 승인된 버전 없음"
+
+#: ../../apps/launcher/src/tv.tsx
+msgid "No apps here match. Try another search, or show all of them."
+msgstr "일치하는 앱이 없어요. 다른 검색어로 찾거나 전체를 보세요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "No apps in this playlist yet. Add some from each app's menu, or edit its filters."
+msgstr "이 재생 목록에 아직 앱이 없어요. 각 앱의 메뉴에서 추가하거나 필터를 수정해 보세요."
+
+#: ../../apps/launcher/src/game.tsx
+msgid "No apps play this game yet."
+msgstr "아직 이 게임을 플레이할 수 있는 앱이 없어요."
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "No controllers detected. Connect one and it appears here."
+msgstr "감지된 컨트롤러가 없어요. 컨트롤러를 연결하면 여기에 표시돼요."
+
+#: ../../apps/launcher/src/file-picker.tsx
+msgid "No folders in here."
+msgstr "여기에는 폴더가 없어요."
+
+#: ../../apps/launcher/src/group.ts
+msgid "No groups"
+msgstr "그룹 없음"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "No mods are installed yet. Find some under Browse."
+msgstr "아직 설치된 모드가 없어요. 둘러보기에서 찾아보세요."
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "No mods match your search."
+msgstr "검색과 일치하는 모드가 없어요."
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "No programs found in its folder."
+msgstr "폴더에서 프로그램을 찾지 못했어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "No release notes provided."
+msgstr "릴리스 노트가 없어요."
+
+#: ../ui/src/index.tsx
+msgid "No releases"
+msgstr "버전 없음"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "No releases found"
+msgstr "버전을 찾지 못함"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "No releases found."
+msgstr "버전을 찾지 못했어요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Nobody has said yet. Be the first."
+msgstr "아직 아무도 남기지 않았어요. 첫 번째로 남겨 보세요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Nobody has shared how it runs yet"
+msgstr "아직 실행 후기를 공유한 사람이 없어요"
+
+#. No game's artwork and consoles
+#: ../../apps/launcher/src/own.tsx
+msgid "None"
+msgstr "없음"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "None of {name} {version}'s files are marked for your computer. If you know which one runs on it, pick it."
+msgstr "{name} {version}의 파일 중 이 컴퓨터용으로 표시된 파일이 없어요. 이 컴퓨터에서 실행되는 파일을 알고 있다면 선택하세요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "None of these apps are installed in that folder."
+msgstr "그 폴더에 설치된 앱이 없어요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "None of these show as installed. If you moved Quiver Launcher 3's Apps folder, or its drive has a different letter now, show Quiver where it is."
+msgstr "설치된 앱이 보이지 않아요. Quiver Launcher 3의 Apps 폴더를 옮겼거나 드라이브 문자가 바뀌었다면 지금 위치를 알려 주세요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "None of this release's files are for this computer."
+msgstr "이 버전의 파일 중 이 컴퓨터용 파일이 없어요."
+
+#. Interface size
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Normal"
+msgstr "보통"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Not available for {os}"
+msgstr "{os}에서 사용할 수 없음"
+
+#. A release's file Quiver has no checksum for, though it has for the release's other files
+#: ../../apps/launcher/src/detail.tsx
+msgid "Not checked by Quiver"
+msgstr "Quiver에서 확인하지 않음"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Not checked yet"
+msgstr "아직 확인 안 됨"
+
+#: ../ui/src/index.tsx
+msgid "Not confirmed yet"
+msgstr "아직 확인 안 됨"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Not in your library"
+msgstr "라이브러리에 없음"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Not installed"
+msgstr "설치 안 됨"
+
+#. Library tab
+#. Library tab
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgctxt "tab"
+msgid "Not installed"
+msgstr "미설치"
+
+#: ../../apps/launcher/src/sort.ts
+msgid "Not installed first"
+msgstr "미설치 먼저"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Not installed only"
+msgstr "미설치만"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Not installed yet"
+msgstr "아직 설치되지 않음"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/old-library.tsx
+#: ../../apps/launcher/src/setup.tsx
+#: ../../apps/launcher/src/update.tsx
+msgid "Not now"
+msgstr "나중에"
+
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Not played yet"
+msgstr "아직 플레이 안 함"
+
+#: ../ui/src/index.tsx
+msgid "Not rated yet"
+msgstr "아직 평가 없음"
+
+#. Which release the player tested
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Not sure"
+msgstr "모름"
+
+#. The player's note about how the app ran
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Note"
+msgstr "메모"
+
+#. Heading of a README's note callout, as on GitHub
+#: ../ui/src/index.tsx
+msgctxt "README callout"
+msgid "Note"
+msgstr "참고"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Nothing here."
+msgstr "여기에는 아무것도 없어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Nothing in this playlist."
+msgstr "이 재생 목록이 비어 있어요."
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Nothing is downloading."
+msgstr "다운로드 중인 항목이 없어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Nothing matches that search and those filters."
+msgstr "검색어 및 필터와 일치하는 항목이 없어요."
+
+#: ../../apps/launcher/src/file-picker.tsx
+msgid "Nothing to choose in this folder."
+msgstr "이 폴더에는 선택할 항목이 없어요."
+
+#. TV mode setting
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Off"
+msgstr "끄기"
+
+#. Updates: offer new releases to install
+#: ../../apps/launcher/src/App.tsx
+msgid "Offer them"
+msgstr "알려 주기"
+
+#. Accept the usage data notice
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/old-library.tsx
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "OK"
+msgstr "확인"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "On this computer"
+msgstr "이 컴퓨터에 있음"
+
+#. Library view option: a game's ports (apps that play it) share one card, which lists them
+#: ../../apps/launcher/src/library-view.tsx
+msgid "One card for each game"
+msgstr "게임마다 카드 하나"
+
+#. Controller hint: what Confirm does on an app card
+#: ../../apps/launcher/src/spatial.ts
+msgid "Open"
+msgstr "열기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Open folder"
+msgstr "폴더 열기"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Open it"
+msgstr "열기"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Open on {site}"
+msgstr "{site}에서 열기"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Open on its site"
+msgstr "사이트에서 열기"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/update.tsx
+msgid "Open the release page"
+msgstr "버전 페이지 열기"
+
+#. Controller action that opens the focused item's menu
+#: ../../apps/launcher/src/spatial.ts
+msgid "Options"
+msgstr "옵션"
+
+#. Between the ways to sign in: with GitHub or Discord, or with a username
+#: ../../apps/launcher/src/App.tsx
+msgid "or"
+msgstr "또는"
+
+#. A kind of video
+#. Library section for apps with no console, maker, game or developer
+#: ../../apps/launcher/src/group.ts
+#: ../../apps/launcher/src/media.tsx
+msgid "Other"
+msgstr "기타"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Other platforms"
+msgstr "기타 플랫폼"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Other ways to add"
+msgstr "다른 추가 방법"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Other ways to play"
+msgstr "다른 플레이 방법"
+
+#. Tab of an app's page
+#: ../../apps/launcher/src/App.tsx
+msgid "Overview"
+msgstr "개요"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "owner/name, or a github.com or gitlab.com address"
+msgstr "소유자/이름 또는 github.com이나 gitlab.com 주소"
+
+#. Controller hint: what the triggers do in a library in another order, jump a screen at a time
+#: ../../apps/launcher/src/spatial.ts
+msgid "Pages"
+msgstr "페이지"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Password"
+msgstr "비밀번호"
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Password cannot begin or end with whitespace."
+msgstr "비밀번호는 공백으로 시작하거나 끝날 수 없어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
+msgstr "재생 목록 링크를 붙여 넣으세요(예: quiverlauncher.com/lists/…)"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Pick a binding, then press the key or button to use for it."
+msgstr "키 할당을 선택한 다음, 사용할 키나 버튼을 누르세요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Pinned to {installedVersion}."
+msgstr "{installedVersion}에 고정됨."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Pinned to {installedVersion}. {verifiedVersion} is available."
+msgstr "{installedVersion}에 고정됨. {verifiedVersion}을(를) 사용할 수 있어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Pinned to {version}"
+msgstr "{version}에 고정됨"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Pinned: click to unpin"
+msgstr "고정됨: 클릭하여 고정 해제"
+
+#: ../../apps/launcher/src/file-picker.tsx
+msgid "Places"
+msgstr "위치"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Platform"
+msgstr "플랫폼"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Platform unspecified"
+msgstr "플랫폼 미지정"
+
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Platforms"
+msgstr "플랫폼"
+
+#. Button that starts an app
+#. Button that starts an app
+#. Button that starts an app
+#. Button that starts an app
+#. Button: start the app
+#. Button: start the app
+#. Button: start the app
+#. Button: start the app
+#. Controller hint: what Confirm does on a library card
+#. Menu item that starts an installed app
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Play"
+msgstr "플레이"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/media.tsx
+msgid "Play {name}"
+msgstr "{name} 플레이"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Play anyway"
+msgstr "그래도 플레이"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Play time"
+msgstr "플레이 시간"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Play with"
+msgstr "플레이할 프로그램"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Played it? How did it run?"
+msgstr "플레이해 보셨나요? 잘 실행됐나요?"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Played today"
+msgstr "오늘 플레이함"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Played yesterday"
+msgstr "어제 플레이함"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Player feedback"
+msgstr "플레이어 피드백"
+
+#. A shelf on the catalog's front page: the apps players rated best
+#: ../ui/src/discover.tsx
+msgid "Players say it runs well"
+msgstr "플레이어 평가: 잘 실행됨"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Playlist name"
+msgstr "재생 목록 이름"
+
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Playlists"
+msgstr "재생 목록"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Playlists and tags"
+msgstr "재생 목록 및 태그"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Playlists for this app"
+msgstr "이 앱의 재생 목록"
+
+#. A kind of project: a game brought to other platforms
+#. Project type: a game ported to another platform
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Port"
+msgstr "포트"
+
+#. A release its developer marked as not yet stable
+#. A release its developer marked as not yet stable
+#: ../../apps/launcher/src/detail.tsx
+msgid "Pre-release"
+msgstr "사전 출시"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Press a button…"
+msgstr "버튼을 누르세요…"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Press a key…"
+msgstr "키를 누르세요…"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Press what you want to use, or Esc to cancel."
+msgstr "사용할 키나 버튼을 누르거나, Esc를 눌러 취소하세요."
+
+#: ../ui/src/discover.tsx
+msgid "Previous featured app"
+msgstr "이전 추천 앱"
+
+#. Controller action: in the library, the apps under the letter before, or a screen up when it isn't by name
+#: ../../apps/launcher/src/spatial.ts
+msgid "Previous letter or page"
+msgstr "이전 글자 또는 페이지"
+
+#. Controller action: the tab before the open one, as on an app's page
+#: ../../apps/launcher/src/spatial.ts
+msgid "Previous tab"
+msgstr "이전 탭"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Program"
+msgstr "프로그램"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Project details"
+msgstr "프로젝트 세부 정보"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "PROJECT DETAILS"
+msgstr "프로젝트 세부 정보"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Project type"
+msgstr "프로젝트 유형"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver blocked {installedVersion}: {blockedWhy}"
+msgstr "Quiver가 {installedVersion}을(를) 차단했어요: {blockedWhy}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver blocked {version}"
+msgstr "Quiver가 {version}을(를) 차단함"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver blocked {version}, so it's not meant to be installed."
+msgstr "Quiver가 {version}을(를) 차단했으므로 설치하지 않는 것이 좋아요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver blocked {version}: {why}"
+msgstr "Quiver가 {version}을(를) 차단했어요: {why}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver blocked it: {blockedWhy}"
+msgstr "Quiver가 차단했어요: {blockedWhy}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
+msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않아요. 버전 변경에서 직접 선택하고 강행할 때만 설치돼요."
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Quiver blocked this version"
+msgstr "Quiver가 이 버전을 차단함"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
+msgstr "Quiver가 {release}의 다른 파일은 확인했지만 {name}은(는) 확인하지 않았어요. 개발자가 게시한 그대로 다운로드해요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Quiver couldn't open your library"
+msgstr "Quiver가 라이브러리를 열지 못했어요"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Quiver hasn't checked this app."
+msgstr "Quiver가 이 앱을 확인하지 않았어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver hasn't checked this release's files. It downloads straight from {host}, as the developer published it."
+msgstr "Quiver가 이 버전의 파일을 확인하지 않았어요. 개발자가 게시한 그대로 {host}에서 바로 다운로드해요."
+
+#: ../../apps/launcher/src/versions.ts
+msgid "Quiver hasn't seen this release yet."
+msgstr "Quiver가 아직 이 버전을 확인하지 못했어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
+msgstr "Quiver가 이 파일을 검증하지 않았어요. 버전 변경에서 이 버전을 선택하고 확인할 때만 설치돼요."
+
+#: ../ui/src/index.tsx
+msgid "Quiver hasn't verified this release"
+msgstr "Quiver가 이 버전을 검증하지 않았어요"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since."
+msgstr "Quiver가 이 버전을 검증하지 않았어요. 출시 당시 Quiver가 확인한 파일만 설치하고, 그 이후 바뀐 파일은 거부해요."
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Quiver Launcher {version} is out."
+msgstr "Quiver Launcher {version}이(가) 나왔어요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Quiver Launcher 3"
+msgstr "Quiver Launcher 3"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Quiver Launcher 3 is on this computer, with {count, plural, one {# app. Add it here?} other {# apps. Add them here?}} Anything already installed stays where it is, so nothing needs to download again."
+msgstr "이 컴퓨터에 Quiver Launcher 3이 있고, {count, plural, other {앱이 #개 있어요. 여기에 추가할까요?}} 이미 설치된 앱은 그 자리에 그대로 있으므로 다시 다운로드할 필요가 없어요."
+
+#: ../../apps/launcher/src/main.tsx
+msgid "Quiver Launcher hit a problem"
+msgstr "Quiver Launcher에 문제가 생겼어요"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver Launcher never updates to it. Install it only if you know why you need this exact version and accept the risk."
+msgstr "Quiver Launcher는 이 버전으로 절대 업데이트하지 않아요. 꼭 이 버전이 필요한 이유를 알고 위험을 감수할 때만 설치하세요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver Launcher only updates to verified releases. It installs an unverified or blocked one only if you pick it and confirm. Verified means each of a release's files has been out for 48 hours, so there was time for a bad upload to be spotted, and a Quiver maintainer checked any file VirusTotal flagged. Quiver Launcher checks every download against the file Quiver verified. If a file is replaced after that, the new one waits its own 48 hours."
+msgstr "Quiver Launcher는 검증된 버전으로만 업데이트해요. 미검증 또는 차단된 버전은 직접 선택하고 확인할 때만 설치해요. 검증됨은 버전의 모든 파일이 공개된 지 48시간이 지나 악성 업로드를 발견할 시간이 있었고, VirusTotal이 탐지한 파일은 Quiver 관리자가 확인했다는 뜻이에요. Quiver Launcher는 모든 다운로드를 Quiver가 검증한 파일과 대조해요. 그 후 파일이 교체되면 새 파일은 따로 48시간을 기다려요."
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Quiver Launcher sends usage data to help improve it. It's anonymous unless you sign in. You can turn this off in Settings."
+msgstr "Quiver Launcher는 개선을 위해 사용 데이터를 보내요. 로그인하지 않으면 익명이에요. 설정에서 끌 수 있어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver Launcher: go to your library"
+msgstr "Quiver Launcher: 라이브러리로 이동"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
+msgstr "Quiver가 {dir}에 폴더를 만들고 열어요. 그곳에 앱 파일을 넣으세요. 플레이를 누르면 그 안의 첫 번째 프로그램이 실행돼요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
+msgstr "Quiver는 각 파일이 공개된 지 48시간이 지날 때까지 기다려요. 해킹되거나 악의적인 업데이트가 사용자에게 전달되기 전에 잡아내기 위해서예요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver won't install it."
+msgstr "Quiver는 이 버전을 설치하지 않아요."
+
+#: ../ui/src/index.tsx
+msgid "Quiver won't install this release"
+msgstr "Quiver는 이 버전을 설치하지 않아요"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver's catalog lists this app now, and checks its releases."
+msgstr "이제 Quiver 카탈로그에 이 앱이 등록되어 있고, 버전도 확인해요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver's catalog lists this app now, and checks its releases. Switching keeps its files, play time and your settings."
+msgstr "이제 Quiver 카탈로그에 이 앱이 등록되어 있고, 버전도 확인해요. 전환해도 파일, 플레이 시간, 설정은 그대로 유지돼요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Read the README"
+msgstr "README 읽기"
+
+#. Library sidebar heading: apps played or added in the last two weeks
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Recent"
+msgstr "최근"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/sort.ts
+msgid "Recently added"
+msgstr "최근 추가"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Recently finished"
+msgstr "최근 완료"
+
+#: ../../apps/launcher/src/sort.ts
+msgid "Recently played"
+msgstr "최근 플레이"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Recently played first"
+msgstr "최근 플레이 순"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Recently played first (press for A to Z)"
+msgstr "최근 플레이 순(누르면 가나다순)"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/sort.ts
+msgid "Recently updated"
+msgstr "최근 업데이트"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Refresh"
+msgstr "새로 고침"
+
+#. Tab of an app's page
+#: ../../apps/launcher/src/App.tsx
+msgid "Releases"
+msgstr "버전"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Releases are being cataloged"
+msgstr "버전을 카탈로그에 등록하는 중"
+
+#: ../../apps/launcher/src/main.tsx
+msgid "Reload"
+msgstr "다시 불러오기"
+
+#. Removes a followed playlist from the library
+#: ../../apps/launcher/src/library.tsx
+msgid "Remove"
+msgstr "삭제"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Remove console {name}"
+msgstr "콘솔 {name} 삭제"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Remove filter {on}"
+msgstr "필터 {on} 삭제"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Remove from library"
+msgstr "라이브러리에서 삭제"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Remove tag {tag}"
+msgstr "태그 {tag} 삭제"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Remove token"
+msgstr "토큰 삭제"
+
+#. The GitHub token was removed
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Removed."
+msgstr "삭제했어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Removing it from your library leaves its files where they are."
+msgstr "라이브러리에서 삭제해도 파일은 그대로 남아요."
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Removing…"
+msgstr "삭제하는 중…"
+
+#. Renames an app's folder
+#: ../../apps/launcher/src/App.tsx
+msgid "Rename"
+msgstr "이름 바꾸기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Rename {app}'s folder"
+msgstr "{app} 폴더 이름 바꾸기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Rename folder"
+msgstr "폴더 이름 바꾸기"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Rename folder…"
+msgstr "폴더 이름 바꾸기…"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
+msgstr "라이브러리를 {taken}의 라이브러리({count, plural, other {앱 #개}})로 바꿀까요? 현재 라이브러리도 백업으로 보관돼요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Repository"
+msgstr "저장소"
+
+#. Puts the launch options back as Quiver chose them
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Reset"
+msgstr "초기화"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Reset bindings to defaults"
+msgstr "키 할당을 기본값으로 초기화"
+
+#. Window button: un-maximize
+#: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/window-bar.tsx
+msgid "Restore"
+msgstr "복원"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Restore a backup Quiver kept. The newest is first."
+msgstr "Quiver가 보관한 백업을 복원하세요. 최신 백업이 맨 위에 있어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "Restore backup"
+msgstr "백업 복원"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Restore from backup"
+msgstr "백업에서 복원"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Results for “{typed}”"
+msgstr "“{typed}” 검색 결과"
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Return to catalog"
+msgstr "카탈로그로 돌아가기"
+
+#. A kind of video
+#: ../../apps/launcher/src/media.tsx
+msgid "Review"
+msgstr "리뷰"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Run installer again"
+msgstr "설치 프로그램 다시 실행"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Run setup again"
+msgstr "설정 다시 하기"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Run with"
+msgstr "실행 도구"
+
+#: ../../apps/launcher/src/feedback.tsx
+#: ../ui/src/index.tsx
+msgid "Runs well"
+msgstr "잘 실행됨"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Runs with issues"
+msgstr "문제 있음"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Same as the system"
+msgstr "시스템 설정과 동일"
+
+#. Saves a playlist
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/launch-options.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Save"
+msgstr "저장"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Save as playlist"
+msgstr "재생 목록으로 저장"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Save token"
+msgstr "토큰 저장"
+
+#: ../../apps/launcher/src/github-token.tsx
+msgid "Saved. Requests to GitHub use your token now."
+msgstr "저장했어요. 이제 GitHub 요청에 토큰을 사용해요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Saving…"
+msgstr "저장하는 중…"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say how {name} ran for you"
+msgstr "{name} 실행 후기 남기기"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say how it ran for you"
+msgstr "실행 후기 남기기"
+
+#. Controller hint: what the scroll stick does
+#: ../../apps/launcher/src/spatial.ts
+msgid "Scroll"
+msgstr "스크롤"
+
+#: ../ui/src/discover.tsx
+msgid "Scroll {title} back"
+msgstr "{title} 이전으로 스크롤"
+
+#: ../ui/src/discover.tsx
+msgid "Scroll {title} on"
+msgstr "{title} 다음으로 스크롤"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Scroll down"
+msgstr "아래로 스크롤"
+
+#: ../../apps/launcher/src/spatial.ts
+msgid "Scroll up"
+msgstr "위로 스크롤"
+
+#. Placeholder of the library's search field
+#. Placeholder of the library's search field
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Search"
+msgstr "검색"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Search mods"
+msgstr "모드 검색"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Search ports, games and tools"
+msgstr "포트, 게임, 도구 검색"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Search the catalog"
+msgstr "카탈로그 검색"
+
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Search your library"
+msgstr "라이브러리 검색"
+
+#. Label of how the library is split into sections (by console, say)
+#. Library view option: how the library is split into sections
+#: ../../apps/launcher/src/library-view.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Sections"
+msgstr "섹션"
+
+#: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "See {name} in the catalog"
+msgstr "카탈로그에서 {name} 보기"
+
+#. Beside a shelf's title on the catalog's front page: its whole list
+#: ../ui/src/discover.tsx
+msgid "See all"
+msgstr "모두 보기"
+
+#: ../../apps/launcher/src/discover.tsx
+msgid "See all: {title}"
+msgstr "모두 보기: {title}"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "See changelog"
+msgstr "변경 사항 보기"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "See downloads"
+msgstr "다운로드 보기"
+
+#: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "See it in the catalog"
+msgstr "카탈로그에서 보기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "See the report"
+msgstr "보고서 보기"
+
+#. Controller hint: what Confirm does on any other control
+#: ../../apps/launcher/src/spatial.ts
+msgid "Select"
+msgstr "선택"
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Send usage data"
+msgstr "사용 데이터 보내기"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Set up Quiver Launcher"
+msgstr "Quiver Launcher 설정"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Settings"
+msgstr "설정"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Settings sections"
+msgstr "설정 섹션"
+
+#. Heading over an app's mods, launch options, versions and updates
+#: ../../apps/launcher/src/App.tsx
+msgid "Setup"
+msgstr "구성"
+
+#. Follows “VirusTotal:”
+#: ../../apps/launcher/src/detail.tsx
+msgid "several engines flag one of its files."
+msgstr "여러 엔진이 파일 하나를 탐지했어요."
+
+#. Button: share the player's feedback
+#. Shares a playlist
+#. Shares a playlist
+#: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Share"
+msgstr "공유"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Share {name}"
+msgstr "{name} 공유"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Share a playlist"
+msgstr "재생 목록 공유"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Share how it ran"
+msgstr "실행 후기 공유"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Shared playlist"
+msgstr "공유된 재생 목록"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Shared playlist link"
+msgstr "공유 재생 목록 링크"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Shortcuts"
+msgstr "바로 가기"
+
+#. Controller hint: what Confirm does, scrolling the focused control into view
+#. Picks which library tab or playlist TV mode's library shows
+#. Picks which library tab or playlist the library shows, where the tabs don't fit
+#. Picks which library tab or playlist the sidebar lists
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv.tsx
+msgid "Show"
+msgstr "보기"
+
+#. A dot under the featured apps: shows that app's slide
+#: ../ui/src/discover.tsx
+msgid "Show {name}"
+msgstr "{name} 보기"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Show again"
+msgstr "다시 표시"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Show all apps"
+msgstr "모든 앱 보기"
+
+#. Above a box for each platform (Windows, macOS, Linux, Android): the library lists apps for the ones ticked
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show apps for"
+msgstr "앱을 표시할 플랫폼"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Show apps in your library"
+msgstr "라이브러리에 있는 앱 보기"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show both names"
+msgstr "두 이름 모두 표시"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show Continue playing"
+msgstr "이어서 플레이 표시"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Show dismissed ({count})"
+msgstr "닫은 공지 보기({count})"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Show in library"
+msgstr "라이브러리에서 보기"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show installed and update icons"
+msgstr "설치됨 및 업데이트 아이콘 표시"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Show more"
+msgstr "더 보기"
+
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show names on cards"
+msgstr "카드에 이름 표시"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show older releases"
+msgstr "이전 버전 보기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Show password"
+msgstr "비밀번호 표시"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps will appear here. Anything already installed stays where it is, so nothing needs to download again."
+msgstr "Quiver Launcher 3 폴더 위치를 알려 주시면 앱이 여기에 나타나요. 이미 설치된 앱은 그 자리에 그대로 있으므로 다시 다운로드할 필요가 없어요."
+
+#: ../../apps/launcher/src/game.tsx
+msgid "Show the full description"
+msgstr "전체 설명 보기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Show the library as a grid"
+msgstr "라이브러리를 격자로 보기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Show the library with a sidebar"
+msgstr "라이브러리를 사이드바와 함께 보기"
+
+#. Shows the library's apps for other platforms, until the library is left
+#: ../../apps/launcher/src/library.tsx
+msgid "Show them"
+msgstr "보기"
+
+#: ../../apps/launcher/src/media.tsx
+msgid "Show videos"
+msgstr "동영상 보기"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Show what the buttons do along the bottom while a controller is connected"
+msgstr "컨트롤러가 연결되어 있으면 화면 하단에 버튼 기능 표시"
+
+#. Library layout: a list of names down the left
+#: ../../apps/launcher/src/view.ts
+msgid "Sidebar"
+msgstr "사이드바"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Sidebar width"
+msgstr "사이드바 너비"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/setup.tsx
+msgid "Sign in"
+msgstr "로그인"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sign in to Quiver"
+msgstr "Quiver에 로그인"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Sign in to share a playlist others can add to their library."
+msgstr "로그인하면 다른 사람이 자기 라이브러리에 추가할 수 있는 재생 목록을 공유할 수 있어요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Sign in to share how it runs for you."
+msgstr "로그인하고 실행 후기를 공유해 주세요."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Sign in to sync your library"
+msgstr "로그인하고 라이브러리 동기화하기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sign out"
+msgstr "로그아웃"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sign out anyway"
+msgstr "그래도 로그아웃"
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Sign-in was cancelled."
+msgstr "로그인이 취소됐어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Signed in as <0>{name}</0>"
+msgstr "<0>{name}</0>(으)로 로그인됨"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Signed out. Apps installed on this computer stay in your library; sign in to see the rest."
+msgstr "로그아웃했어요. 이 컴퓨터에 설치된 앱은 라이브러리에 남아 있어요. 나머지를 보려면 로그인하세요."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Skip setup"
+msgstr "설정 건너뛰기"
+
+#. Interface size
+#. Library card size
+#: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/view.ts
+msgid "Small"
+msgstr "작게"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "So you can reset your password if you forget it"
+msgstr "비밀번호를 잊었을 때 재설정할 수 있도록"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Some AI assistance"
+msgstr "일부 AI 지원"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
+msgstr "누군가 재생 목록을 공유했나요? 링크를 붙여 넣어 라이브러리에 추가하세요. 원래 재생 목록과 계속 동기화돼요."
+
+#. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
+#. The order the catalog's apps are listed in
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Sort"
+msgstr "정렬"
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "Sort mods"
+msgstr "모드 정렬"
+
+#. Where an app's code is: a link to its repository
+#: ../../apps/launcher/src/detail.tsx
+msgid "Source"
+msgstr "소스"
+
+#. Project type
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Standalone game"
+msgstr "독립형 게임"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Start using Quiver"
+msgstr "Quiver 시작하기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Start which of {name}'s programs?"
+msgstr "{name}의 어떤 프로그램을 실행할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Start which program?"
+msgstr "어떤 프로그램을 실행할까요?"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Starting"
+msgstr "시작하는 중"
+
+#: ../../apps/launcher/src/custom.ts
+msgid "Starts {path} on this computer."
+msgstr "이 컴퓨터에서 {path}을(를) 실행해요."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Starts <0>{executable}</0>"
+msgstr "<0>{executable}</0> 실행"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
+msgstr "현재 위치에서 실행해요. 아무것도 다운로드, 이동, 삭제하지 않아요."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Starts the program Quiver finds in its folder."
+msgstr "Quiver가 폴더에서 찾은 프로그램을 실행해요."
+
+#: ../../apps/launcher/src/custom.ts
+msgid "Starts the program you put in its folder, {folder}."
+msgstr "폴더({folder})에 넣은 프로그램을 실행해요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Stay signed in"
+msgstr "로그인 상태 유지"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Staying on {installedLabel}"
+msgstr "{installedLabel} 유지 중"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Step {n} of {total}"
+msgstr "{total}단계 중 {n}단계"
+
+#. Follows “VirusTotal:”
+#: ../../apps/launcher/src/detail.tsx
+msgid "still scanning its files."
+msgstr "아직 파일을 검사하는 중이에요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Stop sharing"
+msgstr "공유 중지"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Submit an app"
+msgstr "앱 제출"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Suggest an app for the catalog, on quiverlauncher.com"
+msgstr "quiverlauncher.com에서 카탈로그에 앱 제안하기"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Supported platforms"
+msgstr "지원 플랫폼"
+
+#. south and east are a controller's buttons as it labels them, like A and B or ✕ and ○
+#: ../../apps/launcher/src/controls.tsx
+msgid "Swap {south} and {east}: Confirm on {east}, Back on {south}"
+msgstr "{south}와(과) {east} 바꾸기: {east}로 확인, {south}로 뒤로"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Switch to the catalog's"
+msgstr "카탈로그 버전으로 전환"
+
+#. Controller hint: what the shoulder buttons do where there are tabs, change tab
+#: ../../apps/launcher/src/spatial.ts
+msgid "Tabs"
+msgstr "탭"
+
+#. Filter by one of an app's tags
+#: ../../apps/launcher/src/library.tsx
+msgid "Tag"
+msgstr "태그"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Tell others how it ran after following the setup."
+msgstr "구성을 따라 한 뒤 어떻게 실행됐는지 다른 사람에게 알려 주세요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Tell others how it worked for you after following the setup on this page."
+msgstr "이 페이지의 구성을 따라 한 뒤 어땠는지 다른 사람에게 알려 주세요."
+
+#. The platform the player tried the app on
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Tested on"
+msgstr "테스트 환경"
+
+#. Under a player's name on their feedback, after the date and platform
+#: ../../apps/launcher/src/feedback.tsx
+msgid "tested on {version}"
+msgstr "{version}에서 테스트함"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Tested release"
+msgstr "테스트한 버전"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Thanks for sharing how it ran."
+msgstr "실행 후기를 공유해 주셔서 감사해요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "That folder doesn't have Quiver Launcher 3 in it. Choose the folder its program is in."
+msgstr "그 폴더에는 Quiver Launcher 3이 없어요. 프로그램이 들어 있는 폴더를 선택하세요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "That folder has {count, plural, one {# app} other {# apps}}, {installed, plural, one {# installed} other {# installed}}. Add them here? Anything already installed stays where it is, so nothing needs to download again."
+msgstr "그 폴더에는 {count, plural, other {앱 #개}}가 있고, {installed, plural, other {#개가 설치돼 있어요}}. 여기에 추가할까요? 이미 설치된 앱은 그 자리에 그대로 있으므로 다시 다운로드할 필요가 없어요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "That folder has {count, plural, one {# app} other {# apps}}, none installed. Add them here?"
+msgstr "그 폴더에는 {count, plural, other {앱 #개}}가 있고, 설치된 앱은 없어요. 여기에 추가할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "That page hit a problem as it closed: {why}"
+msgstr "페이지를 닫는 중에 문제가 생겼어요: {why}"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "That playlist isn't shared any more, or the link is wrong."
+msgstr "더 이상 공유되지 않는 재생 목록이거나 링크가 잘못됐어요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "That sign-in took too long. Try again."
+msgstr "로그인이 너무 오래 걸렸어요. 다시 시도해 주세요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "That username and password don't match."
+msgstr "사용자 이름과 비밀번호가 일치하지 않아요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "That username is already in use."
+msgstr "이미 사용 중인 사용자 이름이에요."
+
+#. A mod's version, by its date, inside a sentence: the 3 Jan 2025 version installed
+#: ../../apps/launcher/src/mods.tsx
+msgid "the {date} version"
+msgstr "{date} 버전"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your library is damaged."
+msgstr "라이브러리 파일이 손상됐어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your library is missing."
+msgstr "라이브러리 파일이 없어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your list of installed apps is damaged."
+msgstr "설치된 앱 목록 파일이 손상됐어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your list of installed apps is missing."
+msgstr "설치된 앱 목록 파일이 없어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your playlists is damaged."
+msgstr "재생 목록 파일이 손상됐어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your playlists is missing."
+msgstr "재생 목록 파일이 없어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your settings is damaged."
+msgstr "설정 파일이 손상됐어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "The file with your settings is missing."
+msgstr "설정 파일이 없어요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
+msgstr "처음 시작할 때의 질문을 차례로 다시 해요: 언어, Quiver Launcher 3에서 앱 추가, 앱 설치 위치, 사용 데이터, 로그인."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "The folder with Quiver Launcher 3's program in it."
+msgstr "Quiver Launcher 3 프로그램이 들어 있는 폴더예요."
+
+#: ../../apps/launcher/src/game.tsx
+msgid "THE ORIGINAL GAME"
+msgstr "원작 게임"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "The program itself"
+msgstr "프로그램 자체"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The programs Play offers are under Play with in the app's menu."
+msgstr "플레이에서 제공하는 프로그램은 앱 메뉴의 플레이할 프로그램에 있어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "The shared playlist is up to date."
+msgstr "공유 재생 목록이 최신 상태예요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The verified {installedVersion} isn't the file you installed."
+msgstr "검증된 {installedVersion}은(는) 설치한 파일과 달라요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Theme"
+msgstr "테마"
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "There are no backups to restore."
+msgstr "복원할 백업이 없어요."
+
+#: ../../apps/launcher/src/recovery.tsx
+msgid "There are no backups yet."
+msgstr "아직 백업이 없어요."
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "There are no mods here yet."
+msgstr "아직 여기에 모드가 없어요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "There are no releases yet. Check the upstream project for downloads."
+msgstr "아직 버전이 없어요. 원본 프로젝트에서 다운로드를 확인해 보세요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "This account is suspended."
+msgstr "이 계정은 정지됐어요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This app has no approved release yet."
+msgstr "이 앱은 아직 승인된 버전이 없어요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This app's folder can't be renamed."
+msgstr "이 앱의 폴더는 이름을 바꿀 수 없어요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
+msgstr "이 다운로드가 Quiver가 확인한 파일과 일치하지 않아 설치하지 않았어요."
+
+#: ../../apps/launcher/src/mods.tsx
+msgid "This mod has no files to download."
+msgstr "이 모드에는 다운로드할 파일이 없어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "This page hit a problem"
+msgstr "이 페이지에 문제가 생겼어요"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "This playlist isn't shared any more."
+msgstr "이 재생 목록은 더 이상 공유되지 않아요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This release has no download for your computer."
+msgstr "이 버전에는 이 컴퓨터용 다운로드가 없어요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download."
+msgstr "이 버전에는 업데이트에 쓸 Windows 설치 프로그램(MSI)이 없어요. 제거한 다음 다시 받으면 이 버전의 다운로드가 설치돼요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "This release has several downloads for this computer. Which app is this?"
+msgstr "이 버전에는 이 컴퓨터용 다운로드가 여러 개 있어요. 어떤 앱인가요?"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way."
+msgstr "이 버전은 Windows 설치 프로그램(MSI)으로만 제공돼요. 제거한 다음 다시 받아서 그 방식으로 설치하세요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
+msgstr "이 버전은 철회되어 파일 링크를 제공하지 않아요. 버전 변경에서 직접 선택하고 강행할 때만 설치돼요."
+
+#: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/store.tsx
+msgid "This repository has no releases yet."
+msgstr "이 저장소에는 아직 버전이 없어요."
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "This version isn't verified"
+msgstr "이 버전은 검증되지 않았어요"
+
+#. Heading of a README's tip callout, as on GitHub
+#: ../ui/src/index.tsx
+msgctxt "README callout"
+msgid "Tip"
+msgstr "팁"
+
+#. When something happened, as in "Updated today"
+#: ../ui/src/index.tsx
+msgid "today"
+msgstr "오늘"
+
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Today"
+msgstr "오늘"
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Too many attempts. Wait a moment and try again."
+msgstr "시도 횟수가 너무 많아요. 잠시 후 다시 시도해 주세요."
+
+#. A kind of project
+#. Project type
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Tool"
+msgstr "도구"
+
+#. Controller hint: what Back to top does
+#: ../../apps/launcher/src/spatial.ts
+msgid "Top"
+msgstr "맨 위로"
+
+#. Sort order for mods
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Top rated"
+msgstr "평점 높은 순"
+
+#. On a featured app's slide: it's among the apps players rated best
+#: ../ui/src/discover.tsx
+msgctxt "one app"
+msgid "Top rated"
+msgstr "높은 평점"
+
+#. A kind of video
+#: ../../apps/launcher/src/media.tsx
+msgid "Trailer"
+msgstr "트레일러"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/update.tsx
+msgid "Try again"
+msgstr "다시 시도"
+
+#. Turn usage data off
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Turn off"
+msgstr "끄기"
+
+#. Setting: the launcher's full-screen layout for a controller (tv.tsx)
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "TV mode"
+msgstr "TV 모드"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "TV mode: for a controller, the couch and a Steam Deck"
+msgstr "TV 모드: 컨트롤러, 소파, Steam Deck을 위한 화면"
+
+#. Controller hint: what Confirm does on a text field
+#: ../../apps/launcher/src/spatial.ts
+msgid "Type"
+msgstr "입력"
+
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Under a minute"
+msgstr "1분 미만"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Uninstall"
+msgstr "제거"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall {name}"
+msgstr "{name} 제거"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall {name} and remove it from your library?"
+msgstr "{name}을(를) 제거하고 라이브러리에서 삭제할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Uninstall {name}?"
+msgstr "{name}을(를) 제거할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Uninstall and remove"
+msgstr "제거 및 삭제"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Unpin"
+msgstr "고정 해제"
+
+#: ../../apps/launcher/src/versions.ts
+msgid "Unpin and downgrade to {version}"
+msgstr "고정 해제 후 {version}(으)로 다운그레이드"
+
+#: ../../apps/launcher/src/versions.ts
+msgid "Unpin and install {version}"
+msgstr "고정 해제 후 {version} 설치"
+
+#. A release Quiver hasn't checked
+#: ../ui/src/index.tsx
+msgid "Unverified"
+msgstr "미검증"
+
+#. Follows “Version 1.2 is”
+#: ../../apps/launcher/src/detail.tsx
+msgid "unverified · being checked"
+msgstr "미검증 · 확인 중"
+
+#. Follows “Version 1.2 is”
+#: ../../apps/launcher/src/detail.tsx
+msgid "unverified · verified shortly"
+msgstr "미검증 · 곧 검증됨"
+
+#. Follows “Version 1.2 is”
+#: ../../apps/launcher/src/detail.tsx
+msgid "unverified · waiting for a maintainer"
+msgstr "미검증 · 관리자 대기 중"
+
+#. Goes to the folder around the one shown
+#: ../../apps/launcher/src/file-picker.tsx
+msgid "Up"
+msgstr "위로"
+
+#. Button that updates a mod
+#. Button: update the one app with an update
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Update"
+msgstr "업데이트"
+
+#. Button on a library card: update the app to its newest verified version
+#: ../../apps/launcher/src/library-tile.tsx
+msgctxt "button"
+msgid "Update"
+msgstr "업데이트"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Update all"
+msgstr "모두 업데이트"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Update all ({updateCount})"
+msgstr "모두 업데이트({updateCount})"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Update and restart"
+msgstr "업데이트 후 다시 시작"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Update available"
+msgstr "업데이트 가능"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Update notes"
+msgstr "메모 수정"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Update now"
+msgstr "지금 업데이트"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Update shared playlist"
+msgstr "공유 재생 목록 업데이트"
+
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/library.tsx
+msgid "Update to {newer}"
+msgstr "{newer}(으)로 업데이트"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Update to {next}"
+msgstr "{next}(으)로 업데이트"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Update to {out}"
+msgstr "{out}(으)로 업데이트"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Update to {verifiedLabel}"
+msgstr "{verifiedLabel}(으)로 업데이트"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Update your feedback"
+msgstr "피드백 수정"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Update your notes"
+msgstr "메모 수정"
+
+#. When a mod last changed
+#: ../../apps/launcher/src/mods.tsx
+msgid "updated {updatedOn}"
+msgstr "{updatedOn} 업데이트됨"
+
+#. when: "today", "3 days ago", "2 wk ago"…
+#: ../ui/src/index.tsx
+msgid "Updated {when}"
+msgstr "{when} 업데이트됨"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Updated to {version} · {when}"
+msgstr "{version}(으)로 업데이트됨 · {when}"
+
+#. How an installed app gets new releases
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Updates"
+msgstr "업데이트"
+
+#. Library tab: apps with an update
+#. Library tab: apps with an update
+#: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv.tsx
+msgid "Updates ({updateCount})"
+msgstr "업데이트({updateCount})"
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Updates available"
+msgstr "업데이트 가능"
+
+#. Sort order for mods
+#: ../../apps/launcher/src/mods.tsx
+msgid "Updates first"
+msgstr "업데이트 먼저"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Updates keep installing into it. Desktop and Steam shortcuts you made before point at the old name, so make them again."
+msgstr "업데이트는 계속 이 폴더에 설치돼요. 전에 만든 바탕 화면 및 Steam 바로 가기는 예전 이름을 가리키므로 다시 만들어 주세요."
+
+#: ../../apps/launcher/src/downloads-page.tsx
+msgid "Updating Quiver Launcher"
+msgstr "Quiver Launcher 업데이트 중"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Updating to {version}… {done}% Quiver Launcher restarts when it's done."
+msgstr "{version}(으)로 업데이트하는 중… {done}% 완료되면 Quiver Launcher가 다시 시작돼요."
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Updating to {version}… Quiver Launcher restarts when it's done."
+msgstr "{version}(으)로 업데이트하는 중… 완료되면 Quiver Launcher가 다시 시작돼요."
+
+#: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/mods.tsx
+msgid "Updating…"
+msgstr "업데이트하는 중…"
+
+#: ../../apps/launcher/src/setup.tsx
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Usage data"
+msgstr "사용 데이터"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use an https:// image address."
+msgstr "https:// 이미지 주소를 사용하세요."
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Use at least 10 characters."
+msgstr "10자 이상 입력하세요."
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "Use controllers to move around Quiver"
+msgstr "컨트롤러로 Quiver 탐색"
+
+#: ../../apps/launcher/src/account.tsx
+msgid "Use no more than 100 characters."
+msgstr "100자 이하로 입력하세요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Use the catalog's consoles"
+msgstr "카탈로그의 콘솔 사용"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the catalog's name and artwork"
+msgstr "카탈로그의 이름과 아트워크 사용"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Use the system's title bar (instead of Quiver's own window buttons)"
+msgstr "시스템 제목 표시줄 사용(Quiver 자체 창 버튼 대신)"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Use this folder"
+msgstr "이 폴더 사용"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Username"
+msgstr "사용자 이름"
+
+#. A release Quiver checked
+#: ../ui/src/index.tsx
+msgid "Verified"
+msgstr "검증됨"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Verified {verifiedLabel}"
+msgstr "검증됨 {verifiedLabel}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Version {checkingVersion} is <0/>"
+msgstr "{checkingVersion} 버전: <0/>"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "Version {version}"
+msgstr "버전 {version}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Versions"
+msgstr "버전"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "View {version} on {host}"
+msgstr "{host}에서 {version} 보기"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "View options"
+msgstr "보기 옵션"
+
+#. Button: waits for the release to be verified instead of installing it now
+#. Button: waits for the release to be verified instead of installing it now
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Wait"
+msgstr "기다리기"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Wait for downloads to finish first"
+msgstr "먼저 다운로드가 끝날 때까지 기다리세요"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Wait for its download to finish, then rename its folder."
+msgstr "다운로드가 끝난 뒤에 폴더 이름을 바꿔 주세요."
+
+#. Heading of a README's warning callout, as on GitHub
+#: ../ui/src/index.tsx
+msgctxt "README callout"
+msgid "Warning"
+msgstr "경고"
+
+#: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/spatial.ts
+msgid "Ways to play"
+msgstr "플레이 방법"
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Ways to play {title}"
+msgstr "{title} 플레이 방법"
+
+#: ../../apps/launcher/src/account.tsx
+msgid "We're getting a lot of new accounts right now. Try again in a few minutes."
+msgstr "지금 새 계정이 많이 만들어지고 있어요. 몇 분 후에 다시 시도해 주세요."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Welcome to Quiver Launcher!"
+msgstr "Quiver Launcher에 오신 것을 환영해요!"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "What players said"
+msgstr "플레이어 평가"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
+msgstr "무엇이 잘 됐고 무엇이 안 됐나요? 실행하거나 문제를 해결하려고 따로 한 일이 있나요?"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "What's it for? (optional)"
+msgstr "어떤 용도인가요? (선택 사항)"
+
+#: ../../apps/launcher/src/update.tsx
+msgid "What's new"
+msgstr "새로운 기능"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Where apps install"
+msgstr "앱 설치 위치"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Which download?"
+msgstr "어떤 다운로드인가요?"
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "While you're signed in, it's linked to your Quiver account."
+msgstr "로그인되어 있는 동안에는 Quiver 계정에 연결돼요."
+
+#. Library sidebar width
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Wide"
+msgstr "넓게"
+
+#. A release that was taken back
+#: ../../apps/launcher/src/detail.tsx
+msgid "Withdrawn"
+msgstr "철회됨"
+
+#. Before why a release was withdrawn
+#: ../../apps/launcher/src/detail.tsx
+msgid "Withdrawn:"
+msgstr "철회됨:"
+
+#: ../../apps/launcher/src/sidebar.ts
+msgid "Yesterday"
+msgstr "어제"
+
+#. Tag by the player's own name on their feedback
+#: ../../apps/launcher/src/feedback.tsx
+msgid "You"
+msgstr "나"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "You have it installed. If you're happy to accept the risk, you can keep using it; otherwise, remove it and install a verified release instead."
+msgstr "이 버전이 설치되어 있어요. 위험을 감수할 수 있다면 계속 사용해도 돼요. 그렇지 않다면 제거하고 검증된 버전을 설치하세요."
+
+#: ../../apps/launcher/src/update.tsx
+msgid "You have the newest version."
+msgstr "최신 버전을 사용 중이에요."
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "You're all caught up."
+msgstr "모두 확인했어요."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "You're signed in as {name}."
+msgstr "{name}(으)로 로그인했어요."
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "You're signed in, so this follows your Quiver account's setting, as on quiverlauncher.com."
+msgstr "로그인되어 있으므로 quiverlauncher.com에서처럼 Quiver 계정 설정을 따라요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "You've reached the {limit}-character limit."
+msgstr "글자 수 제한({limit}자)에 도달했어요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "You've shared how it ran. Has anything changed since?"
+msgstr "실행 후기를 공유했어요. 그 이후 달라진 점이 있나요?"
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Your apps"
+msgstr "내 앱"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Your apps are in your library."
+msgstr "앱이 라이브러리에 들어왔어요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Your experience helps the next person"
+msgstr "여러분의 경험이 다음 사람에게 도움이 돼요"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Your feedback helps the next player know what to expect."
+msgstr "여러분의 피드백은 다음 플레이어가 무엇을 기대할 수 있는지 아는 데 도움이 돼요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Your feedback is waiting for a moderator to review it before others can see it."
+msgstr "다른 사람이 볼 수 있도록 피드백이 관리자 검토를 기다리고 있어요."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Your feedback isn't shared yet. What you wrote is still here."
+msgstr "피드백이 아직 공유되지 않았어요. 작성한 내용은 그대로 남아 있어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Your library is empty"
+msgstr "라이브러리가 비어 있어요"
+
+#: ../../apps/launcher/src/tv.tsx
+msgid "Your library is empty. Apps you get from Browse show here."
+msgstr "라이브러리가 비어 있어요. 둘러보기에서 받은 앱이 여기에 표시돼요."
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
+msgstr "라이브러리가 모든 기기에서 동기화되고, 앱 리뷰도 남길 수 있어요. 계정이 없어도 모든 기능을 쓸 수 있어요."
+
+#: ../../apps/launcher/src/library-sidebar.tsx
+msgid "Your play"
+msgstr "내 플레이"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Your tags"
+msgstr "내 태그"

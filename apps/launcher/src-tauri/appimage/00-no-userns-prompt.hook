@@ -1,0 +1,8 @@
+#!/bin/sh
+# Sourced by the CEF AppImage's AppRun ahead of the bundler's own hooks (they go in name order). Its
+# fix-namespaces.hook offers to install an AppArmor profile, behind a root password, wherever unprivileged user
+# namespaces are restricted (Ubuntu 24.04 on), and every new AppImage would ask again: the profile is tied to the
+# file's path. Chromium runs here without its sandbox (lib.rs), so it never needs them; the two helpers it asks
+# through are stubbed, and nothing else calls them. From Readest (readest/readest#6110).
+notify() { return 1; }
+run_gui_sudo() { return 1; }

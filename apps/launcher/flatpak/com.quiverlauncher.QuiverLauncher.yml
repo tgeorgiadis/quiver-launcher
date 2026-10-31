@@ -1,0 +1,73 @@
+# The Flatpak on the release page, built by release.yml's appimage job. Like the AppImage, it runs on Chromium
+# (Tauri's CEF runtime, CEF-SPIKE.md): it packs the program and the CEF distribution beside it, which the CEF
+# build's deb puts in usr/share/Quiver Launcher/ (`scripts/tauri-cef.sh build --bundles deb`); the job puts that
+# folder beside this file as cef/. The GNOME runtime has no Chromium, so the bundle is about 100 MiB. Games, Wine,
+# Proton, Steam and flatpak itself start on the host (sandbox.rs), so these are the permissions of a game launcher,
+# much as Lutris's on Flathub.
+#
+# To build it by hand, on Linux with flatpak-builder and Flathub added:
+#   dpkg-deb -x "apps/launcher/src-tauri/target/release/bundle/deb/Quiver Launcher_<version>_amd64.deb" x
+#   cp -a "x/usr/share/Quiver Launcher" apps/launcher/flatpak/cef
+#   flatpak-builder --user --install-deps-from=flathub --repo=repo --force-clean build apps/launcher/flatpak/com.quiverlauncher.QuiverLauncher.yml
+#   flatpak build-bundle repo QuiverLauncher.flatpak com.quiverlauncher.QuiverLauncher --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+id: com.quiverlauncher.QuiverLauncher
+runtime: org.gnome.Platform
+runtime-version: "51"
+sdk: org.gnome.Sdk
+command: quiver-launcher
+finish-args:
+  - --share=ipc
+  - --share=network
+  # CEF draws through Chromium's X11 backend, XWayland on a Wayland desktop, and the window follows it there. A
+  # fallback-x11 socket would leave X11 out whenever Wayland is there, so it's X11 alone (as Readest's Flatpak).
+  - --socket=x11
+  # The GPU, and controllers, which SDL reads from /dev/input and hidraw.
+  - --device=all
+  # Controllers plugged in while it runs.
+  - --filesystem=/run/udev:ro
+  # The apps folder, wherever the player puts it; the AppImage's data folder,
+  # which the Flatpak shares; Steam's shortcuts; desktop shortcuts; and
+  # Quiver Launcher 3's library. SD cards and other drives too.
+  - --filesystem=home
+  - --filesystem=/run/media
+  - --filesystem=/media
+  - --filesystem=/mnt
+  # Steam's Flatpak, for Add to Steam and its Protons (home leaves ~/.var/app out).
+  - --filesystem=~/.var/app/com.valvesoftware.Steam
+  # flatpak-spawn --host (sandbox.rs).
+  - --talk-name=org.freedesktop.Flatpak
+  # The sign-in, kept in the system's keyring.
+  - --talk-name=org.freedesktop.secrets
+  # On KDE, Steam's keyboard over a full-screen launcher: a KWin script (keyboard.rs).
+  - --talk-name=org.kde.KWin
+  # The updater installs the next release's bundle (update.rs).
+  - --env=QUIVER_FLATPAK_BUNDLE=1
+modules:
+  - name: quiver-launcher
+    buildsystem: simple
+    sources:
+      # Chromium's own sandbox is off (lib.rs), so its helper processes start as plain children and need no zypak.
+      - type: dir
+        path: cef
+        dest: cef
+      - type: file
+        path: com.quiverlauncher.QuiverLauncher.desktop
+      - type: file
+        path: com.quiverlauncher.QuiverLauncher.metainfo.xml
+      - type: file
+        path: ../src-tauri/icons/32x32.png
+      - type: file
+        path: ../src-tauri/icons/128x128.png
+      - type: file
+        path: ../src-tauri/icons/128x128@2x.png
+    build-commands:
+      # The program finds libcef.so and Chromium's files beside itself ($ORIGIN). chrome-sandbox is setuid's way in,
+      # which a Flatpak can't use.
+      - rm -f cef/chrome-sandbox
+      - mkdir -p ${FLATPAK_DEST}/lib && cp -a cef ${FLATPAK_DEST}/lib/quiver-launcher
+      - mkdir -p ${FLATPAK_DEST}/bin && ln -s ../lib/quiver-launcher/quiver-launcher ${FLATPAK_DEST}/bin/quiver-launcher
+      - install -Dm644 ${FLATPAK_ID}.desktop -t ${FLATPAK_DEST}/share/applications
+      - install -Dm644 ${FLATPAK_ID}.metainfo.xml -t ${FLATPAK_DEST}/share/metainfo
+      - install -Dm644 32x32.png ${FLATPAK_DEST}/share/icons/hicolor/32x32/apps/${FLATPAK_ID}.png
+      - install -Dm644 128x128.png ${FLATPAK_DEST}/share/icons/hicolor/128x128/apps/${FLATPAK_ID}.png
+      - install -Dm644 128x128@2x.png ${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/${FLATPAK_ID}.png

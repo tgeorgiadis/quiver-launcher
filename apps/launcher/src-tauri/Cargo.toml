@@ -1,0 +1,82 @@
+[package]
+name = "quiver-launcher"
+version = "4.0.0-alpha.5"
+edition = "2021"
+license-file = "../../../LICENSE"
+
+[lib]
+name = "quiver_launcher_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+# Chromium (the CEF runtime) in place of WebKitGTK, on Linux only: a spike. Only
+# scripts/tauri-cef.sh turns it on, with .cargo/cef.toml taking Tauri from its
+# `feat/cef` branch. Every other build resolves tauri-runtime-cef to the empty
+# stub in cef-stub/ (the [patch] at the end) and never compiles it.
+[features]
+cef = ["dep:tauri-runtime-cef"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["fs", "io-util", "sync"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+futures-util = "0.3"
+sha2 = "0.10"
+hex = "0.4"
+zip = { version = "2", default-features = false, features = ["deflate", "deflate64", "bzip2", "lzma"] }
+tar = "0.4"
+flate2 = "1"
+lzma-rust2 = { version = "0.23", default-features = false, features = ["std", "optimization", "xz"] }
+bzip2 = "0.6"
+ruzstd = "0.9"
+sevenz-rust2 = "0.15"
+glob = "0.3"
+open = "5"
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "ico", "gif"] }
+dirs = "6"
+crc32fast = "1"
+minisign-verify = "0.2"
+base64 = "0.22"
+
+# Not built for Android: no trash there, and unrar's C++ doesn't build with the NDK.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+trash = "5"
+unrar = "0.5"
+# Controllers (gamepad.rs). SDL is built from source and linked in, with only its
+# controller parts: nothing to install or ship beside the launcher. It opens no
+# windows, so on Linux it builds without X11 or Wayland's headers (a console build).
+sdl3-sys = { version = "0.7.2", default-features = false, features = ["build-from-source-static", "no-default-subsystems", "sdl-joystick", "sdl-hidapi", "sdl-unix-console-build"] }
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+tauri-plugin-dialog = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Asks the desktop to let the browser come to the front (browser.rs), on the
+# GTK window and Wayland connection Tauri has already.
+gtk = "0.18"
+libc = "0.2"
+gdkwayland-sys = "0.18"
+wayland-client = "0.31"
+wayland-backend = { version = "0.3", features = ["client_system"] }
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
+# The desktop portal's file dialogs, not rfd's GTK ones: those share the GLib
+# main context CEF's browser process runs its X11 loop on, and the next mouse
+# event aborts it (SIGTRAP in mojo).
+tauri-plugin-dialog = { version = "2", default-features = false, features = ["xdg-portal"] }
+tauri-runtime-cef = { version = "0.1", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+mslnk = "0.1"
+
+[dev-dependencies]
+tempfile = "3"
+# Packs the archives the tests unpack.
+lzma-rust2 = { version = "0.23", default-features = false, features = ["std", "encoder", "xz"] }
+
+[patch.crates-io]
+tauri-runtime-cef = { path = "cef-stub" }

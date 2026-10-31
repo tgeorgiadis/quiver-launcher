@@ -1,0 +1,9 @@
+# Stands in for tauri-runtime-cef outside the Linux CEF build, so the `cef`
+# feature's optional dependency resolves in Cargo.lock. Never compiled: only
+# scripts/tauri-cef.sh turns that feature on, and .cargo/cef.toml then takes the
+# real crate from Tauri's feat/cef branch.
+[package]
+name = "tauri-runtime-cef"
+version = "0.1.0"
+edition = "2021"
+publish = false

@@ -1,0 +1,6 @@
+/*
+ * Inter, bundled rather than asked of the system: it's rarely installed, so the launcher and the site fell back to
+ * Segoe UI or Arial. The variable font with its optical sizes, so large headings get Inter's display cut on their
+ * own. Each script's file loads only when a page has text in it. SIL Open Font License 1.1.
+ */
+@import "@fontsource-variable/inter/opsz.css";
