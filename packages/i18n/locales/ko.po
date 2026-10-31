@@ -2128,6 +2128,10 @@ msgstr "Linux만"
 msgid "Load more"
 msgstr "더 불러오기"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Load the catalog again"
+msgstr ""
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Loading mods…"
 msgstr "모드 불러오는 중…"
@@ -3040,6 +3044,8 @@ msgstr "최근 플레이 순(누르면 가나다순)"
 msgid "Recently updated"
 msgstr "최근 업데이트"
 
+#. Browse's button that loads the catalog again
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "새로 고침"

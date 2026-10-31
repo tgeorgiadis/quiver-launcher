@@ -2128,6 +2128,10 @@ msgstr "Linux only"
 msgid "Load more"
 msgstr "Load more"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Load the catalog again"
+msgstr "Load the catalog again"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Loading mods…"
 msgstr "Loading mods…"
@@ -3040,6 +3044,8 @@ msgstr "Recently played first (press for A to Z)"
 msgid "Recently updated"
 msgstr "Recently updated"
 
+#. Browse's button that loads the catalog again
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
 msgstr "Refresh"

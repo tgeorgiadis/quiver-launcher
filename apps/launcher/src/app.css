@@ -931,6 +931,10 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .page-tools .tool:hover, .page-tools .tool[aria-expanded="true"] { color: var(--strong); background: var(--panel); border-color: var(--line-strong); }
 .page-tools .tool.on { color: var(--strong); background: var(--accent-soft); border-color: var(--accent); }
 .page-tools .tool.icon-only { width: 34px; padding: 0; justify-content: center; }
+/* Refresh turns while the catalog comes, and waits for it. */
+.refresh-catalog:disabled { cursor: default; }
+.refresh-catalog .spinning { animation: spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .refresh-catalog .spinning { animation: none; } }
 .tool-count {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
   background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 1;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, RefreshCw, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -428,6 +428,12 @@ function BrowsePage({
   useEffect(() => {
     load();
   }, [query, JSON.stringify(filters), client]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Refresh asks again for the list from its start, and for the front page's shelves: Discover's key starts it over.
+  const [refreshes, setRefreshes] = useState(0);
+  const refresh = () => {
+    setRefreshes((n) => n + 1);
+    load();
+  };
   // As on the website: games whose titles match the search, above the apps, whatever the filters.
   useEffect(() => {
     // As on the website, the last search's games go as soon as the search changes.
@@ -533,6 +539,15 @@ function BrowsePage({
           >
             <SlidersHorizontal size={15} /> <Trans>Filters</Trans>
             {filterCount > 0 && <span className="tool-count">{filterCount}</span>}
+          </button>
+          <button
+            className="tool icon-only refresh-catalog"
+            aria-label={t({ message: "Refresh", comment: "Browse's button that loads the catalog again" })}
+            title={t`Load the catalog again`}
+            disabled={loading}
+            onClick={refresh}
+          >
+            <RefreshCw size={15} aria-hidden="true" className={loading ? "spinning" : undefined} />
           </button>
           {/* New apps come to the catalog through the website's form; adding one to the library is the library's. */}
           <button
@@ -645,6 +660,7 @@ function BrowsePage({
       {/* The front page, while the player isn't looking for something in particular. */}
       {!typed && !filtering && !sorted && !error && (
         <Discover
+          key={refreshes}
           onOpen={onOpen}
           showOwned={showOwned}
           action={(entry) => <Action entry={entry} />}
