@@ -55,6 +55,8 @@ let accountOff: boolean | null = null;
 let account: TelemetryAccount | null | undefined;
 let client: Client | null = null;
 let identified: string | null = null;
+/** Screens already sent, each with its app or step (`trackScreen`). */
+const screens = new Set<string>();
 /** Events from before PostHog loaded (the start, the first screen), sent once it has. */
 let queue: [string, Properties | undefined][] = [];
 const listeners = new Set<() => void>();
@@ -128,8 +130,8 @@ function start(): Client | null {
         opt_out_useragent_filter: true,
         // A stand-in (end-to-end tests) reads plain JSON.
         disable_compression: hostname(ctx.host) !== hostname(DEFAULT_HOST),
-        // Turning it off after PostHog loaded drops everything; what's left is scrubbed.
-        before_send: (event) => (!event || off() ? null : scrubEvent(event)),
+        // Turning it off after PostHog loaded drops everything, and browser noise goes too; what's left is scrubbed.
+        before_send: (event) => (!event || off() || isNoise(event) ? null : scrubEvent(event)),
       });
       posthog.register(superProperties(ctx));
       follow(posthog);
@@ -149,6 +151,7 @@ function start(): Client | null {
 /** A fresh anonymous identifier, keeping what every event says about the launcher. */
 function forget() {
   identified = null;
+  screens.clear();
   const ctx = context;
   void client?.then((posthog) => {
     posthog?.reset();
@@ -258,6 +261,26 @@ export function track(event: string, properties?: Properties) {
     return;
   }
   void client.then((posthog) => posthog?.capture(event, properties));
+}
+
+/** A screen shown, once per launch (and again for a fresh identifier): coming back to it says nothing new. */
+export function trackScreen(properties: Properties) {
+  if (!telemetryAvailable() || off()) return;
+  const key = JSON.stringify(properties);
+  if (screens.has(key)) return;
+  screens.add(key);
+  track("screen_viewed", properties);
+}
+
+/**
+ * Errors that aren't the launcher's: the browser's warning that a resize took
+ * more than one frame to settle, harmless and in nearly every window.
+ */
+const NOISE = /^ResizeObserver loop (completed with undelivered notifications|limit exceeded)/;
+function isNoise(event: CaptureResult) {
+  if (event.event !== "$exception") return false;
+  const list = event.properties?.$exception_list as { value?: unknown }[] | undefined;
+  return Array.isArray(list) && list.length > 0 && list.every((e) => typeof e?.value === "string" && NOISE.test(e.value));
 }
 
 /** Reports an error caught on the way (an error boundary's) to error tracking. */

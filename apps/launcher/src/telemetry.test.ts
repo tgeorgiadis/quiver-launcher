@@ -284,6 +284,37 @@ test("errors caught by an error boundary go to error tracking", async () => {
   await vi.waitFor(() => expect(posthog.captureException).toHaveBeenCalledWith(error, { boundary: "page" }));
 });
 
+test("each screen is sent once per launch, and again after turning it off and on", async () => {
+  const telemetry = await started();
+  telemetry.trackScreen({ screen: "browse" });
+  telemetry.trackScreen({ screen: "app", slug: "test-port" });
+  telemetry.trackScreen({ screen: "browse" });
+  telemetry.trackScreen({ screen: "app", slug: "other-port" });
+  telemetry.trackScreen({ screen: "app", slug: "test-port" });
+  await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledTimes(3));
+  expect(posthog.capture.mock.calls.map((c) => c[1])).toEqual([
+    { screen: "browse" },
+    { screen: "app", slug: "test-port" },
+    { screen: "app", slug: "other-port" },
+  ]);
+
+  telemetry.setTelemetryEnabled(false);
+  telemetry.setTelemetryEnabled(true);
+  telemetry.trackScreen({ screen: "browse" });
+  await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledTimes(4));
+});
+
+test("the browser's harmless ResizeObserver warning isn't sent; other errors are", async () => {
+  await started();
+  await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled());
+  const error = (...values: string[]) => beforeSend({ event: "$exception", properties: { $exception_list: values.map((value) => ({ type: "Error", value })) } });
+  expect(error("ResizeObserver loop completed with undelivered notifications.")).toBeNull();
+  expect(error("ResizeObserver loop limit exceeded")).toBeNull();
+  expect(error("Cannot read properties of undefined (reading 'length')")).not.toBeNull();
+  expect(error("ResizeObserver loop limit exceeded", "Failed to fetch")).not.toBeNull();
+  expect(beforeSend({ event: "screen_viewed", properties: { reason: "ResizeObserver loop limit exceeded" } })).not.toBeNull();
+});
+
 test("a problem reaches usage data in English, whatever language it showed in", async () => {
   const telemetry = await started();
   const { i18n } = await import("@quiverlauncher/i18n");
