@@ -14,7 +14,7 @@
 such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](https://quiverlauncher.com), press
 **Get**, and Quiver downloads it, checks it and installs it. Then it keeps it up to date.
 
-![Quiver Launcher](docs/screenshot.png)
+<img width="2559" height="1366" alt="quiver-launcher-screenshot" src="https://github.com/user-attachments/assets/4cae3f54-0e41-43a3-9925-1adbbf81071e" />
 
 ## What it does
 
