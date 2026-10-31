@@ -45,7 +45,7 @@ anywhere else isn't made by us.
 
 | Your device | Download | Then |
 | --- | --- | --- |
-| **Windows** | `…_x64-setup.exe` | Run it. Prefer no installer? Take the portable `.zip`, extract it, and run `QuiverLauncher.exe`. |
+| **Windows** | `QuiverLauncher-win-Portable.zip` | Extract it anywhere and run `QuiverLauncher.exe`. It updates itself from there. |
 | **macOS** | `…_universal.dmg` | Open it and drag Quiver Launcher into Applications. Works on Intel and Apple silicon. |
 | **Linux** | `…_x86_64.flatpak` or `…_amd64.AppImage` | Flatpak: open it with your software center. AppImage: mark it executable, then run it. |
 | **Steam Deck** | `…_x86_64.flatpak` or `…_amd64.AppImage` | In Desktop Mode, install the Flatpak with Discover, or mark the AppImage executable. Then add Quiver to Steam to start it from Game Mode. |
