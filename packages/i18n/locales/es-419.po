@@ -1577,6 +1577,10 @@ msgstr "General"
 msgid "Get"
 msgstr "Obtener"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Get the Windows version (Wine)"
+msgstr "Obtener la versión de Windows (Wine)"
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
 msgstr "GitHub no aceptó ese token, así que no se guardó. Revisa que lo hayas copiado completo."
@@ -3650,6 +3654,14 @@ msgstr "Intercambiar {south} y {east}: Confirmar con {east}, Atrás con {south}"
 #: ../../apps/launcher/src/App.tsx
 msgid "Switch to the catalog's"
 msgstr "Cambiar al del catálogo"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Linux version"
+msgstr "Cambiar a la versión de Linux"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Windows version (Wine)"
+msgstr "Cambiar a la versión de Windows (Wine)"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts

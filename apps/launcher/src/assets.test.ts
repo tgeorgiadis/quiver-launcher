@@ -134,3 +134,15 @@ test("a file the player can install from the Releases tab is one this computer r
   expect(runsHere(asset("Game-win64.zip.sha256", "windows"), "windows", "x64")).toBe(false);
   expect(runsHere(asset("Game-1.0-x64.msi", "windows"), "linux", "x64")).toBe(false);
 });
+
+test("the Windows build the player chose on Linux comes first, and its updates keep to it", () => {
+  const files = [asset("Game-linux.AppImage", "linux"), asset("Game-win64.zip", "windows"), asset("Game-1.0-x64.msi", "windows")];
+  const names = (list: Asset[]) => list.map((a) => a.filename);
+  expect(names(bestAssets(files, "linux", "x64"))).toEqual(["Game-linux.AppImage"]);
+  expect(names(bestAssets(files, "linux", "x64", undefined, "files", "windows"))).toEqual(["Game-win64.zip"]);
+  // Back to Linux's, and a release with no Windows build: Linux's.
+  expect(names(bestAssets(files, "linux", "x64", undefined, "files", "linux"))).toEqual(["Game-linux.AppImage"]);
+  expect(names(bestAssets([files[0]], "linux", "x64", undefined, "files", "windows"))).toEqual(["Game-linux.AppImage"]);
+  // A system this computer can't run isn't one to prefer.
+  expect(names(bestAssets(files, "windows", "x64", undefined, undefined, "linux"))).toEqual(["Game-win64.zip"]);
+});

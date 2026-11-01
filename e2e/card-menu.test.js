@@ -26,6 +26,9 @@ after(() => s?.close());
 const menu = () => app.$('[role="menu"][aria-label="Test Port menu"]');
 const items = () => app.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map((b) => b.textContent));
 const pick = async (text) => (await (await menu()).$(`button=${text}`)).click();
+/** Items only Linux has: Test Port has a Linux and a Windows build, and there Windows' runs through Wine. */
+const onLinux = (...names) => (process.platform === "linux" ? names : []);
+
 /** Picks an item in the Manage submenu, opening it first. */
 const manage = async (text) => {
   await pick("Manage");
@@ -52,7 +55,7 @@ test("the ⋯ button on a library card has the app's actions", async () => {
   await (await menu()).waitForDisplayed();
   assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "App page"]);
   await pick("Manage");
-  assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "Open folder", "Rename folder…", "Desktop shortcut", "Add to Steam", "Change version…", "Hide from library", "Uninstall", "Uninstall and remove", "App page"]);
+  assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "Open folder", "Rename folder…", "Desktop shortcut", "Add to Steam", "Change version…", ...onLinux("Switch to the Windows version (Wine)"), "Hide from library", "Uninstall", "Uninstall and remove", "App page"]);
   await pick("Open folder");
   await until(() => existsSync(opened) && readFileSync(opened, "utf8").includes(join(apps, "test-port")));
   await (await menu()).waitForDisplayed({ reverse: true });
@@ -224,7 +227,7 @@ test("Uninstall deletes the files and keeps the app in the library to get again"
   await (await menuButton()).click();
   assert.deepEqual(await items(), ["Get", "Add to", "Manage", "App page"]);
   await pick("Manage");
-  assert.deepEqual(await items(), ["Get", "Add to", "Manage", "Choose a version…", "Hide from library", "Remove from library", "App page"]);
+  assert.deepEqual(await items(), ["Get", "Add to", "Manage", "Choose a version…", ...onLinux("Get the Windows version (Wine)"), "Hide from library", "Remove from library", "App page"]);
   await pick("Get");
   await (await port.$(".card-open")).moveTo();
   await (await port.$("button*=Play")).waitForDisplayed({ timeout: 30000 });

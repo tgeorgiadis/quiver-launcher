@@ -1577,6 +1577,10 @@ msgstr "일반"
 msgid "Get"
 msgstr "받기"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Get the Windows version (Wine)"
+msgstr "Windows 버전 받기 (Wine)"
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
 msgstr "GitHub에서 토큰을 받아들이지 않아 저장하지 않았어요. 전부 복사했는지 확인하세요."
@@ -3650,6 +3654,14 @@ msgstr "{south}와(과) {east} 바꾸기: {east}로 확인, {south}로 뒤로"
 #: ../../apps/launcher/src/App.tsx
 msgid "Switch to the catalog's"
 msgstr "카탈로그 버전으로 전환"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Linux version"
+msgstr "Linux 버전으로 전환"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Windows version (Wine)"
+msgstr "Windows 버전으로 전환 (Wine)"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts

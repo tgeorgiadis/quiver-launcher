@@ -15,7 +15,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { canGet, hasUpdate, pulledVerified, renamable, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn } from "./detail";
-import { versionLabel } from "./versions";
+import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
 import { native } from "./native";
 import { track } from "./telemetry";
@@ -233,6 +233,16 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
   // Every release, verified or not, as the app's page has them: the player's own files have none.
   if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
+  // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better. Switching installs
+  // the version Get would, so it's offered once the app is on that one; updates then keep to the build chosen.
+  const newest = latest.verified?.version ?? latest.lastReleaseVersion;
+  const both = config.os === "linux" && latest.supportedOS.includes("linux") && latest.supportedOS.includes("windows");
+  const onNewest = !install || Boolean(newest && bare(install.version) === bare(newest));
+  if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && install?.installer !== "msi" && !busy)
+    manage.push({
+      text: install?.wine ? t`Switch to the Linux version` : install ? t`Switch to the Windows version (Wine)` : t`Get the Windows version (Wine)`,
+      act: () => void get(latest, undefined, { platform: install?.wine ? "linux" : "windows" }),
+    });
   manage.push({
     text: hidden ? t`Show in library` : t`Hide from library`,
     act: () => setSettings({ ...settings, hidden: hidden ? settings.hidden!.filter((h) => h !== entry.id) : [...(settings.hidden ?? []), entry.id] }),

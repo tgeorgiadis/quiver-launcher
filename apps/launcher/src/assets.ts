@@ -47,9 +47,13 @@ const archRank = (a: Asset, arch: string) =>
 
 /**
  * The systems whose files this computer runs, its own first. Files the site couldn't place on a platform are tried
- * only when none are for this one; Linux runs Windows builds through Wine when there's no Linux build.
+ * only when none are for this one; Linux runs Windows builds through Wine when there's no Linux build. `platform`, one
+ * of these the player chose (Windows' build on Linux), goes first.
  */
-const osFallbacks = (os: Os): Os[] => (os === "linux" ? [os, "unknown", "windows"] : [os, "unknown"]);
+const osFallbacks = (os: Os, platform?: Os): Os[] => {
+  const all: Os[] = os === "linux" ? [os, "unknown", "windows"] : [os, "unknown"];
+  return platform && all.includes(platform) ? [platform, ...all.filter((o) => o !== platform)] : all;
+};
 
 /** A file this computer can install and run: the player can pick it themselves, as on the app's Releases tab. */
 export const runsHere = (asset: Asset, os: Os, arch: string) =>
@@ -60,11 +64,12 @@ export const runsHere = (asset: Asset, os: Os, arch: string) =>
  * One file means install it; several mean the player picks; none means the
  * release has nothing for this platform. `kind` keeps an update to the kind
  * installed: a Windows installer ("msi"), or files Quiver unpacks ("files").
+ * `platform` is the system whose build the player chose, tried first.
  */
-export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files"): Asset[] {
+export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os): Asset[] {
   const wanted = filter?.trim().toLowerCase();
   const usable = installable(assets, os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-  const forOs = osFallbacks(os).map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
+  const forOs = osFallbacks(os, platform).map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
   const ranked = forOs
     .filter((a) => !wanted || a.filename.toLowerCase().includes(wanted))
     .filter((a) => archRank(a, arch) >= 0)
