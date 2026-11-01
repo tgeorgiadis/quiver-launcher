@@ -913,8 +913,9 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   );
   // A phone has one build to get, and an app's versions are on its page: Get alone.
   if (config.os === "android") return getIt;
+  // Its own key: as a download's row it was, React would keep Cancel's button as the arrow, the focus still on it.
   return (
-    <div className="get-split">
+    <div className="get-split" key="get">
       {getIt}
       <button
         className="primary get-more"

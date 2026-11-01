@@ -214,8 +214,15 @@ function candidates() {
     (el) =>
       !hiddenOnCard(el) &&
       shown(el) &&
+      !foldedAway(el) &&
       (el === document.activeElement || (el.getAttribute("tabindex") !== "-1" && !el.matches(".sidebar-edge") && !pressedByCard(el))),
   );
+}
+
+/** Under a long text's fold (Clipped, detail.tsx): out of sight until Read more, which the d-pad gets to, shows it. */
+function foldedAway(el: Element) {
+  const fold = el.closest(".clipped");
+  return !!fold && el.getBoundingClientRect().bottom > fold.getBoundingClientRect().bottom;
 }
 
 /**

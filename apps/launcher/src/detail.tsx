@@ -204,22 +204,35 @@ function Clipped({ height, children }: { height: number; children: ReactNode }) 
     sized.observe(el.firstElementChild);
     return () => sized.disconnect();
   }, [height]);
+  // Where the fold was, once it's open: the focus waits there for the d-pad (or the keys) to read on from.
+  const fold = useRef<HTMLSpanElement>(null);
   const folded = long && !open;
   return (
     <>
-      <div ref={body} className={folded ? "clipped" : undefined} style={folded ? { maxHeight: height } : undefined}>
+      <div
+        ref={body}
+        className={folded ? "clipped" : "clip-open"}
+        style={folded ? { maxHeight: height } : undefined}
+        // Tab to a link under the fold: it opens, so what has the focus shows.
+        onFocus={(e) => folded && e.target.getBoundingClientRect().bottom > e.currentTarget.getBoundingClientRect().bottom && setOpen(true)}
+      >
         {children}
+        {long && open && <span ref={fold} className="clip-fold" tabIndex={-1} style={{ top: height }} />}
       </div>
       {long && (
         <button
           type="button"
           className="clip-toggle"
           aria-expanded={open}
-          // Folding it back, from far down a long text: back to where it now ends.
           onClick={(e) => {
             const button = e.currentTarget;
+            // A controller's A or the keys (not a click, detail 0): the focus to the fold, as the button goes to the end.
+            const keyed = e.detail === 0;
             setOpen(!open);
-            if (open) requestAnimationFrame(() => button.scrollIntoView({ block: "nearest" }));
+            requestAnimationFrame(() =>
+              // Folding it back, from far down a long text: back to where it now ends.
+              open ? button.scrollIntoView({ block: "nearest" }) : keyed && fold.current?.focus({ preventScroll: true }),
+            );
           }}
         >
           {open ? <Trans>Show less</Trans> : <Trans>Read more</Trans>}

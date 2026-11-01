@@ -75,8 +75,9 @@ const home = async () => {
 const BACK_TO_TOP = 'button[aria-label="Back to top"]';
 // The sidebar's edge is a pointer's (and Tab's): the d-pad goes past it, and View options set its width.
 const SIDEBAR_EDGE = ".sidebar-edge";
-// A card's only button (Get, Play): Y on the card presses it, so the d-pad goes card to card past it.
-const CARD_MAIN = ".card-action > .primary:only-child";
+// A card's only button (Get, Play), or Get and its arrow: Y on the card presses Get, so the d-pad goes card to card
+// past them. The arrow's choices are on the app's page too.
+const CARD_MAIN = ".card-action > .primary:only-child, .card-action .get-split > .primary";
 /** Asserts the d-pad reaches everything showing (but Back to top, the sidebar's edge, a card's only button and `ignore`), each with all of its focus ring showing. */
 const everything = async (name, ignore) => {
   const { missed, reached, cut, outOfSight, unmarked } = await reach.explore(app, { ignore: [BACK_TO_TOP, SIDEBAR_EDGE, CARD_MAIN, ignore].filter(Boolean).join(", ") });
@@ -296,6 +297,8 @@ test("a long README: the d-pad reads through it, the right stick and Page Down s
   // Down a press at a time: a step at most, through the text rather than past it, to the link at its end.
   let steps = 0;
   for (let i = 0; i < 40 && !(await reach.focused(app)).includes("the notes"); i++) {
+    // At the fold, Read more: A opens the rest, and the d-pad reads on from there.
+    if ((await reach.focused(app)).startsWith('button "Read more"')) await reach.press(app, "South");
     const before = await y();
     await reach.press(app, "DPadDown");
     const by = (await y()) - before;

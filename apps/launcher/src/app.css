@@ -667,6 +667,9 @@ main.app-main { padding: 0 0 40px; }
 .clipped { overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent); }
 .clip-toggle { display: block; margin-top: 8px; padding: 2px 0; background: none; color: var(--accent); font-size: 13px; font-weight: 600; }
 .clip-toggle:hover { text-decoration: underline; }
+/* Opened: where the fold was, a place for the focus with nothing to see. */
+.clip-open { position: relative; }
+.clip-fold { position: absolute; left: 0; right: 0; height: 0; outline: none; }
 /* Release notes: greyer text, headings as big stops, and what's under a heading set in from it. */
 .release-notes .markdown { --ql-md-text: var(--text-3); }
 .release-notes .markdown strong { color: var(--text-2); }
