@@ -3,7 +3,7 @@
  * releases, the project's details, shortcuts, picking another version, and
  * the player's tags.
  */
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { FaSteam } from "react-icons/fa6";
@@ -185,6 +185,50 @@ export function RepositoryLink({ source }: { source: Source }) {
   );
 }
 
+/**
+ * Long text cut to its start, `height` pixels of it fading out, with Read more to show the rest and Show less to fold it
+ * again: what's under a README, or a release's long notes, stays in reach. Text that nearly fits shows whole.
+ */
+function Clipped({ height, children }: { height: number; children: ReactNode }) {
+  const body = useRef<HTMLDivElement>(null);
+  const [long, setLong] = useState(false);
+  const [open, setOpen] = useState(false);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el) return;
+    // Its whole height, as pictures in it load too.
+    const measure = () => setLong(el.scrollHeight > height + 80);
+    measure();
+    if (typeof ResizeObserver === "undefined" || !el.firstElementChild) return;
+    const sized = new ResizeObserver(measure);
+    sized.observe(el.firstElementChild);
+    return () => sized.disconnect();
+  }, [height]);
+  const folded = long && !open;
+  return (
+    <>
+      <div ref={body} className={folded ? "clipped" : undefined} style={folded ? { maxHeight: height } : undefined}>
+        {children}
+      </div>
+      {long && (
+        <button
+          type="button"
+          className="clip-toggle"
+          aria-expanded={open}
+          // Folding it back, from far down a long text: back to where it now ends.
+          onClick={(e) => {
+            const button = e.currentTarget;
+            setOpen(!open);
+            if (open) requestAnimationFrame(() => button.scrollIntoView({ block: "nearest" }));
+          }}
+        >
+          {open ? <Trans>Show less</Trans> : <Trans>Read more</Trans>}
+        </button>
+      )}
+    </>
+  );
+}
+
 /** The project's README: the site's copy, else straight from GitHub. */
 export function Readme({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
   const { client, github } = useLauncher();
@@ -216,7 +260,9 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
     <section className="readme">
       <h3>README</h3>
       <div className="readme-body">
-        <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />
+        <Clipped height={320}>
+          <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />
+        </Clipped>
       </div>
     </section>
   );
@@ -353,15 +399,6 @@ function ReleaseCard({
       )}
       {open && (
         <div className="release-details">
-          {release.notes.trim() ? (
-            <div className="release-notes">
-              <Markdown text={release.notes} alertTitles={alertTitles()} />
-            </div>
-          ) : (
-            <p className="muted release-notes">
-              <Trans>No release notes provided.</Trans>
-            </p>
-          )}
           {state === "blocked" ? (
             <p className="release-files-note">
               {withdrawn
@@ -422,6 +459,18 @@ function ReleaseCard({
                 );
               })}
             </div>
+          )}
+          {/* Its notes after its files, cut to their start: a long changelog doesn't push them out of sight. */}
+          {release.notes.trim() ? (
+            <div className="release-notes">
+              <Clipped height={180}>
+                <Markdown text={release.notes} alertTitles={alertTitles()} />
+              </Clipped>
+            </div>
+          ) : (
+            <p className="muted release-notes">
+              <Trans>No release notes provided.</Trans>
+            </p>
           )}
           {state !== "verified" && release.upstreamUrl && (
             <a className="release-hold-link" href={release.upstreamUrl}>

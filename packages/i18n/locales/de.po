@@ -3067,6 +3067,10 @@ msgstr "Der Katalog von Quiver führt diese App jetzt und prüft ihre Versionen.
 msgid "Quiver's catalog lists this app now, and checks its releases. Switching keeps its files, play time and your settings."
 msgstr "Der Katalog von Quiver führt diese App jetzt und prüft ihre Versionen. Beim Wechseln bleiben ihre Dateien, die Spielzeit und deine Einstellungen erhalten."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Read more"
+msgstr "Weiterlesen"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Read the README"
 msgstr "README lesen"
@@ -3481,6 +3485,10 @@ msgstr "In Bibliothek anzeigen"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show installed and update icons"
 msgstr "Symbole für installiert und Updates anzeigen"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show less"
+msgstr "Weniger anzeigen"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx

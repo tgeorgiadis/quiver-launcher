@@ -3067,6 +3067,10 @@ msgstr "이제 Quiver 카탈로그에 이 앱이 등록되어 있고, 버전도 
 msgid "Quiver's catalog lists this app now, and checks its releases. Switching keeps its files, play time and your settings."
 msgstr "이제 Quiver 카탈로그에 이 앱이 등록되어 있고, 버전도 확인해요. 전환해도 파일, 플레이 시간, 설정은 그대로 유지돼요."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Read more"
+msgstr "더 읽기"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Read the README"
 msgstr "README 읽기"
@@ -3481,6 +3485,10 @@ msgstr "라이브러리에서 보기"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show installed and update icons"
 msgstr "설치됨 및 업데이트 아이콘 표시"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show less"
+msgstr "간략히 보기"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx

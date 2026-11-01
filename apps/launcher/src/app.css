@@ -662,7 +662,11 @@ main.app-main { padding: 0 0 40px; }
 .release-summary:hover .release-chevron, .release-summary:focus-visible .release-chevron { background: var(--accent-soft); color: var(--accent); }
 .release.open .release-chevron svg { transform: rotate(180deg); }
 .release-details { padding: 20px 22px 22px; }
-.release-notes { font-size: 13px; overflow-wrap: anywhere; margin-bottom: 20px; }
+.release-notes { font-size: 13px; overflow-wrap: anywhere; margin-top: 20px; }
+/* Long text cut to its start (Clipped, detail.tsx): it fades out over its last lines, and Read more is a link under it. */
+.clipped { overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent); }
+.clip-toggle { display: block; margin-top: 8px; padding: 2px 0; background: none; color: var(--accent); font-size: 13px; font-weight: 600; }
+.clip-toggle:hover { text-decoration: underline; }
 /* Release notes: greyer text, headings as big stops, and what's under a heading set in from it. */
 .release-notes .markdown { --ql-md-text: var(--text-3); }
 .release-notes .markdown strong { color: var(--text-2); }
