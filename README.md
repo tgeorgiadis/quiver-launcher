@@ -110,6 +110,15 @@ on Windows, Linux, macOS, and Android. See [library protection and recovery](doc
 
 The App Catalog reads the catalog from the [quiverlauncher.com](https://quiverlauncher.com) API the first time you open it, and again whenever you search, sort or filter. Reviews are written on the website: an app's **Write a review on the website** button opens its page.
 
+### Command line
+
+Run `QuiverLauncher --list` to check the library, or `QuiverLauncher --update` to
+update all installed apps. `--download "App name"` installs or updates one app.
+These commands run without opening the desktop interface and return after the
+operation completes; a successful update must not require a running GUI event loop.
+If a release needs a download-file choice, select the intended build in Quiver
+or configure the app's release asset filter before using the CLI.
+
 ## Configuration
 
 ### Kiosk mode
