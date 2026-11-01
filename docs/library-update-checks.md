@@ -12,6 +12,20 @@ Progress appears beneath the header with Cancel. A foreground pass has a 60-seco
 - Metadata requests have a 15-second timeout after acquiring the provider slot. Large download timeouts are unchanged.
 - Conditional requests reuse credential-specific endpoint payloads. Scheduled installed-app checks allow six-hour cached evidence; manual checks revalidate immediately, subject to server rate limits.
 
+## Headless updates
+
+Catalog startup evidence may contain a verified version without a release payload
+or download files. Before CLI install/update commands select an asset, they load
+the selected release through the catalog, falling back to the normal repository
+resolver with the existing release target and credentials. Missing cached release
+details are not evidence that no eligible download exists.
+
+This preserves the player's pin, Quiver's verified release target, asset filters,
+and installed-build matching. Genuinely ambiguous downloads still require an
+explicit selection; the CLI does not silently choose between portable, Flatpak,
+or Windows builds. Older installations without an `installed-build.txt` receipt
+may need a release asset filter configured in Quiver before unattended updates.
+
 ## Background work
 
 Uninstalled library entries refresh afterward with a 24-hour cache policy. Mods and artwork refresh separately from foreground completion. Automatic installations retain their existing opt-in policy and session-owned installation gate; automatic candidates are excluded from simultaneous manual-update prompts. Shutdown cancels queued metadata and secondary refreshes.
