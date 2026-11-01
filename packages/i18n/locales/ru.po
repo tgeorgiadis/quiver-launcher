@@ -825,13 +825,30 @@ msgstr "Адрес изображения"
 msgid "Artwork and consoles from the game"
 msgstr "Изображения и консоли из игры"
 
+#. Run with: the runner chosen in Settings for every Windows app
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "As in Settings: {name}"
+msgstr "Как в настройках: {name}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {verifiedVersion} back. It installs the next new release."
 msgstr "Автообновление не вернёт {verifiedVersion}. Оно установит следующую новую версию."
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Automatic (Wine for Windows apps)"
-msgstr "Автоматически (Wine для приложений Windows)"
+msgid "Automatic"
+msgstr "Автоматически"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic (no Proton or Wine found)"
+msgstr "Автоматически (Proton и Wine не найдены)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic uses a Proton that Steam has, which comes with what most games need, or Wine where there's no Proton. An app's own launch options can choose another."
+msgstr "Автоматически используется Proton из Steam, в котором есть всё нужное большинству игр, а если Proton нет — Wine. В параметрах запуска приложения можно выбрать другой."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic: {name}"
+msgstr "Автоматически: {name}"
 
 #. Controller hint: what Back does, closing or going back
 #. The setup's previous step
@@ -907,6 +924,11 @@ msgstr "Обзор"
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Открыть каталог"
+
+#. Which platform's build of an app to install, as Linux or Windows through Wine
+#: ../../apps/launcher/src/detail.tsx
+msgid "Build"
+msgstr "Сборка"
 
 #: ../ui/src/index.tsx
 msgid "Built with some AI assistance"
@@ -1044,9 +1066,20 @@ msgstr "Выберите программу (.exe), которая запуск�
 msgid "Choose a version"
 msgstr "Выбрать версию"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Choose a version of {name}"
 msgstr "Выбрать версию {name}"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform"
+msgstr "Выбрать версию или платформу"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform of {name}"
+msgstr "Выбрать версию или платформу {name}"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Choose a version…"
@@ -1567,15 +1600,25 @@ msgid "General"
 msgstr "Общие"
 
 #. Button that installs an app
+#. Button that installs an app
 #. Button: download and install the app
 #. Controller hint: what Options does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Get"
 msgstr "Получить"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {app}"
+msgstr "Получить {app}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {newestLabel}"
+msgstr "Получить {newestLabel}"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Get the Windows version (Wine)"
@@ -2418,6 +2461,10 @@ msgid "Next tab"
 msgstr "Следующая вкладка"
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "No {build} build"
+msgstr "Нет сборки для {build}"
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "No AI use found"
 msgstr "Использование ИИ не обнаружено"
 
@@ -2692,6 +2739,11 @@ msgstr "Другое"
 #: ../../apps/launcher/src/library.tsx
 msgid "Other platforms"
 msgstr "Другие платформы"
+
+#. Over the list of an app's versions, under Get's own button for its newest
+#: ../../apps/launcher/src/detail.tsx
+msgid "Other versions"
+msgstr "Другие версии"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Other ways to add"
@@ -4281,6 +4333,14 @@ msgstr "Пока вы вошли в аккаунт, они связаны с в�
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
 msgstr "Широкая"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Windows (Wine)"
+msgstr "Windows (Wine)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Windows apps"
+msgstr "Приложения Windows"
 
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx

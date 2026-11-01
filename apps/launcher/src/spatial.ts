@@ -187,10 +187,15 @@ export function quickButton(el: EventTarget | null) {
   return el.closest(".app-page")?.querySelector<HTMLElement>(".app-actions .primary:not(:disabled)") ?? null;
 }
 
-/** The only button under a card, which Options on the card presses: so the arrows go card to card past it. */
+/**
+ * The only button under a card, which Options on the card presses, or Get and its arrow: so the arrows go card to card
+ * past them. The arrow's choices are on the app's page too.
+ */
 function pressedByCard(el: HTMLElement) {
   const under = el.closest(".card-action");
-  return !!under && el.matches(".primary") && [...under.querySelectorAll(FOCUSABLE)].filter(shown).length === 1;
+  if (!under || !el.matches(".primary")) return false;
+  const buttons = [...under.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(shown);
+  return buttons.length === 1 || (buttons.length === 2 && buttons[1].matches(".get-more"));
 }
 
 /**

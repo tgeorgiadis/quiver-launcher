@@ -759,6 +759,8 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
   const [versions, setVersions] = useState(false);
+  // Get's arrow: the version, and on Linux the build, to get, in place of Get's own choice.
+  const [getting, setGetting] = useState(false);
   const noWayOff = Boolean(pulledVerified(catalog[entry.id] ?? entry));
   const choose = (
     <>
@@ -902,10 +904,28 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
       </p>
     );
   if (noWayOff) return <div className="row">{choose}</div>;
-  return (
+  const name = entry.projectName;
+  const builds = config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows");
+  const getIt = (
     <button className="primary wide" onClick={() => get(entry)}>
       <Download size={15} /> <Trans comment="Button that installs an app">Get</Trans>
     </button>
+  );
+  // A phone has one build to get, and an app's versions are on its page: Get alone.
+  if (config.os === "android") return getIt;
+  return (
+    <div className="get-split">
+      {getIt}
+      <button
+        className="primary get-more"
+        title={builds ? t`Choose a version or platform` : t`Choose a version`}
+        aria-label={builds ? t`Choose a version or platform of ${name}` : t`Choose a version of ${name}`}
+        onClick={() => setGetting(true)}
+      >
+        <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" />
+      </button>
+      {getting && <VersionsDialog entry={catalog[entry.id] ?? entry} getting onClose={() => setGetting(false)} />}
+    </div>
   );
 }
 

@@ -194,7 +194,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const latest = catalog[entry.id] ?? entry;
   const hidden = settings.hidden?.includes(entry.id);
   const shortcut = (make: typeof native.createShortcut) =>
-    make(shortcutRequest(entry, install!)).then(
+    make(shortcutRequest(entry, install!, settings)).then(
       (text) => setNotice(text),
       (e) => setNotice(String(e)),
     );

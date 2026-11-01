@@ -144,6 +144,8 @@ const Tile = memo(function Tile({
   const pinned = install?.updates === "pinned";
   // The app's other versions, from beside Install; or in its place, when the verified one was withdrawn too.
   const [versions, setVersions] = useState(false);
+  const [getting, setGetting] = useState(false);
+  const builds = os === "linux" && latest.supportedOS.includes("linux") && latest.supportedOS.includes("windows");
   const noWayOff = Boolean(pulledVerified(latest));
   // Not here yet, but can be: Get's symbol beside its name, and Get as its button.
   const gettable = canGet(entry, os);
@@ -158,6 +160,12 @@ const Tile = memo(function Tile({
   const installedLabel = install ? versionLabel(install.version) : "";
   const pulledLabel = pulled ? versionLabel(pulled.version) : "";
   const newerLabel = newer ? versionLabel(newer) : "";
+  const getIt = (
+    <button type="button" className="tile-play tile-get" onClick={() => get(entry)}>
+      <Download size={24} />
+      <span className="tile-label">{t({ message: "Get", comment: "Button: download and install the app" })}</span>
+    </button>
+  );
   const others = (
     <button type="button" className="tile-versions" title={t`Choose a version`} aria-label={t`Choose a version of ${name}`} onClick={() => setVersions(true)}>
       <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" />
@@ -341,22 +349,36 @@ const Tile = memo(function Tile({
                 </button>
               )}
             </>
+          ) : gettable && noWayOff ? (
+            <button type="button" className="tile-play tile-get" title={t`Its newest verified version was withdrawn: choose a version`} onClick={() => setVersions(true)}>
+              <History size={24} />
+              <span className="tile-label">{t`Choose a version`}</span>
+            </button>
           ) : (
-            gettable && (
-              <button
-                type="button"
-                className="tile-play tile-get"
-                title={noWayOff ? t`Its newest verified version was withdrawn: choose a version` : undefined}
-                onClick={() => (noWayOff ? setVersions(true) : get(entry))}
-              >
-                {noWayOff ? <History size={24} /> : <Download size={24} />}
-                <span className="tile-label">{noWayOff ? t`Choose a version` : t({ message: "Get", comment: "Button: download and install the app" })}</span>
-              </button>
-            )
+            gettable &&
+            // A phone has one build to get, and an app's versions are in its menu: Get alone.
+            (os === "android" ? (
+              getIt
+            ) : (
+              // Get, and joined to it an arrow for the version, and on Linux the build, to get in place of Get's own choice.
+              <span className="tile-get-split">
+                {getIt}
+                <button
+                  type="button"
+                  className="tile-versions tile-get-more"
+                  title={builds ? t`Choose a version or platform` : t`Choose a version`}
+                  aria-label={builds ? t`Choose a version or platform of ${name}` : t`Choose a version of ${name}`}
+                  onClick={() => setGetting(true)}
+                >
+                  <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" />
+                </button>
+              </span>
+            ))
           )}
         </div>
       </div>
       {versions && <VersionsDialog entry={latest} onClose={() => setVersions(false)} />}
+      {getting && <VersionsDialog entry={latest} getting onClose={() => setGetting(false)} />}
     </article>
   );
 });

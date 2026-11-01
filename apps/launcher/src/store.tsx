@@ -8,7 +8,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
-import { native, type Config, type LaunchOptions, type OldApp, type Progress, type StateProblem, type V3Library } from "./native";
+import { native, type Config, type LaunchOptions, type OldApp, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore } from "./assets";
 import { fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
@@ -331,6 +331,8 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 
 /** This computer's preferences; they don't sync. */
 export type Settings = {
+  /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
+  windowsRunner?: WindowsRunner;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
   /** TV mode (tv.tsx): on, off, or unset, on by itself in Steam's Game Mode. */
@@ -1120,7 +1122,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const programs = install.launch?.programs ?? [];
       if (!executable && programs.length > 1) return chooseProgram(id);
       const chosen = executable ?? programs[0];
-      const launch = chosen ? { ...install.launch, executable: chosen } : install.launch;
+      const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
       if (install.installer === "msi" && !program) {

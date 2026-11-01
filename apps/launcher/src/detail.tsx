@@ -10,14 +10,14 @@ import { FaSteam } from "react-icons/fa6";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
-import { ApiError, type AiUse, type Asset, type Checking, type Detail, type Entry, type HistoryRelease, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, type AiUse, type Asset, type Checking, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
 import { OS_NAMES, ReleaseBadge, alertTitles, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
-import { useLauncher, type Install } from "./store";
+import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
 import { bare, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
-import { runsHere } from "./assets";
+import { hasBuildFor, runsHere } from "./assets";
 import { isCustom, isLocal } from "./custom";
 import { Dialog, PlaylistChoices } from "./library";
 
@@ -736,11 +736,11 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
 
 /** A desktop shortcut and a Steam shortcut, both starting the game directly. */
 export function Shortcuts({ entry }: { entry: Entry }) {
-  const { installs, config } = useLauncher();
+  const { installs, config, settings } = useLauncher();
   const install = installs[entry.id];
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   if (!install || !shortcutsOn(config.os)) return null;
-  const request = shortcutRequest(entry, install);
+  const request = shortcutRequest(entry, install, settings);
   const run = (action: Promise<string>) =>
     action.then(
       (text) => setMessage({ text }),
@@ -781,8 +781,8 @@ export const shortcutsOn = (os: string) => os === "windows" || os === "linux";
 /** Android keeps an app's files to itself: there's no folder to open, or program to choose. */
 export const foldersOn = (os: string) => os !== "android" && os !== "ios";
 
-/** What a desktop or Steam shortcut to an installed app starts, and its pictures. */
-export function shortcutRequest(entry: Entry, install: Install): ShortcutRequest {
+/** What a desktop or Steam shortcut to an installed app starts, and its pictures; `settings` has the runner for Windows programs on Linux. */
+export function shortcutRequest(entry: Entry, install: Install, settings: Settings): ShortcutRequest {
   const art = entry.libraryArt ?? {};
   return {
     name: entry.projectName,
@@ -791,7 +791,7 @@ export function shortcutRequest(entry: Entry, install: Install): ShortcutRequest
     preferred: install.executables,
     wine: Boolean(install.wine),
     program: install.program,
-    launch: install.launch,
+    launch: { ...install.launch, windowsRunner: settings.windowsRunner },
     art: { icon: entry.artwork ?? art.logo, header: art.header, capsule: art.capsule, hero: art.hero, logo: art.logo },
   };
 }
@@ -841,6 +841,7 @@ export function Versions({
   source,
   onClose,
   start,
+  getting,
 }: {
   entry: Entry;
   source: Source | null | undefined;
@@ -848,8 +849,14 @@ export function Versions({
   onClose?: () => void;
   /** A release the player chose already, on the Releases tab: it installs as if picked from the list, which shows only when it isn't there. `asset` is the file they chose. */
   start?: { version: string; asset?: string };
+  /** Set, it's Get's own choices, from beside Get: what Get would install first, and the build to install where there's a choice. */
+  getting?: boolean;
 }) {
-  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog } = useLauncher();
+  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config } = useLauncher();
+  // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
+  const builds: Os[] = getting && config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows") ? ["linux", "windows"] : [];
+  const [platform, setPlatform] = useState<Os | undefined>(builds[0]);
+  const lacks = (release: Release) => Boolean(platform) && release.assets.length > 0 && !hasBuildFor(release.assets, config.os, config.arch, platform!);
   const [versions, setVersions] = useState<Version[] | string | null>(null);
   // The release from `start`, once it's found in the list: cancelling its question closes the dialog, as there's no list behind it.
   const [started, setStarted] = useState<Version | null>(null);
@@ -910,7 +917,7 @@ export function Versions({
     const blocked = !custom && version.state === "blocked" ? (version.reasons[0] ?? "Quiver blocked this release.") : undefined;
     // By its version: a verified one installs from the effect that found it, before `started` is set.
     const asset = start && bare(version.release.version) === bare(start.version) ? start.asset : undefined;
-    void get(entry, version.release, { pin, unverified: !custom && version.state !== "verified", ...(blocked ? { blocked } : {}), ...(asset ? { asset } : {}) });
+    void get(entry, version.release, { pin, unverified: !custom && version.state !== "verified", ...(blocked ? { blocked } : {}), ...(asset ? { asset } : {}), ...(platform ? { platform } : {}) });
     onClose?.();
   }
   function pick(version: Version, pin = false) {
@@ -1045,11 +1052,49 @@ export function Versions({
       </Dialog>
     );
   }
+  // Get's own choices: the build, then what Get installs of it (its newest verified release), over the other versions.
+  const newest = entry.verified && !pulledVerified(catalog[entry.id] ?? entry) ? entry.verified.version : undefined;
+  const newestRelease = Array.isArray(versions) ? versions.find((v) => newest && bare(v.release.version) === bare(newest))?.release : undefined;
+  const buildName = (os: Os) => (os === "windows" ? t`Windows (Wine)` : (OS_NAMES[os] ?? os));
+  const build = platform && buildName(platform);
+  const missing = build && t`No ${build} build`;
+  const newestLabel = versionLabel(newest);
+  const head = getting && (
+    <div className="get-choices">
+      <PanelFormHead title={t`Get ${app}`} onClose={onClose!} />
+      {builds.length > 0 && (
+        <div className="segmented" role="group" aria-label={t({ message: "Build", comment: "Which platform's build of an app to install, as Linux or Windows through Wine" })}>
+          {builds.map((os) => (
+            <button key={os} type="button" aria-pressed={os === platform} onClick={() => setPlatform(os)}>
+              {buildName(os)}
+            </button>
+          ))}
+        </div>
+      )}
+      {newestRelease && lacks(newestRelease) ? (
+        <p className="muted">{missing}</p>
+      ) : (
+        <button
+          className="primary"
+          autoFocus
+          onClick={() => {
+            onClose?.();
+            void get(entry, undefined, platform ? { platform } : undefined);
+          }}
+        >
+          <Download size={15} aria-hidden="true" /> {newest ? t`Get ${newestLabel}` : t({ message: "Get", comment: "Button that installs an app" })}
+        </button>
+      )}
+    </div>
+  );
   // As a dialog: the list, or how it's loading, in one.
   const shown = (body: ReactNode) =>
     onClose ? (
-      <Dialog label={t`Versions`} onClose={onClose}>
-        <div className="detail-body versions-dialog">{body}</div>
+      <Dialog label={getting ? t`Get ${app}` : t`Versions`} onClose={onClose}>
+        <div className="detail-body versions-dialog">
+          {head}
+          {body}
+        </div>
       </Dialog>
     ) : (
       body
@@ -1064,7 +1109,13 @@ export function Versions({
     return shown(versions === "loading" ? <span className="spinner" /> : <p className="job-error">{versions}</p>);
   return shown(
     <section className="panel-form versions" aria-label={t`Versions`}>
-      <PanelFormHead title={onClose ? t`${app} versions` : t`Versions`} onClose={onClose ?? (() => setVersions(null))} />
+      {getting ? (
+        <h3 className="versions-heading">
+          <Trans comment="Over the list of an app's versions, under Get's own button for its newest">Other versions</Trans>
+        </h3>
+      ) : (
+        <PanelFormHead title={onClose ? t`${app} versions` : t`Versions`} onClose={onClose ?? (() => setVersions(null))} />
+      )}
       {versions.length === 0 && (
         <p className="muted">
           <Trans>No releases found.</Trans>
@@ -1099,7 +1150,9 @@ export function Versions({
                   </span>
                   {state !== "blocked" && <PinButton pressed={pinned} onClick={() => setUpdates(entry.id, pinned ? undefined : "pinned")} />}
                 </span>
-              ) : unavailable ? null : (
+              ) : unavailable ? null : lacks(release) ? (
+                <span className="version-actions muted">{missing}</span>
+              ) : (
                 <span className="version-actions">
                   <button className={state === "verified" || custom ? undefined : `quiet ${state}`} onClick={() => pick(version)}>
                     <Trans comment="Button that installs this version">Install</Trans>
@@ -1120,10 +1173,10 @@ export function Versions({
  * The app's versions in a dialog of their own, from a library card's Install button or its menu's Change version;
  * from the Releases tab, the one release the player chose (`start`).
  */
-export function VersionsDialog({ entry, onClose, start }: { entry: Entry; onClose: () => void; start?: { version: string; asset?: string } }) {
+export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entry; onClose: () => void; start?: { version: string; asset?: string }; getting?: boolean }) {
   const { source } = useAppDetail(entry);
   // Over the page, not in the card, which a lifted (transformed) card would hold it inside.
-  return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} />, document.body);
+  return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} />, document.body);
 }
 
 /**

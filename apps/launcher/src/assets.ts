@@ -60,6 +60,13 @@ export const runsHere = (asset: Asset, os: Os, arch: string) =>
   installable([asset], os).length > 0 && osFallbacks(os).includes(asset.os) && archRank(asset, arch) >= 0;
 
 /**
+ * Whether a release has `platform`'s build (Windows' on Linux) for this computer: what installing it with that choice
+ * would take is that build, or a file the site couldn't place on a platform, not the other one's.
+ */
+export const hasBuildFor = (assets: Asset[], os: Os, arch: string, platform: Os) =>
+  bestAssets(assets, os, arch, undefined, undefined, platform).some((a) => a.os === platform || a.os === "unknown");
+
+/**
  * The release files that suit this computer, narrowed to the best match.
  * One file means install it; several mean the player picks; none means the
  * release has nothing for this platform. `kind` keeps an update to the kind
