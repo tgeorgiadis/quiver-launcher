@@ -96,7 +96,7 @@ const REVIEW_FAILED = msg`Couldn't save your feedback. Try again.`;
 const AccountContext = createContext<Account | null>(null);
 export const useAccount = () => useContext(AccountContext)!;
 
-/** Tokens live in the OS keychain (Rust side), not the webview's storage. */
+/** Tokens live on the Rust side (secrets.rs), in the OS keychain or the data folder, not the webview's storage. */
 const keychain: TokenStorage = {
   getItem: (key) => native.secretGet(key),
   setItem: (key, value) => native.secretSet(key, value),

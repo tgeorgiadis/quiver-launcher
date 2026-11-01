@@ -13,6 +13,7 @@ mod msi;
 mod picker;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
+mod secrets;
 mod shortcut;
 mod snapshots;
 mod steam;
@@ -867,68 +868,15 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
     .map_err(|e| e.to_string())?
 }
 
-/// Sign-in tokens: in the OS keychain, or a file in the data folder where
-/// there's none (some Linux desktops, Android, and when QUIVER_DATA is set).
-fn secret_file(data: &Data) -> PathBuf {
-    data.0.join("account.json")
-}
-fn keychain(key: &str) -> Option<keyring::Entry> {
-    // keyring has no Android store and falls back to its mock, which keeps
-    // nothing: signed in, the tokens were gone the next time Convex Auth read
-    // them (back from the background). The app's own data folder is private to it there.
-    if cfg!(target_os = "android") || std::env::var_os("QUIVER_DATA").is_some() {
-        return None;
-    }
-    keyring::Entry::new("Quiver Launcher", key).ok()
-}
-fn secrets(data: &Data) -> serde_json::Map<String, serde_json::Value> {
-    std::fs::read(secret_file(data)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default()
-}
-
+/// Sign-in tokens: in the OS keychain or the data folder (secrets.rs).
 #[tauri::command]
 fn secret_get(data: State<Data>, key: String) -> Option<String> {
-    keychain(&key)
-        .and_then(|e| e.get_password().ok())
-        .or_else(|| secrets(&data).get(&key)?.as_str().map(str::to_string))
+    secrets::get(&data.0, &secrets::OsKeychain, secrets::store(), &key)
 }
 
 #[tauri::command]
 fn secret_set(data: State<Data>, key: String, value: Option<String>) -> Result<(), String> {
-    if let Some(entry) = keychain(&key) {
-        let saved = match &value {
-            Some(v) => entry.set_password(v),
-            None => entry.delete_credential().or_else(|e| match e {
-                keyring::Error::NoEntry => Ok(()),
-                e => Err(e),
-            }),
-        };
-        if saved.is_ok() {
-            return Ok(());
-        }
-    }
-    let mut all = secrets(&data);
-    match value {
-        Some(v) => all.insert(key, v.into()),
-        None => all.remove(&key),
-    };
-    std::fs::create_dir_all(&data.0).map_err(|e| e.to_string())?;
-    write_private(&secret_file(&data), &serde_json::to_vec(&all).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
-}
-
-/// Writes a file only this user can read: the data folder is open to everyone
-/// on the computer, as most Linux homes are.
-fn write_private(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    #[cfg(unix)]
-    {
-        use std::io::Write;
-        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-        let mut file = std::fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(path)?;
-        // One an earlier version wrote is anyone's to read until it's this user's alone.
-        file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
-        file.write_all(bytes)
-    }
-    #[cfg(not(unix))]
-    std::fs::write(path, bytes)
+    secrets::set(&data.0, &secrets::OsKeychain, secrets::store(), &key, value.as_deref())
 }
 
 /// Opens a GitHub or Discord sign-in page and waits for it to come back,
@@ -991,6 +939,13 @@ fn set_fullscreen(window: tauri::WebviewWindow, on: bool, title_bar: bool) -> Re
 /// The system's title bar, or none and the launcher's own buttons in its top
 /// bar (the default). A Mac keeps its own, with its buttons where Mac players
 /// look for them.
+/// Running in Steam's Game Mode (gamescope), which shows one app at a time on the whole screen. A window there fills
+/// it: gamescope shrinks a larger one to fit, and a size kept from Desktop Mode (docked to a bigger screen, say) put
+/// the whole interface at a fraction of its size.
+fn in_game_mode() -> bool {
+    keyboard::game_mode(|name| std::env::var(name).ok())
+}
+
 #[cfg_attr(mobile, allow(dead_code))]
 fn system_title_bar(on: bool) -> bool {
     on || OS == "macos"
@@ -1000,8 +955,11 @@ fn system_title_bar(on: bool) -> bool {
 /// the taskbar (tao's WM_NCCALCSIZE), and full screen kept that too: the
 /// taskbar went, and an empty strip stayed where it was. So full screen there
 /// has the title bar's frame, which full screen takes off anyway.
+///
+/// In Steam's Game Mode it's always full screen (`in_game_mode`), whatever leaves it.
 #[cfg(desktop)]
 fn fullscreen(window: &tauri::WebviewWindow, on: bool, title_bar: bool) -> tauri::Result<()> {
+    let on = on || in_game_mode();
     if OS == "windows" && !system_title_bar(title_bar) {
         if on {
             window.set_fullscreen(true)?;
@@ -1094,8 +1052,12 @@ fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_
     };
     // Hidden until it's back where it was, so it doesn't jump.
     let window = builder.visible(false).build()?;
-    let maximize = window_state::restore(&window, dir);
-    window_state::track(&window, dir.to_path_buf());
+    // Game Mode's window fills the screen (run below), and keeps Desktop Mode's size and place as they were.
+    let game_mode = in_game_mode();
+    let maximize = !game_mode && window_state::restore(&window, dir);
+    if !game_mode {
+        window_state::track(&window, dir.to_path_buf());
+    }
     #[cfg(windows)]
     tray::watch(&window);
     if !shown {
@@ -1199,7 +1161,7 @@ pub fn run() {
                 .and_then(|b| serde_json::from_slice(&b).ok())
                 .unwrap_or_default();
             let title_bar = settings["systemTitleBar"] == true;
-            let full = settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen");
+            let full = settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen") || in_game_mode();
             // Started by Windows as the player signs in: in the tray, the window unseen till they open it.
             #[cfg(windows)]
             let unseen = std::env::args().any(|a| a == tray::ARG);
