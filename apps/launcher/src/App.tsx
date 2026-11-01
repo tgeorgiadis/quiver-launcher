@@ -17,7 +17,7 @@ import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
 import { LaunchOptionsButton } from "./launch-options";
-import { versionLabel, wayOffLabel } from "./versions";
+import { cameAfter, versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { Discover, MoreLikeThis } from "./discover";
@@ -1255,7 +1255,7 @@ function AppPage({
                 <Pin size={14} aria-hidden="true" />
                 <span>
                   {/* Quietly: no badge or count, but a pin never hides that there's more. */}
-                  {entry.verified && bare(entry.verified.version) !== bare(install.version) && entry.verified.releasedAt > (install.releasedAt ?? 0) ? (
+                  {entry.verified && bare(entry.verified.version) !== bare(install.version) && cameAfter(entry.verified, install) ? (
                     <Trans>Pinned to {installedVersion}. {verifiedVersion} is available.</Trans>
                   ) : (
                     <Trans>Pinned to {installedVersion}.</Trans>
