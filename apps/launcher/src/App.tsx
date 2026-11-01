@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
@@ -419,11 +419,19 @@ function BrowsePage({
         remember(page.items);
         const mine = new Set(libraryNow.current.map((i) => i.id));
         const left = page.items.filter((e) => mine.has(e.id)).map((e) => e.id);
-        setOwned((o) => new Set([...(cursor ? o : []), ...left]));
-        setPages((p) => (cursor ? [...p, page] : [page]));
+        // Drawn a little at a time, between frames: a page of cards at once held a scrolling d-pad up a moment on a
+        // Steam Deck. Still loading till they're in, so the last page's Show more doesn't ask for them again.
+        startTransition(() => {
+          setOwned((o) => new Set([...(cursor ? o : []), ...left]));
+          setPages((p) => (cursor ? [...p, page] : [page]));
+          setLoading(false);
+        });
       })
-      .catch(() => request === latest.current && setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`))
-      .finally(() => request === latest.current && setLoading(false));
+      .catch(() => {
+        if (request !== latest.current) return;
+        setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
+        setLoading(false);
+      });
   }
   useEffect(() => {
     load();
