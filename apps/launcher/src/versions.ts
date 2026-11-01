@@ -30,14 +30,18 @@ export const bare = (v: string) => v.trim().replace(/^v/i, "");
 export const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
 
 /**
+ * Whether `a` came out after `b`: by when each came out, else by version number, as for an install from Quiver
+ * Launcher 3, which has no release date.
+ */
+export const cameAfter = (a: { version: string; releasedAt?: number }, b: { version: string; releasedAt?: number }) =>
+  a.releasedAt && b.releasedAt ? a.releasedAt > b.releasedAt : bare(a.version).localeCompare(bare(b.version), undefined, { numeric: true }) > 0;
+
+/**
  * The button that takes an app off a withdrawn release, worded for where it goes: back to an older release is a
- * downgrade, said so, so a player knows they're going back. Older by when each came out, else by version number.
+ * downgrade, said so, so a player knows they're going back.
  */
 export function wayOffLabel(install: { version: string; releasedAt?: number; updates?: string }, to: { version: string; releasedAt?: number }) {
-  const back =
-    install.releasedAt && to.releasedAt
-      ? to.releasedAt < install.releasedAt
-      : bare(to.version).localeCompare(bare(install.version), undefined, { numeric: true }) < 0;
+  const back = cameAfter(install, to);
   const version = versionLabel(to.version);
   if (install.updates === "pinned") return back ? t`Unpin and downgrade to ${version}` : t`Unpin and install ${version}`;
   return back ? t`Downgrade to ${version}` : t`Install ${version}`;

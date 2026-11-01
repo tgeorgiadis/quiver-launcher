@@ -11,7 +11,7 @@ import { ApiError, createClient, createGithub, createGitlab, githubRepository, p
 import { native, type Config, type LaunchOptions, type OldApp, type Progress, type StateProblem, type V3Library } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore } from "./assets";
-import { fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
+import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, type Collection } from "./sync";
@@ -288,14 +288,15 @@ export function hasUpdate(entry: CatalogEntry | undefined, install: Install | un
       !pulledVerified(entry) &&
       install.updates !== "pinned" &&
       bare(install.version) !== bare(entry.verified.version) &&
-      entry.verified.releasedAt > (install.releasedAt ?? 0),
+      cameAfter(entry.verified, install),
   );
 }
 
 /**
  * The install a Quiver Launcher 3 app comes over with, staying where 3.x put
- * it; none when it wasn't installed. A version 3.x didn't know comes as 3.x's
- * own 0.0.0 (v3.rs), with no release date, so any verified release is an update.
+ * it; none when it wasn't installed. It has no release date, so its version
+ * number says which releases are newer. A version 3.x didn't know comes as
+ * 3.x's own 0.0.0 (v3.rs), so any verified release is an update.
  */
 export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | undefined {
   if (!old.dir || !old.version) return undefined;
