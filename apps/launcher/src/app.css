@@ -838,7 +838,8 @@ button.download { width: 100%; text-align: left; }
   border: 1px solid var(--line-strong); border-radius: 9px; background: var(--panel); box-shadow: 0 12px 30px var(--shadow);
 }
 .menu > button { padding: 8px 10px; border-radius: 6px; text-align: left; font-size: 13px; white-space: nowrap; }
-.menu > button:hover, .menu > button:focus-visible { background: var(--field-hover); }
+/* Not lit by a mouse left resting while a controller or the keys move (spatial.ts): the option under it looked chosen. */
+.menu > button:hover:where(:not([data-navigating] *)), .menu > button:focus-visible { background: var(--field-hover); }
 /* At once, not animated: a held d-pad steps a card several times a second, and each step's lift and shadow redrew two cards a frame. */
 .entry-card { transition: none; }
 /*
@@ -1931,6 +1932,15 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 .letter-index {
   position: sticky; top: 12px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px;
   border-radius: 999px; background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+/*
+ * In the page's margin where there's room for them (the margin is 3.5% of the window's width): in a column of their own,
+ * they left the grid a column fewer, its cards larger, so each of a held d-pad's steps scrolled farther and drew more,
+ * and the library by name scrolled less smoothly than in another order. TV mode's have room beside its rows.
+ */
+@media (min-width: 1150px) {
+  .letters-wrap:not(.tv *) { grid-template-columns: minmax(0, 1fr) 0; column-gap: 0; }
+  .letters-wrap:not(.tv *) > .letter-index { width: max-content; margin-left: calc((var(--gutter) - 34px) / 2); }
 }
 .letter-index > button { display: grid; place-items: center; width: 26px; height: 22px; padding: 0; border-radius: 7px; background: none; color: var(--text-3); font-size: 11.5px; font-weight: 700; line-height: 1; }
 .letter-index > button:hover { color: var(--strong); background: var(--field); }

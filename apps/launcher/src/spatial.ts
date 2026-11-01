@@ -341,9 +341,10 @@ export function move(direction: Direction) {
   if (!best && vertical) best = ahead(direction, current, all);
   const intoBar = !inBar && best !== undefined && !!bar?.contains(best);
   if (best) {
-    // Not with the focus's own scroll, which jumps it into view: eased there instead.
-    show(best, true);
+    // Not with the focus's own scroll, which jumps it into view: eased there instead. Measured for that before the
+    // focus moves, which restyles the card it goes to: measured after, the page was laid out again mid-step.
     reveal(best);
+    show(best, true);
   }
   // Up into the top bar takes the page to its top, where its title and art are.
   if (intoBar) easeTo(pageArea(), 0);
@@ -670,10 +671,12 @@ let halo: HTMLElement | null = null;
 let haloFor: Element | null = null;
 /** What it was put on last, to glide only as it comes to something new, not as the page scrolls under it. */
 let haloWas: Element | null = null;
-/** Where it was put last, and the glide from there that may be under way. */
+/** Where it is drawn, and the glide from there that may be under way. */
 type HaloBox = { x: number; y: number; w: number; h: number };
-let haloBox: HaloBox | null = null;
-let haloGlide: { from: HaloBox; run: Animation } | null = null;
+let haloDrawn: HaloBox | null = null;
+let haloGlide: { from: HaloBox; since: number } | null = null;
+/** A glide's length, in milliseconds. */
+const HALO_GLIDE = 110;
 const haloFrameOf = (b: HaloBox) => ({ transform: `translate(${b.x}px, ${b.y}px)`, width: `${b.w}px`, height: `${b.h}px` });
 /**
  * What clips the control it's over: what scrolls around it or hides what overflows it, found once for each control.
@@ -718,7 +721,7 @@ function placeHalo() {
   const on = Boolean(rect && rect.width && rect.height);
   document.documentElement.toggleAttribute("data-halo", on);
   halo.hidden = !on;
-  if (!on) [haloWas, haloBox] = [null, null];
+  if (!on) [haloWas, haloDrawn, haloGlide] = [null, null, null];
   if (!on || !rect || !el) return;
   // The interface size zooms the page, the box with it; its place is in unzoomed pixels (zoom.ts).
   const zoom = boxZoom();
@@ -747,14 +750,13 @@ function placeHalo() {
     const [fitX, fitY] = [Math.max(box.x, left), Math.max(box.y, top)];
     box = { x: fitX, y: fitY, w: Math.min(box.x + box.w, far) - fitX, h: Math.min(box.y + box.h, low) - fitY };
   }
-  Object.assign(halo.style, haloFrameOf(box));
   const glow = 48;
   const inset = [box.y - top, box.x + box.w - far, box.y + box.h - low, box.x - left].map((d, i) => Math.max(i === 0 || i === 3 ? -d : d, -glow));
   if (inset[0] + inset[2] >= box.h || inset[1] + inset[3] >= box.w) {
     // Scrolled out of sight: no box, and none to glide from once it's back.
     halo.hidden = true;
     document.documentElement.toggleAttribute("data-halo", false);
-    [haloWas, haloBox] = [el, null];
+    [haloWas, haloDrawn, haloGlide] = [el, null, null];
     return;
   }
   // Its corners round as what it's over does, no rounder than half its height (a pill's 999px).
@@ -777,23 +779,44 @@ function placeHalo() {
     halo.style.clipPath = `inset(${inset.map((d) => `${d}px`).join(" ")})`;
     halo.style.removeProperty("--halo-glow");
   }
+  // Come to something new: a glide there from where it's drawn, easing in, no overshoot. Drawn here a frame at a time,
+  // toward where its control is that frame, so it lands on it as the page scrolls under it too. An animation aimed
+  // again each frame the page scrolled started over each time, and the box stayed on what the focus had left.
+  const now = performance.now();
   const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  if (el !== haloWas) {
-    // Come to something new: a glide there from where it was, easing in, no overshoot.
-    haloGlide?.run.cancel();
-    haloGlide = haloBox && !still && halo.animate ? { from: haloBox, run: halo.animate([haloFrameOf(haloBox), haloFrameOf(box)], { duration: 110, easing: "cubic-bezier(0.2, 0, 0, 1)" }) } : null;
-  } else if (haloGlide?.run.playState === "running") {
-    // The page moved under it as it glides: aimed again at where its control is now.
-    (haloGlide.run.effect as KeyframeEffect | null)?.setKeyframes([haloFrameOf(haloGlide.from), haloFrameOf(box)]);
-  }
-  [haloWas, haloBox] = [el, box];
+  if (el !== haloWas) haloGlide = haloDrawn && !still ? { from: haloDrawn, since: now } : null;
+  const t = haloGlide ? Math.min(1, (now - haloGlide.since) / HALO_GLIDE) : 1;
+  if (t >= 1) haloGlide = null;
+  const eased = 1 - (1 - t) ** 4;
+  const drawn = haloGlide ? glideBox(haloGlide.from, box, eased) : box;
+  Object.assign(halo.style, haloFrameOf(drawn));
+  [haloWas, haloDrawn] = [el, drawn];
+  if (haloGlide) queueHalo();
 }
+const glideBox = (a: HaloBox, b: HaloBox, t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t });
 const queueHalo = () => void (haloFrame ||= requestAnimationFrame(placeHalo));
 /** What has the focus moved with no scroll or transition to say so (a panel placed again under its button): the box with it. */
 export const haloMoved = queueHalo;
-/** What it's over changing size or place as it animates (a search widening as it takes the focus): followed each frame till it's done. */
-let moving = 0;
-const follow = () => void (placeHalo(), moving > 0 && requestAnimationFrame(follow));
+/**
+ * What it's over changing size or place as it animates (a search widening as it takes the focus): followed each frame
+ * till it's done. Each transition by its element and property, let go of as it ends wherever the focus is by then: a
+ * count let go only of those ending on what the focus was still on, and one that ended after the focus moved on (a
+ * dropdown's option's fill) left it followed every frame for good. And at most a second: one on something taken off
+ * the page as it ran (a dropdown's list closing) never says it ended.
+ */
+const moving = new Map<string, number>();
+const transitionIds = new WeakMap<EventTarget, number>();
+let transitionCount = 0;
+const transitionKey = (e: TransitionEvent) => {
+  let n = transitionIds.get(e.target!);
+  if (n === undefined) transitionIds.set(e.target!, (n = ++transitionCount));
+  return `${n} ${e.propertyName}`;
+};
+const follow = (now: number) => {
+  placeHalo();
+  for (const [key, since] of moving) if (now - since > 1000) moving.delete(key);
+  if (moving.size > 0) requestAnimationFrame(follow);
+};
 const moves = (e: Event) => e.target instanceof Element && e.target !== halo && !halo?.contains(e.target) && Boolean(haloFor && (e.target === haloFor || e.target.contains(haloFor)));
 function startHalo() {
   halo = document.createElement("div");
@@ -806,8 +829,13 @@ function startHalo() {
   // Along with the page as it scrolls (a held d-pad's eased scroll too) and the window as it changes size.
   window.addEventListener("scroll", queueHalo, { capture: true, passive: true });
   window.addEventListener("resize", queueHalo);
-  document.addEventListener("transitionrun", (e) => moves(e) && moving++ === 0 && requestAnimationFrame(follow), true);
-  const settled = (e: Event) => moves(e) && ((moving = Math.max(0, moving - 1)), queueHalo());
+  document.addEventListener("transitionrun", (e) => {
+    if (!moves(e)) return;
+    const was = moving.size;
+    moving.set(transitionKey(e), performance.now());
+    if (was === 0) requestAnimationFrame(follow);
+  }, true);
+  const settled = (e: TransitionEvent) => moving.delete(transitionKey(e)) && queueHalo();
   document.addEventListener("transitionend", settled, true);
   document.addEventListener("transitioncancel", settled, true);
 }
