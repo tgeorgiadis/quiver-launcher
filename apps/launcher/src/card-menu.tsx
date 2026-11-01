@@ -16,6 +16,7 @@ import { canGet, hasUpdate, pulledVerified, renamable, useLauncher } from "./sto
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn } from "./detail";
 import { versionLabel } from "./versions";
+import { isLocal } from "./custom";
 import { native } from "./native";
 import { track } from "./telemetry";
 import { boxZoom, windowBox, zoom } from "./zoom";
@@ -139,7 +140,7 @@ export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, remove, saveCollection, setNotice, setLaunch } = useLauncher();
+  const { config, installs, jobs, catalog, collections, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, changeVersion, remove, saveCollection, setNotice, setLaunch } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -230,6 +231,8 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   if (install && shortcutsOn(config.os))
     manage.push({ text: t`Desktop shortcut`, act: () => void shortcut(native.createShortcut) }, { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) });
   if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
+  // Every release, verified or not, as the app's page has them: the player's own files have none.
+  if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
   manage.push({
     text: hidden ? t`Show in library` : t`Hide from library`,
     act: () => setSettings({ ...settings, hidden: hidden ? settings.hidden!.filter((h) => h !== entry.id) : [...(settings.hidden ?? []), entry.id] }),

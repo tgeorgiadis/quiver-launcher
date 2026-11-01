@@ -294,6 +294,7 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <ChangeVersion />
       <ProgramPrompt />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
       <FilePicker />
@@ -1732,6 +1733,13 @@ function UninstallPrompt() {
       </div>
     </Dialog>
   );
+}
+
+/** An app's versions, from its menu's Change version. */
+function ChangeVersion() {
+  const { changingVersion, changeVersion, catalog } = useLauncher();
+  if (!changingVersion) return null;
+  return <VersionsDialog entry={catalog[changingVersion.id] ?? changingVersion} onClose={() => changeVersion(null)} />;
 }
 
 /**

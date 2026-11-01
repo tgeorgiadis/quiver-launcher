@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, installable, installFormat, pickedBefore } from "./assets";
+import { assetFilterFor, bestAssets, installable, installFormat, pickedBefore, runsHere } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -121,4 +121,16 @@ test("Android installs its APKs, and only Android does", () => {
   expect(bestAssets([asset("Game.zip", "unknown", "unknown")], "android", "arm64")).toEqual([]);
   expect(bestAssets(files, "windows", "x64").map((a) => a.filename)).toEqual(["Game-win64.zip"]);
   expect(installFormat("Game.apk")).toBe("apk");
+});
+
+test("a file the player can install from the Releases tab is one this computer runs", () => {
+  expect(runsHere(asset("Game-win64.zip", "windows"), "windows", "x64")).toBe(true);
+  expect(runsHere(asset("Game-win32.zip", "windows", "x86"), "windows", "x64")).toBe(true);
+  expect(runsHere(asset("Game.zip", "unknown", "unknown"), "windows", "x64")).toBe(true);
+  // Linux runs Windows builds through Wine; Windows doesn't run Linux ones.
+  expect(runsHere(asset("Game-win64.zip", "windows"), "linux", "x64")).toBe(true);
+  expect(runsHere(asset("Game-linux-x64.tar.gz", "linux"), "windows", "x64")).toBe(false);
+  expect(runsHere(asset("Game-win-arm64.zip", "windows", "arm64"), "windows", "x64")).toBe(false);
+  expect(runsHere(asset("Game-win64.zip.sha256", "windows"), "windows", "x64")).toBe(false);
+  expect(runsHere(asset("Game-1.0-x64.msi", "windows"), "linux", "x64")).toBe(false);
 });

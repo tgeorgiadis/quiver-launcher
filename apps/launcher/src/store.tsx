@@ -111,7 +111,7 @@ export type Asking = {
   resolve: (install: boolean) => void;
 };
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
-type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean };
+type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string };
 
 type Launcher = {
   config: Config;
@@ -154,8 +154,9 @@ type Launcher = {
    * With no verified release, its newest that isn't blocked, once the player confirms.
    * `unverified`: a release Quiver hasn't verified, which the player confirmed.
    * `blocked`: why Quiver blocked it, for one the player insisted on.
+   * `asset`: the name of the release's file the player picked, in place of the one Quiver would choose.
    */
-  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string }) => Promise<void>;
+  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string }) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
   play: (id: string, executable?: string) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
@@ -212,6 +213,9 @@ type Launcher = {
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /** The app whose versions are open from its menu's Change version; null closes them. */
+  changingVersion: Entry | null;
+  changeVersion: (entry: Entry | null) => void;
   /** Renames an installed app's folder in the apps folder, as a folder can be named; resolves to the name it got. */
   renameFolder: (id: string, name: string) => Promise<string>;
   /** Moves the installed apps to another folder, where apps install from then on. */
@@ -453,6 +457,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [notice, setNotice] = useState<string | null>(null);
@@ -735,9 +740,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!release) throw new Problem(custom ? msg`This repository has no releases yet.` : msg`This app has no approved release yet.`);
       version = release.version;
       const settings = release.installationOverride ?? entry.launcher;
-      let candidates = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind);
+      // The file the player picked on the app's Releases tab: that one, unless it isn't the kind installed.
+      const clicked = options.asset ? release.assets.find((a) => a.filename === options.asset) : undefined;
+      let candidates = clicked
+        ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
+        : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind);
       // A file the player picked that a later release names differently: they pick again, even from one.
-      const missed = !candidates.length && Boolean(custom && settings.releaseAssetFilter);
+      const missed = !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
       if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind);
       let [asset, ...others] = candidates;
       if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length)
@@ -753,7 +762,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // The file the player picked last time, when it's still one of these: taken again without asking.
       const again = pickedBefore([asset, ...others], was?.pick);
       let pick = was?.pick;
-      if (again) asset = again;
+      // Picked by name: later releases keep to it, as to a file picked from several.
+      if (clicked) {
+        const files = installable(release.assets, config.os).map((a) => a.filename);
+        pick = files.length > 1 ? assetFilterFor(clicked.filename, files) : undefined;
+      } else if (again) asset = again;
       else if (others.length || missed || unmatched) {
         const choices = [asset, ...others];
         const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
@@ -1088,7 +1101,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked });
+      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset });
     },
     async play(id, executable) {
       const install = installs[id];
@@ -1191,6 +1204,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     appFolders,
     renaming,
     askRename,
+    changingVersion,
+    changeVersion,
     async renameFolder(id, name) {
       const install = installs[id];
       if (!install || !renamable(install)) throw new Problem(msg`This app's folder can't be renamed.`);

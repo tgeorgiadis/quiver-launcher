@@ -985,6 +985,10 @@ msgstr "Mudar nome ou arte"
 msgid "Change version"
 msgstr "Mudar versão"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Change version…"
+msgstr "Mudar versão…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
 msgstr "Mudar…"
@@ -1750,6 +1754,7 @@ msgstr "Incluir versões prévias"
 
 #. Button that installs a mod
 #. Button that installs this version
+#. Button that installs this version
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
@@ -1765,6 +1770,7 @@ msgstr "Instalar {other} no lugar"
 msgid "Install {release} before it's verified?"
 msgstr "Instalar {release} antes de ser verificada?"
 
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/versions.ts
 msgid "Install {version}"
 msgstr "Instalar {version}"
@@ -2909,8 +2915,8 @@ msgid "Quiver blocked it: {blockedWhy}"
 msgstr "O Quiver bloqueou esta versão: {blockedWhy}"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "O Quiver bloqueou esta versão, então não mostra links para os arquivos dela. “Mudar versão” só a instala se você escolhê-la e insistir."
+msgid "Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "O Quiver bloqueou esta versão, então não mostra links para os arquivos dela. Para instalá-la, você precisa aceitar o risco primeiro."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
@@ -2937,8 +2943,8 @@ msgid "Quiver hasn't seen this release yet."
 msgstr "O Quiver ainda não viu esta versão."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
-msgstr "O Quiver não verificou estes arquivos. “Mudar versão” só os instala se você escolher esta versão e confirmar."
+msgid "Quiver hasn't verified these files. Installing one asks you to confirm first."
+msgstr "O Quiver não verificou estes arquivos. Antes de instalar um deles, você precisa confirmar."
 
 #: ../ui/src/index.tsx
 msgid "Quiver hasn't verified this release"
@@ -3843,8 +3849,8 @@ msgid "This release only comes as a Windows installer (MSI). Uninstall it, then 
 msgstr "Esta versão só vem como instalador do Windows (MSI). Desinstale e obtenha de novo para instalá-la desse jeito."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Esta versão foi retirada, então não traz links para os arquivos. “Mudar versão” só a instala se você escolhê-la e insistir."
+msgid "This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Esta versão foi retirada, então não traz links para os arquivos. Para instalá-la, você precisa aceitar o risco primeiro."
 
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/store.tsx

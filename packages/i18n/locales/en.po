@@ -985,6 +985,10 @@ msgstr "Change name or artwork"
 msgid "Change version"
 msgstr "Change version"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Change version…"
+msgstr "Change version…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
 msgstr "Change…"
@@ -1750,6 +1754,7 @@ msgstr "Include preview updates"
 
 #. Button that installs a mod
 #. Button that installs this version
+#. Button that installs this version
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
@@ -1765,6 +1770,7 @@ msgstr "Install {other} instead"
 msgid "Install {release} before it's verified?"
 msgstr "Install {release} before it's verified?"
 
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/versions.ts
 msgid "Install {version}"
 msgstr "Install {version}"
@@ -2909,8 +2915,8 @@ msgid "Quiver blocked it: {blockedWhy}"
 msgstr "Quiver blocked it: {blockedWhy}"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
+msgid "Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
@@ -2937,8 +2943,8 @@ msgid "Quiver hasn't seen this release yet."
 msgstr "Quiver hasn't seen this release yet."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
-msgstr "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
+msgid "Quiver hasn't verified these files. Installing one asks you to confirm first."
+msgstr "Quiver hasn't verified these files. Installing one asks you to confirm first."
 
 #: ../ui/src/index.tsx
 msgid "Quiver hasn't verified this release"
@@ -3843,8 +3849,8 @@ msgid "This release only comes as a Windows installer (MSI). Uninstall it, then 
 msgstr "This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
+msgid "This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first."
 
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/store.tsx

@@ -701,6 +701,18 @@ main.app-main { padding: 0 0 40px; }
 .download-list { display: flex; flex-direction: column; gap: 8px; }
 .download { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line-strong); padding: 12px; border-radius: 6px; color: var(--text-3); text-decoration: none; }
 .download:hover { border-color: var(--accent); }
+/* A file this computer runs installs: a button, as wide as the links beside it, saying so on its right. */
+button.download { width: 100%; text-align: left; }
+.download .download-go { flex: none; display: block; color: var(--accent); font-size: 12px; font-weight: 600; }
+/* Installs the release, as Change version would: grey for an unverified one, red for a blocked one, as their badges. */
+.release-install {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; margin: 0 0 12px; padding: 0 14px; border-radius: 7px;
+  background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 600;
+}
+.release-install:hover { background: var(--accent-hover); }
+.release-install:is(.unverified, .blocked) { background: none; box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-2); }
+.release-install.blocked { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 50%, var(--line)); color: var(--danger); }
+.release-install:is(.unverified, .blocked):hover { background: var(--field-hover); }
 .download > span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .download strong { font-size: 12px; }
 .download small { font-size: 10px; overflow-wrap: anywhere; }

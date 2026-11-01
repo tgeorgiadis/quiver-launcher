@@ -985,6 +985,10 @@ msgstr "이름 또는 아트워크 변경"
 msgid "Change version"
 msgstr "버전 변경"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Change version…"
+msgstr "버전 변경…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
 msgstr "변경…"
@@ -1750,6 +1754,7 @@ msgstr "미리 보기 업데이트 포함"
 
 #. Button that installs a mod
 #. Button that installs this version
+#. Button that installs this version
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
@@ -1765,6 +1770,7 @@ msgstr "대신 {other} 설치"
 msgid "Install {release} before it's verified?"
 msgstr "검증 전에 {release}을(를) 설치할까요?"
 
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/versions.ts
 msgid "Install {version}"
 msgstr "{version} 설치"
@@ -2909,8 +2915,8 @@ msgid "Quiver blocked it: {blockedWhy}"
 msgstr "Quiver가 차단했어요: {blockedWhy}"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않아요. 버전 변경에서 직접 선택하고 강행할 때만 설치돼요."
+msgid "Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않아요. 설치하려면 먼저 위험을 감수한다고 확인해야 해요."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
@@ -2937,8 +2943,8 @@ msgid "Quiver hasn't seen this release yet."
 msgstr "Quiver가 아직 이 버전을 확인하지 못했어요."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
-msgstr "Quiver가 이 파일을 검증하지 않았어요. 버전 변경에서 이 버전을 선택하고 확인할 때만 설치돼요."
+msgid "Quiver hasn't verified these files. Installing one asks you to confirm first."
+msgstr "Quiver가 이 파일을 검증하지 않았어요. 설치하기 전에 확인을 요청해요."
 
 #: ../ui/src/index.tsx
 msgid "Quiver hasn't verified this release"
@@ -3843,8 +3849,8 @@ msgid "This release only comes as a Windows installer (MSI). Uninstall it, then 
 msgstr "이 버전은 Windows 설치 프로그램(MSI)으로만 제공돼요. 제거한 다음 다시 받아서 그 방식으로 설치하세요."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "이 버전은 철회되어 파일 링크를 제공하지 않아요. 버전 변경에서 직접 선택하고 강행할 때만 설치돼요."
+msgid "This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "이 버전은 철회되어 파일 링크를 제공하지 않아요. 설치하려면 먼저 위험을 감수한다고 확인해야 해요."
 
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/store.tsx

@@ -52,7 +52,7 @@ test("the ⋯ button on a library card has the app's actions", async () => {
   await (await menu()).waitForDisplayed();
   assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "App page"]);
   await pick("Manage");
-  assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "Open folder", "Rename folder…", "Desktop shortcut", "Add to Steam", "Hide from library", "Uninstall", "Uninstall and remove", "App page"]);
+  assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "Open folder", "Rename folder…", "Desktop shortcut", "Add to Steam", "Change version…", "Hide from library", "Uninstall", "Uninstall and remove", "App page"]);
   await pick("Open folder");
   await until(() => existsSync(opened) && readFileSync(opened, "utf8").includes(join(apps, "test-port")));
   await (await menu()).waitForDisplayed({ reverse: true });
@@ -224,7 +224,7 @@ test("Uninstall deletes the files and keeps the app in the library to get again"
   await (await menuButton()).click();
   assert.deepEqual(await items(), ["Get", "Add to", "Manage", "App page"]);
   await pick("Manage");
-  assert.deepEqual(await items(), ["Get", "Add to", "Manage", "Hide from library", "Remove from library", "App page"]);
+  assert.deepEqual(await items(), ["Get", "Add to", "Manage", "Choose a version…", "Hide from library", "Remove from library", "App page"]);
   await pick("Get");
   await (await port.$(".card-open")).moveTo();
   await (await port.$("button*=Play")).waitForDisplayed({ timeout: 30000 });
