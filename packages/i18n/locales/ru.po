@@ -573,6 +573,7 @@ msgid "Add to"
 msgstr "Добавить в"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Add to library"
 msgstr "Добавить в библиотеку"
 
@@ -1604,13 +1605,11 @@ msgid "General"
 msgstr "Общие"
 
 #. Button that installs an app
-#. Button that installs an app
 #. Button: download and install the app
 #. Controller hint: what Options does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
-#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Get"
@@ -1619,10 +1618,6 @@ msgstr "Получить"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Get {app}"
 msgstr "Получить {app}"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {newestLabel}"
-msgstr "Получить {newestLabel}"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Get the Windows version (Wine)"
@@ -1803,6 +1798,7 @@ msgstr "Показывать NSFW"
 msgid "Include preview updates"
 msgstr "Получать предварительные версии"
 
+#. Button in Get's dialog: downloads and installs the app now
 #. Button that installs a mod
 #. Button that installs this version
 #. Button that installs this version
@@ -1810,6 +1806,10 @@ msgstr "Получать предварительные версии"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
 msgstr "Установить"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {newestLabel}"
+msgstr "Установить {newestLabel}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx

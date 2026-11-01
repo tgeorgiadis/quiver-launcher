@@ -1375,7 +1375,8 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 }
 .get-choices .segmented button:hover { color: var(--strong); }
 .get-choices .segmented button[aria-pressed="true"] { background: var(--segment-on); color: var(--strong); box-shadow: 0 1px 3px var(--card-shadow), inset 0 0 0 1px var(--line-strong); }
-.get-choices > .primary { justify-self: start; min-height: 40px; padding: 0 20px; font-size: 14px; }
+.get-choices .get-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-self: start; }
+.get-choices .get-actions > .primary { min-height: 40px; padding: 0 20px; font-size: 14px; }
 .versions-heading { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--text-2); }
 .versions-dialog .versions ul { max-height: min(60vh, 480px); }
 /* In its own dialog, the list needs no frame of its own. */

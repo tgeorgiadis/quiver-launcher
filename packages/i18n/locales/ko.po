@@ -573,6 +573,7 @@ msgid "Add to"
 msgstr "추가 위치"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Add to library"
 msgstr "라이브러리에 추가"
 
@@ -1604,13 +1605,11 @@ msgid "General"
 msgstr "일반"
 
 #. Button that installs an app
-#. Button that installs an app
 #. Button: download and install the app
 #. Controller hint: what Options does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
-#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Get"
@@ -1619,10 +1618,6 @@ msgstr "받기"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Get {app}"
 msgstr "{app} 받기"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {newestLabel}"
-msgstr "{newestLabel} 받기"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Get the Windows version (Wine)"
@@ -1803,6 +1798,7 @@ msgstr "NSFW 포함"
 msgid "Include preview updates"
 msgstr "미리 보기 업데이트 포함"
 
+#. Button in Get's dialog: downloads and installs the app now
 #. Button that installs a mod
 #. Button that installs this version
 #. Button that installs this version
@@ -1810,6 +1806,10 @@ msgstr "미리 보기 업데이트 포함"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
 msgstr "설치"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {newestLabel}"
+msgstr "{newestLabel} 설치"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
