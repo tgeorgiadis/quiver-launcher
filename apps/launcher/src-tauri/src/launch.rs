@@ -12,6 +12,9 @@ pub struct LaunchOptions {
     pub executable: Option<String>,
     #[serde(default)]
     pub runner: Option<Runner>,
+    /// What Settings runs every Windows program with on Linux, where the app has no runner of its own.
+    #[serde(default)]
+    pub windows_runner: Option<Runner>,
     /// Steam-style: `NAME=value` words first set the environment, `%command%`
     /// marks where the game goes, and without it everything is arguments.
     #[serde(default)]
@@ -159,6 +162,21 @@ pub fn protons(home: &Path) -> Vec<Proton> {
     list
 }
 
+/// The Proton a Windows app runs through when the player chose none and there's no Wine, as on a Steam Deck: Valve's
+/// newest numbered Proton, else Experimental, else the newest of the rest (such as GE-Proton), Hotfix last, as it's
+/// for particular games.
+pub fn automatic_proton(mut list: Vec<Proton>) -> Option<Proton> {
+    let numbers = |name: &str| name.split(|c: char| !c.is_ascii_digit()).filter_map(|n| n.parse::<u32>().ok()).collect::<Vec<_>>();
+    let rank = |p: &Proton| match p.name.strip_prefix("Proton ") {
+        Some(rest) if rest.starts_with(|c: char| c.is_ascii_digit()) => 0,
+        _ if p.name.contains("Experimental") => 1,
+        _ if p.name.contains("Hotfix") => 3,
+        _ => 2,
+    };
+    list.sort_by(|a, b| rank(a).cmp(&rank(b)).then_with(|| numbers(&b.name).cmp(&numbers(&a.name))));
+    list.into_iter().next()
+}
+
 /// The other Steam libraries listed in a Steam folder's libraryfolders.vdf.
 fn libraries(steam: &Path) -> Vec<PathBuf> {
     let Ok(text) = std::fs::read_to_string(steam.join("steamapps/libraryfolders.vdf")) else { return vec![] };
@@ -207,5 +225,18 @@ mod tests {
         assert_eq!(names, ["Proton 9.0", "Proton - Experimental", "GE-Proton9-20"]);
         assert!(proton_script(&steam.join("steamapps/common/Proton 9.0").to_string_lossy()).is_ok());
         assert!(proton_script(&steam.join("nothing").to_string_lossy()).is_err());
+    }
+
+    #[test]
+    fn without_wine_a_windows_app_runs_through_valves_newest_proton() {
+        let list = |names: &[&str]| names.iter().map(|n| Proton { name: n.to_string(), path: format!("/p/{n}") }).collect::<Vec<_>>();
+        let pick = |names: &[&str]| automatic_proton(list(names)).map(|p| p.name);
+        // A Steam Deck's.
+        assert_eq!(pick(&["Proton - Experimental", "Proton 9.0 (Beta)", "Proton Hotfix", "GE-Proton9-26"]).as_deref(), Some("Proton 9.0 (Beta)"));
+        assert_eq!(pick(&["Proton 9.0", "Proton 10.0", "Proton 8.0"]).as_deref(), Some("Proton 10.0"));
+        assert_eq!(pick(&["Proton Hotfix", "GE-Proton9-26", "Proton - Experimental"]).as_deref(), Some("Proton - Experimental"));
+        assert_eq!(pick(&["Proton Hotfix", "GE-Proton9-26", "GE-Proton10-3"]).as_deref(), Some("GE-Proton10-3"));
+        assert_eq!(pick(&["Proton Hotfix"]).as_deref(), Some("Proton Hotfix"));
+        assert_eq!(pick(&[]), None);
     }
 }

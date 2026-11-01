@@ -32,7 +32,12 @@ export function install(app) {
       const dialogs = document.querySelectorAll('[role="dialog"]');
       return dialogs[dialogs.length - 1] ?? document;
     };
-    const visible = (el) => el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+    // Not under a long text's fold (Read more), which the app leaves out too.
+    const folded = (el) => {
+      const fold = el.closest(".clipped");
+      return !!fold && el.getBoundingClientRect().bottom > fold.getBoundingClientRect().bottom;
+    };
+    const visible = (el) => el.isConnected && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden" && !folded(el);
     const candidates = () => [...scope().querySelectorAll(FOCUSABLE)].filter(visible);
     const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

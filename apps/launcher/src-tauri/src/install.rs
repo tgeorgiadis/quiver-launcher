@@ -179,17 +179,25 @@ pub async fn install(
             extract(&file, &filename, &out)?;
             flatten(&out).map_err(text)?;
             drop_records(&out);
+            // This release's Flatpak bundle, where it lands: not one an earlier build left in the folder.
+            let bundle = crate::flatpak::bundle_in(&out).and_then(|b| b.strip_prefix(&out).ok().map(|rel| dir.join(rel)));
             // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.
             fs::create_dir_all(&dir).map_err(text)?;
             if !dir.join(VERSION_FILE).exists() {
                 fs::write(dir.join(VERSION_FILE), "").map_err(text)?;
             }
             merge(&out, &dir).map_err(text)?;
-            // A Flatpak bundle is installed for the player; Play then runs it with flatpak.
+            // A Flatpak bundle is installed for the player; Play then runs it with flatpak. A build that isn't one (the
+            // Windows build in place of a Flatpak, say) is what Play runs instead.
             if cfg!(target_os = "linux") {
-                if let Some(bundle) = crate::flatpak::bundle_in(&dir) {
-                    let id = crate::flatpak::install(&bundle)?;
-                    fs::write(dir.join(crate::flatpak::FILE), id).map_err(text)?;
+                match bundle {
+                    Some(bundle) => {
+                        let id = crate::flatpak::install(&bundle)?;
+                        fs::write(dir.join(crate::flatpak::FILE), id).map_err(text)?;
+                    }
+                    None => {
+                        let _ = fs::remove_file(dir.join(crate::flatpak::FILE));
+                    }
                 }
             }
             // An APK is installed by Android, once the player confirms it; Play then starts its package.

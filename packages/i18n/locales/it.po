@@ -825,13 +825,30 @@ msgstr "Indirizzo dell'immagine"
 msgid "Artwork and consoles from the game"
 msgstr "Immagini e console dal gioco"
 
+#. Run with: the runner chosen in Settings for every Windows app
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "As in Settings: {name}"
+msgstr "Come nelle Impostazioni: {name}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {verifiedVersion} back. It installs the next new release."
 msgstr "L'aggiornamento automatico non reinstallerà la {verifiedVersion}. Installerà la prossima nuova versione."
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Automatic (Wine for Windows apps)"
-msgstr "Automatico (Wine per le app Windows)"
+msgid "Automatic"
+msgstr "Automatico"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic (no Proton or Wine found)"
+msgstr "Automatico (nessun Proton o Wine trovato)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic uses a Proton that Steam has, which comes with what most games need, or Wine where there's no Proton. An app's own launch options can choose another."
+msgstr "Automatico usa un Proton di Steam, che include ciò che serve alla maggior parte dei giochi, o Wine se non c'è Proton. Le opzioni di avvio di un'app possono sceglierne un altro."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic: {name}"
+msgstr "Automatico: {name}"
 
 #. Controller hint: what Back does, closing or going back
 #. The setup's previous step
@@ -907,6 +924,11 @@ msgstr "Esplora"
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Esplora il catalogo"
+
+#. Which platform's build of an app to install, as Linux or Windows through Wine
+#: ../../apps/launcher/src/detail.tsx
+msgid "Build"
+msgstr "Build"
 
 #: ../ui/src/index.tsx
 msgid "Built with some AI assistance"
@@ -985,6 +1007,10 @@ msgstr "Cambia nome o immagini"
 msgid "Change version"
 msgstr "Cambia versione"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Change version…"
+msgstr "Cambia versione…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
 msgstr "Cambia…"
@@ -1040,9 +1066,20 @@ msgstr "Scegli un programma (.exe) che avvia l'app."
 msgid "Choose a version"
 msgstr "Scegli una versione"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Choose a version of {name}"
 msgstr "Scegli una versione di {name}"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform"
+msgstr "Scegli una versione o una piattaforma"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform of {name}"
+msgstr "Scegli una versione o una piattaforma di {name}"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Choose a version…"
@@ -1563,15 +1600,29 @@ msgid "General"
 msgstr "Generali"
 
 #. Button that installs an app
+#. Button that installs an app
 #. Button: download and install the app
 #. Controller hint: what Options does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Get"
 msgstr "Ottieni"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {app}"
+msgstr "Ottieni {app}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {newestLabel}"
+msgstr "Ottieni {newestLabel}"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Get the Windows version (Wine)"
+msgstr "Ottieni la versione Windows (Wine)"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -1750,6 +1801,7 @@ msgstr "Includi aggiornamenti di anteprima"
 
 #. Button that installs a mod
 #. Button that installs this version
+#. Button that installs this version
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
@@ -1765,6 +1817,7 @@ msgstr "Installa {other} al suo posto"
 msgid "Install {release} before it's verified?"
 msgstr "Installare {release} prima che sia verificata?"
 
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/versions.ts
 msgid "Install {version}"
 msgstr "Installa {version}"
@@ -2408,6 +2461,10 @@ msgid "Next tab"
 msgstr "Scheda successiva"
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "No {build} build"
+msgstr "Nessuna build per {build}"
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "No AI use found"
 msgstr "Nessun uso di IA rilevato"
 
@@ -2683,6 +2740,11 @@ msgstr "Altro"
 msgid "Other platforms"
 msgstr "Altre piattaforme"
 
+#. Over the list of an app's versions, under Get's own button for its newest
+#: ../../apps/launcher/src/detail.tsx
+msgid "Other versions"
+msgstr "Altre versioni"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Other ways to add"
 msgstr "Altri modi per aggiungere"
@@ -2909,8 +2971,8 @@ msgid "Quiver blocked it: {blockedWhy}"
 msgstr "Quiver l'ha bloccata: {blockedWhy}"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Quiver ha bloccato questa versione, quindi non ne collega i file. Con Cambia versione si installa solo se la scegli e insisti."
+msgid "Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Quiver ha bloccato questa versione, quindi non ne collega i file. Per installarla devi prima accettare il rischio."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
@@ -2937,8 +2999,8 @@ msgid "Quiver hasn't seen this release yet."
 msgstr "Quiver non ha ancora visto questa versione."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
-msgstr "Quiver non ha verificato questi file. Con Cambia versione si installano solo se scegli questa versione e confermi."
+msgid "Quiver hasn't verified these files. Installing one asks you to confirm first."
+msgstr "Quiver non ha verificato questi file. Prima di installarne uno ti viene chiesto di confermare."
 
 #: ../ui/src/index.tsx
 msgid "Quiver hasn't verified this release"
@@ -3004,6 +3066,10 @@ msgstr "Ora il catalogo di Quiver include questa app e ne controlla le versioni.
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver's catalog lists this app now, and checks its releases. Switching keeps its files, play time and your settings."
 msgstr "Ora il catalogo di Quiver include questa app e ne controlla le versioni. Passando al catalogo mantieni i file, il tempo di gioco e le tue impostazioni."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Read more"
+msgstr "Continua a leggere"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Read the README"
@@ -3420,6 +3486,10 @@ msgstr "Mostra nella libreria"
 msgid "Show installed and update icons"
 msgstr "Mostra icone di installazione e aggiornamento"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show less"
+msgstr "Mostra meno"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Show more"
@@ -3645,6 +3715,14 @@ msgstr "Scambia {south} e {east}: Conferma su {east}, Indietro su {south}"
 msgid "Switch to the catalog's"
 msgstr "Passa a quella del catalogo"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Linux version"
+msgstr "Passa alla versione Linux"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Windows version (Wine)"
+msgstr "Passa alla versione Windows (Wine)"
+
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
 msgid "Tabs"
@@ -3843,8 +3921,8 @@ msgid "This release only comes as a Windows installer (MSI). Uninstall it, then 
 msgstr "Questa versione è disponibile solo come programma di installazione Windows (MSI). Disinstalla l'app, poi ottienila di nuovo per installarla in quel modo."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Questa versione è stata ritirata, quindi non ne collega i file. Con Cambia versione si installa solo se la scegli e insisti."
+msgid "This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Questa versione è stata ritirata, quindi non ne collega i file. Per installarla devi prima accettare il rischio."
 
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/store.tsx
@@ -4263,6 +4341,14 @@ msgstr "Finché hai effettuato l'accesso, sono collegati al tuo account Quiver."
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
 msgstr "Larga"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Windows (Wine)"
+msgstr "Windows (Wine)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Windows apps"
+msgstr "App Windows"
 
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx

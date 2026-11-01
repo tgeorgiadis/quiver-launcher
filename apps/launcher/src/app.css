@@ -88,6 +88,10 @@ button.primary, .row button, .more button, .choices button, .choose button, .set
 button.primary { background: var(--accent); color: var(--on-accent); }
 button.primary:hover { background: var(--accent-hover); }
 button.wide { width: 100%; }
+/* Get and, joined to it, an arrow for the version (and on Linux the build) to get in place of Get's own choice. */
+.get-split { display: flex; width: 100%; min-width: 0; }
+.get-split > .primary:first-child { flex: 1; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.get-split > .get-more { flex: none; width: 34px; min-width: 0; padding: 0; border-left: 1px solid rgb(0 0 0 / 0.25); border-top-left-radius: 0; border-bottom-left-radius: 0; }
 button.danger { color: var(--danger); }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .row > button { flex: 1; }
@@ -384,6 +388,8 @@ main.app-main { padding: 0 0 40px; }
 .app-actions .row { gap: 12px; flex-wrap: nowrap; }
 .app-actions .row > button { flex: none; }
 .app-actions .primary, .app-actions .wide { width: auto; min-width: 200px; }
+.app-actions .get-split { width: auto; }
+.app-actions .get-split > .get-more { width: 46px; min-width: 0; padding: 0; }
 .app-actions .progress { width: 320px; height: 46px; border-radius: 9px; }
 .app-actions .progress-row > .cancel-download { width: 46px; height: 46px; padding: 0; }
 /* Beside a large Play, a plain button needs an edge to read as one over the artwork. */
@@ -656,7 +662,14 @@ main.app-main { padding: 0 0 40px; }
 .release-summary:hover .release-chevron, .release-summary:focus-visible .release-chevron { background: var(--accent-soft); color: var(--accent); }
 .release.open .release-chevron svg { transform: rotate(180deg); }
 .release-details { padding: 20px 22px 22px; }
-.release-notes { font-size: 13px; overflow-wrap: anywhere; margin-bottom: 20px; }
+.release-notes { font-size: 13px; overflow-wrap: anywhere; margin-top: 20px; }
+/* Long text cut to its start (Clipped, detail.tsx): it fades out over its last lines, and Read more is a link under it. */
+.clipped { overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 72px), transparent); }
+.clip-toggle { display: block; margin-top: 8px; padding: 2px 0; background: none; color: var(--accent); font-size: 13px; font-weight: 600; }
+.clip-toggle:hover { text-decoration: underline; }
+/* Opened: where the fold was, a place for the focus with nothing to see. */
+.clip-open { position: relative; }
+.clip-fold { position: absolute; left: 0; right: 0; height: 0; outline: none; }
 /* Release notes: greyer text, headings as big stops, and what's under a heading set in from it. */
 .release-notes .markdown { --ql-md-text: var(--text-3); }
 .release-notes .markdown strong { color: var(--text-2); }
@@ -701,6 +714,18 @@ main.app-main { padding: 0 0 40px; }
 .download-list { display: flex; flex-direction: column; gap: 8px; }
 .download { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line-strong); padding: 12px; border-radius: 6px; color: var(--text-3); text-decoration: none; }
 .download:hover { border-color: var(--accent); }
+/* A file this computer runs installs: a button, as wide as the links beside it, saying so on its right. */
+button.download { width: 100%; text-align: left; }
+.download .download-go { flex: none; display: block; color: var(--accent); font-size: 12px; font-weight: 600; }
+/* Installs the release, as Change version would: grey for an unverified one, red for a blocked one, as their badges. */
+.release-install {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; margin: 0 0 12px; padding: 0 14px; border-radius: 7px;
+  background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 600;
+}
+.release-install:hover { background: var(--accent-hover); }
+.release-install:is(.unverified, .blocked) { background: none; box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-2); }
+.release-install.blocked { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 50%, var(--line)); color: var(--danger); }
+.release-install:is(.unverified, .blocked):hover { background: var(--field-hover); }
 .download > span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .download strong { font-size: 12px; }
 .download small { font-size: 10px; overflow-wrap: anywhere; }
@@ -1333,6 +1358,24 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
   border-left: 1px solid rgb(0 0 0 / 0.25); color: var(--on-accent); background: var(--accent);
 }
 .tile-versions:hover, .tile-versions:focus-visible { background: var(--accent-hover); }
+/*
+ * A library card's Get with its arrow: round, the arrow a small round button on the circle's edge; on box art and
+ * cover cards, a bar with the arrow joined to its end, as Install's on a withdrawn card.
+ */
+.tile-get-split { position: relative; display: block; }
+.tile-get-split > .tile-get-more { position: absolute; right: -6px; bottom: -6px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--raised); }
+.layout-grid:not(.image-icon) .tile-get-split { display: flex; min-width: 0; border-radius: 9px; box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); }
+.layout-grid:not(.image-icon) .tile-get-split > .tile-get { flex: 1; border-radius: 9px 0 0 9px; box-shadow: none; }
+.layout-grid:not(.image-icon) .tile-get-split > .tile-get-more { position: static; width: 34px; height: auto; border: 0; border-left: 1px solid rgb(0 0 0 / 0.25); border-radius: 0 9px 9px 0; }
+/* Get's own choices, over the other versions: which build, and Get's button for the newest verified of it. */
+.get-choices { display: grid; gap: 12px; margin-bottom: 16px; }
+.get-choices .segmented button {
+  flex: 1; padding: 7px 10px; border-radius: 6px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500;
+}
+.get-choices .segmented button:hover { color: var(--strong); }
+.get-choices .segmented button[aria-pressed="true"] { background: var(--segment-on); color: var(--strong); box-shadow: 0 1px 3px var(--card-shadow), inset 0 0 0 1px var(--line-strong); }
+.get-choices > .primary { justify-self: start; min-height: 40px; padding: 0 20px; font-size: 14px; }
+.versions-heading { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--text-2); }
 .versions-dialog .versions ul { max-height: min(60vh, 480px); }
 /* In its own dialog, the list needs no frame of its own. */
 .versions-dialog .panel-form { padding: 0; border: 0; background: none; }

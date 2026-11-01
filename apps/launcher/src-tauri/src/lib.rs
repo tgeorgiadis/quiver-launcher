@@ -252,18 +252,28 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
     };
     let quoted = || vec![exe.to_string_lossy().into_owned()];
     let mut env = Vec::new();
+    // Through a Proton, each app gets its own Wine prefix, as Steam gives each game.
+    let mut through_proton = |path: &str| -> Result<(PathBuf, Vec<String>, bool), String> {
+        let prefix = data.0.join("proton").join(install::plain_name(folder)?);
+        std::fs::create_dir_all(&prefix).map_err(|e| format!("Couldn't make a folder for Proton: {e}"))?;
+        env.push(("STEAM_COMPAT_DATA_PATH".to_string(), prefix.to_string_lossy().into_owned()));
+        env.push(("STEAM_COMPAT_CLIENT_INSTALL_PATH".to_string(), launch::steam_client().to_string_lossy().into_owned()));
+        Ok((launch::proton_script(path)?, [vec!["run".to_string()], quoted()].concat(), true))
+    };
     let (program, args, steam_proton) = match &options.runner {
         Some(launch::Runner::Direct) => (exe.clone(), vec![], false),
         Some(launch::Runner::Wine) => (PathBuf::from("wine"), quoted(), false),
-        Some(launch::Runner::Proton { path }) => {
-            // Each app gets its own Wine prefix, as Steam gives each game.
-            let prefix = data.0.join("proton").join(install::plain_name(folder)?);
-            std::fs::create_dir_all(&prefix).map_err(|e| format!("Couldn't make a folder for Proton: {e}"))?;
-            env.push(("STEAM_COMPAT_DATA_PATH".to_string(), prefix.to_string_lossy().into_owned()));
-            env.push(("STEAM_COMPAT_CLIENT_INSTALL_PATH".to_string(), launch::steam_client().to_string_lossy().into_owned()));
-            (launch::proton_script(path)?, [vec!["run".to_string()], quoted()].concat(), true)
-        }
-        None if wine => (PathBuf::from("wine"), quoted(), true),
+        Some(launch::Runner::Proton { path }) => through_proton(path)?,
+        None if wine => match &options.windows_runner {
+            // What Settings runs every Windows program with.
+            Some(launch::Runner::Proton { path }) => through_proton(path)?,
+            Some(launch::Runner::Wine) => (PathBuf::from("wine"), quoted(), false),
+            // Automatic: a Proton Steam has, which brings what games need that Wine alone often lacks; with none, Wine.
+            _ => match automatic_proton() {
+                Some(proton) => through_proton(&proton.path)?,
+                None => (PathBuf::from("wine"), quoted(), true),
+            },
+        },
         None if OS == "macos" && exe.extension().is_some_and(|e| e == "app") => (PathBuf::from("open"), quoted(), false),
         // A shortcut the player picked: Explorer starts what it points at.
         None if OS == "windows" && exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("lnk")) => (PathBuf::from("explorer"), quoted(), false),
@@ -330,7 +340,9 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
             });
         })
         .map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound if wine => "This is a Windows app. Install Wine to play it on Linux.".into(),
+            // Automatic found no Proton either; or the player chose Wine.
+            std::io::ErrorKind::NotFound if wine && target.steam_proton => "This is a Windows app. Install Steam (it brings Proton) or Wine to play it on Linux.".into(),
+            std::io::ErrorKind::NotFound if wine => "Wine isn't installed. Install it, or choose a Proton under Run with, in Settings or the app's launch options.".into(),
             std::io::ErrorKind::NotFound if target.program.ends_with("flatpak") => "This app is a Flatpak, and Flatpak isn't installed on this computer.".into(),
             std::io::ErrorKind::NotFound if program != target.exe => format!("Couldn't find {} on this computer. Check the app's launch options.", program.display()),
             // A downloaded AppImage or program isn't executable until it's allowed to run.
@@ -649,6 +661,17 @@ async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, fo
 #[tauri::command]
 fn list_protons() -> Vec<launch::Proton> {
     dirs::home_dir().map(|home| launch::protons(&home)).unwrap_or_default()
+}
+
+/// The Proton that Automatic runs a Windows app with, if Steam has one.
+fn automatic_proton() -> Option<launch::Proton> {
+    dirs::home_dir().and_then(|home| launch::automatic_proton(launch::protons(&home)))
+}
+
+/// What Automatic runs a Windows app with on Linux, by name: a Proton, else Wine, else nothing (None).
+#[tauri::command]
+fn automatic_runner() -> Option<String> {
+    automatic_proton().map(|p| p.name).or_else(|| sandbox::which("wine").map(|_| "Wine".into()))
 }
 
 /// Asks for a Proton the launcher didn't find: its folder.
@@ -1196,6 +1219,7 @@ pub fn run() {
             pick_executable,
             list_programs,
             list_protons,
+            automatic_runner,
             pick_proton,
             gamepad::controllers,
             gamepad::page_focus,

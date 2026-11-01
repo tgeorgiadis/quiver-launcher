@@ -41,25 +41,46 @@ export function installFormat(name: string) {
 
 const formatRank = (name: string) => FORMATS.findIndex((f) => f.test(name));
 
+/** How well a file's architecture suits this computer's, best 0; -1 when it can't run. */
+const archRank = (a: Asset, arch: string) =>
+  a.architecture === arch ? 0 : a.architecture === "universal" || a.architecture === "unknown" ? 1 : arch === "x64" && a.architecture === "x86" ? 2 : -1;
+
+/**
+ * The systems whose files this computer runs, its own first. Files the site couldn't place on a platform are tried
+ * only when none are for this one; Linux runs Windows builds through Wine when there's no Linux build. `platform`, one
+ * of these the player chose (Windows' build on Linux), goes first.
+ */
+const osFallbacks = (os: Os, platform?: Os): Os[] => {
+  const all: Os[] = os === "linux" ? [os, "unknown", "windows"] : [os, "unknown"];
+  return platform && all.includes(platform) ? [platform, ...all.filter((o) => o !== platform)] : all;
+};
+
+/** A file this computer can install and run: the player can pick it themselves, as on the app's Releases tab. */
+export const runsHere = (asset: Asset, os: Os, arch: string) =>
+  installable([asset], os).length > 0 && osFallbacks(os).includes(asset.os) && archRank(asset, arch) >= 0;
+
+/**
+ * Whether a release has `platform`'s build (Windows' on Linux) for this computer: what installing it with that choice
+ * would take is that build, or a file the site couldn't place on a platform, not the other one's.
+ */
+export const hasBuildFor = (assets: Asset[], os: Os, arch: string, platform: Os) =>
+  bestAssets(assets, os, arch, undefined, undefined, platform).some((a) => a.os === platform || a.os === "unknown");
+
 /**
  * The release files that suit this computer, narrowed to the best match.
  * One file means install it; several mean the player picks; none means the
  * release has nothing for this platform. `kind` keeps an update to the kind
  * installed: a Windows installer ("msi"), or files Quiver unpacks ("files").
+ * `platform` is the system whose build the player chose, tried first.
  */
-export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files"): Asset[] {
+export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os): Asset[] {
   const wanted = filter?.trim().toLowerCase();
-  const archRank = (a: Asset) =>
-    a.architecture === arch ? 0 : a.architecture === "universal" || a.architecture === "unknown" ? 1 : arch === "x64" && a.architecture === "x86" ? 2 : -1;
   const usable = installable(assets, os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-  // Files the site couldn't place on a platform are tried only when none are for this one.
-  // Linux runs Windows builds through Wine when there's no Linux build.
-  const fallbacks: Os[] = os === "linux" ? ["unknown", "windows"] : ["unknown"];
-  const forOs = [os, ...fallbacks].map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
+  const forOs = osFallbacks(os, platform).map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
   const ranked = forOs
     .filter((a) => !wanted || a.filename.toLowerCase().includes(wanted))
-    .filter((a) => archRank(a) >= 0)
-    .map((a) => ({ a, rank: archRank(a) * FORMATS.length + formatRank(a.filename) }))
+    .filter((a) => archRank(a, arch) >= 0)
+    .map((a) => ({ a, rank: archRank(a, arch) * FORMATS.length + formatRank(a.filename) }))
     .sort((x, y) => x.rank - y.rank);
   return ranked.filter((r) => r.rank === ranked[0].rank).map((r) => r.a);
 }

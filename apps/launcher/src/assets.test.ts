@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, installable, installFormat, pickedBefore } from "./assets";
+import { assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, pickedBefore, runsHere } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -121,4 +121,44 @@ test("Android installs its APKs, and only Android does", () => {
   expect(bestAssets([asset("Game.zip", "unknown", "unknown")], "android", "arm64")).toEqual([]);
   expect(bestAssets(files, "windows", "x64").map((a) => a.filename)).toEqual(["Game-win64.zip"]);
   expect(installFormat("Game.apk")).toBe("apk");
+});
+
+test("a file the player can install from the Releases tab is one this computer runs", () => {
+  expect(runsHere(asset("Game-win64.zip", "windows"), "windows", "x64")).toBe(true);
+  expect(runsHere(asset("Game-win32.zip", "windows", "x86"), "windows", "x64")).toBe(true);
+  expect(runsHere(asset("Game.zip", "unknown", "unknown"), "windows", "x64")).toBe(true);
+  // Linux runs Windows builds through Wine; Windows doesn't run Linux ones.
+  expect(runsHere(asset("Game-win64.zip", "windows"), "linux", "x64")).toBe(true);
+  expect(runsHere(asset("Game-linux-x64.tar.gz", "linux"), "windows", "x64")).toBe(false);
+  expect(runsHere(asset("Game-win-arm64.zip", "windows", "arm64"), "windows", "x64")).toBe(false);
+  expect(runsHere(asset("Game-win64.zip.sha256", "windows"), "windows", "x64")).toBe(false);
+  expect(runsHere(asset("Game-1.0-x64.msi", "windows"), "linux", "x64")).toBe(false);
+});
+
+test("the Windows build the player chose on Linux comes first, and its updates keep to it", () => {
+  const files = [asset("Game-linux.AppImage", "linux"), asset("Game-win64.zip", "windows"), asset("Game-1.0-x64.msi", "windows")];
+  const names = (list: Asset[]) => list.map((a) => a.filename);
+  expect(names(bestAssets(files, "linux", "x64"))).toEqual(["Game-linux.AppImage"]);
+  expect(names(bestAssets(files, "linux", "x64", undefined, "files", "windows"))).toEqual(["Game-win64.zip"]);
+  // Back to Linux's, and a release with no Windows build: Linux's.
+  expect(names(bestAssets(files, "linux", "x64", undefined, "files", "linux"))).toEqual(["Game-linux.AppImage"]);
+  expect(names(bestAssets([files[0]], "linux", "x64", undefined, "files", "windows"))).toEqual(["Game-linux.AppImage"]);
+  // A system this computer can't run isn't one to prefer.
+  expect(names(bestAssets(files, "windows", "x64", undefined, undefined, "linux"))).toEqual(["Game-win64.zip"]);
+});
+
+test("a release has the build the player chose to get when that's what installing it would take", () => {
+  const linux = asset("Game-linux.AppImage", "linux");
+  const windows = asset("Game-win64.zip", "windows");
+  const unplaced = asset("Game.zip", "unknown");
+  expect(hasBuildFor([linux, windows], "linux", "x64", "windows")).toBe(true);
+  expect(hasBuildFor([linux, windows], "linux", "x64", "linux")).toBe(true);
+  // Linux's alone: choosing Windows' would install Linux's.
+  expect(hasBuildFor([linux], "linux", "x64", "windows")).toBe(false);
+  expect(hasBuildFor([windows], "linux", "x64", "linux")).toBe(false);
+  // A file the site couldn't place could be either, as Get takes it for either.
+  expect(hasBuildFor([unplaced], "linux", "x64", "windows")).toBe(true);
+  expect(hasBuildFor([linux, unplaced], "linux", "x64", "windows")).toBe(false);
+  // Windows Installer doesn't run through Wine.
+  expect(hasBuildFor([linux, asset("Game-1.0-x64.msi", "windows")], "linux", "x64", "windows")).toBe(false);
 });

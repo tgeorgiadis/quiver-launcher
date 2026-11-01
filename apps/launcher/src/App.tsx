@@ -294,6 +294,7 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <ChangeVersion />
       <ProgramPrompt />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
       <FilePicker />
@@ -758,6 +759,8 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
   const [versions, setVersions] = useState(false);
+  // Get's arrow: the version, and on Linux the build, to get, in place of Get's own choice.
+  const [getting, setGetting] = useState(false);
   const noWayOff = Boolean(pulledVerified(catalog[entry.id] ?? entry));
   const choose = (
     <>
@@ -901,10 +904,29 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
       </p>
     );
   if (noWayOff) return <div className="row">{choose}</div>;
-  return (
+  const name = entry.projectName;
+  const builds = config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows");
+  const getIt = (
     <button className="primary wide" onClick={() => get(entry)}>
       <Download size={15} /> <Trans comment="Button that installs an app">Get</Trans>
     </button>
+  );
+  // A phone has one build to get, and an app's versions are on its page: Get alone.
+  if (config.os === "android") return getIt;
+  // Its own key: as a download's row it was, React would keep Cancel's button as the arrow, the focus still on it.
+  return (
+    <div className="get-split" key="get">
+      {getIt}
+      <button
+        className="primary get-more"
+        title={builds ? t`Choose a version or platform` : t`Choose a version`}
+        aria-label={builds ? t`Choose a version or platform of ${name}` : t`Choose a version of ${name}`}
+        onClick={() => setGetting(true)}
+      >
+        <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" />
+      </button>
+      {getting && <VersionsDialog entry={catalog[entry.id] ?? entry} getting onClose={() => setGetting(false)} />}
+    </div>
   );
 }
 
@@ -1732,6 +1754,13 @@ function UninstallPrompt() {
       </div>
     </Dialog>
   );
+}
+
+/** An app's versions, from its menu's Change version. */
+function ChangeVersion() {
+  const { changingVersion, changeVersion, catalog } = useLauncher();
+  if (!changingVersion) return null;
+  return <VersionsDialog entry={catalog[changingVersion.id] ?? changingVersion} onClose={() => changeVersion(null)} />;
 }
 
 /**
