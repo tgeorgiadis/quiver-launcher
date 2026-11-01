@@ -25,6 +25,14 @@ describe("adoptedInstall", () => {
     expect(hasUpdate(entry, install)).toBe(true);
   });
 
+  it("is offered only newer releases, by version number, as it has no release date", () => {
+    const at = (version: string) => adoptedInstall({ name: "Test Port", provider: "github", dir: "/old/Apps/TestPort", version }, entry, "linux");
+    expect(hasUpdate(entry, at("v1.1.9"))).toBe(true);
+    expect(hasUpdate(entry, at("v1.10.0"))).toBe(false);
+    // Unverified in 3.x, newer than the verified one: never an update back to it.
+    expect(hasUpdate({ ...entry, verified: { version: "v0.1.6", releasedAt: 20 } } as unknown as Entry, at("v0.1.7"))).toBe(false);
+  });
+
   it("starts the program a Windows installer put on the computer", () => {
     const old = { name: "Test Port", provider: "github", dir: "C:\\Old\\Apps\\TestPort", version: "v1.0", program: "C:\\Program Files\\Port\\port.exe" };
     expect(adoptedInstall(old, entry, "windows")).toMatchObject({ installer: "msi", program: old.program, executables: [] });

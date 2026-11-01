@@ -8,10 +8,10 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
-import { native, type Config, type LaunchOptions, type OldApp, type Progress, type StateProblem, type V3Library } from "./native";
+import { native, type Config, type LaunchOptions, type OldApp, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore } from "./assets";
-import { fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
+import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, type Collection } from "./sync";
@@ -111,7 +111,7 @@ export type Asking = {
   resolve: (install: boolean) => void;
 };
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
-type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean };
+type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os };
 
 type Launcher = {
   config: Config;
@@ -154,8 +154,10 @@ type Launcher = {
    * With no verified release, its newest that isn't blocked, once the player confirms.
    * `unverified`: a release Quiver hasn't verified, which the player confirmed.
    * `blocked`: why Quiver blocked it, for one the player insisted on.
+   * `asset`: the name of the release's file the player picked, in place of the one Quiver would choose.
+   * `platform`: the system whose build to install, as Windows' through Wine on Linux; later updates keep to it.
    */
-  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string }) => Promise<void>;
+  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os }) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
   play: (id: string, executable?: string) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
@@ -212,6 +214,9 @@ type Launcher = {
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /** The app whose versions are open from its menu's Change version; null closes them. */
+  changingVersion: Entry | null;
+  changeVersion: (entry: Entry | null) => void;
   /** Renames an installed app's folder in the apps folder, as a folder can be named; resolves to the name it got. */
   renameFolder: (id: string, name: string) => Promise<string>;
   /** Moves the installed apps to another folder, where apps install from then on. */
@@ -288,14 +293,15 @@ export function hasUpdate(entry: CatalogEntry | undefined, install: Install | un
       !pulledVerified(entry) &&
       install.updates !== "pinned" &&
       bare(install.version) !== bare(entry.verified.version) &&
-      entry.verified.releasedAt > (install.releasedAt ?? 0),
+      cameAfter(entry.verified, install),
   );
 }
 
 /**
  * The install a Quiver Launcher 3 app comes over with, staying where 3.x put
- * it; none when it wasn't installed. A version 3.x didn't know comes as 3.x's
- * own 0.0.0 (v3.rs), with no release date, so any verified release is an update.
+ * it; none when it wasn't installed. It has no release date, so its version
+ * number says which releases are newer. A version 3.x didn't know comes as
+ * 3.x's own 0.0.0 (v3.rs), so any verified release is an update.
  */
 export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | undefined {
   if (!old.dir || !old.version) return undefined;
@@ -326,6 +332,8 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 
 /** This computer's preferences; they don't sync. */
 export type Settings = {
+  /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
+  windowsRunner?: WindowsRunner;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
   /** TV mode (tv.tsx): on, off, or unset, on by itself in Steam's Game Mode. */
@@ -333,6 +341,8 @@ export type Settings = {
   fullscreen?: boolean;
   /** The system's title bar over the window; unset, the window's buttons are in the top bar instead. */
   systemTitleBar?: boolean;
+  /** Closing the window hides it in the tray, the launcher still running (tray.rs; Windows only). */
+  closeToTray?: boolean;
   scale?: number;
   /** Light or dark; unset follows the system. */
   theme?: Theme;
@@ -355,6 +365,10 @@ export type Settings = {
   browseShowsLibrary?: boolean;
   /** How the library is sorted (sort.ts); unset is recently played. */
   librarySort?: string;
+  /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
+  libraryTab?: string;
+  /** The library's filters (library.tsx keptFilters); unset is none. */
+  libraryFilters?: Record<string, string>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
   /** How the library shows its apps (view.ts); only what differs from the defaults. */
@@ -453,6 +467,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [notice, setNotice] = useState<string | null>(null);
@@ -704,6 +719,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const custom = isCustom(entry.id) ? (app ?? allItems.find((i) => i.id === entry.id)?.custom ?? fromKey(entry.id)) : null;
     // An update installs the same kind as before: a Windows installer's setup, or files in the app's folder.
     const kind = was ? (was.installer === "msi" ? "msi" : "files") : undefined;
+    // The system whose build it runs: the player's choice, else the one installed, so an update keeps to Windows' build
+    // through Wine. Switching drops the file picked for the other one.
+    const platform = options.platform ?? (was?.wine ? "windows" : undefined);
+    const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = () => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -735,10 +754,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!release) throw new Problem(custom ? msg`This repository has no releases yet.` : msg`This app has no approved release yet.`);
       version = release.version;
       const settings = release.installationOverride ?? entry.launcher;
-      let candidates = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind);
+      // The file the player picked on the app's Releases tab: that one, unless it isn't the kind installed.
+      const clicked = options.asset ? release.assets.find((a) => a.filename === options.asset) : undefined;
+      let candidates = clicked
+        ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
+        : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind, platform);
       // A file the player picked that a later release names differently: they pick again, even from one.
-      const missed = !candidates.length && Boolean(custom && settings.releaseAssetFilter);
-      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind);
+      const missed = !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
+      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform);
       let [asset, ...others] = candidates;
       if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length)
         throw new Problem(
@@ -751,9 +774,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (unmatched) [asset, ...others] = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
       if (!asset) throw new Problem(msg`This release has no download for your computer.`);
       // The file the player picked last time, when it's still one of these: taken again without asking.
-      const again = pickedBefore([asset, ...others], was?.pick);
-      let pick = was?.pick;
-      if (again) asset = again;
+      const again = pickedBefore([asset, ...others], lastPick);
+      let pick = lastPick;
+      // Picked by name: later releases keep to it, as to a file picked from several.
+      if (clicked) {
+        const files = installable(release.assets, config.os).map((a) => a.filename);
+        pick = files.length > 1 ? assetFilterFor(clicked.filename, files) : undefined;
+      } else if (again) asset = again;
       else if (others.length || missed || unmatched) {
         const choices = [asset, ...others];
         const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
@@ -808,7 +835,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const updates = pin ? "pinned" : i[entry.id]?.updates;
         // Installed now, or as long ago as it was before this update (an install from before there was a time, none).
         const installedAt = i[entry.id] ? i[entry.id].installedAt : Date.now();
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.launch ? { launch: i[entry.id]?.launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } };
+        // The other system's build in place of the one there was: the programs the player picked, and what ran them,
+        // were the old build's. Its command line stays.
+        const wine = asset.os === "windows" && config.os === "linux";
+        const old = i[entry.id]?.launch;
+        const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -1088,7 +1120,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked });
+      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform });
     },
     async play(id, executable) {
       const install = installs[id];
@@ -1097,7 +1129,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const programs = install.launch?.programs ?? [];
       if (!executable && programs.length > 1) return chooseProgram(id);
       const chosen = executable ?? programs[0];
-      const launch = chosen ? { ...install.launch, executable: chosen } : install.launch;
+      const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
       if (install.installer === "msi" && !program) {
@@ -1191,6 +1223,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     appFolders,
     renaming,
     askRename,
+    changingVersion,
+    changeVersion,
     async renameFolder(id, name) {
       const install = installs[id];
       if (!install || !renamable(install)) throw new Problem(msg`This app's folder can't be renamed.`);

@@ -428,8 +428,9 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     if (base === DEFAULT_API) {
       const other = await fetchOnce(FALLBACK_API + path, init).catch(() => null);
       if (other && other.status < 500) {
+        // Calls already on their way get here too; only the first one tells.
+        if (origin !== FALLBACK_API) options.onFallback?.(problem);
         origin = FALLBACK_API;
-        options.onFallback?.(problem);
         return other;
       }
     }

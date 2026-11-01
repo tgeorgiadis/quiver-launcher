@@ -92,12 +92,16 @@ export type LaunchOptions = {
   /** The program to start: inside the app's folder (relative), or anywhere for a program the player added. */
   executable?: string;
   runner?: { kind: "direct" } | { kind: "wine" } | { kind: "proton"; path: string };
+  /** What Settings runs every Windows program with on Linux, where the app has no runner of its own (never saved with an app). */
+  windowsRunner?: WindowsRunner;
   /** As Steam takes them: `NAME=value` first sets the environment, `%command%` is where the game goes, otherwise arguments. */
   command?: string;
   /** The programs Play starts, relative to the app's folder: with more than one, Play asks which. The launcher itself reads only `executable`. */
   programs?: string[];
 };
 export type Proton = { name: string; path: string };
+/** What runs Windows programs on Linux, chosen in Settings for every app: unset, Automatic. */
+export type WindowsRunner = { kind: "wine" } | { kind: "proton"; path: string };
 
 /** An installed app, for a desktop or Steam shortcut. */
 export type ShortcutRequest = {
@@ -184,6 +188,11 @@ export const native = {
   setFullscreen: (on: boolean, systemTitleBar: boolean) => invoke<void>("set_fullscreen", { on, titleBar: systemTitleBar }),
   /** The system's title bar back on, or off for the launcher's own buttons (a Mac always keeps its own). */
   setSystemTitleBar: (on: boolean) => invoke<void>("set_system_title_bar", { on }),
+  /** Close to tray on or off, and the tray menu's words in the player's language (tray.rs; Windows only). */
+  setTray: (closeToTray: boolean, open: string, quit: string) => invoke<void>("set_tray", { closeToTray, open, quit }),
+  /** Whether Windows starts this copy of the launcher, in the tray, as the player signs in. */
+  startWithWindows: () => invoke<boolean>("start_with_windows"),
+  setStartWithWindows: (on: boolean) => invoke<void>("set_start_with_windows", { on }),
   /** The window's own buttons, for the top bar when the system's title bar is off. */
   minimize: () => getCurrentWindow().minimize(),
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),
@@ -248,6 +257,8 @@ export const native = {
   /** The programs in an installed app's folder, relative to it. */
   listPrograms: (folder: string, dir?: string) => invoke<string[]>("list_programs", { folder, dir }),
   listProtons: () => invoke<Proton[]>("list_protons"),
+  /** What Automatic runs Windows programs with on Linux, by name (a Proton, else Wine); null with neither. */
+  automaticRunner: () => invoke<string | null>("automatic_runner"),
   /** Asks for a Proton folder the launcher didn't find. */
   pickProton: () => invoke<string | null>("pick_proton"),
   controllers: () => invoke<string[]>("controllers"),

@@ -72,6 +72,11 @@ tauri-runtime-cef = { version = "0.1", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 mslnk = "0.1"
+# Close to tray and starting with Windows (tray.rs): the notification area's icon, the one launcher running at a
+# time, and the Run key Windows starts it from.
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+winreg = "0.55"
 
 [dev-dependencies]
 tempfile = "3"

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { artFor, savedView, viewOf, DEFAULT_VIEW } from "./view";
+import { artFor, keepsTab, keptFilters, savedView, viewOf, DEFAULT_VIEW } from "./view";
 
 test("a library view keeps only what differs from today's look, and ignores what it doesn't know", () => {
   expect(viewOf(undefined)).toEqual(DEFAULT_VIEW);
@@ -31,4 +31,17 @@ test("box art and icon cards fall back to the cover, then to nothing", () => {
   ]);
   expect(artFor({ libraryArt: { header: "cover" } }, "box")).toEqual([{ src: "cover", fit: "letterbox" }]);
   expect(artFor({}, "icon")).toEqual([]);
+});
+
+test("the library's filters and tab come back as the player left them, when the library still has them", () => {
+  expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", console: "n64", ai: "no-ai" });
+  expect(keptFilters({ installed: "maybe", ai: "some", tag: "" })).toEqual({});
+  expect(keptFilters(undefined)).toEqual({});
+  const playlists = [{ key: "racing" }, { key: "gone", removed: true }];
+  expect(keepsTab("installed", playlists)).toBe(true);
+  expect(keepsTab("racing", playlists)).toBe(true);
+  expect(keepsTab("gone", playlists)).toBe(false);
+  expect(keepsTab("updates", playlists)).toBe(false);
+  expect(keepsTab("hidden", playlists)).toBe(false);
+  expect(keepsTab(undefined, playlists)).toBe(false);
 });
