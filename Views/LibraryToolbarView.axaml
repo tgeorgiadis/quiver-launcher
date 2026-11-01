@@ -1,11 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" x:Class="QuiverLauncher.Views.LibraryToolbarView" x:DataType="vm:LibraryViewModel" x:CompileBindings="True">
 <Grid x:Name="Surface" ColumnSpacing="12">
     <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" MaxWidth="220"/>
-        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*" MaxWidth="320"/>
         <ColumnDefinition Width="Auto"/>
     </Grid.ColumnDefinitions>
-							<Grid x:Name="LibrarySearchHost" MaxWidth="220" MinWidth="120" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+							<Grid x:Name="LibrarySearchHost" MaxWidth="320" MinWidth="120" HorizontalAlignment="Stretch" VerticalAlignment="Center">
 							<TextBox x:Name="LibrarySearchTextBox"
 									 Watermark="Search this list"
 									 MinHeight="32"
@@ -42,22 +41,5 @@
 									VerticalAlignment="Center"
 									Margin="0"
 									Click="AddNewEntryButton_Click"/>
-
-							<ComboBox x:Name="SortByComboBox" Grid.Column="2"
-									  MaxWidth="200"
-									  ToolTip.Tip="{Binding SelectedItem.Content, RelativeSource={RelativeSource Self}, x:CompileBindings=False}"
-									  Foreground="{DynamicResource ThemeText}"
-									  Background="{DynamicResource ThemeDarker}"
-									  BorderBrush="{DynamicResource ThemeBorder}"
-									  MinHeight="32"
-									  VerticalAlignment="Center"
-									  Margin="0"
-									  SelectionChanged="SortByComboBox_SelectionChanged">
-								<ComboBoxItem Content="Name (A-Z)" Tag="Name"/>
-								<ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
-								<ComboBoxItem Content="Installed First" Tag="Installed"/>
-								<ComboBoxItem Content="Not Installed First" Tag="NotInstalled"/>
-								<ComboBoxItem Content="Last Played" Tag="LastPlayed"/>
-							</ComboBox>
 							</Grid>
 </UserControl>

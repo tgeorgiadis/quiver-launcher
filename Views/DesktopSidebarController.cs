@@ -13,16 +13,18 @@ internal sealed class DesktopSidebarController : IDisposable
     private readonly SplitView _split;
     private readonly Border _sidebar;
     private readonly Button _toggle;
+    private readonly Control _headerLogo;
     private readonly SettingsViewModel _settings;
     private readonly Action _focusToggle;
     private bool? _sessionCollapsed;
 
-    public DesktopSidebarController(SplitView split, Border sidebar, Button toggle,
+    public DesktopSidebarController(SplitView split, Border sidebar, Button toggle, Control headerLogo,
         SettingsViewModel settings, Action focusToggle)
     {
         _split = split;
         _sidebar = sidebar;
         _toggle = toggle;
+        _headerLogo = headerLogo;
         _settings = settings;
         _focusToggle = focusToggle;
         // Keep labels laid out at their normal width while SplitView clips the animated pane.
@@ -75,6 +77,8 @@ internal sealed class DesktopSidebarController : IDisposable
         _split.IsPaneOpen = !collapsed;
         _sidebar.IsEnabled = !collapsed;
         _sidebar.IsHitTestVisible = !collapsed;
+        // The logo goes with the sidebar, so the header carries a small one while it is hidden.
+        _headerLogo.IsVisible = collapsed;
         var label = collapsed ? "Show sidebar" : "Hide sidebar";
         ToolTip.SetTip(_toggle, label);
         AutomationProperties.SetName(_toggle, label);

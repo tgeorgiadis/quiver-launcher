@@ -165,8 +165,9 @@
 				<!-- Library-only filters -->
 				<views:LibraryFiltersView x:Name="LibraryFiltersPanel" Grid.Row="2"/>
 
-				<!-- Footer Links -->
-				<StackPanel x:Name="ExternalLinksHost" Grid.Row="3" Margin="12,0,12,8" IsVisible="{Binding ShowExternalLinks}">
+				<!-- Footer: links, then the version (kept visible when kiosk mode hides the links) -->
+				<StackPanel Grid.Row="3">
+				<StackPanel x:Name="ExternalLinksHost" Margin="12,0,12,8" IsVisible="{Binding ShowExternalLinks}">
 						<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="-12,0,-12,8"/>
 					<StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
 						<Button x:Name="WebsiteFooterButton"
@@ -207,6 +208,15 @@
 						</Button>
 					</StackPanel>
 				</StackPanel>
+				<TextBlock x:Name="SidebarVersionText"
+						   Text="{Binding Shell.Version}"
+						   HorizontalAlignment="Center"
+						   Margin="0,0,0,8"
+						   FontSize="11"
+						   Foreground="{DynamicResource ThemeTextSecondary}"
+						   IsHitTestVisible="False"
+						   IsVisible="{Binding IsDesktopPlatform}"/>
+				</StackPanel>
 			</Grid>
 		</Border>
 		</SplitView.Pane>
@@ -228,7 +238,8 @@
 				<Border Classes="header-inner">
 					<Grid RowDefinitions="Auto,Auto">
 						<Grid x:Name="HeaderLayoutGrid" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto" VerticalAlignment="Top">
-						<Button x:Name="DesktopSidebarToggleButton" Grid.Column="0"
+						<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+						<Button x:Name="DesktopSidebarToggleButton"
 								Classes="modern-icon" Width="32" Height="32" Margin="8,0,0,0" Padding="6"
 								VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
 								IsVisible="{Binding IsDesktopPlatform}" Focusable="True"
@@ -236,6 +247,15 @@
 							<Path Width="20" Height="20" Stretch="Uniform" Stroke="{DynamicResource ThemeText}"
 								  StrokeThickness="1.5" Data="M3,3 L21,3 L21,21 L3,21 Z M9,3 L9,21 M16,8 L12,12 L16,16"/>
 						</Button>
+						<!-- Stands in for the sidebar logo while the sidebar is hidden (see DesktopSidebarController). -->
+						<Image x:Name="HeaderLogoImage"
+							   Source="avares://QuiverLauncher/Assets/app.png"
+							   Width="15.36" Height="32"
+							   Margin="12,0,0,0"
+							   VerticalAlignment="Center"
+							   IsVisible="False"
+							   IsHitTestVisible="False"/>
+						</StackPanel>
 						<Button x:Name="MobileNavButton"
 								Grid.Column="0"
 								Classes="modern-icon mobile-header-icon"
@@ -374,15 +394,6 @@
 								</Button>
 							</StackPanel>
 
-
-							<!-- Version text -->
-							<TextBlock Text="{Binding Shell.Version}"
-								   VerticalAlignment="Center"
-								   HorizontalAlignment="Right"
-								   Foreground="{DynamicResource ThemeText}"
-								   FontSize="14"
-								   IsHitTestVisible="False"
-								   IsVisible="{Binding IsDesktopPlatform}"/>
 
 							<Button x:Name="CheckForUpdatesButton"
 									IsVisible="{Binding ShowUpdateCheckButton}"

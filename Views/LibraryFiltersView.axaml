@@ -1,48 +1,60 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:QuiverLauncher.ViewModels" xmlns:services="using:QuiverLauncher.Services" x:Class="QuiverLauncher.Views.LibraryFiltersView" x:DataType="vm:LibraryFiltersViewModel" x:CompileBindings="True">
 <Grid x:Name="Surface" RowDefinitions="Auto,*">
-				<StackPanel Grid.Row="0" Margin="0,4,0,8">
-					<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="0,0,0,8"/>
-					<TextBlock Text="SHOW"
-							   FontSize="10"
-							   FontWeight="Bold"
-							   Foreground="{DynamicResource ThemeTextSecondary}"
-							   LetterSpacing="1"
-							   Margin="24,0,0,4"/>
+				<!-- Sort and Show: how the list is ordered and which apps it includes. -->
+				<StackPanel Grid.Row="0" Margin="12,4,12,10" Spacing="8">
+					<Border Height="1" Background="{DynamicResource ThemeBorder}" Margin="-12,0,-12,2"/>
+					<Grid x:Name="SortSection" ColumnDefinitions="48,*">
+						<TextBlock Classes="sidebar-field-label" Text="Sort"/>
+						<ComboBox x:Name="SortByComboBox"
+								  Grid.Column="1"
+								  HorizontalAlignment="Stretch"
+								  Foreground="{DynamicResource ThemeText}"
+								  Background="{DynamicResource ThemeDarker}"
+								  BorderBrush="{DynamicResource ThemeBorder}"
+								  MinHeight="32"
+								  SelectionChanged="SortByComboBox_SelectionChanged">
+							<ComboBoxItem Content="Name (A-Z)" Tag="Name"/>
+							<ComboBoxItem Content="Name (Z-A)" Tag="NameDesc"/>
+							<ComboBoxItem Content="Installed First" Tag="Installed"/>
+							<ComboBoxItem Content="Not Installed First" Tag="NotInstalled"/>
+							<ComboBoxItem Content="Last Played" Tag="LastPlayed"/>
+						</ComboBox>
+					</Grid>
+					<Grid ColumnDefinitions="48,*">
+						<TextBlock Classes="sidebar-field-label" Text="Show"/>
+						<Border Grid.Column="1" Classes="sidebar-segmented">
+							<Grid ColumnDefinitions="*,1,*,1,*">
+								<Button x:Name="UnhideAllGamesButton"
+										Classes="settings scope-filter scope-segment"
+										Content="All"
+										ToolTip.Tip="All apps"
+										Click="UnhideAllGamesButton_Click"/>
+								<Border Grid.Column="1" Background="{DynamicResource ThemeBorder}"/>
+								<Button x:Name="HideNonInstalledButton"
+										Grid.Column="2"
+										Classes="settings scope-filter scope-segment"
+										Content="Installed"
+										ToolTip.Tip="Installed apps only"
+										Click="HideNonInstalledButton_Click"/>
+								<Border Grid.Column="3" Background="{DynamicResource ThemeBorder}"/>
+								<Button x:Name="ShowHiddenGamesButton"
+										Grid.Column="4"
+										Classes="settings scope-filter scope-segment"
+										Content="Hidden"
+										ToolTip.Tip="Apps you have hidden"
+										Click="ShowHiddenGamesButton_Click"/>
+							</Grid>
+						</Border>
+					</Grid>
 				</StackPanel>
 
-				<!-- Filter Buttons ScrollViewer -->
+				<!-- The player's own tag filters. -->
 				<ScrollViewer x:Name="LibraryFiltersScroller" Grid.Row="1" VerticalScrollBarVisibility="Auto">
 					<StackPanel Margin="12,0,12,0">
-
-							<Button x:Name="UnhideAllGamesButton"
-									Classes="settings scope-filter"
-									Width="216"
-									HorizontalAlignment="Left"
-									Click="UnhideAllGamesButton_Click">
-								<TextBlock Text="All Apps"/>
-							</Button>
-
-							<Button x:Name="HideNonInstalledButton"
-									Classes="settings scope-filter"
-									Width="216"
-									HorizontalAlignment="Left"
-									Click="HideNonInstalledButton_Click">
-								<TextBlock Text="Installed Only"/>
-							</Button>
-
-							<Button x:Name="ShowHiddenGamesButton"
-									Classes="settings scope-filter"
-									Width="216"
-									HorizontalAlignment="Left"
-									Click="ShowHiddenGamesButton_Click">
-								<TextBlock Text="Hidden"/>
-							</Button>
-
 							<Border Height="1"
 									Background="{DynamicResource ThemeBorder}"
-									Margin="0,8,0,8"/>
-
-							<Grid ColumnDefinitions="*,Auto" Margin="12,0,8,8">
+									Margin="-12,0,-12,8"/>
+							<Grid ColumnDefinitions="*,Auto" Margin="0,0,4,8">
 								<TextBlock Grid.Column="0"
 										   Text="FILTERS"
 										   FontSize="10"
@@ -50,7 +62,8 @@
 										   Foreground="{DynamicResource ThemeTextSecondary}"
 										   LetterSpacing="1"
 										   VerticalAlignment="Center"/>
-								<Button Grid.Column="1"
+								<Button x:Name="AddDisplayFilterButton"
+										Grid.Column="1"
 										Classes="iconbutton tag-filter-add"
 										Width="24"
 										Height="24"
@@ -132,12 +145,6 @@
 									</DataTemplate>
 								</ItemsControl.ItemTemplate>
 							</ItemsControl>
-
-							<Button Classes="options"
-									Content="Add Filter"
-									HorizontalAlignment="Stretch"
-									Margin="0,8,0,0"
-									Click="AddDisplayFilter_Click"/>
 						</StackPanel>
 				</ScrollViewer>
 				</Grid>

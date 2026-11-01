@@ -38,6 +38,8 @@ public class DesktopSidebarTests
                     var content = view.FindControl<Grid>("MainGrid")!;
                     var navigation = (ShellChromeNavigation)typeof(MainView).GetField("_chromeNavigation", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(view)!;
                     split.IsPaneOpen.Should().Be(session != 1);
+                    var logo = view.FindControl<Image>("HeaderLogoImage")!;
+                    logo.IsVisible.Should().Be(session == 1);
                     toggle.IsEffectivelyVisible.Should().BeTrue();
                     navigation.CollectTopBarControls().First().Should().BeSameAs(toggle);
                     var before = content.Bounds.Width;
@@ -50,6 +52,7 @@ public class DesktopSidebarTests
                     await Task.Delay(300, TestContext.Current.CancellationToken);
                     Settle(window);
                     split.IsPaneOpen.Should().Be(session == 1);
+                    logo.IsVisible.Should().Be(session == 0);
                     content.Bounds.Width.Should().BeApproximately(before + (session == 0 ? 240 : -240), 1);
                     AutomationProperties.GetName(toggle).Should().Be(session == 0 ? "Show sidebar" : "Hide sidebar");
                     new FileSettingsStore(path).Current.DesktopSidebarCollapsed.Should().Be(session == 0);

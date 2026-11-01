@@ -8,6 +8,12 @@ public sealed class LibraryFiltersViewModel(GameManager manager, LibraryViewMode
     public AppSettings Settings => library.Settings.Current;
     public ObservableCollection<TagDisplayFilterListItem> TagDisplayFilters => library.TagDisplayFilters;
     public void Save() => library.Settings.SaveCurrent();
+    public void SetSort(string sort)
+    {
+        library.SortBy = sort;
+        Settings.SortBy = sort;
+        library.ApplySorting();
+    }
     public void SetScope(AppListScope scope)
     {
         manager.SetListScope(scope, Settings);

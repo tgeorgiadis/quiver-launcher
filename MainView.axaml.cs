@@ -153,8 +153,6 @@ namespace QuiverLauncher
                 _desktopHeader = new Views.DesktopHeaderLayout(HeaderLayoutGrid, HeaderTitleColumn, DesktopInlineTopBar, HeaderFixedActions,
                     () => LibraryToolbar.IsVisible ? LibraryToolbar.PreferredWidth : 0);
                 _session.OnShutdown(_desktopHeader.Dispose);
-                LibraryToolbar.PreferredSizeChanged += _desktopHeader.Refresh;
-                _session.OnShutdown(() => LibraryToolbar.PreferredSizeChanged -= _desktopHeader.Refresh);
             }
             MessagePromptOverlay.Configure(_session);
             _prompts = new LauncherPromptService(_session, _dialogs, MessagePromptOverlay);
@@ -165,7 +163,7 @@ namespace QuiverLauncher
             if (IsDesktopPlatform)
             {
                 _sidebarController = new Views.DesktopSidebarController(MainSplitView, SidebarPanel, DesktopSidebarToggleButton,
-                    _settingsViewModel, () =>
+                    HeaderLogoImage, _settingsViewModel, () =>
                     {
                         if (IsGamepadFocusActive) _chromeNavigation.ApplyTopBarGamepadSelection(0);
                         else DesktopSidebarToggleButton.Focus();
@@ -201,7 +199,7 @@ namespace QuiverLauncher
             Banners.Configure(_session, _settingsViewModel, _gameManager.HttpClient, this, provider => OpenAdvancedApiTokenSettings(provider == "gitlab"));
             Library = new LibraryViewModel(_gameManager, _settingsViewModel);
             if (_initializeOnOpen) Library.BeginInitialLoad();
-            LibraryToolbar.Configure(Library, _session, OnSettingChanged);
+            LibraryToolbar.Configure(Library, _session);
             ApplyKioskChrome(refreshShell: false);
             LibraryToolbar.AddRequested += () => ShowEntryFormOverlay(forCreate: true);
             LibraryToolbar.SearchChanged += () =>
@@ -260,7 +258,7 @@ namespace QuiverLauncher
                 _chromeNavigation.ClearTopBarGamepadFocus(steal);
             }, _libraryLaunch.PerformSelectedGameActionAsync);
             _libraryLaunch.FocusRestorationRequested = LibraryPanel.Navigation.RestoreLibraryGamepadFocusAfterMenu;
-            LibraryFiltersPanel.Configure(new LibraryFiltersViewModel(_gameManager, Library), _session, (message, title) => ShowMessageBoxAsync(message, title));
+            LibraryFiltersPanel.Configure(new LibraryFiltersViewModel(_gameManager, Library), _session, (message, title) => ShowMessageBoxAsync(message, title), OnSettingChanged);
             LibraryFiltersPanel.EditRequested += ShowDisplayFilterOverlay;
             LibraryFiltersPanel.FocusRestorationRequested += _chromeNavigation.RestoreSidebarDisplayFilterFocus;
             DisplayFilterOverlay.Configure(_settingsViewModel, _session, this, (message, title) => ShowMessageBoxAsync(message, title), DismissTextInputFocus);
@@ -595,7 +593,7 @@ namespace QuiverLauncher
         {
             SettingsPanel.UpdateSettingsUI();
             Library.SortBy = _settings.SortBy ?? "Name";
-            LibraryToolbar.SelectSort(Library.SortBy);
+            LibraryFiltersPanel.SelectSort(Library.SortBy);
             UpdateGridLayoutVisibility();
             Shell.ThemeColorBrush = new SolidColorBrush(Color.Parse(_settings.PrimaryColor ?? "#18181b"));
             Shell.SecondaryColorBrush = new SolidColorBrush(Color.Parse(_settings.SecondaryColor ?? "#404040"));
@@ -731,6 +729,7 @@ namespace QuiverLauncher
         {
             if (KioskLocked)
                 return;
+            CloseOtherOverlays(keep: TagEditOverlay);
             Shell.TagEditorOpen = true;
             ClearGamepadFocus();
             _chromeNavigation.ClearSidebarGamepadFocus();
@@ -757,8 +756,7 @@ namespace QuiverLauncher
         {
             if (KioskLocked)
                 return;
-            if (Shell.SettingsOpen)
-                CloseSettingsPanel();
+            CloseOtherOverlays(keep: EntryFormOverlay);
             Shell.EntryEditorOpen = true;
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.EntryFormOverlay;
             OnPropertyChanged(nameof(GamepadHintsVisible));
@@ -814,6 +812,10 @@ namespace QuiverLauncher
                 _app?.UpdateTrayTooltip(Shell.PendingUpdatesCount, Shell.IsCheckingUpdates);
             if (e.PropertyName == nameof(ShellViewModel.ShowUpdateCheckStatus))
                 LibraryPanel.SetUpdateStatusVisible(Shell.ShowUpdateCheckStatus);
+            // App and mod pages cover the Settings panel, so opening one closes it.
+            if ((e.PropertyName == nameof(ShellViewModel.BrowseDetailsOpen) && Shell.BrowseDetailsOpen)
+                || (e.PropertyName == nameof(ShellViewModel.ModDetailsOpen) && Shell.ModDetailsOpen))
+                CloseSettingsPanel();
         }
 
         private void OnGameManagerPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -950,10 +952,11 @@ namespace QuiverLauncher
         private void MobileLibrarySortFlyout_Opening(object? sender, EventArgs e)
         {
             GamepadMenuFlyoutNavigation.Attach(sender as MenuFlyout);
-            LibraryToolbar.SortFlyoutOpening(sender as MenuFlyout);
+            LibraryFiltersPanel.SortFlyoutOpening(sender as MenuFlyout);
         }
 
-        private void MobileLibrarySortItem_Click(object? sender, RoutedEventArgs e) => LibraryToolbar.SelectSort((sender as MenuItem)?.Tag as string);
+        // The sort dropdown sits in the sidebar, which mobile shows as a drawer; the header menu drives it there.
+        private void MobileLibrarySortItem_Click(object? sender, RoutedEventArgs e) => LibraryFiltersPanel.SelectSort((sender as MenuItem)?.Tag as string);
         internal async Task InitializeGamesAsync()
         {
             Library.BeginInitialLoad();
@@ -1150,6 +1153,12 @@ namespace QuiverLauncher
                 return;
             }
 
+            if (IsDisplayFilterOverlayOpen)
+            {
+                CloseDisplayFilterOverlay();
+                return;
+            }
+
             if (MessagePromptOverlay.Dismiss())
                 return;
             CloseHost();
@@ -1167,12 +1176,11 @@ namespace QuiverLauncher
         {
             if (KioskLocked || SettingsPanel == null)
                 return;
-            if (Shell.EntryEditorOpen)
-                CloseEntryFormOverlay();
-            if (Shell.TagEditorOpen)
-                CloseTagEditOverlay();
+            CloseOtherOverlays(keep: SettingsPanel);
             if (Shell.BrowseDetailsOpen)
                 CloseBrowseDetails(restoreSelection: false);
+            if (Shell.ModDetailsOpen)
+                ModsPanel.Details.Close();
             Shell.SettingsOpen = !Shell.SettingsOpen;
             SettingsPanel.IsVisible = Shell.SettingsOpen;
             if (Shell.SettingsOpen)
@@ -1213,12 +1221,11 @@ namespace QuiverLauncher
         {
             if (SettingsPanel == null)
                 return;
-            if (Shell.EntryEditorOpen)
-                CloseEntryFormOverlay();
-            if (Shell.TagEditorOpen)
-                CloseTagEditOverlay();
+            CloseOtherOverlays(keep: SettingsPanel);
             if (Shell.BrowseDetailsOpen)
                 CloseBrowseDetails(restoreSelection: false);
+            if (Shell.ModDetailsOpen)
+                ModsPanel.Details.Close();
             Shell.SettingsOpen = true;
             SettingsPanel.IsVisible = true;
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.Settings;
@@ -1688,6 +1695,7 @@ namespace QuiverLauncher
             _mobileLayout.CloseMobileNav();
             if (!DisplayFilterOverlay.Open(filterId))
                 return;
+            CloseOtherOverlays(keep: DisplayFilterOverlay);
             DisplayFilterOverlay.IsVisible = true;
             _gamepadNavigation.ActiveZone = GamepadNavigationZone.DisplayFilterOverlay;
             OnPropertyChanged(nameof(GamepadHintsVisible));
@@ -1707,6 +1715,19 @@ namespace QuiverLauncher
         }
 
         private bool IsDisplayFilterOverlayOpen => DisplayFilterOverlay?.IsVisible == true;
+
+        // Settings and the editing dialogs share the content area, so only one of them is open at a time.
+        private void CloseOtherOverlays(Control keep)
+        {
+            if (!ReferenceEquals(keep, SettingsPanel))
+                CloseSettingsPanel();
+            if (!ReferenceEquals(keep, EntryFormOverlay) && Shell.EntryEditorOpen)
+                CloseEntryFormOverlay();
+            if (!ReferenceEquals(keep, TagEditOverlay) && Shell.TagEditorOpen)
+                CloseTagEditOverlay();
+            if (!ReferenceEquals(keep, DisplayFilterOverlay) && IsDisplayFilterOverlayOpen)
+                CloseDisplayFilterOverlay();
+        }
 
         private void ApplySorting()
         {

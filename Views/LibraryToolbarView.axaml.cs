@@ -13,28 +13,24 @@ public partial class LibraryToolbarView : UserControl
 {
     private LauncherSession? _session;
     private LibraryViewModel _model = null!;
-    private Action _save = null!;
     public event Action? AddRequested;
     public event Action? SearchChanged;
-    public event Action? PreferredSizeChanged;
     public event EventHandler<RoutedEventArgs>? SearchLostFocus;
     public bool HasQuery => !string.IsNullOrWhiteSpace(LibrarySearchTextBox.Text);
     public bool SearchContainsFocus => LibrarySearchTextBox.IsFocused || LibrarySearchClearButton.IsFocused;
     public bool IsEditingSearch => GamepadTextInput.IsEditing && ReferenceEquals(GamepadTextInput.Active, LibrarySearchTextBox);
-    public double PreferredWidth => 220 + AddNewEntryButton.DesiredSize.Width + SortByComboBox.DesiredSize.Width + 24;
+    public double PreferredWidth => 320 + AddNewEntryButton.DesiredSize.Width + 12;
 
     public LibraryToolbarView()
     {
         InitializeComponent();
-        GamepadComboBoxNavigation.Attach(SortByComboBox);
         LibrarySearchTextBox.LostFocus += (sender, e) => SearchLostFocus?.Invoke(sender, e);
     }
 
-    public void Configure(LibraryViewModel model, LauncherSession session, Action save)
+    public void Configure(LibraryViewModel model, LauncherSession session)
     {
         _model = model;
         _session = session;
-        _save = save;
         DataContext = model;
     }
 
@@ -69,8 +65,7 @@ public partial class LibraryToolbarView : UserControl
     {
         LibrarySearchTextBox,
         LibrarySearchClearButton,
-        AddNewEntryButton,
-        SortByComboBox
+        AddNewEntryButton
     }
 
     ).Where(c => c.IsEffectivelyVisible && c.IsEnabled).ToArray();
@@ -93,26 +88,6 @@ public partial class LibraryToolbarView : UserControl
         return navigation.ActiveZone == GamepadNavigationZone.TopBar && index >= 0 && index == SearchIndex(controls);
     }
 
-    public void SelectSort(string? tag)
-    {
-        foreach (var item in SortByComboBox.Items.OfType<ComboBoxItem>())
-            if (item.Tag as string == tag)
-            {
-                SortByComboBox.SelectedItem = item;
-                return;
-            }
-    }
-
-    public void SortFlyoutOpening(MenuFlyout? flyout)
-    {
-        GamepadMenuFlyoutNavigation.Attach(flyout);
-        if (flyout == null)
-            return;
-        var selected = (SortByComboBox.SelectedItem as ComboBoxItem)?.Tag as string;
-        foreach (var item in flyout.Items.OfType<MenuItem>())
-            item.FontWeight = item.Tag as string == selected ? FontWeight.Bold : FontWeight.Normal;
-    }
-
     private void AddNewEntryButton_Click(object? sender, RoutedEventArgs e) => AddRequested?.Invoke();
     private void LibrarySearchClear_Click(object? sender, RoutedEventArgs e) => ClearSearch();
     private async void LibrarySearch_TextChanged(object? sender, TextChangedEventArgs e)
@@ -127,18 +102,5 @@ public partial class LibraryToolbarView : UserControl
                 SearchChanged?.Invoke();
             }
         });
-    }
-
-    private void SortByComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        PreferredSizeChanged?.Invoke();
-        if (_session == null || _session.IsClosed || e.AddedItems.Count == 0)
-            return;
-        if (SortByComboBox.SelectedItem is not ComboBoxItem { Tag: string sort })
-            return;
-        _model.SortBy = sort;
-        _model.Settings.Current.SortBy = sort;
-        _save();
-        _model.ApplySorting();
     }
 }

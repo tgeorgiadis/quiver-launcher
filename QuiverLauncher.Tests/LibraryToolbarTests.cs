@@ -19,15 +19,14 @@ public class LibraryToolbarTests
     }
 
     [AvaloniaFact]
-    public async Task Toolbar_edits_search_sorts_and_requests_add_after_mobile_reparenting()
+    public async Task Toolbar_edits_search_and_requests_add_after_mobile_reparenting()
     {
         using var manager = new GameManager(new Store());
         using var model = new LibraryViewModel(manager, new SettingsViewModel(new Store()));
         await using var session = new LauncherSession();
         var toolbar = new LibraryToolbarView();
-        var saves = 0;
         var adds = 0;
-        toolbar.Configure(model, session, () => saves++);
+        toolbar.Configure(model, session);
         toolbar.AddRequested += () => adds++;
         var header = new Grid();
         var window = new Window { Content = new StackPanel { Children = { header, toolbar } } };
@@ -47,10 +46,6 @@ public class LibraryToolbarTests
             toolbar.ClearSearch();
             Dispatcher.UIThread.RunJobs();
             model.SearchText.Should().BeEmpty();
-            toolbar.SelectSort("NameDesc");
-            model.SortBy.Should().Be("NameDesc");
-            model.Settings.Current.SortBy.Should().Be("NameDesc");
-            saves.Should().BeGreaterThan(0);
             toolbar.FindControl<Button>("AddNewEntryButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             adds.Should().Be(1);
         }
@@ -65,7 +60,7 @@ public class LibraryToolbarTests
         var session = new LauncherSession();
         var toolbar = new LibraryToolbarView();
         var changed = 0;
-        toolbar.Configure(model, session, () => { });
+        toolbar.Configure(model, session);
         toolbar.SearchChanged += () => changed++;
         toolbar.FindControl<TextBox>("LibrarySearchTextBox")!.Text = "pending";
         Dispatcher.UIThread.RunJobs();

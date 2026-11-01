@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using QuiverLauncher.Services;
 using QuiverLauncher.ViewModels;
@@ -12,6 +13,7 @@ public partial class LibraryFiltersView : UserControl
 {
     private LauncherSession _session = null!;
     private Func<string, string, Task> _message = null!;
+    private Action _saveSettings = null!;
     public LibraryFiltersViewModel Model { get; private set; } = null!;
     private AppSettings _settings => Model.Settings;
     private System.Collections.ObjectModel.ObservableCollection<TagDisplayFilterListItem> TagDisplayFilters => Model.TagDisplayFilters;
@@ -21,15 +23,18 @@ public partial class LibraryFiltersView : UserControl
     public LibraryFiltersView()
     {
         InitializeComponent();
+        GamepadComboBoxNavigation.Attach(SortByComboBox);
         DetachedFromVisualTree += (_, _) => EndTagFilterDragSession();
     }
 
-    public void Configure(LibraryFiltersViewModel model, LauncherSession session, Func<string, string, Task> message)
+    /// <param name="saveSettings">Saves a sort change the way other settings changes are saved.</param>
+    public void Configure(LibraryFiltersViewModel model, LauncherSession session, Func<string, string, Task> message, Action saveSettings)
     {
         Model = model;
         DataContext = model;
         _session = session;
         _message = message;
+        _saveSettings = saveSettings;
     }
 
     public void ApplyMobileLayout()
@@ -37,6 +42,8 @@ public partial class LibraryFiltersView : UserControl
         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top;
         Surface.RowDefinitions[1].Height = GridLength.Auto;
         LibraryFiltersScroller.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+        // Mobile sorts from the header's sort button.
+        SortSection.IsVisible = false;
     }
 
     public IReadOnlyList<Control> CollectNavigationControls()
@@ -44,12 +51,41 @@ public partial class LibraryFiltersView : UserControl
         var controls = new List<Control>();
         if (!IsVisible)
             return controls;
-        controls.AddRange(new Control[] { UnhideAllGamesButton, HideNonInstalledButton, ShowHiddenGamesButton }.Where(c => c.IsVisible && c.IsEnabled));
+        controls.AddRange(new Control[] { SortByComboBox, UnhideAllGamesButton, HideNonInstalledButton, ShowHiddenGamesButton, AddDisplayFilterButton }
+            .Where(c => c.IsEffectivelyVisible && c.IsEnabled));
         controls.AddRange(TagDisplayFiltersItemsControl.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("display-filter-row") && b.IsVisible && b.IsEnabled));
-        var add = Surface.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.IsVisible && b.IsEnabled && b.Content is string text && string.Equals(text, "Add Filter", StringComparison.Ordinal));
-        if (add != null)
-            controls.Add(add);
         return controls;
+    }
+
+    public void SelectSort(string? tag)
+    {
+        foreach (var item in SortByComboBox.Items.OfType<ComboBoxItem>())
+            if (item.Tag as string == tag)
+            {
+                SortByComboBox.SelectedItem = item;
+                return;
+            }
+    }
+
+    /// <summary>Marks the current sort in the mobile header's sort menu.</summary>
+    public void SortFlyoutOpening(MenuFlyout? flyout)
+    {
+        GamepadMenuFlyoutNavigation.Attach(flyout);
+        if (flyout == null)
+            return;
+        var selected = (SortByComboBox.SelectedItem as ComboBoxItem)?.Tag as string;
+        foreach (var item in flyout.Items.OfType<MenuItem>())
+            item.FontWeight = item.Tag as string == selected ? FontWeight.Bold : FontWeight.Normal;
+    }
+
+    private void SortByComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_session == null || _session.IsClosed || e.AddedItems.Count == 0)
+            return;
+        if (SortByComboBox.SelectedItem is not ComboBoxItem { Tag: string sort })
+            return;
+        Model.SetSort(sort);
+        _saveSettings();
     }
 
     private void ShowDisplayFilterOverlay(string? filterId) => EditRequested?.Invoke(filterId);

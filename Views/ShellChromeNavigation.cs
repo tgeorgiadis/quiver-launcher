@@ -315,7 +315,7 @@ public sealed class ShellChromeNavigation : IFeatureNavigationHandler
         }
 
         // Consume Up (and any other non-transition direction) so InputService's
-        // Avalonia focus walk does not move keyboard focus onto Sort By while
+        // Avalonia focus walk does not move keyboard focus onto the toolbar while
         // the gamepad selection ring stays on Check for Updates / Settings / etc.
         return true;
     }

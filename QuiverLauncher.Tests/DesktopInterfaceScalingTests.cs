@@ -141,7 +141,7 @@ public class DesktopInterfaceScalingTests
             var toolbar = view.FindControl<LibraryToolbarView>("LibraryToolbar")!;
             var search = toolbar.FindControl<TextBox>("LibrarySearchTextBox")!;
             search.Text = "dummy query";
-            toolbar.SelectSort("NameDesc");
+            view.FindControl<LibraryFiltersView>("LibraryFiltersPanel")!.SelectSort("NameDesc");
             GamepadTextInput.BeginEdit(search);
             search.SelectionStart = 2; search.SelectionEnd = 7;
             view.SettingsModel.InterfaceScalePercent = percent; Settle(window);

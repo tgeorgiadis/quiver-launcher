@@ -144,7 +144,7 @@ public class DesktopHeaderLayoutTests
             var search = toolbar.FindControl<TextBox>("LibrarySearchTextBox")!;
             var parent = search.Parent;
             search.Text = "dummy search";
-            toolbar.SelectSort("NameDesc");
+            view.FindControl<LibraryFiltersView>("LibraryFiltersPanel")!.SelectSort("NameDesc");
             GamepadTextInput.BeginEdit(search);
             search.SelectionStart = 2; search.SelectionEnd = 7;
             foreach (var width in new[] { 750, 1600, 900, 1280, 750, 1600 })
