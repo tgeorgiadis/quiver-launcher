@@ -1362,6 +1362,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark { filter: none; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="missing"] { color: var(--muted); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="update"] { color: var(--accent); }
+.layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="pinned"] { color: var(--muted); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-overlay { bottom: var(--tile-names); }
 .layout-grid.size-small:not(.no-names, .image-icon) .library-tile .card-title { font-size: 13.5px; }
 .layout-grid.size-large:not(.no-names, .image-icon) .library-tile .card-title { font-size: 16px; }
@@ -1583,6 +1584,8 @@ html[data-halo] :focus-visible { outline-color: transparent; }
 .sidebar-row[data-lines="2"] { min-height: 40px; }
 .sidebar-row[data-lines="2"] .sidebar-icon { width: 28px; height: 28px; }
 .sidebar-note { flex-shrink: 0; margin-left: 0.3em; color: var(--link); font-size: 12px; white-space: nowrap; }
+/* An app kept on its version, beside its name: it gets no updates. */
+.sidebar-pin { flex-shrink: 0; align-self: center; margin-left: 5px; color: var(--muted); }
 .sidebar-row[data-state="error"] .sidebar-note { color: var(--danger); }
 .sidebar-icon { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; overflow: hidden; }
 .sidebar-icon .card-art img { object-fit: contain; filter: none; }

@@ -114,3 +114,24 @@ export function artFor(entry: Pick<Entry, "libraryArt" | "artwork">, image: Excl
   // The same picture once.
   return list.filter((a, i) => list.findIndex((b) => b.src === a.src) === i);
 }
+
+/** What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). */
+export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
+
+/** The library's filters as they were saved, each only when it's one the library has. */
+export function keptFilters(saved: Record<string, string> = {}): LibraryFilters {
+  const { console, projectType, ai, tag, installed } = saved;
+  return Object.fromEntries(
+    Object.entries({
+      console,
+      projectType,
+      tag,
+      ai: ai === "no-generated" || ai === "no-ai" ? ai : undefined,
+      installed: installed === "yes" || installed === "no" ? installed : undefined,
+    }).filter(([, value]) => typeof value === "string" && value),
+  );
+}
+
+/** A tab the library opens at next time (`libraryTab`): not Updates or Hidden, which come and go, nor a playlist since removed. */
+export const keepsTab = (tab: string | undefined, playlists: { key: string; removed?: boolean }[]) =>
+  tab === "installed" || tab === "not-installed" || playlists.some((p) => p.key === tab && !p.removed);

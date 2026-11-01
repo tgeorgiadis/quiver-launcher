@@ -12,7 +12,7 @@
  * every port with its button, from the card.
  */
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Play, Plus, TriangleAlert } from "lucide-react";
+import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, TriangleAlert } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
@@ -56,6 +56,9 @@ function Mark({ copy, marks, gettable }: { copy: Copy; marks: boolean; gettable:
   if (copy === "missing") return gettable ? <Download className="tile-mark" data-copy={copy} size={15} strokeWidth={2.5} aria-hidden="true" /> : null;
   return <CloudDownload className="tile-mark" data-copy={copy} size={16} strokeWidth={2.5} aria-hidden="true" />;
 }
+
+/** Beside the name, an app kept on its version: it gets no updates, so no cloud says when there's one. */
+const PinMark = () => <Pin className="tile-mark" data-copy="pinned" size={14} strokeWidth={2.5} aria-hidden="true" />;
 
 type TileProps = {
   entry: Entry;
@@ -186,6 +189,7 @@ const Tile = memo(function Tile({
                   <ScrollingText text={large} />
                 </span>
                 <Mark copy={copy} marks={marks} gettable={gettable} />
+                {pinned && marks && <PinMark />}
               </span>
               {small && (
                 <span className="card-subtitle">
@@ -194,7 +198,10 @@ const Tile = memo(function Tile({
               )}
             </>
           ) : (
-            <Mark copy={copy} marks={marks} gettable={gettable} />
+            <>
+              <Mark copy={copy} marks={marks} gettable={gettable} />
+              {pinned && marks && <PinMark />}
+            </>
           )}
         </span>
       </button>

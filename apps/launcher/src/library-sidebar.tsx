@@ -4,7 +4,7 @@
  * sidebar stays in place under the top bar as the app's page scrolls.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
-import { X } from "lucide-react";
+import { Pin, X } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
@@ -257,6 +257,7 @@ function SidebarRow({
         <span className="sidebar-names">
           <span className="sidebar-line">
             <span className="sidebar-name">{name}</span>
+            {install?.updates === "pinned" && <Pin className="sidebar-pin" size={12} strokeWidth={2.5} aria-hidden="true" />}
             {note && <span className="sidebar-note"> – {note}</span>}
           </span>
           {both && other && <span className="sidebar-other">{other}</span>}
