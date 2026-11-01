@@ -17,6 +17,12 @@ export type OldApp = {
   version?: string;
   /** The program a Windows installer (MSI) put on the computer, for an app 3.x installed that way. */
   program?: string;
+  /** Its tags as 3.x showed them, the catalog's among them. */
+  tags?: string[];
+  /** The catalog's tags when 3.x last followed its entry. */
+  catalogTags?: string[];
+  /** The player hid it in 3.x's library. */
+  hidden?: boolean;
 };
 /** A file or folder to ask for in the page's own browser (file-picker.tsx). */
 export type PickAsk = { id: number; folder: boolean; title: string; dir?: string | null; extensions: string[] };
@@ -28,7 +34,9 @@ export type Listing = {
   places: { name: string; path: string }[];
 };
 /** A Quiver Launcher 3 library: the folder its apps.json is in, and its apps. */
-export type V3Library = { folder: string; apps: OldApp[] };
+/** A tag filter the player made in 3.x: apps with any of its tags (all, with `all`), less those with any of `exclude` (all, with `excludeAll`). */
+export type OldFilter = { name: string; tags: string[]; all: boolean; exclude: string[]; excludeAll: boolean };
+export type V3Library = { folder: string; apps: OldApp[]; filters?: OldFilter[] };
 export type Config = {
   api: string;
   convex: string;

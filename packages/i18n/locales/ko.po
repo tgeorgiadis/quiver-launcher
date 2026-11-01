@@ -141,10 +141,18 @@ msgstr "개발자가 {listed}에서 {file}을(를) 삭제했어요."
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, other {파일 #개}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
+msgstr "{filters, plural, other {태그 필터 #개, 재생 목록으로}}"
+
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "{have} 설치됨"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{hidden, plural, one {# hidden app, still hidden} other {# hidden apps, still hidden}}"
+msgstr "{hidden, plural, other {숨긴 앱 #개, 계속 숨김}}"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "{hours, plural, one {# hour} other {# hours}}"
@@ -354,6 +362,10 @@ msgstr "{size} KB"
 #: ../../apps/launcher/src/downloads.ts
 msgid "{size} MB"
 msgstr "{size} MB"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
+msgstr "{tagged, plural, other {앱 #개의 내 태그}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -666,6 +678,7 @@ msgid "All other platforms"
 msgstr "기타 모든 플랫폼"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "All platforms"
 msgstr "모든 플랫폼"
 
@@ -680,6 +693,10 @@ msgstr "모든 프로젝트 유형"
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "모든 태그"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Also coming over"
+msgstr "함께 가져오는 항목"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
@@ -2813,6 +2830,7 @@ msgid "Places"
 msgstr "위치"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Platform"
 msgstr "플랫폼"
 

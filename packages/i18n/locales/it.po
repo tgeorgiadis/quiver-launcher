@@ -141,10 +141,18 @@ msgstr "Lo sviluppatore ha rimosso {file} da {listed}."
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# file} other {# file}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
+msgstr "{filters, plural, one {# filtro per tag, come playlist} other {# filtri per tag, come playlist}}"
+
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "{have} installata"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{hidden, plural, one {# hidden app, still hidden} other {# hidden apps, still hidden}}"
+msgstr "{hidden, plural, one {# app nascosta, resta nascosta} other {# app nascoste, restano nascoste}}"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "{hours, plural, one {# hour} other {# hours}}"
@@ -354,6 +362,10 @@ msgstr "{size} KB"
 #: ../../apps/launcher/src/downloads.ts
 msgid "{size} MB"
 msgstr "{size} MB"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
+msgstr "{tagged, plural, one {I tuoi tag su # app} other {I tuoi tag su # app}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -666,6 +678,7 @@ msgid "All other platforms"
 msgstr "Tutte le altre piattaforme"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "All platforms"
 msgstr "Tutte le piattaforme"
 
@@ -680,6 +693,10 @@ msgstr "Tutti i tipi di progetto"
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "Tutti i tag"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Also coming over"
+msgstr "Arrivano anche"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
@@ -2813,6 +2830,7 @@ msgid "Places"
 msgstr "Posizioni"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Platform"
 msgstr "Piattaforma"
 

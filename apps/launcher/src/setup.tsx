@@ -22,7 +22,7 @@ export const showsSetup = (settings: Pick<Settings, "launched" | "setupDone">) =
 
 /** `onClose` says whether a Quiver Launcher 3 library came over, so the library shows its apps rather than Browse. */
 export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => void; onSignIn: () => void }) {
-  const { settings, setSettings, config } = useLauncher();
+  const { setSettings, config } = useLauncher();
   const { available } = useTelemetrySwitch();
   const phone = config.os === "android" || config.os === "ios";
   // Quiver Launcher 3 and an apps folder are a computer's; usage data only where it's sent.
@@ -43,14 +43,15 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   /** Leaving a step answers it: its banner has nothing more to ask. */
   const answered = (s: Step): Partial<Settings> =>
     s === "v3" ? { oldLibraryNoticeSeen: true } : s === "usage" ? { telemetryNoticeSeen: true } : {};
+  // From the settings as they are by then: an import that finishes on a step saves the apps it hid.
   const finish = (skipped: boolean) => {
-    setSettings({ ...settings, ...(skipped ? {} : answered(step)), setupDone: true });
+    setSettings((s) => ({ ...s, ...(skipped ? {} : answered(step)), setupDone: true }));
     track("setup_finished", { skipped, step, brought });
     onClose(brought);
   };
   const next = () => {
     if (at >= steps.length - 1) return finish(false);
-    setSettings({ ...settings, ...answered(step) });
+    setSettings((s) => ({ ...s, ...answered(step) }));
     setOffering(false);
     setAt(at + 1);
   };

@@ -5,16 +5,17 @@
  * overrides); names, artwork and files always come from the catalog. The
  * last catalog data seen is cached so the library shows instantly offline.
  */
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
-import { native, type Config, type LaunchOptions, type OldApp, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, type Collection } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
+import type { Platform } from "./platforms";
 import { setBindings, type Bindings } from "./spatial";
 import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { followTheme, type Theme } from "./theme";
@@ -142,8 +143,8 @@ type Launcher = {
   chooseProgram: (id: string | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
-  /** Imports these Quiver Launcher 3 apps, saying how many are done as it goes; resolves to the names of those it couldn't. */
-  importOld: (apps: OldApp[], onProgress?: (done: number) => void) => Promise<string[]>;
+  /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
+  importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void) => Promise<string[]>;
   /** The Quiver Launcher 3 library in a folder the player picked, its installs in `apps` if given: null when there isn't one. */
   findOld: (path: string, apps?: string) => Promise<V3Library | null>;
   remember: (entries: Entry[]) => void;
@@ -204,7 +205,8 @@ type Launcher = {
   /** Signs out, taking the library along except the apps installed on this computer, which stay until another account signs in. */
   signOut: () => Promise<void>;
   settings: Settings;
-  setSettings: (settings: Settings) => void;
+  /** Takes the new settings, or how to change them as they are by then, for a change that may come after another. */
+  setSettings: Dispatch<SetStateAction<Settings>>;
   /** A short note for the player, such as what signing in brought over. */
   notice: string | null;
   setNotice: (notice: string | null) => void;
@@ -309,6 +311,82 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
   // One 3.x installed with its Windows installer starts the program it linked.
   const msi = old.program ? { installer: "msi" as const, program: old.program } : {};
   return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi };
+}
+
+/**
+ * The tags the player gave a 3.x app, which come over as their own: its tags less the catalog's, the ones 3.x last
+ * had from it and the entry's now (a 3.x from before it kept them has only those), as many as the tag field takes.
+ */
+export function importedTags(old: OldApp, entry: Entry): string[] {
+  const catalogs = new Set([...(old.catalogTags ?? []), ...entry.tags, ...(entry.consoles ?? [])].map((t) => t.toLowerCase()));
+  const own = (old.tags ?? []).map((t) => t.trim().slice(0, 50)).filter((t) => t && !catalogs.has(t.toLowerCase()));
+  return own.filter((t, i) => own.findIndex((o) => o.toLowerCase() === t.toLowerCase()) === i).slice(0, 20);
+}
+
+/**
+ * What a 3.x library brings along besides its apps, as far as it can say before the catalog is asked: the apps
+ * with tags of the player's own (those 3.x didn't have from the catalog, or any on an app the catalog doesn't
+ * know), its tag filters and its hidden apps. Only apps it knows where they come from come over.
+ */
+export function bringsAlong({ apps, filters }: Pick<V3Library, "apps" | "filters">) {
+  const coming = apps.filter((a) => a.repository || a.catalogId);
+  const own = (a: OldApp) => {
+    // A catalog app from a 3.x that didn't keep the catalog's tags can't tell them apart.
+    if (!a.catalogTags && a.catalogId) return false;
+    const catalogs = new Set((a.catalogTags ?? []).map((t) => t.toLowerCase()));
+    return (a.tags ?? []).some((t) => !catalogs.has(t.toLowerCase()));
+  };
+  return { tagged: coming.filter(own).length, filters: filters?.length ?? 0, hidden: coming.filter((a) => a.hidden).length };
+}
+
+/**
+ * An app brought over from 3.x: its id here, the tags 3.x matched its filters on, and what a playlist matches here:
+ * its tags and platforms.
+ */
+export type ImportedApp = { id: string; old: string[]; tags: string[]; platforms?: Entry["supportedOS"] };
+
+/** 3.x's tags for a platform, which a playlist here filters by platform instead. */
+const PLATFORM_TAGS: Record<string, Platform> = { windows: "windows", linux: "linux", macos: "macos", mac: "macos", osx: "macos", android: "android" };
+
+/**
+ * The playlist filters that could show what a 3.x filter showed, the closest first: its platforms' tags as platforms
+ * (any of them; or one, with all of one other tag), then its tags as tags (any of them). None for one that leaves
+ * tags out, as a playlist can't.
+ */
+function rulesFor(f: OldFilter): Pick<Collection, "tags" | "platforms">[] {
+  if (!f.tags.length || f.exclude.length) return [];
+  const platforms = [...new Set(f.tags.flatMap((t) => PLATFORM_TAGS[t.toLowerCase()] ?? []))];
+  const tags = f.tags.filter((t) => !PLATFORM_TAGS[t.toLowerCase()]);
+  const rules: Pick<Collection, "tags" | "platforms">[] = [];
+  if (platforms.length && (f.all ? platforms.length === 1 && tags.length <= 1 : !tags.length)) rules.push({ tags, platforms });
+  if (!f.all || f.tags.length === 1) rules.push({ tags: f.tags });
+  return rules;
+}
+
+/**
+ * Playlists for the player's 3.x tag filters, each showing the apps its filter showed. One a playlist's filters can
+ * follow keeps following them (rulesFor), with any app it showed that they don't find here (one tagged with a
+ * console, say) picked for it; when they'd find more than it showed, the next. Any other is a playlist of the apps
+ * it showed, picked by hand, and none when it showed none.
+ */
+export function importedPlaylists(filters: OldFilter[], apps: ImportedApp[]): Pick<Collection, "name" | "tags" | "platforms" | "apps">[] {
+  const has = (tags: string[], want: string[], all: boolean) => {
+    const set = new Set(tags.map((t) => t.toLowerCase()));
+    return all ? want.every((t) => set.has(t.toLowerCase())) : want.some((t) => set.has(t.toLowerCase()));
+  };
+  // As 3.x filtered (TagHelper.MatchesDisplayFilter).
+  const shows = (f: OldFilter, tags: string[]) => (!f.tags.length || has(tags, f.tags, f.all)) && (!f.exclude.length || !has(tags, f.exclude, f.excludeAll));
+  return filters.flatMap((f) => {
+    const name = f.name.slice(0, 60);
+    const showed = [...new Set(apps.filter((a) => shows(f, a.old)).map((a) => a.id))];
+    for (const rule of rulesFor(f)) {
+      const facts = (a: ImportedApp) => ({ tags: a.tags, consoles: [], installed: false, platforms: a.platforms });
+      const found = new Set(apps.filter((a) => matches({ ...rule, consoles: [] }, facts(a))).map((a) => a.id));
+      const picked = showed.filter((id) => !found.has(id));
+      if ([...found].every((id) => showed.includes(id))) return [{ name, ...rule, ...(picked.length ? { apps: picked } : {}) }];
+    }
+    return showed.length ? [{ name, tags: [], apps: showed }] : [];
+  });
 }
 
 /** `work` on each item, `at` at a time, its results in the items' order; `each` after each one. */
@@ -1183,9 +1261,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     /**
      * Adds the 3.x apps, keeping their installs: the catalog's as the catalog has them (found by repository, or by
      * the entry 3.x knew), any other from GitHub or GitLab as a custom app. Returns the names of those it couldn't:
-     * ones 3.x didn't say where they're from.
+     * ones 3.x didn't say where they're from. The player's tag filters come over as playlists.
      */
-    async importOld(apps, onProgress) {
+    async importOld({ apps, filters = [] }, onProgress) {
       const ids = await catalogRepositories();
       let done = 0;
       // Each asks the site, or its repository's host, so several at a time; then they're added in the library's order.
@@ -1202,6 +1280,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { kind: "custom" as const, custom, latest: releases ? latestOf(releases) : undefined, art };
       }, () => onProgress?.(++done));
       const missing: string[] = [];
+      const tags = new Map<string, string[]>();
+      const hidden: string[] = [];
+      const imported: ImportedApp[] = [];
       apps.forEach((old, i) => {
         const it = found[i];
         if (!it) return void missing.push(old.name);
@@ -1214,7 +1295,32 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         } else entry = addCustom(it.custom, it.latest, it.art);
         const install = adoptedInstall(old, entry, config.os);
         if (install) setInstalls((i) => ({ ...i, [entry.id]: install }));
+        const own = importedTags(old, entry);
+        if (own.length) tags.set(entry.id, own);
+        if (old.hidden) hidden.push(entry.id);
+        const have = library.find((l) => l.id === entry.id)?.overrides?.tags ?? [];
+        imported.push({ id: entry.id, old: old.tags ?? [], tags: [...entry.tags, ...have, ...own], platforms: entry.supportedOS });
       });
+      // Their tags join any the app has here already, and the apps they hid in 3.x stay hidden.
+      if (tags.size)
+        setLibrary((l) =>
+          l.map((i) => {
+            const own = tags.get(i.id);
+            if (!own) return i;
+            const have = i.overrides?.tags ?? [];
+            const all = [...have, ...own.filter((t) => !have.some((h) => h.toLowerCase() === t.toLowerCase()))].slice(0, 20);
+            return all.length === have.length ? i : { ...i, overrides: { ...i.overrides, tags: all }, pending: i.account ? { ...i.pending, tags: true } : i.pending };
+          }),
+        );
+      if (hidden.length) setSettings((s) => ({ ...s, hidden: [...new Set([...(s.hidden ?? []), ...hidden])] }));
+      // Their tag filters, as playlists; one named as a playlist here already leaves that one as it is.
+      const names = new Set(collections.map((c) => c.name.toLowerCase()));
+      const playlists = importedPlaylists(filters, imported).filter((p) => !names.has(p.name.toLowerCase()) && names.add(p.name.toLowerCase()));
+      if (playlists.length)
+        setCollections((all) => [
+          ...all,
+          ...playlists.map((p, i) => ({ key: newKey(), consoles: [], ...p, order: collections.length + i, account: userId, pending: userId ? true : undefined })),
+        ]);
       // The player brought a library over: the one found by itself isn't offered again.
       setOldLibrary(null);
       return missing;

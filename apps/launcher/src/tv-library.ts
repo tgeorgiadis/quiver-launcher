@@ -36,6 +36,7 @@ export function pickLibrary(apps: readonly TvApp[], pick: TvPick, playlists: rea
             // Apps the player added match only the filters there's data for.
             projectType: isOwn(entry.id) ? undefined : entry.projectType,
             aiLevel: entry.aiLevel,
+            platforms: entry.supportedOS,
             names: [entry.projectName, ...entry.games.map((g) => g.title)],
           },
           makers,
