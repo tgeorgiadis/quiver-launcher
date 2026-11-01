@@ -302,7 +302,10 @@ pub fn install(app: &Path, config: &Config, package: &Package, download: &Path, 
             let relative = base.join(file);
             let to = mods.join(&relative);
             fs::create_dir_all(to.parent().unwrap()).map_err(|e| e.to_string())?;
+            crate::install::writable(&to);
             fs::copy(staging.join(file), &to).map_err(|e| format!("Couldn't put {} in the mods folder: {e}", relative.display()))?;
+            // A copy keeps a read-only flag the mod's archive gave it.
+            crate::install::writable(&to);
             placed.push(relative.to_string_lossy().replace('\\', "/"));
         }
         // What the old version had and this one doesn't.
@@ -360,6 +363,7 @@ fn remove(mods: &Path, relative: &str) {
     if !path.components().all(|c| matches!(c, Component::Normal(_))) {
         return;
     }
+    crate::install::writable(&mods.join(path));
     let _ = fs::remove_file(mods.join(path));
     let mut parent = path.parent();
     while let Some(dir) = parent.filter(|d| !d.as_os_str().is_empty()) {
