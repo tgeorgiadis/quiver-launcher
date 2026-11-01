@@ -24,6 +24,7 @@ import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
 import { isOwn } from "./custom";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
+import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
 import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
 import { PLATFORMS, forPlatforms } from "./platforms";
@@ -36,7 +37,7 @@ import { boxZoom, windowBox, zoom } from "./zoom";
 
 type Tab = "all" | "installed" | "not-installed" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
-type Filters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
+type Filters = LibraryFilters;
 
 type Overrides = { name?: string; cover?: string; consoles?: string[] };
 // Made once for an entry and its overrides, so a card given it keeps it till either changes (LibraryTile's memo).
@@ -141,7 +142,8 @@ export function LibraryPage({
   // The app open beside the sidebar; the first one until the player picks one.
   const [selected, setSelected] = useState<string>();
   const { user, unshareList } = useAccount();
-  const [tab, setTab] = useState<Tab>("all");
+  // The tab and filters as the player left them, across Browse and restarts (kept below).
+  const [tab, setTab] = useState<Tab>(() => (keepsTab(settings.libraryTab, collections) ? settings.libraryTab! : "all"));
   const [editing, setEditing] = useState<Collection | null>(null);
   const [sharing, setSharing] = useState<Collection | null>(null);
   const [following, setFollowing] = useState(false);
@@ -149,8 +151,16 @@ export function LibraryPage({
   // Kept with this computer's other preferences.
   const sort: LibrarySort = isLibrarySort(settings.librarySort) ? settings.librarySort : "played";
   const setSort = (librarySort: LibrarySort) => setSettings({ ...settings, librarySort: librarySort === "played" ? undefined : librarySort });
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>(() => keptFilters(settings.libraryFilters));
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Kept with this computer's other preferences once they settle: two changes at once (a playlist's filters cleared as it opens) save together.
+  useEffect(() => {
+    const libraryTab = keepsTab(tab, collections) ? tab : undefined;
+    const set = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
+    const libraryFilters = Object.keys(set).length ? set : undefined;
+    if (libraryTab === settings.libraryTab && JSON.stringify(libraryFilters) === JSON.stringify(settings.libraryFilters)) return;
+    setSettings({ ...settings, libraryTab, libraryFilters });
+  }, [tab, filters]); // eslint-disable-line react-hooks/exhaustive-deps
   const { platforms, picked: pickedPlatforms } = usePlatforms();
   // Every platform's apps, until the library is left.
   const [everywhere, setEverywhere] = useState(false);

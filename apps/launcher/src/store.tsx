@@ -363,6 +363,10 @@ export type Settings = {
   browseShowsLibrary?: boolean;
   /** How the library is sorted (sort.ts); unset is recently played. */
   librarySort?: string;
+  /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
+  libraryTab?: string;
+  /** The library's filters (library.tsx keptFilters); unset is none. */
+  libraryFilters?: Record<string, string>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
   /** How the library shows its apps (view.ts); only what differs from the defaults. */

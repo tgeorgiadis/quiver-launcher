@@ -67,6 +67,8 @@ export function App() {
   // Pages opened from the list, each over the one before: Back goes down one.
   const [stack, setStack] = useState<View[]>([]);
   const [search, setSearch] = useState("");
+  // Browse's filters as the player picked them, kept while they're in the library: Browse starts again from them.
+  const [browseKept, setBrowseKept] = useState<KeptBrowse | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   // Read before this start counts as one (useTelemetrySetup).
   const [settingUp, setSettingUp] = useState(() => showsSetup(settings));
@@ -271,7 +273,7 @@ export function App() {
                 )}
               />
             ) : (
-              <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} />
+              <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} kept={browseKept} onKeep={setBrowseKept} />
             )}
           </div>
         )}
@@ -362,11 +364,16 @@ function BrowsePage({
   onOpenGame,
   search,
   onSearch,
+  kept,
+  onKeep,
 }: {
   onOpen: (e: Entry) => void;
   onOpenGame: (game: GameLink) => void;
   search: string;
   onSearch: (search: string) => void;
+  /** The filters the player picked when Browse was last open. */
+  kept: KeptBrowse | null;
+  onKeep: (kept: KeptBrowse) => void;
 }) {
   const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs } = useLauncher();
   const saved = useAccount().user?.catalogDefaults;
@@ -387,9 +394,9 @@ function BrowsePage({
     console: d?.console,
     ai: d?.ai === "no-generated" || d?.ai === "no-ai" ? d.ai : undefined,
   });
-  const [filters, setFilters] = useState(() => fromSaved(saved));
+  const [filters, setFilters] = useState(() => kept?.filters ?? fromSaved(saved));
   // The account can load after Browse opens: its saved filters apply until the player picks their own.
-  const picked = useRef(false);
+  const picked = useRef(Boolean(kept));
   useEffect(() => {
     if (!picked.current) setFilters(fromSaved(saved));
   }, [JSON.stringify(saved)]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -460,7 +467,11 @@ function BrowsePage({
   const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== "here"].filter(Boolean).length;
   // An order the player picked (the sort, or a shelf's See all): the whole list in it, in place of the front page, as a
   // search or a filter has it; its pill goes back to the front page.
-  const [sorted, setSorted] = useState(false);
+  const [sorted, setSorted] = useState(kept?.sorted ?? false);
+  // What the player picked, for Browse to start from when they come back to it.
+  useEffect(() => {
+    if (picked.current) onKeep({ filters, sorted });
+  }, [filters, sorted]); // eslint-disable-line react-hooks/exhaustive-deps
   const sortName = (sort: BrowseFilters["sort"]) =>
     ({ added: t`Recently added`, updated: t`Recently updated`, rating: t`Top rated`, name: t`Name A–Z` })[sort ?? "added"];
   // Apps in your library shown, a choice kept from before: on the Filters button's count, not a row of its own.
@@ -1365,6 +1376,8 @@ const SORTS = ["added", "updated", "rating", "name"] as const;
 /** Browse's catalog filters; several kinds of project come from saved filters. */
 /** The catalog's filters, with "here" for the platforms this computer runs (catalogOs). */
 type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & { os?: Os | "here" };
+/** Browse's filters as the player left them, and whether they picked its sort. */
+type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
 
 /** Runs a Windows installer's setup again for the installed version, as to repair it. */
 function ReinstallButton({ id }: { id: string }) {
