@@ -610,6 +610,19 @@ namespace QuiverLauncher
                 // Get the latest release info
                 await game.CheckStatusAsync(_gameManager.HttpClient, _gameManager.GamesFolder, forceUpdateCheck: true);
 
+                // Catalog startup evidence can contain only a verified version, not its download files.
+                // Resolve that release before deciding whether a headless asset selection is possible.
+                if (game.GetLatestRelease() == null)
+                {
+                    var release = await game.CatalogReleaseAsync(LauncherSession.OperationCancellation)
+                        ?? await CatalogReleaseSelection.FetchSelectedAsync(
+                            _gameManager.HttpClient, game.RepositorySource, game.Repository!,
+                            game.ReleaseTarget, game.GetReleaseApiToken(settings),
+                            LauncherSession.OperationCancellation);
+                    if (release != null)
+                        game.ApplyCachedRelease(release.tag_name, release);
+                }
+
                 string platformIdentifier = GameInfo.GetPlatformIdentifier(settings);
                 WriteColor($"→ Detected platform: {platformIdentifier}", ColorMuted);
                 Console.WriteLine();
