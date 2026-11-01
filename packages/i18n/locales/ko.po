@@ -1145,6 +1145,10 @@ msgstr "{title} 닫기"
 msgid "Close filters"
 msgstr "필터 닫기"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
+msgstr "닫으면 시스템 트레이로 보내기 (Quiver Launcher가 계속 실행되며 앱을 업데이트해요)"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Collapse all sections"
 msgstr "모든 섹션 접기"
@@ -2655,6 +2659,11 @@ msgstr "{site}에서 열기"
 msgid "Open on its site"
 msgstr "사이트에서 열기"
 
+#. Item in the launcher's menu in the Windows system tray
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Open Quiver Launcher"
+msgstr "Quiver Launcher 열기"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Open the release page"
@@ -2887,6 +2896,11 @@ msgstr "프로젝트 세부 정보"
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
 msgstr "프로젝트 유형"
+
+#. Item in the launcher's menu in the Windows system tray: closes the launcher
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quit"
+msgstr "종료"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
@@ -3578,6 +3592,10 @@ msgstr "{name}의 어떤 프로그램을 실행할까요?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Start which program?"
 msgstr "어떤 프로그램을 실행할까요?"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Start with Windows, in the system tray"
+msgstr "Windows 시작 시 시스템 트레이에서 실행"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"

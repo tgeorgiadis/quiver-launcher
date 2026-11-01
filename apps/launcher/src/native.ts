@@ -184,6 +184,11 @@ export const native = {
   setFullscreen: (on: boolean, systemTitleBar: boolean) => invoke<void>("set_fullscreen", { on, titleBar: systemTitleBar }),
   /** The system's title bar back on, or off for the launcher's own buttons (a Mac always keeps its own). */
   setSystemTitleBar: (on: boolean) => invoke<void>("set_system_title_bar", { on }),
+  /** Close to tray on or off, and the tray menu's words in the player's language (tray.rs; Windows only). */
+  setTray: (closeToTray: boolean, open: string, quit: string) => invoke<void>("set_tray", { closeToTray, open, quit }),
+  /** Whether Windows starts this copy of the launcher, in the tray, as the player signs in. */
+  startWithWindows: () => invoke<boolean>("start_with_windows"),
+  setStartWithWindows: (on: boolean) => invoke<void>("set_start_with_windows", { on }),
   /** The window's own buttons, for the top bar when the system's title bar is off. */
   minimize: () => getCurrentWindow().minimize(),
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),

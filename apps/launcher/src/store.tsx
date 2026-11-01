@@ -333,6 +333,8 @@ export type Settings = {
   fullscreen?: boolean;
   /** The system's title bar over the window; unset, the window's buttons are in the top bar instead. */
   systemTitleBar?: boolean;
+  /** Closing the window hides it in the tray, the launcher still running (tray.rs; Windows only). */
+  closeToTray?: boolean;
   scale?: number;
   /** Light or dark; unset follows the system. */
   theme?: Theme;

@@ -126,6 +126,51 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
   );
 }
 
+/**
+ * Close to tray, as Quiver Launcher 3 had it, and starting with Windows in the tray (tray.rs): the launcher keeps
+ * running, and updating apps, with its window closed. Whether Windows starts it is Windows' to say, so it's read from there.
+ */
+function TraySettings() {
+  const { settings, setSettings, setNotice } = useLauncher();
+  const [starts, setStarts] = useState<boolean | null>(null);
+  useEffect(() => {
+    native.startWithWindows().then(setStarts, () => setStarts(false));
+  }, []);
+  return (
+    <>
+      <label className="toggle">
+        <input type="checkbox" checked={Boolean(settings.closeToTray)} onChange={(e) => setSettings({ ...settings, closeToTray: e.target.checked || undefined })} />
+        <Trans>Close to the system tray (Quiver Launcher keeps running and updating apps)</Trans>
+      </label>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          disabled={starts === null}
+          checked={Boolean(starts)}
+          onChange={(e) => {
+            const on = e.target.checked;
+            native.setStartWithWindows(on).then(
+              () => setStarts(on),
+              (error) => setNotice(String(error)),
+            );
+          }}
+        />
+        <Trans>Start with Windows, in the system tray</Trans>
+      </label>
+    </>
+  );
+}
+
+/** Close to tray as the setting has it, and the tray's menu in the player's language (tray.rs; Windows only). */
+export function useTray() {
+  const { settings, config } = useLauncher();
+  const open = t({ message: "Open Quiver Launcher", comment: "Item in the launcher's menu in the Windows system tray" });
+  const quit = t({ message: "Quit", comment: "Item in the launcher's menu in the Windows system tray: closes the launcher" });
+  useEffect(() => {
+    if (config.os === "windows") native.setTray(Boolean(settings.closeToTray), open, quit).catch(() => {});
+  }, [config.os, settings.closeToTray, open, quit]);
+}
+
 /** The window, the interface size and theme, the language, usage data, and the first start's setup again. */
 function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
   const { settings, setSettings, config } = useLauncher();
@@ -166,6 +211,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
           <Trans>Use the system's title bar (instead of Quiver's own window buttons)</Trans>
         </label>
       )}
+      {config.os === "windows" && <TraySettings />}
       <label>
         <Trans>Interface size</Trans>{" "}
         <select value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>

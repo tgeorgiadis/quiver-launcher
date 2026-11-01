@@ -33,7 +33,7 @@ import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
 import { WindowControls, moveWindow, useWindowButtons } from "./window-bar";
-import { SettingsPage } from "./settings-page";
+import { SettingsPage, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { FilePicker } from "./file-picker";
@@ -56,6 +56,7 @@ const bare = (version: string) => version.trim().replace(/^v/i, "");
 export function App() {
   useTelemetrySetup();
   useUpdateCheck();
+  useTray();
   const { library, client, settings, setSettings, config } = useLauncher();
   // TV mode (tv.tsx) in place of the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
