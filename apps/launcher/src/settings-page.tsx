@@ -134,7 +134,9 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       <label className="toggle">
         <input
           type="checkbox"
-          checked={Boolean(settings.fullscreen)}
+          // Steam's Game Mode is always full screen (lib.rs in_game_mode).
+          checked={Boolean(settings.fullscreen || config.gameMode)}
+          disabled={config.gameMode}
           onChange={(e) => {
             setSettings({ ...settings, fullscreen: e.target.checked });
             void native.setFullscreen(e.target.checked, Boolean(settings.systemTitleBar));
