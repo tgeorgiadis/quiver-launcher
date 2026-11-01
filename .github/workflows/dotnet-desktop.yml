@@ -272,10 +272,74 @@ jobs:
         iconutil -c icns "$ICONSET" -o QuiverLauncher.icns
         test -f QuiverLauncher.icns
 
-    # Apple Developer ID + notarization can be wired later via
-    # --signAppIdentity / --signInstallIdentity / --notaryProfile / --keychain.
-    - name: Velopack pack (macOS)
+    # Developer ID signing and notarization turn on when these repository secrets exist
+    # (never on pull_request runs, which build unsigned as before):
+    #   MACOS_CERTIFICATE_P12_BASE64  base64 of the exported "Developer ID Application" .p12
+    #   MACOS_CERTIFICATE_PASSWORD    password of that .p12
+    #   MACOS_SIGN_APP_IDENTITY       e.g. "Developer ID Application: Your Name (TEAMID)"
+    # Notarization (optional, needs signing) uses an App Store Connect API key:
+    #   APPLE_API_KEY_P8_BASE64, APPLE_API_KEY_ID, APPLE_API_ISSUER_ID
+    - name: Set up Developer ID signing
+      id: signing
+      if: github.event_name != 'pull_request'
+      env:
+        MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+        MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        MACOS_SIGN_APP_IDENTITY: ${{ secrets.MACOS_SIGN_APP_IDENTITY }}
+        APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+        APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+        APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
       run: |
+        set -euo pipefail
+        if [ -z "$MACOS_CERTIFICATE_P12_BASE64" ] || [ -z "$MACOS_SIGN_APP_IDENTITY" ]; then
+          echo "::notice::macOS signing secrets not set; packaging an unsigned app."
+          exit 0
+        fi
+
+        KEYCHAIN="$RUNNER_TEMP/quiver-signing.keychain-db"
+        KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+
+        CERT="$RUNNER_TEMP/developer-id.p12"
+        echo "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERT"
+        security import "$CERT" -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+        rm -f "$CERT"
+        security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+
+        # vpk 1.2 has no --keychain option: codesign finds the identity through the search
+        # list, and notarytool reads the stored profile from the default keychain.
+        security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+        security default-keychain -d user -s "$KEYCHAIN"
+        echo "keychain=$KEYCHAIN" >> "$GITHUB_OUTPUT"
+        echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+        if [ -n "$APPLE_API_KEY_P8_BASE64" ] && [ -n "$APPLE_API_KEY_ID" ] && [ -n "$APPLE_API_ISSUER_ID" ]; then
+          KEY="$RUNNER_TEMP/notary-key.p8"
+          echo "$APPLE_API_KEY_P8_BASE64" | base64 --decode > "$KEY"
+          xcrun notarytool store-credentials quiver-notary \
+            --key "$KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" \
+            --keychain "$KEYCHAIN"
+          rm -f "$KEY"
+          echo "notarize=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::Notarization secrets not set; the app is signed but Gatekeeper will still warn on first launch."
+        fi
+
+    - name: Velopack pack (macOS)
+      env:
+        MACOS_SIGN_APP_IDENTITY: ${{ secrets.MACOS_SIGN_APP_IDENTITY }}
+      run: |
+        set -euo pipefail
+        SIGN_ARGS=()
+        if [ "${{ steps.signing.outputs.enabled }}" = "true" ]; then
+          SIGN_ARGS+=(--signAppIdentity "$MACOS_SIGN_APP_IDENTITY")
+        fi
+        if [ "${{ steps.signing.outputs.notarize }}" = "true" ]; then
+          SIGN_ARGS+=(--notaryProfile quiver-notary)
+        fi
+
         vpk pack \
           --packId ${{ env.PACK_ID }} \
           --packVersion ${{ steps.ver.outputs.version }} \
@@ -285,7 +349,28 @@ jobs:
           --runtime ${{ matrix.rid }} \
           --channel ${{ matrix.rid }} \
           --noInst true \
-          --outputDir releases/${{ matrix.rid }}
+          --outputDir releases/${{ matrix.rid }} \
+          ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"}
+
+    - name: Verify macOS signature
+      if: steps.signing.outputs.enabled == 'true'
+      run: |
+        set -euo pipefail
+        CHECK="$RUNNER_TEMP/verify-${{ matrix.rid }}"
+        rm -rf "$CHECK"
+        ditto -x -k releases/${{ matrix.rid }}/*-Portable.zip "$CHECK"
+        APP="$(find "$CHECK" -maxdepth 2 -name '*.app' -type d | head -n1)"
+        codesign --verify --deep --strict --verbose=2 "$APP"
+        if [ "${{ steps.signing.outputs.notarize }}" = "true" ]; then
+          xcrun stapler validate "$APP"
+          spctl --assess --type execute --verbose=2 "$APP"
+        fi
+
+    - name: Remove signing keychain
+      if: always() && steps.signing.outputs.keychain != ''
+      run: |
+        security default-keychain -d user -s login.keychain-db || true
+        security delete-keychain "${{ steps.signing.outputs.keychain }}" || true
 
     # Until the app is signed with a Developer ID, give the downloadable app a complete
     # ad-hoc signature. vpk leaves the bundle's seal broken, which macOS reports as
