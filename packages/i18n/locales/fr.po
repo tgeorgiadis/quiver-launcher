@@ -1182,6 +1182,10 @@ msgstr "Fermer {title}"
 msgid "Close filters"
 msgstr "Fermer les filtres"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
+msgstr "Fermer dans la zone de notification (Quiver Launcher continue de tourner et de mettre à jour les apps)"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Collapse all sections"
 msgstr "Réduire toutes les sections"
@@ -2712,6 +2716,11 @@ msgstr "Ouvrir sur {site}"
 msgid "Open on its site"
 msgstr "Ouvrir sur son site"
 
+#. Item in the launcher's menu in the Windows system tray
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Open Quiver Launcher"
+msgstr "Ouvrir Quiver Launcher"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Open the release page"
@@ -2949,6 +2958,11 @@ msgstr "DÉTAILS DU PROJET"
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
 msgstr "Type de projet"
+
+#. Item in the launcher's menu in the Windows system tray: closes the launcher
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quit"
+msgstr "Quitter"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
@@ -3648,6 +3662,10 @@ msgstr "Lancer quel programme de {name} ?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Start which program?"
 msgstr "Lancer quel programme ?"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Start with Windows, in the system tray"
+msgstr "Démarrer avec Windows, dans la zone de notification"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"

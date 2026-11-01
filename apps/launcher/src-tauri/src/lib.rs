@@ -16,6 +16,8 @@ mod sandbox;
 mod shortcut;
 mod snapshots;
 mod steam;
+#[cfg(windows)]
+mod tray;
 mod update;
 mod v3;
 mod window_state;
@@ -743,6 +745,47 @@ async fn to_background() -> Result<(), String> {
     Ok(())
 }
 
+/// Close to tray on or off (tray.rs), and its menu's words in the player's language. Windows only: elsewhere, nothing.
+#[tauri::command]
+fn set_tray(app: tauri::AppHandle, close_to_tray: bool, open: String, quit: String) -> Result<(), String> {
+    #[cfg(windows)]
+    return tray::set(&app, close_to_tray, open, quit).map_err(|e| e.to_string());
+    #[cfg(not(windows))]
+    {
+        let _ = (app, close_to_tray, open, quit);
+        Ok(())
+    }
+}
+
+/// Whether Windows starts the launcher, in the tray, as the player signs in.
+#[tauri::command]
+fn start_with_windows() -> bool {
+    #[cfg(windows)]
+    return tray::starts_with_windows();
+    #[cfg(not(windows))]
+    false
+}
+
+#[tauri::command]
+fn set_start_with_windows(on: bool) -> Result<(), String> {
+    #[cfg(windows)]
+    return tray::set_start_with_windows(on);
+    #[cfg(not(windows))]
+    {
+        let _ = on;
+        Err("Only Windows starts the launcher as you sign in.".into())
+    }
+}
+
+/// The data folder beside a portable copy of the launcher (one with `portable.txt` next to it).
+fn portable_data() -> Option<PathBuf> {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(Path::to_path_buf))
+        .filter(|dir| dir.join("portable.txt").exists())
+        .map(|dir| dir.join("data"))
+}
+
 fn has_fuse2() -> bool {
     // Without ldconfig, extracting still works, just more slowly. The system's, where the AppImage runs.
     let mut ldconfig = Command::new("/sbin/ldconfig");
@@ -1032,7 +1075,9 @@ fn find_v3_library_in(path: String, apps: Option<String>) -> Option<v3::Library>
 /// The window from tauri.conf.json. End-to-end tests on Windows set
 /// QUIVER_DEBUG_PORT on a debug build and attach to WebView2 there, since its
 /// runtime no longer takes the debugging port WebDriver passes it.
-fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_bar: bool) -> tauri::Result<()> {
+/// The launcher's window, back where it was: on screen unless `shown` is false (started in the tray), when it's
+/// whether to maximize it as it shows.
+fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_bar: bool, shown: bool) -> tauri::Result<bool> {
     let builder = tauri::WebviewWindowBuilder::from_config(app.handle(), &app.config().app.windows[0])?.theme(theme);
     #[cfg(desktop)]
     let builder = builder.decorations(system_title_bar(title_bar));
@@ -1051,14 +1096,17 @@ fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_
     let window = builder.visible(false).build()?;
     let maximize = window_state::restore(&window, dir);
     window_state::track(&window, dir.to_path_buf());
+    #[cfg(windows)]
+    tray::watch(&window);
+    if !shown {
+        return Ok(maximize);
+    }
     window.show()?;
     #[cfg(desktop)]
     if maximize {
         let _ = window.maximize();
     }
-    #[cfg(mobile)]
-    let _ = maximize;
-    Ok(())
+    Ok(maximize)
 }
 
 /// What `tauri::AppHandle` and the rest mean without a runtime named: wry, or on
@@ -1107,16 +1155,24 @@ pub fn run() {
         };
         builder.runtime(cef)
     };
+    // One launcher at a time on its data: starting it again, as one hidden in the tray can be, opens the one running
+    // (unless that's Windows starting it as the player signs in). A portable copy keeps its own data, and so do tests.
+    #[cfg(windows)]
+    let builder = if std::env::var_os("QUIVER_DATA").is_none() && portable_data().is_none() {
+        builder.plugin(tauri_plugin_single_instance::init(|app, args, _| {
+            if !args.iter().any(|a| a == tray::ARG) {
+                tray::open_window(app);
+            }
+        }))
+    } else {
+        builder
+    };
     let builder = builder.plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "android")]
     let builder = builder.plugin(android::init());
     builder
         .setup(|app| {
-            let portable = std::env::current_exe()
-                .ok()
-                .and_then(|exe| exe.parent().map(Path::to_path_buf))
-                .filter(|dir| dir.join("portable.txt").exists())
-                .map(|dir| dir.join("data"));
+            let portable = portable_data();
             // What an earlier update moved aside.
             match update::kind() {
                 update::Kind::AppImage(image) => update::clean_up(&image),
@@ -1142,16 +1198,35 @@ pub fn run() {
                 .ok()
                 .and_then(|b| serde_json::from_slice(&b).ok())
                 .unwrap_or_default();
-            main_window(app, &dir, theme_of(settings["theme"].as_str()), settings["systemTitleBar"] == true)?;
+            let title_bar = settings["systemTitleBar"] == true;
+            let full = settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen");
+            // Started by Windows as the player signs in: in the tray, the window unseen till they open it.
+            #[cfg(windows)]
+            let unseen = std::env::args().any(|a| a == tray::ARG);
+            #[cfg(not(windows))]
+            let unseen = false;
+            #[cfg(windows)]
+            app.manage(tray::Tray::new(settings["closeToTray"] == true, unseen));
+            let maximize = main_window(app, &dir, theme_of(settings["theme"].as_str()), title_bar, !unseen)?;
+            #[cfg(not(windows))]
+            let _ = maximize;
             // Paint behind the page in the theme it will draw in.
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(theme) = window.theme() {
                     let _ = window.set_background_color(Some(backdrop(theme)));
                 }
             }
-            if settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen") {
+            #[cfg(windows)]
+            if unseen {
+                app.state::<tray::Tray>().wait_to_show(tray::OnShow { maximize, fullscreen: full.then_some(title_bar) });
+            }
+            #[cfg(windows)]
+            if let Err(e) = tray::refresh(app.handle()) {
+                append_log(&dir.join("quiver.log"), &format!("Couldn't show the tray icon: {e}"));
+            }
+            if full && !unseen {
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = fullscreen(&window, true, settings["systemTitleBar"] == true);
+                    let _ = fullscreen(&window, true, title_bar);
                 }
             }
             let apps = apps_folder::current(&dir);
@@ -1204,6 +1279,9 @@ pub fn run() {
             add_to_steam,
             open_url,
             to_background,
+            set_tray,
+            start_with_windows,
+            set_start_with_windows,
             check_update,
             install_update,
             open_folder,
