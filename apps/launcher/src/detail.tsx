@@ -5,7 +5,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
+import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, Plus, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { FaSteam } from "react-icons/fa6";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
@@ -914,7 +914,7 @@ export function Versions({
   /** Set, it's Get's own choices, from beside Get: what Get would install first, and the build to install where there's a choice. */
   getting?: boolean;
 }) {
-  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config } = useLauncher();
+  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config, library, add } = useLauncher();
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
   const builds: Os[] = getting && config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows") ? ["linux", "windows"] : [];
   const [platform, setPlatform] = useState<Os | undefined>(builds[0]);
@@ -1121,6 +1121,7 @@ export function Versions({
   const build = platform && buildName(platform);
   const missing = build && t`No ${build} build`;
   const newestLabel = versionLabel(newest);
+  const inLibrary = library.some((i) => i.id === entry.id && !i.removed);
   const head = getting && (
     <div className="get-choices">
       <PanelFormHead title={t`Get ${app}`} onClose={onClose!} />
@@ -1133,20 +1134,35 @@ export function Versions({
           ))}
         </div>
       )}
-      {newestRelease && lacks(newestRelease) ? (
-        <p className="muted">{missing}</p>
-      ) : (
-        <button
-          className="primary"
-          autoFocus
-          onClick={() => {
-            onClose?.();
-            void get(entry, undefined, platform ? { platform } : undefined);
-          }}
-        >
-          <Download size={15} aria-hidden="true" /> {newest ? t`Get ${newestLabel}` : t({ message: "Get", comment: "Button that installs an app" })}
-        </button>
-      )}
+      <div className="get-actions">
+        {newestRelease && lacks(newestRelease) ? (
+          <p className="muted">{missing}</p>
+        ) : (
+          <button
+            className="primary"
+            autoFocus
+            onClick={() => {
+              onClose?.();
+              void get(entry, undefined, platform ? { platform } : undefined);
+            }}
+          >
+            <Download size={15} aria-hidden="true" />{" "}
+            {newest ? t`Install ${newestLabel}` : t({ message: "Install", comment: "Button in Get's dialog: downloads and installs the app now" })}
+          </button>
+        )}
+        {/* Just the library's: nothing is downloaded until the player gets it from there. */}
+        {!inLibrary && (
+          <button
+            className="primary"
+            onClick={() => {
+              onClose?.();
+              add(entry);
+            }}
+          >
+            <Plus size={15} aria-hidden="true" /> <Trans>Add to library</Trans>
+          </button>
+        )}
+      </div>
     </div>
   );
   // As a dialog: the list, or how it's loading, in one.
