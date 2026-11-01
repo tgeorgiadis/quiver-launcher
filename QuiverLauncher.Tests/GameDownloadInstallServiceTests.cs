@@ -18,6 +18,67 @@ public class GameDownloadInstallServiceTests
     }
 
     [Fact]
+    public async Task DownloadAndInstallAsync_finishes_headless_update_with_a_library_manager()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        var gamesFolder = Path.Combine(root, "Apps");
+        Directory.CreateDirectory(gamesFolder);
+
+        try
+        {
+            var settings = new AppSettings { Platform = TestPlatforms.ForWindowsPayload, AppsPath = gamesFolder };
+            var store = new FileSettingsStore(Path.Combine(root, "settings.json"));
+            store.Save(settings);
+            using var client = new HttpClient(new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(CreateMinimalZipWithExe()),
+            }));
+            using var manager = new GameManager(store, client, new AppCatalogService(dataDirectory: root));
+            var game = new GameInfo
+            {
+                Name = "Headless update",
+                Repository = "owner/headless-update",
+                FolderName = "HeadlessUpdate",
+                GameManager = manager,
+                InstalledVersion = "v1.0.0",
+                Status = GameStatus.UpdateAvailable,
+            };
+            var gamePath = game.GetInstallPath(gamesFolder);
+            Directory.CreateDirectory(gamePath);
+            await File.WriteAllTextAsync(Path.Combine(gamePath, "version.txt"), "v1.0.0", TestContext.Current.CancellationToken);
+            await File.WriteAllBytesAsync(Path.Combine(gamePath, "game.exe"), [0x4D, 0x5A], TestContext.Current.CancellationToken);
+            var libraryNotified = false;
+            manager.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName == nameof(GameManager.Games))
+                    libraryNotified = game.Status == GameStatus.Installed && game.InstalledVersion == "v1.2.3";
+            };
+            var release = new GitHubRelease
+            {
+                tag_name = "v1.2.3",
+                assets = [new GitHubAsset { name = "payload.zip", browser_download_url = "https://example.com/download/asset" }],
+            };
+            var dialogs = new RecordingDialogs();
+
+            await GameDownloadInstallService.DownloadAndInstallAsync(
+                game, client, gamesFolder, release, settings, GameStatus.UpdateAvailable,
+                dialogs, releaseMode: ReleaseInstallMode.ExplicitRelease)
+                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+            dialogs.LastError.Should().BeNull();
+            game.Status.Should().Be(GameStatus.Installed);
+            game.InstalledVersion.Should().Be("v1.2.3");
+            File.ReadAllText(Path.Combine(gamePath, "version.txt")).Trim().Should().Be("v1.2.3");
+            libraryNotified.Should().BeTrue("headless callers must receive the completed library update without an Avalonia event loop");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
     public async Task DownloadAndInstallAsync_installs_single_zip_asset()
     {
         var gamesFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

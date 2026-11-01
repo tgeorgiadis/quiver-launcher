@@ -30,7 +30,7 @@ namespace QuiverLauncher.Services
         public Func<Action, Task>? UiThreadInvoker { get; set; }
         public bool HasLoadedLibrary { get; private set; }
 
-        private async Task RunOnUiThreadAsync(Action action)
+        internal async Task RunOnUiThreadAsync(Action action)
         {
             var invoker = UiThreadInvoker;
             if (invoker == null)

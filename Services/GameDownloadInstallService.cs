@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using Avalonia.Threading;
 using QuiverLauncher.Core.Models;
 using QuiverLauncher.Core.Services;
 using QuiverLauncher.Models;
@@ -467,10 +466,10 @@ public static class GameDownloadInstallService
 
             if (game.GameManager != null)
             {
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                await game.GameManager.RunOnUiThreadAsync(() =>
                 {
                     game.GameManager.OnPropertyChanged(nameof(GameManager.Games));
-                });
+                }).ConfigureAwait(false);
             }
         }
         catch (DownloadMismatchException ex)
