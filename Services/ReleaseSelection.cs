@@ -6,8 +6,8 @@ namespace QuiverLauncher.Services;
 public static class ReleaseSelection
 {
     public static GitHubRelease? SelectLatestRelease(IReadOnlyList<GitHubRelease>? releases,
-        string? preferredVersion = null, string? installedVersion = null, string? githubLatestTag = null) =>
-        CatalogReleaseSelection.SelectLatestRelease(releases, preferredVersion, installedVersion, githubLatestTag);
+        string? preferredVersion = null, string? installedVersion = null, string? githubLatestTag = null, bool includePrereleases = false) =>
+        CatalogReleaseSelection.SelectLatestRelease(releases, preferredVersion, installedVersion, githubLatestTag, includePrereleases);
     public static bool IsSameInstalledRelease(string? installedVersion, string? releaseTag) =>
         CatalogReleaseSelection.IsSameInstalledRelease(installedVersion, releaseTag);
 }

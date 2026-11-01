@@ -47,7 +47,7 @@ public sealed class LibraryUpdateChecker(HttpClient client, AppSettings settings
     {
         var targets = apps.Where(a => !a.IsManuallyManaged && !string.IsNullOrWhiteSpace(a.Repository)).ToArray();
         var results = new AppCheckResult[targets.Length];
-        var pass = new ReleasePass(client);
+        var pass = new ReleasePass(client, settings.IncludePrereleaseAppUpdates);
         using var cacheScope = force ? null : ReleaseRequestCoordinator.AllowCachedMetadata(cacheAge);
         var coordinator = ReleaseRequestCoordinator.For(client);
         var credentialsToValidate = new Dictionary<string, (string Provider, string Token)>();
@@ -153,7 +153,7 @@ public sealed class LibraryUpdateChecker(HttpClient client, AppSettings settings
         _ => "Could not read release information. Try again; if it persists, check the app's repository settings.",
     };
 
-    private sealed class ReleasePass(HttpClient client)
+    private sealed class ReleasePass(HttpClient client, bool includePrereleases)
     {
         private readonly object _gate = new();
         private readonly Dictionary<string, Task<GitHubReleaseFetchResult>> _responses = new(StringComparer.Ordinal);
@@ -175,18 +175,20 @@ public sealed class LibraryUpdateChecker(HttpClient client, AppSettings settings
                 var other = await Once(key, () => ReleaseSourceRegistry.Default.FetchReleasesAsync(client,
                     app.RepositorySource, repository, credential, cancellationToken: token));
                 other.EnsureSuccess();
-                return ReleaseSelection.SelectLatestRelease(other.Releases, app.ReleaseTarget, app.InstalledVersion, other.LatestTag);
+                return ReleaseSelection.SelectLatestRelease(other.Releases, app.ReleaseTarget, app.InstalledVersion, other.LatestTag,
+                    includePrereleases);
             }
             var latest = await Once(key + ":latest", () => GitHubReleaseService.FetchLatestReleaseIndexAsync(client, repository, credential, cancellationToken: token));
             if (latest.IsRateLimited || latest.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) latest.EnsureSuccess();
-            // A pinned or verified release may not be GitHub's latest; that needs the release list.
-            if (string.IsNullOrWhiteSpace(app.ReleaseTarget) && latest.StatusCode == HttpStatusCode.OK &&
+            // A pinned or verified release, or the newest pre-release, may not be GitHub's latest; that needs the release list.
+            if (string.IsNullOrWhiteSpace(app.ReleaseTarget) && !includePrereleases && latest.StatusCode == HttpStatusCode.OK &&
                 ReleaseSelection.SelectLatestRelease(latest.Releases, githubLatestTag: latest.LatestTag) is { } selected)
                 return selected;
             var list = await Once(key + ":list", () => GitHubReleaseService.FetchReleaseListAsync(client, repository, credential, token));
             list.EnsureSuccess();
             var releases = list.Releases.Concat(latest.StatusCode == HttpStatusCode.OK ? latest.Releases : []).ToArray();
-            return ReleaseSelection.SelectLatestRelease(releases, app.ReleaseTarget, app.InstalledVersion, latest.LatestTag);
+            return ReleaseSelection.SelectLatestRelease(releases, app.ReleaseTarget, app.InstalledVersion, latest.LatestTag,
+                includePrereleases);
         }
     }
 }

@@ -305,7 +305,8 @@ public sealed class LibraryLaunchController
             await _gameManager.CatalogReleases.RefreshAsync([game], _session.Token);
             var releaseResult = await game.FetchReleasesAsync(_gameManager.HttpClient, _session.Token);
             _session.Token.ThrowIfCancellationRequested();
-            var latestRelease = GameInfo.SelectLatestRelease(releaseResult.Releases, game.ReleaseTarget, game.InstalledVersion, releaseResult.LatestTag);
+            var latestRelease = GameInfo.SelectLatestRelease(releaseResult.Releases, game.ReleaseTarget, game.InstalledVersion, releaseResult.LatestTag,
+                game.FollowsPrereleases);
             if (latestRelease == null)
             {
                 if (allowAssetPicker)
@@ -375,7 +376,8 @@ public sealed class LibraryLaunchController
             release = (game.InstalledVersion is { Length: > 0 } installed
                     ? releaseResult.Releases.FirstOrDefault(r => ReleaseVersionIdentity.AreVersionsEquivalent(r.tag_name, installed))
                     : null)
-                ?? GameInfo.SelectLatestRelease(releaseResult.Releases, game.ReleaseTarget, game.InstalledVersion, releaseResult.LatestTag);
+                ?? GameInfo.SelectLatestRelease(releaseResult.Releases, game.ReleaseTarget, game.InstalledVersion, releaseResult.LatestTag,
+                game.FollowsPrereleases);
         }
         catch (Exception ex)
         {

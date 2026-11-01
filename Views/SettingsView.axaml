@@ -270,6 +270,19 @@
 													   TextWrapping="Wrap"/>
 										</StackPanel>
 
+										<StackPanel Spacing="2" Margin="0,8,0,0">
+											<CheckBox x:Name="IncludePrereleaseAppUpdatesCheckBox"
+													  Content="Include pre-releases in app updates"
+													  Foreground="{DynamicResource ThemeText}"
+													  FontSize="13" FontWeight="SemiBold"
+													  IsChecked="{Binding IncludePrereleaseAppUpdates, Mode=TwoWay}"/>
+											<TextBlock Text="Update apps to their newest release, pre-releases and nightly builds included, instead of the one GitHub marks Latest. A version you chose and releases Quiver verified still come first. Pre-releases may be unstable. Applies from the next update check."
+													   FontSize="11"
+													   Foreground="{DynamicResource ThemeTextSecondary}"
+													   Margin="20,0,0,0"
+													   TextWrapping="Wrap"/>
+										</StackPanel>
+
 										<StackPanel Spacing="4" IsVisible="{Binding IsDesktopPlatform}">
 
 											<!-- Divider -->

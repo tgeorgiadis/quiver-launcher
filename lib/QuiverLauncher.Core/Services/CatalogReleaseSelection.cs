@@ -8,9 +8,10 @@ namespace QuiverLauncher.Core.Services;
 public static class CatalogReleaseSelection
 {
     public static async Task<GitHubRelease?> FetchSelectedAsync(HttpClient client, string? provider, string repository,
-        string? preferredRelease, string? token, CancellationToken cancellationToken = default)
+        string? preferredRelease, string? token, CancellationToken cancellationToken = default, bool includePrereleases = false)
     {
-        var latestOnly = RepositorySourceHelper.IsGitHub(provider) && string.IsNullOrWhiteSpace(preferredRelease);
+        // GitHub's Latest alone answers, unless a pin or the newest pre-release is wanted from the release list.
+        var latestOnly = RepositorySourceHelper.IsGitHub(provider) && string.IsNullOrWhiteSpace(preferredRelease) && !includePrereleases;
         var result = latestOnly
             ? await GitHubReleaseService.FetchLatestReleaseIndexAsync(client, repository, token, cancellationToken: cancellationToken).ConfigureAwait(false)
             : await ReleaseSourceRegistry.Default.FetchReleasesAsync(client, provider, repository, token, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -19,18 +20,20 @@ public static class CatalogReleaseSelection
             result = await ReleaseSourceRegistry.Default.FetchReleasesAsync(client, provider, repository, token, cancellationToken: cancellationToken).ConfigureAwait(false);
         result.EnsureSuccess();
         if (result.StatusCode != System.Net.HttpStatusCode.OK) throw new HttpRequestException("Release metadata was not returned.");
-        return SelectLatestRelease(result.Releases, preferredRelease, githubLatestTag: result.LatestTag);
+        return SelectLatestRelease(result.Releases, preferredRelease, githubLatestTag: result.LatestTag, includePrereleases: includePrereleases);
     }
 
     /// <summary>
-    /// Preferred pin wins. Then GitHub's Latest tag when present with assets.
+    /// Preferred pin wins. Then, when <paramref name="includePrereleases"/>, the newest release with assets, pre-release
+    /// or not. Then GitHub's Latest tag when present with assets.
     /// Otherwise first stable with assets (GitHub list order), else first prerelease with assets.
     /// </summary>
     public static GitHubRelease? SelectLatestRelease(
         IReadOnlyList<GitHubRelease>? releases,
         string? preferredVersion = null,
         string? installedVersion = null,
-        string? githubLatestTag = null)
+        string? githubLatestTag = null,
+        bool includePrereleases = false)
     {
         _ = installedVersion;
 
@@ -43,6 +46,9 @@ public static class CatalogReleaseSelection
             if (pinned != null)
                 return pinned;
         }
+
+        if (includePrereleases && NewestWithAssets(releases) is { } newest)
+            return newest;
 
         if (!string.IsNullOrWhiteSpace(githubLatestTag))
         {
@@ -57,6 +63,17 @@ public static class CatalogReleaseSelection
 
     public static bool IsSameInstalledRelease(string? installedVersion, string? releaseTag) =>
         ReleaseVersionIdentity.AreVersionsEquivalent(installedVersion, releaseTag);
+
+    /// <summary>
+    /// The release whose files were uploaded last: a nightly refilled under an old release counts as new. In list order
+    /// when files carry no upload time (GitHub lists the newest release first).
+    /// </summary>
+    private static GitHubRelease? NewestWithAssets(IReadOnlyList<GitHubRelease> releases) =>
+        releases.Select((release, index) => (Release: release, Index: index,
+                Uploaded: GitHubReleaseService.GetDownloadableAssets(release).Max(a => a.updated_at)))
+            .Where(r => HasAssets(r.Release))
+            .OrderByDescending(r => r.Uploaded ?? DateTimeOffset.MinValue).ThenBy(r => r.Index)
+            .Select(r => r.Release).FirstOrDefault();
 
     private static GitHubRelease? FirstWithAssets(IReadOnlyList<GitHubRelease> releases, bool prerelease) =>
         releases.FirstOrDefault(release => release.prerelease == prerelease && HasAssets(release));

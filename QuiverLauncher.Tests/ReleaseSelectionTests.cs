@@ -203,6 +203,45 @@ public class ReleaseSelectionTests
         ReleaseSelection.IsSameInstalledRelease(second, first).Should().Be(expected);
     }
 
+    [Fact]
+    public void SelectLatestRelease_with_prereleases_included_follows_the_newest_upload()
+    {
+        var beta = Uploaded("1.3.0-beta.1", prerelease: true, day: 15);
+        var stable = Uploaded("1.2.0", prerelease: false, day: 10);
+        // Created long ago, so listed last, but refilled with tonight's build.
+        var nightly = Uploaded("nightly", prerelease: true, day: 18);
+
+        ReleaseSelection.SelectLatestRelease([beta, stable, nightly], githubLatestTag: "1.2.0").Should().BeSameAs(stable);
+        ReleaseSelection.SelectLatestRelease([beta, stable, nightly], githubLatestTag: "1.2.0", includePrereleases: true)
+            .Should().BeSameAs(nightly);
+    }
+
+    [Fact]
+    public void SelectLatestRelease_with_prereleases_included_still_keeps_a_pin()
+    {
+        var beta = Uploaded("1.3.0-beta.1", prerelease: true, day: 15);
+        var stable = Uploaded("1.2.0", prerelease: false, day: 10);
+
+        ReleaseSelection.SelectLatestRelease([beta, stable], preferredVersion: "1.2.0", includePrereleases: true).Should().BeSameAs(stable);
+    }
+
+    [Fact]
+    public void SelectLatestRelease_with_prereleases_included_and_no_upload_times_takes_the_first_listed_with_assets()
+    {
+        var empty = NoAssets("1.4.0-beta.1", prerelease: true);
+        var beta = Release("1.3.0-beta.1", prerelease: true);
+        var stable = Release("1.2.0", prerelease: false);
+
+        ReleaseSelection.SelectLatestRelease([empty, beta, stable], githubLatestTag: "1.2.0", includePrereleases: true).Should().BeSameAs(beta);
+    }
+
+    private static GitHubRelease Uploaded(string tag, bool prerelease, int day)
+    {
+        var release = Release(tag, prerelease);
+        release.assets[0].updated_at = new DateTimeOffset(2026, 10, day, 3, 0, 0, TimeSpan.Zero);
+        return release;
+    }
+
     private static GitHubRelease Release(string tag, bool prerelease) =>
         new()
         {

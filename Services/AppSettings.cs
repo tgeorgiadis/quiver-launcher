@@ -148,6 +148,11 @@ namespace QuiverLauncher
         /// Intended for development; default is off. RC installs (version contains '-') still follow prereleases.
         /// </summary>
         public bool AllowPrereleaseLauncherUpdates { get; set; }
+        /// <summary>
+        /// When true, apps update to their newest release, pre-releases and nightly builds included, rather than the one
+        /// GitHub marks Latest. A pin and the release quiverlauncher.com verified still come first. Off by default.
+        /// </summary>
+        public bool IncludePrereleaseAppUpdates { get; set; }
         public bool AutoUpdateNewlyAddedApps { get; set; }
         /// <summary>The player agreed to send anonymous usage data and errors (see <see cref="Telemetry"/>). Off until they do.</summary>
         public bool UsageDataEnabled { get; set; }

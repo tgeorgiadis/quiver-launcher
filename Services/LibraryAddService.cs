@@ -165,7 +165,8 @@ public sealed class LibraryAddService(GameManager manager, SettingsViewModel set
                     continue;
                 }
                 result.EnsureSuccess();
-                var release = GameInfo.SelectLatestRelease(result.Releases, app.ReleaseTarget, app.InstalledVersion, result.LatestTag);
+                var release = GameInfo.SelectLatestRelease(result.Releases, app.ReleaseTarget, app.InstalledVersion, result.LatestTag,
+                    app.FollowsPrereleases);
                 cancellationToken.ThrowIfCancellationRequested();
                 if (release != null)
                 {

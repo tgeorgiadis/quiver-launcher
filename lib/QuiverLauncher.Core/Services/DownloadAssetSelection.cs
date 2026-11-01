@@ -44,7 +44,8 @@ public static class DownloadAssetPolicy
 
     /// <summary>
     /// The file in <paramref name="choices"/> that is the same build as the installed file, its version aside:
-    /// Game-1.2.0-linux-x64.zip installed under 1.2.0 matches Game-1.3.0-linux-x64.zip under 1.3.0. Null unless exactly
+    /// Game-1.2.0-linux-x64.zip installed under 1.2.0 matches Game-1.3.0-linux-x64.zip under 1.3.0, and a nightly's
+    /// Game-20261017-linux-x64.zip matches Game-20261018-linux-x64.zip under the same tag. Null unless exactly
     /// one file matches, so an update never guesses between builds.
     /// </summary>
     public static GitHubAsset? MatchInstalled(DownloadAssetSelection choices, string? installedFileName, string? installedTag, string? releaseTag)
@@ -66,7 +67,14 @@ public static class DownloadAssetPolicy
     private static readonly Regex DottedVersion = new(@"(?<![0-9.])\d+(?:\.\d+)+(?:[-.]?(?:alpha|beta|rc|pre|preview)(?:[-.]?\d+)?)?(?![0-9])",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    /// <summary>The file name with its release's tag (v1.2.0, r23, nightly-2026-10-11) and any dotted version replaced by one mark.</summary>
+    // A build's date (2026-10-11, 20261011) or commit (a1b2c3d): a nightly rebuilt under one tag names its files by them.
+    private static readonly Regex BuildStamp = new(@"(?<![0-9A-Za-z])(?:(?:19|20)\d{2}([-_]?)(?:0[1-9]|1[0-2])\1(?:0[1-9]|[12]\d|3[01])|(?=[0-9a-f]*[a-f])(?=[0-9a-f]*[0-9])[0-9a-f]{7,40})(?![0-9A-Za-z])",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// The file name with its release's tag (v1.2.0, r23, nightly-2026-10-11), any dotted version and any build
+    /// date or commit replaced by one mark.
+    /// </summary>
     internal static string WithoutVersion(string name, string? tag)
     {
         var tagText = tag?.Trim() ?? "";
@@ -76,7 +84,7 @@ public static class DownloadAssetPolicy
                 name = Regex.Replace(name, $@"(?<![0-9A-Za-z]){Regex.Escape(form)}(?![0-9A-Za-z]|\.[0-9])", VersionMark,
                     RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
-        return DottedVersion.Replace(name, VersionMark);
+        return BuildStamp.Replace(DottedVersion.Replace(name, VersionMark), VersionMark);
     }
 
     /// <summary>

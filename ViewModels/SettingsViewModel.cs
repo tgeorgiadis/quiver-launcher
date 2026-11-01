@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 using QuiverLauncher.Core.Models;
+using QuiverLauncher.Core.Services;
 
 namespace QuiverLauncher.ViewModels;
 
@@ -330,6 +331,17 @@ public class SettingsViewModel : ObservableViewModel
     /// <summary>Has the usage data client follow the saved choice.</summary>
     public void ApplyUsageData() => Telemetry.Current.Configure(Current.UsageDataEnabled, Current.UsageDataInstallId);
 
+    public bool IncludePrereleaseAppUpdates
+    {
+        get => Current.IncludePrereleaseAppUpdates;
+        set
+        {
+            if (Current.IncludePrereleaseAppUpdates == value) return;
+            Change(Current.IncludePrereleaseAppUpdates, value, s => s.IncludePrereleaseAppUpdates = value, SettingsChange.Presentation);
+            // Releases already chosen were chosen the other way: the next check chooses again.
+            GitHubApiCache.ExpireSelections();
+        }
+    }
     public bool AllowPrereleaseLauncherUpdates
     {
         get => Current.AllowPrereleaseLauncherUpdates;

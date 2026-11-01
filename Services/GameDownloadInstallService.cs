@@ -92,7 +92,7 @@ public static class GameDownloadInstallService
                 latestRelease = await game.CatalogReleaseAsync(LauncherSession.OperationCancellation).ConfigureAwait(false)
                     ?? await CatalogReleaseSelection.FetchSelectedAsync(httpClient,
                         game.RepositorySource, game.Repository, game.ReleaseTarget, apiToken,
-                        LauncherSession.OperationCancellation).ConfigureAwait(false);
+                        LauncherSession.OperationCancellation, settings.IncludePrereleaseAppUpdates).ConfigureAwait(false);
                 if (latestRelease != null)
                     GitHubApiCache.SetCache(game.RepositorySource, game.Repository, latestRelease.tag_name, "", latestRelease);
             }
@@ -136,7 +136,8 @@ public static class GameDownloadInstallService
                     gamePath, game.GetInstallationOptions())) &&
                 (await File.ReadAllTextAsync(versionFile).ConfigureAwait(false)).Trim() == latestRelease.tag_name &&
                 // A rolling release rebuilt under the same tag is a new build to download.
-                InstalledBuild.Read(gamePath)?.IsRebuiltIn(latestRelease, latestRelease.tag_name) != true)
+                !InstalledBuild.IsRebuilt(InstalledBuild.Read(gamePath), InstalledBuild.InstalledAt(gamePath), latestRelease, latestRelease.tag_name,
+                    game.IsRollingRelease(latestRelease.tag_name)))
             {
                 game.Status = GameStatus.Installed;
                 game.InstalledVersion = latestRelease.tag_name;
@@ -309,7 +310,7 @@ public static class GameDownloadInstallService
                     // Which file was installed, so the next update picks the same one (the .msi, not the zip beside it).
                     if (game.IsWindowsInstaller && game.InstalledVersion == latestRelease.tag_name)
                     {
-                        game.InstalledBuild = new InstalledBuild(asset.name, actual);
+                        game.InstalledBuild = new InstalledBuild(asset.name, actual, asset.updated_at);
                         await game.InstalledBuild.WriteAsync(gamePath).ConfigureAwait(false);
                     }
                     game.DownloadProgress = 0;
@@ -420,8 +421,9 @@ public static class GameDownloadInstallService
                 }
 
                 // Which build of the tag this is, so a rebuild under the same tag is seen as an update.
-                game.InstalledBuild = new InstalledBuild(asset.name, actual);
+                game.InstalledBuild = new InstalledBuild(asset.name, actual, asset.updated_at);
                 await game.InstalledBuild.WriteAsync(gamePath).ConfigureAwait(false);
+                game.InstalledAt = InstalledBuild.InstalledAt(gamePath);
                 game.InstalledVersion = latestRelease.tag_name;
                 if (string.IsNullOrWhiteSpace(game.LatestVersion) ||
                     LauncherVersionService.IsNewerVersion(latestRelease.tag_name, game.LatestVersion))

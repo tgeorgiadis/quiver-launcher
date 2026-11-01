@@ -168,6 +168,10 @@ public class DownloadAssetPolicyTests
     [InlineData("Game-linux-x64.zip", "v1.2.0", "v1.3.0", "Game-linux-x64.zip")]
     [InlineData("GAME-1.2.0-LINUX-X64.ZIP", "v1.2.0", "v1.3.0", "Game-1.3.0-linux-x64.zip")]
     [InlineData("Game-1.2.0-windows-x64.zip", "v1.2.0", "v1.3.0", "Game-1.3.0-windows-x64.zip")]
+    // A nightly rebuilt under one tag names its files by the build's date or commit.
+    [InlineData("Game-nightly-20261017-linux-x64.zip", "nightly", "nightly", "Game-nightly-20261018-linux-x64.zip")]
+    [InlineData("Game_2026_10_17_linux-x64.zip", "latest", "latest", "Game_2026_10_18_linux-x64.zip")]
+    [InlineData("Game-linux-x64-a1b2c3d.zip", "continuous", "continuous", "Game-linux-x64-e4f5a6b.zip")]
     public void Update_keeps_the_installed_build_with_its_version_changed(string installed, string installedTag, string tag, string expected)
     {
         // The release's other files: other architectures, formats and platforms.
@@ -202,6 +206,23 @@ public class DownloadAssetPolicyTests
     {
         var choices = DownloadAssetPolicy.Select(TaggedRelease("v1.3.0", "Game-1.3.0-linux-x64.zip", "Game-1.3.1-linux-x64.zip"), "Linux-X64");
         DownloadAssetPolicy.MatchInstalled(choices, "Game-1.2.0-linux-x64.zip", "v1.2.0", "v1.3.0").Should().BeNull();
+    }
+
+    [Fact]
+    public void Update_matches_nothing_when_two_files_differ_only_by_build_date()
+    {
+        var choices = DownloadAssetPolicy.Select(TaggedRelease("nightly", "Game-20261018-linux-x64.zip", "Game-20261019-linux-x64.zip"), "Linux-X64");
+        DownloadAssetPolicy.MatchInstalled(choices, "Game-20261017-linux-x64.zip", "nightly", "nightly").Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("Game-linux-x64-1234567.zip", "Game-linux-x64-7654321.zip")] // A build number, not a commit.
+    [InlineData("Game-linux-x64-deadbeef.zip", "Game-linux-x64-cafebabe.zip")] // Words, not a commit.
+    [InlineData("Game-linux-x64-2026-13-01.zip", "Game-linux-x64-2026-14-01.zip")] // Not a date.
+    public void Update_matches_nothing_for_names_differing_by_more_than_a_build_stamp(string installed, string offered)
+    {
+        var choices = DownloadAssetPolicy.Select(TaggedRelease("nightly", offered, offered.Replace("linux", "windows")), "Linux-X64");
+        DownloadAssetPolicy.MatchInstalled(choices, installed, "nightly", "nightly").Should().BeNull();
     }
 
     [Fact]

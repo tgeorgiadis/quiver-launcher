@@ -34,6 +34,7 @@ public static class GameStatusService
             var gamePath = game.GetInstallPath(gamesFolder);
             var versionFile = Path.Combine(gamePath, "version.txt");
             game.InstalledBuild = InstalledBuild.Read(gamePath);
+            game.InstalledAt = InstalledBuild.InstalledAt(gamePath);
             game.IsWindowsInstaller = WindowsInstallerService.HasReceipt(gamePath);
             if (game.IsWindowsInstaller)
             {

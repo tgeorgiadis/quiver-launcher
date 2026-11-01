@@ -6,7 +6,7 @@ Progress appears beneath the header with Cancel. A foreground pass has a 60-seco
 
 ## Release requests
 
-- Unpinned GitHub entries request the designated latest release first. The release list is fetched only when required for a pin or fallback (such as prerelease-only repositories or missing assets). Existing release-selection rules remain in use.
+- Unpinned GitHub entries request the designated latest release first. The release list is fetched only when required for a pin, for the rolling tag an app was installed from (such as `nightly`), while **Include pre-releases in app updates** is on, or for a fallback (such as prerelease-only repositories or missing assets). Existing release-selection rules remain in use.
 - Each pass shares raw endpoint responses for entries with the same repository and credentials. Release selection is applied separately for each entry.
 - Requests remain serialized per provider. Interactive checks overtake queued background requests; an active request finishes or reaches its timeout first.
 - Metadata requests have a 15-second timeout after acquiring the provider slot. Large download timeouts are unchanged.

@@ -6,7 +6,7 @@ namespace QuiverLauncher.Core.Services
 {
     public class GameVersionCache
     {
-        public const int CurrentSelectionRevision = 1;
+        public const int CurrentSelectionRevision = 2;
         public int SelectionRevision { get; set; }
         public string Version { get; set; } = string.Empty;
         public DateTime LastChecked { get; set; }
@@ -222,6 +222,16 @@ namespace QuiverLauncher.Core.Services
 
         /// <summary>Writes in-memory cache entries to disk. No-op when nothing has been initialized.</summary>
         public static void Flush() => SaveToDisk();
+
+        /// <summary>Has every cached selection checked again, as after the rules choosing a release changed.</summary>
+        public static void ExpireSelections()
+        {
+            foreach (var cache in _cache.Values)
+            {
+                cache.LastChecked = DateTime.MinValue;
+                cache.LastUpdateCheck = DateTime.MinValue;
+            }
+        }
 
         /// <summary>Legacy overload: treats repository as GitHub.</summary>
         public static void SetCache(string repository, string version, string etag, GitHubRelease? release = null) =>

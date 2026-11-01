@@ -745,12 +745,23 @@ namespace QuiverLauncher.Models
         /// <summary>The verified release is rebuilt under the same tag (a nightly), so its builds are told apart by file.</summary>
         public bool CatalogRolling { get; set; }
 
+        /// <summary>Whether <paramref name="tag"/> is the verified release and that's rolling (see <see cref="CatalogRolling"/>).</summary>
+        public bool IsRollingRelease(string? tag) => CatalogRolling && AreVersionsEquivalent(tag, CatalogVerifiedVersion);
+
         /// <summary>The file this app was installed from and its checksum (see <see cref="Services.InstalledBuild"/>).</summary>
         [System.Text.Json.Serialization.JsonIgnore]
         public InstalledBuild? InstalledBuild { get; set; }
 
-        /// <summary>The release updates and installs aim for: the player's pin, else the verified release.</summary>
-        public string? ReleaseTarget => string.IsNullOrWhiteSpace(PreferredVersion) ? CatalogVerifiedVersion : PreferredVersion;
+        /// <summary>When version.txt was written (see <see cref="Services.InstalledBuild.IsRebuilt"/>).</summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        public DateTimeOffset? InstalledAt { get; set; }
+
+        /// <summary>
+        /// The release updates and installs aim for: the player's pin, else the verified release, else the rolling tag the
+        /// app was installed from (a nightly), which it keeps following rather than the repository's Latest.
+        /// </summary>
+        public string? ReleaseTarget => !string.IsNullOrWhiteSpace(PreferredVersion) ? PreferredVersion : CatalogVerifiedVersion ??
+            (ReleaseVersionIdentity.IsRollingTag(InstalledVersion) && !IsUnknownInstalledVersion(InstalledVersion) ? InstalledVersion!.Trim() : null);
 
         internal bool MatchesReleaseTarget(string? version) =>
             string.IsNullOrWhiteSpace(ReleaseTarget) || ReleaseVersionIdentity.AreVersionsEquivalent(ReleaseTarget, version);
@@ -1134,7 +1145,8 @@ namespace QuiverLauncher.Models
 
             if (AreVersionsEquivalent(LatestVersion, InstalledVersion))
                 // The same tag: an update only when it's been rebuilt (a rolling release's new build).
-                return InstalledBuild?.IsRebuiltIn(_cachedRelease, InstalledVersion) == true && !DeferUpdateTracking &&
+                return Services.InstalledBuild.IsRebuilt(InstalledBuild, InstalledAt, _cachedRelease, InstalledVersion,
+                    IsRollingRelease(InstalledVersion)) && !DeferUpdateTracking &&
                     !AreVersionsEquivalent(SkippedUpdateVersion, LatestVersion);
 
             var unknownInstall = IsUnknownInstalledVersion(InstalledVersion);
@@ -1143,11 +1155,16 @@ namespace QuiverLauncher.Models
             if (DeferUpdateTracking && !unknownInstall)
                 return false;
 
-            if (!unknownInstall && !IsNewerVersion(LatestVersion, InstalledVersion!))
+            if (!unknownInstall && !IsNewerVersion(LatestVersion, InstalledVersion!) &&
+                // Builds tagged by date or commit: numbers can't tell, so a release uploaded since the install is newer.
+                (ReleaseVersionIdentity.CanCompareVersions(LatestVersion, InstalledVersion) ||
+                    !Services.InstalledBuild.IsUploadedSince(InstalledBuild, InstalledAt, _cachedRelease)))
                 return false;
 
             if (!string.IsNullOrWhiteSpace(SkippedUpdateVersion) &&
-                !IsNewerVersion(LatestVersion, SkippedUpdateVersion))
+                !IsNewerVersion(LatestVersion, SkippedUpdateVersion) &&
+                (ReleaseVersionIdentity.CanCompareVersions(LatestVersion, SkippedUpdateVersion) ||
+                    AreVersionsEquivalent(LatestVersion, SkippedUpdateVersion)))
             {
                 return false;
             }
@@ -1688,8 +1705,13 @@ namespace QuiverLauncher.Models
             IReadOnlyList<GitHubRelease>? releases,
             string? preferredVersion = null,
             string? installedVersion = null,
-            string? githubLatestTag = null) =>
-            ReleaseSelection.SelectLatestRelease(releases, preferredVersion, installedVersion, githubLatestTag);
+            string? githubLatestTag = null,
+            bool includePrereleases = false) =>
+            ReleaseSelection.SelectLatestRelease(releases, preferredVersion, installedVersion, githubLatestTag, includePrereleases);
+
+        /// <summary>Updates follow pre-releases and nightly builds too (see <see cref="AppSettings.IncludePrereleaseAppUpdates"/>).</summary>
+        internal bool FollowsPrereleases =>
+            (GameManager?.CurrentSettings ?? SettingsStoreProvider.Default.Current).IncludePrereleaseAppUpdates;
 
         public bool TrySelectPlatformDownload(AppSettings settings) =>
             GameDownloadService.TrySelectPlatformDownload(this, GetLatestRelease(), settings);
@@ -1783,7 +1805,7 @@ namespace QuiverLauncher.Models
                 }
 
                 var latestRelease = SelectLatestRelease(
-                    result.Releases, ReleaseTarget, InstalledVersion, result.LatestTag);
+                    result.Releases, ReleaseTarget, InstalledVersion, result.LatestTag, FollowsPrereleases);
                 if (latestRelease != null && !string.IsNullOrWhiteSpace(latestRelease.tag_name))
                 {
                     RepositoryCheckError = null;
@@ -1822,11 +1844,12 @@ namespace QuiverLauncher.Models
 
         /// <summary>
         /// When the selected GitHub tag is already installed, drop UpdateAvailable even if
-        /// numeric comparison still treats Latest as newer.
+        /// numeric comparison still treats Latest as newer. Not when the tag was rebuilt since (a nightly's new build).
         /// </summary>
         internal bool TryAcknowledgeAlreadyInstalledRelease(string? releaseTag)
         {
-            if (!ReleaseSelection.IsSameInstalledRelease(InstalledVersion, releaseTag))
+            if (!ReleaseSelection.IsSameInstalledRelease(InstalledVersion, releaseTag) ||
+                Services.InstalledBuild.IsRebuilt(InstalledBuild, InstalledAt, _cachedRelease, InstalledVersion, IsRollingRelease(InstalledVersion)))
                 return false;
 
             if (Status == GameStatus.UpdateAvailable)

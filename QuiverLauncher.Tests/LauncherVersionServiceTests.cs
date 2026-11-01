@@ -30,6 +30,33 @@ public class LauncherVersionServiceTests
         LauncherVersionService.IsNewerVersion("build-foo", "build-bar").Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("nightly", true)]
+    [InlineData("latest-nightly", true)]
+    [InlineData("pre-release", true)]
+    [InlineData("nightly-2026-10-18", false)]
+    [InlineData("v1.2.0", false)]
+    [InlineData("r23", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void IsRollingTag_is_a_tag_naming_no_version(string? tag, bool rolling)
+    {
+        Core.Services.ReleaseVersionIdentity.IsRollingTag(tag).Should().Be(rolling);
+    }
+
+    [Theory]
+    [InlineData("v1.2.0", "v1.3.0", true)]
+    [InlineData("v3.5.1-rc.1", "3.5.0", true)]
+    // The numbers are the same, or there are none to compare: they can't tell which is newer.
+    [InlineData("v1.2.0", "v1.2.0-hotfix", false)]
+    [InlineData("KytyPS5-2026-10-18-37df7f3", "KytyPS5-2026-10-19-e5f0ee7", false)]
+    [InlineData("bc9098d", "f1e2d3c", false)]
+    [InlineData("EXODUS", "v7.0", false)]
+    public void CanCompareVersions_only_when_both_name_different_dotted_versions(string first, string second, bool comparable)
+    {
+        Core.Services.ReleaseVersionIdentity.CanCompareVersions(first, second).Should().Be(comparable);
+    }
+
     [Fact]
     public void AreVersionsEquivalent_treats_v_prefix_as_equal()
     {

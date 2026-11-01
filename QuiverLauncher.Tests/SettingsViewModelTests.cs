@@ -19,6 +19,19 @@ public class SettingsViewModelTests
     }
 
     [Fact]
+    public void Prerelease_app_updates_are_off_until_chosen_and_then_saved()
+    {
+        var store = new Store();
+        var model = new SettingsViewModel(store);
+
+        model.IncludePrereleaseAppUpdates.Should().BeFalse();
+        model.IncludePrereleaseAppUpdates = true;
+
+        store.Current.IncludePrereleaseAppUpdates.Should().BeTrue();
+        store.Saves.Should().Be(1);
+    }
+
+    [Fact]
     public async Task New_path_edit_cancels_older_debounce()
     {
         var store = new Store();

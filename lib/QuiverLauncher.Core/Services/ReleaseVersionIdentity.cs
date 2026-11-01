@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace QuiverLauncher.Core.Services;
 
 public static class ReleaseVersionIdentity
@@ -57,6 +59,19 @@ public static class ReleaseVersionIdentity
         return TryParseNumericIdentity(firstIdentity, out var first) &&
             TryParseNumericIdentity(secondIdentity, out var second) && first == second;
     }
+
+    /// <summary>A tag naming no version at all (nightly, latest-nightly, continuous): a release rebuilt under it.</summary>
+    public static bool IsRollingTag(string? tag) => !string.IsNullOrWhiteSpace(tag) && !tag.Any(char.IsAsciiDigit);
+
+    /// <summary>
+    /// Whether version numbers tell two tags apart: both name a dotted version (1.2, v3.5.1-rc.1) and the numbers differ.
+    /// Builds tagged by date or commit (KytyPS5-2026-10-19-e5f0ee7, bc9098d) or by name (EXODUS) can't be told apart so.
+    /// </summary>
+    public static bool CanCompareVersions(string? first, string? second) =>
+        DottedVersion.IsMatch(first ?? "") && DottedVersion.IsMatch(second ?? "") &&
+        NormalizeVersionString(first) != NormalizeVersionString(second);
+
+    private static readonly Regex DottedVersion = new(@"\d+\.\d+", RegexOptions.CultureInvariant);
 
     public static bool LooksLikePrereleaseTag(string? version)
     {

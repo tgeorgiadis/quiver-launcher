@@ -148,6 +148,43 @@ public class DownloadSelectionFlowTests
         InstalledBuild.Read(gamePath)!.FileName.Should().Be("Game-1.0.0-windows-x64-portable.zip");
     }
 
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Update_installs_a_nightlys_new_build_under_the_same_tag(bool recorded)
+    {
+        using var fixture = new Fixture();
+        // Tonight's build names its files after its commit, as last night's did.
+        fixture.Handler.Assets = recorded
+            ? ["ymir-windows-x86_64-AVX2-v0.4.2-dev_8cdf0a53.zip", "ymir-windows-x86_64-SSE2-v0.4.2-dev_8cdf0a53.zip", "ymir-windows-ARM64-v0.4.2-dev_8cdf0a53.zip"]
+            : ["ymir-windows-x86_64-AVX2-v0.4.2-dev_8cdf0a53.zip"];
+        fixture.Handler.Rolling = ("latest-nightly", new DateTimeOffset(2026, 10, 19, 9, 40, 0, TimeSpan.Zero));
+        await using var session = new LauncherSession();
+        var game = fixture.Game();
+        var gamePath = game.GetInstallPath(fixture.Manager.GamesFolder);
+        Directory.CreateDirectory(gamePath);
+        File.WriteAllBytes(Path.Combine(gamePath, "game.exe"), [0x4D, 0x5A, 0x01, 0x01]);
+        File.WriteAllText(Path.Combine(gamePath, "version.txt"), "latest-nightly");
+        File.SetLastWriteTimeUtc(Path.Combine(gamePath, "version.txt"), new DateTime(2026, 10, 18, 12, 0, 0, DateTimeKind.Utc));
+        if (recorded)
+        {
+            game.InstalledBuild = new InstalledBuild("ymir-windows-x86_64-AVX2-v0.4.2-dev_1a2b3c4d.zip", new string('0', 64),
+                new DateTimeOffset(2026, 10, 18, 9, 40, 0, TimeSpan.Zero));
+            await game.InstalledBuild.WriteAsync(gamePath);
+        }
+        await GameStatusService.CheckStatusAsync(game, fixture.Manager.HttpClient, fixture.Manager.GamesFolder, forceUpdateCheck: true);
+        game.Status.Should().Be(GameStatus.UpdateAvailable);
+
+        var result = await fixture.Controller(session).HandleUpdateNowAsync(new Button(), game);
+
+        result.Should().BeTrue("the same tag's new build is downloaded, not taken for the installed one");
+        fixture.Handler.Downloaded.Should().Equal("ymir-windows-x86_64-AVX2-v0.4.2-dev_8cdf0a53.zip");
+        game.Status.Should().Be(GameStatus.Installed);
+        InstalledBuild.Read(gamePath)!.FileName.Should().Be("ymir-windows-x86_64-AVX2-v0.4.2-dev_8cdf0a53.zip");
+        await GameStatusService.CheckStatusAsync(game, fixture.Manager.HttpClient, fixture.Manager.GamesFolder, forceUpdateCheck: true);
+        game.Status.Should().Be(GameStatus.Installed, "checking again finds the build just installed");
+    }
+
     [AvaloniaFact]
     public async Task Picker_lists_the_installed_build_first()
     {
@@ -215,10 +252,24 @@ public class DownloadSelectionFlowTests
         public bool Single;
         /// <summary>The release's files, each of which can be downloaded.</summary>
         public string[]? Assets;
-        public GitHubRelease Release => Assets != null ? DownloadAssetPolicyTests.Release(Assets) : Single
-            ? DownloadAssetPolicyTests.Release("game-windows.zip", "game-windows.zip.sha256", "game-macos.zip", "game-linux.AppImage", "Nautilus-Alfa-iOS.zip",
-                "game-windows.zip.provenance.json", "game-rg34xxsp-stockos64-mod.zip", "game-sbc-portmaster.zip", "game-xbox-uwp.zip")
-            : DownloadAssetPolicyTests.Release("game-windows.zip", "game-windows-portable.zip", "game-macos.zip");
+        /// <summary>The release's tag, and when its files were uploaded, for a release other than v1.</summary>
+        public (string Tag, DateTimeOffset UploadedAt)? Rolling;
+        public GitHubRelease Release
+        {
+            get
+            {
+                var release = Assets != null ? DownloadAssetPolicyTests.Release(Assets) : Single
+                    ? DownloadAssetPolicyTests.Release("game-windows.zip", "game-windows.zip.sha256", "game-macos.zip", "game-linux.AppImage", "Nautilus-Alfa-iOS.zip",
+                        "game-windows.zip.provenance.json", "game-rg34xxsp-stockos64-mod.zip", "game-sbc-portmaster.zip", "game-xbox-uwp.zip")
+                    : DownloadAssetPolicyTests.Release("game-windows.zip", "game-windows-portable.zip", "game-macos.zip");
+                if (Rolling is { } rolling)
+                {
+                    release.tag_name = rolling.Tag;
+                    foreach (var asset in release.assets) asset.updated_at = rolling.UploadedAt;
+                }
+                return release;
+            }
+        }
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             // These apps are not in the quiverlauncher.com catalog.
