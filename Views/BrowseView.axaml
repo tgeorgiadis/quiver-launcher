@@ -136,6 +136,8 @@
 						  VerticalAlignment="Center" Foreground="{DynamicResource ThemeText}"
 						  ToolTip.Tip="Leaves out apps you already have, so new ones are easier to find"
 						  IsCheckedChanged="BrowseHideLibrary_Changed"/>
+				<Button x:Name="BrowseRefreshButton" Classes="options" Content="Refresh" FontSize="11" MinHeight="40"
+						Margin="0,0,10,0" ToolTip.Tip="Refresh the catalog" Click="BrowseRefresh_Click"/>
 				<Button x:Name="BrowseRetryButton" Classes="options" Content="Try again" FontSize="12" MinHeight="40"
 						Margin="0,0,10,0" IsVisible="False" Click="BrowseRetry_Click"/>
 				<Button x:Name="BrowseClearFiltersButton" Classes="options" Content="Clear filters" FontSize="12" MinHeight="40"

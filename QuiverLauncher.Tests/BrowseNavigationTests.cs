@@ -27,7 +27,8 @@ public class BrowseNavigationTests
         QuiverLauncherPaths.OverrideUserDataRoot = root;
         var store = new Store();
         store.Current.AppsPath = Path.Combine(root, "Apps");
-        using var http = new HttpClient(new Site());
+        var site = new Site();
+        using var http = new HttpClient(site);
         var manager = new GameManager(store, http) { UiThreadInvoker = action => Dispatcher.UIThread.InvokeAsync(action).GetTask() };
         var view = new MainView(new() { SettingsStore = store, GameManager = manager, InitializeOnOpen = false, EnableInput = false, EnableMusic = false });
         var window = new Window { Content = view, Width = 1280, Height = 860 };
@@ -44,6 +45,14 @@ public class BrowseNavigationTests
             await Until(() => browse.Model.Items.Count == 3);
             window.UpdateLayout();
 
+            // Refresh asks the site again and is available to the controller as well as the mouse.
+            browse.Navigation.FilterControls().Should().Contain(browse.BrowseRefreshButton);
+            var requests = site.AppRequests;
+            browse.BrowseRefreshButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await Until(() => site.AppRequests > requests && !browse.Model.IsLoading && browse.Model.Items.Count == 3);
+            window.UpdateLayout();
+            browse.Navigation.SelectInitial();
+
             // The search box holds the highlight while the catalog loads; the first card takes it when the cards arrive.
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseGrid);
             browse.Model.Items[0].IsGamepadFocused.Should().BeTrue();
@@ -54,6 +63,8 @@ public class BrowseNavigationTests
             // beside the sort: Up climbs line by line to it, and Down comes back the same way to the cards.
             Move(NavigationDirection.Up).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
+            browse.BrowseRefreshButton.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Up).Should().BeTrue();
             new Control[] { browse.BrowseTypeComboBox, browse.BrowsePlatformComboBox, browse.BrowseConsoleComboBox, browse.BrowseAiComboBox }
                 .Should().ContainSingle(c => c.Classes.Contains("gamepad-focused"));
             Move(NavigationDirection.Up).Should().BeTrue();
@@ -64,7 +75,7 @@ public class BrowseNavigationTests
             browse.BrowseHideLibraryCheckBox.Classes.Should().Contain("gamepad-focused");
             Move(NavigationDirection.Right).Should().BeTrue();
             browse.BrowseSortComboBox.Classes.Should().Contain("gamepad-focused");
-            for (var i = 0; i < 3; i++) Move(NavigationDirection.Down).Should().BeTrue();
+            for (var i = 0; i < 4; i++) Move(NavigationDirection.Down).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseGrid);
             Move(NavigationDirection.Left).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.Sidebar);
@@ -177,6 +188,8 @@ public class BrowseNavigationTests
             Move(NavigationDirection.Right).Should().BeTrue();
             Move(NavigationDirection.Up).Should().BeTrue();
             navigation.ActiveZone.Should().Be(GamepadNavigationZone.BrowseFilters);
+            browse.BrowseRefreshButton.Classes.Should().Contain("gamepad-focused");
+            Move(NavigationDirection.Left).Should().BeTrue();
             browse.BrowseHideLibraryCheckBox.Classes.Should().Contain("gamepad-focused");
             Move(NavigationDirection.Up).Should().BeTrue();
             browse.BrowseConsoleComboBox.Classes.Should().Contain("gamepad-focused");
@@ -249,7 +262,7 @@ public class BrowseNavigationTests
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
             var focused = new Control[] { browse.BrowseTypeComboBox, browse.BrowsePlatformComboBox, browse.BrowseConsoleComboBox,
-                browse.BrowseAiComboBox, browse.BrowseHideLibraryCheckBox }.Single(c => c.Classes.Contains("gamepad-focused"));
+                browse.BrowseAiComboBox, browse.BrowseHideLibraryCheckBox, browse.BrowseRefreshButton }.Single(c => c.Classes.Contains("gamepad-focused"));
             Top(focused).Should().BeGreaterThanOrEqualTo(-1);
             (Top(focused) + focused.Bounds.Height).Should().BeLessThanOrEqualTo(scroller.Viewport.Height + 1);
         }
@@ -427,6 +440,7 @@ public class BrowseNavigationTests
     /// <summary>The parts of quiverlauncher.com Browse reads; GitHub and everything else is unavailable.</summary>
     private sealed class Site : HttpMessageHandler
     {
+        public int AppRequests { get; private set; }
         private static string App(string slug, string project, string folder) => $$"""
             {"id":"{{slug}}","slug":"{{slug}}","name":"{{project}} game","projectName":"{{project}}","description":"Plays {{project}}.",
              "games":[{"id":"g","slug":"g","title":"{{project}} game"}],"consoles":["n64"],"tags":["n64"],
@@ -440,6 +454,7 @@ public class BrowseNavigationTests
             // Answer later, like the network, so Browse opens before its cards arrive.
             await Task.Delay(50, cancellationToken);
             var path = request.RequestUri!.AbsolutePath;
+            if (path == "/api/v1/apps") AppRequests++;
             var body = path switch
             {
                 "/api/v1/facets" => """{"total":3,"consoles":[{"id":"n64","name":"Nintendo 64","brand":"Nintendo"}]}""",

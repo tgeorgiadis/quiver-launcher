@@ -151,9 +151,9 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
 
     internal List<Control> FilterControls() => view.HideOptionInTitle
         ? Visible(view.BrowseSearchTextBox, view.BrowseTypeComboBox, view.BrowsePlatformComboBox,
-            view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseRetryButton, view.BrowseClearFiltersButton)
+            view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseRefreshButton, view.BrowseRetryButton, view.BrowseClearFiltersButton)
         : Visible(view.BrowseSearchTextBox, view.BrowseTypeComboBox, view.BrowsePlatformComboBox,
-            view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseHideLibraryCheckBox, view.BrowseRetryButton, view.BrowseClearFiltersButton);
+            view.BrowseConsoleComboBox, view.BrowseAiComboBox, view.BrowseHideLibraryCheckBox, view.BrowseRefreshButton, view.BrowseRetryButton, view.BrowseClearFiltersButton);
 
     private static List<Control> Visible(params Control[] controls) => controls.Where(c => c.IsVisible && c.IsEnabled).ToList();
 
@@ -336,7 +336,7 @@ public sealed class BrowseNavigation(BrowseView view, IFeatureNavigationHost hos
         // Every control, including hidden ones, so one that reappears doesn't still look highlighted.
         Control[] controls = [view.BrowseCatalogTabButton, view.BrowseCustomListTabButton, view.BrowseSortComboBox, view.BrowseSearchTextBox,
             view.BrowseTypeComboBox, view.BrowsePlatformComboBox, view.BrowseConsoleComboBox, view.BrowseAiComboBox,
-            view.BrowseHideLibraryCheckBox, view.BrowseRetryButton, view.BrowseClearFiltersButton];
+            view.BrowseHideLibraryCheckBox, view.BrowseRefreshButton, view.BrowseRetryButton, view.BrowseClearFiltersButton];
         foreach (var control in controls)
             control.Classes.Set("gamepad-focused", false);
         var focus = TopLevel.GetTopLevel(view)?.FocusManager;

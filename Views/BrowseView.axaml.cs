@@ -340,6 +340,7 @@ public partial class BrowseView : UserControl
             }
             BrowseResultsText.IsVisible = quiet.Length > 0 || added.Length > 0;
             BrowseFilterGrid.IsVisible = !custom;
+            BrowseRefreshButton.IsVisible = !custom;
             BrowseFiltersIcon.IsVisible = !custom && _filterLayout == FilterLayout.BesideSearch;
             Select(BrowseSortComboBox, Model.Sort);
             Select(BrowseTypeComboBox, Model.ProjectType);
@@ -410,6 +411,12 @@ public partial class BrowseView : UserControl
     {
         if (Model.ShowingCustomList) Model.ForgetCustomList();
         Navigation.AfterRetry();
+        Reload();
+    }
+
+    private void BrowseRefresh_Click(object? sender, RoutedEventArgs e)
+    {
+        _searchDelay?.Cancel();
         Reload();
     }
 
