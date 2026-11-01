@@ -15,7 +15,7 @@
 				<Grid RowDefinitions="Auto,Auto">
 					<Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
 						<Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Width="44" Height="44" Margin="0,0,10,0">
-							<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}" Width="44" Height="44" Stretch="Uniform"/>
+							<asyncImageLoader:AdvancedImage Source="{Binding DisplayIconUrl}" Width="44" Height="44" Stretch="Uniform"/>
 						</Border>
 						<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
 							<TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"

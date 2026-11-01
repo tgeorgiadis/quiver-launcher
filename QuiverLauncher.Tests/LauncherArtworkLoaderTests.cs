@@ -1,7 +1,13 @@
 using System.Net;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media.Imaging;
+using Avalonia.Threading;
+using AsyncImageLoader;
 using FluentAssertions;
+using QuiverLauncher.Models;
 using QuiverLauncher.Services;
 
 namespace QuiverLauncher.Tests;
@@ -10,6 +16,97 @@ public class LauncherArtworkLoaderTests
 {
     private const string Grid = "https://cdn2.steamgriddb.com/grid/93f56e33053be5d9e391480a49bcd0d0.png";
     private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7S8AAAAASUVORK5CYII=");
+
+    [AvaloniaFact]
+    public async Task Library_image_control_renders_replacement_with_the_same_extension()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "quiver-custom-control", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var firstPath = Path.Combine(directory, "first.png");
+        var secondPath = Path.Combine(directory, "second.png");
+        File.WriteAllBytes(firstPath, Png);
+        File.WriteAllBytes(secondPath, [.. Png, 42]);
+        var game = new GameInfo { FolderName = "game" };
+        var previous = ImageLoader.AsyncImageLoader;
+        using var loader = new LauncherArtworkLoader(Path.Combine(directory, "cache"));
+        ImageLoader.AsyncImageLoader = loader;
+        var image = new Image { DataContext = game };
+        image.Bind(ImageLoader.SourceProperty, new Binding(nameof(GameInfo.DisplayIconUrl)));
+        var window = new Window { Content = image, Width = 100, Height = 100 };
+        try
+        {
+            game.SetCustomIcon(firstPath, directory);
+            window.Show();
+            async Task<Bitmap> Rendered()
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    Dispatcher.UIThread.RunJobs();
+                    var rendered = image.Source as Bitmap;
+                    if (rendered != null && !ImageLoader.GetIsLoading(image)) return rendered;
+                    await Task.Delay(10, TestContext.Current.CancellationToken);
+                }
+                throw new TimeoutException("Custom image did not render.");
+            }
+            var first = await Rendered();
+            game.SetCustomIcon(secondPath, directory);
+            for (var i = 0; i < 100; i++)
+            {
+                Dispatcher.UIThread.RunJobs();
+                if (image.Source is Bitmap bitmap && !ReferenceEquals(bitmap, first)) return;
+                await Task.Delay(10, TestContext.Current.CancellationToken);
+            }
+            throw new TimeoutException("Replacement custom image did not render.");
+        }
+        finally
+        {
+            window.Close();
+            ImageLoader.AsyncImageLoader = previous;
+            TestFixtures.CleanupDirectory(directory);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Replacing_and_quickly_readding_a_custom_image_loads_the_new_file()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "quiver-custom-art", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var firstPath = Path.Combine(directory, "first.png");
+        var secondPath = Path.Combine(directory, "second.png");
+        File.WriteAllBytes(firstPath, Png);
+        File.WriteAllBytes(secondPath, [.. Png, 42]);
+        var game = new GameInfo { FolderName = "game" };
+        using var loader = new LauncherArtworkLoader(Path.Combine(directory, "cache"));
+        try
+        {
+            game.SetCustomIcon(firstPath, directory);
+            var originalPath = game.IconUrl;
+            var firstKey = game.DisplayIconUrl;
+            var first = await loader.ProvideImageAsync(firstKey);
+            first.Should().NotBeNull();
+
+            game.SetCustomIcon(secondPath, directory);
+            game.IconUrl.Should().Be(originalPath, "shortcuts still need a real file path");
+            game.DisplayIconUrl.Should().NotBe(firstKey);
+            var second = await loader.ProvideImageAsync(game.DisplayIconUrl);
+            second.Should().NotBeNull().And.NotBeSameAs(first);
+            File.ReadAllBytes(game.IconUrl).Should().Equal(File.ReadAllBytes(secondPath));
+
+            game.RemoveCustomIcon();
+            game.SetCustomIcon(firstPath, directory);
+            await Task.Delay(300, TestContext.Current.CancellationToken);
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(300, TestContext.Current.CancellationToken);
+            Dispatcher.UIThread.RunJobs();
+            File.Exists(game.IconUrl).Should().BeTrue("a delayed removal must not delete the replacement");
+            File.ReadAllBytes(game.IconUrl).Should().Equal(Png);
+            (await loader.ProvideImageAsync(game.DisplayIconUrl)).Should().NotBeSameAs(first);
+        }
+        finally
+        {
+            TestFixtures.CleanupDirectory(directory);
+        }
+    }
 
     [Theory]
     [InlineData(600, 900, 256, 156, 256, 384)]

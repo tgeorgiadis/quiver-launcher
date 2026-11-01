@@ -383,6 +383,7 @@ namespace QuiverLauncher.Models
             }
         }
         private string? _customIconPath { get; set; }
+        private Guid _customIconRevision = Guid.NewGuid();
         public string? CustomIconPath
         {
             get => _customIconPath;
@@ -393,6 +394,7 @@ namespace QuiverLauncher.Models
                     _customIconPath = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(IconUrl));
+                    OnPropertyChanged(nameof(DisplayIconUrl));
                     OnPropertyChanged(nameof(HasCustomIcon));
                 }
             }
@@ -400,6 +402,12 @@ namespace QuiverLauncher.Models
         private string? _cachedDefaultIconPath;
         internal bool CachedArtworkOnly { get; set; }
         public bool HasCustomIcon => !string.IsNullOrEmpty(CustomIconPath) && File.Exists(CustomIconPath);
+
+        // Keep IconUrl as a usable file path for shortcuts, but give the image loader a new key after replacement.
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string DisplayIconUrl => HasCustomIcon
+            ? LauncherArtworkLoader.VersionedLocalPath(CustomIconPath!, _customIconRevision)
+            : IconUrl;
 
         public string IconUrl
         {
@@ -1229,10 +1237,12 @@ namespace QuiverLauncher.Models
                     }
                 }
 
+                _customIconRevision = Guid.NewGuid();
                 CustomIconPath = destinationPath;
 
                 OnPropertyChanged(nameof(CustomIconPath));
                 OnPropertyChanged(nameof(IconUrl));
+                OnPropertyChanged(nameof(DisplayIconUrl));
                 OnPropertyChanged(nameof(HasCustomIcon));
             }
             catch (Exception ex)
@@ -1268,7 +1278,7 @@ namespace QuiverLauncher.Models
 
                     try
                     {
-                        if (File.Exists(pathToDelete))
+                        if (!string.Equals(CustomIconPath, pathToDelete, StringComparison.OrdinalIgnoreCase) && File.Exists(pathToDelete))
                         {
                             TryDeleteFileWithRetry(pathToDelete, maxRetries: 5, delayMs: 200);
                         }
@@ -1433,6 +1443,7 @@ namespace QuiverLauncher.Models
                     if (!LauncherIconCache.HasImageHeader(sharedPath)) continue;
                     _cachedDefaultIconPath = sharedPath;
                     DispatchPropertyChanged(nameof(IconUrl));
+                    DispatchPropertyChanged(nameof(DisplayIconUrl));
                     return;
                 }
 
@@ -1473,6 +1484,7 @@ namespace QuiverLauncher.Models
                 cancellationToken.ThrowIfCancellationRequested();
                 _cachedDefaultIconPath = cachedIconPath;
                 OnPropertyChanged(nameof(IconUrl));
+                OnPropertyChanged(nameof(DisplayIconUrl));
                 System.Diagnostics.Debug.WriteLine($"Icon cached for {Name}: {cachedIconPath}");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
@@ -1496,6 +1508,7 @@ namespace QuiverLauncher.Models
             cancellationToken.ThrowIfCancellationRequested();
             CachedArtworkOnly = false;
             DispatchPropertyChanged(nameof(IconUrl));
+            DispatchPropertyChanged(nameof(DisplayIconUrl));
         }
 
         private static string GetUrlHash(string url)

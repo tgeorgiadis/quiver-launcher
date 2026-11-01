@@ -21,6 +21,15 @@ namespace QuiverLauncher.Services;
 public sealed class LauncherArtworkLoader : DiskCachedWebImageLoader
 {
     private const string FullSizeMarker = "#quiver-full-size";
+    private const string LocalRevisionMarker = "#quiver-local-revision=";
+
+    internal static string VersionedLocalPath(string path, Guid revision) => $"{path}{LocalRevisionMarker}{revision:N}";
+
+    private static string LocalPath(string url)
+    {
+        var marker = url.LastIndexOf(LocalRevisionMarker, StringComparison.Ordinal);
+        return marker >= 0 && Guid.TryParseExact(url[(marker + LocalRevisionMarker.Length)..], "N", out _) ? url[..marker] : url;
+    }
 
     // The same copies the website asks for (src/images.ts on the website), so the launcher reuses
     // copies Cloudflare has already made instead of adding to the site's monthly resizing limit.
@@ -146,7 +155,7 @@ public sealed class LauncherArtworkLoader : DiskCachedWebImageLoader
 
     // AdvancedImage loads through this overload, which would open plain file paths at full size.
     protected override Task<Bitmap?> LoadAsync(string url, IStorageProvider? storageProvider) =>
-        IsFullSize(url) || File.Exists(url) || IsWeb(url) ? LoadAsync(url) : base.LoadAsync(url, storageProvider);
+        IsFullSize(url) || File.Exists(LocalPath(url)) || IsWeb(url) ? LoadAsync(url) : base.LoadAsync(url, storageProvider);
 
     private static bool IsWeb(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https";
@@ -155,6 +164,7 @@ public sealed class LauncherArtworkLoader : DiskCachedWebImageLoader
     {
         var fullSize = IsFullSize(url);
         if (fullSize) url = url[..^FullSizeMarker.Length];
+        url = LocalPath(url);
 
         // Local covers (custom covers and cached library icons) are plain paths; file:// URIs
         // (the window background) and app assets keep the default behaviour.

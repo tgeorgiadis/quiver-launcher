@@ -141,7 +141,7 @@
 				<views:LibraryListRowLayout Settings="{Binding $parent[views:LibraryView].Model.Settings}">
     <Border views:LibraryListRowLayout.Role="Thumbnail" CornerRadius="8" ClipToBounds="True">
         <Panel>
-        <asyncImageLoader:AdvancedImage Source="{Binding IconUrl}" Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
+        <asyncImageLoader:AdvancedImage Source="{Binding DisplayIconUrl}" Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
             Stretch="{Binding $parent[views:LibraryView].Model.Settings.IconFill, Converter={StaticResource BooleanToStretchConverter}}"/>
         <views:RepositoryCheckWarning/>
         </Panel>
@@ -199,7 +199,7 @@
 							VerticalAlignment="Top"
 							HorizontalAlignment="Center">
 							<Border CornerRadius="12" ClipToBounds="True">
-								<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+								<asyncImageLoader:AdvancedImage Source="{Binding DisplayIconUrl}"
 								ClipToBounds="True"
 								VerticalAlignment="Center"
 								Opacity="{Binding $parent[views:LibraryView].Model.Settings.IconOpacity}"
@@ -419,7 +419,7 @@
 							HorizontalAlignment="Stretch">
 						<Panel ClipToBounds="True"
 							   Margin="{Binding $parent[views:LibraryView].Model.Settings.IconMargin}">
-							<asyncImageLoader:AdvancedImage Source="{Binding IconUrl}"
+							<asyncImageLoader:AdvancedImage Source="{Binding DisplayIconUrl}"
 								ClipToBounds="True"
 								VerticalAlignment="Center"
 								HorizontalAlignment="Center"
