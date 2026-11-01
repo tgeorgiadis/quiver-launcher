@@ -11,6 +11,7 @@ public static class LauncherIconCache
     {
         try
         {
+            if (!File.Exists(path)) return false;
             using var stream = File.OpenRead(path);
             using var bitmap = new Bitmap(stream);
             return bitmap.PixelSize.Width > 0 && bitmap.PixelSize.Height > 0;
@@ -25,6 +26,7 @@ public static class LauncherIconCache
     {
         try
         {
+            if (!File.Exists(path)) return false;
             Span<byte> head = stackalloc byte[12];
             using var stream = File.OpenRead(path);
             var read = stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);

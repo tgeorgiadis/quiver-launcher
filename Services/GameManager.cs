@@ -25,7 +25,7 @@ namespace QuiverLauncher.Services
         private List<GameInfo> _catalogApps = [];
         private List<GameInfo> _allGames = [];
         private readonly object _catalogInitializationLock = new();
-        private Task? _catalogInitialization;
+        private Task<List<GameInfo>>? _catalogInitialization;
 
         public Func<Action, Task>? UiThreadInvoker { get; set; }
         public bool HasLoadedLibrary { get; private set; }
@@ -191,18 +191,35 @@ namespace QuiverLauncher.Services
                 if (game == null || string.IsNullOrEmpty(game.FolderName))
                     continue;
 
+                if (!game.IsInstalled)
+                    continue;
+
                 if (IsGameManuallyHidden(settings, game))
                     continue;
+
+                if (game.LastPlayedSortTime > DateTime.MinValue)
+                {
+                    if (game.LastPlayedSortTime > latestTime)
+                    {
+                        latestTime = game.LastPlayedSortTime;
+                        latestGame = game;
+                    }
+                    continue;
+                }
 
                 var gamePath = game.GetInstallPath(_appsFolder);
                 var lastPlayedPath = Path.Combine(gamePath, "LastPlayed.txt");
                 if (File.Exists(lastPlayedPath))
                 {
                     var timeString = File.ReadAllText(lastPlayedPath).Trim();
-                    if (DateTime.TryParseExact(timeString, "yyyy-MM-dd HH:mm:ss", null, System.Globalization.DateTimeStyles.None, out DateTime lastPlayed) && lastPlayed > latestTime)
+                    if (DateTime.TryParseExact(timeString, "yyyy-MM-dd HH:mm:ss", null, System.Globalization.DateTimeStyles.None, out DateTime lastPlayed))
                     {
-                        latestTime = lastPlayed;
-                        latestGame = game;
+                        game.LastPlayedSortTime = lastPlayed;
+                        if (lastPlayed > latestTime)
+                        {
+                            latestTime = lastPlayed;
+                            latestGame = game;
+                        }
                     }
                 }
             }
@@ -214,14 +231,32 @@ namespace QuiverLauncher.Services
             if (Games == null || string.IsNullOrEmpty(_cacheFolder))
                 return;
 
-            foreach (var game in Games)
+            var customIconsDir = Path.Combine(_cacheFolder, "CustomIcons");
+            HashSet<string>? customFiles = null;
+            if (Directory.Exists(customIconsDir))
             {
-                game?.LoadCustomIcon(_cacheFolder);
+                try
+                {
+                    customFiles = new HashSet<string>(Directory.EnumerateFiles(customIconsDir).Select(Path.GetFileName)!, StringComparer.OrdinalIgnoreCase);
+                }
+                catch { }
             }
 
+            foreach (var game in Games)
+            {
+                if (game == null) continue;
+                if (customFiles != null && customFiles.Count > 0)
+                    game.LoadCustomIconFast(customIconsDir, customFiles);
+                else if (game.CustomIconPath != null)
+                    game.LoadCustomIcon(_cacheFolder);
+            }
+
+            try { Directory.CreateDirectory(Path.Combine(_cacheFolder, "Icons")); } catch { }
+
+            var token = _settingsStore.Current.GitHubApiToken;
             var tasks = Games
                 .Where(g => g != null)
-                .Select(g => g.LoadAndCacheDefaultIconAsync(_cacheFolder, _settingsStore.Current.GitHubApiToken, allowDownload, cancellationToken));
+                .Select(g => g.LoadAndCacheDefaultIconAsync(_cacheFolder, token, allowDownload, cancellationToken));
 
             await Task.WhenAll(tasks);
         }
@@ -275,8 +310,14 @@ namespace QuiverLauncher.Services
         /// <paramref name="allowNetwork"/> to false (startup) to use cached releases and icons
         /// without waiting for remote metadata.
         /// </summary>
-        public Task ReloadLibraryFromDiskAsync(bool allowNetwork = true) =>
-            LoadGamesCoreAsync(forceUpdateCheck: false, allowNetwork);
+        public Task ReloadLibraryFromDiskAsync(bool allowNetwork = true)
+        {
+            lock (_catalogInitializationLock)
+            {
+                _catalogInitialization = null;
+            }
+            return LoadGamesCoreAsync(forceUpdateCheck: false, allowNetwork);
+        }
 
         private async Task LoadGamesCoreAsync(
             bool forceUpdateCheck,
@@ -284,20 +325,20 @@ namespace QuiverLauncher.Services
         {
             // Validate and back up the existing library without rewriting it. Keep
             // initialization within the caller's awaited load/session lifetime.
-            Task initialization;
+            Task<List<GameInfo>> initialization;
             lock (_catalogInitializationLock)
             {
                 if (_catalogInitialization is { IsFaulted: true } or { IsCanceled: true }) _catalogInitialization = null;
-                initialization = _catalogInitialization ??= _catalogService.ValidateAndFixLocalAppsJsonAsync();
+                initialization = _catalogInitialization ??= _catalogService.LoadLocalAppsAsync();
             }
-            await initialization.ConfigureAwait(false);
+            var loadedApps = await initialization.ConfigureAwait(false);
 
             _settings = _settingsStore.Load();
             _settings.EnsureInitialized();
 
             Games ??= [];
             var previousByKey = _catalogApps.Where(a => !string.IsNullOrWhiteSpace(a.InstanceKey)).GroupBy(a => a.InstanceKey, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-            var allApps = await _catalogService.LoadLocalCatalogAsync(_settings).ConfigureAwait(false);
+            var allApps = await _catalogService.LoadLocalCatalogAsync(_settings, loadedApps).ConfigureAwait(false);
             _catalogApps = allApps.Where(app => app != null).Cast<GameInfo>().ToList();
 
             foreach (var app in _catalogApps)
@@ -592,6 +633,13 @@ namespace QuiverLauncher.Services
                 _settings.SortBy ?? "Name",
                 _appsFolder ?? string.Empty,
                 _settings.IgnoreArticlesWhenSorting);
+
+            if (Games.Count == sorted.Count && Games.SequenceEqual(sorted))
+            {
+                OnPropertyChanged(nameof(HasLibrarySearch));
+                OnPropertyChanged(nameof(HasNoLibrarySearchMatches));
+                return;
+            }
 
             Games.Clear();
             foreach (var app in sorted)

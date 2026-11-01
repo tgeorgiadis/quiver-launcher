@@ -399,20 +399,20 @@ namespace QuiverLauncher.Models
         }
         private string? _cachedDefaultIconPath;
         internal bool CachedArtworkOnly { get; set; }
-        public bool HasCustomIcon => !string.IsNullOrEmpty(CustomIconPath) && File.Exists(CustomIconPath);
+        public bool HasCustomIcon => !string.IsNullOrEmpty(CustomIconPath);
 
         public string IconUrl
         {
             get
             {
                 // custom cover image
-                if (!string.IsNullOrEmpty(CustomIconPath) && File.Exists(CustomIconPath))
+                if (!string.IsNullOrEmpty(CustomIconPath))
                 {
                     return CustomIconPath;
                 }
 
                 // Cached default icon
-                if (!string.IsNullOrEmpty(_cachedDefaultIconPath) && File.Exists(_cachedDefaultIconPath))
+                if (!string.IsNullOrEmpty(_cachedDefaultIconPath))
                 {
                     return _cachedDefaultIconPath;
                 }
@@ -467,6 +467,7 @@ namespace QuiverLauncher.Models
                 if (_availableExecutables != value)
                 {
                     _availableExecutables = value;
+                    InvalidateExecutableScan();
                     DispatchPropertyChanged();
                     DispatchPropertyChanged(nameof(HasMultipleExecutables));
                     DispatchPropertyChanged(nameof(HasExecutableChoice));
@@ -485,6 +486,7 @@ namespace QuiverLauncher.Models
                 if (_selectedExecutable != value)
                 {
                     _selectedExecutable = value;
+                    InvalidateExecutableScan();
                     DispatchPropertyChanged();
                 }
             }
@@ -566,7 +568,7 @@ namespace QuiverLauncher.Models
         public bool CanChangeVersion => !IsFlatpak && (IsInstalled || Status == GameStatus.NotInstalled) && !IsManuallyManaged && !string.IsNullOrWhiteSpace(Repository);
         public bool CanVersionOptions => !IsManuallyManaged && (CanSkipUpdate || CanChangeVersion || IsInstalled);
         public bool CanLaunchOptions =>
-            !IsFlatpak && !PlatformCapabilities.IsMobile && (HasExecutableChoice || IsInstalled);
+            !IsFlatpak && !PlatformCapabilities.IsMobile && (IsInstalled || HasExecutableChoice);
         public bool CanToggleAutoUpdate => !IsWindowsInstaller && !IsManuallyManaged;
         public bool CanOpenFolder =>
             !PlatformCapabilities.IsMobile && (IsManuallyManaged || IsInstalled);
@@ -803,6 +805,7 @@ namespace QuiverLauncher.Models
                 if (_status != value)
                 {
                     _status = value;
+                    InvalidateExecutableScan();
                     DispatchPropertyChanged();
                     DispatchPropertyChanged(nameof(ButtonText));
                     DispatchPropertyChanged(nameof(ButtonImage));
@@ -1000,6 +1003,18 @@ namespace QuiverLauncher.Models
             DispatchPropertyChanged(nameof(ShowWindowsRunnerOptions));
         }
 
+        private List<string>? _scannedExecutableCandidates;
+        private bool _scannedNeedsWine;
+        private bool _hasScannedExecutables;
+        private bool _scannedWithExpansion;
+
+        internal void InvalidateExecutableScan()
+        {
+            _hasScannedExecutables = false;
+            _scannedExecutableCandidates = null;
+            _scannedWithExpansion = false;
+        }
+
         /// <summary>
         /// Scans the install folder for launch candidates (top-level first, then recursive if needed).
         /// </summary>
@@ -1012,6 +1027,16 @@ namespace QuiverLauncher.Models
             out bool needsWine,
             bool expandWhenSingleCandidate = false)
         {
+            if (_hasScannedExecutables && _scannedExecutableCandidates != null)
+            {
+                if (!expandWhenSingleCandidate || _scannedWithExpansion || _scannedExecutableCandidates.Count > 1)
+                {
+                    executables = _scannedExecutableCandidates;
+                    needsWine = _scannedNeedsWine;
+                    return true;
+                }
+            }
+
             executables = [];
             needsWine = false;
 
@@ -1047,7 +1072,16 @@ namespace QuiverLauncher.Models
                         SearchOption.AllDirectories,
                         GetInstallationOptions(),
                         out needsWine);
+                    _scannedWithExpansion = true;
                 }
+                else
+                {
+                    _scannedWithExpansion = false;
+                }
+
+                _scannedExecutableCandidates = executables;
+                _scannedNeedsWine = needsWine;
+                _hasScannedExecutables = true;
 
                 return true;
             }
@@ -1285,6 +1319,45 @@ namespace QuiverLauncher.Models
             }
         }
 
+        internal void LoadCustomIconFast(string customIconsDir, HashSet<string> existingFiles)
+        {
+            if (string.IsNullOrEmpty(FolderName))
+                return;
+
+            var possibleExtensions = new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".ico" };
+            foreach (var ext in possibleExtensions)
+            {
+                var fileName = $"{FolderName}_custom{ext}";
+                if (existingFiles.Contains(fileName))
+                {
+                    var iconPath = Path.Combine(customIconsDir, fileName);
+                    try
+                    {
+                        var attributes = File.GetAttributes(iconPath);
+                        if ((attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                        {
+                            File.SetAttributes(iconPath, attributes & ~FileAttributes.ReadOnly);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Failed to check/modify file attributes for {iconPath}: {ex.Message}");
+                    }
+
+                    if (CustomIconPath != iconPath)
+                    {
+                        CustomIconPath = iconPath;
+                    }
+                    return;
+                }
+            }
+
+            if (CustomIconPath != null)
+            {
+                CustomIconPath = null;
+            }
+        }
+
         public void LoadCustomIcon(string cacheDirectory)
         {
             if (string.IsNullOrEmpty(FolderName))
@@ -1292,7 +1365,11 @@ namespace QuiverLauncher.Models
 
             var customIconsDir = Path.Combine(cacheDirectory, "CustomIcons");
             if (!Directory.Exists(customIconsDir))
+            {
+                if (CustomIconPath != null)
+                    CustomIconPath = null;
                 return;
+            }
 
             var possibleExtensions = new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".ico" };
             foreach (var ext in possibleExtensions)
@@ -1314,9 +1391,17 @@ namespace QuiverLauncher.Models
                         System.Diagnostics.Debug.WriteLine($"Failed to check/modify file attributes for {iconPath}: {ex.Message}");
                     }
 
-                    CustomIconPath = iconPath;
-                    break;
+                    if (CustomIconPath != iconPath)
+                    {
+                        CustomIconPath = iconPath;
+                    }
+                    return;
                 }
+            }
+
+            if (CustomIconPath != null)
+            {
+                CustomIconPath = null;
             }
         }
 
@@ -1331,6 +1416,7 @@ namespace QuiverLauncher.Models
                 var selectedExePath = Path.Combine(gamePath, "selected_executable.txt");
                 File.WriteAllText(selectedExePath, executablePath);
                 System.Diagnostics.Debug.WriteLine($"Saved selected executable for {Name}: {executablePath}");
+                InvalidateExecutableScan();
                 OnPropertyChanged(nameof(HasStoredExecutable));
             }
             catch (Exception ex)
@@ -1414,7 +1500,6 @@ namespace QuiverLauncher.Models
             try
             {
                 var iconsDir = Path.Combine(cacheDirectory, "Icons");
-                Directory.CreateDirectory(iconsDir);
 
                 var defaultUrl = DefaultIconUrl;
 
@@ -1431,8 +1516,11 @@ namespace QuiverLauncher.Models
                 foreach (var sharedPath in new[] { cardUrl, defaultUrl }.Distinct().Select(url => LauncherArtworkLoader.CachedPath(cacheDirectory, url)))
                 {
                     if (!LauncherIconCache.HasImageHeader(sharedPath)) continue;
-                    _cachedDefaultIconPath = sharedPath;
-                    DispatchPropertyChanged(nameof(IconUrl));
+                    if (_cachedDefaultIconPath != sharedPath)
+                    {
+                        _cachedDefaultIconPath = sharedPath;
+                        DispatchPropertyChanged(nameof(IconUrl));
+                    }
                     return;
                 }
 
@@ -1448,8 +1536,13 @@ namespace QuiverLauncher.Models
 
                 if (!LauncherIconCache.HasImageHeader(cachedIconPath))
                 {
-                    _cachedDefaultIconPath = null;
+                    if (_cachedDefaultIconPath != null)
+                    {
+                        _cachedDefaultIconPath = null;
+                        DispatchPropertyChanged(nameof(IconUrl));
+                    }
                     if (!allowDownload) return;
+                    Directory.CreateDirectory(iconsDir);
                     if (File.Exists(cachedIconPath)) File.Delete(cachedIconPath);
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
                     // The website's smaller copy first; the original if Cloudflare won't make one.
@@ -1471,8 +1564,11 @@ namespace QuiverLauncher.Models
                             cancellationToken);
                 }
                 cancellationToken.ThrowIfCancellationRequested();
-                _cachedDefaultIconPath = cachedIconPath;
-                OnPropertyChanged(nameof(IconUrl));
+                if (_cachedDefaultIconPath != cachedIconPath)
+                {
+                    _cachedDefaultIconPath = cachedIconPath;
+                    DispatchPropertyChanged(nameof(IconUrl));
+                }
                 System.Diagnostics.Debug.WriteLine($"Icon cached for {Name}: {cachedIconPath}");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }

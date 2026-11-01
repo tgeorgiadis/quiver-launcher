@@ -32,6 +32,74 @@ public static class GameStatusService
         try
         {
             var gamePath = game.GetInstallPath(gamesFolder);
+            var directoryExists = Directory.Exists(gamePath);
+
+            if (!directoryExists)
+            {
+                var androidInstalled = OperatingSystem.IsAndroid() && AppInstallLaunch.Current.IsInstalled(game);
+                if (androidInstalled)
+                {
+                    game.InstalledVersion = AppInstallLaunch.Current.GetInstalledVersion(game, gamePath) ?? game.InstalledVersion;
+                    game.Status = GameStatus.Installed;
+                }
+                else
+                {
+                    game.Status = GameStatus.NotInstalled;
+                    game.InstalledVersion = "";
+                }
+
+                if (game.IsManuallyManaged)
+                {
+                    game.LatestVersion = null;
+                    return;
+                }
+
+                var isAppInstalled = androidInstalled;
+                if (!checkRemoteVersion)
+                {
+                    if (applyCachedRelease && GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null &&
+                        game.MatchesReleaseTarget(cache.Version))
+                        game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+                    else if (applyCachedRelease && GitHubApiCache.TryGetLastKnownVersion(game.RepositorySource, game.Repository, out var stale) && stale != null &&
+                        game.MatchesReleaseTarget(stale.Version))
+                        game.ApplyLastKnownVersion(stale.Version);
+                }
+                else if (forceUpdateCheck)
+                    await game.CheckLatestVersionAsync(httpClient, forceCheck: true).ConfigureAwait(false);
+                else if (isAppInstalled)
+                {
+                    if (GitHubApiCache.NeedsUpdateCheck(game.RepositorySource, game.Repository ?? string.Empty, isInstalledGame: true))
+                        await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
+                    else if (GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null)
+                    {
+                        if (game.MatchesReleaseTarget(cache.Version)) game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+                        else await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
+                    }
+                }
+                else
+                {
+                    if (GitHubApiCache.NeedsUpdateCheck(game.RepositorySource, game.Repository ?? string.Empty, isInstalledGame: false))
+                        await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
+                    else if (GitHubApiCache.TryGetCachedVersion(game.RepositorySource, game.Repository, out var cache) && cache != null)
+                    {
+                        if (game.MatchesReleaseTarget(cache.Version)) game.ApplyCachedRelease(cache.Version, cache.CachedRelease);
+                        else await game.CheckLatestVersionAsync(httpClient).ConfigureAwait(false);
+                    }
+                }
+
+                if (isAppInstalled && string.IsNullOrWhiteSpace(game.InstalledVersion))
+                {
+                    game.InstalledVersion = string.IsNullOrWhiteSpace(game.LatestVersion)
+                        ? "Unknown"
+                        : DefaultInstalledVersion;
+                }
+
+                if (isAppInstalled)
+                    game.RefreshInstalledStatus();
+
+                return;
+            }
+
             var versionFile = Path.Combine(gamePath, "version.txt");
             game.InstalledBuild = InstalledBuild.Read(gamePath);
             game.IsWindowsInstaller = WindowsInstallerService.HasReceipt(gamePath);
@@ -46,7 +114,6 @@ public static class GameStatusService
                 return;
             }
 
-            var directoryExists = Directory.Exists(gamePath);
             var versionFileExists = File.Exists(versionFile);
             var hasFlatpakReceipt = FlatpakService.HasReceipt(gamePath);
             game.IsFlatpak = hasFlatpakReceipt;
