@@ -23,7 +23,7 @@ import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game"
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
 import { pageArea, toTop } from "./spatial";
-import { track } from "./telemetry";
+import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
@@ -120,10 +120,10 @@ export function App() {
   const screen = !top ? tab : top.kind === "app" ? `app:${isOwn(top.entry.id) ? "" : top.entry.slug}` : top.kind === "game" ? `game:${top.game.slug}` : top.kind;
   useEffect(() => {
     const [name, slug] = screen.split(":");
-    track("screen_viewed", { screen: name, ...(slug !== undefined ? { slug: slug || null } : {}) });
+    trackScreen({ screen: name, ...(slug !== undefined ? { slug: slug || null } : {}) });
   }, [screen]);
-  useEffect(() => void (adding && track("screen_viewed", { screen: "add_app" })), [adding]);
-  useEffect(() => void (signingIn && track("screen_viewed", { screen: "sign_in" })), [signingIn]);
+  useEffect(() => void (adding && trackScreen({ screen: "add_app" })), [adding]);
+  useEffect(() => void (signingIn && trackScreen({ screen: "sign_in" })), [signingIn]);
   const query = search.trim();
   const searched = shorten(query);
   const listName = tab === "library" ? t`Library` : query ? t`Back to results for “${searched}”` : t({ message: "Browse", comment: "The tab with the catalog of apps" });

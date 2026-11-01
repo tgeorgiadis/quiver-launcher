@@ -125,6 +125,17 @@ test("when api.quiverlauncher.com can't be reached, the deployment's own host an
   expect(fell).toHaveLength(1);
 });
 
+test("calls already on their way when it falls back tell about it once", async () => {
+  const fell: unknown[] = [];
+  const fetch = (async (url: string) => {
+    if (url.startsWith(DEFAULT_API)) throw new TypeError("Failed to fetch");
+    return new Response(JSON.stringify({ total: 1, consoles: [] }), { status: 200 });
+  }) as typeof globalThis.fetch;
+  const client = createClient(DEFAULT_API, { fetch, onFallback: (e) => fell.push(e) });
+  await Promise.all([client.facets(), client.facets(), client.facets()]);
+  expect(fell).toHaveLength(1);
+});
+
 test("the proxy's 499 falls back too, but a real answer, another address or a failing fallback doesn't", async () => {
   const proxy = (async (url: string) =>
     new Response("{}", { status: url.startsWith(DEFAULT_API) ? 499 : 200 })) as typeof globalThis.fetch;

@@ -13,7 +13,7 @@ import { useAccount } from "./account";
 import { AppsFolder, LanguageSetting } from "./settings-page";
 import { OldLibraryStep } from "./old-library";
 import { TelemetrySetting, useTelemetrySwitch } from "./telemetry-ui";
-import { track } from "./telemetry";
+import { track, trackScreen } from "./telemetry";
 
 type Step = "welcome" | "v3" | "apps" | "usage" | "account";
 
@@ -34,7 +34,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   // An import under way: the setup's own buttons wait for it.
   const [busy, setBusy] = useState(false);
   const dialog = useRef<HTMLElement>(null);
-  useEffect(() => void track("screen_viewed", { screen: "setup", step }), [step]);
+  useEffect(() => void trackScreen({ screen: "setup", step }), [step]);
   // Each step starts on what answers it, so a controller's A goes on.
   useEffect(() => {
     const body = dialog.current;

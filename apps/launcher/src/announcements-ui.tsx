@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import type { Announcement } from "@quiverlauncher/api";
 import { useLauncher } from "./store";
 import { dayLabel } from "./sidebar";
-import { track } from "./telemetry";
+import { track, trackScreen } from "./telemetry";
 import { bannerAnnouncement, keptDismissals, sorted, useAnnouncementList } from "./announcements";
 import { closesOutside } from "./overlay";
 
@@ -114,7 +114,7 @@ export function AnnouncementsDialog({ onClose }: { onClose: () => void }) {
   const [showDismissed, setShowDismissed] = useState(false);
   const { shown, dismissed: hidden } = sorted(list, dismissed);
   const count = hidden.length;
-  useEffect(() => void track("screen_viewed", { screen: "announcements" }), []);
+  useEffect(() => void trackScreen({ screen: "announcements" }), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
