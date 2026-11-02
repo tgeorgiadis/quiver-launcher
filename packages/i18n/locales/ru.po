@@ -141,10 +141,18 @@ msgstr "Разработчик удалил {file} из версии {listed}."
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
+msgstr "{filters, plural, one {# фильтр по тегам, как плейлист} few {# фильтра по тегам, как плейлисты} many {# фильтров по тегам, как плейлисты} other {# фильтра по тегам, как плейлисты}}"
+
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "Установлена {have}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{hidden, plural, one {# hidden app, still hidden} other {# hidden apps, still hidden}}"
+msgstr "{hidden, plural, one {# скрытое приложение, останется скрытым} few {# скрытых приложения, останутся скрытыми} many {# скрытых приложений, останутся скрытыми} other {# скрытого приложения, останутся скрытыми}}"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "{hours, plural, one {# hour} other {# hours}}"
@@ -354,6 +362,15 @@ msgstr "{size} КБ"
 #: ../../apps/launcher/src/downloads.ts
 msgid "{size} MB"
 msgstr "{size} МБ"
+
+#. Mouse wheel speed: times as far as the system's, such as 2×
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{speed}×"
+msgstr "{speed}×"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
+msgstr "{tagged, plural, one {Ваши теги в # приложении} few {Ваши теги в # приложениях} many {Ваши теги в # приложениях} other {Ваши теги в # приложениях}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -614,6 +631,11 @@ msgstr "Добавление приложений"
 msgid "Advanced"
 msgstr "Дополнительно"
 
+#. Browse card detail: AI-assisted or Mostly AI
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "AI label"
+msgstr "Метка ИИ"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -666,6 +688,7 @@ msgid "All other platforms"
 msgstr "Все остальные платформы"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "All platforms"
 msgstr "Все платформы"
 
@@ -680,6 +703,10 @@ msgstr "Все типы проектов"
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "Все теги"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Also coming over"
+msgstr "Также перенесётся"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
@@ -825,13 +852,30 @@ msgstr "Адрес изображения"
 msgid "Artwork and consoles from the game"
 msgstr "Изображения и консоли из игры"
 
+#. Run with: the runner chosen in Settings for every Windows app
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "As in Settings: {name}"
+msgstr "Как в настройках: {name}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {verifiedVersion} back. It installs the next new release."
 msgstr "Автообновление не вернёт {verifiedVersion}. Оно установит следующую новую версию."
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Automatic (Wine for Windows apps)"
-msgstr "Автоматически (Wine для приложений Windows)"
+msgid "Automatic"
+msgstr "Автоматически"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic (no Proton or Wine found)"
+msgstr "Автоматически (Proton и Wine не найдены)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic uses a Proton that Steam has, which comes with what most games need, or Wine where there's no Proton. An app's own launch options can choose another."
+msgstr "Автоматически используется Proton из Steam, в котором есть всё нужное большинству игр, а если Proton нет — Wine. В параметрах запуска приложения можно выбрать другой."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic: {name}"
+msgstr "Автоматически: {name}"
 
 #. Controller hint: what Back does, closing or going back
 #. The setup's previous step
@@ -850,12 +894,18 @@ msgstr "Назад к результатам по запросу «{searched}»"
 msgid "Back to top"
 msgstr "Наверх"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Background music"
+msgstr "Фоновая музыка"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Backups"
 msgstr "Резервные копии"
 
 #. Before the game(s) an app is made from
+#. Before the game(s) an app is made from
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../ui/src/index.tsx
 msgid "Based on"
 msgstr "Основано на"
@@ -889,7 +939,9 @@ msgstr "Сначала лучшие, по отзывам игроков"
 msgid "Blocked"
 msgstr "Заблокирована"
 
+#. Browse card style: the portrait box art over the catalog's details
 #. Library card image: the portrait capsule
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/view.ts
 msgid "Box art"
 msgstr "Обложка коробки"
@@ -904,9 +956,19 @@ msgstr "Обложка коробки"
 msgid "Browse"
 msgstr "Обзор"
 
+#. Settings section: how the catalog's cards look in Browse
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse cards"
+msgstr "Карточки в обзоре"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Открыть каталог"
+
+#. Which platform's build of an app to install, as Linux or Windows through Wine
+#: ../../apps/launcher/src/detail.tsx
+msgid "Build"
+msgstr "Сборка"
 
 #: ../ui/src/index.tsx
 msgid "Built with some AI assistance"
@@ -962,6 +1024,11 @@ msgstr "Изображение карточки"
 msgid "Card size"
 msgstr "Размер карточек"
 
+#. Browse view option
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Card style"
+msgstr "Стиль карточек"
+
 #. What the featured apps across the top of Browse are, for screen readers
 #: ../ui/src/discover.tsx
 msgid "carousel"
@@ -984,6 +1051,10 @@ msgstr "Изменить название или изображения"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Change version"
 msgstr "Сменить версию"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Change version…"
+msgstr "Сменить версию…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
@@ -1040,9 +1111,20 @@ msgstr "Выберите программу (.exe), которая запуск�
 msgid "Choose a version"
 msgstr "Выбрать версию"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Choose a version of {name}"
 msgstr "Выбрать версию {name}"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform"
+msgstr "Выбрать версию или платформу"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform of {name}"
+msgstr "Выбрать версию или платформу {name}"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Choose a version…"
@@ -1072,6 +1154,14 @@ msgstr "Нажмите «Создать токен на GitHub» и войдит
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Нажмите Generate token, скопируйте токен, вставьте его выше и нажмите «Сохранить токен»."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music to play in the background"
+msgstr "Выберите музыку для фона"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music…"
+msgstr "Выбрать музыку…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
@@ -1144,6 +1234,10 @@ msgstr "Закрыть {title}"
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "Закрыть фильтры"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
+msgstr "Сворачивать в системный трей при закрытии (Quiver Launcher продолжит работать и обновлять приложения)"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Collapse all sections"
@@ -1568,15 +1662,29 @@ msgid "General"
 msgstr "Общие"
 
 #. Button that installs an app
+#. Button that installs an app
 #. Button: download and install the app
 #. Controller hint: what Options does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Get"
 msgstr "Получить"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {app}"
+msgstr "Получить {app}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {newestLabel}"
+msgstr "Получить {newestLabel}"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Get the Windows version (Wine)"
+msgstr "Получить версию для Windows (Wine)"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -1755,6 +1863,7 @@ msgstr "Получать предварительные версии"
 
 #. Button that installs a mod
 #. Button that installs this version
+#. Button that installs this version
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
@@ -1770,6 +1879,7 @@ msgstr "Установить вместо этого {other}"
 msgid "Install {release} before it's verified?"
 msgstr "Установить {release} до проверки?"
 
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/versions.ts
 msgid "Install {version}"
 msgstr "Установить {version}"
@@ -2034,7 +2144,9 @@ msgstr "Крупное название"
 msgid "Last played"
 msgstr "Последний запуск"
 
+#. Browse card detail: when the app's latest release came out
 #. Sort order for mods
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/mods.tsx
 msgid "Last updated"
 msgstr "Последнее обновление"
@@ -2272,6 +2384,10 @@ msgid "Mostly AI-generated"
 msgstr "В основном создано ИИ"
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Mouse wheel speed"
+msgstr "Скорость колёсика мыши"
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Move apps"
 msgstr "Переместить приложения"
 
@@ -2315,6 +2431,11 @@ msgstr "Название и оформление"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Name on top"
 msgstr "Название сверху"
+
+#. Library card detail: the other name (the app's or the game's) under the large one
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Name underneath"
+msgstr "Название под ним"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Name, like Favourites"
@@ -2368,6 +2489,11 @@ msgstr "Новые приложения устанавливаются сюда.
 msgid "New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card."
 msgstr "Новые приложения устанавливаются сюда. Выберите другой диск или папку, если здесь мало места, например карту microSD в Steam Deck."
 
+#. Browse card detail: a badge on apps added to the catalog lately
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "New badge"
+msgstr "Значок «Новое»"
+
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
 msgid "New in the catalog"
@@ -2411,6 +2537,10 @@ msgstr "Следующая буква или страница"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Next tab"
 msgstr "Следующая вкладка"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "No {build} build"
+msgstr "Нет сборки для {build}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "No AI use found"
@@ -2511,6 +2641,7 @@ msgid "None of this release's files are for this computer."
 msgstr "Ни один файл этой версии не предназначен для этого компьютера."
 
 #. Interface size
+#. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "Обычный"
@@ -2660,6 +2791,11 @@ msgstr "Открыть на {site}"
 msgid "Open on its site"
 msgstr "Открыть на сайте"
 
+#. Item in the launcher's menu in the Windows system tray
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Open Quiver Launcher"
+msgstr "Открыть Quiver Launcher"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Open the release page"
@@ -2687,6 +2823,11 @@ msgstr "Другое"
 #: ../../apps/launcher/src/library.tsx
 msgid "Other platforms"
 msgstr "Другие платформы"
+
+#. Over the list of an app's versions, under Get's own button for its newest
+#: ../../apps/launcher/src/detail.tsx
+msgid "Other versions"
+msgstr "Другие версии"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Other ways to add"
@@ -2747,6 +2888,7 @@ msgid "Places"
 msgstr "Места"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Platform"
 msgstr "Платформа"
 
@@ -2755,6 +2897,8 @@ msgstr "Платформа"
 msgid "Platform unspecified"
 msgstr "Платформа не указана"
 
+#. Browse card detail: icons for Windows, Linux, macOS, Android
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Platforms"
@@ -2784,6 +2928,10 @@ msgstr "Играть"
 #: ../../apps/launcher/src/media.tsx
 msgid "Play {name}"
 msgstr "Запустить {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Play a music file of your own while Quiver is open. It fades out while you play."
+msgstr "Воспроизводите свой музыкальный файл, пока Quiver открыт. Во время игры он затихает."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -2862,6 +3010,11 @@ msgstr "Нажмите клавишу…"
 msgid "Press what you want to use, or Esc to cancel."
 msgstr "Нажмите то, что хотите использовать, или Esc для отмены."
 
+#. Above a sample card, showing how the options picked look
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Preview"
+msgstr "Предпросмотр"
+
 #: ../ui/src/discover.tsx
 msgid "Previous featured app"
 msgstr "Предыдущее рекомендуемое приложение"
@@ -2893,6 +3046,11 @@ msgstr "О ПРОЕКТЕ"
 msgid "Project type"
 msgstr "Тип проекта"
 
+#. Item in the launcher's menu in the Windows system tray: closes the launcher
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quit"
+msgstr "Выйти"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
 msgstr "Quiver заблокировал {installedVersion}: {blockedWhy}"
@@ -2914,16 +3072,24 @@ msgid "Quiver blocked it: {blockedWhy}"
 msgstr "Quiver заблокировал её: {blockedWhy}"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Quiver заблокировал эту версию, поэтому ссылок на её файлы нет. «Сменить версию» установит её, только если вы выберете её и будете настаивать."
+msgid "Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Quiver заблокировал эту версию, поэтому ссылок на её файлы нет. Чтобы установить её, сначала нужно принять риск."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
 msgstr "Quiver заблокировал эту версию"
 
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver can't play that file. Try an MP3 or OGG."
+msgstr "Quiver не может воспроизвести этот файл. Попробуйте MP3 или OGG."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
 msgstr "Quiver проверил другие файлы {release}, но не {name}. Он скачивается в том виде, в каком его опубликовал разработчик."
+
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver couldn't open that music file. It may have been moved or deleted."
+msgstr "Quiver не удалось открыть этот музыкальный файл. Возможно, он был перемещён или удалён."
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
@@ -2942,8 +3108,8 @@ msgid "Quiver hasn't seen this release yet."
 msgstr "Quiver ещё не видел эту версию."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
-msgstr "Quiver не проверял эти файлы. «Сменить версию» установит их, только если вы выберете эту версию и подтвердите."
+msgid "Quiver hasn't verified these files. Installing one asks you to confirm first."
+msgstr "Quiver не проверял эти файлы. Перед установкой вас попросят подтвердить."
 
 #: ../ui/src/index.tsx
 msgid "Quiver hasn't verified this release"
@@ -3010,6 +3176,10 @@ msgstr "Теперь это приложение есть в каталоге Qu
 msgid "Quiver's catalog lists this app now, and checks its releases. Switching keeps its files, play time and your settings."
 msgstr "Теперь это приложение есть в каталоге Quiver, и его версии проверяются. При переключении сохранятся его файлы, время в игре и ваши настройки."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Read more"
+msgstr "Читать далее"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Read the README"
 msgstr "Читать README"
@@ -3062,8 +3232,10 @@ msgstr "Версии добавляются в каталог"
 msgid "Reload"
 msgstr "Перезагрузить"
 
+#. Button: no background music
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "Убрать"
 
@@ -3425,6 +3597,10 @@ msgstr "Показать в библиотеке"
 msgid "Show installed and update icons"
 msgstr "Показывать значки установки и обновлений"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show less"
+msgstr "Свернуть"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Show more"
@@ -3437,6 +3613,11 @@ msgstr "Показывать названия на карточках"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Show older releases"
 msgstr "Показать старые версии"
+
+#. Above a box for each detail the cards can show
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show on cards"
+msgstr "Показывать на карточках"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
@@ -3534,6 +3715,11 @@ msgstr "Пропустить настройку"
 msgid "Small"
 msgstr "Маленький"
 
+#. Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Smooth scrolling"
+msgstr "Плавная прокрутка"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "So you can reset your password if you forget it"
 msgstr "Чтобы можно было сбросить пароль, если вы его забудете"
@@ -3583,6 +3769,10 @@ msgstr "Какую программу {name} запустить?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Start which program?"
 msgstr "Какую программу запустить?"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Start with Windows, in the system tray"
+msgstr "Запускать вместе с Windows в системном трее"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
@@ -3650,6 +3840,14 @@ msgstr "Поменять {south} и {east}: подтверждение на {eas
 msgid "Switch to the catalog's"
 msgstr "Перейти на вариант из каталога"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Linux version"
+msgstr "Перейти на версию для Linux"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Windows version (Wine)"
+msgstr "Перейти на версию для Windows (Wine)"
+
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
 msgid "Tabs"
@@ -3659,6 +3857,11 @@ msgstr "Вкладки"
 #: ../../apps/launcher/src/library.tsx
 msgid "Tag"
 msgstr "Тег"
+
+#. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Tags"
+msgstr "Теги"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it ran after following the setup."
@@ -3848,8 +4051,8 @@ msgid "This release only comes as a Windows installer (MSI). Uninstall it, then 
 msgstr "Эта версия выходит только как установщик Windows (MSI). Удалите приложение, затем получите его снова, чтобы установить таким способом."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Эта версия отозвана, поэтому ссылок на её файлы нет. «Сменить версию» установит её, только если вы выберете её и будете настаивать."
+msgid "This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Эта версия отозвана, поэтому ссылок на её файлы нет. Чтобы установить её, сначала нужно принять риск."
 
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/store.tsx
@@ -4194,9 +4397,15 @@ msgstr "Версии"
 msgid "View {version} on {host}"
 msgstr "Открыть {version} на {host}"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "View options"
 msgstr "Параметры вида"
+
+#. Background music's volume
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Volume"
+msgstr "Громкость"
 
 #. Button: waits for the release to be verified instead of installing it now
 #. Button: waits for the release to be verified instead of installing it now
@@ -4240,6 +4449,11 @@ msgstr "Добро пожаловать в Quiver Launcher!"
 msgid "What players said"
 msgstr "Что говорят игроки"
 
+#. Browse card detail: Runs well, Has issues, and how many players said so
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "What players say"
+msgstr "Отзывы игроков"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "Что работало хорошо, а что нет? Пришлось ли что-то делать, чтобы запустить игру или исправить проблему?"
@@ -4268,6 +4482,19 @@ msgstr "Пока вы вошли в аккаунт, они связаны с в�
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
 msgstr "Широкая"
+
+#. Browse card style: the wide art over the catalog's details, as Quiver Launcher 3 had
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Wide art"
+msgstr "Широкая обложка"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Windows (Wine)"
+msgstr "Windows (Wine)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Windows apps"
+msgstr "Приложения Windows"
 
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx

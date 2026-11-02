@@ -6,7 +6,7 @@
  * playlist someone shared can be followed. The Sidebar layout shows the same
  * library as a list down the left, with the app picked in it open beside it.
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, HardDrive, LayoutGrid, Library, ListPlus, MoreHorizontal, PanelLeft, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
@@ -14,19 +14,20 @@ import { Plural, Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
-import { PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
+import { OS_NAMES, PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
 import { hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { haloMoved, pageArea } from "./spatial";
 import { jumpLetters, letterOf } from "./tv-library";
 import { LetterIndex } from "./letter-index";
 import { versionLabel } from "./versions";
 import { useAccount } from "./account";
-import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
+import { hasFilters, inCollection, matches, newKey, type AppFacts, type Collection } from "./sync";
 import { isOwn } from "./custom";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
+import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
 import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
-import { PLATFORMS, forPlatforms } from "./platforms";
+import { PLATFORMS, forPlatforms, type Platform } from "./platforms";
 import { gridGroupBy, isStack, sections, stacks, type Stack } from "./group";
 import { FiltersPanel, SidebarLayout, SidebarList } from "./library-sidebar";
 import { byWhen } from "./sidebar";
@@ -36,7 +37,7 @@ import { boxZoom, windowBox, zoom } from "./zoom";
 
 type Tab = "all" | "installed" | "not-installed" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
-type Filters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
+type Filters = LibraryFilters;
 
 type Overrides = { name?: string; cover?: string; consoles?: string[] };
 // Made once for an entry and its overrides, so a card given it keeps it till either changes (LibraryTile's memo).
@@ -60,7 +61,7 @@ export function withOverrides(entry: Entry, o?: Overrides): Entry {
   return made;
 }
 
-export const newKey = () => `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+export { newKey } from "./sync";
 /** A playlist's filters from the library's, and back. */
 const toPlaylist = (f: Filters) => ({
   tags: f.tag ? [f.tag] : [],
@@ -141,7 +142,8 @@ export function LibraryPage({
   // The app open beside the sidebar; the first one until the player picks one.
   const [selected, setSelected] = useState<string>();
   const { user, unshareList } = useAccount();
-  const [tab, setTab] = useState<Tab>("all");
+  // The tab and filters as the player left them, across Browse and restarts (kept below).
+  const [tab, setTab] = useState<Tab>(() => (keepsTab(settings.libraryTab, collections) ? settings.libraryTab! : "all"));
   const [editing, setEditing] = useState<Collection | null>(null);
   const [sharing, setSharing] = useState<Collection | null>(null);
   const [following, setFollowing] = useState(false);
@@ -149,8 +151,16 @@ export function LibraryPage({
   // Kept with this computer's other preferences.
   const sort: LibrarySort = isLibrarySort(settings.librarySort) ? settings.librarySort : "played";
   const setSort = (librarySort: LibrarySort) => setSettings({ ...settings, librarySort: librarySort === "played" ? undefined : librarySort });
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>(() => keptFilters(settings.libraryFilters));
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Kept with this computer's other preferences once they settle: two changes at once (a playlist's filters cleared as it opens) save together.
+  useEffect(() => {
+    const libraryTab = keepsTab(tab, collections) ? tab : undefined;
+    const set = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
+    const libraryFilters = Object.keys(set).length ? set : undefined;
+    if (libraryTab === settings.libraryTab && JSON.stringify(libraryFilters) === JSON.stringify(settings.libraryFilters)) return;
+    setSettings({ ...settings, libraryTab, libraryFilters });
+  }, [tab, filters]); // eslint-disable-line react-hooks/exhaustive-deps
   const { platforms, picked: pickedPlatforms } = usePlatforms();
   // Every platform's apps, until the library is left.
   const [everywhere, setEverywhere] = useState(false);
@@ -231,6 +241,7 @@ export function LibraryPage({
     // Apps the player added match only the filters there's data for.
     projectType: isOwn(entry.id) ? undefined : entry.projectType,
     aiLevel: entry.aiLevel,
+    platforms: entry.supportedOS,
     names: [entry.projectName, ...entry.games.map((g) => g.title)],
   });
   const sortFacts = (e: Entry) => ({ lastPlayed: installs[e.id]?.lastPlayed, installedAt: installs[e.id]?.installedAt, addedAt: inLibrary.get(e.id)?.addedAt, installed: Boolean(installs[e.id]) });
@@ -640,6 +651,7 @@ export function LibraryPage({
         size={view.size}
         names={view.names}
         marks={view.marks}
+        details={view.details}
         inLibrary={(id) => inLibrary.has(id)}
         action={cardAction}
         onOpen={cardOpen}
@@ -654,6 +666,7 @@ export function LibraryPage({
         names={view.names}
         nameOrder={view.nameOrder}
         marks={view.marks}
+        details={view.details}
         inLibrary={inLibrary.has(entry.id)}
         action={cardAction}
         onOpen={cardOpen}
@@ -661,9 +674,12 @@ export function LibraryPage({
     );
   // The player's view: the cards' picture and size, names or not. A sidebar that doesn't fit is a grid.
   const gridClass = `catalog-grid library-grid layout-grid image-${view.image} size-${view.size}${view.names ? "" : " no-names"}`;
+  // The lines under the name, and the tags' over it, the names keep room for (app.css's --tile-names).
+  const tileLines = view.details.filter((d) => d === "subtitle" || d === "rating" || d === "updated").length + (view.details.some((d) => d === "kinds" || d === "ai" || d === "platforms") ? 1 : 0);
+  const gridStyle = { "--tile-lines": tileLines } as CSSProperties;
   // The triggers jump through a grid: a letter at a time by name, else a screen. A card for each game, or each app.
   const grid = (entries: Entry[]) => (
-    <div className={gridClass} data-jump={byLetter ? "letters" : "pages"} ref={byLetter ? letterGrid : undefined}>
+    <div className={gridClass} style={gridStyle} data-jump={byLetter ? "letters" : "pages"} ref={byLetter ? letterGrid : undefined}>
       {(view.byGame ? stacks(entries, sortFacts) : entries).map(card)}
     </div>
   );
@@ -829,7 +845,7 @@ export function LibraryPage({
             The library's own cards, in its view, each one stop for the d-pad: Add in Play's place, which Y presses, and
             A its page. Uninstalling is on that page, as for any app.
           */}
-          <div className={gridClass}>
+          <div className={gridClass} style={gridStyle}>
             {loose.map((entry) => (
               <LibraryTile
                 key={entry.id}
@@ -839,6 +855,7 @@ export function LibraryPage({
                 names={view.names}
                 nameOrder={view.nameOrder}
                 marks={view.marks}
+                details={view.details}
                 inLibrary={false}
                 onAdd={add}
                 action={cardAction}
@@ -1385,8 +1402,10 @@ function PlaylistEditor({
   const [name, setName] = useState(collection.name);
   const [filters, setFilters] = useState<Filters>(fromPlaylist(collection));
   const [search, setSearch] = useState(collection.search ?? "");
+  const [platform, setPlatform] = useState<Platform | undefined>(collection.platforms?.[0]);
   const [icon, setIcon] = useState(collection.icon);
   const isNew = !collection.name;
+  const platforms = platform === collection.platforms?.[0] ? collection.platforms : platform && [platform];
   const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const picked = collection.apps?.length ?? 0;
   return (
@@ -1404,6 +1423,7 @@ function PlaylistEditor({
             ...next,
             name: name.trim().slice(0, 60),
             search: search.trim() || undefined,
+            platforms,
             icon,
             tags: filters.tag === was.tag ? collection.tags : next.tags,
             consoles: filters.console === was.console ? collection.consoles : next.consoles,
@@ -1434,9 +1454,17 @@ function PlaylistEditor({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <select aria-label={t`Platform`} value={platform ?? ""} onChange={(e) => setPlatform((e.target.value || undefined) as Platform | undefined)}>
+            <option value="">{t`All platforms`}</option>
+            {PLATFORMS.map((os) => (
+              <option key={os} value={os}>
+                {OS_NAMES[os]}
+              </option>
+            ))}
+          </select>
           <FilterFields value={filters} set={set} entries={library} ownTags={ownTags} />
         </div>
-        <IconChoice entries={on({ ...collection, ...toPlaylist(filters), search })} value={icon} onChange={setIcon} />
+        <IconChoice entries={on({ ...collection, ...toPlaylist(filters), search, platforms })} value={icon} onChange={setIcon} />
         <div className="row">
           <button className="primary">
             <Trans comment="Saves a playlist">Save</Trans>

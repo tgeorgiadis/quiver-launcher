@@ -141,10 +141,18 @@ msgstr "개발자가 {listed}에서 {file}을(를) 삭제했어요."
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, other {파일 #개}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
+msgstr "{filters, plural, other {태그 필터 #개, 재생 목록으로}}"
+
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "{have} 설치됨"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{hidden, plural, one {# hidden app, still hidden} other {# hidden apps, still hidden}}"
+msgstr "{hidden, plural, other {숨긴 앱 #개, 계속 숨김}}"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "{hours, plural, one {# hour} other {# hours}}"
@@ -354,6 +362,15 @@ msgstr "{size} KB"
 #: ../../apps/launcher/src/downloads.ts
 msgid "{size} MB"
 msgstr "{size} MB"
+
+#. Mouse wheel speed: times as far as the system's, such as 2×
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{speed}×"
+msgstr "{speed}×"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
+msgstr "{tagged, plural, other {앱 #개의 내 태그}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -614,6 +631,11 @@ msgstr "앱 추가 중"
 msgid "Advanced"
 msgstr "고급"
 
+#. Browse card detail: AI-assisted or Mostly AI
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "AI label"
+msgstr "AI 표시"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -666,6 +688,7 @@ msgid "All other platforms"
 msgstr "기타 모든 플랫폼"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "All platforms"
 msgstr "모든 플랫폼"
 
@@ -680,6 +703,10 @@ msgstr "모든 프로젝트 유형"
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "모든 태그"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Also coming over"
+msgstr "함께 가져오는 항목"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
@@ -825,13 +852,30 @@ msgstr "아트워크 주소"
 msgid "Artwork and consoles from the game"
 msgstr "게임의 아트워크와 콘솔"
 
+#. Run with: the runner chosen in Settings for every Windows app
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "As in Settings: {name}"
+msgstr "설정과 같이: {name}"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {verifiedVersion} back. It installs the next new release."
 msgstr "자동 업데이트는 {verifiedVersion}을(를) 다시 설치하지 않아요. 다음 새 버전을 설치해요."
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Automatic (Wine for Windows apps)"
-msgstr "자동(Windows 앱은 Wine)"
+msgid "Automatic"
+msgstr "자동"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic (no Proton or Wine found)"
+msgstr "자동(Proton이나 Wine을 찾지 못함)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic uses a Proton that Steam has, which comes with what most games need, or Wine where there's no Proton. An app's own launch options can choose another."
+msgstr "자동은 대부분의 게임에 필요한 것을 갖춘 Steam의 Proton을 쓰고, Proton이 없으면 Wine을 써요. 앱마다 실행 옵션에서 다른 것을 고를 수 있어요."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Automatic: {name}"
+msgstr "자동: {name}"
 
 #. Controller hint: what Back does, closing or going back
 #. The setup's previous step
@@ -850,12 +894,18 @@ msgstr "“{searched}” 검색 결과로 돌아가기"
 msgid "Back to top"
 msgstr "맨 위로"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Background music"
+msgstr "배경 음악"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Backups"
 msgstr "백업"
 
 #. Before the game(s) an app is made from
+#. Before the game(s) an app is made from
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../ui/src/index.tsx
 msgid "Based on"
 msgstr "원작"
@@ -889,7 +939,9 @@ msgstr "플레이어 피드백 기준 좋은 순"
 msgid "Blocked"
 msgstr "차단됨"
 
+#. Browse card style: the portrait box art over the catalog's details
 #. Library card image: the portrait capsule
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/view.ts
 msgid "Box art"
 msgstr "박스 아트"
@@ -904,9 +956,19 @@ msgstr "박스 아트"
 msgid "Browse"
 msgstr "둘러보기"
 
+#. Settings section: how the catalog's cards look in Browse
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse cards"
+msgstr "둘러보기 카드"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "카탈로그 둘러보기"
+
+#. Which platform's build of an app to install, as Linux or Windows through Wine
+#: ../../apps/launcher/src/detail.tsx
+msgid "Build"
+msgstr "빌드"
 
 #: ../ui/src/index.tsx
 msgid "Built with some AI assistance"
@@ -962,6 +1024,11 @@ msgstr "카드 이미지"
 msgid "Card size"
 msgstr "카드 크기"
 
+#. Browse view option
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Card style"
+msgstr "카드 스타일"
+
 #. What the featured apps across the top of Browse are, for screen readers
 #: ../ui/src/discover.tsx
 msgid "carousel"
@@ -984,6 +1051,10 @@ msgstr "이름 또는 아트워크 변경"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Change version"
 msgstr "버전 변경"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Change version…"
+msgstr "버전 변경…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Change…"
@@ -1040,9 +1111,20 @@ msgstr "앱을 실행하는 프로그램(.exe)을 선택하세요."
 msgid "Choose a version"
 msgstr "버전 선택"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Choose a version of {name}"
 msgstr "{name} 버전 선택"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform"
+msgstr "버전 또는 플랫폼 선택"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Choose a version or platform of {name}"
+msgstr "{name} 버전 또는 플랫폼 선택"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Choose a version…"
@@ -1072,6 +1154,14 @@ msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인�
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music to play in the background"
+msgstr "배경에서 재생할 음악 선택"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music…"
+msgstr "음악 선택…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
@@ -1144,6 +1234,10 @@ msgstr "{title} 닫기"
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "필터 닫기"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
+msgstr "닫으면 시스템 트레이로 보내기 (Quiver Launcher가 계속 실행되며 앱을 업데이트해요)"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Collapse all sections"
@@ -1568,15 +1662,29 @@ msgid "General"
 msgstr "일반"
 
 #. Button that installs an app
+#. Button that installs an app
 #. Button: download and install the app
 #. Controller hint: what Options does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Get"
 msgstr "받기"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {app}"
+msgstr "{app} 받기"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Get {newestLabel}"
+msgstr "{newestLabel} 받기"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Get the Windows version (Wine)"
+msgstr "Windows 버전 받기 (Wine)"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -1755,6 +1863,7 @@ msgstr "미리 보기 업데이트 포함"
 
 #. Button that installs a mod
 #. Button that installs this version
+#. Button that installs this version
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Install"
@@ -1770,6 +1879,7 @@ msgstr "대신 {other} 설치"
 msgid "Install {release} before it's verified?"
 msgstr "검증 전에 {release}을(를) 설치할까요?"
 
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/versions.ts
 msgid "Install {version}"
 msgstr "{version} 설치"
@@ -2034,7 +2144,9 @@ msgstr "큰 이름"
 msgid "Last played"
 msgstr "마지막 플레이"
 
+#. Browse card detail: when the app's latest release came out
 #. Sort order for mods
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/mods.tsx
 msgid "Last updated"
 msgstr "최근 업데이트순"
@@ -2272,6 +2384,10 @@ msgid "Mostly AI-generated"
 msgstr "대부분 AI 생성"
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Mouse wheel speed"
+msgstr "마우스 휠 속도"
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Move apps"
 msgstr "앱 옮기기"
 
@@ -2315,6 +2431,11 @@ msgstr "이름 및 아트워크"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Name on top"
 msgstr "이름을 위에"
+
+#. Library card detail: the other name (the app's or the game's) under the large one
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Name underneath"
+msgstr "아래 이름"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Name, like Favourites"
@@ -2368,6 +2489,11 @@ msgstr "새 앱은 여기에 설치돼요."
 msgid "New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card."
 msgstr "새 앱은 여기에 설치돼요. 공간이 부족하면 Steam Deck의 microSD 카드처럼 다른 드라이브나 폴더를 선택하세요."
 
+#. Browse card detail: a badge on apps added to the catalog lately
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "New badge"
+msgstr "신규 배지"
+
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
 msgid "New in the catalog"
@@ -2411,6 +2537,10 @@ msgstr "다음 글자 또는 페이지"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Next tab"
 msgstr "다음 탭"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "No {build} build"
+msgstr "{build} 빌드 없음"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "No AI use found"
@@ -2511,6 +2641,7 @@ msgid "None of this release's files are for this computer."
 msgstr "이 버전의 파일 중 이 컴퓨터용 파일이 없어요."
 
 #. Interface size
+#. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "보통"
@@ -2660,6 +2791,11 @@ msgstr "{site}에서 열기"
 msgid "Open on its site"
 msgstr "사이트에서 열기"
 
+#. Item in the launcher's menu in the Windows system tray
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Open Quiver Launcher"
+msgstr "Quiver Launcher 열기"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Open the release page"
@@ -2687,6 +2823,11 @@ msgstr "기타"
 #: ../../apps/launcher/src/library.tsx
 msgid "Other platforms"
 msgstr "기타 플랫폼"
+
+#. Over the list of an app's versions, under Get's own button for its newest
+#: ../../apps/launcher/src/detail.tsx
+msgid "Other versions"
+msgstr "다른 버전"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Other ways to add"
@@ -2747,6 +2888,7 @@ msgid "Places"
 msgstr "위치"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Platform"
 msgstr "플랫폼"
 
@@ -2755,6 +2897,8 @@ msgstr "플랫폼"
 msgid "Platform unspecified"
 msgstr "플랫폼 미지정"
 
+#. Browse card detail: icons for Windows, Linux, macOS, Android
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Platforms"
@@ -2784,6 +2928,10 @@ msgstr "플레이"
 #: ../../apps/launcher/src/media.tsx
 msgid "Play {name}"
 msgstr "{name} 플레이"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Play a music file of your own while Quiver is open. It fades out while you play."
+msgstr "Quiver가 열려 있는 동안 내 음악 파일을 재생합니다. 게임 중에는 소리가 줄어듭니다."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -2862,6 +3010,11 @@ msgstr "키를 누르세요…"
 msgid "Press what you want to use, or Esc to cancel."
 msgstr "사용할 키나 버튼을 누르거나, Esc를 눌러 취소하세요."
 
+#. Above a sample card, showing how the options picked look
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Preview"
+msgstr "미리 보기"
+
 #: ../ui/src/discover.tsx
 msgid "Previous featured app"
 msgstr "이전 추천 앱"
@@ -2893,6 +3046,11 @@ msgstr "프로젝트 세부 정보"
 msgid "Project type"
 msgstr "프로젝트 유형"
 
+#. Item in the launcher's menu in the Windows system tray: closes the launcher
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quit"
+msgstr "종료"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
 msgstr "Quiver가 {installedVersion}을(를) 차단했어요: {blockedWhy}"
@@ -2914,16 +3072,24 @@ msgid "Quiver blocked it: {blockedWhy}"
 msgstr "Quiver가 차단했어요: {blockedWhy}"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않아요. 버전 변경에서 직접 선택하고 강행할 때만 설치돼요."
+msgid "Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않아요. 설치하려면 먼저 위험을 감수한다고 확인해야 해요."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
 msgstr "Quiver가 이 버전을 차단함"
 
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver can't play that file. Try an MP3 or OGG."
+msgstr "Quiver에서 이 파일을 재생할 수 없습니다. MP3 또는 OGG 파일을 사용해 보세요."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
 msgstr "Quiver가 {release}의 다른 파일은 확인했지만 {name}은(는) 확인하지 않았어요. 개발자가 게시한 그대로 다운로드해요."
+
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver couldn't open that music file. It may have been moved or deleted."
+msgstr "Quiver에서 이 음악 파일을 열 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
@@ -2942,8 +3108,8 @@ msgid "Quiver hasn't seen this release yet."
 msgstr "Quiver가 아직 이 버전을 확인하지 못했어요."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver hasn't verified these files. Change version installs them only if you pick this release and confirm."
-msgstr "Quiver가 이 파일을 검증하지 않았어요. 버전 변경에서 이 버전을 선택하고 확인할 때만 설치돼요."
+msgid "Quiver hasn't verified these files. Installing one asks you to confirm first."
+msgstr "Quiver가 이 파일을 검증하지 않았어요. 설치하기 전에 확인을 요청해요."
 
 #: ../ui/src/index.tsx
 msgid "Quiver hasn't verified this release"
@@ -3010,6 +3176,10 @@ msgstr "이제 Quiver 카탈로그에 이 앱이 등록되어 있고, 버전도 
 msgid "Quiver's catalog lists this app now, and checks its releases. Switching keeps its files, play time and your settings."
 msgstr "이제 Quiver 카탈로그에 이 앱이 등록되어 있고, 버전도 확인해요. 전환해도 파일, 플레이 시간, 설정은 그대로 유지돼요."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Read more"
+msgstr "더 읽기"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Read the README"
 msgstr "README 읽기"
@@ -3062,8 +3232,10 @@ msgstr "버전을 카탈로그에 등록하는 중"
 msgid "Reload"
 msgstr "다시 불러오기"
 
+#. Button: no background music
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "삭제"
 
@@ -3425,6 +3597,10 @@ msgstr "라이브러리에서 보기"
 msgid "Show installed and update icons"
 msgstr "설치됨 및 업데이트 아이콘 표시"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show less"
+msgstr "간략히 보기"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Show more"
@@ -3437,6 +3613,11 @@ msgstr "카드에 이름 표시"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Show older releases"
 msgstr "이전 버전 보기"
+
+#. Above a box for each detail the cards can show
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show on cards"
+msgstr "카드에 표시"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
@@ -3534,6 +3715,11 @@ msgstr "설정 건너뛰기"
 msgid "Small"
 msgstr "작게"
 
+#. Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Smooth scrolling"
+msgstr "부드러운 스크롤"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "So you can reset your password if you forget it"
 msgstr "비밀번호를 잊었을 때 재설정할 수 있도록"
@@ -3583,6 +3769,10 @@ msgstr "{name}의 어떤 프로그램을 실행할까요?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Start which program?"
 msgstr "어떤 프로그램을 실행할까요?"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Start with Windows, in the system tray"
+msgstr "Windows 시작 시 시스템 트레이에서 실행"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
@@ -3650,6 +3840,14 @@ msgstr "{south}와(과) {east} 바꾸기: {east}로 확인, {south}로 뒤로"
 msgid "Switch to the catalog's"
 msgstr "카탈로그 버전으로 전환"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Linux version"
+msgstr "Linux 버전으로 전환"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Switch to the Windows version (Wine)"
+msgstr "Windows 버전으로 전환 (Wine)"
+
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
 msgid "Tabs"
@@ -3658,6 +3856,11 @@ msgstr "탭"
 #. Filter by one of an app's tags
 #: ../../apps/launcher/src/library.tsx
 msgid "Tag"
+msgstr "태그"
+
+#. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Tags"
 msgstr "태그"
 
 #: ../../apps/launcher/src/feedback.tsx
@@ -3848,8 +4051,8 @@ msgid "This release only comes as a Windows installer (MSI). Uninstall it, then 
 msgstr "이 버전은 Windows 설치 프로그램(MSI)으로만 제공돼요. 제거한 다음 다시 받아서 그 방식으로 설치하세요."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist."
-msgstr "이 버전은 철회되어 파일 링크를 제공하지 않아요. 버전 변경에서 직접 선택하고 강행할 때만 설치돼요."
+msgid "This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first."
+msgstr "이 버전은 철회되어 파일 링크를 제공하지 않아요. 설치하려면 먼저 위험을 감수한다고 확인해야 해요."
 
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/store.tsx
@@ -4194,9 +4397,15 @@ msgstr "버전"
 msgid "View {version} on {host}"
 msgstr "{host}에서 {version} 보기"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "View options"
 msgstr "보기 옵션"
+
+#. Background music's volume
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Volume"
+msgstr "볼륨"
 
 #. Button: waits for the release to be verified instead of installing it now
 #. Button: waits for the release to be verified instead of installing it now
@@ -4240,6 +4449,11 @@ msgstr "Quiver Launcher에 오신 것을 환영해요!"
 msgid "What players said"
 msgstr "플레이어 평가"
 
+#. Browse card detail: Runs well, Has issues, and how many players said so
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "What players say"
+msgstr "플레이어 평가"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "무엇이 잘 됐고 무엇이 안 됐나요? 실행하거나 문제를 해결하려고 따로 한 일이 있나요?"
@@ -4268,6 +4482,19 @@ msgstr "로그인되어 있는 동안에는 Quiver 계정에 연결돼요."
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
 msgstr "넓게"
+
+#. Browse card style: the wide art over the catalog's details, as Quiver Launcher 3 had
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Wide art"
+msgstr "가로 이미지"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Windows (Wine)"
+msgstr "Windows (Wine)"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Windows apps"
+msgstr "Windows 앱"
 
 #. A release that was taken back
 #: ../../apps/launcher/src/detail.tsx

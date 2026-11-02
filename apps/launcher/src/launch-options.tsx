@@ -9,7 +9,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { PanelFormHead } from "./detail";
-import { native, type LaunchOptions, type Proton } from "./native";
+import { native, type LaunchOptions, type Proton, type WindowsRunner } from "./native";
 import { useLauncher } from "./store";
 
 type Runner = LaunchOptions["runner"];
@@ -20,14 +20,97 @@ const runnerFrom = (value: string): Runner =>
 /** A Proton's name from its folder. */
 const folderName = (path: string) => path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || path;
 
+/**
+ * What runs a program, as a dropdown: Automatic first, saying what it runs Windows programs with (`automatic`), then
+ * Wine, each Proton found, and another Proton the player picks. `direct`: running the program itself, for one app.
+ */
+export function RunnerSelect({ value, onChange, onError, automatic, direct }: { value: Runner; onChange: (runner: Runner) => void; onError: (error: string) => void; automatic: string; direct?: boolean }) {
+  const [protons, setProtons] = useState<Proton[]>([]);
+  useEffect(() => {
+    native.listProtons().then(setProtons, () => setProtons([]));
+  }, []);
+  const pick = (choice: string) => {
+    if (choice !== "other") return onChange(runnerFrom(choice));
+    native.pickProton().then(
+      (path) => path && onChange({ kind: "proton", path }),
+      (e) => onError(String(e)),
+    );
+  };
+  const listed = value?.kind === "proton" && !protons.some((p) => p.path === value.path) ? [...protons, { name: folderName(value.path), path: value.path }] : protons;
+  return (
+    <select aria-label={t`Run with`} value={runnerValue(value)} onChange={(e) => pick(e.target.value)}>
+      <option value="">{automatic}</option>
+      {direct && <option value="direct">{t`The program itself`}</option>}
+      <option value="wine">Wine</option>
+      {listed.map((p) => (
+        <option key={p.path} value={`proton:${p.path}`}>
+          {p.name}
+        </option>
+      ))}
+      <option value="other">{t`Another Proton…`}</option>
+    </select>
+  );
+}
+
+/** What Automatic runs Windows programs with here, by name: a Proton Steam has, else Wine; null with neither, undefined until known. */
+export function useAutomaticRunner() {
+  const [name, setName] = useState<string | null>();
+  useEffect(() => {
+    native.automaticRunner().then(setName, () => setName(null));
+  }, []);
+  return name;
+}
+
+/** A runner Settings set, by name. */
+const runnerName = (runner: NonNullable<Runner>) => (runner.kind === "proton" ? folderName(runner.path) : runner.kind === "wine" ? "Wine" : t`The program itself`);
+
+/** Automatic's line in a Run with dropdown, saying what it runs Windows programs with. */
+const automaticLine = (name: string | null | undefined) =>
+  name === undefined ? t`Automatic` : name === null ? t`Automatic (no Proton or Wine found)` : t`Automatic: ${name}`;
+
+/** One app's Run with: its first line is what Settings runs Windows programs with, which the app keeps to unless it has its own. */
+function AppRunner({ value, onChange, onError, defaultRunner }: { value: Runner; onChange: (runner: Runner) => void; onError: (error: string) => void; defaultRunner?: WindowsRunner }) {
+  const automatic = useAutomaticRunner();
+  const name = defaultRunner && runnerName(defaultRunner);
+  const first = name ? t({ message: `As in Settings: ${name}`, comment: "Run with: the runner chosen in Settings for every Windows app" }) : automaticLine(automatic);
+  return <RunnerSelect value={value} onChange={onChange} onError={onError} automatic={first} direct />;
+}
+
+/** Settings' Run with for every Windows program on Linux, where an app has none of its own (Launch options). */
+export function WindowsRunnerSetting() {
+  const { config, settings, setSettings } = useLauncher();
+  const automatic = useAutomaticRunner();
+  const [error, setError] = useState<string | null>(null);
+  if (config.os !== "linux") return null;
+  return (
+    <section className="settings-section" aria-label={t`Windows apps`}>
+      <h3>
+        <Trans>Windows apps</Trans>
+      </h3>
+      <label>
+        <Trans>Run with</Trans>{" "}
+        <RunnerSelect
+          value={settings.windowsRunner}
+          onChange={(runner) => (setError(null), setSettings({ ...settings, windowsRunner: runner?.kind === "direct" ? undefined : runner }))}
+          onError={setError}
+          automatic={automaticLine(automatic)}
+        />
+      </label>
+      <p className="muted">
+        <Trans>Automatic uses a Proton that Steam has, which comes with what most games need, or Wine where there's no Proton. An app's own launch options can choose another.</Trans>
+      </p>
+      {error && <p className="job-error">{error}</p>}
+    </section>
+  );
+}
+
 export function LaunchOptionsButton({ id }: { id: string }) {
-  const { installs, config, setLaunch } = useLauncher();
+  const { installs, config, settings, setLaunch } = useLauncher();
   const install = installs[id];
   const [open, setOpen] = useState(false);
   const [executable, setExecutable] = useState<string | undefined>();
   const [runner, setRunner] = useState<Runner>();
   const [command, setCommand] = useState("");
-  const [protons, setProtons] = useState<Proton[]>([]);
   const [error, setError] = useState<string | null>(null);
   const linux = config.os === "linux";
   useEffect(() => {
@@ -36,7 +119,6 @@ export function LaunchOptionsButton({ id }: { id: string }) {
     setRunner(install.launch?.runner);
     setCommand(install.launch?.command ?? "");
     setError(null);
-    if (linux) native.listProtons().then(setProtons, () => setProtons([]));
     // What's saved fills the form as it opens.
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!install) return null;
@@ -60,15 +142,6 @@ export function LaunchOptionsButton({ id }: { id: string }) {
       (e) => setError(String(e)),
     );
   };
-  const pickRunner = (value: string) => {
-    setError(null);
-    if (value !== "other") return setRunner(runnerFrom(value));
-    native.pickProton().then(
-      (path) => path && setRunner({ kind: "proton", path }),
-      (e) => setError(String(e)),
-    );
-  };
-  const listed = runner?.kind === "proton" && !protons.some((p) => p.path === runner.path) ? [...protons, { name: folderName(runner.path), path: runner.path }] : protons;
   const unclosed = (command.match(/"/g)?.length ?? 0) % 2 === 1 || (command.match(/'/g)?.length ?? 0) % 2 === 1;
   return (
     <form
@@ -111,17 +184,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
           <span className="field-label">
             <Trans>Run with</Trans>
           </span>
-          <select aria-label={t`Run with`} value={runnerValue(runner)} onChange={(e) => pickRunner(e.target.value)}>
-            <option value="">{t`Automatic (Wine for Windows apps)`}</option>
-            <option value="direct">{t`The program itself`}</option>
-            <option value="wine">Wine</option>
-            {listed.map((p) => (
-              <option key={p.path} value={`proton:${p.path}`}>
-                {p.name}
-              </option>
-            ))}
-            <option value="other">{t`Another Proton…`}</option>
-          </select>
+          <AppRunner value={runner} onChange={(r) => (setError(null), setRunner(r))} onError={setError} defaultRunner={settings.windowsRunner} />
         </label>
       )}
       <label>

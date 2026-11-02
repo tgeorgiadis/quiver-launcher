@@ -3,7 +3,7 @@
  * the focused control (spatial.ts's buttonsNow), labelled as on the controller
  * used last, by the player's bindings. Settings can hide it.
  */
-import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { t } from "@lingui/core/macro";
 import { native, type PadLabels } from "./native";
 import { useLauncher } from "./store";
@@ -69,9 +69,9 @@ function scrollLabel(pad: Bindings, labels: PadLabels | null) {
  * Enter, so Select, B is Escape, so Back, Y is Space, so Options, and on a text field X brings up Steam's keyboard.
  * Its other buttons are Steam's mouse and keys there, so nothing of Quiver's.
  */
-function desktopHints(labels: PadLabels) {
-  return buttonsNow().flatMap(([action, does]) => {
-    if (action === "confirm" && takesText(document.activeElement))
+function desktopHints(labels: PadLabels, { buttons, typing }: Now) {
+  return buttons.flatMap(([action, does]) => {
+    if (action === "confirm" && typing)
       return [{ action: "keyboard", binding: labels.west, does: t({ message: "Keyboard", comment: "Controller hint: what the button bringing up Steam's on-screen keyboard does" }) }];
     if (action === "confirm") return [{ action, binding: labels.south, does }];
     if (action === "back") return [{ action, binding: labels.east, does }];
@@ -81,31 +81,74 @@ function desktopHints(labels: PadLabels) {
   });
 }
 
+/** What the buttons do now (spatial.ts's buttonsNow), and whether the focus is on a text field. */
+type Now = { buttons: [Action, string][]; typing: boolean };
+
 export function PadHints() {
   const { settings } = useLauncher();
   const pads = usePads();
   const labels = usePadLabels();
   const shown = pads.length > 0 && !settings.padOff && !settings.padHintsOff;
-  // Again whenever the focus moves, the page changes (a dialog, a menu) or scrolls.
-  const [, again] = useReducer((n: number) => n + 1, 0);
+  // The button a press of the controller's presses from the focus shows which: the Get (or Play) that Options presses
+  // (a catalog card's, or the page's), as A opens such a card; else the Play or Get that Confirm presses on a library
+  // card, where it has a word beside it (not an icon card's round Play, with no room).
+  const bound = withDefaults(settings.pad, DEFAULT_PAD);
+  const optionsGlyph = shown && bound.options[0] ? label("pad", bound.options[0], labels) : "";
+  const confirmGlyph = shown && bound.confirm[0] ? label("pad", bound.confirm[0], labels) : "";
+  const glyphs = useRef({ optionsGlyph, confirmGlyph });
+  glyphs.current = { optionsGlyph, confirmGlyph };
+  // Changed only when it does, and the mark taken off and put back restyled the button each time.
+  const marked = useRef<HTMLElement | null>(null);
+  const mark = useCallback(() => {
+    const { optionsGlyph, confirmGlyph } = glyphs.current;
+    const quick = optionsGlyph ? quickButton(document.activeElement) : null;
+    const play = !quick && confirmGlyph ? confirmButton(document.activeElement) : null;
+    const button = quick ?? (play && !play.closest(".image-icon") ? play : null);
+    const glyph = quick ? optionsGlyph : confirmGlyph;
+    if (marked.current !== button) marked.current?.removeAttribute("data-pad-glyph");
+    if (button && button.getAttribute("data-pad-glyph") !== glyph) button.setAttribute("data-pad-glyph", glyph);
+    marked.current = button;
+  }, []);
+  useLayoutEffect(mark, [mark, optionsGlyph, confirmGlyph]);
+  useEffect(() => () => marked.current?.removeAttribute("data-pad-glyph"), []);
+  // Looked at again whenever the focus moves, the page changes (a dialog, a menu) or has scrolled, and drawn again
+  // only when what it says does: on a Steam Deck, drawing it anew with each frame a held d-pad scrolled the page, and
+  // with each step, was most of that time.
+  const [now, setNow] = useState<Now>({ buttons: [], typing: false });
   useEffect(() => {
     if (!shown) return;
     let frame = 0;
-    const soon = () => (frame ||= requestAnimationFrame(() => ((frame = 0), again())));
+    let settled = 0;
+    let said = "";
+    const check = () => {
+      mark();
+      const next = { buttons: buttonsNow(), typing: takesText(document.activeElement) };
+      const saying = JSON.stringify(next);
+      if (saying !== said) (said = saying), setNow(next);
+    };
+    check();
+    const soon = () => (frame ||= requestAnimationFrame(() => ((frame = 0), check())));
+    // Scrolling changes only Top, Scroll and Show (spatial.ts's buttonsNow): looked at once it stops.
+    const scrolled = () => {
+      clearTimeout(settled);
+      settled = window.setTimeout(soon, 150);
+    };
     document.addEventListener("focusin", soon);
     document.addEventListener("focusout", soon);
-    window.addEventListener("scroll", soon, { capture: true, passive: true });
+    window.addEventListener("scroll", scrolled, { capture: true, passive: true });
     // Not its own changes, which would have it go round again.
     const changes = new MutationObserver((records) => records.some((r) => !bar.current?.contains(r.target)) && soon());
     changes.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
     return () => {
       cancelAnimationFrame(frame);
+      clearTimeout(settled);
       document.removeEventListener("focusin", soon);
       document.removeEventListener("focusout", soon);
-      window.removeEventListener("scroll", soon, { capture: true });
+      window.removeEventListener("scroll", scrolled, { capture: true });
       changes.disconnect();
     };
-  }, [shown]);
+    // Again with the settings, the language among them, which what it says is in.
+  }, [shown, settings, mark]);
   // The page leaves room for it at the bottom (app.css, and spatial.ts scrolls out from under it).
   const bar = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -114,7 +157,12 @@ export function PadHints() {
       root.removeProperty("--pad-hints");
       return;
     }
-    const room = new ResizeObserver(() => root.setProperty("--pad-hints", `${bar.current?.offsetHeight ?? 0}px`));
+    // Set only when its height changes: as the hints change, it gets wider or narrower, and each new value on the
+    // page's root restyled the whole page.
+    const room = new ResizeObserver(() => {
+      const height = `${bar.current?.offsetHeight ?? 0}px`;
+      if (root.getPropertyValue("--pad-hints") !== height) root.setProperty("--pad-hints", height);
+    });
     room.observe(bar.current);
     return () => {
       room.disconnect();
@@ -150,38 +198,18 @@ export function PadHints() {
       window.removeEventListener("resize", measure);
     };
   });
-  // The button a press of the controller's presses from the focus shows which: the Get (or Play) that Options presses
-  // (a catalog card's, or the page's), as A opens such a card; else the Play or Get that Confirm presses on a library
-  // card, where it has a word beside it (not an icon card's round Play, with no room).
-  const bound = withDefaults(settings.pad, DEFAULT_PAD);
-  const optionsGlyph = shown && bound.options[0] ? label("pad", bound.options[0], labels) : "";
-  const confirmGlyph = shown && bound.confirm[0] ? label("pad", bound.confirm[0], labels) : "";
-  // Changed only when it does: this runs with each frame the page scrolls, and the mark taken off and put back
-  // restyled the button each time.
-  const marked = useRef<HTMLElement | null>(null);
-  useLayoutEffect(() => {
-    const quick = optionsGlyph ? quickButton(document.activeElement) : null;
-    const play = !quick && confirmGlyph ? confirmButton(document.activeElement) : null;
-    const button = quick ?? (play && !play.closest(".image-icon") ? play : null);
-    const glyph = quick ? optionsGlyph : confirmGlyph;
-    if (marked.current !== button) marked.current?.removeAttribute("data-pad-glyph");
-    if (button && button.getAttribute("data-pad-glyph") !== glyph) button.setAttribute("data-pad-glyph", glyph);
-    marked.current = button;
-  });
-  useEffect(() => () => marked.current?.removeAttribute("data-pad-glyph"), []);
   if (!shown) return null;
-  const pad = withDefaults(settings.pad, DEFAULT_PAD);
   const hints = labels?.desktop
-    ? desktopHints(labels)
-    : buttonsNow().flatMap(([action, does]) => {
+    ? desktopHints(labels, now)
+    : now.buttons.flatMap(([action, does]) => {
         const binding =
           action === "scrollDown"
-            ? scrollLabel(pad, labels)
+            ? scrollLabel(bound, labels)
             : action === "nextTab"
-              ? pairLabel(pad, labels, "prevTab", "nextTab")
+              ? pairLabel(bound, labels, "prevTab", "nextTab")
               : action === "nextLetter"
-                ? pairLabel(pad, labels, "prevLetter", "nextLetter")
-                : pad[action][0] && label("pad", pad[action][0], labels);
+                ? pairLabel(bound, labels, "prevLetter", "nextLetter")
+                : bound[action][0] && label("pad", bound[action][0], labels);
         return binding ? [{ action: action as string, binding, does }] : [];
       });
   return (

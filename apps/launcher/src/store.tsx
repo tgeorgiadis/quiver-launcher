@@ -5,17 +5,19 @@
  * overrides); names, artwork and files always come from the catalog. The
  * last catalog data seen is cached so the library shows instantly offline.
  */
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
-import { native, type Config, type LaunchOptions, type OldApp, type Progress, type StateProblem, type V3Library } from "./native";
+import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore } from "./assets";
-import { fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
+import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, type Collection } from "./sync";
-import { setBindings, type Bindings } from "./spatial";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
+import type { Platform } from "./platforms";
+import { setBindings, setScrolling, type Bindings } from "./spatial";
+import { musicForGame, setMusic } from "./music";
 import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
@@ -111,7 +113,7 @@ export type Asking = {
   resolve: (install: boolean) => void;
 };
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
-type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean };
+type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os };
 
 type Launcher = {
   config: Config;
@@ -142,8 +144,8 @@ type Launcher = {
   chooseProgram: (id: string | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
-  /** Imports these Quiver Launcher 3 apps, saying how many are done as it goes; resolves to the names of those it couldn't. */
-  importOld: (apps: OldApp[], onProgress?: (done: number) => void) => Promise<string[]>;
+  /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
+  importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void) => Promise<string[]>;
   /** The Quiver Launcher 3 library in a folder the player picked, its installs in `apps` if given: null when there isn't one. */
   findOld: (path: string, apps?: string) => Promise<V3Library | null>;
   remember: (entries: Entry[]) => void;
@@ -154,8 +156,10 @@ type Launcher = {
    * With no verified release, its newest that isn't blocked, once the player confirms.
    * `unverified`: a release Quiver hasn't verified, which the player confirmed.
    * `blocked`: why Quiver blocked it, for one the player insisted on.
+   * `asset`: the name of the release's file the player picked, in place of the one Quiver would choose.
+   * `platform`: the system whose build to install, as Windows' through Wine on Linux; later updates keep to it.
    */
-  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string }) => Promise<void>;
+  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os }) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
   play: (id: string, executable?: string) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
@@ -202,7 +206,8 @@ type Launcher = {
   /** Signs out, taking the library along except the apps installed on this computer, which stay until another account signs in. */
   signOut: () => Promise<void>;
   settings: Settings;
-  setSettings: (settings: Settings) => void;
+  /** Takes the new settings, or how to change them as they are by then, for a change that may come after another. */
+  setSettings: Dispatch<SetStateAction<Settings>>;
   /** A short note for the player, such as what signing in brought over. */
   notice: string | null;
   setNotice: (notice: string | null) => void;
@@ -212,6 +217,9 @@ type Launcher = {
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /** The app whose versions are open from its menu's Change version; null closes them. */
+  changingVersion: Entry | null;
+  changeVersion: (entry: Entry | null) => void;
   /** Renames an installed app's folder in the apps folder, as a folder can be named; resolves to the name it got. */
   renameFolder: (id: string, name: string) => Promise<string>;
   /** Moves the installed apps to another folder, where apps install from then on. */
@@ -288,14 +296,15 @@ export function hasUpdate(entry: CatalogEntry | undefined, install: Install | un
       !pulledVerified(entry) &&
       install.updates !== "pinned" &&
       bare(install.version) !== bare(entry.verified.version) &&
-      entry.verified.releasedAt > (install.releasedAt ?? 0),
+      cameAfter(entry.verified, install),
   );
 }
 
 /**
  * The install a Quiver Launcher 3 app comes over with, staying where 3.x put
- * it; none when it wasn't installed. A version 3.x didn't know comes as 3.x's
- * own 0.0.0 (v3.rs), with no release date, so any verified release is an update.
+ * it; none when it wasn't installed. It has no release date, so its version
+ * number says which releases are newer. A version 3.x didn't know comes as
+ * 3.x's own 0.0.0 (v3.rs), so any verified release is an update.
  */
 export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | undefined {
   if (!old.dir || !old.version) return undefined;
@@ -303,6 +312,82 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
   // One 3.x installed with its Windows installer starts the program it linked.
   const msi = old.program ? { installer: "msi" as const, program: old.program } : {};
   return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi };
+}
+
+/**
+ * The tags the player gave a 3.x app, which come over as their own: its tags less the catalog's, the ones 3.x last
+ * had from it and the entry's now (a 3.x from before it kept them has only those), as many as the tag field takes.
+ */
+export function importedTags(old: OldApp, entry: Entry): string[] {
+  const catalogs = new Set([...(old.catalogTags ?? []), ...entry.tags, ...(entry.consoles ?? [])].map((t) => t.toLowerCase()));
+  const own = (old.tags ?? []).map((t) => t.trim().slice(0, 50)).filter((t) => t && !catalogs.has(t.toLowerCase()));
+  return own.filter((t, i) => own.findIndex((o) => o.toLowerCase() === t.toLowerCase()) === i).slice(0, 20);
+}
+
+/**
+ * What a 3.x library brings along besides its apps, as far as it can say before the catalog is asked: the apps
+ * with tags of the player's own (those 3.x didn't have from the catalog, or any on an app the catalog doesn't
+ * know), its tag filters and its hidden apps. Only apps it knows where they come from come over.
+ */
+export function bringsAlong({ apps, filters }: Pick<V3Library, "apps" | "filters">) {
+  const coming = apps.filter((a) => a.repository || a.catalogId);
+  const own = (a: OldApp) => {
+    // A catalog app from a 3.x that didn't keep the catalog's tags can't tell them apart.
+    if (!a.catalogTags && a.catalogId) return false;
+    const catalogs = new Set((a.catalogTags ?? []).map((t) => t.toLowerCase()));
+    return (a.tags ?? []).some((t) => !catalogs.has(t.toLowerCase()));
+  };
+  return { tagged: coming.filter(own).length, filters: filters?.length ?? 0, hidden: coming.filter((a) => a.hidden).length };
+}
+
+/**
+ * An app brought over from 3.x: its id here, the tags 3.x matched its filters on, and what a playlist matches here:
+ * its tags and platforms.
+ */
+export type ImportedApp = { id: string; old: string[]; tags: string[]; platforms?: Entry["supportedOS"] };
+
+/** 3.x's tags for a platform, which a playlist here filters by platform instead. */
+const PLATFORM_TAGS: Record<string, Platform> = { windows: "windows", linux: "linux", macos: "macos", mac: "macos", osx: "macos", android: "android" };
+
+/**
+ * The playlist filters that could show what a 3.x filter showed, the closest first: its platforms' tags as platforms
+ * (any of them; or one, with all of one other tag), then its tags as tags (any of them). None for one that leaves
+ * tags out, as a playlist can't.
+ */
+function rulesFor(f: OldFilter): Pick<Collection, "tags" | "platforms">[] {
+  if (!f.tags.length || f.exclude.length) return [];
+  const platforms = [...new Set(f.tags.flatMap((t) => PLATFORM_TAGS[t.toLowerCase()] ?? []))];
+  const tags = f.tags.filter((t) => !PLATFORM_TAGS[t.toLowerCase()]);
+  const rules: Pick<Collection, "tags" | "platforms">[] = [];
+  if (platforms.length && (f.all ? platforms.length === 1 && tags.length <= 1 : !tags.length)) rules.push({ tags, platforms });
+  if (!f.all || f.tags.length === 1) rules.push({ tags: f.tags });
+  return rules;
+}
+
+/**
+ * Playlists for the player's 3.x tag filters, each showing the apps its filter showed. One a playlist's filters can
+ * follow keeps following them (rulesFor), with any app it showed that they don't find here (one tagged with a
+ * console, say) picked for it; when they'd find more than it showed, the next. Any other is a playlist of the apps
+ * it showed, picked by hand, and none when it showed none.
+ */
+export function importedPlaylists(filters: OldFilter[], apps: ImportedApp[]): Pick<Collection, "name" | "tags" | "platforms" | "apps">[] {
+  const has = (tags: string[], want: string[], all: boolean) => {
+    const set = new Set(tags.map((t) => t.toLowerCase()));
+    return all ? want.every((t) => set.has(t.toLowerCase())) : want.some((t) => set.has(t.toLowerCase()));
+  };
+  // As 3.x filtered (TagHelper.MatchesDisplayFilter).
+  const shows = (f: OldFilter, tags: string[]) => (!f.tags.length || has(tags, f.tags, f.all)) && (!f.exclude.length || !has(tags, f.exclude, f.excludeAll));
+  return filters.flatMap((f) => {
+    const name = f.name.slice(0, 60);
+    const showed = [...new Set(apps.filter((a) => shows(f, a.old)).map((a) => a.id))];
+    for (const rule of rulesFor(f)) {
+      const facts = (a: ImportedApp) => ({ tags: a.tags, consoles: [], installed: false, platforms: a.platforms });
+      const found = new Set(apps.filter((a) => matches({ ...rule, consoles: [] }, facts(a))).map((a) => a.id));
+      const picked = showed.filter((id) => !found.has(id));
+      if ([...found].every((id) => showed.includes(id))) return [{ name, ...rule, ...(picked.length ? { apps: picked } : {}) }];
+    }
+    return showed.length ? [{ name, tags: [], apps: showed }] : [];
+  });
 }
 
 /** `work` on each item, `at` at a time, its results in the items' order; `each` after each one. */
@@ -326,6 +411,8 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 
 /** This computer's preferences; they don't sync. */
 export type Settings = {
+  /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
+  windowsRunner?: WindowsRunner;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
   /** TV mode (tv.tsx): on, off, or unset, on by itself in Steam's Game Mode. */
@@ -333,7 +420,17 @@ export type Settings = {
   fullscreen?: boolean;
   /** The system's title bar over the window; unset, the window's buttons are in the top bar instead. */
   systemTitleBar?: boolean;
+  /** Closing the window hides it in the tray, the launcher still running (tray.rs; Windows only). */
+  closeToTray?: boolean;
   scale?: number;
+  /** How many times as far a mouse wheel's turn scrolls, as in Quiver Launcher 3 (spatial.ts); unset, the system's. */
+  scrollSpeed?: number;
+  /** The wheel and the d-pad's steps scroll at once, not easing there. */
+  smoothScrollOff?: boolean;
+  /** A sound file played behind the launcher, looped (music.ts), as in Quiver Launcher 3. */
+  music?: string;
+  /** Its volume, 0 to 1; unset, music.ts's default. */
+  musicVolume?: number;
   /** Light or dark; unset follows the system. */
   theme?: Theme;
   /** The language Quiver shows in (@quiverlauncher/i18n); unset follows the system. */
@@ -353,8 +450,14 @@ export type Settings = {
   groupBy?: string;
   /** Browse lists apps already in the library too. */
   browseShowsLibrary?: boolean;
+  /** How Browse's cards look and which details they show (browse-cards.ts); only what differs from the defaults. */
+  browseCards?: { look?: string; details?: string[] };
   /** How the library is sorted (sort.ts); unset is recently played. */
   librarySort?: string;
+  /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
+  libraryTab?: string;
+  /** The library's filters (library.tsx keptFilters); unset is none. */
+  libraryFilters?: Record<string, string>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
   /** How the library shows its apps (view.ts); only what differs from the defaults. */
@@ -453,6 +556,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [notice, setNotice] = useState<string | null>(null);
@@ -506,6 +610,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   useEffect(() => void activate(languageOf(settings)).catch(() => {}), [settings.language]);
   useEffect(() => {
     setBindings(settings);
+    setScrolling(settings);
+    setMusic(settings);
   }, [settings]);
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
@@ -704,6 +810,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const custom = isCustom(entry.id) ? (app ?? allItems.find((i) => i.id === entry.id)?.custom ?? fromKey(entry.id)) : null;
     // An update installs the same kind as before: a Windows installer's setup, or files in the app's folder.
     const kind = was ? (was.installer === "msi" ? "msi" : "files") : undefined;
+    // The system whose build it runs: the player's choice, else the one installed, so an update keeps to Windows' build
+    // through Wine. Switching drops the file picked for the other one.
+    const platform = options.platform ?? (was?.wine ? "windows" : undefined);
+    const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = () => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -735,10 +845,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!release) throw new Problem(custom ? msg`This repository has no releases yet.` : msg`This app has no approved release yet.`);
       version = release.version;
       const settings = release.installationOverride ?? entry.launcher;
-      let candidates = bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind);
+      // The file the player picked on the app's Releases tab: that one, unless it isn't the kind installed.
+      const clicked = options.asset ? release.assets.find((a) => a.filename === options.asset) : undefined;
+      let candidates = clicked
+        ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
+        : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind, platform);
       // A file the player picked that a later release names differently: they pick again, even from one.
-      const missed = !candidates.length && Boolean(custom && settings.releaseAssetFilter);
-      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind);
+      const missed = !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
+      if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform);
       let [asset, ...others] = candidates;
       if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length)
         throw new Problem(
@@ -751,9 +865,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (unmatched) [asset, ...others] = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
       if (!asset) throw new Problem(msg`This release has no download for your computer.`);
       // The file the player picked last time, when it's still one of these: taken again without asking.
-      const again = pickedBefore([asset, ...others], was?.pick);
-      let pick = was?.pick;
-      if (again) asset = again;
+      const again = pickedBefore([asset, ...others], lastPick);
+      let pick = lastPick;
+      // Picked by name: later releases keep to it, as to a file picked from several.
+      if (clicked) {
+        const files = installable(release.assets, config.os).map((a) => a.filename);
+        pick = files.length > 1 ? assetFilterFor(clicked.filename, files) : undefined;
+      } else if (again) asset = again;
       else if (others.length || missed || unmatched) {
         const choices = [asset, ...others];
         const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
@@ -808,7 +926,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const updates = pin ? "pinned" : i[entry.id]?.updates;
         // Installed now, or as long ago as it was before this update (an install from before there was a time, none).
         const installedAt = i[entry.id] ? i[entry.id].installedAt : Date.now();
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.launch ? { launch: i[entry.id]?.launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(asset.os === "windows" && config.os === "linux" ? { wine: true } : {}) } };
+        // The other system's build in place of the one there was: the programs the player picked, and what ran them,
+        // were the old build's. Its command line stays.
+        const wine = asset.os === "windows" && config.os === "linux";
+        const old = i[entry.id]?.launch;
+        const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -1088,7 +1211,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked });
+      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform });
     },
     async play(id, executable) {
       const install = installs[id];
@@ -1097,7 +1220,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const programs = install.launch?.programs ?? [];
       if (!executable && programs.length > 1) return chooseProgram(id);
       const chosen = executable ?? programs[0];
-      const launch = chosen ? { ...install.launch, executable: chosen } : install.launch;
+      const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
       if (install.installer === "msi" && !program) {
@@ -1107,7 +1230,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
-        () => track("app_launched", ref),
+        () => (musicForGame(), track("app_launched", ref)),
         (e) => (fail(id, e), track("app_launch_failed", { ...ref, reason: reasonOf(e) })),
       );
     },
@@ -1151,9 +1274,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     /**
      * Adds the 3.x apps, keeping their installs: the catalog's as the catalog has them (found by repository, or by
      * the entry 3.x knew), any other from GitHub or GitLab as a custom app. Returns the names of those it couldn't:
-     * ones 3.x didn't say where they're from.
+     * ones 3.x didn't say where they're from. The player's tag filters come over as playlists.
      */
-    async importOld(apps, onProgress) {
+    async importOld({ apps, filters = [] }, onProgress) {
       const ids = await catalogRepositories();
       let done = 0;
       // Each asks the site, or its repository's host, so several at a time; then they're added in the library's order.
@@ -1170,6 +1293,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { kind: "custom" as const, custom, latest: releases ? latestOf(releases) : undefined, art };
       }, () => onProgress?.(++done));
       const missing: string[] = [];
+      const tags = new Map<string, string[]>();
+      const hidden: string[] = [];
+      const imported: ImportedApp[] = [];
       apps.forEach((old, i) => {
         const it = found[i];
         if (!it) return void missing.push(old.name);
@@ -1182,7 +1308,32 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         } else entry = addCustom(it.custom, it.latest, it.art);
         const install = adoptedInstall(old, entry, config.os);
         if (install) setInstalls((i) => ({ ...i, [entry.id]: install }));
+        const own = importedTags(old, entry);
+        if (own.length) tags.set(entry.id, own);
+        if (old.hidden) hidden.push(entry.id);
+        const have = library.find((l) => l.id === entry.id)?.overrides?.tags ?? [];
+        imported.push({ id: entry.id, old: old.tags ?? [], tags: [...entry.tags, ...have, ...own], platforms: entry.supportedOS });
       });
+      // Their tags join any the app has here already, and the apps they hid in 3.x stay hidden.
+      if (tags.size)
+        setLibrary((l) =>
+          l.map((i) => {
+            const own = tags.get(i.id);
+            if (!own) return i;
+            const have = i.overrides?.tags ?? [];
+            const all = [...have, ...own.filter((t) => !have.some((h) => h.toLowerCase() === t.toLowerCase()))].slice(0, 20);
+            return all.length === have.length ? i : { ...i, overrides: { ...i.overrides, tags: all }, pending: i.account ? { ...i.pending, tags: true } : i.pending };
+          }),
+        );
+      if (hidden.length) setSettings((s) => ({ ...s, hidden: [...new Set([...(s.hidden ?? []), ...hidden])] }));
+      // Their tag filters, as playlists; one named as a playlist here already leaves that one as it is.
+      const names = new Set(collections.map((c) => c.name.toLowerCase()));
+      const playlists = importedPlaylists(filters, imported).filter((p) => !names.has(p.name.toLowerCase()) && names.add(p.name.toLowerCase()));
+      if (playlists.length)
+        setCollections((all) => [
+          ...all,
+          ...playlists.map((p, i) => ({ key: newKey(), consoles: [], ...p, order: collections.length + i, account: userId, pending: userId ? true : undefined })),
+        ]);
       // The player brought a library over: the one found by itself isn't offered again.
       setOldLibrary(null);
       return missing;
@@ -1191,6 +1342,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     appFolders,
     renaming,
     askRename,
+    changingVersion,
+    changeVersion,
     async renameFolder(id, name) {
       const install = installs[id];
       if (!install || !renamable(install)) throw new Problem(msg`This app's folder can't be renamed.`);

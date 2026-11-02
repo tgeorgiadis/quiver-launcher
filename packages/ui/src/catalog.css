@@ -98,6 +98,9 @@
   display: block;
   padding: 17px 15px 13px;
 }
+.card-tags:empty {
+  display: none;
+}
 .card-tags {
   display: flex;
   gap: 6px;
@@ -324,10 +327,42 @@
   margin-top: auto;
 }
 
+/* Cards side by side end level: what's left over goes above the foot, so each one's divider and footer line up. */
+.entry-card:is(.box, .wide) .card-open {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.entry-card:is(.box, .wide) .card-cover {
+  flex: none;
+}
+.entry-card:is(.box, .wide) .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.entry-card:is(.box, .wide) .card-body::before {
+  content: "";
+  flex: 1;
+  order: 1;
+}
+.entry-card:is(.box, .wide) .card-bottom {
+  order: 2;
+}
+/* The same height with an AI label or without, so titles line up too. */
+.entry-card.wide .card-tags > :is(.ai-chip, .platform-icons) {
+  box-sizing: border-box;
+  min-height: 16px;
+}
+.entry-card.wide .card-tags > .ai-chip {
+  display: inline-flex;
+  align-items: center;
+}
+
 /*
- * A box-art card (the default look): the portrait art, which lifts under the pointer or focus, and three short lines
- * under it, the app's name, its game and console, and what players said. Marks on the art sit on a dark glass of their
- * own, whatever the theme, so they read over any picture.
+ * A box-art card (the default look): the portrait art, which lifts under the pointer or focus, with lines of text under
+ * it, too narrow for a wide card's details side by side: its kinds, the app's name, its games, and under a divider what
+ * players said and when it was updated.
  */
 .entry-card.box {
   position: relative;
@@ -379,44 +414,28 @@
   position: relative;
   padding: 0 8%;
 }
-.entry-card.box .card-arrow {
-  display: none;
-}
 .entry-card.box .cover-badge {
   top: 8px;
   right: auto;
   left: 8px;
 }
-.cover-os,
-.cover-ai {
+/* The AI label and platforms along the foot of the art, on a shade of their own, so they read over any picture in either theme. */
+.cover-strip {
   position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  border-radius: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 20px 7px 7px;
   color: var(--ql-on-art-fg, #fff);
-  background: var(--ql-on-art-bg, rgb(5 9 16 / 0.7));
-}
-/* The platforms show under the pointer or with focus: Browse lists this computer's apps anyway, and the app's page says. */
-.cover-os {
-  top: 8px;
-  right: 8px;
-  padding: 4px 6px;
-  opacity: 0;
+  background: linear-gradient(transparent, rgb(5 9 16 / 0.86) 62%);
   transition: opacity 0.14s;
 }
-.entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .cover-os {
-  opacity: 1;
-}
-.cover-os .platform-icons {
-  gap: 6px;
-  color: inherit;
-  font-size: 11px;
-}
-.cover-ai {
-  bottom: 8px;
-  left: 8px;
-}
-.cover-ai .ai-chip {
-  padding: 2px 7px;
+.cover-strip .ai-chip {
+  padding: 0;
   border: 0;
   color: inherit;
   font-size: 9.5px;
@@ -424,15 +443,30 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+.cover-strip .platform-icons {
+  gap: 5px;
+  margin-left: auto;
+  color: inherit;
+  font-size: 11px;
+}
 .entry-card.box .card-body {
   padding: 11px 2px 2px;
+}
+.entry-card.box .card-kind {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ql-card-kind);
 }
 .entry-card.box .card-title {
   font-size: 14.5px;
   font-weight: 650;
   letter-spacing: -0.01em;
 }
-.entry-card.box :is(.card-subtitle, .card-line, .card-status) {
+.entry-card.box :is(.card-subtitle, .card-status) {
   display: block;
   margin-top: 2px;
   overflow: hidden;
@@ -441,12 +475,15 @@
   font-size: 12.5px;
   color: var(--ql-card-meta);
 }
-.entry-card.box .card-line {
-  margin-top: 4px;
-  font-size: 12px;
+.entry-card.box .card-bottom {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  margin-top: 8px;
+  padding-top: 7px;
 }
-.entry-card.box .card-line .score small {
-  font-size: 11.5px;
+.entry-card.box .card-bottom > .score {
+  max-width: 100%;
 }
 
 /*

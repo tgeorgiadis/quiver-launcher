@@ -13,9 +13,12 @@ mod msi;
 mod picker;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
+mod secrets;
 mod shortcut;
 mod snapshots;
 mod steam;
+#[cfg(windows)]
+mod tray;
 mod update;
 mod v3;
 mod window_state;
@@ -252,18 +255,28 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
     };
     let quoted = || vec![exe.to_string_lossy().into_owned()];
     let mut env = Vec::new();
+    // Through a Proton, each app gets its own Wine prefix, as Steam gives each game.
+    let mut through_proton = |path: &str| -> Result<(PathBuf, Vec<String>, bool), String> {
+        let prefix = data.0.join("proton").join(install::plain_name(folder)?);
+        std::fs::create_dir_all(&prefix).map_err(|e| format!("Couldn't make a folder for Proton: {e}"))?;
+        env.push(("STEAM_COMPAT_DATA_PATH".to_string(), prefix.to_string_lossy().into_owned()));
+        env.push(("STEAM_COMPAT_CLIENT_INSTALL_PATH".to_string(), launch::steam_client().to_string_lossy().into_owned()));
+        Ok((launch::proton_script(path)?, [vec!["run".to_string()], quoted()].concat(), true))
+    };
     let (program, args, steam_proton) = match &options.runner {
         Some(launch::Runner::Direct) => (exe.clone(), vec![], false),
         Some(launch::Runner::Wine) => (PathBuf::from("wine"), quoted(), false),
-        Some(launch::Runner::Proton { path }) => {
-            // Each app gets its own Wine prefix, as Steam gives each game.
-            let prefix = data.0.join("proton").join(install::plain_name(folder)?);
-            std::fs::create_dir_all(&prefix).map_err(|e| format!("Couldn't make a folder for Proton: {e}"))?;
-            env.push(("STEAM_COMPAT_DATA_PATH".to_string(), prefix.to_string_lossy().into_owned()));
-            env.push(("STEAM_COMPAT_CLIENT_INSTALL_PATH".to_string(), launch::steam_client().to_string_lossy().into_owned()));
-            (launch::proton_script(path)?, [vec!["run".to_string()], quoted()].concat(), true)
-        }
-        None if wine => (PathBuf::from("wine"), quoted(), true),
+        Some(launch::Runner::Proton { path }) => through_proton(path)?,
+        None if wine => match &options.windows_runner {
+            // What Settings runs every Windows program with.
+            Some(launch::Runner::Proton { path }) => through_proton(path)?,
+            Some(launch::Runner::Wine) => (PathBuf::from("wine"), quoted(), false),
+            // Automatic: a Proton Steam has, which brings what games need that Wine alone often lacks; with none, Wine.
+            _ => match automatic_proton() {
+                Some(proton) => through_proton(&proton.path)?,
+                None => (PathBuf::from("wine"), quoted(), true),
+            },
+        },
         None if OS == "macos" && exe.extension().is_some_and(|e| e == "app") => (PathBuf::from("open"), quoted(), false),
         // A shortcut the player picked: Explorer starts what it points at.
         None if OS == "windows" && exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("lnk")) => (PathBuf::from("explorer"), quoted(), false),
@@ -330,7 +343,9 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
             });
         })
         .map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound if wine => "This is a Windows app. Install Wine to play it on Linux.".into(),
+            // Automatic found no Proton either; or the player chose Wine.
+            std::io::ErrorKind::NotFound if wine && target.steam_proton => "This is a Windows app. Install Steam (it brings Proton) or Wine to play it on Linux.".into(),
+            std::io::ErrorKind::NotFound if wine => "Wine isn't installed. Install it, or choose a Proton under Run with, in Settings or the app's launch options.".into(),
             std::io::ErrorKind::NotFound if target.program.ends_with("flatpak") => "This app is a Flatpak, and Flatpak isn't installed on this computer.".into(),
             std::io::ErrorKind::NotFound if program != target.exe => format!("Couldn't find {} on this computer. Check the app's launch options.", program.display()),
             // A downloaded AppImage or program isn't executable until it's allowed to run.
@@ -517,6 +532,37 @@ async fn pick_program(app: tauri::AppHandle, window: tauri::WebviewWindow, dir: 
     Some(path.to_string_lossy().into())
 }
 
+/// The kinds of sound file the launcher's music can be: what WebView2, Chromium (CEF) and a Mac's WebKit all play.
+const MUSIC_EXTENSIONS: &[&str] = &["mp3", "ogg", "opus", "flac", "wav", "m4a"];
+/// More than an hour of music at a high bitrate: past it, it's not a file to keep in memory.
+const MUSIC_MAX_BYTES: u64 = 200 * 1024 * 1024;
+
+/// Asks the player for a sound file to play behind the launcher (music.ts), as Quiver Launcher 3 did; null if they
+/// cancel. `QUIVER_PICK` answers instead in end-to-end tests.
+#[tauri::command]
+async fn pick_music(app: tauri::AppHandle, window: tauri::WebviewWindow, title: String, dir: Option<String>) -> Option<String> {
+    if let Some(path) = std::env::var_os("QUIVER_PICK") {
+        return Some(path.to_string_lossy().into());
+    }
+    let path = picker::choose(&app, &window, picker::Want::File, &title, dir.as_deref().map(Path::new), Some(("Music", MUSIC_EXTENSIONS))).await?;
+    Some(path.to_string_lossy().into())
+}
+
+/// The launcher's music file, for the page to play: only a sound file, and not one too large to hold in memory.
+#[tauri::command]
+async fn read_music(path: String) -> Result<tauri::ipc::Response, String> {
+    let path = PathBuf::from(path);
+    let kind = path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if !kind.is_some_and(|k| MUSIC_EXTENSIONS.contains(&k.as_str())) {
+        return Err("That isn't a music file Quiver can play.".into());
+    }
+    let size = tokio::fs::metadata(&path).await.map_err(|e| e.to_string())?.len();
+    if size > MUSIC_MAX_BYTES {
+        return Err("That music file is too large to play.".into());
+    }
+    Ok(tauri::ipc::Response::new(tokio::fs::read(&path).await.map_err(|e| e.to_string())?))
+}
+
 /// A newer Quiver Launcher, if there is one. Debug builds only look when
 /// `QUIVER_UPDATE_API` says where; `QUIVER_SKIP_UPDATES` turns checking off.
 #[tauri::command]
@@ -651,6 +697,17 @@ fn list_protons() -> Vec<launch::Proton> {
     dirs::home_dir().map(|home| launch::protons(&home)).unwrap_or_default()
 }
 
+/// The Proton that Automatic runs a Windows app with, if Steam has one.
+fn automatic_proton() -> Option<launch::Proton> {
+    dirs::home_dir().and_then(|home| launch::automatic_proton(launch::protons(&home)))
+}
+
+/// What Automatic runs a Windows app with on Linux, by name: a Proton, else Wine, else nothing (None).
+#[tauri::command]
+fn automatic_runner() -> Option<String> {
+    automatic_proton().map(|p| p.name).or_else(|| sandbox::which("wine").map(|_| "Wine".into()))
+}
+
 /// Asks for a Proton the launcher didn't find: its folder.
 #[tauri::command]
 async fn pick_proton(app: tauri::AppHandle, window: tauri::WebviewWindow) -> Result<Option<String>, String> {
@@ -718,6 +775,47 @@ async fn to_background() -> Result<(), String> {
     return android::to_background();
     #[cfg(not(target_os = "android"))]
     Ok(())
+}
+
+/// Close to tray on or off (tray.rs), and its menu's words in the player's language. Windows only: elsewhere, nothing.
+#[tauri::command]
+fn set_tray(app: tauri::AppHandle, close_to_tray: bool, open: String, quit: String) -> Result<(), String> {
+    #[cfg(windows)]
+    return tray::set(&app, close_to_tray, open, quit).map_err(|e| e.to_string());
+    #[cfg(not(windows))]
+    {
+        let _ = (app, close_to_tray, open, quit);
+        Ok(())
+    }
+}
+
+/// Whether Windows starts the launcher, in the tray, as the player signs in.
+#[tauri::command]
+fn start_with_windows() -> bool {
+    #[cfg(windows)]
+    return tray::starts_with_windows();
+    #[cfg(not(windows))]
+    false
+}
+
+#[tauri::command]
+fn set_start_with_windows(on: bool) -> Result<(), String> {
+    #[cfg(windows)]
+    return tray::set_start_with_windows(on);
+    #[cfg(not(windows))]
+    {
+        let _ = on;
+        Err("Only Windows starts the launcher as you sign in.".into())
+    }
+}
+
+/// The data folder beside a portable copy of the launcher (one with `portable.txt` next to it).
+fn portable_data() -> Option<PathBuf> {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(Path::to_path_buf))
+        .filter(|dir| dir.join("portable.txt").exists())
+        .map(|dir| dir.join("data"))
 }
 
 fn has_fuse2() -> bool {
@@ -801,68 +899,15 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
     .map_err(|e| e.to_string())?
 }
 
-/// Sign-in tokens: in the OS keychain, or a file in the data folder where
-/// there's none (some Linux desktops, Android, and when QUIVER_DATA is set).
-fn secret_file(data: &Data) -> PathBuf {
-    data.0.join("account.json")
-}
-fn keychain(key: &str) -> Option<keyring::Entry> {
-    // keyring has no Android store and falls back to its mock, which keeps
-    // nothing: signed in, the tokens were gone the next time Convex Auth read
-    // them (back from the background). The app's own data folder is private to it there.
-    if cfg!(target_os = "android") || std::env::var_os("QUIVER_DATA").is_some() {
-        return None;
-    }
-    keyring::Entry::new("Quiver Launcher", key).ok()
-}
-fn secrets(data: &Data) -> serde_json::Map<String, serde_json::Value> {
-    std::fs::read(secret_file(data)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default()
-}
-
+/// Sign-in tokens: in the OS keychain or the data folder (secrets.rs).
 #[tauri::command]
 fn secret_get(data: State<Data>, key: String) -> Option<String> {
-    keychain(&key)
-        .and_then(|e| e.get_password().ok())
-        .or_else(|| secrets(&data).get(&key)?.as_str().map(str::to_string))
+    secrets::get(&data.0, &secrets::OsKeychain, secrets::store(), &key)
 }
 
 #[tauri::command]
 fn secret_set(data: State<Data>, key: String, value: Option<String>) -> Result<(), String> {
-    if let Some(entry) = keychain(&key) {
-        let saved = match &value {
-            Some(v) => entry.set_password(v),
-            None => entry.delete_credential().or_else(|e| match e {
-                keyring::Error::NoEntry => Ok(()),
-                e => Err(e),
-            }),
-        };
-        if saved.is_ok() {
-            return Ok(());
-        }
-    }
-    let mut all = secrets(&data);
-    match value {
-        Some(v) => all.insert(key, v.into()),
-        None => all.remove(&key),
-    };
-    std::fs::create_dir_all(&data.0).map_err(|e| e.to_string())?;
-    write_private(&secret_file(&data), &serde_json::to_vec(&all).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
-}
-
-/// Writes a file only this user can read: the data folder is open to everyone
-/// on the computer, as most Linux homes are.
-fn write_private(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    #[cfg(unix)]
-    {
-        use std::io::Write;
-        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-        let mut file = std::fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(path)?;
-        // One an earlier version wrote is anyone's to read until it's this user's alone.
-        file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
-        file.write_all(bytes)
-    }
-    #[cfg(not(unix))]
-    std::fs::write(path, bytes)
+    secrets::set(&data.0, &secrets::OsKeychain, secrets::store(), &key, value.as_deref())
 }
 
 /// Opens a GitHub or Discord sign-in page and waits for it to come back,
@@ -925,6 +970,13 @@ fn set_fullscreen(window: tauri::WebviewWindow, on: bool, title_bar: bool) -> Re
 /// The system's title bar, or none and the launcher's own buttons in its top
 /// bar (the default). A Mac keeps its own, with its buttons where Mac players
 /// look for them.
+/// Running in Steam's Game Mode (gamescope), which shows one app at a time on the whole screen. A window there fills
+/// it: gamescope shrinks a larger one to fit, and a size kept from Desktop Mode (docked to a bigger screen, say) put
+/// the whole interface at a fraction of its size.
+fn in_game_mode() -> bool {
+    keyboard::game_mode(|name| std::env::var(name).ok())
+}
+
 #[cfg_attr(mobile, allow(dead_code))]
 fn system_title_bar(on: bool) -> bool {
     on || OS == "macos"
@@ -934,8 +986,11 @@ fn system_title_bar(on: bool) -> bool {
 /// the taskbar (tao's WM_NCCALCSIZE), and full screen kept that too: the
 /// taskbar went, and an empty strip stayed where it was. So full screen there
 /// has the title bar's frame, which full screen takes off anyway.
+///
+/// In Steam's Game Mode it's always full screen (`in_game_mode`), whatever leaves it.
 #[cfg(desktop)]
 fn fullscreen(window: &tauri::WebviewWindow, on: bool, title_bar: bool) -> tauri::Result<()> {
+    let on = on || in_game_mode();
     if OS == "windows" && !system_title_bar(title_bar) {
         if on {
             window.set_fullscreen(true)?;
@@ -1009,7 +1064,9 @@ fn find_v3_library_in(path: String, apps: Option<String>) -> Option<v3::Library>
 /// The window from tauri.conf.json. End-to-end tests on Windows set
 /// QUIVER_DEBUG_PORT on a debug build and attach to WebView2 there, since its
 /// runtime no longer takes the debugging port WebDriver passes it.
-fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_bar: bool) -> tauri::Result<()> {
+/// The launcher's window, back where it was: on screen unless `shown` is false (started in the tray), when it's
+/// whether to maximize it as it shows.
+fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_bar: bool, shown: bool) -> tauri::Result<bool> {
     let builder = tauri::WebviewWindowBuilder::from_config(app.handle(), &app.config().app.windows[0])?.theme(theme);
     #[cfg(desktop)]
     let builder = builder.decorations(system_title_bar(title_bar));
@@ -1026,16 +1083,23 @@ fn main_window(app: &tauri::App, dir: &Path, theme: Option<tauri::Theme>, title_
     };
     // Hidden until it's back where it was, so it doesn't jump.
     let window = builder.visible(false).build()?;
-    let maximize = window_state::restore(&window, dir);
-    window_state::track(&window, dir.to_path_buf());
+    // Game Mode's window fills the screen (run below), and keeps Desktop Mode's size and place as they were.
+    let game_mode = in_game_mode();
+    let maximize = !game_mode && window_state::restore(&window, dir);
+    if !game_mode {
+        window_state::track(&window, dir.to_path_buf());
+    }
+    #[cfg(windows)]
+    tray::watch(&window);
+    if !shown {
+        return Ok(maximize);
+    }
     window.show()?;
     #[cfg(desktop)]
     if maximize {
         let _ = window.maximize();
     }
-    #[cfg(mobile)]
-    let _ = maximize;
-    Ok(())
+    Ok(maximize)
 }
 
 /// What `tauri::AppHandle` and the rest mean without a runtime named: wry, or on
@@ -1084,16 +1148,24 @@ pub fn run() {
         };
         builder.runtime(cef)
     };
+    // One launcher at a time on its data: starting it again, as one hidden in the tray can be, opens the one running
+    // (unless that's Windows starting it as the player signs in). A portable copy keeps its own data, and so do tests.
+    #[cfg(windows)]
+    let builder = if std::env::var_os("QUIVER_DATA").is_none() && portable_data().is_none() {
+        builder.plugin(tauri_plugin_single_instance::init(|app, args, _| {
+            if !args.iter().any(|a| a == tray::ARG) {
+                tray::open_window(app);
+            }
+        }))
+    } else {
+        builder
+    };
     let builder = builder.plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "android")]
     let builder = builder.plugin(android::init());
     builder
         .setup(|app| {
-            let portable = std::env::current_exe()
-                .ok()
-                .and_then(|exe| exe.parent().map(Path::to_path_buf))
-                .filter(|dir| dir.join("portable.txt").exists())
-                .map(|dir| dir.join("data"));
+            let portable = portable_data();
             // What an earlier update moved aside.
             match update::kind() {
                 update::Kind::AppImage(image) => update::clean_up(&image),
@@ -1119,16 +1191,35 @@ pub fn run() {
                 .ok()
                 .and_then(|b| serde_json::from_slice(&b).ok())
                 .unwrap_or_default();
-            main_window(app, &dir, theme_of(settings["theme"].as_str()), settings["systemTitleBar"] == true)?;
+            let title_bar = settings["systemTitleBar"] == true;
+            let full = settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen") || in_game_mode();
+            // Started by Windows as the player signs in: in the tray, the window unseen till they open it.
+            #[cfg(windows)]
+            let unseen = std::env::args().any(|a| a == tray::ARG);
+            #[cfg(not(windows))]
+            let unseen = false;
+            #[cfg(windows)]
+            app.manage(tray::Tray::new(settings["closeToTray"] == true, unseen));
+            let maximize = main_window(app, &dir, theme_of(settings["theme"].as_str()), title_bar, !unseen)?;
+            #[cfg(not(windows))]
+            let _ = maximize;
             // Paint behind the page in the theme it will draw in.
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(theme) = window.theme() {
                     let _ = window.set_background_color(Some(backdrop(theme)));
                 }
             }
-            if settings["fullscreen"] == true || std::env::args().any(|a| a == "--fullscreen") {
+            #[cfg(windows)]
+            if unseen {
+                app.state::<tray::Tray>().wait_to_show(tray::OnShow { maximize, fullscreen: full.then_some(title_bar) });
+            }
+            #[cfg(windows)]
+            if let Err(e) = tray::refresh(app.handle()) {
+                append_log(&dir.join("quiver.log"), &format!("Couldn't show the tray icon: {e}"));
+            }
+            if full && !unseen {
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = fullscreen(&window, true, settings["systemTitleBar"] == true);
+                    let _ = fullscreen(&window, true, title_bar);
                 }
             }
             let apps = apps_folder::current(&dir);
@@ -1181,12 +1272,17 @@ pub fn run() {
             add_to_steam,
             open_url,
             to_background,
+            set_tray,
+            start_with_windows,
+            set_start_with_windows,
             check_update,
             install_update,
             open_folder,
             create_app_folder,
             rename_app_folder,
             pick_program,
+            pick_music,
+            read_music,
             mod_packages,
             mod_files,
             installed_mods,
@@ -1196,6 +1292,7 @@ pub fn run() {
             pick_executable,
             list_programs,
             list_protons,
+            automatic_runner,
             pick_proton,
             gamepad::controllers,
             gamepad::page_focus,

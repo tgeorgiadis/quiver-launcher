@@ -44,6 +44,7 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     find_v3_library: () => null,
     controllers: () => [],
     list_protons: () => [],
+    automatic_runner: () => null,
     installed_mods: () => [],
     mod_packages: () => [],
     check_update: () => null,

@@ -2,7 +2,8 @@
  * A library card, in the grid and in TV mode's library alike, as the designers drew it: the picture, with the names
  * under it or over its foot and a mark for this computer's copy (Get's symbol when it isn't installed and can be, a
  * cloud for an update, a warning for a withdrawn release, none when it's ready to play), which says it without a badge
- * on the picture as well. On hover or focus the picture dims and the card shows what's installed and verified, buttons
+ * on the picture as well. With the names, the details the player picked (view.ts), as Browse's cards have them: its
+ * tags, AI label and platforms over the name, what players said and when it was updated under it. On hover or focus the picture dims and the card shows what's installed and verified, buttons
  * for the app's folder, playlists and its menu, and Play: along the foot of the art, with Update to its version under
  * it when there's one (a round Play in the corner, and Update with the small buttons, on an icon card). A download in
  * progress, or one that failed, shows without hover. A withdrawn release's hover or focus says why, with the way off
@@ -12,11 +13,11 @@
  * every port with its button, from the card.
  */
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Play, Plus, TriangleAlert } from "lucide-react";
+import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, TriangleAlert } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { Artwork, ScrollingText, boxSubtitle, cardSources, coverOf } from "@quiverlauncher/ui";
+import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel, type CardDetail } from "@quiverlauncher/ui";
 import { canGet, hasUpdate, pulledVerified, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
 import { VersionsDialog, foldersOn } from "./detail";
@@ -57,6 +58,45 @@ function Mark({ copy, marks, gettable }: { copy: Copy; marks: boolean; gettable:
   return <CloudDownload className="tile-mark" data-copy={copy} size={16} strokeWidth={2.5} aria-hidden="true" />;
 }
 
+/** Beside the name, an app kept on its version: it gets no updates, so no cloud says when there's one. */
+const PinMark = () => <Pin className="tile-mark" data-copy="pinned" size={14} strokeWidth={2.5} aria-hidden="true" />;
+
+/** The line under the name alone, as cards had before they could show more. */
+const NAME_ONLY: readonly CardDetail[] = ["subtitle"];
+const TAG_DETAILS: readonly CardDetail[] = ["kinds", "ai", "platforms"];
+
+/**
+ * Over the name, those of its tags (not its console), AI label and platforms picked (view.ts), as Browse's cards have
+ * them. Its row is there on every card when any is picked, so the names line up along a row of cards; empty on a
+ * game's card with more than one port (`entry` unset), which they'd differ between.
+ */
+function TileTags({ entry, details, consoleNames }: { entry?: Entry; details: readonly CardDetail[]; consoleNames: Record<string, string> }) {
+  if (!details.some((d) => TAG_DETAILS.includes(d))) return null;
+  const kinds = entry && details.includes("kinds") ? entry.tags.filter((tag) => !Object.hasOwn(consoleNames, tag)).slice(0, 2).map(tagLabel) : [];
+  const os = entry && details.includes("platforms") ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id)) : [];
+  return (
+    <span className="tile-tags">
+      {kinds.length > 0 && (
+        <span className="tile-kinds">
+          <ScrollingText text={kinds.join(" · ")} />
+        </span>
+      )}
+      {entry && details.includes("ai") && <AiChip level={entry.aiLevel} />}
+      {os.length > 0 && <PlatformIcons os={os} />}
+    </span>
+  );
+}
+
+/** Under the names, what players said and when it was last updated, a line each, those picked; blank lines on a game's card with more than one port. */
+function TileLines({ entry, details }: { entry?: Entry; details: readonly CardDetail[] }) {
+  return (
+    <>
+      {details.includes("rating") && <span className="tile-line">{entry && <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />}</span>}
+      {details.includes("updated") && <span className="tile-line">{entry && <ReleaseAge entry={entry} />}</span>}
+    </>
+  );
+}
+
 type TileProps = {
   entry: Entry;
   /** The picture (view.ts): box art, an icon, or the catalog's cover; and the cards' size, for the copy of it to load. */
@@ -66,6 +106,8 @@ type TileProps = {
   nameOrder: NameOrder;
   /** The marks for this computer's copy (view.ts). */
   marks: boolean;
+  /** What it shows with its names (view.ts); unset, the line under the name alone. */
+  details?: readonly CardDetail[];
   /** In the player's library, not only installed here: its playlists and its menu. */
   inLibrary: boolean;
   /**
@@ -103,6 +145,7 @@ const Tile = memo(function Tile({
   names,
   nameOrder,
   marks,
+  details = NAME_ONLY,
   inLibrary,
   onAdd,
   action,
@@ -144,6 +187,8 @@ const Tile = memo(function Tile({
   const pinned = install?.updates === "pinned";
   // The app's other versions, from beside Install; or in its place, when the verified one was withdrawn too.
   const [versions, setVersions] = useState(false);
+  const [getting, setGetting] = useState(false);
+  const builds = os === "linux" && latest.supportedOS.includes("linux") && latest.supportedOS.includes("windows");
   const noWayOff = Boolean(pulledVerified(latest));
   // Not here yet, but can be: Get's symbol beside its name, and Get as its button.
   const gettable = canGet(entry, os);
@@ -158,6 +203,12 @@ const Tile = memo(function Tile({
   const installedLabel = install ? versionLabel(install.version) : "";
   const pulledLabel = pulled ? versionLabel(pulled.version) : "";
   const newerLabel = newer ? versionLabel(newer) : "";
+  const getIt = (
+    <button type="button" className="tile-play tile-get" onClick={() => get(entry)}>
+      <Download size={24} />
+      <span className="tile-label">{t({ message: "Get", comment: "Button: download and install the app" })}</span>
+    </button>
+  );
   const others = (
     <button type="button" className="tile-versions" title={t`Choose a version`} aria-label={t`Choose a version of ${name}`} onClick={() => setVersions(true)}>
       <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" />
@@ -181,20 +232,26 @@ const Tile = memo(function Tile({
         <span className="card-body">
           {names ? (
             <>
+              <TileTags entry={entry} details={details} consoleNames={consoleNames} />
               <span className="tile-name">
                 <span className="card-title">
                   <ScrollingText text={large} />
                 </span>
                 <Mark copy={copy} marks={marks} gettable={gettable} />
+                {pinned && marks && <PinMark />}
               </span>
-              {small && (
+              {small && details.includes("subtitle") && (
                 <span className="card-subtitle">
                   <ScrollingText text={small} />
                 </span>
               )}
+              <TileLines entry={entry} details={details} />
             </>
           ) : (
-            <Mark copy={copy} marks={marks} gettable={gettable} />
+            <>
+              <Mark copy={copy} marks={marks} gettable={gettable} />
+              {pinned && marks && <PinMark />}
+            </>
           )}
         </span>
       </button>
@@ -341,22 +398,36 @@ const Tile = memo(function Tile({
                 </button>
               )}
             </>
+          ) : gettable && noWayOff ? (
+            <button type="button" className="tile-play tile-get" title={t`Its newest verified version was withdrawn: choose a version`} onClick={() => setVersions(true)}>
+              <History size={24} />
+              <span className="tile-label">{t`Choose a version`}</span>
+            </button>
           ) : (
-            gettable && (
-              <button
-                type="button"
-                className="tile-play tile-get"
-                title={noWayOff ? t`Its newest verified version was withdrawn: choose a version` : undefined}
-                onClick={() => (noWayOff ? setVersions(true) : get(entry))}
-              >
-                {noWayOff ? <History size={24} /> : <Download size={24} />}
-                <span className="tile-label">{noWayOff ? t`Choose a version` : t({ message: "Get", comment: "Button: download and install the app" })}</span>
-              </button>
-            )
+            gettable &&
+            // A phone has one build to get, and an app's versions are in its menu: Get alone.
+            (os === "android" ? (
+              getIt
+            ) : (
+              // Get, and joined to it an arrow for the version, and on Linux the build, to get in place of Get's own choice.
+              <span className="tile-get-split">
+                {getIt}
+                <button
+                  type="button"
+                  className="tile-versions tile-get-more"
+                  title={builds ? t`Choose a version or platform` : t`Choose a version`}
+                  aria-label={builds ? t`Choose a version or platform of ${name}` : t`Choose a version of ${name}`}
+                  onClick={() => setGetting(true)}
+                >
+                  <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" />
+                </button>
+              </span>
+            ))
           )}
         </div>
       </div>
       {versions && <VersionsDialog entry={latest} onClose={() => setVersions(false)} />}
+      {getting && <VersionsDialog entry={latest} getting onClose={() => setGetting(false)} />}
     </article>
   );
 });
@@ -473,6 +544,7 @@ const Game = memo(
     size,
     names,
     marks,
+    details = NAME_ONLY,
     inLibrary,
     action,
     onOpen,
@@ -496,6 +568,8 @@ const Game = memo(
         <CardArt entry={first} image={image} sizes={artSizes(image, size)} />
       );
     const apps = ports.length;
+    // The port its details are of: its only one (a game's ports differ in theirs).
+    const one = apps === 1 ? first : undefined;
     // Under the game's name, its one port's, or how many it has.
     const small = apps === 1 ? first.projectName : plural(apps, { one: "# way to play", other: "# ways to play" });
     const title = game.title;
@@ -522,15 +596,19 @@ const Game = memo(
               <span className="card-body">
                 {names ? (
                   <>
+                    <TileTags entry={one} details={details} consoleNames={consoleNames} />
                     <span className="tile-name">
                       <span className="card-title">
                         <ScrollingText text={title} />
                       </span>
                       <Mark copy={copy} marks={marks} gettable={gettable} />
                     </span>
-                    <span className="card-subtitle">
-                      <ScrollingText text={small} />
-                    </span>
+                    {details.includes("subtitle") && (
+                      <span className="card-subtitle">
+                        <ScrollingText text={small} />
+                      </span>
+                    )}
+                    <TileLines entry={one} details={details} />
                   </>
                 ) : (
                   <Mark copy={copy} marks={marks} gettable={gettable} />
@@ -593,6 +671,7 @@ const Game = memo(
     a.size === b.size &&
     a.names === b.names &&
     a.marks === b.marks &&
+    a.details === b.details &&
     a.letter === b.letter &&
     a.tv === b.tv &&
     a.consoleNames === b.consoleNames &&

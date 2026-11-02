@@ -82,6 +82,26 @@ test("a playlist's words and icon stay on this device when the account's copy of
   expect(playlist).toMatchObject({ name: "Zelda games", search: "zelda", icon: "entry_a" });
 });
 
+test("a playlist's platforms sync like its other filters: the account's, unless changed here", () => {
+  const local = [{ key: "p", name: "Phone", tags: [], consoles: [], platforms: ["android" as const], order: 0, account: "me" }];
+  const server = (platforms?: ("android" | "linux")[]) => [{ key: "p", name: "Phone", tags: [], consoles: [], platforms, order: 0, removed: false, updatedAt: 2 }];
+  expect(applyServerCollections(local, server(["linux"]), "me")[0].platforms).toEqual(["linux"]);
+  expect(applyServerCollections(local, server(), "me")[0].platforms).toBeUndefined();
+  expect(applyServerCollections([{ ...local[0], pending: true }], server(["linux"]), "me")[0].platforms).toEqual(["android"]);
+});
+
+test("a playlist's platforms match apps with a release for any of them, as the library goes by them", () => {
+  const app = (platforms?: ("windows" | "linux" | "android" | "unknown")[]) => ({ tags: [], consoles: [], installed: false, platforms });
+  expect(inCollection({ tags: [], consoles: [], platforms: ["android"] }, app(["windows", "android"]))).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], platforms: ["android", "linux"] }, app(["linux"]))).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], platforms: ["android"] }, app(["windows"]))).toBe(false);
+  // One whose platforms aren't known yet.
+  expect(inCollection({ tags: [], consoles: [], platforms: ["android"] }, app(["unknown"]))).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], platforms: ["android"] }, app())).toBe(true);
+  // With the other filters, all of them.
+  expect(inCollection({ tags: ["recomp"], consoles: [], platforms: ["android"] }, app(["android"]))).toBe(false);
+});
+
 test("the consoles the player picked sync like tags: sent when changed here, the account's otherwise", () => {
   const local = [
     item("picked", { account: "me", overrides: { consoles: ["ps4"] }, pending: { consoles: true } }),

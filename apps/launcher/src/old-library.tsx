@@ -8,8 +8,8 @@ import { useEffect, useState } from "react";
 import { ArchiveRestore, FolderInput, LoaderCircle } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { useLauncher } from "./store";
-import { native, type OldApp, type V3Library } from "./native";
+import { bringsAlong, useLauncher } from "./store";
+import { native, type V3Library } from "./native";
 
 type Progress = { done: number; total: number };
 /** Importing a library's apps: idle, under way (how many are done), or done with the names of the apps that couldn't come. */
@@ -19,14 +19,14 @@ const importing = (state: Import): state is Progress => typeof state === "object
 
 /** `onDone` hears the names of the apps that couldn't come, once it's done. */
 function useImport(onDone?: (missing: string[]) => void) {
-  const { importOld, settings, setSettings } = useLauncher();
+  const { importOld, setSettings } = useLauncher();
   const [state, setState] = useState<Import>("idle");
-  const start = (apps: OldApp[]) => {
-    const total = apps.length;
+  const start = (library: V3Library) => {
+    const total = library.apps.length;
     setState({ done: 0, total });
     // A library came over: the first run's banner has nothing more to ask.
-    setSettings({ ...settings, oldLibraryNoticeSeen: true });
-    importOld(apps, (done) => setState({ done, total })).then(
+    setSettings((s) => ({ ...s, oldLibraryNoticeSeen: true }));
+    importOld(library, (done) => setState({ done, total })).then(
       (missing) => {
         setState(missing);
         onDone?.(missing);
@@ -46,6 +46,19 @@ const importLabel = (count: number) => t`${plural(count, { one: "Add # app", oth
 
 const onThisComputer = (count: number) =>
   t`Quiver Launcher 3 is on this computer, with ${plural(count, { one: "# app. Add it here?", other: "# apps. Add them here?" })} Anything already installed stays where it is, so nothing needs to download again.`;
+
+/** What else a library brings along besides its apps: the player's tags, tag filters and hidden apps. */
+function BringsAlong({ library }: { library: V3Library }) {
+  const { tagged, filters, hidden } = bringsAlong(library);
+  if (!tagged && !filters && !hidden) return null;
+  return (
+    <ul className="old-library-extras" aria-label={t`Also coming over`}>
+      {tagged > 0 && <li>{t`${plural(tagged, { one: "Your tags on # app", other: "Your tags on # apps" })}`}</li>}
+      {filters > 0 && <li>{t`${plural(filters, { one: "# tag filter, as a playlist", other: "# tag filters, as playlists" })}`}</li>}
+      {hidden > 0 && <li>{t`${plural(hidden, { one: "# hidden app, still hidden", other: "# hidden apps, still hidden" })}`}</li>}
+    </ul>
+  );
+}
 
 /** How far an import has got, as a download's bar shows it. */
 function Importing({ done, total }: Progress) {
@@ -105,7 +118,7 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
         <button className="primary" onClick={choose}>
           <FolderInput size={15} aria-hidden="true" /> <Trans>Choose my Quiver Launcher 3 folder…</Trans>
         </button>
-        <button onClick={() => setSettings({ ...settings, oldLibraryNoticeSeen: true })}>
+        <button onClick={() => setSettings((s) => ({ ...s, oldLibraryNoticeSeen: true }))}>
           <Trans>Not now</Trans>
         </button>
       </div>
@@ -121,11 +134,12 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
         <span className="old-library-folder">{where}</span>
         {notFound && <span className="old-library-folder">{notThere()}</span>}
       </p>
+      <BringsAlong library={library} />
       {importing(state) ? (
         <Importing {...state} />
       ) : (
         <>
-          <button className="primary" onClick={() => start(apps)}>
+          <button className="primary" onClick={() => start(library)}>
             {importLabel(apps.length)}
           </button>
           <button onClick={choose}>
@@ -177,17 +191,18 @@ export function FindOldLibrary() {
           {notThere()}
         </p>
       )}
-      {count > 0 && !Array.isArray(state) && (
+      {library && count > 0 && !Array.isArray(state) && (
         <>
           <p role="status">
             {installed
               ? t`That folder has ${plural(count, { one: "# app", other: "# apps" })}, ${plural(installed, { one: "# installed", other: "# installed" })}. Add them here? Anything already installed stays where it is, so nothing needs to download again.`
               : t`That folder has ${plural(count, { one: "# app", other: "# apps" })}, none installed. Add them here?`}
           </p>
+          <BringsAlong library={library} />
           {importing(state) ? (
             <Importing {...state} />
           ) : (
-            <button className="primary" onClick={() => start(found)}>
+            <button className="primary" onClick={() => start(library)}>
               {importLabel(count)}
             </button>
           )}
@@ -295,6 +310,7 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
           </li>
         ))}
       </ul>
+      <BringsAlong library={library} />
       {!installed && (
         <p className="muted">
           <Trans>None of these show as installed. If you moved Quiver Launcher 3's Apps folder, or its drive has a different letter now, show Quiver where it is.</Trans>
@@ -309,7 +325,7 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
         <Importing {...state} />
       ) : (
         <div className="row">
-          <button className="primary" onClick={() => start(apps)}>
+          <button className="primary" onClick={() => start(library)}>
             {importLabel(apps.length)}
           </button>
           <button onClick={choose}>

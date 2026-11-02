@@ -4,19 +4,21 @@
  * large interface size) the list is the page, and a section opens on its own
  * with a way back to the list; Back from a section goes to the list first.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ArrowLeft, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { useLauncher } from "./store";
-import { pageArea } from "./spatial";
+import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native } from "./native";
-import { PlatformChoice, ViewOptions } from "./library-view";
+import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
+import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
 import { ControlSettings } from "./controls";
+import { WindowsRunnerSetting } from "./launch-options";
 import { UpdateSettings } from "./update";
 import { GithubTokenSetting } from "./github-token";
 import { TelemetrySetting } from "./telemetry-ui";
@@ -111,7 +113,10 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
             ) : section === "library" ? (
               <LibrarySettings />
             ) : section === "apps" ? (
-              <AppsFolder />
+              <>
+                <AppsFolder />
+                <WindowsRunnerSetting />
+              </>
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (
@@ -126,6 +131,51 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
   );
 }
 
+/**
+ * Close to tray, as Quiver Launcher 3 had it, and starting with Windows in the tray (tray.rs): the launcher keeps
+ * running, and updating apps, with its window closed. Whether Windows starts it is Windows' to say, so it's read from there.
+ */
+function TraySettings() {
+  const { settings, setSettings, setNotice } = useLauncher();
+  const [starts, setStarts] = useState<boolean | null>(null);
+  useEffect(() => {
+    native.startWithWindows().then(setStarts, () => setStarts(false));
+  }, []);
+  return (
+    <>
+      <label className="toggle">
+        <input type="checkbox" checked={Boolean(settings.closeToTray)} onChange={(e) => setSettings({ ...settings, closeToTray: e.target.checked || undefined })} />
+        <Trans>Close to the system tray (Quiver Launcher keeps running and updating apps)</Trans>
+      </label>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          disabled={starts === null}
+          checked={Boolean(starts)}
+          onChange={(e) => {
+            const on = e.target.checked;
+            native.setStartWithWindows(on).then(
+              () => setStarts(on),
+              (error) => setNotice(String(error)),
+            );
+          }}
+        />
+        <Trans>Start with Windows, in the system tray</Trans>
+      </label>
+    </>
+  );
+}
+
+/** Close to tray as the setting has it, and the tray's menu in the player's language (tray.rs; Windows only). */
+export function useTray() {
+  const { settings, config } = useLauncher();
+  const open = t({ message: "Open Quiver Launcher", comment: "Item in the launcher's menu in the Windows system tray" });
+  const quit = t({ message: "Quit", comment: "Item in the launcher's menu in the Windows system tray: closes the launcher" });
+  useEffect(() => {
+    if (config.os === "windows") native.setTray(Boolean(settings.closeToTray), open, quit).catch(() => {});
+  }, [config.os, settings.closeToTray, open, quit]);
+}
+
 /** The window, the interface size and theme, the language, usage data, and the first start's setup again. */
 function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
   const { settings, setSettings, config } = useLauncher();
@@ -134,7 +184,9 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       <label className="toggle">
         <input
           type="checkbox"
-          checked={Boolean(settings.fullscreen)}
+          // Steam's Game Mode is always full screen (lib.rs in_game_mode).
+          checked={Boolean(settings.fullscreen || config.gameMode)}
+          disabled={config.gameMode}
           onChange={(e) => {
             setSettings({ ...settings, fullscreen: e.target.checked });
             void native.setFullscreen(e.target.checked, Boolean(settings.systemTitleBar));
@@ -166,6 +218,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
           <Trans>Use the system's title bar (instead of Quiver's own window buttons)</Trans>
         </label>
       )}
+      {config.os === "windows" && <TraySettings />}
       <label>
         <Trans>Interface size</Trans>{" "}
         <select value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>
@@ -174,6 +227,20 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
           <option value={1.15}>{t({ message: "Large", comment: "Interface size" })}</option>
           <option value={1.3}>{t({ message: "Extra large", comment: "Interface size" })}</option>
         </select>
+      </label>
+      <label>
+        <Trans>Mouse wheel speed</Trans>{" "}
+        <select value={settings.scrollSpeed ?? 1} onChange={(e) => setSettings({ ...settings, scrollSpeed: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })}>
+          {WHEEL_SPEEDS.map((speed) => (
+            <option key={speed} value={speed}>
+              {speed === 1 ? t({ message: "Normal", comment: "Mouse wheel speed: the system's" }) : t({ message: `${speed}×`, comment: "Mouse wheel speed: times as far as the system's, such as 2×" })}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="toggle">
+        <input type="checkbox" checked={!settings.smoothScrollOff} onChange={(e) => setSettings({ ...settings, smoothScrollOff: e.target.checked ? undefined : true })} />
+        <Trans comment="Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping">Smooth scrolling</Trans>
       </label>
       <label>
         <Trans>Theme</Trans>{" "}
@@ -187,6 +254,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
         </select>
       </label>
       <LanguageSetting />
+      {config.os !== "android" && config.os !== "ios" && <MusicSetting />}
       <TelemetrySetting />
       <div className="settings-section">
         <button onClick={onRunSetup}>
@@ -222,11 +290,17 @@ export function LanguageSetting() {
   );
 }
 
-/** How the library looks, as in its View menu, which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
+/** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
 function LibrarySettings() {
   return (
     <>
       <ViewOptions groups />
+      <section className="settings-section" aria-label={t`Browse cards`}>
+        <h3>
+          <Trans comment="Settings section: how the catalog's cards look in Browse">Browse cards</Trans>
+        </h3>
+        <BrowseCardOptions />
+      </section>
       <section className="settings-section" aria-label={t`Platforms`}>
         <h3>
           <Trans>Platforms</Trans>
@@ -241,6 +315,51 @@ function LibrarySettings() {
         <Snapshots />
       </section>
     </>
+  );
+}
+
+/**
+ * Music behind the launcher (music.ts), as Quiver Launcher 3 had: a file to choose, its volume, and none. Not on a
+ * phone, whose picker gives a file without a path to read it by.
+ */
+function MusicSetting() {
+  const { settings, setSettings } = useLauncher();
+  const problem = useSyncExternalStore(watchMusicProblem, musicProblem);
+  const music = settings.music;
+  const name = music?.split(/[\\/]/).pop();
+  const volume = Math.round((settings.musicVolume ?? DEFAULT_MUSIC_VOLUME) * 100);
+  const choose = async () => {
+    // Opening where the last one was.
+    const dir = music && name ? music.slice(0, -name.length) : undefined;
+    const picked = await native.pickMusic(t`Choose music to play in the background`, dir).catch(() => null);
+    if (picked) setSettings({ ...settings, music: picked });
+  };
+  return (
+    <section className="settings-section" aria-label={t`Background music`}>
+      <h3>
+        <Trans>Background music</Trans>
+      </h3>
+      <p className="muted">{name ?? <Trans>Play a music file of your own while Quiver is open. It fades out while you play.</Trans>}</p>
+      <div className="music-buttons">
+        <button onClick={() => void choose()}>{music ? <Trans>Change…</Trans> : <Trans>Choose music…</Trans>}</button>
+        {music && (
+          <button onClick={() => setSettings({ ...settings, music: undefined })}>
+            <Trans comment="Button: no background music">Remove</Trans>
+          </button>
+        )}
+      </div>
+      {music && (
+        <label>
+          <Trans comment="Background music's volume">Volume</Trans>{" "}
+          <input type="range" min={0} max={100} step={5} value={volume} onChange={(e) => setSettings({ ...settings, musicVolume: Number(e.target.value) / 100 })} />
+        </label>
+      )}
+      {problem && (
+        <p className="job-error" role="status">
+          {problem}
+        </p>
+      )}
+    </section>
   );
 }
 

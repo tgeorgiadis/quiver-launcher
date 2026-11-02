@@ -96,7 +96,7 @@ const REVIEW_FAILED = msg`Couldn't save your feedback. Try again.`;
 const AccountContext = createContext<Account | null>(null);
 export const useAccount = () => useContext(AccountContext)!;
 
-/** Tokens live in the OS keychain (Rust side), not the webview's storage. */
+/** Tokens live on the Rust side (secrets.rs), in the OS keychain or the data folder, not the webview's storage. */
 const keychain: TokenStorage = {
   getItem: (key) => native.secretGet(key),
   setItem: (key, value) => native.secretSet(key, value),
@@ -275,11 +275,12 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
 }
 
 /** What the site stores of a collection; apps on this computer only never leave it. null clears a field there. */
-const toServer = ({ key, name, tags, consoles, installed, order, removed, apps, projectTypes, ai, follows }: Collection) => ({
+const toServer = ({ key, name, tags, consoles, installed, order, removed, apps, projectTypes, ai, platforms, follows }: Collection) => ({
   key, name, tags, consoles, ...(installed ? { installed } : {}), order, removed: Boolean(removed),
   apps: (apps ?? []).filter((id) => !id.startsWith("local:")),
   projectTypes: projectTypes?.length ? projectTypes : null,
   ai: ai ?? null,
+  platforms: platforms?.length ? platforms : null,
   follows: follows ?? null,
 });
 

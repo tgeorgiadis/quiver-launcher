@@ -6,7 +6,7 @@ your account's setting while you're signed in. Events are linked to your Quiver 
 earlier events from the same device may also become linked when you sign in. Signed-out events are not intentionally
 associated with a Quiver account, but they can still carry a device-level analytics identifier.
 
-The launcher sends named events only (`apps/launcher/src/telemetry.ts`): screens opened, catalog apps installed,
+The launcher sends named events only (`apps/launcher/src/telemetry.ts`): screens opened (each once per launch), catalog apps installed,
 updated, launched and uninstalled (by slug; apps players add only by kind), failed installs and launches and why,
 playlists made, shared and followed, searches that found nothing (their length, not their words), sign-in and
 sign-out, and errors. Every event carries the launcher's version, OS and architecture.

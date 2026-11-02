@@ -179,17 +179,25 @@ pub async fn install(
             extract(&file, &filename, &out)?;
             flatten(&out).map_err(text)?;
             drop_records(&out);
+            // This release's Flatpak bundle, where it lands: not one an earlier build left in the folder.
+            let bundle = crate::flatpak::bundle_in(&out).and_then(|b| b.strip_prefix(&out).ok().map(|rel| dir.join(rel)));
             // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.
             fs::create_dir_all(&dir).map_err(text)?;
             if !dir.join(VERSION_FILE).exists() {
                 fs::write(dir.join(VERSION_FILE), "").map_err(text)?;
             }
             merge(&out, &dir).map_err(text)?;
-            // A Flatpak bundle is installed for the player; Play then runs it with flatpak.
+            // A Flatpak bundle is installed for the player; Play then runs it with flatpak. A build that isn't one (the
+            // Windows build in place of a Flatpak, say) is what Play runs instead.
             if cfg!(target_os = "linux") {
-                if let Some(bundle) = crate::flatpak::bundle_in(&dir) {
-                    let id = crate::flatpak::install(&bundle)?;
-                    fs::write(dir.join(crate::flatpak::FILE), id).map_err(text)?;
+                match bundle {
+                    Some(bundle) => {
+                        let id = crate::flatpak::install(&bundle)?;
+                        fs::write(dir.join(crate::flatpak::FILE), id).map_err(text)?;
+                    }
+                    None => {
+                        let _ = fs::remove_file(dir.join(crate::flatpak::FILE));
+                    }
                 }
             }
             // An APK is installed by Android, once the player confirms it; Play then starts its package.
@@ -532,12 +540,33 @@ fn merge(from: &Path, to: &Path) -> io::Result<()> {
             if dest.is_dir() {
                 fs::remove_dir_all(&dest)?;
             }
+            // So it can be replaced now, and its new version next time.
+            writable(&dest);
+            writable(&entry.path());
             if fs::rename(entry.path(), &dest).is_err() {
                 fs::copy(entry.path(), &dest)?;
             }
         }
     }
     Ok(())
+}
+
+/// Clears a file's read-only flag on Windows, which won't replace or remove a
+/// read-only file ("Access is denied"). A tar without write permission or a
+/// RAR unpacks files read-only, as can a tool the player copied them with. On
+/// other systems the folder decides that, and `open_up` sees to what unpacked.
+pub(crate) fn writable(path: &Path) {
+    #[cfg(windows)]
+    if let Ok(meta) = fs::symlink_metadata(path) {
+        let mut permissions = meta.permissions();
+        if meta.is_file() && permissions.readonly() {
+            #[allow(clippy::permissions_set_readonly_false)]
+            permissions.set_readonly(false);
+            let _ = fs::set_permissions(path, permissions);
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = path;
 }
 
 /// Programs that come with an app but don't start it.
@@ -672,6 +701,36 @@ mod tests {
         drop_records(&out);
         let left: Vec<_> = fs::read_dir(&out).unwrap().map(|e| e.unwrap().file_name()).collect();
         assert_eq!(left, ["Game.exe"]);
+    }
+
+    #[test]
+    fn an_update_replaces_read_only_files_and_leaves_none() {
+        let dir = tempfile::tempdir().unwrap();
+        let (from, to) = (dir.path().join("out"), dir.path().join("Game"));
+        fs::create_dir_all(from.join("data")).unwrap();
+        fs::create_dir_all(to.join("data")).unwrap();
+        let read_only = |path: &Path| {
+            let mut permissions = fs::metadata(path).unwrap().permissions();
+            permissions.set_readonly(true);
+            fs::set_permissions(path, permissions).unwrap();
+        };
+        for (name, old, new) in [("Game.exe", "v1", "v2"), ("data/level.dat", "v1", "v2")] {
+            fs::write(to.join(name), old).unwrap();
+            read_only(&to.join(name));
+            fs::write(from.join(name), new).unwrap();
+        }
+        // As a tar or a RAR can unpack it.
+        fs::write(from.join("data/new.dat"), "v2").unwrap();
+        read_only(&from.join("data/new.dat"));
+        merge(&from, &to).unwrap();
+        for name in ["Game.exe", "data/level.dat", "data/new.dat"] {
+            assert_eq!(fs::read_to_string(to.join(name)).unwrap(), "v2");
+            #[cfg(windows)]
+            assert!(!fs::metadata(to.join(name)).unwrap().permissions().readonly(), "{name}");
+        }
+        // And uninstalling still removes them all.
+        read_only(&to.join("Game.exe"));
+        fs::remove_dir_all(&to).unwrap();
     }
 
     #[test]

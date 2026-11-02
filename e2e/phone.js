@@ -62,15 +62,17 @@ export async function openPhone({ device = "Pixel 7", theme = "dark", state = {}
       return out;
     };
     await page.route("**/api/v1/apps**", async (route) => {
-      const response = await route.fetch();
-      const body = await response.text();
+      // A list the page asks for as a test's phone closes finds the catalog gone: that's no failure of the page's.
+      const response = await route.fetch().catch(() => null);
+      const body = await response?.text().catch(() => null);
+      if (body == null) return route.abort().catch(() => {});
       let json;
       try {
         json = JSON.parse(body);
       } catch {
-        return route.fulfill({ response, body });
+        return route.fulfill({ response, body }).catch(() => {});
       }
-      route.fulfill({ response, json: forAndroid(json) });
+      await route.fulfill({ response, json: forAndroid(json) }).catch(() => {});
     });
   }
   // As the Android build answers: its apps in its own folder, and the window always filling the screen.

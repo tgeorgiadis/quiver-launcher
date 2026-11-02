@@ -3,20 +3,21 @@
  * releases, the project's details, shortcuts, picking another version, and
  * the player's tags.
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { FaSteam } from "react-icons/fa6";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
-import { ApiError, type AiUse, type Checking, type Detail, type Entry, type HistoryRelease, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, type AiUse, type Asset, type Checking, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
 import { OS_NAMES, ReleaseBadge, alertTitles, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
-import { useLauncher, type Install } from "./store";
+import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
 import { bare, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
+import { hasBuildFor, runsHere } from "./assets";
 import { isCustom, isLocal } from "./custom";
 import { Dialog, PlaylistChoices } from "./library";
 
@@ -184,6 +185,63 @@ export function RepositoryLink({ source }: { source: Source }) {
   );
 }
 
+/**
+ * Long text cut to its start, `height` pixels of it fading out, with Read more to show the rest and Show less to fold it
+ * again: what's under a README, or a release's long notes, stays in reach. Text that nearly fits shows whole.
+ */
+function Clipped({ height, children }: { height: number; children: ReactNode }) {
+  const body = useRef<HTMLDivElement>(null);
+  const [long, setLong] = useState(false);
+  const [open, setOpen] = useState(false);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el) return;
+    // Its whole height, as pictures in it load too.
+    const measure = () => setLong(el.scrollHeight > height + 80);
+    measure();
+    if (typeof ResizeObserver === "undefined" || !el.firstElementChild) return;
+    const sized = new ResizeObserver(measure);
+    sized.observe(el.firstElementChild);
+    return () => sized.disconnect();
+  }, [height]);
+  // Where the fold was, once it's open: the focus waits there for the d-pad (or the keys) to read on from.
+  const fold = useRef<HTMLSpanElement>(null);
+  const folded = long && !open;
+  return (
+    <>
+      <div
+        ref={body}
+        className={folded ? "clipped" : "clip-open"}
+        style={folded ? { maxHeight: height } : undefined}
+        // Tab to a link under the fold: it opens, so what has the focus shows.
+        onFocus={(e) => folded && e.target.getBoundingClientRect().bottom > e.currentTarget.getBoundingClientRect().bottom && setOpen(true)}
+      >
+        {children}
+        {long && open && <span ref={fold} className="clip-fold" tabIndex={-1} style={{ top: height }} />}
+      </div>
+      {long && (
+        <button
+          type="button"
+          className="clip-toggle"
+          aria-expanded={open}
+          onClick={(e) => {
+            const button = e.currentTarget;
+            // A controller's A or the keys (not a click, detail 0): the focus to the fold, as the button goes to the end.
+            const keyed = e.detail === 0;
+            setOpen(!open);
+            requestAnimationFrame(() =>
+              // Folding it back, from far down a long text: back to where it now ends.
+              open ? button.scrollIntoView({ block: "nearest" }) : keyed && fold.current?.focus({ preventScroll: true }),
+            );
+          }}
+        >
+          {open ? <Trans>Show less</Trans> : <Trans>Read more</Trans>}
+        </button>
+      )}
+    </>
+  );
+}
+
 /** The project's README: the site's copy, else straight from GitHub. */
 export function Readme({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
   const { client, github } = useLauncher();
@@ -215,7 +273,9 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
     <section className="readme">
       <h3>README</h3>
       <div className="readme-body">
-        <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />
+        <Clipped height={320}>
+          <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />
+        </Clipped>
       </div>
     </section>
   );
@@ -255,6 +315,8 @@ function ReleaseCard({
   host,
   installed,
   said,
+  onInstall,
+  runsHere,
 }: {
   /** A withdrawn one is blocked (withdrawnAsBlocked), with why. */
   release: HistoryRelease & { withdrawn?: Withdrawn };
@@ -264,9 +326,15 @@ function ReleaseCard({
   /** The version installed on this computer. */
   installed: boolean;
   said?: Said;
+  /** Installs this release, asking first as Change version does: `asset`, the file the player chose. Unset when it can't install now. */
+  onInstall?: (asset?: string) => void;
+  /** Whether this computer can install a file: those it can install it in place of opening it on GitHub. */
+  runsHere: (asset: Asset) => boolean;
 }) {
   const { state, scan, withdrawn, version } = release;
   const files = release.assets.length;
+  // A blocked release the site lists no files for (one from before blocked installs) can't install, as in Change version.
+  const install = onInstall && !(state === "blocked" && files === 0) ? onInstall : undefined;
   const hours = release.checkEndsAt !== undefined ? hoursFrom(release.checkEndsAt) : 0;
   const engines = scan?.engines ?? t({ message: "flagged", comment: "What VirusTotal said of a release's files, after “VirusTotal:”" });
   return (
@@ -344,57 +412,78 @@ function ReleaseCard({
       )}
       {open && (
         <div className="release-details">
+          {state === "blocked" ? (
+            <p className="release-files-note">
+              {withdrawn
+                ? t`This release was withdrawn, so it doesn't link its files. Installing it asks you to accept the risk first.`
+                : t`Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first.`}
+            </p>
+          ) : (
+            state === "unverified" && (
+              <p className="release-files-note">
+                <Trans>Quiver hasn&apos;t verified these files. Installing one asks you to confirm first.</Trans>
+              </p>
+            )
+          )}
+          {install && (
+            <button type="button" className={`release-install ${state}`} onClick={() => install()}>
+              <Download size={16} aria-hidden="true" /> {installLabel(version)}
+            </button>
+          )}
+          {state !== "blocked" && (
+            <div className="download-list">
+              {release.assets.map((a) => {
+                // A file that isn't verified with its release, marked as on the website, so a player sees which one waits.
+                const why = unverifiedFile(a, release);
+                const changed = why === "changed" ? changedFile(a.checkEndsAt) : undefined;
+                const body = (
+                  <>
+                    <Download size={18} />
+                    <span>
+                      <strong>
+                        {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
+                      </strong>
+                      <small>{a.filename}</small>
+                      {changed && <small className="file-why">{changed}</small>}
+                    </span>
+                    {changed && (
+                      <span className="file-mark">
+                        <ReleaseBadge state="unverified" title={changed} />
+                      </span>
+                    )}
+                    {why === "unchecked" && (
+                      <span className="file-mark unchecked">{t({ message: "Not checked by Quiver", comment: "A release's file Quiver has no checksum for, though it has for the release's other files" })}</span>
+                    )}
+                  </>
+                );
+                // One this computer runs installs, as the player chose it; any other opens on GitHub or GitLab.
+                return install && runsHere(a) ? (
+                  <button type="button" className="download" key={a.id} onClick={() => install(a.filename)}>
+                    {body}
+                    <span className="download-go">
+                      <Trans comment="Button that installs this version">Install</Trans>
+                    </span>
+                  </button>
+                ) : (
+                  <a className="download" key={a.id} href={a.url}>
+                    {body}
+                    <ExternalLink size={14} />
+                  </a>
+                );
+              })}
+            </div>
+          )}
+          {/* Its notes after its files, cut to their start: a long changelog doesn't push them out of sight. */}
           {release.notes.trim() ? (
             <div className="release-notes">
-              <Markdown text={release.notes} alertTitles={alertTitles()} />
+              <Clipped height={180}>
+                <Markdown text={release.notes} alertTitles={alertTitles()} />
+              </Clipped>
             </div>
           ) : (
             <p className="muted release-notes">
               <Trans>No release notes provided.</Trans>
             </p>
-          )}
-          {state === "blocked" ? (
-            <p className="release-files-note">
-              {withdrawn
-                ? t`This release was withdrawn, so it doesn't link its files. Change version installs it only if you pick it and insist.`
-                : t`Quiver blocked this release, so it doesn't link its files. Change version installs it only if you pick it and insist.`}
-            </p>
-          ) : (
-            <>
-              {state === "unverified" && (
-                <p className="release-files-note">
-                  <Trans>Quiver hasn&apos;t verified these files. Change version installs them only if you pick this release and confirm.</Trans>
-                </p>
-              )}
-              <div className="download-list">
-                {release.assets.map((a) => {
-                  // A file that isn't verified with its release, marked as on the website, so a player sees which one waits.
-                  const why = unverifiedFile(a, release);
-                  const changed = why === "changed" ? changedFile(a.checkEndsAt) : undefined;
-                  return (
-                    <a className="download" key={a.id} href={a.url}>
-                      <Download size={18} />
-                      <span>
-                        <strong>
-                          {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
-                        </strong>
-                        <small>{a.filename}</small>
-                        {changed && <small className="file-why">{changed}</small>}
-                      </span>
-                      {changed && (
-                        <span className="file-mark">
-                          <ReleaseBadge state="unverified" title={changed} />
-                        </span>
-                      )}
-                      {why === "unchecked" && (
-                        <span className="file-mark unchecked">{t({ message: "Not checked by Quiver", comment: "A release's file Quiver has no checksum for, though it has for the release's other files" })}</span>
-                      )}
-                      <ExternalLink size={14} />
-                    </a>
-                  );
-                })}
-              </div>
-            </>
           )}
           {state !== "verified" && release.upstreamUrl && (
             <a className="release-hold-link" href={release.upstreamUrl}>
@@ -410,6 +499,12 @@ function ReleaseCard({
   );
 }
 
+/** "Install v1.2", as the button that takes an app off a withdrawn release says it. */
+function installLabel(release: string) {
+  const version = versionLabel(release);
+  return t`Install ${version}`;
+}
+
 /**
  * Why a file of a verified release isn't verified with it, as the website says it: it changed on GitHub since, and
  * when it's verified by itself, unless the site's automatic verification is paused (no `checkEndsAt`).
@@ -423,7 +518,8 @@ function changedFile(checkEndsAt?: number) {
 
 /**
  * Every release of the app in release order, verified or not, as on the
- * website's Releases tab. Another version installs from Change version.
+ * website's Releases tab. Each but the installed one installs from here, or
+ * one of its files does, asking first as Change version does.
  */
 export function ReleasesTab({
   entry,
@@ -442,8 +538,14 @@ export function ReleasesTab({
 }) {
   const [toggled, setToggled] = useState<Set<string>>(new Set());
   const { items } = history;
-  const { client, installs } = useLauncher();
+  const { client, installs, jobs, catalog, config } = useLauncher();
   const install = installs[entry.id];
+  // A release the player chose to install, with the file they chose, in Change version's dialog for its questions.
+  const [chosen, setChosen] = useState<{ version: string; asset?: string } | null>(null);
+  const job = jobs[entry.id];
+  // The player's own files are never downloaded over, and one download at a time.
+  const canInstall = !isLocal(entry.id) && !install?.local && !(job && !("error" in job));
+  const fits = (a: Asset) => runsHere(a, config.os, config.arch);
   // What players said of each version, from the newest feedback: the first page, the one address the site keeps for every launcher.
   const [said, setSaid] = useState<Map<string, Said>>(new Map());
   useEffect(() => {
@@ -510,14 +612,14 @@ export function ReleasesTab({
                 if (!next.delete(release.releaseId)) next.add(release.releaseId);
                 return next;
               });
-            const facts = {
-              installed: Boolean(install && !install.local && bare(install.version) === bare(release.version)),
-              said: said.get(bare(release.version)),
-            };
-            return <ReleaseCard key={release.releaseId} release={release} open={open} onToggle={flip} host={host} {...facts} />;
+            const installed = Boolean(install && !install.local && bare(install.version) === bare(release.version));
+            const facts = { installed, said: said.get(bare(release.version)) };
+            const onInstall = canInstall && !installed ? (asset?: string) => setChosen({ version: release.version, ...(asset ? { asset } : {}) }) : undefined;
+            return <ReleaseCard key={release.releaseId} release={release} open={open} onToggle={flip} host={host} onInstall={onInstall} runsHere={fits} {...facts} />;
           })}
         </>
       )}
+      {chosen && <VersionsDialog entry={catalog[entry.id] ?? entry} start={chosen} onClose={() => setChosen(null)} />}
       {history.more && (
         <button className="button secondary" disabled={history.loading} onClick={history.loadMore}>
           <Trans>Show older releases</Trans>
@@ -696,11 +798,11 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
 
 /** A desktop shortcut and a Steam shortcut, both starting the game directly. */
 export function Shortcuts({ entry }: { entry: Entry }) {
-  const { installs, config } = useLauncher();
+  const { installs, config, settings } = useLauncher();
   const install = installs[entry.id];
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   if (!install || !shortcutsOn(config.os)) return null;
-  const request = shortcutRequest(entry, install);
+  const request = shortcutRequest(entry, install, settings);
   const run = (action: Promise<string>) =>
     action.then(
       (text) => setMessage({ text }),
@@ -741,8 +843,8 @@ export const shortcutsOn = (os: string) => os === "windows" || os === "linux";
 /** Android keeps an app's files to itself: there's no folder to open, or program to choose. */
 export const foldersOn = (os: string) => os !== "android" && os !== "ios";
 
-/** What a desktop or Steam shortcut to an installed app starts, and its pictures. */
-export function shortcutRequest(entry: Entry, install: Install): ShortcutRequest {
+/** What a desktop or Steam shortcut to an installed app starts, and its pictures; `settings` has the runner for Windows programs on Linux. */
+export function shortcutRequest(entry: Entry, install: Install, settings: Settings): ShortcutRequest {
   const art = entry.libraryArt ?? {};
   return {
     name: entry.projectName,
@@ -751,7 +853,7 @@ export function shortcutRequest(entry: Entry, install: Install): ShortcutRequest
     preferred: install.executables,
     wine: Boolean(install.wine),
     program: install.program,
-    launch: install.launch,
+    launch: { ...install.launch, windowsRunner: settings.windowsRunner },
     art: { icon: entry.artwork ?? art.logo, header: art.header, capsule: art.capsule, hero: art.hero, logo: art.logo },
   };
 }
@@ -796,9 +898,30 @@ function PinButton({ pressed, onClick }: { pressed: boolean; onClick: () => void
  * Installing one only installs it: staying on it is the pin, which the
  * player sets on purpose (never on a blocked one).
  */
-export function Versions({ entry, source, onClose }: { entry: Entry; source: Source | null | undefined; /** Set, the list opens at once in a dialog of its own, which this closes. */ onClose?: () => void }) {
-  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog } = useLauncher();
+export function Versions({
+  entry,
+  source,
+  onClose,
+  start,
+  getting,
+}: {
+  entry: Entry;
+  source: Source | null | undefined;
+  /** Set, the list opens at once in a dialog of its own, which this closes. */
+  onClose?: () => void;
+  /** A release the player chose already, on the Releases tab: it installs as if picked from the list, which shows only when it isn't there. `asset` is the file they chose. */
+  start?: { version: string; asset?: string };
+  /** Set, it's Get's own choices, from beside Get: what Get would install first, and the build to install where there's a choice. */
+  getting?: boolean;
+}) {
+  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config } = useLauncher();
+  // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
+  const builds: Os[] = getting && config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows") ? ["linux", "windows"] : [];
+  const [platform, setPlatform] = useState<Os | undefined>(builds[0]);
+  const lacks = (release: Release) => Boolean(platform) && release.assets.length > 0 && !hasBuildFor(release.assets, config.os, config.arch, platform!);
   const [versions, setVersions] = useState<Version[] | string | null>(null);
+  // The release from `start`, once it's found in the list: cancelling its question closes the dialog, as there's no list behind it.
+  const [started, setStarted] = useState<Version | null>(null);
   // An unverified release the player chose, waiting for them to confirm; `pin` keeps the app on it after.
   const [asking, setAsking] = useState<{ version: Version; pin: boolean } | null>(null);
   // A blocked release the player chose: installed only once they tick that they understand.
@@ -813,6 +936,14 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
   useEffect(() => {
     if (onClose && source !== undefined && versions === null) void load();
   }, [source]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Before it paints: the list only flashes by otherwise.
+  useLayoutEffect(() => {
+    if (!start || started || !Array.isArray(versions)) return;
+    const chosen = versions.find((v) => bare(v.release.version) === bare(start.version));
+    if (!chosen) return;
+    setStarted(chosen);
+    pick(chosen);
+  }, [versions]); // eslint-disable-line react-hooks/exhaustive-deps
   if (source === undefined || jobs[entry.id]) return null;
   async function load() {
     setVersions("loading");
@@ -846,7 +977,9 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
   function installVersion(version: Version, pin: boolean) {
     setVersions(null);
     const blocked = !custom && version.state === "blocked" ? (version.reasons[0] ?? "Quiver blocked this release.") : undefined;
-    void get(entry, version.release, { pin, unverified: !custom && version.state !== "verified", ...(blocked ? { blocked } : {}) });
+    // By its version: a verified one installs from the effect that found it, before `started` is set.
+    const asset = start && bare(version.release.version) === bare(start.version) ? start.asset : undefined;
+    void get(entry, version.release, { pin, unverified: !custom && version.state !== "verified", ...(blocked ? { blocked } : {}), ...(asset ? { asset } : {}), ...(platform ? { platform } : {}) });
     onClose?.();
   }
   function pick(version: Version, pin = false) {
@@ -855,7 +988,7 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
     installVersion(version, pin);
   }
   if (insisting) {
-    const close = () => setInsisting(null);
+    const close = () => (insisting === started ? onClose?.() : setInsisting(null));
     const { release, reasons, scan, withdrawn } = insisting;
     const keep = install && !install.local ? versionLabel(install.version) : undefined;
     // Withdrawn or blocked, the same insisting: only the words differ.
@@ -915,7 +1048,7 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
     );
   }
   if (asking) {
-    const close = () => setAsking(null);
+    const close = () => (asking.version === started ? onClose?.() : setAsking(null));
     const { version, pin } = asking;
     const host = source?.provider === "gitlab" ? "GitLab" : "GitHub";
     const waits = version.checkEndsAt !== undefined;
@@ -981,11 +1114,49 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
       </Dialog>
     );
   }
+  // Get's own choices: the build, then what Get installs of it (its newest verified release), over the other versions.
+  const newest = entry.verified && !pulledVerified(catalog[entry.id] ?? entry) ? entry.verified.version : undefined;
+  const newestRelease = Array.isArray(versions) ? versions.find((v) => newest && bare(v.release.version) === bare(newest))?.release : undefined;
+  const buildName = (os: Os) => (os === "windows" ? t`Windows (Wine)` : (OS_NAMES[os] ?? os));
+  const build = platform && buildName(platform);
+  const missing = build && t`No ${build} build`;
+  const newestLabel = versionLabel(newest);
+  const head = getting && (
+    <div className="get-choices">
+      <PanelFormHead title={t`Get ${app}`} onClose={onClose!} />
+      {builds.length > 0 && (
+        <div className="segmented" role="group" aria-label={t({ message: "Build", comment: "Which platform's build of an app to install, as Linux or Windows through Wine" })}>
+          {builds.map((os) => (
+            <button key={os} type="button" aria-pressed={os === platform} onClick={() => setPlatform(os)}>
+              {buildName(os)}
+            </button>
+          ))}
+        </div>
+      )}
+      {newestRelease && lacks(newestRelease) ? (
+        <p className="muted">{missing}</p>
+      ) : (
+        <button
+          className="primary"
+          autoFocus
+          onClick={() => {
+            onClose?.();
+            void get(entry, undefined, platform ? { platform } : undefined);
+          }}
+        >
+          <Download size={15} aria-hidden="true" /> {newest ? t`Get ${newestLabel}` : t({ message: "Get", comment: "Button that installs an app" })}
+        </button>
+      )}
+    </div>
+  );
   // As a dialog: the list, or how it's loading, in one.
   const shown = (body: ReactNode) =>
     onClose ? (
-      <Dialog label={t`Versions`} onClose={onClose}>
-        <div className="detail-body versions-dialog">{body}</div>
+      <Dialog label={getting ? t`Get ${app}` : t`Versions`} onClose={onClose}>
+        <div className="detail-body versions-dialog">
+          {head}
+          {body}
+        </div>
       </Dialog>
     ) : (
       body
@@ -1000,7 +1171,13 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
     return shown(versions === "loading" ? <span className="spinner" /> : <p className="job-error">{versions}</p>);
   return shown(
     <section className="panel-form versions" aria-label={t`Versions`}>
-      <PanelFormHead title={onClose ? t`${app} versions` : t`Versions`} onClose={onClose ?? (() => setVersions(null))} />
+      {getting ? (
+        <h3 className="versions-heading">
+          <Trans comment="Over the list of an app's versions, under Get's own button for its newest">Other versions</Trans>
+        </h3>
+      ) : (
+        <PanelFormHead title={onClose ? t`${app} versions` : t`Versions`} onClose={onClose ?? (() => setVersions(null))} />
+      )}
       {versions.length === 0 && (
         <p className="muted">
           <Trans>No releases found.</Trans>
@@ -1035,7 +1212,9 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
                   </span>
                   {state !== "blocked" && <PinButton pressed={pinned} onClick={() => setUpdates(entry.id, pinned ? undefined : "pinned")} />}
                 </span>
-              ) : unavailable ? null : (
+              ) : unavailable ? null : lacks(release) ? (
+                <span className="version-actions muted">{missing}</span>
+              ) : (
                 <span className="version-actions">
                   <button className={state === "verified" || custom ? undefined : `quiet ${state}`} onClick={() => pick(version)}>
                     <Trans comment="Button that installs this version">Install</Trans>
@@ -1052,11 +1231,14 @@ export function Versions({ entry, source, onClose }: { entry: Entry; source: Sou
   );
 }
 
-/** The app's versions in a dialog of their own, from a library card's Install button. */
-export function VersionsDialog({ entry, onClose }: { entry: Entry; onClose: () => void }) {
+/**
+ * The app's versions in a dialog of their own, from a library card's Install button or its menu's Change version;
+ * from the Releases tab, the one release the player chose (`start`).
+ */
+export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entry; onClose: () => void; start?: { version: string; asset?: string }; getting?: boolean }) {
   const { source } = useAppDetail(entry);
   // Over the page, not in the card, which a lifted (transformed) card would hold it inside.
-  return createPortal(<Versions entry={entry} source={source} onClose={onClose} />, document.body);
+  return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} />, document.body);
 }
 
 /**

@@ -1,29 +1,29 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
-import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, boxOf, cardSources, heroSources } from "@quiverlauncher/ui";
+import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
 import { availableOn, canGet, catalogOs, hasUpdate, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
 import { TvHome } from "./tv";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
-import { CATALOG_BOX, useLibraryView, useSidebarFits } from "./library-view";
+import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
 import { DownloadsButton, DownloadsPage, DownloadsStrip, SidebarDownloads } from "./downloads-page";
 import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
 import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
 import { LaunchOptionsButton } from "./launch-options";
-import { versionLabel, wayOffLabel } from "./versions";
+import { cameAfter, versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
 import { FORWARD, pageArea, toTop } from "./spatial";
-import { track } from "./telemetry";
+import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
@@ -33,7 +33,7 @@ import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
 import { WindowControls, moveWindow, useWindowButtons } from "./window-bar";
-import { SettingsPage } from "./settings-page";
+import { SettingsPage, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { FilePicker } from "./file-picker";
@@ -56,6 +56,7 @@ const bare = (version: string) => version.trim().replace(/^v/i, "");
 export function App() {
   useTelemetrySetup();
   useUpdateCheck();
+  useTray();
   const { library, client, settings, setSettings, config } = useLauncher();
   // TV mode (tv.tsx) in place of the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
@@ -67,6 +68,8 @@ export function App() {
   // Pages opened from the list, each over the one before: Back goes down one.
   const [stack, setStack] = useState<View[]>([]);
   const [search, setSearch] = useState("");
+  // Browse's filters as the player picked them, kept while they're in the library: Browse starts again from them.
+  const [browseKept, setBrowseKept] = useState<KeptBrowse | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   // Read before this start counts as one (useTelemetrySetup).
   const [settingUp, setSettingUp] = useState(() => showsSetup(settings));
@@ -147,10 +150,10 @@ export function App() {
   const screen = !top ? tab : top.kind === "app" ? `app:${isOwn(top.entry.id) ? "" : top.entry.slug}` : top.kind === "game" ? `game:${top.game.slug}` : top.kind;
   useEffect(() => {
     const [name, slug] = screen.split(":");
-    track("screen_viewed", { screen: name, ...(slug !== undefined ? { slug: slug || null } : {}) });
+    trackScreen({ screen: name, ...(slug !== undefined ? { slug: slug || null } : {}) });
   }, [screen]);
-  useEffect(() => void (adding && track("screen_viewed", { screen: "add_app" })), [adding]);
-  useEffect(() => void (signingIn && track("screen_viewed", { screen: "sign_in" })), [signingIn]);
+  useEffect(() => void (adding && trackScreen({ screen: "add_app" })), [adding]);
+  useEffect(() => void (signingIn && trackScreen({ screen: "sign_in" })), [signingIn]);
   const query = search.trim();
   const searched = shorten(query);
   const listName = tab === "library" ? t`Library` : query ? t`Back to results for “${searched}”` : t({ message: "Browse", comment: "The tab with the catalog of apps" });
@@ -298,7 +301,7 @@ export function App() {
                 )}
               />
             ) : (
-              <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} />
+              <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} kept={browseKept} onKeep={setBrowseKept} />
             )}
           </div>
         )}
@@ -321,6 +324,7 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <ChangeVersion />
       <ProgramPrompt />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
       <FilePicker />
@@ -388,17 +392,23 @@ function BrowsePage({
   onOpenGame,
   search,
   onSearch,
+  kept,
+  onKeep,
 }: {
   onOpen: (e: Entry) => void;
   onOpenGame: (game: GameLink) => void;
   search: string;
   onSearch: (search: string) => void;
+  /** The filters the player picked when Browse was last open. */
+  kept: KeptBrowse | null;
+  onKeep: (kept: KeptBrowse) => void;
 }) {
   const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs } = useLauncher();
   const saved = useAccount().user?.catalogDefaults;
   // As in Quiver Launcher 3, apps already in the library stay out of Browse unless the player asks for them.
   const showOwned = Boolean(settings.browseShowsLibrary);
   const setShowOwned = (on: boolean) => setSettings({ ...settings, browseShowsLibrary: on || undefined });
+  const looks = useBrowseCards();
   const libraryNow = useRef(library);
   libraryNow.current = library;
   // The apps left out: those in the library when their page came. One added since stays, with its badge.
@@ -413,9 +423,9 @@ function BrowsePage({
     console: d?.console,
     ai: d?.ai === "no-generated" || d?.ai === "no-ai" ? d.ai : undefined,
   });
-  const [filters, setFilters] = useState(() => fromSaved(saved));
+  const [filters, setFilters] = useState(() => kept?.filters ?? fromSaved(saved));
   // The account can load after Browse opens: its saved filters apply until the player picks their own.
-  const picked = useRef(false);
+  const picked = useRef(Boolean(kept));
   useEffect(() => {
     if (!picked.current) setFilters(fromSaved(saved));
   }, [JSON.stringify(saved)]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -446,11 +456,19 @@ function BrowsePage({
         remember(page.items);
         const mine = new Set(libraryNow.current.map((i) => i.id));
         const left = page.items.filter((e) => mine.has(e.id)).map((e) => e.id);
-        setOwned((o) => new Set([...(cursor ? o : []), ...left]));
-        setPages((p) => (cursor ? [...p, page] : [page]));
+        // Drawn a little at a time, between frames: a page of cards at once held a scrolling d-pad up a moment on a
+        // Steam Deck. Still loading till they're in, so the last page's Show more doesn't ask for them again.
+        startTransition(() => {
+          setOwned((o) => new Set([...(cursor ? o : []), ...left]));
+          setPages((p) => (cursor ? [...p, page] : [page]));
+          setLoading(false);
+        });
       })
-      .catch(() => request === latest.current && setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`))
-      .finally(() => request === latest.current && setLoading(false));
+      .catch(() => {
+        if (request !== latest.current) return;
+        setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
+        setLoading(false);
+      });
   }
   useEffect(() => {
     load();
@@ -486,7 +504,11 @@ function BrowsePage({
   const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== "here"].filter(Boolean).length;
   // An order the player picked (the sort, or a shelf's See all): the whole list in it, in place of the front page, as a
   // search or a filter has it; its pill goes back to the front page.
-  const [sorted, setSorted] = useState(false);
+  const [sorted, setSorted] = useState(kept?.sorted ?? false);
+  // What the player picked, for Browse to start from when they come back to it.
+  useEffect(() => {
+    if (picked.current) onKeep({ filters, sorted });
+  }, [filters, sorted]); // eslint-disable-line react-hooks/exhaustive-deps
   const sortName = (sort: BrowseFilters["sort"]) =>
     ({ added: t`Recently added`, updated: t`Recently updated`, rating: t`Top rated`, name: t`Name A–Z` })[sort ?? "added"];
   // Apps in your library shown, a choice kept from before: on the Filters button's count, not a row of its own.
@@ -561,6 +583,10 @@ function BrowsePage({
             <SlidersHorizontal size={15} /> <Trans>Filters</Trans>
             {filterCount > 0 && <span className="tool-count">{filterCount}</span>}
           </button>
+          {/* How Browse's cards look, as the library's View menu sets its own; Settings has the same. */}
+          <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
+            {() => <BrowseCardOptions />}
+          </Popover>
           {/* New apps come to the catalog through the website's form; adding one to the library is the library's. */}
           <button
             className="tool submit-app"
@@ -705,12 +731,12 @@ function BrowsePage({
               </h2>
             </>
           )}
-          <div className="catalog-grid boxes">
+          <div className={looks.grid}>
             {entries.map((entry) => (
               <EntryCard
                 key={entry.id}
                 entry={entry}
-                coverSources={boxOf(entry) ? cardSources(boxOf(entry)!, CATALOG_BOX) : undefined}
+                {...looks.card(entry)}
                 // A download's progress, or what went wrong, shows over the art without hover.
                 className={jobs[entry.id] ? "busy" : undefined}
                 consoleNames={consoleNames}
@@ -785,6 +811,8 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
   const [versions, setVersions] = useState(false);
+  // Get's arrow: the version, and on Linux the build, to get, in place of Get's own choice.
+  const [getting, setGetting] = useState(false);
   const noWayOff = Boolean(pulledVerified(catalog[entry.id] ?? entry));
   const choose = (
     <>
@@ -928,10 +956,29 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
       </p>
     );
   if (noWayOff) return <div className="row">{choose}</div>;
-  return (
+  const name = entry.projectName;
+  const builds = config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows");
+  const getIt = (
     <button className="primary wide" onClick={() => get(entry)}>
       <Download size={15} /> <Trans comment="Button that installs an app">Get</Trans>
     </button>
+  );
+  // A phone has one build to get, and an app's versions are on its page: Get alone.
+  if (config.os === "android") return getIt;
+  // Its own key: as a download's row it was, React would keep Cancel's button as the arrow, the focus still on it.
+  return (
+    <div className="get-split" key="get">
+      {getIt}
+      <button
+        className="primary get-more"
+        title={builds ? t`Choose a version or platform` : t`Choose a version`}
+        aria-label={builds ? t`Choose a version or platform of ${name}` : t`Choose a version of ${name}`}
+        onClick={() => setGetting(true)}
+      >
+        <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" />
+      </button>
+      {getting && <VersionsDialog entry={catalog[entry.id] ?? entry} getting onClose={() => setGetting(false)} />}
+    </div>
   );
 }
 
@@ -1260,7 +1307,7 @@ function AppPage({
                 <Pin size={14} aria-hidden="true" />
                 <span>
                   {/* Quietly: no badge or count, but a pin never hides that there's more. */}
-                  {entry.verified && bare(entry.verified.version) !== bare(install.version) && entry.verified.releasedAt > (install.releasedAt ?? 0) ? (
+                  {entry.verified && bare(entry.verified.version) !== bare(install.version) && cameAfter(entry.verified, install) ? (
                     <Trans>Pinned to {installedVersion}. {verifiedVersion} is available.</Trans>
                   ) : (
                     <Trans>Pinned to {installedVersion}.</Trans>
@@ -1370,6 +1417,8 @@ const SORTS = ["added", "updated", "rating", "name"] as const;
 /** Browse's catalog filters; several kinds of project come from saved filters. */
 /** The catalog's filters, with "here" for the platforms this computer runs (catalogOs). */
 type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & { os?: Os | "here" };
+/** Browse's filters as the player left them, and whether they picked its sort. */
+type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
 
 /** Runs a Windows installer's setup again for the installed version, as to repair it. */
 function ReinstallButton({ id }: { id: string }) {
@@ -1759,6 +1808,13 @@ function UninstallPrompt() {
       </div>
     </Dialog>
   );
+}
+
+/** An app's versions, from its menu's Change version. */
+function ChangeVersion() {
+  const { changingVersion, changeVersion, catalog } = useLauncher();
+  if (!changingVersion) return null;
+  return <VersionsDialog entry={catalog[changingVersion.id] ?? changingVersion} onClose={() => changeVersion(null)} />;
 }
 
 /**

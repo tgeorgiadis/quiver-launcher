@@ -17,6 +17,12 @@ export type OldApp = {
   version?: string;
   /** The program a Windows installer (MSI) put on the computer, for an app 3.x installed that way. */
   program?: string;
+  /** Its tags as 3.x showed them, the catalog's among them. */
+  tags?: string[];
+  /** The catalog's tags when 3.x last followed its entry. */
+  catalogTags?: string[];
+  /** The player hid it in 3.x's library. */
+  hidden?: boolean;
 };
 /** A file or folder to ask for in the page's own browser (file-picker.tsx). */
 export type PickAsk = { id: number; folder: boolean; title: string; dir?: string | null; extensions: string[] };
@@ -28,7 +34,9 @@ export type Listing = {
   places: { name: string; path: string }[];
 };
 /** A Quiver Launcher 3 library: the folder its apps.json is in, and its apps. */
-export type V3Library = { folder: string; apps: OldApp[] };
+/** A tag filter the player made in 3.x: apps with any of its tags (all, with `all`), less those with any of `exclude` (all, with `excludeAll`). */
+export type OldFilter = { name: string; tags: string[]; all: boolean; exclude: string[]; excludeAll: boolean };
+export type V3Library = { folder: string; apps: OldApp[]; filters?: OldFilter[] };
 export type Config = {
   api: string;
   convex: string;
@@ -92,12 +100,16 @@ export type LaunchOptions = {
   /** The program to start: inside the app's folder (relative), or anywhere for a program the player added. */
   executable?: string;
   runner?: { kind: "direct" } | { kind: "wine" } | { kind: "proton"; path: string };
+  /** What Settings runs every Windows program with on Linux, where the app has no runner of its own (never saved with an app). */
+  windowsRunner?: WindowsRunner;
   /** As Steam takes them: `NAME=value` first sets the environment, `%command%` is where the game goes, otherwise arguments. */
   command?: string;
   /** The programs Play starts, relative to the app's folder: with more than one, Play asks which. The launcher itself reads only `executable`. */
   programs?: string[];
 };
 export type Proton = { name: string; path: string };
+/** What runs Windows programs on Linux, chosen in Settings for every app: unset, Automatic. */
+export type WindowsRunner = { kind: "wine" } | { kind: "proton"; path: string };
 
 /** An installed app, for a desktop or Steam shortcut. */
 export type ShortcutRequest = {
@@ -184,6 +196,11 @@ export const native = {
   setFullscreen: (on: boolean, systemTitleBar: boolean) => invoke<void>("set_fullscreen", { on, titleBar: systemTitleBar }),
   /** The system's title bar back on, or off for the launcher's own buttons (a Mac always keeps its own). */
   setSystemTitleBar: (on: boolean) => invoke<void>("set_system_title_bar", { on }),
+  /** Close to tray on or off, and the tray menu's words in the player's language (tray.rs; Windows only). */
+  setTray: (closeToTray: boolean, open: string, quit: string) => invoke<void>("set_tray", { closeToTray, open, quit }),
+  /** Whether Windows starts this copy of the launcher, in the tray, as the player signs in. */
+  startWithWindows: () => invoke<boolean>("start_with_windows"),
+  setStartWithWindows: (on: boolean) => invoke<void>("set_start_with_windows", { on }),
   /** The window's own buttons, for the top bar when the system's title bar is off. */
   minimize: () => getCurrentWindow().minimize(),
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),
@@ -202,6 +219,10 @@ export const native = {
   findV3Library: () => invoke<V3Library | null>("find_v3_library"),
   /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in that Apps folder. */
   findV3LibraryIn: (path: string, apps?: string) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
+  /** Asks for a sound file to play behind the launcher (music.ts), opening in `dir` when given; null when the player cancels. */
+  pickMusic: (title: string, dir?: string) => invoke<string | null>("pick_music", { title, dir }),
+  /** The music file's bytes, to play. */
+  readMusic: (path: string) => invoke<ArrayBuffer>("read_music", { path }),
   /** Asks for a folder on this computer, opening in `dir` when given; null when the player cancels. */
   pickFolder: (title: string, dir?: string) => invoke<string | null>("pick_folder", { title, dir }),
   /** In Steam's Game Mode, the pickers ask the page's own browser (file-picker.tsx) instead of the system's dialog. */
@@ -248,6 +269,8 @@ export const native = {
   /** The programs in an installed app's folder, relative to it. */
   listPrograms: (folder: string, dir?: string) => invoke<string[]>("list_programs", { folder, dir }),
   listProtons: () => invoke<Proton[]>("list_protons"),
+  /** What Automatic runs Windows programs with on Linux, by name (a Proton, else Wine); null with neither. */
+  automaticRunner: () => invoke<string | null>("automatic_runner"),
   /** Asks for a Proton folder the launcher didn't find. */
   pickProton: () => invoke<string | null>("pick_proton"),
   controllers: () => invoke<string[]>("controllers"),
