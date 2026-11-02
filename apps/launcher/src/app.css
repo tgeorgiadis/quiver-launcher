@@ -886,7 +886,9 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .game-menu button { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; text-align: left; font-size: 13px; white-space: nowrap; }
 /* The controller moves focus by script, which never counts as :focus-visible once the mouse has been used. */
 /* A step brighter than the menu itself (var(--panel)), in the menu and its submenus alike. */
-.game-menu button:not(:disabled, .game-menu-main):is(:hover, :focus), .game-menu button[aria-expanded="true"] { background: var(--field-hover); outline: 0; }
+/* Focus shows once it's from a key or a controller: a right-click puts it on the first item too, for them, without looking picked. */
+.game-menu button:not(:disabled, .game-menu-main):is(:hover, :focus-visible), .game-menu button[aria-expanded="true"] { background: var(--field-hover); }
+.game-menu button:focus { outline: 0; }
 .game-menu .game-menu-main:focus { outline: 0; }
 .game-menu button:disabled { color: var(--muted); }
 .game-menu button.danger { color: var(--danger); }

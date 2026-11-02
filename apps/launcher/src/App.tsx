@@ -37,13 +37,15 @@ import { SettingsPage, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { FilePicker } from "./file-picker";
-import { fileName } from "./card-menu";
+import { BrowseMenu, fileName } from "./card-menu";
+import { browseShown, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog). */
-export type PageAt = { releases: string };
+/** Where an app's page opens: at a release on its Releases tab, or on its Player feedback tab. */
+export type PageAt = { releases: string } | { feedback: true };
 type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings" };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
@@ -397,7 +399,7 @@ function BrowsePage({
   kept,
   onKeep,
 }: {
-  onOpen: (e: Entry) => void;
+  onOpen: (e: Entry, at?: PageAt) => void;
   onOpenGame: (game: GameLink) => void;
   search: string;
   onSearch: (search: string) => void;
@@ -411,6 +413,9 @@ function BrowsePage({
   const showOwned = Boolean(settings.browseShowsLibrary);
   const setShowOwned = (on: boolean) => setSettings({ ...settings, browseShowsLibrary: on || undefined });
   const looks = useBrowseCards();
+  // Apps the player hid from Browse (browse-hidden.ts): out of it as soon as they're hidden, unlike the library's.
+  const hidden = new Set(settings.browseHidden);
+  const [hiddenView, setHiddenView] = useState<HiddenView>("hide");
   const libraryNow = useRef(library);
   libraryNow.current = library;
   // The apps left out: those in the library when their page came. One added since stays, with its badge.
@@ -514,7 +519,7 @@ function BrowsePage({
   const sortName = (sort: BrowseFilters["sort"]) =>
     ({ added: t`Recently added`, updated: t`Recently updated`, rating: t`Top rated`, name: t`Name A–Z` })[sort ?? "added"];
   // Apps in your library shown, a choice kept from before: on the Filters button's count, not a row of its own.
-  const filterCount = filtering + (showOwned ? 1 : 0);
+  const filterCount = filtering + (showOwned ? 1 : 0) + (hiddenView !== "hide" ? 1 : 0);
   const types = filters.projectTypes ?? [];
   /** A filter's pill: `on` names it while it differs from the default, and removing it goes back to the default. */
   const pill = (key: "os" | "console" | "projectTypes" | "ai", on: string | undefined, select: ReactNode) =>
@@ -535,8 +540,11 @@ function BrowsePage({
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
   const all = pages.flatMap((p) => p.items).filter((e) => filters.os !== "here" || availableOn(e, config.os));
-  const entries = showOwned ? all : all.filter((e) => !owned.has(e.id));
-  const left = all.length - entries.length;
+  const shown = (o: { showOwned?: boolean; view?: HiddenView }) => browseShown(all, { owned, showOwned, hidden, view: hiddenView, ...o });
+  const entries = shown({});
+  // What the notes under the list offer to show: apps in the library, and hidden ones.
+  const left = showOwned ? 0 : shown({ showOwned: true }).length - entries.length;
+  const hiddenLeft = hiddenView === "hide" ? shown({ view: "show" }).length - entries.length : 0;
   const mine = showOwned ? all.filter((e) => inLibrary.has(e.id)).length : 0;
   const last = pages.at(-1);
   const typed = search.trim();
@@ -604,7 +612,7 @@ function BrowsePage({
         Filters: pills to pick from while open; the ones that differ from the defaults stay, each removable, while it's
         closed, with a picked order's first. Apps in your library shown has a pill only beside others, or with it open.
       */}
-      {(filtersOpen || filtering > 0 || (sorted && !searching)) && (
+      {(filtersOpen || filtering > 0 || hiddenView !== "hide" || (sorted && !searching)) && (
         <div id="browse-filters" className="filter-bar" role="group" aria-label={t`Catalog filters`}>
           {sorted && !searching && (
             <FilterPill on={sortName(filters.sort)} onClear={() => (setSorted(false), choose({ ...filters, sort: fromSaved(saved).sort }))}>
@@ -688,6 +696,30 @@ function BrowsePage({
               </select>
             </FilterPill>
           )}
+          {(filtersOpen || hiddenView !== "hide") && (hidden.size > 0 || hiddenView !== "hide") && (
+            <FilterPill
+              on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
+              onClear={() => setHiddenView("hide")}
+            >
+              <select aria-label={t`Hidden apps`} value={hiddenView} onChange={(e) => setHiddenView(e.target.value as HiddenView)}>
+                <option value="hide">{t`Hide hidden apps`}</option>
+                <option value="show">{t`Show hidden apps`}</option>
+                <option value="only">{t`Only hidden apps`}</option>
+              </select>
+            </FilterPill>
+          )}
+          {hiddenView === "only" && hidden.size > 0 && (
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setSettings({ ...settings, browseHidden: undefined });
+                setHiddenView("hide");
+              }}
+            >
+              <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
+            </button>
+          )}
           {filtering > 0 && (
             <span className="filter-actions">
               <button type="button" className="text-button" onClick={() => choose({ os: "here", sort: filters.sort })}>
@@ -698,11 +730,12 @@ function BrowsePage({
         </div>
       )}
       {/* The front page, while the player isn't looking for something in particular. */}
-      {!typed && !filtering && !sorted && !error && (
+      {!typed && !filtering && !sorted && !error && hiddenView === "hide" && (
         <Discover
           onOpen={onOpen}
           showOwned={showOwned}
-          action={(entry) => <Action entry={entry} />}
+          hidden={hidden}
+          action={(entry) => <BrowseAction entry={entry} onOpen={onOpen} />}
           onSeeAll={(to) => {
             choose({ ...filters, ...to });
             if ("sort" in to) setSorted(true);
@@ -743,8 +776,8 @@ function BrowsePage({
                 className={jobs[entry.id] ? "busy" : undefined}
                 consoleNames={consoleNames}
                 onOpen={() => onOpen(entry)}
-                badge={inLibrary.has(entry.id) ? t`In library` : undefined}
-                action={<Action entry={entry} />}
+                badge={hidden.has(entry.id) ? t`Hidden` : inLibrary.has(entry.id) ? t`In library` : undefined}
+                action={<BrowseAction entry={entry} onOpen={onOpen} />}
               />
             ))}
           </div>
@@ -758,6 +791,14 @@ function BrowsePage({
               <Plural value={left} one="# app here is already in your library." other="# apps here are already in your library." />{" "}
               <button type="button" className="link-button" onClick={() => setShowOwned(true)}>
                 <Plural value={left} one="Show it" other="Show them" />
+              </button>
+            </p>
+          )}
+          {!loading && hiddenLeft > 0 && (
+            <p className={entries.length || left ? "owned-note" : "empty"}>
+              <Plural value={hiddenLeft} one="# app here is hidden." other="# apps here are hidden." />{" "}
+              <button type="button" className="link-button" onClick={() => setHiddenView("show")}>
+                <Plural value={hiddenLeft} one="Show it" other="Show them" />
               </button>
             </p>
           )}
@@ -803,6 +844,16 @@ function ShowMore({ onMore }: { onMore: () => void }) {
         <Trans>Show more</Trans>
       </button>
     </div>
+  );
+}
+
+/** A Browse card's button, and the menu its card opens (a right-click, a long press): its README, versions and feedback, and hiding it. */
+function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?: PageAt) => void }) {
+  return (
+    <>
+      <Action entry={entry} />
+      <BrowseMenu entry={entry} onFeedback={() => onOpen(entry, { feedback: true })} />
+    </>
   );
 }
 
@@ -1014,7 +1065,7 @@ function AppPage({
   onClose?: () => void;
   onOpenGame: (game: GameLink) => void;
   /** Opens another app's page, from More like this. */
-  onOpenApp: (entry: Entry) => void;
+  onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
   const { config, library, installs, jobs, catalog, add, remove, confirmUninstall, askRename, consoleNames, setUpdates, get, switched, switchToCatalog } = useLauncher();
@@ -1032,7 +1083,9 @@ function AppPage({
   const releases = useReleases(entry, site);
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
-  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "computer">(at ? "releases" : "overview");
+  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "computer">(
+    at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
+  );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
   // changing size), so More like this, under it, doesn't come up into sight for a moment and go down again.
   const content = useRef<HTMLDivElement>(null);
@@ -1251,6 +1304,8 @@ function AppPage({
                   <Plus size={17} /> <Trans>Add to library</Trans>
                 </button>
               )}
+              {/* Out of Browse, as its card's menu has it: here for a controller, whose Options on the card gets the app. */}
+              {site && !item && <BrowseHideButton id={entry.id} />}
               {/* Its files go; the app stays in the library to get again. Taking it out is under On this computer. */}
               {install && !install.local && !(job && !("error" in job)) && !tv && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
@@ -1388,7 +1443,7 @@ function AppPage({
             </>
           )}
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
-          {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at?.releases} />}
+          {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
           {(site ? tab === "computer" : true) && computer}
           {tab === "feedback" && (
             <FeedbackTab
@@ -1403,7 +1458,7 @@ function AppPage({
           )}
         </div>
       </div>
-      {site && <MoreLikeThis entry={entry} onOpen={onOpenApp} action={(e) => <Action entry={e} />} />}
+      {site && <MoreLikeThis entry={entry} onOpen={onOpenApp} action={(e) => <BrowseAction entry={e} onOpen={onOpenApp} />} />}
     </section>
   );
 }
@@ -1473,6 +1528,17 @@ function HideButton({ id }: { id: string }) {
     >
       {hidden ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />}
       {hidden ? t`Show in library` : t`Hide from library`}
+    </button>
+  );
+}
+
+/** Whether Browse shows the app (browse-hidden.ts), beside its Get on its page. */
+function BrowseHideButton({ id }: { id: string }) {
+  const { settings, setSettings } = useLauncher();
+  const hidden = settings.browseHidden?.includes(id);
+  return (
+    <button onClick={() => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, id) })}>
+      {hidden ? <Eye size={17} /> : <EyeOff size={17} />} {hidden ? t`Show in Browse` : t`Hide from Browse`}
     </button>
   );
 }
