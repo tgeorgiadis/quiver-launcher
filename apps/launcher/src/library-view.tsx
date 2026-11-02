@@ -4,17 +4,18 @@
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, Gamepad2, LayoutGrid, PanelLeft, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
-import { plural, t } from "@lingui/core/macro";
+import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
-import { OS_ICONS, OS_NAMES, blurSource, cardSources } from "@quiverlauncher/ui";
-import { useLauncher } from "./store";
+import { CARD_DETAILS, EntryCardContent, OS_ICONS, OS_NAMES, blurSource, boxOf, cardSources, coverOf, type CardDetail, type CardLook } from "@quiverlauncher/ui";
+import { catalogOs, useLauncher } from "./store";
+import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards, type BrowseCards } from "./browse-cards";
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
 import { SIDEBAR_SIZES } from "./sidebar";
 import { GRID_GROUP_BYS, GROUP_BYS, gridGroupBy, isGroupBy, type GroupBy } from "./group";
-import { CARD_IMAGES, CARD_SIZES, LAYOUTS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
+import { CARD_IMAGES, CARD_SIZES, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
 
 /** This computer's library view, and a way to change it. */
 export function useLibraryView() {
@@ -72,7 +73,10 @@ export function useSidebarFits() {
   return wide && config.os !== "android" && config.os !== "ios";
 }
 
-/** Layout, card image, card size and names; in Settings and on a phone, the library's sections too (elsewhere the library has them beside Sort). */
+/**
+ * Layout, card image, card size, names and what the cards show with them; in Settings and on a phone, the library's
+ * sections too (elsewhere the library has them beside Sort).
+ */
 export function ViewOptions({ groups }: { groups?: boolean }) {
   const { view, set } = useLibraryView();
   const fits = useSidebarFits();
@@ -122,6 +126,8 @@ export function ViewOptions({ groups }: { groups?: boolean }) {
           <Trans>Show installed and update icons</Trans>
         </label>
       )}
+      {/* With the names: a card without them has the art alone. */}
+      {cards && view.names && <DetailChoice options={LIBRARY_DETAILS} value={view.details} onChange={(details) => set({ details })} names={LIBRARY_DETAIL_NAMES} />}
       {groups && (
         <div className="view-choice">
           <span className="view-label">
@@ -236,6 +242,108 @@ const ART_WIDTHS: Record<CardImage, Record<CardSize, number>> = {
 export const artSizes = (image: CardImage, size: CardSize) => `${ART_WIDTHS[image][size]}px`;
 /** About how wide the catalog's box art shows (Browse, a game's ways to play), for the size of copy to load. */
 export const CATALOG_BOX = artSizes("box", "medium");
+/** And its wide cards' art. */
+const CATALOG_COVER = artSizes("cover", "medium");
+
+/**
+ * This computer's Browse cards (browse-cards.ts), and a way to change them; with what an `EntryCard` takes of them for
+ * an app (its look, details and the copy of its picture to load) and the class of the grid they sit in.
+ */
+export function useBrowseCards() {
+  const { settings, setSettings } = useLauncher();
+  const cards = browseCardsOf(settings.browseCards);
+  const box = cards.look === "box";
+  return {
+    ...cards,
+    set: (next: Partial<BrowseCards>) => setSettings({ ...settings, browseCards: savedBrowseCards({ ...cards, ...next }) }),
+    card: (entry: Entry) => {
+      const art = box ? boxOf(entry) : coverOf(entry);
+      return { look: cards.look, details: cards.details, coverSources: art ? cardSources(art, box ? CATALOG_BOX : CATALOG_COVER) : undefined };
+    },
+    grid: box ? "catalog-grid boxes" : "catalog-grid",
+  };
+}
+
+/** Browse's card style, and a box for each detail its cards can show, beside a card showing them; in Browse's View menu and Settings. */
+export function BrowseCardOptions() {
+  const { look, details, set } = useBrowseCards();
+  return (
+    <div className="view-options card-options">
+      <Choice label={t({ message: "Card style", comment: "Browse view option" })} options={CARD_LOOKS} icons={LOOK_ICONS} value={look} onChange={(look) => set({ look })} />
+      <div className="card-preview">
+        <CardSample />
+        <DetailChoice options={CARD_DETAILS} value={details} onChange={(details) => set({ details })} />
+      </div>
+    </div>
+  );
+}
+
+/** The catalog's app for the sample card, kept while the launcher runs so it stays the same one each time the menu opens. */
+let sampled: Entry | undefined;
+
+/**
+ * A card as the options have it, since the page's own are out of sight: under Browse's banner, or not there at all in
+ * Settings. Only to look at, with nothing to focus or press. Offline, one from the library; with none, no card.
+ */
+function CardSample() {
+  const { client, config, catalog, consoleNames } = useLauncher();
+  const { look, details, card } = useBrowseCards();
+  const [entry, setEntry] = useState<Entry | null | undefined>(sampled);
+  useEffect(() => {
+    if (sampled) return;
+    let live = true;
+    client.apps({ sort: "rating", os: catalogOs(config.os) }).then(
+      (page) => {
+        sampled = sampleEntry(page.items);
+        if (live) setEntry(sampled ?? null);
+      },
+      () => live && setEntry(sampleEntry(Object.values(catalog)) ?? null),
+    );
+    return () => {
+      live = false;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (entry === null) return null;
+  return (
+    <div className="view-choice card-sample" aria-hidden="true">
+      <span className="view-label">
+        <Trans comment="Above a sample card, showing how the options picked look">Preview</Trans>
+      </span>
+      <div className={`entry-card ${look}`}>
+        <div className="card-open">
+          {/* Any app can be New here, or its box would seem to do nothing. */}
+          {entry ? (
+            <EntryCardContent entry={{ ...entry, addedAt: Date.now() }} look={look} details={details} coverSources={card(entry).coverSources} consoleName={(tag) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined)} />
+          ) : (
+            <span className="card-cover" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A box for each detail cards can show, in the library's View menu and Browse's; `names` in place of Browse's words for some. */
+function DetailChoice({ options, value, onChange, names }: { options: readonly CardDetail[]; value: readonly CardDetail[]; onChange: (details: CardDetail[]) => void; names?: Partial<Record<CardDetail, MessageDescriptor>> }) {
+  return (
+    <div className="view-choice">
+      <span className="view-label">
+        <Trans comment="Above a box for each detail the cards can show">Show on cards</Trans>
+      </span>
+      {options.map((detail) => (
+        <label key={detail} className="toggle">
+          <input type="checkbox" checked={value.includes(detail)} onChange={(e) => onChange(e.target.checked ? [...value, detail] : value.filter((d) => d !== detail))} />
+          {i18n._(names?.[detail] ?? DETAIL_NAMES[detail])}
+        </label>
+      ))}
+    </div>
+  );
+}
+/** A library card's line under its name is the other name, the app's or its game's, not always the game and console. */
+const LIBRARY_DETAIL_NAMES: Partial<Record<CardDetail, MessageDescriptor>> = {
+  subtitle: msg({ message: "Name underneath", comment: "Library card detail: the other name (the app's or the game's) under the large one" }),
+};
+const LOOK_ICONS: Record<CardLook, ReactNode> = { box: <RectangleVertical size={15} aria-hidden="true" />, wide: <RectangleHorizontal size={15} aria-hidden="true" /> };
 
 /**
  * A card's box art or icon, at about the size it shows (cardSources: a resized copy, else SteamGridDB's thumbnail,

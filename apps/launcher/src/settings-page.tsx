@@ -14,7 +14,7 @@ import { useLauncher } from "./store";
 import { pageArea } from "./spatial";
 import { native } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
-import { PlatformChoice, ViewOptions } from "./library-view";
+import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
 import { ControlSettings } from "./controls";
@@ -276,11 +276,17 @@ export function LanguageSetting() {
   );
 }
 
-/** How the library looks, as in its View menu, which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
+/** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
 function LibrarySettings() {
   return (
     <>
       <ViewOptions groups />
+      <section className="settings-section" aria-label={t`Browse cards`}>
+        <h3>
+          <Trans comment="Settings section: how the catalog's cards look in Browse">Browse cards</Trans>
+        </h3>
+        <BrowseCardOptions />
+      </section>
       <section className="settings-section" aria-label={t`Platforms`}>
         <h3>
           <Trans>Platforms</Trans>

@@ -446,6 +446,8 @@ export type Settings = {
   groupBy?: string;
   /** Browse lists apps already in the library too. */
   browseShowsLibrary?: boolean;
+  /** How Browse's cards look and which details they show (browse-cards.ts); only what differs from the defaults. */
+  browseCards?: { look?: string; details?: string[] };
   /** How the library is sorted (sort.ts); unset is recently played. */
   librarySort?: string;
   /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
