@@ -363,6 +363,11 @@ msgstr "{size} KB"
 msgid "{size} MB"
 msgstr "{size} MB"
 
+#. Mouse wheel speed: times as far as the system's, such as 2×
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{speed}×"
+msgstr "{speed}×"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
 msgstr "{tagged, plural, other {앱 #개의 내 태그}}"
@@ -2341,6 +2346,10 @@ msgid "Mostly AI-generated"
 msgstr "대부분 AI 생성"
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Mouse wheel speed"
+msgstr "마우스 휠 속도"
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Move apps"
 msgstr "앱 옮기기"
 
@@ -2584,6 +2593,7 @@ msgid "None of this release's files are for this computer."
 msgstr "이 버전의 파일 중 이 컴퓨터용 파일이 없어요."
 
 #. Interface size
+#. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "보통"
@@ -3630,6 +3640,11 @@ msgstr "설정 건너뛰기"
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "작게"
+
+#. Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Smooth scrolling"
+msgstr "부드러운 스크롤"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "So you can reset your password if you forget it"

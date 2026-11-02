@@ -368,14 +368,15 @@ function easeTo(el: Element, to: number, axis: "scrollTop" | "scrollLeft" = "scr
   const top = Math.max(0, Math.min(max, Math.round(to)));
   const running = eases.get(el);
   if (running) return void (running.to = top);
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return void (el[axis] = top);
+  if (!smooth || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return void (el[axis] = top);
   const state = { to: top, frame: 0 };
   eases.set(el, state);
   let last = performance.now();
   const frame = (now: number) => {
     const gap = state.to - el[axis];
-    // Most of the way in a tenth of a second, the rest following on.
-    const by = gap * (1 - Math.exp(-Math.min(50, now - last) / 60));
+    // Most of the way in a tenth of a second, the rest following on. A frame's time can be from before the scroll
+    // began, which stepped it backwards: at the top, held there, it was taken as there, and jumped the whole way.
+    const by = gap * (1 - Math.exp(-Math.max(0, Math.min(50, now - last)) / 60));
     last = now;
     const before = el[axis];
     if (Math.abs(gap) >= 1.5) el[axis] = before + (Math.abs(by) < 1 ? Math.sign(gap) : by);
@@ -401,6 +402,62 @@ function stopEasing(el?: Element) {
         cancelAnimationFrame(state.frame);
         eases.delete(area);
       }
+}
+
+/**
+ * How far a wheel's turn scrolls, times the system's, and whether it and the d-pad's steps ease there (Settings), as
+ * Quiver Launcher 3 had them. Left as they come, the wheel is the browser's own, its listener passive as before: one
+ * that may cancel the browser's scroll holds every turn of the wheel until the page has a moment for it.
+ */
+let wheelSpeed = 1;
+let smooth = true;
+export const WHEEL_SPEEDS = [1, 2, 3, 5] as const;
+export function setScrolling({ scrollSpeed, smoothScrollOff }: { scrollSpeed?: number; smoothScrollOff?: boolean }) {
+  wheelSpeed = WHEEL_SPEEDS.find((s) => s === scrollSpeed) ?? 1;
+  smooth = !smoothScrollOff;
+  const ours = wheelSpeed !== 1 || !smooth;
+  window.removeEventListener("wheel", wheeled);
+  window.removeEventListener("wheel", stoppedByWheel);
+  if (ours) window.addEventListener("wheel", wheeled, { passive: false });
+  else window.addEventListener("wheel", stoppedByWheel, { passive: true });
+}
+const stoppedByWheel = () => stopEasing();
+
+/** A wheel's turn in pixels, from lines (Firefox's, a few mice's) or pages. */
+export function wheelPixels(e: Pick<WheelEvent, "deltaY" | "deltaMode">, page: number) {
+  return e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * page : e.deltaY;
+}
+
+/**
+ * What a wheel turned over `from` scrolls: the nearest area around it that scrolls up and down and has room that way.
+ * Not past one that keeps its scroll to itself (overscroll-behavior), as the browser wouldn't: nothing, then.
+ */
+function wheelArea(from: Element | null, way: number): Element | null {
+  for (let el = from; el && el !== document.documentElement; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    const scrolls = /auto|scroll|overlay/.test(style.overflowY) && el.scrollHeight > el.clientHeight;
+    if (scrolls && (way > 0 ? headed(el) + el.clientHeight < el.scrollHeight - 1 : headed(el) > 0)) return el;
+    if (scrolls && style.overscrollBehaviorY !== "auto") return null;
+  }
+  return null;
+}
+
+/**
+ * The wheel, scrolled here when the player changed how: `wheelSpeed` times as far, eased there turn by turn (each
+ * adding to where the last was headed), or at once. A touchpad's small steps follow the fingers at once either way,
+ * which easing would only lag behind. A list's own wheel (the library's tabs, sideways) and Ctrl's zoom are left be,
+ * and so is sideways scrolling.
+ */
+function wheeled(e: WheelEvent) {
+  if (e.defaultPrevented || e.ctrlKey || e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return void stopEasing();
+  const area = wheelArea(e.target as Element | null, Math.sign(e.deltaY));
+  if (!area) return void stopEasing();
+  e.preventDefault();
+  const by = wheelPixels(e, area.clientHeight) * wheelSpeed;
+  const notch = e.deltaMode !== 0 || Math.abs(e.deltaY) >= 50;
+  if (smooth && notch) return easeTo(area, headed(area) + by);
+  stopEasing(area);
+  area.scrollTop += by;
 }
 
 /**
@@ -1238,8 +1295,9 @@ export function startSpatialNavigation() {
       true,
     );
 
-  // A wheel or a finger takes over from an eased scroll.
-  for (const type of ["wheel", "touchstart"] as const) window.addEventListener(type, () => stopEasing(), { capture: true, passive: true });
+  // A finger takes over from an eased scroll, and a wheel (setScrolling), until the settings come, as the browser has it.
+  window.addEventListener("touchstart", () => stopEasing(), { capture: true, passive: true });
+  setScrolling({});
 
   // A tap on a text field on a touch screen (a Steam Deck's) edits it.
   window.addEventListener("pointerdown", (e) => {

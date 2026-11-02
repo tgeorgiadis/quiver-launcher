@@ -16,7 +16,7 @@ import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
 import type { Platform } from "./platforms";
-import { setBindings, type Bindings } from "./spatial";
+import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
@@ -422,6 +422,10 @@ export type Settings = {
   /** Closing the window hides it in the tray, the launcher still running (tray.rs; Windows only). */
   closeToTray?: boolean;
   scale?: number;
+  /** How many times as far a mouse wheel's turn scrolls, as in Quiver Launcher 3 (spatial.ts); unset, the system's. */
+  scrollSpeed?: number;
+  /** The wheel and the d-pad's steps scroll at once, not easing there. */
+  smoothScrollOff?: boolean;
   /** Light or dark; unset follows the system. */
   theme?: Theme;
   /** The language Quiver shows in (@quiverlauncher/i18n); unset follows the system. */
@@ -599,6 +603,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   useEffect(() => void activate(languageOf(settings)).catch(() => {}), [settings.language]);
   useEffect(() => {
     setBindings(settings);
+    setScrolling(settings);
   }, [settings]);
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.

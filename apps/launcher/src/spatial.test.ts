@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { DEFAULT_KEYS, DEFAULT_PAD, confirmBackSwapped, goBack, swapConfirmBack, withDefaults } from "./spatial";
+import { DEFAULT_KEYS, DEFAULT_PAD, confirmBackSwapped, goBack, swapConfirmBack, wheelPixels, withDefaults } from "./spatial";
 
 vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn() }));
 vi.mock("./native", () => ({ native: {} }));
@@ -39,4 +39,10 @@ test("Android's Back presses Escape while there's something to close or go back 
   } finally {
     vi.unstubAllGlobals();
   }
+});
+
+test("a wheel's turn in lines or pages scrolls as far as one in pixels would", () => {
+  expect(wheelPixels({ deltaY: 100, deltaMode: 0 }, 600)).toBe(100);
+  expect(wheelPixels({ deltaY: -3, deltaMode: 1 }, 600)).toBe(-120);
+  expect(wheelPixels({ deltaY: 1, deltaMode: 2 }, 600)).toBe(600);
 });
