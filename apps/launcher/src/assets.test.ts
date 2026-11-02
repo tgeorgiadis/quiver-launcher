@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, pickedBefore, runsHere } from "./assets";
+import { assetFilterFor, bestAssets, flatpakAsset, hasBuildFor, installable, installFormat, isFlatpakAsset, pickedBefore, runsHere } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
@@ -81,6 +81,29 @@ test("a Flatpak bundle installs on Linux, after an AppImage", () => {
   expect(bestAssets([asset("Game-x86_64.flatpak", "linux"), asset("Game-win64.zip", "windows")], "linux", "x64").map((a) => a.filename)).toEqual(["Game-x86_64.flatpak"]);
   expect(bestAssets([asset("Game.flatpak", "linux"), asset("Game.AppImage", "linux")], "linux", "x64").map((a) => a.filename)).toEqual(["Game.AppImage"]);
   expect(assetFilterFor("GameB-1.0.flatpak", ["GameA-1.0.flatpak", "GameB-1.0.flatpak"])).toBe("gameb");
+});
+
+test("preferring Flatpak puts a Flatpak bundle first, and falls back when there isn't one", () => {
+  const files = [asset("Game.flatpak", "linux"), asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")];
+  expect(bestAssets(files, "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename)).toEqual(["Game.flatpak"]);
+  // A zip whose name says it holds a Flatpak counts as one, ahead of an AppImage.
+  expect(
+    bestAssets([asset("Game-Flatpak.zip", "linux"), asset("Game.AppImage", "linux")], "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename),
+  ).toEqual(["Game-Flatpak.zip"]);
+  // No Flatpak: the usual order (archives before AppImage) is unchanged.
+  expect(bestAssets([asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")], "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename)).toEqual([
+    "Game-linux.zip",
+  ]);
+  // A catalog filter still wins over preferring Flatpak.
+  expect(bestAssets(files, "linux", "x64", "AppImage", undefined, undefined, true).map((a) => a.filename)).toEqual(["Game.AppImage"]);
+  expect(isFlatpakAsset("Game.flatpak")).toBe(true);
+  expect(isFlatpakAsset("Game-Flatpak.zip")).toBe(true);
+  expect(isFlatpakAsset("Game.AppImage")).toBe(false);
+  expect(isFlatpakAsset("readme-about-flatpak.txt")).toBe(false);
+  expect(flatpakAsset(files, "linux", "x64")?.filename).toBe("Game.flatpak");
+  expect(flatpakAsset([asset("Game.AppImage", "linux")], "linux", "x64")).toBeUndefined();
+  // Wrong architecture: not offered.
+  expect(flatpakAsset([asset("Game-aarch64.flatpak", "linux", "arm64"), asset("Game.AppImage", "linux")], "linux", "x64")).toBeUndefined();
 });
 
 test("a Windows installer (MSI) installs on Windows when there's nothing to unpack, and never elsewhere", () => {

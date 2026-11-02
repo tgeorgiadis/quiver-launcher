@@ -116,6 +116,7 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
               <>
                 <AppsFolder />
                 <WindowsRunnerSetting />
+                <FlatpakInstallSettings />
               </>
             ) : section === "controllers" ? (
               <ControlSettings />
@@ -291,6 +292,50 @@ export function LanguageSetting() {
 }
 
 /** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
+/**
+ * How Linux installs pick Flatpak: prefer it for new installs, and optionally offer to move an existing install when
+ * a release gains one. Off by default so older behaviour stays.
+ */
+function FlatpakInstallSettings() {
+  const { config, settings, setSettings } = useLauncher();
+  if (config.os !== "linux") return null;
+  return (
+    <section className="settings-section" aria-label={t`Flatpak`}>
+      <h3>
+        <Trans>Flatpak</Trans>
+      </h3>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={Boolean(settings.preferFlatpak)}
+          onChange={(e) => setSettings({ ...settings, preferFlatpak: e.target.checked || undefined })}
+        />
+        <Trans>Prefer Flatpak releases when available</Trans>
+      </label>
+      <p className="muted">
+        <Trans>
+          When you install an app for the first time, Quiver picks a Flatpak if the release has one that runs on this
+          computer. You can still choose another download. Updates of apps you already have keep their current format.
+        </Trans>
+      </p>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={Boolean(settings.offerFlatpakMigration)}
+          onChange={(e) => setSettings({ ...settings, offerFlatpakMigration: e.target.checked || undefined })}
+        />
+        <Trans>Offer migration to Flatpak when available</Trans>
+      </label>
+      <p className="muted">
+        <Trans>
+          If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching.
+          It never migrates on its own. Your library entry, saves and settings stay.
+        </Trans>
+      </p>
+    </section>
+  );
+}
+
 function LibrarySettings() {
   return (
     <>

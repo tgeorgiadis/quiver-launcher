@@ -30,16 +30,24 @@ export const isMsi = (name: string) => /\.msi$/i.test(name);
 /** An Android app, which Android installs. */
 const isApk = (name: string) => /\.apk$/i.test(name);
 
+/**
+ * A Flatpak bundle Quiver can install: a `.flatpak` file, or a zip whose name
+ * says it holds one (`Game-Flatpak.zip`). A name that only mentions Flatpak in
+ * passing (notes, checksums) isn't one — those never reach `installable`.
+ */
+export const isFlatpakAsset = (name: string) => /\.flatpak$/i.test(name) || (/\.zip$/i.test(name) && /flatpak/i.test(name));
+
 /** The kind of file an app was installed from, for usage data, as Quiver Launcher 3 sends it. */
 export function installFormat(name: string) {
-  if (/\.flatpak$/i.test(name) || (/\.zip$/i.test(name) && /flatpak/i.test(name))) return "flatpak";
+  if (isFlatpakAsset(name)) return "flatpak";
   if (isMsi(name)) return "msi";
   if (/\.appimage$/i.test(name)) return "appimage";
   if (isApk(name)) return "apk";
   return FORMATS.slice(0, 8).some((f) => f.test(name)) ? "archive" : "executable";
 }
 
-const formatRank = (name: string) => FORMATS.findIndex((f) => f.test(name));
+const formatRank = (name: string, preferFlatpak?: boolean) =>
+  preferFlatpak && isFlatpakAsset(name) ? -1 : FORMATS.findIndex((f) => f.test(name));
 
 /** How well a file's architecture suits this computer's, best 0; -1 when it can't run. */
 const archRank = (a: Asset, arch: string) =>
@@ -72,17 +80,29 @@ export const hasBuildFor = (assets: Asset[], os: Os, arch: string, platform: Os)
  * release has nothing for this platform. `kind` keeps an update to the kind
  * installed: a Windows installer ("msi"), or files Quiver unpacks ("files").
  * `platform` is the system whose build the player chose, tried first.
+ * `preferFlatpak` puts a Flatpak bundle first when one suits this computer
+ * (Settings, or an install that already is one); otherwise Flatpak stays after
+ * AppImage, as before.
  */
-export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os): Asset[] {
+export function bestAssets(assets: Asset[], os: Os, arch: string, filter?: string, kind?: "msi" | "files", platform?: Os, preferFlatpak?: boolean): Asset[] {
   const wanted = filter?.trim().toLowerCase();
   const usable = installable(assets, os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
   const forOs = osFallbacks(os, platform).map((o) => usable.filter((a) => a.os === o)).find((list) => list.length) ?? [];
   const ranked = forOs
     .filter((a) => !wanted || a.filename.toLowerCase().includes(wanted))
     .filter((a) => archRank(a, arch) >= 0)
-    .map((a) => ({ a, rank: archRank(a, arch) * FORMATS.length + formatRank(a.filename) }))
+    .map((a) => ({ a, rank: archRank(a, arch) * FORMATS.length + formatRank(a.filename, preferFlatpak) }))
     .sort((x, y) => x.rank - y.rank);
   return ranked.filter((r) => r.rank === ranked[0].rank).map((r) => r.a);
+}
+
+/**
+ * A Flatpak bundle among these that this computer can install, preferring the
+ * same ranking `bestAssets` uses when Flatpak is preferred. Undefined when
+ * none suits (wrong arch, filtered out, or the release has no Flatpak).
+ */
+export function flatpakAsset(assets: Asset[], os: Os, arch: string, filter?: string, platform?: Os): Asset | undefined {
+  return bestAssets(assets, os, arch, filter, "files", platform, true).find((a) => isFlatpakAsset(a.filename));
 }
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, hasUpdate, importedPlaylists, importedTags, type ImportedApp } from "./store";
+import { adoptedInstall, bringsAlong, canMigrateToFlatpak, hasUpdate, importedPlaylists, importedTags, type ImportedApp, type Install } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -9,6 +9,20 @@ const entry = {
   launcher: { folderName: "TestPort", preferredExecutables: { linux: ["port.sh"] } },
   verified: { version: "v1.2.0", releasedAt: 20 },
 } as unknown as Entry;
+
+describe("canMigrateToFlatpak", () => {
+  const base: Install = { version: "v1.0", folder: "Game", executables: [] };
+
+  it("offers only managed Linux installs that aren't already Flatpak or MSI", () => {
+    expect(canMigrateToFlatpak(base, "linux")).toBe(true);
+    expect(canMigrateToFlatpak({ ...base, installer: "flatpak" }, "linux")).toBe(false);
+    expect(canMigrateToFlatpak({ ...base, installer: "msi" }, "linux")).toBe(false);
+    expect(canMigrateToFlatpak({ ...base, local: true }, "linux")).toBe(false);
+    expect(canMigrateToFlatpak({ ...base, flatpakMigrationDismissed: true }, "linux")).toBe(false);
+    expect(canMigrateToFlatpak(base, "windows")).toBe(false);
+    expect(canMigrateToFlatpak(undefined, "linux")).toBe(false);
+  });
+});
 
 describe("adoptedInstall", () => {
   it("keeps a Quiver Launcher 3 install where it is", () => {

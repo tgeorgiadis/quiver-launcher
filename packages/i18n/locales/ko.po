@@ -8,11 +8,52 @@ msgstr ""
 "Language: ko\n"
 
 #. Beside Launch options: the player changed them
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "(changed)"
 msgstr "(변경됨)"
 
 #. placeholder {0}: elsewhere.size
+#: ../../apps/launcher/src/App.tsx
+msgid "Don't ask again for this app"
+msgstr ""
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Flatpak"
+msgstr ""
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "If an app you installed as an AppImage or archive later publishes a Flatpak, Quiver asks before switching. It never migrates on its own. Your library entry, saves and settings stay."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Keep current format"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate to Flatpak"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate to Flatpak?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Migrate {name} to Flatpak?"
+msgstr ""
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Offer migration to Flatpak when available"
+msgstr ""
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Prefer Flatpak releases when available"
+msgstr ""
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "When you install an app for the first time, Quiver picks a Flatpak if the release has one that runs on this computer. You can still choose another download. Updates of apps you already have keep their current format."
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}}"
@@ -339,6 +380,10 @@ msgstr "{size} 중 {received}"
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{received} so far"
 msgstr "지금까지 {received}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{release} includes a Flatpak. Quiver can install it with Flatpak and keep {name} in your library. Your saves and settings stay; the files Quiver installed before are replaced only after the Flatpak installs."
+msgstr ""
 
 #: ../ui/src/index.tsx
 msgid "{runs, plural, one {# runs well} other {# run well}}"
