@@ -1057,15 +1057,15 @@ export function goBack() {
   return true;
 }
 
+/** Sent to the window by Forward (a mouse's forward button, Alt+→), for the page stack to open what Back left. */
+export const FORWARD = "quiver:forward";
+
 /**
  * Escape as the key sends it, from the focus up: the window's capture listeners first (a narrow Settings page's, back
  * to its list), then its others. Sent to the window itself, Android's webview ran them as they were added instead, the
  * launcher's going back a page first, so Back from a Settings section skipped its list.
  */
-/** Sent to the window by Forward (a mouse's forward button, Alt+→), for the page stack to open what Back left. */
-export const FORWARD = "quiver:forward";
-
-const pressEscape = () => (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+const pressEscape =() => (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 
 /**
  * Moving by a controller or the keys: the page's hover looks are let be (app.css), so a card under a mouse left resting
@@ -1345,7 +1345,7 @@ export function startSpatialNavigation() {
     if (!action) return;
     if (scroll) return glide(scroll);
     act(action);
-    if (action === "confirm" || action === "back" || action === "options" || action === "top" || action === "prevTab" || action === "nextTab") return;
+    if (action === "confirm" || action === "back" || action === "forward" || action === "options" || action === "top" || action === "prevTab" || action === "nextTab") return;
     const again = (delay: number) => repeats.set(key, setTimeout(() => (act(action), again(120)), delay));
     again(300);
   });

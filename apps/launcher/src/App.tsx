@@ -107,9 +107,11 @@ export function App() {
     setStack((s) => s.slice(0, -1));
   }, []);
   const goForward = useCallback(() => {
+    // An app the player added has no page once it's removed: there's no catalog to show it from.
+    ahead.current = ahead.current.filter((view) => view.kind !== "app" || !isOwn(view.entry.id) || library.some((i) => i.id === view.entry.id));
     const next = ahead.current.pop();
     if (next) push(next);
-  }, [push]);
+  }, [push, library]);
   const switchTab = (next: Tab) => {
     setTab(next);
     setStack([]);
@@ -139,9 +141,9 @@ export function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [goBack]);
-  // Forward (spatial.ts), as Back: not from under a dialog.
+  // Forward (spatial.ts): not from under a dialog, a menu or a dropdown's list, which would stay open over the new page.
   useEffect(() => {
-    const onForward = () => void (!document.querySelector('[role="dialog"]') && goForward());
+    const onForward = () => void (!document.querySelector('[role="dialog"], [role="menu"], [role="listbox"], .menu.floating') && goForward());
     window.addEventListener(FORWARD, onForward);
     return () => window.removeEventListener(FORWARD, onForward);
   }, [goForward]);

@@ -1622,7 +1622,7 @@ msgstr "Passwort vergessen?"
 #. Action that opens again the page Back last left
 #: ../../apps/launcher/src/spatial.ts
 msgid "Forward"
-msgstr ""
+msgstr "Vorwärts"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
