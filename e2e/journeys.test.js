@@ -68,7 +68,7 @@ test("an app can stay on its version, or update by itself", async () => {
   await updates("Always stay on v1.1.0");
   api.release("1.2.0");
   await reload();
-  await (await (await card("test-port")).$("button*=Play")).waitForDisplayed();
+  await s.untilCardShows("test-port", "button*=Play");
   assert.ok(!(await (await card("test-port")).$("button*=Update").isExisting()), "no update offered");
   await updates("Install automatically");
   await reload();
@@ -87,7 +87,7 @@ test("an app can stay on its version, or update by itself", async () => {
   await (await page.$("p*=put v1.2.0 back")).waitForDisplayed({ timeout: 10000 });
   await app.keys("Escape");
   await reload();
-  await (await (await card("test-port")).$("button=Update to v1.2.0")).waitForDisplayed({ timeout: 10000 });
+  await s.untilCardShows("test-port", "button=Update to v1.2.0", 10000);
   assert.equal(readFileSync(join(apps, "test-port", ".quiver-version"), "utf8"), "v1.0.0");
   api.release("1.3.0");
   await reload();
