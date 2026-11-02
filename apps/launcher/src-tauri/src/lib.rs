@@ -111,7 +111,8 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
 /// The launcher's own JSON files: the library, installs and the catalog cache.
 fn state_file(data: &Data, name: &str) -> Result<PathBuf, String> {
     match name {
-        "library" | "installs" | "catalog" | "settings" | "collections" => Ok(data.0.join(format!("{name}.json"))),
+        // releaseFormats: Browse's cache of which install files each catalog app ships (not snapshotted).
+        "library" | "installs" | "catalog" | "settings" | "collections" | "releaseFormats" => Ok(data.0.join(format!("{name}.json"))),
         _ => Err(format!("Unknown state file {name}")),
     }
 }

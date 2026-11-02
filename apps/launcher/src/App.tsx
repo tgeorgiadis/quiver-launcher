@@ -28,6 +28,7 @@ import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { isLocal, isOwn } from "./custom";
+import { isReleaseFormat, matchesFormats, RELEASE_FORMATS, resolveFormats, type ReleaseFormat } from "./release-formats";
 import { AddApp } from "./own";
 import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
@@ -425,7 +426,11 @@ function BrowsePage({
     console: d?.console,
     ai: d?.ai === "no-generated" || d?.ai === "no-ai" ? d.ai : undefined,
   });
-  const [filters, setFilters] = useState(() => kept?.filters ?? fromSaved(saved));
+  const withFormats = (base: BrowseFilters): BrowseFilters => {
+    const formats = base.formats?.filter(isReleaseFormat);
+    return { ...base, formats: formats?.length ? formats : undefined };
+  };
+  const [filters, setFilters] = useState(() => withFormats(kept?.filters ?? fromSaved(saved)));
   // The account can load after Browse opens: its saved filters apply until the player picks their own.
   const picked = useRef(Boolean(kept));
   useEffect(() => {
@@ -433,7 +438,7 @@ function BrowsePage({
   }, [JSON.stringify(saved)]); // eslint-disable-line react-hooks/exhaustive-deps
   const choose = (next: BrowseFilters) => {
     picked.current = true;
-    setFilters(next);
+    setFilters(withFormats(next));
   };
   const [pages, setPages] = useState<Page<Entry>[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -445,34 +450,75 @@ function BrowsePage({
   const searching = Boolean(query.trim());
   // Only the newest request's answer is shown: an older one can arrive after it.
   const latest = useRef(0);
+  // Where a format-filtered scan left the catalog's cursor, for Show more.
+  const formatCursor = useRef<string | null>(null);
+  const formatsWanted = filters.formats ?? [];
 
   function load(cursor?: string | null) {
     const request = ++latest.current;
     setLoading(true);
     setError(null);
-    client
-      // A search orders by relevance.
-      .apps({ ...filters, os: filters.os === "here" ? catalogOs(config.os) : filters.os, search: query, sort: searching ? undefined : filters.sort, cursor })
-      .then((page) => {
-        if (request !== latest.current) return;
-        remember(page.items);
+    const { formats: _, ...catalogFilters } = filters;
+    const base = {
+      ...catalogFilters,
+      os: filters.os === "here" ? catalogOs(config.os) : filters.os,
+      search: query,
+      sort: searching ? undefined : filters.sort,
+    };
+    // No format filter: one catalog page, as before. With formats, walk catalog pages until enough matches, using the
+    // site's release assets (cached) so Browse never hits GitHub for this.
+    void (async () => {
+      try {
+        if (!formatsWanted.length) {
+          const page = await client.apps({ ...base, cursor });
+          if (request !== latest.current) return;
+          remember(page.items);
+          const mine = new Set(libraryNow.current.map((i) => i.id));
+          const left = page.items.filter((e) => mine.has(e.id)).map((e) => e.id);
+          startTransition(() => {
+            setOwned((o) => new Set([...(cursor ? o : []), ...left]));
+            setPages((p) => (cursor ? [...p, page] : [page]));
+            setLoading(false);
+          });
+          return;
+        }
+        let next = cursor === undefined ? null : (cursor ?? formatCursor.current);
+        const matched: Entry[] = [];
+        let done = false;
+        while (matched.length < FORMAT_PAGE && !done) {
+          const page = await client.apps({ ...base, cursor: next, limit: FORMAT_PAGE });
+          if (request !== latest.current) return;
+          remember(page.items);
+          const byId = await resolveFormats(client, page.items);
+          if (request !== latest.current) return;
+          for (const entry of page.items) {
+            if (matchesFormats(byId.get(entry.id), formatsWanted)) matched.push(entry);
+          }
+          next = page.nextCursor;
+          done = page.isDone || !page.nextCursor;
+          if (!page.items.length) {
+            done = true;
+            break;
+          }
+        }
+        formatCursor.current = next;
+        const page: Page<Entry> = { items: matched, nextCursor: done ? null : next, isDone: done };
         const mine = new Set(libraryNow.current.map((i) => i.id));
-        const left = page.items.filter((e) => mine.has(e.id)).map((e) => e.id);
-        // Drawn a little at a time, between frames: a page of cards at once held a scrolling d-pad up a moment on a
-        // Steam Deck. Still loading till they're in, so the last page's Show more doesn't ask for them again.
+        const left = matched.filter((e) => mine.has(e.id)).map((e) => e.id);
         startTransition(() => {
-          setOwned((o) => new Set([...(cursor ? o : []), ...left]));
-          setPages((p) => (cursor ? [...p, page] : [page]));
+          setOwned((o) => new Set([...(cursor !== undefined ? o : []), ...left]));
+          setPages((p) => (cursor !== undefined ? [...p, page] : [page]));
           setLoading(false);
         });
-      })
-      .catch(() => {
+      } catch {
         if (request !== latest.current) return;
         setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
         setLoading(false);
-      });
+      }
+    })();
   }
   useEffect(() => {
+    formatCursor.current = null;
     load();
   }, [query, JSON.stringify(filters), client]); // eslint-disable-line react-hooks/exhaustive-deps
   // As on the website: games whose titles match the search, above the apps, whatever the filters.
@@ -503,7 +549,7 @@ function BrowsePage({
   const brands = [...new Set(consoles.map((c) => c.brand))];
   const [filtersOpen, setFiltersOpen] = useState(false);
   // How many filters differ from the defaults: any platform but what this computer runs counts.
-  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== "here"].filter(Boolean).length;
+  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== "here", formatsWanted.length].filter(Boolean).length;
   // An order the player picked (the sort, or a shelf's See all): the whole list in it, in place of the front page, as a
   // search or a filter has it; its pill goes back to the front page.
   const [sorted, setSorted] = useState(kept?.sorted ?? false);
@@ -678,6 +724,58 @@ function BrowsePage({
               <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
               <option value="no-ai">{t`Hide apps with any AI use`}</option>
             </select>,
+          )}
+          {/* Release formats the project ships (OR); from the site's release assets, not tags or what's installed. */}
+          {(filtersOpen || formatsWanted.length > 0) && (
+            <span className={`pill format-pill${formatsWanted.length ? " on" : ""}`}>
+              <Popover
+                label={formatsWanted.length ? formatsWanted.map(formatLabel).join(", ") : t`Release format`}
+                icon={
+                  <>
+                    <span className="pill-label">{formatsWanted.length ? formatsWanted.map(formatLabel).join(", ") : t`Any release format`}</span>
+                    {!formatsWanted.length && <ChevronDown size={13} aria-hidden="true" />}
+                  </>
+                }
+                role="group"
+                className="format-filter"
+                panel="format-panel view-panel"
+                panelLabel={t`Release format`}
+              >
+                {() => (
+                  <div className="view-choice">
+                    <span className="view-label">
+                      <Trans comment="Above Browse's checkboxes for Flatpak, AppImage, Archive and EXE">Release format</Trans>
+                    </span>
+                    {RELEASE_FORMATS.map((format) => {
+                      const on = formatsWanted.includes(format);
+                      return (
+                        <label key={format} className="toggle">
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={() => {
+                              const next = on ? formatsWanted.filter((f) => f !== format) : [...formatsWanted, format];
+                              choose({ ...filters, formats: next.length ? RELEASE_FORMATS.filter((f) => next.includes(f)) : undefined });
+                            }}
+                          />
+                          {formatLabel(format)}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </Popover>
+              {formatsWanted.length > 0 && (
+                <button
+                  type="button"
+                  className="pill-clear"
+                  aria-label={t`Remove filter ${formatsWanted.map(formatLabel).join(", ")}`}
+                  onClick={() => choose({ ...filters, formats: undefined })}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </span>
           )}
           {/* Up here with the filters, not under the list, which loads more as it's reached. */}
           {(filtersOpen || showOwned) && (
@@ -1418,9 +1516,24 @@ const PROJECT_TYPES: Record<string, MessageDescriptor> = {
 const SORTS = ["added", "updated", "rating", "name"] as const;
 /** Browse's catalog filters; several kinds of project come from saved filters. */
 /** The catalog's filters, with "here" for the platforms this computer runs (catalogOs). */
-type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & { os?: Os | "here" };
+type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & {
+  os?: Os | "here";
+  /** Release formats the app ships (OR); filled from the site's release assets, not sent to the catalog API. */
+  formats?: ReleaseFormat[];
+};
 /** Browse's filters as the player left them, and whether they picked its sort. */
 type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
+
+const FORMAT_LABELS: Record<ReleaseFormat, MessageDescriptor> = {
+  flatpak: msg({ message: "Flatpak", comment: "Browse filter: apps that ship a Flatpak release" }),
+  appimage: msg({ message: "AppImage", comment: "Browse filter: apps that ship an AppImage" }),
+  archive: msg({ message: "Archive", comment: "Browse filter: apps that ship a zip, tar or other archive" }),
+  exe: msg({ message: "EXE", comment: "Browse filter: apps that ship a Windows .exe" }),
+};
+const formatLabel = (format: ReleaseFormat) => i18n._(FORMAT_LABELS[format]);
+
+/** How many matching apps one Browse page aims for when filtering by release format. */
+const FORMAT_PAGE = 48;
 
 /** Runs a Windows installer's setup again for the installed version, as to repair it. */
 function ReinstallButton({ id }: { id: string }) {
