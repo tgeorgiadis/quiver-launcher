@@ -4,7 +4,7 @@
  * large interface size) the list is the page, and a section opens on its own
  * with a way back to the list; Back from a section goes to the list first.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ArrowLeft, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
@@ -13,6 +13,7 @@ import type { MessageDescriptor } from "@lingui/core";
 import { useLauncher } from "./store";
 import { pageArea } from "./spatial";
 import { native } from "./native";
+import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
@@ -239,6 +240,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
         </select>
       </label>
       <LanguageSetting />
+      {config.os !== "android" && config.os !== "ios" && <MusicSetting />}
       <TelemetrySetting />
       <div className="settings-section">
         <button onClick={onRunSetup}>
@@ -299,6 +301,51 @@ function LibrarySettings() {
         <Snapshots />
       </section>
     </>
+  );
+}
+
+/**
+ * Music behind the launcher (music.ts), as Quiver Launcher 3 had: a file to choose, its volume, and none. Not on a
+ * phone, whose picker gives a file without a path to read it by.
+ */
+function MusicSetting() {
+  const { settings, setSettings } = useLauncher();
+  const problem = useSyncExternalStore(watchMusicProblem, musicProblem);
+  const music = settings.music;
+  const name = music?.split(/[\\/]/).pop();
+  const volume = Math.round((settings.musicVolume ?? DEFAULT_MUSIC_VOLUME) * 100);
+  const choose = async () => {
+    // Opening where the last one was.
+    const dir = music && name ? music.slice(0, -name.length) : undefined;
+    const picked = await native.pickMusic(t`Choose music to play in the background`, dir).catch(() => null);
+    if (picked) setSettings({ ...settings, music: picked });
+  };
+  return (
+    <section className="settings-section" aria-label={t`Background music`}>
+      <h3>
+        <Trans>Background music</Trans>
+      </h3>
+      <p className="muted">{name ?? <Trans>Play a music file of your own while Quiver is open. It fades out while you play.</Trans>}</p>
+      <div className="music-buttons">
+        <button onClick={() => void choose()}>{music ? <Trans>Change…</Trans> : <Trans>Choose music…</Trans>}</button>
+        {music && (
+          <button onClick={() => setSettings({ ...settings, music: undefined })}>
+            <Trans comment="Button: no background music">Remove</Trans>
+          </button>
+        )}
+      </div>
+      {music && (
+        <label>
+          <Trans comment="Background music's volume">Volume</Trans>{" "}
+          <input type="range" min={0} max={100} step={5} value={volume} onChange={(e) => setSettings({ ...settings, musicVolume: Number(e.target.value) / 100 })} />
+        </label>
+      )}
+      {problem && (
+        <p className="job-error" role="status">
+          {problem}
+        </p>
+      )}
+    </section>
   );
 }
 

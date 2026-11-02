@@ -889,6 +889,10 @@ msgstr "“{searched}” 검색 결과로 돌아가기"
 msgid "Back to top"
 msgstr "맨 위로"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Background music"
+msgstr "배경 음악"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Backups"
 msgstr "백업"
@@ -1145,6 +1149,14 @@ msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인�
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music to play in the background"
+msgstr "배경에서 재생할 음악 선택"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music…"
+msgstr "음악 선택…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
@@ -2902,6 +2914,10 @@ msgstr "플레이"
 msgid "Play {name}"
 msgstr "{name} 플레이"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Play a music file of your own while Quiver is open. It fades out while you play."
+msgstr "Quiver가 열려 있는 동안 내 음악 파일을 재생합니다. 게임 중에는 소리가 줄어듭니다."
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Play anyway"
@@ -3048,9 +3064,17 @@ msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않�
 msgid "Quiver blocked this version"
 msgstr "Quiver가 이 버전을 차단함"
 
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver can't play that file. Try an MP3 or OGG."
+msgstr "Quiver에서 이 파일을 재생할 수 없습니다. MP3 또는 OGG 파일을 사용해 보세요."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
 msgstr "Quiver가 {release}의 다른 파일은 확인했지만 {name}은(는) 확인하지 않았어요. 개발자가 게시한 그대로 다운로드해요."
+
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver couldn't open that music file. It may have been moved or deleted."
+msgstr "Quiver에서 이 음악 파일을 열 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
@@ -3193,8 +3217,10 @@ msgstr "버전을 카탈로그에 등록하는 중"
 msgid "Reload"
 msgstr "다시 불러오기"
 
+#. Button: no background music
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "삭제"
 
@@ -4355,6 +4381,11 @@ msgstr "{host}에서 {version} 보기"
 #: ../../apps/launcher/src/library.tsx
 msgid "View options"
 msgstr "보기 옵션"
+
+#. Background music's volume
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Volume"
+msgstr "볼륨"
 
 #. Button: waits for the release to be verified instead of installing it now
 #. Button: waits for the release to be verified instead of installing it now

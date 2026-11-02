@@ -1826,6 +1826,7 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 /* The pane's heading is the section's, so its first part needs no line of its own. */
 .settings-pane > :is(:first-child, h2 + *):is(.settings-section, .controls) { padding-top: 0; border-top: 0; }
 .settings-pane :is(.settings-section, .controls) > button { justify-self: start; }
+.music-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .settings-page:not([data-side-by-side]) .settings-nav { position: static; flex: 1; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
 .settings-page:not([data-side-by-side]) .settings-nav button { padding: 15px 16px; border-radius: 0; font-size: 15px; }
 .settings-page:not([data-side-by-side]) .settings-nav button + button { border-top: 1px solid var(--line); }

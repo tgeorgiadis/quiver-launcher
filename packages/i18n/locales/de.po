@@ -889,6 +889,10 @@ msgstr "Zurück zu den Ergebnissen für „{searched}“"
 msgid "Back to top"
 msgstr "Nach oben"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Background music"
+msgstr "Hintergrundmusik"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Backups"
 msgstr "Sicherungen"
@@ -1145,6 +1149,14 @@ msgstr "Wähle „Token auf GitHub erstellen“ und melde dich bei GitHub an."
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Wähle „Generate token“, kopiere den Token, füge ihn oben ein und wähle „Token speichern“."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music to play in the background"
+msgstr "Musik für den Hintergrund auswählen"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music…"
+msgstr "Musik auswählen…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
@@ -2902,6 +2914,10 @@ msgstr "Spielen"
 msgid "Play {name}"
 msgstr "{name} spielen"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Play a music file of your own while Quiver is open. It fades out while you play."
+msgstr "Spiele eine eigene Musikdatei, solange Quiver geöffnet ist. Beim Spielen wird sie ausgeblendet."
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Play anyway"
@@ -3048,9 +3064,17 @@ msgstr "Quiver hat diese Version gesperrt und verlinkt ihre Dateien daher nicht.
 msgid "Quiver blocked this version"
 msgstr "Quiver hat diese Version gesperrt"
 
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver can't play that file. Try an MP3 or OGG."
+msgstr "Quiver kann diese Datei nicht abspielen. Versuche eine MP3- oder OGG-Datei."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
 msgstr "Quiver hat die anderen Dateien von {release} geprüft, nicht {name}. Sie wird so heruntergeladen, wie der Entwickler sie veröffentlicht hat."
+
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver couldn't open that music file. It may have been moved or deleted."
+msgstr "Quiver konnte diese Musikdatei nicht öffnen. Sie wurde vielleicht verschoben oder gelöscht."
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
@@ -3193,8 +3217,10 @@ msgstr "Versionen werden erfasst"
 msgid "Reload"
 msgstr "Neu laden"
 
+#. Button: no background music
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "Entfernen"
 
@@ -4355,6 +4381,11 @@ msgstr "{version} auf {host} ansehen"
 #: ../../apps/launcher/src/library.tsx
 msgid "View options"
 msgstr "Ansichtsoptionen"
+
+#. Background music's volume
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Volume"
+msgstr "Lautstärke"
 
 #. Button: waits for the release to be verified instead of installing it now
 #. Button: waits for the release to be verified instead of installing it now
