@@ -6,7 +6,7 @@
  * playlist someone shared can be followed. The Sidebar layout shows the same
  * library as a list down the left, with the app picked in it open beside it.
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, HardDrive, LayoutGrid, Library, ListPlus, MoreHorizontal, PanelLeft, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
@@ -651,6 +651,7 @@ export function LibraryPage({
         size={view.size}
         names={view.names}
         marks={view.marks}
+        details={view.details}
         inLibrary={(id) => inLibrary.has(id)}
         action={cardAction}
         onOpen={cardOpen}
@@ -665,6 +666,7 @@ export function LibraryPage({
         names={view.names}
         nameOrder={view.nameOrder}
         marks={view.marks}
+        details={view.details}
         inLibrary={inLibrary.has(entry.id)}
         action={cardAction}
         onOpen={cardOpen}
@@ -672,9 +674,12 @@ export function LibraryPage({
     );
   // The player's view: the cards' picture and size, names or not. A sidebar that doesn't fit is a grid.
   const gridClass = `catalog-grid library-grid layout-grid image-${view.image} size-${view.size}${view.names ? "" : " no-names"}`;
+  // The lines under the name, and the tags' over it, the names keep room for (app.css's --tile-names).
+  const tileLines = view.details.filter((d) => d === "subtitle" || d === "rating" || d === "updated").length + (view.details.some((d) => d === "kinds" || d === "ai" || d === "platforms") ? 1 : 0);
+  const gridStyle = { "--tile-lines": tileLines } as CSSProperties;
   // The triggers jump through a grid: a letter at a time by name, else a screen. A card for each game, or each app.
   const grid = (entries: Entry[]) => (
-    <div className={gridClass} data-jump={byLetter ? "letters" : "pages"} ref={byLetter ? letterGrid : undefined}>
+    <div className={gridClass} style={gridStyle} data-jump={byLetter ? "letters" : "pages"} ref={byLetter ? letterGrid : undefined}>
       {(view.byGame ? stacks(entries, sortFacts) : entries).map(card)}
     </div>
   );
@@ -840,7 +845,7 @@ export function LibraryPage({
             The library's own cards, in its view, each one stop for the d-pad: Add in Play's place, which Y presses, and
             A its page. Uninstalling is on that page, as for any app.
           */}
-          <div className={gridClass}>
+          <div className={gridClass} style={gridStyle}>
             {loose.map((entry) => (
               <LibraryTile
                 key={entry.id}
@@ -850,6 +855,7 @@ export function LibraryPage({
                 names={view.names}
                 nameOrder={view.nameOrder}
                 marks={view.marks}
+                details={view.details}
                 inLibrary={false}
                 onAdd={add}
                 action={cardAction}

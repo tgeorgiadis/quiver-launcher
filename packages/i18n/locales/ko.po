@@ -631,6 +631,11 @@ msgstr "앱 추가 중"
 msgid "Advanced"
 msgstr "고급"
 
+#. Browse card detail: AI-assisted or Mostly AI
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "AI label"
+msgstr "AI 표시"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -889,12 +894,18 @@ msgstr "“{searched}” 검색 결과로 돌아가기"
 msgid "Back to top"
 msgstr "맨 위로"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Background music"
+msgstr "배경 음악"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Backups"
 msgstr "백업"
 
 #. Before the game(s) an app is made from
+#. Before the game(s) an app is made from
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../ui/src/index.tsx
 msgid "Based on"
 msgstr "원작"
@@ -928,7 +939,9 @@ msgstr "플레이어 피드백 기준 좋은 순"
 msgid "Blocked"
 msgstr "차단됨"
 
+#. Browse card style: the portrait box art over the catalog's details
 #. Library card image: the portrait capsule
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/view.ts
 msgid "Box art"
 msgstr "박스 아트"
@@ -942,6 +955,11 @@ msgstr "박스 아트"
 #: ../../apps/launcher/src/tv.tsx
 msgid "Browse"
 msgstr "둘러보기"
+
+#. Settings section: how the catalog's cards look in Browse
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse cards"
+msgstr "둘러보기 카드"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
@@ -1005,6 +1023,11 @@ msgstr "카드 이미지"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Card size"
 msgstr "카드 크기"
+
+#. Browse view option
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Card style"
+msgstr "카드 스타일"
 
 #. What the featured apps across the top of Browse are, for screen readers
 #: ../ui/src/discover.tsx
@@ -1131,6 +1154,14 @@ msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인�
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music to play in the background"
+msgstr "배경에서 재생할 음악 선택"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music…"
+msgstr "음악 선택…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
@@ -2108,7 +2139,9 @@ msgstr "큰 이름"
 msgid "Last played"
 msgstr "마지막 플레이"
 
+#. Browse card detail: when the app's latest release came out
 #. Sort order for mods
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/mods.tsx
 msgid "Last updated"
 msgstr "최근 업데이트순"
@@ -2394,6 +2427,11 @@ msgstr "이름 및 아트워크"
 msgid "Name on top"
 msgstr "이름을 위에"
 
+#. Library card detail: the other name (the app's or the game's) under the large one
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Name underneath"
+msgstr "아래 이름"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Name, like Favourites"
 msgstr "이름(예: 즐겨찾기)"
@@ -2445,6 +2483,11 @@ msgstr "새 앱은 여기에 설치돼요."
 #: ../../apps/launcher/src/setup.tsx
 msgid "New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card."
 msgstr "새 앱은 여기에 설치돼요. 공간이 부족하면 Steam Deck의 microSD 카드처럼 다른 드라이브나 폴더를 선택하세요."
+
+#. Browse card detail: a badge on apps added to the catalog lately
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "New badge"
+msgstr "신규 배지"
 
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
@@ -2849,6 +2892,8 @@ msgstr "플랫폼"
 msgid "Platform unspecified"
 msgstr "플랫폼 미지정"
 
+#. Browse card detail: icons for Windows, Linux, macOS, Android
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Platforms"
@@ -2878,6 +2923,10 @@ msgstr "플레이"
 #: ../../apps/launcher/src/media.tsx
 msgid "Play {name}"
 msgstr "{name} 플레이"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Play a music file of your own while Quiver is open. It fades out while you play."
+msgstr "Quiver가 열려 있는 동안 내 음악 파일을 재생합니다. 게임 중에는 소리가 줄어듭니다."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -2956,6 +3005,11 @@ msgstr "키를 누르세요…"
 msgid "Press what you want to use, or Esc to cancel."
 msgstr "사용할 키나 버튼을 누르거나, Esc를 눌러 취소하세요."
 
+#. Above a sample card, showing how the options picked look
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Preview"
+msgstr "미리 보기"
+
 #: ../ui/src/discover.tsx
 msgid "Previous featured app"
 msgstr "이전 추천 앱"
@@ -3020,9 +3074,17 @@ msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않�
 msgid "Quiver blocked this version"
 msgstr "Quiver가 이 버전을 차단함"
 
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver can't play that file. Try an MP3 or OGG."
+msgstr "Quiver에서 이 파일을 재생할 수 없습니다. MP3 또는 OGG 파일을 사용해 보세요."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
 msgstr "Quiver가 {release}의 다른 파일은 확인했지만 {name}은(는) 확인하지 않았어요. 개발자가 게시한 그대로 다운로드해요."
+
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver couldn't open that music file. It may have been moved or deleted."
+msgstr "Quiver에서 이 음악 파일을 열 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
@@ -3165,8 +3227,10 @@ msgstr "버전을 카탈로그에 등록하는 중"
 msgid "Reload"
 msgstr "다시 불러오기"
 
+#. Button: no background music
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "삭제"
 
@@ -3545,6 +3609,11 @@ msgstr "카드에 이름 표시"
 msgid "Show older releases"
 msgstr "이전 버전 보기"
 
+#. Above a box for each detail the cards can show
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show on cards"
+msgstr "카드에 표시"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
 msgstr "비밀번호 표시"
@@ -3782,6 +3851,11 @@ msgstr "탭"
 #. Filter by one of an app's tags
 #: ../../apps/launcher/src/library.tsx
 msgid "Tag"
+msgstr "태그"
+
+#. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Tags"
 msgstr "태그"
 
 #: ../../apps/launcher/src/feedback.tsx
@@ -4318,9 +4392,15 @@ msgstr "버전"
 msgid "View {version} on {host}"
 msgstr "{host}에서 {version} 보기"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "View options"
 msgstr "보기 옵션"
+
+#. Background music's volume
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Volume"
+msgstr "볼륨"
 
 #. Button: waits for the release to be verified instead of installing it now
 #. Button: waits for the release to be verified instead of installing it now
@@ -4364,6 +4444,11 @@ msgstr "Quiver Launcher에 오신 것을 환영해요!"
 msgid "What players said"
 msgstr "플레이어 평가"
 
+#. Browse card detail: Runs well, Has issues, and how many players said so
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "What players say"
+msgstr "플레이어 평가"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "무엇이 잘 됐고 무엇이 안 됐나요? 실행하거나 문제를 해결하려고 따로 한 일이 있나요?"
@@ -4392,6 +4477,11 @@ msgstr "로그인되어 있는 동안에는 Quiver 계정에 연결돼요."
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
 msgstr "넓게"
+
+#. Browse card style: the wide art over the catalog's details, as Quiver Launcher 3 had
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Wide art"
+msgstr "가로 이미지"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Windows (Wine)"

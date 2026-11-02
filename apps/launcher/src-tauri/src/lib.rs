@@ -532,6 +532,37 @@ async fn pick_program(app: tauri::AppHandle, window: tauri::WebviewWindow, dir: 
     Some(path.to_string_lossy().into())
 }
 
+/// The kinds of sound file the launcher's music can be: what WebView2, Chromium (CEF) and a Mac's WebKit all play.
+const MUSIC_EXTENSIONS: &[&str] = &["mp3", "ogg", "opus", "flac", "wav", "m4a"];
+/// More than an hour of music at a high bitrate: past it, it's not a file to keep in memory.
+const MUSIC_MAX_BYTES: u64 = 200 * 1024 * 1024;
+
+/// Asks the player for a sound file to play behind the launcher (music.ts), as Quiver Launcher 3 did; null if they
+/// cancel. `QUIVER_PICK` answers instead in end-to-end tests.
+#[tauri::command]
+async fn pick_music(app: tauri::AppHandle, window: tauri::WebviewWindow, title: String, dir: Option<String>) -> Option<String> {
+    if let Some(path) = std::env::var_os("QUIVER_PICK") {
+        return Some(path.to_string_lossy().into());
+    }
+    let path = picker::choose(&app, &window, picker::Want::File, &title, dir.as_deref().map(Path::new), Some(("Music", MUSIC_EXTENSIONS))).await?;
+    Some(path.to_string_lossy().into())
+}
+
+/// The launcher's music file, for the page to play: only a sound file, and not one too large to hold in memory.
+#[tauri::command]
+async fn read_music(path: String) -> Result<tauri::ipc::Response, String> {
+    let path = PathBuf::from(path);
+    let kind = path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if !kind.is_some_and(|k| MUSIC_EXTENSIONS.contains(&k.as_str())) {
+        return Err("That isn't a music file Quiver can play.".into());
+    }
+    let size = tokio::fs::metadata(&path).await.map_err(|e| e.to_string())?.len();
+    if size > MUSIC_MAX_BYTES {
+        return Err("That music file is too large to play.".into());
+    }
+    Ok(tauri::ipc::Response::new(tokio::fs::read(&path).await.map_err(|e| e.to_string())?))
+}
+
 /// A newer Quiver Launcher, if there is one. Debug builds only look when
 /// `QUIVER_UPDATE_API` says where; `QUIVER_SKIP_UPDATES` turns checking off.
 #[tauri::command]
@@ -1250,6 +1281,8 @@ pub fn run() {
             create_app_folder,
             rename_app_folder,
             pick_program,
+            pick_music,
+            read_music,
             mod_packages,
             mod_files,
             installed_mods,

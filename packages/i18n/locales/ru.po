@@ -631,6 +631,11 @@ msgstr "Добавление приложений"
 msgid "Advanced"
 msgstr "Дополнительно"
 
+#. Browse card detail: AI-assisted or Mostly AI
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "AI label"
+msgstr "Метка ИИ"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -889,12 +894,18 @@ msgstr "Назад к результатам по запросу «{searched}»"
 msgid "Back to top"
 msgstr "Наверх"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Background music"
+msgstr "Фоновая музыка"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Backups"
 msgstr "Резервные копии"
 
 #. Before the game(s) an app is made from
+#. Before the game(s) an app is made from
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../ui/src/index.tsx
 msgid "Based on"
 msgstr "Основано на"
@@ -928,7 +939,9 @@ msgstr "Сначала лучшие, по отзывам игроков"
 msgid "Blocked"
 msgstr "Заблокирована"
 
+#. Browse card style: the portrait box art over the catalog's details
 #. Library card image: the portrait capsule
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/view.ts
 msgid "Box art"
 msgstr "Обложка коробки"
@@ -942,6 +955,11 @@ msgstr "Обложка коробки"
 #: ../../apps/launcher/src/tv.tsx
 msgid "Browse"
 msgstr "Обзор"
+
+#. Settings section: how the catalog's cards look in Browse
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse cards"
+msgstr "Карточки в обзоре"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
@@ -1005,6 +1023,11 @@ msgstr "Изображение карточки"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Card size"
 msgstr "Размер карточек"
+
+#. Browse view option
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Card style"
+msgstr "Стиль карточек"
 
 #. What the featured apps across the top of Browse are, for screen readers
 #: ../ui/src/discover.tsx
@@ -1131,6 +1154,14 @@ msgstr "Нажмите «Создать токен на GitHub» и войдит
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Нажмите Generate token, скопируйте токен, вставьте его выше и нажмите «Сохранить токен»."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music to play in the background"
+msgstr "Выберите музыку для фона"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose music…"
+msgstr "Выбрать музыку…"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
@@ -2108,7 +2139,9 @@ msgstr "Крупное название"
 msgid "Last played"
 msgstr "Последний запуск"
 
+#. Browse card detail: when the app's latest release came out
 #. Sort order for mods
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/mods.tsx
 msgid "Last updated"
 msgstr "Последнее обновление"
@@ -2394,6 +2427,11 @@ msgstr "Название и оформление"
 msgid "Name on top"
 msgstr "Название сверху"
 
+#. Library card detail: the other name (the app's or the game's) under the large one
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Name underneath"
+msgstr "Название под ним"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Name, like Favourites"
 msgstr "Название, например «Избранное»"
@@ -2445,6 +2483,11 @@ msgstr "Новые приложения устанавливаются сюда.
 #: ../../apps/launcher/src/setup.tsx
 msgid "New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card."
 msgstr "Новые приложения устанавливаются сюда. Выберите другой диск или папку, если здесь мало места, например карту microSD в Steam Deck."
+
+#. Browse card detail: a badge on apps added to the catalog lately
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "New badge"
+msgstr "Значок «Новое»"
 
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
@@ -2849,6 +2892,8 @@ msgstr "Платформа"
 msgid "Platform unspecified"
 msgstr "Платформа не указана"
 
+#. Browse card detail: icons for Windows, Linux, macOS, Android
+#: ../../apps/launcher/src/browse-cards.ts
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Platforms"
@@ -2878,6 +2923,10 @@ msgstr "Играть"
 #: ../../apps/launcher/src/media.tsx
 msgid "Play {name}"
 msgstr "Запустить {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Play a music file of your own while Quiver is open. It fades out while you play."
+msgstr "Воспроизводите свой музыкальный файл, пока Quiver открыт. Во время игры он затихает."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -2956,6 +3005,11 @@ msgstr "Нажмите клавишу…"
 msgid "Press what you want to use, or Esc to cancel."
 msgstr "Нажмите то, что хотите использовать, или Esc для отмены."
 
+#. Above a sample card, showing how the options picked look
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Preview"
+msgstr "Предпросмотр"
+
 #: ../ui/src/discover.tsx
 msgid "Previous featured app"
 msgstr "Предыдущее рекомендуемое приложение"
@@ -3020,9 +3074,17 @@ msgstr "Quiver заблокировал эту версию, поэтому сс
 msgid "Quiver blocked this version"
 msgstr "Quiver заблокировал эту версию"
 
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver can't play that file. Try an MP3 or OGG."
+msgstr "Quiver не может воспроизвести этот файл. Попробуйте MP3 или OGG."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
 msgstr "Quiver проверил другие файлы {release}, но не {name}. Он скачивается в том виде, в каком его опубликовал разработчик."
+
+#: ../../apps/launcher/src/music.ts
+msgid "Quiver couldn't open that music file. It may have been moved or deleted."
+msgstr "Quiver не удалось открыть этот музыкальный файл. Возможно, он был перемещён или удалён."
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Quiver couldn't open your library"
@@ -3165,8 +3227,10 @@ msgstr "Версии добавляются в каталог"
 msgid "Reload"
 msgstr "Перезагрузить"
 
+#. Button: no background music
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "Убрать"
 
@@ -3545,6 +3609,11 @@ msgstr "Показывать названия на карточках"
 msgid "Show older releases"
 msgstr "Показать старые версии"
 
+#. Above a box for each detail the cards can show
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Show on cards"
+msgstr "Показывать на карточках"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
 msgstr "Показать пароль"
@@ -3783,6 +3852,11 @@ msgstr "Вкладки"
 #: ../../apps/launcher/src/library.tsx
 msgid "Tag"
 msgstr "Тег"
+
+#. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Tags"
+msgstr "Теги"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it ran after following the setup."
@@ -4318,9 +4392,15 @@ msgstr "Версии"
 msgid "View {version} on {host}"
 msgstr "Открыть {version} на {host}"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "View options"
 msgstr "Параметры вида"
+
+#. Background music's volume
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Volume"
+msgstr "Громкость"
 
 #. Button: waits for the release to be verified instead of installing it now
 #. Button: waits for the release to be verified instead of installing it now
@@ -4364,6 +4444,11 @@ msgstr "Добро пожаловать в Quiver Launcher!"
 msgid "What players said"
 msgstr "Что говорят игроки"
 
+#. Browse card detail: Runs well, Has issues, and how many players said so
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "What players say"
+msgstr "Отзывы игроков"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "Что работало хорошо, а что нет? Пришлось ли что-то делать, чтобы запустить игру или исправить проблему?"
@@ -4392,6 +4477,11 @@ msgstr "Пока вы вошли в аккаунт, они связаны с в�
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
 msgstr "Широкая"
+
+#. Browse card style: the wide art over the catalog's details, as Quiver Launcher 3 had
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "Wide art"
+msgstr "Широкая обложка"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Windows (Wine)"

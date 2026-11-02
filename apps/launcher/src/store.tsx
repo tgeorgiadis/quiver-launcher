@@ -17,6 +17,7 @@ import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
+import { musicForGame, setMusic } from "./music";
 import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
@@ -426,6 +427,10 @@ export type Settings = {
   scrollSpeed?: number;
   /** The wheel and the d-pad's steps scroll at once, not easing there. */
   smoothScrollOff?: boolean;
+  /** A sound file played behind the launcher, looped (music.ts), as in Quiver Launcher 3. */
+  music?: string;
+  /** Its volume, 0 to 1; unset, music.ts's default. */
+  musicVolume?: number;
   /** Light or dark; unset follows the system. */
   theme?: Theme;
   /** The language Quiver shows in (@quiverlauncher/i18n); unset follows the system. */
@@ -445,6 +450,8 @@ export type Settings = {
   groupBy?: string;
   /** Browse lists apps already in the library too. */
   browseShowsLibrary?: boolean;
+  /** How Browse's cards look and which details they show (browse-cards.ts); only what differs from the defaults. */
+  browseCards?: { look?: string; details?: string[] };
   /** How the library is sorted (sort.ts); unset is recently played. */
   librarySort?: string;
   /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
@@ -604,6 +611,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   useEffect(() => {
     setBindings(settings);
     setScrolling(settings);
+    setMusic(settings);
   }, [settings]);
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
@@ -1222,7 +1230,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
-        () => track("app_launched", ref),
+        () => (musicForGame(), track("app_launched", ref)),
         (e) => (fail(id, e), track("app_launch_failed", { ...ref, reason: reasonOf(e) })),
       );
     },

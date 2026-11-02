@@ -219,6 +219,10 @@ export const native = {
   findV3Library: () => invoke<V3Library | null>("find_v3_library"),
   /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in that Apps folder. */
   findV3LibraryIn: (path: string, apps?: string) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
+  /** Asks for a sound file to play behind the launcher (music.ts), opening in `dir` when given; null when the player cancels. */
+  pickMusic: (title: string, dir?: string) => invoke<string | null>("pick_music", { title, dir }),
+  /** The music file's bytes, to play. */
+  readMusic: (path: string) => invoke<ArrayBuffer>("read_music", { path }),
   /** Asks for a folder on this computer, opening in `dir` when given; null when the player cancels. */
   pickFolder: (title: string, dir?: string) => invoke<string | null>("pick_folder", { title, dir }),
   /** In Steam's Game Mode, the pickers ask the page's own browser (file-picker.tsx) instead of the system's dialog. */

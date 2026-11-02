@@ -7,8 +7,8 @@ import { ArrowLeft } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { BasedOn, Entry, Game, GameDetail, GameMatch } from "@quiverlauncher/api";
-import { Artwork, EntryCard, boxOf, cardSources } from "@quiverlauncher/ui";
-import { CATALOG_BOX } from "./library-view";
+import { Artwork, EntryCard } from "@quiverlauncher/ui";
+import { useBrowseCards } from "./library-view";
 import { useLauncher } from "./store";
 import { byPlayerFeedback } from "./catalog";
 
@@ -111,6 +111,7 @@ export function GamePage({
   action: (entry: Entry) => ReactNode;
 }) {
   const { client, library, consoleNames, remember } = useLauncher();
+  const looks = useBrowseCards();
   const [data, setData] = useState<GameDetail | null | undefined>(() => seen.get(link.slug));
   const [failed, setFailed] = useState(false);
   const [round, setRound] = useState(0);
@@ -231,12 +232,12 @@ export function GamePage({
                       <span className="tab-count">{group.entries.length}</span>
                     </h3>
                   )}
-                  <div className="catalog-grid boxes">
+                  <div className={looks.grid}>
                     {group.entries.map((entry) => (
                       <EntryCard
                         key={entry.id}
                         entry={entry}
-                        coverSources={boxOf(entry) ? cardSources(boxOf(entry)!, CATALOG_BOX) : undefined}
+                        {...looks.card(entry)}
                         consoleNames={consoleNames}
                         onOpen={() => onOpenApp(entry)}
                         badge={inLibrary.has(entry.id) ? t`In library` : undefined}
