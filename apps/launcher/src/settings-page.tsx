@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { useLauncher } from "./store";
-import { pageArea } from "./spatial";
+import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
@@ -227,6 +227,20 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
           <option value={1.15}>{t({ message: "Large", comment: "Interface size" })}</option>
           <option value={1.3}>{t({ message: "Extra large", comment: "Interface size" })}</option>
         </select>
+      </label>
+      <label>
+        <Trans>Mouse wheel speed</Trans>{" "}
+        <select value={settings.scrollSpeed ?? 1} onChange={(e) => setSettings({ ...settings, scrollSpeed: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })}>
+          {WHEEL_SPEEDS.map((speed) => (
+            <option key={speed} value={speed}>
+              {speed === 1 ? t({ message: "Normal", comment: "Mouse wheel speed: the system's" }) : t({ message: `${speed}×`, comment: "Mouse wheel speed: times as far as the system's, such as 2×" })}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="toggle">
+        <input type="checkbox" checked={!settings.smoothScrollOff} onChange={(e) => setSettings({ ...settings, smoothScrollOff: e.target.checked ? undefined : true })} />
+        <Trans comment="Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping">Smooth scrolling</Trans>
       </label>
       <label>
         <Trans>Theme</Trans>{" "}

@@ -363,6 +363,11 @@ msgstr "{size} КБ"
 msgid "{size} MB"
 msgstr "{size} МБ"
 
+#. Mouse wheel speed: times as far as the system's, such as 2×
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{speed}×"
+msgstr "{speed}×"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
 msgstr "{tagged, plural, one {Ваши теги в # приложении} few {Ваши теги в # приложениях} many {Ваши теги в # приложениях} other {Ваши теги в # приложениях}}"
@@ -2374,6 +2379,10 @@ msgid "Mostly AI-generated"
 msgstr "В основном создано ИИ"
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Mouse wheel speed"
+msgstr "Скорость колёсика мыши"
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Move apps"
 msgstr "Переместить приложения"
 
@@ -2627,6 +2636,7 @@ msgid "None of this release's files are for this computer."
 msgstr "Ни один файл этой версии не предназначен для этого компьютера."
 
 #. Interface size
+#. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "Обычный"
@@ -3699,6 +3709,11 @@ msgstr "Пропустить настройку"
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Маленький"
+
+#. Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Smooth scrolling"
+msgstr "Плавная прокрутка"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "So you can reset your password if you forget it"

@@ -363,6 +363,11 @@ msgstr "{size} KB"
 msgid "{size} MB"
 msgstr "{size} MB"
 
+#. Mouse wheel speed: times as far as the system's, such as 2×
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{speed}×"
+msgstr "{speed}×"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
 msgstr "{tagged, plural, one {I tuoi tag su # app} other {I tuoi tag su # app}}"
@@ -2374,6 +2379,10 @@ msgid "Mostly AI-generated"
 msgstr "Generato perlopiù con IA"
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Mouse wheel speed"
+msgstr "Velocità della rotellina"
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Move apps"
 msgstr "Sposta le app"
 
@@ -2627,6 +2636,7 @@ msgid "None of this release's files are for this computer."
 msgstr "Nessuno dei file di questa versione è per questo computer."
 
 #. Interface size
+#. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
 msgstr "Normale"
@@ -3699,6 +3709,11 @@ msgstr "Salta la configurazione"
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Piccolo"
+
+#. Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Smooth scrolling"
+msgstr "Scorrimento fluido"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "So you can reset your password if you forget it"

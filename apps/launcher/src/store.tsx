@@ -16,7 +16,7 @@ import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
 import type { Platform } from "./platforms";
-import { setBindings, type Bindings } from "./spatial";
+import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
 import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { followTheme, type Theme } from "./theme";
@@ -423,6 +423,10 @@ export type Settings = {
   /** Closing the window hides it in the tray, the launcher still running (tray.rs; Windows only). */
   closeToTray?: boolean;
   scale?: number;
+  /** How many times as far a mouse wheel's turn scrolls, as in Quiver Launcher 3 (spatial.ts); unset, the system's. */
+  scrollSpeed?: number;
+  /** The wheel and the d-pad's steps scroll at once, not easing there. */
+  smoothScrollOff?: boolean;
   /** A sound file played behind the launcher, looped (music.ts), as in Quiver Launcher 3. */
   music?: string;
   /** Its volume, 0 to 1; unset, music.ts's default. */
@@ -606,6 +610,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   useEffect(() => void activate(languageOf(settings)).catch(() => {}), [settings.language]);
   useEffect(() => {
     setBindings(settings);
+    setScrolling(settings);
     setMusic(settings);
   }, [settings]);
 
