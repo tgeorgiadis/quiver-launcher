@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset } from "@quiverlauncher/api";
-import { formatsOf, matchesFormats, type ReleaseFormat } from "./release-formats";
+import { formatsFromStored, formatsOf, formatsStored, matchesFormats, type ReleaseFormat } from "./release-formats";
 
 const asset = (filename: string, os: Asset["os"] = "linux"): Asset => ({
   id: filename,
@@ -51,4 +51,11 @@ test("no format filter matches every app; unknown formats match none of a picked
 
 test("counts every platform's files, not only this computer's", () => {
   expect(formatsOf([asset("Game-mac.zip", "macos"), asset("Game-win64.exe", "windows")])).toEqual(["archive", "exe"]);
+});
+
+test("settings store formats as a comma-separated list in RELEASE_FORMATS order", () => {
+  expect(formatsStored(["exe", "flatpak"])).toBe("flatpak,exe");
+  expect(formatsStored([])).toBeUndefined();
+  expect(formatsFromStored("exe,flatpak,nope")).toEqual(["flatpak", "exe"]);
+  expect(formatsFromStored(["archive", "bogus"])).toEqual(["archive"]);
 });

@@ -774,7 +774,7 @@ msgstr "모든 콘솔"
 msgid "Any project type"
 msgstr "모든 프로젝트 유형"
 
-#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Any release format"
 msgstr ""
 
@@ -799,8 +799,8 @@ msgstr "앱 페이지"
 msgid "App sections"
 msgstr "앱 섹션"
 
-#. Browse filter: apps that ship an AppImage
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship an AppImage
+#: ../../apps/launcher/src/library.tsx
 msgid "AppImage"
 msgstr ""
 
@@ -849,8 +849,8 @@ msgstr "GitHub에서 추가한 앱은 GitHub에서 직접 버전을 가져와요
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "아직 없는 앱에는 받기가 표시돼요. 누르기 전에는 아무것도 다운로드되지 않아요."
 
-#. Browse filter: apps that ship a zip, tar or other archive
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship a zip, tar or other archive
+#: ../../apps/launcher/src/library.tsx
 msgid "Archive"
 msgstr ""
 
@@ -1561,8 +1561,8 @@ msgstr "모두 최신 상태예요."
 msgid "Evidence"
 msgstr "근거"
 
-#. Browse filter: apps that ship a Windows .exe
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship a Windows .exe
+#: ../../apps/launcher/src/library.tsx
 msgid "EXE"
 msgstr ""
 
@@ -1626,8 +1626,8 @@ msgstr "창에 맞춤"
 msgid "flagged"
 msgstr "위험 감지됨"
 
-#. Browse filter: apps that ship a Flatpak release
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship a Flatpak release
+#: ../../apps/launcher/src/library.tsx
 msgid "Flatpak"
 msgstr ""
 
@@ -3243,8 +3243,8 @@ msgstr "최근 업데이트"
 msgid "Refresh"
 msgstr "새로 고침"
 
-#. Above Browse's checkboxes for Flatpak, AppImage, Archive and EXE
-#: ../../apps/launcher/src/App.tsx
+#. Above checkboxes for Flatpak, AppImage, Archive and EXE
+#: ../../apps/launcher/src/library.tsx
 msgid "Release format"
 msgstr ""
 
@@ -3272,9 +3272,8 @@ msgstr "삭제"
 msgid "Remove console {name}"
 msgstr "콘솔 {name} 삭제"
 
-#. placeholder {0}: formatsWanted.map(formatLabel).join(", ")
-#: ../../apps/launcher/src/App.tsx
-msgid "Remove filter {0}"
+#: ../../apps/launcher/src/library.tsx
+msgid "Remove filter {label}"
 msgstr ""
 
 #: ../../apps/launcher/src/library.tsx

@@ -1,5 +1,5 @@
 /**
- * Release formats for Browse's catalog filter: which installable files a
+ * Release formats for Browse and library filters: which installable files a
  * project's releases ship, from the site's release assets (not tags, not the
  * install on this computer). Flatpak, AppImage, archive and Windows .exe.
  */
@@ -17,6 +17,19 @@ export type ReleaseFormat = (typeof RELEASE_FORMATS)[number];
 
 export const isReleaseFormat = (value: string): value is ReleaseFormat =>
   (RELEASE_FORMATS as readonly string[]).includes(value);
+
+/** Comma-separated formats for settings.json (`libraryFilters.formats`), in RELEASE_FORMATS order. */
+export function formatsStored(formats?: readonly ReleaseFormat[]): string | undefined {
+  if (!formats?.length) return undefined;
+  return RELEASE_FORMATS.filter((f) => formats.includes(f)).join(",");
+}
+
+/** Formats saved as a comma-separated string, or already an array from an older write. */
+export function formatsFromStored(value: unknown): ReleaseFormat[] | undefined {
+  const parts = Array.isArray(value) ? value.map(String) : typeof value === "string" ? value.split(",") : [];
+  const picked = parts.filter(isReleaseFormat);
+  return picked.length ? RELEASE_FORMATS.filter((f) => picked.includes(f)) : undefined;
+}
 
 /**
  * The installable release formats among these assets. Every platform's files

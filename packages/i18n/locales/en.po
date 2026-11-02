@@ -774,7 +774,7 @@ msgstr "Any console"
 msgid "Any project type"
 msgstr "Any project type"
 
-#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Any release format"
 msgstr "Any release format"
 
@@ -799,8 +799,8 @@ msgstr "App page"
 msgid "App sections"
 msgstr "App sections"
 
-#. Browse filter: apps that ship an AppImage
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship an AppImage
+#: ../../apps/launcher/src/library.tsx
 msgid "AppImage"
 msgstr "AppImage"
 
@@ -849,8 +849,8 @@ msgstr "Apps you add from GitHub get their releases from GitHub itself, which al
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "Apps you don't have yet show with Get; nothing downloads until you press it."
 
-#. Browse filter: apps that ship a zip, tar or other archive
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship a zip, tar or other archive
+#: ../../apps/launcher/src/library.tsx
 msgid "Archive"
 msgstr "Archive"
 
@@ -1561,8 +1561,8 @@ msgstr "Everything is up to date."
 msgid "Evidence"
 msgstr "Evidence"
 
-#. Browse filter: apps that ship a Windows .exe
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship a Windows .exe
+#: ../../apps/launcher/src/library.tsx
 msgid "EXE"
 msgstr "EXE"
 
@@ -1626,8 +1626,8 @@ msgstr "Fit the window"
 msgid "flagged"
 msgstr "flagged"
 
-#. Browse filter: apps that ship a Flatpak release
-#: ../../apps/launcher/src/App.tsx
+#. Filter: apps that ship a Flatpak release
+#: ../../apps/launcher/src/library.tsx
 msgid "Flatpak"
 msgstr "Flatpak"
 
@@ -3243,8 +3243,8 @@ msgstr "Recently updated"
 msgid "Refresh"
 msgstr "Refresh"
 
-#. Above Browse's checkboxes for Flatpak, AppImage, Archive and EXE
-#: ../../apps/launcher/src/App.tsx
+#. Above checkboxes for Flatpak, AppImage, Archive and EXE
+#: ../../apps/launcher/src/library.tsx
 msgid "Release format"
 msgstr "Release format"
 
@@ -3272,10 +3272,9 @@ msgstr "Remove"
 msgid "Remove console {name}"
 msgstr "Remove console {name}"
 
-#. placeholder {0}: formatsWanted.map(formatLabel).join(", ")
-#: ../../apps/launcher/src/App.tsx
-msgid "Remove filter {0}"
-msgstr "Remove filter {0}"
+#: ../../apps/launcher/src/library.tsx
+msgid "Remove filter {label}"
+msgstr "Remove filter {label}"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Remove filter {on}"

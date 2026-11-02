@@ -8,6 +8,7 @@ import { msg } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import type { Entry } from "@quiverlauncher/api";
 import { CARD_DETAILS, coverOf, type CardDetail } from "@quiverlauncher/ui";
+import { formatsFromStored, formatsStored, type ReleaseFormat } from "./release-formats";
 
 /** Sidebar: the library as a list down the left, the app picked in it open beside it (wide windows only). */
 export type Layout = "grid" | "sidebar";
@@ -137,20 +138,44 @@ export function artFor(entry: Pick<Entry, "libraryArt" | "artwork">, image: Excl
 }
 
 /** What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). */
-export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
+export type LibraryFilters = {
+  console?: string;
+  projectType?: string;
+  ai?: "no-generated" | "no-ai";
+  tag?: string;
+  installed?: "yes" | "no";
+  /** Release formats the app ships (OR); not part of a playlist's saved filters. */
+  formats?: ReleaseFormat[];
+};
+
+/** settings.json's libraryFilters: string fields, formats as a comma-separated list. */
+export type SavedLibraryFilters = Record<string, string>;
 
 /** The library's filters as they were saved, each only when it's one the library has. */
-export function keptFilters(saved: Record<string, string> = {}): LibraryFilters {
+export function keptFilters(saved: SavedLibraryFilters = {}): LibraryFilters {
   const { console, projectType, ai, tag, installed } = saved;
-  return Object.fromEntries(
-    Object.entries({
-      console,
-      projectType,
-      tag,
-      ai: ai === "no-generated" || ai === "no-ai" ? ai : undefined,
-      installed: installed === "yes" || installed === "no" ? installed : undefined,
-    }).filter(([, value]) => typeof value === "string" && value),
-  );
+  const formats = formatsFromStored(saved.formats);
+  return {
+    ...Object.fromEntries(
+      Object.entries({
+        console,
+        projectType,
+        tag,
+        ai: ai === "no-generated" || ai === "no-ai" ? ai : undefined,
+        installed: installed === "yes" || installed === "no" ? installed : undefined,
+      }).filter(([, value]) => typeof value === "string" && value),
+    ),
+    ...(formats ? { formats } : {}),
+  };
+}
+
+/** Library filters as settings.json stores them (formats comma-separated). */
+export function savedLibraryFilters(filters: LibraryFilters): SavedLibraryFilters | undefined {
+  const { formats, ...rest } = filters;
+  const set: SavedLibraryFilters = Object.fromEntries(Object.entries(rest).filter(([, value]) => value));
+  const stored = formatsStored(formats);
+  if (stored) set.formats = stored;
+  return Object.keys(set).length ? set : undefined;
 }
 
 /** A tab the library opens at next time (`libraryTab`): not Updates or Hidden, which come and go, nor a playlist since removed. */

@@ -9,7 +9,7 @@ import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage
 import { availableOn, canGet, catalogOs, hasUpdate, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
 import { TvHome } from "./tv";
 import { TabPrompt } from "./pad-hints";
-import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
+import { Dialog, FilterPill, FormatFilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
 import { DownloadsButton, DownloadsPage, DownloadsStrip, SidebarDownloads } from "./downloads-page";
 import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
@@ -28,7 +28,7 @@ import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { isLocal, isOwn } from "./custom";
-import { isReleaseFormat, matchesFormats, RELEASE_FORMATS, resolveFormats, type ReleaseFormat } from "./release-formats";
+import { isReleaseFormat, matchesFormats, resolveFormats, type ReleaseFormat } from "./release-formats";
 import { AddApp } from "./own";
 import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
@@ -726,57 +726,11 @@ function BrowsePage({
             </select>,
           )}
           {/* Release formats the project ships (OR); from the site's release assets, not tags or what's installed. */}
-          {(filtersOpen || formatsWanted.length > 0) && (
-            <span className={`pill format-pill${formatsWanted.length ? " on" : ""}`}>
-              <Popover
-                label={formatsWanted.length ? formatsWanted.map(formatLabel).join(", ") : t`Release format`}
-                icon={
-                  <>
-                    <span className="pill-label">{formatsWanted.length ? formatsWanted.map(formatLabel).join(", ") : t`Any release format`}</span>
-                    {!formatsWanted.length && <ChevronDown size={13} aria-hidden="true" />}
-                  </>
-                }
-                role="group"
-                className="format-filter"
-                panel="format-panel view-panel"
-                panelLabel={t`Release format`}
-              >
-                {() => (
-                  <div className="view-choice">
-                    <span className="view-label">
-                      <Trans comment="Above Browse's checkboxes for Flatpak, AppImage, Archive and EXE">Release format</Trans>
-                    </span>
-                    {RELEASE_FORMATS.map((format) => {
-                      const on = formatsWanted.includes(format);
-                      return (
-                        <label key={format} className="toggle">
-                          <input
-                            type="checkbox"
-                            checked={on}
-                            onChange={() => {
-                              const next = on ? formatsWanted.filter((f) => f !== format) : [...formatsWanted, format];
-                              choose({ ...filters, formats: next.length ? RELEASE_FORMATS.filter((f) => next.includes(f)) : undefined });
-                            }}
-                          />
-                          {formatLabel(format)}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </Popover>
-              {formatsWanted.length > 0 && (
-                <button
-                  type="button"
-                  className="pill-clear"
-                  aria-label={t`Remove filter ${formatsWanted.map(formatLabel).join(", ")}`}
-                  onClick={() => choose({ ...filters, formats: undefined })}
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </span>
-          )}
+          <FormatFilterPill
+            value={formatsWanted}
+            open={filtersOpen}
+            onChange={(formats) => choose({ ...filters, formats })}
+          />
           {/* Up here with the filters, not under the list, which loads more as it's reached. */}
           {(filtersOpen || showOwned) && (
             <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
@@ -1523,14 +1477,6 @@ type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType
 };
 /** Browse's filters as the player left them, and whether they picked its sort. */
 type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
-
-const FORMAT_LABELS: Record<ReleaseFormat, MessageDescriptor> = {
-  flatpak: msg({ message: "Flatpak", comment: "Browse filter: apps that ship a Flatpak release" }),
-  appimage: msg({ message: "AppImage", comment: "Browse filter: apps that ship an AppImage" }),
-  archive: msg({ message: "Archive", comment: "Browse filter: apps that ship a zip, tar or other archive" }),
-  exe: msg({ message: "EXE", comment: "Browse filter: apps that ship a Windows .exe" }),
-};
-const formatLabel = (format: ReleaseFormat) => i18n._(FORMAT_LABELS[format]);
 
 /** How many matching apps one Browse page aims for when filtering by release format. */
 const FORMAT_PAGE = 48;
