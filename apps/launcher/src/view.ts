@@ -55,6 +55,8 @@ const sameDetails = (a: readonly CardDetail[], b: readonly CardDetail[]) => a.le
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
 export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, byGame: false, details: ["subtitle"] };
+/** TV mode's look (tvModeOn), over the player's own view, which stays saved for when it's left. */
+export const TV_VIEW: Pick<LibraryView, "layout" | "image" | "size"> = { layout: "grid", image: "box", size: "large" };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const LAYOUTS: [Layout, MessageDescriptor][] = [
@@ -139,9 +141,13 @@ export function artFor(entry: Pick<Entry, "libraryArt" | "artwork">, image: Excl
 /** What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). */
 export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
 
-/** The library's filters as they were saved, each only when it's one the library has. */
-export function keptFilters(saved: Record<string, string> = {}): LibraryFilters {
-  const { console, projectType, ai, tag, installed } = saved;
+/**
+ * The library's filters as they were saved, each only when it's one the library has. `tab` is the saved tab: Installed
+ * and Not installed were tabs as well as a filter, and a library left on one opens with the filter on instead.
+ */
+export function keptFilters(saved: Record<string, string> = {}, tab?: string): LibraryFilters {
+  const { console, projectType, ai, tag } = saved;
+  const installed = tab === "installed" ? "yes" : tab === "not-installed" ? "no" : saved.installed;
   return Object.fromEntries(
     Object.entries({
       console,
@@ -154,5 +160,4 @@ export function keptFilters(saved: Record<string, string> = {}): LibraryFilters 
 }
 
 /** A tab the library opens at next time (`libraryTab`): not Updates or Hidden, which come and go, nor a playlist since removed. */
-export const keepsTab = (tab: string | undefined, playlists: { key: string; removed?: boolean }[]) =>
-  tab === "installed" || tab === "not-installed" || playlists.some((p) => p.key === tab && !p.removed);
+export const keepsTab = (tab: string | undefined, playlists: { key: string; removed?: boolean }[]) => playlists.some((p) => p.key === tab && !p.removed);

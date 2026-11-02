@@ -56,9 +56,16 @@ test("an update whose signature doesn't match isn't installed", async () => {
   await (await (await banner()).$("span*=signature doesn't match")).waitForDisplayed({ timeout: 10000 });
   assert.equal(readFileSync(image, "utf8"), "#!/bin/sh\necho old\n");
   assert.ok(!existsSync(updated));
-  // What's new opens the release page.
+  // What's new shows the release's notes here, with a way on to its page.
   await (await (await banner()).$("button=What's new")).click();
+  const notes = await s.app.$('[role="dialog"].changelog');
+  await notes.waitForDisplayed({ timeout: 10000 });
+  assert.match(await notes.getText(), /What's new in 9\.0\.0/);
+  assert.deepEqual(api.releasePages(), []);
+  await (await notes.$("button=View v9.0.0 on GitHub")).click();
   await s.until(() => api.releasePages().includes("v9.0.0"));
+  await (await notes.$("button=Close")).click();
+  await notes.waitForDisplayed({ reverse: true });
 });
 
 test("a signed update backs up the library, replaces the AppImage and starts it", async () => {

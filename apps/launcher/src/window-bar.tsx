@@ -20,7 +20,7 @@ export function windowButtons(os: Os, systemTitleBar: boolean, fullscreen: boole
   return systemTitleBar ? "none" : "window";
 }
 
-/** The buttons to show, and whether the window is maximized, kept as the window changes. */
+/** The buttons to show, and whether the window is maximized, kept as the window changes. None in Steam's Game Mode: Steam has the window, and its own way out. */
 export function useWindowButtons() {
   const { settings, config } = useLauncher();
   const [state, setState] = useState({ maximized: false, fullscreen: Boolean(settings.fullscreen) });
@@ -30,7 +30,7 @@ export function useWindowButtons() {
     const off = native.onWindowResized(check);
     return () => void off.then((stop) => stop());
   }, []);
-  return { buttons: windowButtons(config.os, Boolean(settings.systemTitleBar), state.fullscreen), maximized: state.maximized };
+  return { buttons: config.gameMode ? "none" : windowButtons(config.os, Boolean(settings.systemTitleBar), state.fullscreen), maximized: state.maximized };
 }
 
 /** What a press in the top bar can't move the window from: its buttons, links and fields. */

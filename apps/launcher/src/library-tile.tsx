@@ -121,7 +121,7 @@ type TileProps = {
   /** The letter it files under in a library by name, for the triggers' jumps and the letters beside it. */
   letter?: string;
   /**
-   * In TV mode's library (tv.tsx): on focus its buttons alone (and a withdrawn release's why), the facts and the small
+   * In TV mode's library: on focus its buttons alone (and a withdrawn release's why), the facts and the small
    * buttons being for a mouse, and small from across a room; its menu from Options or a right-click.
    */
   tv?: boolean;
@@ -320,7 +320,7 @@ const Tile = memo(function Tile({
                 type="button"
                 className="tile-icon"
                 title={t`Open folder`}
-                onClick={() => void native.openFolder(entry.id).catch((e) => now.current.setNotice(String(e)))}
+                onClick={() => void native.openFolder(entry.id).catch((e) => now.current.setNotice(String(e), { stays: true }))}
               >
                 <FolderOpen size={17} />
                 <span className="sr-only">

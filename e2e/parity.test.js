@@ -228,10 +228,14 @@ test("library playlists: installed or not, a hand-picked collection, and section
   await (await app.$("button*=Library")).click();
   const playlist = (name) => s.showTab(name);
   const shown = () => app.execute(() => [...document.querySelectorAll("main article")].map((e) => e.dataset.slug).sort());
-  await playlist("Installed");
+  await (await app.$(".filters-tool")).click();
+  const installed = await app.$("#library-filters select[aria-label='Installed']");
+  await installed.selectByVisibleText("Installed only");
   assert.deepEqual(await shown(), ["test-port"]);
-  await playlist("Not installed");
+  await installed.selectByVisibleText("Not installed only");
   assert.deepEqual(await shown(), ["tampered-port"]);
+  await installed.selectByVisibleText("Installed or not");
+  await (await app.$(".filters-tool")).click();
   await (await app.$("button[aria-label='Add a playlist']")).click();
   await (await (await app.$("[role=menu]")).$("button=New playlist")).click();
   await (await app.$("input[aria-label='Playlist name']")).setValue("Favourites");

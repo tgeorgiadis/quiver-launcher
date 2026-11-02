@@ -129,7 +129,7 @@ test("a row's menu opens on a right-click or a controller's Options button, as a
   };
   await (await row("test-remake")).click({ button: "right" });
   await (await menu()).waitForDisplayed();
-  assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "App page"]);
+  assert.deepEqual(await items(), ["Play", "Play with", "Add to playlist", "Manage", "App page"]);
   assert.equal(await focused(), "Play");
   // A right-click doesn't pick the app, and Escape gives the row its focus back.
   assert.equal(await open(), "Test Port");

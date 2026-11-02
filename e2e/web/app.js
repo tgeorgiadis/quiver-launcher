@@ -27,14 +27,14 @@ async function start() {
 }
 
 /** An app with `state` as its saved files (settings, library, installs…), opened at the window's size. */
-export async function openApp({ state = {}, width = 1280, height = 800 } = {}) {
+export async function openApp({ state = {}, width = 1280, height = 800, config = {} } = {}) {
   shared ??= await start();
   const api = await startMockApi();
   const context = await shared.browser.newContext({ viewport: { width, height } });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.addInitScript(standInForRust, { api: api.api, state, config: { convex: api.convex, accountApi: api.account, githubApi: api.github, gitlabApi: api.gitlab } });
+  await page.addInitScript(standInForRust, { api: api.api, state, config: { convex: api.convex, accountApi: api.account, githubApi: api.github, gitlabApi: api.gitlab, ...config } });
   await page.goto(shared.url);
   await page.locator(".topbar").waitFor();
   /** WebdriverIO's execute, for reach.js: a function and its arguments, run in the page. */

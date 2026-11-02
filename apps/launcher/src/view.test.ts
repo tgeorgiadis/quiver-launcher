@@ -48,8 +48,12 @@ test("the library's filters and tab come back as the player left them, when the 
   expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", console: "n64", ai: "no-ai" });
   expect(keptFilters({ installed: "maybe", ai: "some", tag: "" })).toEqual({});
   expect(keptFilters(undefined)).toEqual({});
+  // Installed and Not installed were tabs too: left on one, the library opens with the filter on.
+  expect(keptFilters({ console: "n64" }, "installed")).toEqual({ console: "n64", installed: "yes" });
+  expect(keptFilters({ installed: "yes" }, "not-installed")).toEqual({ installed: "no" });
+  expect(keptFilters({ installed: "yes" }, "racing")).toEqual({ installed: "yes" });
   const playlists = [{ key: "racing" }, { key: "gone", removed: true }];
-  expect(keepsTab("installed", playlists)).toBe(true);
+  expect(keepsTab("installed", playlists)).toBe(false);
   expect(keepsTab("racing", playlists)).toBe(true);
   expect(keepsTab("gone", playlists)).toBe(false);
   expect(keepsTab("updates", playlists)).toBe(false);

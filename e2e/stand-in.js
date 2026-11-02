@@ -47,7 +47,15 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     automatic_runner: () => null,
     installed_mods: () => [],
     mod_packages: () => [],
-    check_update: () => null,
+    // A newer Quiver Launcher, if `state` says so (launcherUpdate).
+    check_update: () => files.launcherUpdate ?? null,
+    // The library's background: what the picker answers (pickBackground), and a picture for any file but a missing one.
+    pick_background: () => files.pickBackground ?? null,
+    read_background: ({ path }) => {
+      if (path.includes("missing")) throw new Error("os error 2");
+      const png = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAFklEQVR4nGP8z8DAwMDAxMDAwMAAAAwuAQ8pwYnLAAAAAElFTkSuQmCC";
+      return Uint8Array.from(atob(png), (c) => c.charCodeAt(0)).buffer;
+    },
     // A download that stays under way till a test finishes it (window.__installs) or Cancel stops it: what an install
     // does is the real app's to show (the tests one folder up).
     install: ({ request }) => new Promise((resolve, reject) => window.__installs.set(request.id, { resolve, reject })),

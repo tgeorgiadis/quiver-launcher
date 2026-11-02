@@ -10,17 +10,18 @@ import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
 import { CARD_DETAILS, EntryCardContent, OS_ICONS, OS_NAMES, blurSource, boxOf, cardSources, coverOf, type CardDetail, type CardLook } from "@quiverlauncher/ui";
-import { catalogOs, useLauncher } from "./store";
+import { catalogOs, tvModeOn, useLauncher } from "./store";
 import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards, type BrowseCards } from "./browse-cards";
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
 import { SIDEBAR_SIZES } from "./sidebar";
 import { GRID_GROUP_BYS, GROUP_BYS, gridGroupBy, isGroupBy, type GroupBy } from "./group";
-import { CARD_IMAGES, CARD_SIZES, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
+import { CARD_IMAGES, CARD_SIZES, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
 
 /** This computer's library view, and a way to change it. */
 export function useLibraryView() {
-  const { settings, setSettings } = useLauncher();
-  const view = viewOf(settings.library);
+  const { settings, setSettings, config } = useLauncher();
+  const saved = viewOf(settings.library);
+  const view = tvModeOn(settings, config) ? { ...saved, ...TV_VIEW } : saved;
   return {
     view,
     // Sections by console were a switch before there were other sections.
@@ -31,7 +32,7 @@ export function useLibraryView() {
       const { byConsole: _, groupBy: __, ...others } = settings;
       setSettings({
         ...(groupBy === undefined ? settings : { ...others, ...(groupBy ? { groupBy } : {}) }),
-        library: savedView({ ...view, ...rest }),
+        library: savedView({ ...saved, ...rest }),
       });
     },
   };
@@ -79,17 +80,20 @@ export function useSidebarFits() {
  */
 export function ViewOptions({ groups }: { groups?: boolean }) {
   const { view, set } = useLibraryView();
+  const { settings, config } = useLauncher();
   const fits = useSidebarFits();
+  // TV mode's look decides these (TV_VIEW); the player's choices are kept for when it's left.
+  const tv = tvModeOn(settings, config);
   // Where the sidebar doesn't fit, the library is a grid; the choice is kept for a wider window.
   const layout = view.layout === "sidebar" && !fits ? "grid" : view.layout;
   const cards = layout !== "sidebar";
   return (
     <div className="view-options">
       {/* Where the sidebar doesn't fit, the grid is the only layout. */}
-      {fits && <Choice label={t({ message: "Layout", comment: "Library view option" })} options={LAYOUTS} icons={LAYOUT_ICONS} value={layout} onChange={(layout) => set({ layout })} />}
+      {fits && !tv && <Choice label={t({ message: "Layout", comment: "Library view option" })} options={LAYOUTS} icons={LAYOUT_ICONS} value={layout} onChange={(layout) => set({ layout })} />}
       {/* The sidebar has no cards. */}
-      {cards && <Choice label={t`Card image`} options={CARD_IMAGES} icons={IMAGE_ICONS} value={view.image} onChange={(image) => set({ image })} />}
-      {cards && <Choice label={t`Card size`} options={CARD_SIZES} value={view.size} onChange={(size) => set({ size })} />}
+      {cards && !tv && <Choice label={t`Card image`} options={CARD_IMAGES} icons={IMAGE_ICONS} value={view.image} onChange={(image) => set({ image })} />}
+      {cards && !tv && <Choice label={t`Card size`} options={CARD_SIZES} value={view.size} onChange={(size) => set({ size })} />}
       {cards && (
         <label className="toggle">
           <input type="checkbox" checked={view.names} onChange={(e) => set({ names: e.target.checked })} />
@@ -241,7 +245,7 @@ const ART_WIDTHS: Record<CardImage, Record<CardSize, number>> = {
 };
 export const artSizes = (image: CardImage, size: CardSize) => `${ART_WIDTHS[image][size]}px`;
 /** About how wide the catalog's box art shows (Browse, a game's ways to play), for the size of copy to load. */
-export const CATALOG_BOX = artSizes("box", "medium");
+const CATALOG_BOX = artSizes("box", "medium");
 /** And its wide cards' art. */
 const CATALOG_COVER = artSizes("cover", "medium");
 

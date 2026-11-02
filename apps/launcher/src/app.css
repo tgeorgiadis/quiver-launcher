@@ -143,6 +143,13 @@ button.danger { color: var(--danger); }
 @media (max-width: 520px) { .wide-cards .shelf-row { --shelf-card: 230px; } }
 /* One banner at a time (App.tsx): the first that has something to say; dealing with it shows the next. */
 .banner-stack > * + * { display: none; }
+/* What just happened (App.tsx's Notice): over everything, above a controller's hints. */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + var(--pad-hints, env(safe-area-inset-bottom, 0px))); z-index: 25; transform: translateX(-50%);
+  width: max-content; max-width: min(640px, calc(100vw - 48px)); padding: 12px 18px; border: 1px solid var(--line-strong); border-radius: 10px;
+  background: var(--raised); color: var(--strong); font-size: 14px; box-shadow: 0 10px 28px rgb(0 0 0 / 0.45); cursor: pointer;
+}
+.notice-prompt { display: grid; gap: 16px; }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */
 .banner { flex-wrap: wrap; }
 .banner p { flex: 1 1 220px; }
@@ -676,6 +683,20 @@ main.app-main { padding: 0 0 40px; }
 .clip-open { position: relative; }
 .clip-fold { position: absolute; left: 0; right: 0; height: 0; outline: none; }
 /* Release notes: greyer text, headings as big stops, and what's under a heading set in from it. */
+/* A release's notes over the page (NotesDialog, detail.tsx): its heading and buttons stay in sight as the notes scroll under them, and a link the d-pad lands on isn't left under either. */
+.detail.choose.changelog { width: min(680px, 100%); scroll-padding-block: 64px 72px; }
+.changelog-head, .changelog-foot { position: sticky; z-index: 1; padding-inline: 24px; background: var(--raised); }
+.changelog-head { top: 0; padding-block: 18px 12px; border-bottom: 1px solid var(--line); font-size: 18px; }
+.changelog-foot { bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding-block: 12px; border-top: 1px solid var(--line); }
+.changelog-foot .changelog-other { margin-right: auto; }
+.changelog-notes { display: grid; gap: 24px; min-height: 96px; padding: 16px 24px 20px; }
+.changelog-notes article > h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-size: 16px; font-weight: 700; }
+.changelog-notes article > h3 small { color: var(--muted); font-size: 12px; font-weight: 400; }
+.changelog-notes .release-notes { margin-top: 8px; }
+/* Under its version's heading, whichever level the release's own headings start at. */
+.changelog-notes .release-notes .markdown :is(.md-h1, .md-h2) { font-size: 1.15em; }
+.changelog-notes .release-notes .markdown :is(.md-h3, .md-h4, .md-h5, .md-h6) { font-size: 1em; }
+.changelog-notes .release-notes .markdown > :first-child { margin-top: 0; }
 .release-notes .markdown { --ql-md-text: var(--text-3); }
 .release-notes .markdown strong { color: var(--text-2); }
 .release-notes .markdown :is(h1, h2, h3, h4, h5, h6) { margin: 1.6em 0 0.7em; padding-bottom: 0; border: 0; color: var(--strong); font-weight: 700; }
@@ -1402,7 +1423,7 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 .tile-get-split { position: relative; display: block; }
 .tile-get-split > .tile-get-more { position: absolute; right: -6px; bottom: -6px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--raised); }
 .layout-grid:not(.image-icon) .tile-get-split { display: flex; min-width: 0; border-radius: 9px; box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); }
-.layout-grid:not(.image-icon) .tile-get-split > .tile-get { flex: 1; border-radius: 9px 0 0 9px; box-shadow: none; }
+.layout-grid:not(.image-icon) .library-tile .tile-get-split > .tile-get { flex: 1; border-radius: 9px 0 0 9px; box-shadow: none; }
 .layout-grid:not(.image-icon) .tile-get-split > .tile-get-more { position: static; width: 34px; height: auto; border: 0; border-left: 1px solid rgb(0 0 0 / 0.25); border-radius: 0 9px 9px 0; }
 /* Get's own choices, over the other versions: which build, and Get's button for the newest verified of it. */
 .get-choices { display: grid; gap: 12px; margin-bottom: 16px; }
@@ -1821,12 +1842,25 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .settings-nav button[aria-current="page"] { background: var(--panel); color: var(--strong); box-shadow: inset 3px 0 var(--accent); }
 .settings-nav button[aria-current="page"] svg { color: var(--accent); }
 .settings-nav-more { margin-left: auto; }
+/* Main's space under a page (main.app-main's 40px) inside the columns: outside them, it pushed the list up off a short window at the page's end, with room for all of it. */
+.settings-page[data-side-by-side] .settings-columns { margin-bottom: -40px; }
+.settings-page[data-side-by-side] .settings-pane { padding-bottom: 40px; }
 .settings-pane { flex: 1; min-width: 0; max-width: 680px; display: grid; align-content: start; gap: 14px; }
 .settings-pane h2 { font-size: 22px; }
 /* The pane's heading is the section's, so its first part needs no line of its own. */
 .settings-pane > :is(:first-child, h2 + *):is(.settings-section, .controls) { padding-top: 0; border-top: 0; }
 .settings-pane :is(.settings-section, .controls) > button { justify-self: start; }
 .music-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.background-preview { width: min(280px, 100%); aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.background-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/*
+ * The player's picture, library-background.tsx: fixed to the window, under the shell's page and the top bar, so the
+ * cards scroll over it. Its own layer, so a scroll doesn't draw a large picture again at each step. The top bar's see-
+ * through colour goes over the page's background as ever, so the picture starts below it.
+ */
+.library-background { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; will-change: transform; }
+.library-background img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.shell:has(.library-background) > .topbar { background: linear-gradient(var(--topbar), var(--topbar)), var(--bg); }
 .settings-page:not([data-side-by-side]) .settings-nav { position: static; flex: 1; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
 .settings-page:not([data-side-by-side]) .settings-nav button { padding: 15px 16px; border-radius: 0; font-size: 15px; }
 .settings-page:not([data-side-by-side]) .settings-nav button + button { border-top: 1px solid var(--line); }
@@ -1851,76 +1885,69 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 }
 
 /*
- * TV mode (tv.tsx): the launcher across a TV or a Steam Deck, for a controller from the couch. Its own bar with the
- * tabs, then the library's grid or the catalog's shelves, which scroll.
+ * TV mode (App.tsx's .tv-mode): the library and Browse across a TV or a Steam Deck, for a controller from the couch.
  */
-.shell[data-tv] > .topbar { display: none; }
-.shell[data-tv] > main:not(.app-main) { padding: 0; overflow: hidden; }
-.tv-layer { height: 100%; }
-.tv { position: relative; display: flex; flex-direction: column; height: 100%; color: #fff; background: var(--glow), #05090f; }
-/* Under a phone's status bar, as the top bar is (TV mode has none of its own over it). */
-.tv-bar { --tv-bar-top: 16px; flex: none; display: flex; align-items: center; gap: 10px; padding: calc(var(--tv-bar-top) + env(safe-area-inset-top, 0px)) var(--gutter) 8px; }
-.tv-brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; text-shadow: 0 1px 8px rgb(0 0 0 / 0.5); }
-/* Library and Browse, with LB and RB at their ends: as large as an app page's tabs, the open one in the accent. */
-.tv-tabs { display: flex; align-items: center; gap: 6px; margin: 0 auto 0 28px; }
-.tv-tabs > button {
-  position: relative; height: 42px; padding: 0 18px; border-radius: 12px; color: rgb(255 255 255 / 0.72); background: none;
-  font-size: 17px; font-weight: 600; text-shadow: 0 1px 8px rgb(0 0 0 / 0.5);
-}
-.tv-tabs > button:hover { color: #fff; }
-.tv-tabs > button[aria-selected="true"] { color: var(--accent); font-weight: 750; }
-.tv-tabs > button[aria-selected="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 2px; height: 4px; border-radius: 4px; background: var(--accent); }
-.tv-tabs .tab-prompt { margin-top: -8px; }
-.tv-clock { margin-right: 8px; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; text-shadow: 0 1px 8px rgb(0 0 0 / 0.5); }
-.tv-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: #fff; background: rgb(5 9 16 / 0.5); }
-.tv-icon:hover { background: rgb(5 9 16 / 0.75); }
-.tv-leave { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; color: #fff; background: rgb(5 9 16 / 0.5); font-weight: 600; }
-.tv-leave:hover { background: rgb(5 9 16 / 0.75); }
-/*
- * What scrolls: room at its top as the focus moves, so a shelf's heading shows over its row, and at its foot, so the
- * next row shows under the one the focus is on.
- */
-.tv-rows { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: 8px var(--gutter) 24px; scroll-padding-block: 56px 110px; }
-.tv { --tv-card: 168px; }
-.tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--tv-card), 1fr)); gap: 26px 22px; }
-.tv .shelf-row { --shelf-card: var(--tv-card); gap: 22px; }
-.tv-card { display: flex; min-width: 0; }
-.tv-card > .entry-card { flex: 1; min-width: 0; }
+.tv-clock { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tv-leave { display: inline-flex; flex-shrink: 0; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 10px; background: var(--field); color: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.tv-leave:hover { background: var(--field-hover); color: var(--strong); }
 /*
  * Moving costs nothing it needn't: the focus box is the focus's mark, so a card neither lifts, nor relights its frame,
  * nor fades its button in as the focus comes to it; its button shows at once. The library's own cards
  * (library-tile.tsx) don't darken their art either, with nothing over it to read but their buttons (a withdrawn
  * release's why aside).
  */
-.tv .entry-card.box .card-cover { transition: none; }
-.tv .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-cover { transform: none; border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
-.tv .entry-card.box :is(.card-action, .cover-strip) { transition: none; }
-.tv .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-action { transform: none; }
-.tv .layout-grid .library-tile, .tv .layout-grid .library-tile .card-cover { transition: none; }
-.tv .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), :focus-within, [data-focus]) { transform: none; }
-.tv .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-cover { border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
-.tv .library-tile:not([data-withdrawn]) .card-cover::after { display: none; }
-/* Finding a game in the library: its search, what to show, a console, the order, and how many there are. */
-.tv-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 22px; }
-.tv-search { flex: 0 1 380px; min-width: 220px; height: 46px; gap: 10px; padding: 0 14px; border: 1px solid rgb(255 255 255 / 0.16); border-radius: 12px; background: rgb(255 255 255 / 0.06); color: rgb(255 255 255 / 0.75); }
-.tv-search input { height: 100%; color: #fff; font-size: 16px; }
-.tv-search input::placeholder { color: rgb(255 255 255 / 0.55); }
-.tv-search .search-clear { width: 30px; height: 30px; color: rgb(255 255 255 / 0.7); }
-.tv-search-button {
-  display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border: 1px solid rgb(255 255 255 / 0.16); border-radius: 12px;
-  background: rgb(255 255 255 / 0.06); color: #fff; font-size: 15px; font-weight: 600;
+.tv-mode .entry-card.box .card-cover { transition: none; }
+.tv-mode .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-cover { transform: none; border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
+.tv-mode .entry-card.box :is(.card-action, .cover-strip) { transition: none; }
+.tv-mode .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-action { transform: none; }
+.tv-mode .layout-grid .library-tile, .tv-mode .layout-grid .library-tile .card-cover { transition: none; }
+.tv-mode .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), :focus-within, [data-focus]) { transform: none; }
+.tv-mode .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-cover { border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
+.tv-mode .library-tile:not([data-withdrawn]) .card-cover::after { display: none; }
+/*
+ * The bar is part of the page, not a banner over it, lined up with what's under
+ * it. Its clock and way out fit beside its buttons, with the logo alone and the account's icon (its name is in its
+ * menu), and its tabs read from across a room. Over the library's picture, a shade for the bar's words.
+ */
+.shell.tv-mode > .topbar {
+  gap: 16px; padding-left: var(--gutter); border-top-color: transparent; border-bottom: 0;
+  background: linear-gradient(color-mix(in srgb, var(--bg) 75%, transparent), transparent);
 }
-.tv-search-button:hover, .tv-search-button:focus-visible { background: rgb(255 255 255 / 0.12); }
-.tv-select select {
-  height: 46px; padding: 0 38px 0 16px; border: 1px solid rgb(255 255 255 / 0.16); border-radius: 12px; background: rgb(255 255 255 / 0.06); color: #fff; font-size: 15px; font-weight: 600;
-}
-.tv-select select:hover, .tv-select select:focus-visible { background: rgb(255 255 255 / 0.12); color: #fff; }
-.tv-select svg { right: 14px; color: rgb(255 255 255 / 0.7); }
-.tv-count { margin-left: auto; color: rgb(255 255 255 / 0.6); font-size: 15px; font-variant-numeric: tabular-nums; }
-.tv .shelf-head h2 { font-size: 21px; color: #fff; }
-.tv .entry-card.box .card-title { color: #fff; }
-.tv .entry-card.box :is(.card-subtitle, .card-status) { color: rgb(255 255 255 / 0.7); }
-.tv-empty { margin: 24px 0; color: rgb(255 255 255 / 0.75); font-size: 16px; }
+.shell.tv-mode > .topbar:not(.with-window-controls) { padding-right: var(--gutter); }
+.shell.tv-mode > main:not(.app-main) { padding-top: 8px; }
+.tv-mode .brand > span { display: none; }
+.tv-mode .account-button > span { display: none; }
+/* :has, as the menu is over the page, outside the shell. */
+body:has(.tv-mode) .account-menu-name { display: block; }
+.tv-mode .topbar nav button { font-size: 17px; font-weight: 600; }
+.tv-mode .topbar nav button:is(.active, :hover) { background: none; }
+.tv-mode .topbar nav button.active { color: var(--accent); font-weight: 750; }
+.tv-mode .topbar nav button.active::after { bottom: 0; height: 4px; border-radius: 4px; }
+.tv-mode .topbar .tab-prompt { margin-top: 0; }
+/* The library's and Browse's tools, large enough to read and to find the focus on from across a room. */
+.tv-mode .library-bar { margin-bottom: 22px; }
+.tv-mode .page-tools { gap: 12px; }
+.tv-mode .page-tools > * { height: 46px; }
+.tv-mode :is(.library-search, .browse-search) { gap: 10px; height: 46px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); }
+.tv-mode :is(.library-search, .browse-search):focus-within { border-color: var(--accent); }
+.tv-mode :is(.library-search, .browse-search) > svg { width: 18px; height: 18px; }
+.tv-mode :is(.library-search, .browse-search) input { font-size: 16px; }
+.tv-mode :is(.library-search, .browse-search) .search-clear { width: 30px; height: 30px; }
+.tv-mode .page-tools .quiet-select select { padding: 0 38px 0 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 15px; font-weight: 600; }
+.tv-mode .page-tools .quiet-select select:is(:hover, :focus-visible) { background: var(--field-hover); }
+.tv-mode .page-tools .quiet-select select:disabled { background: transparent; color: var(--muted); }
+.tv-mode .page-tools .quiet-select > svg { right: 14px; }
+.tv-mode .page-tools .tool { padding: 0 18px; border-color: var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); font-size: 15px; font-weight: 600; }
+.tv-mode .page-tools .tool:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
+.tv-mode .page-tools .tool.on { background: var(--accent-soft); border-color: var(--accent); }
+.tv-mode .page-tools .tool.icon-only { width: 46px; padding: 0; }
+.tv-mode .library-show { gap: 12px; }
+.tv-mode .library-show .menu-button { width: 46px; height: 46px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); }
+.tv-mode .library-show .menu-button:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
+.tv-mode .console-section h2 { font-size: 21px; color: var(--strong); }
+/* An app's page has no edge under the bar: its art comes in from the page's background. */
+.tv-mode .page-layer .app-backdrop { background: none; }
+.tv-mode .page-layer .backdrop-art { mask-image: linear-gradient(transparent, #000 96px); }
 /*
  * An app's page over TV mode (App.tsx's AppPage with `tv`): its art taller and plainer, its name and buttons larger
  * for across a room, its words a size up; Back (B) goes home, so it has no back link.
@@ -1935,34 +1962,11 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 .app-page[data-tv] .app-content { font-size: 15px; }
 .app-page[data-tv] .content-panel dl { font-size: 14px; }
 .tv-readme { width: 100%; justify-content: flex-start; padding: 18px 22px; border-radius: 12px; font-size: 16px; }
-/* A Steam Deck's screen (800 high): smaller cards, so a row and the next's heading show under the strip. */
-@media (max-height: 820px) {
-  .tv { --tv-card: 136px; }
-  .tv-rows { scroll-padding-block: 48px 84px; }
-  .tv-tools { margin-bottom: 16px; }
-  .tv-search, .tv-select select, .tv-search-button { height: 40px; }
-  .tv-bar { --tv-bar-top: 12px; }
-}
-/*
- * A phone: the tabs on a row of their own under the logo and the buttons, Leave TV mode an icon (so it's on the
- * screen, not past its edge), no clock (the phone has its own), and two cards across.
- */
+/* A phone: Leave TV mode an icon (so it's on the screen, not past its edge), and no clock (the phone has its own). */
 @media (max-width: 600px) {
-  /* Two across a 360 px phone even beside a name-sorted grid's letters. */
-  .tv { --tv-card: 120px; }
-  .tv-bar { --tv-bar-top: 10px; flex-wrap: wrap; gap: 6px 8px; }
-  .tv-brand { margin-right: auto; font-size: 18px; }
-  .tv-tabs { order: 1; flex-basis: 100%; margin: 0; }
-  .tv-tabs > button { flex: 1; height: 40px; font-size: 16px; }
   .tv-clock { display: none; }
-  .tv-icon { width: 36px; height: 36px; }
   .tv-leave { width: 36px; height: 36px; padding: 0; justify-content: center; }
   .tv-leave-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .tv-grid { gap: 20px 14px; }
-  .tv .shelf-row { gap: 14px; }
-  .tv-tools { gap: 8px; margin-bottom: 16px; }
-  .tv-search { flex: 1 1 100%; min-width: 0; }
-  .tv-search, .tv-select select, .tv-search-button { height: 40px; font-size: 14px; }
 }
 
 /*
@@ -1977,11 +1981,11 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 /*
  * In the page's margin where there's room for them (the margin is 3.5% of the window's width): in a column of their own,
  * they left the grid a column fewer, its cards larger, so each of a held d-pad's steps scrolled farther and drew more,
- * and the library by name scrolled less smoothly than in another order. TV mode's have room beside its rows.
+ * and the library by name scrolled less smoothly than in another order.
  */
 @media (min-width: 1150px) {
-  .letters-wrap:not(.tv *) { grid-template-columns: minmax(0, 1fr) 0; column-gap: 0; }
-  .letters-wrap:not(.tv *) > .letter-index { width: max-content; margin-left: calc((var(--gutter) - 34px) / 2); }
+  .letters-wrap { grid-template-columns: minmax(0, 1fr) 0; column-gap: 0; }
+  .letters-wrap > .letter-index { width: max-content; margin-left: calc((var(--gutter) - 34px) / 2); }
 }
 .letter-index > button { display: grid; place-items: center; width: 26px; height: 22px; padding: 0; border-radius: 7px; background: none; color: var(--text-3); font-size: 11.5px; font-weight: 700; line-height: 1; }
 .letter-index > button:hover { color: var(--strong); background: var(--field); }
@@ -2001,12 +2005,8 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
   .letter-big { animation-name: letter-big-still; }
   @keyframes letter-big-still { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
 }
-/* TV mode: a size up, on its own dark. A Steam Deck's short screen: closer together, so every letter fits. */
-.tv .letter-index { top: 4px; background: rgb(255 255 255 / 0.06); }
-.tv .letter-index > button { width: 30px; height: 24px; color: rgb(255 255 255 / 0.6); font-size: 13px; }
-.tv .letter-index > button:hover { color: #fff; background: rgb(255 255 255 / 0.12); }
-.tv .letter-index > button[data-current] { color: var(--on-accent); background: var(--accent); }
-.tv .letter-big { background: rgb(13 20 31 / 0.92); }
+/* TV mode: a size up. A Steam Deck's short screen: closer together, so every letter fits. */
+.tv-mode .letter-index > button { width: 30px; height: 24px; font-size: 13px; }
 @media (max-height: 820px) {
-  .tv .letter-index > button { height: 18px; font-size: 11px; }
+  .tv-mode .letter-index > button { height: 18px; font-size: 11px; }
 }
