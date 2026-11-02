@@ -1109,77 +1109,6 @@ function FilterFields({
   );
 }
 
-const FORMAT_LABELS: Record<ReleaseFormat, MessageDescriptor> = {
-  flatpak: msg({ message: "Flatpak", comment: "Filter: apps that ship a Flatpak release" }),
-  appimage: msg({ message: "AppImage", comment: "Filter: apps that ship an AppImage" }),
-  archive: msg({ message: "Archive", comment: "Filter: apps that ship a zip, tar or other archive" }),
-  exe: msg({ message: "EXE", comment: "Filter: apps that ship a Windows .exe" }),
-};
-const formatLabel = (format: ReleaseFormat) => i18n._(FORMAT_LABELS[format]);
-
-/**
- * Multi-select OR for Flatpak, AppImage, Archive and EXE; used in the library's
- * and Browse's filter rows. Hidden while closed with none picked unless `open`.
- */
-export function FormatFilterPill({
-  value,
-  onChange,
-  open,
-}: {
-  value: readonly ReleaseFormat[];
-  onChange: (next: ReleaseFormat[] | undefined) => void;
-  open?: boolean;
-}) {
-  if (!open && !value.length) return null;
-  const label = value.length ? value.map(formatLabel).join(", ") : t`Any release format`;
-  return (
-    <span className={`pill format-pill${value.length ? " on" : ""}`}>
-      <Popover
-        label={value.length ? label : t`Release format`}
-        icon={
-          <>
-            <span className="pill-label">{label}</span>
-            {!value.length && <ChevronDown size={13} aria-hidden="true" />}
-          </>
-        }
-        role="group"
-        className="format-filter"
-        panel="format-panel view-panel"
-        panelLabel={t`Release format`}
-      >
-        {() => (
-          <div className="view-choice">
-            <span className="view-label">
-              <Trans comment="Above checkboxes for Flatpak, AppImage, Archive and EXE">Release format</Trans>
-            </span>
-            {RELEASE_FORMATS.map((format) => {
-              const on = value.includes(format);
-              return (
-                <label key={format} className="toggle">
-                  <input
-                    type="checkbox"
-                    checked={on}
-                    onChange={() => {
-                      const next = on ? value.filter((f) => f !== format) : [...value, format];
-                      onChange(next.length ? RELEASE_FORMATS.filter((f) => next.includes(f)) : undefined);
-                    }}
-                  />
-                  {formatLabel(format)}
-                </label>
-              );
-            })}
-          </div>
-        )}
-      </Popover>
-      {value.length > 0 && (
-        <button type="button" className="pill-clear" aria-label={t`Remove filter ${label}`} onClick={() => onChange(undefined)}>
-          <X size={12} />
-        </button>
-      )}
-    </span>
-  );
-}
-
 /**
  * One filter as a compact dropdown: tinted, with its own remove button, while
  * it's on (`on` names it for the button), as in the library's and the
@@ -1409,6 +1338,78 @@ export function Popover({
 }
 
 /** A small menu of actions behind one button. */
+const FORMAT_LABELS: Record<ReleaseFormat, MessageDescriptor> = {
+  flatpak: msg({ message: "Flatpak", comment: "Filter: apps that ship a Flatpak release" }),
+  appimage: msg({ message: "AppImage", comment: "Filter: apps that ship an AppImage" }),
+  archive: msg({ message: "Archive", comment: "Filter: apps that ship a zip, tar or other archive" }),
+  exe: msg({ message: "EXE", comment: "Filter: apps that ship a Windows .exe" }),
+};
+const formatLabel = (format: ReleaseFormat) => i18n._(FORMAT_LABELS[format]);
+
+/**
+ * Multi-select OR for Flatpak, AppImage, Archive and EXE; used in the library's
+ * and Browse's filter rows. Hidden while closed with none picked unless `open`.
+ */
+export function FormatFilterPill({
+  value,
+  onChange,
+  open,
+}: {
+  value: readonly ReleaseFormat[];
+  onChange: (next: ReleaseFormat[] | undefined) => void;
+  open?: boolean;
+}) {
+  if (!open && !value.length) return null;
+  const label = value.length ? value.map(formatLabel).join(", ") : t`Any release format`;
+  return (
+    <span className={`pill format-pill${value.length ? " on" : ""}`}>
+      <Popover
+        label={value.length ? label : t`Release format`}
+        icon={
+          <>
+            <span className="pill-label">{label}</span>
+            {!value.length && <ChevronDown size={13} aria-hidden="true" />}
+          </>
+        }
+        role="group"
+        className="format-filter"
+        panel="format-panel view-panel"
+        panelLabel={t`Release format`}
+      >
+        {() => (
+          <div className="view-choice">
+            <span className="view-label">
+              <Trans comment="Above checkboxes for Flatpak, AppImage, Archive and EXE">Release format</Trans>
+            </span>
+            {RELEASE_FORMATS.map((format) => {
+              const on = value.includes(format);
+              return (
+                <label key={format} className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() => {
+                      const next = on ? value.filter((f) => f !== format) : [...value, format];
+                      onChange(next.length ? RELEASE_FORMATS.filter((f) => next.includes(f)) : undefined);
+                    }}
+                  />
+                  {formatLabel(format)}
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </Popover>
+      {value.length > 0 && (
+        <button type="button" className="pill-clear" aria-label={t`Remove filter ${label}`} onClick={() => onChange(undefined)}>
+          <X size={12} />
+        </button>
+      )}
+    </span>
+  );
+}
+
+
 function Menu({ label, icon, items }: { label: string; icon: ReactNode; items: [string, () => void][] }) {
   return (
     <Popover label={label} icon={icon} role="menu">

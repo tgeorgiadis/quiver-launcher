@@ -485,7 +485,10 @@ function BrowsePage({
         let next = cursor === undefined ? null : (cursor ?? formatCursor.current);
         const matched: Entry[] = [];
         let done = false;
-        while (matched.length < FORMAT_PAGE && !done) {
+        let scanned = 0;
+        // Cap how far one load walks: Flatpak-only (and similar) would otherwise scan the whole catalog and look hung.
+        while (matched.length < FORMAT_PAGE && !done && scanned < FORMAT_SCAN) {
+          scanned++;
           const page = await client.apps({ ...base, cursor: next, limit: FORMAT_PAGE });
           if (request !== latest.current) return;
           remember(page.items);
@@ -493,6 +496,7 @@ function BrowsePage({
           if (request !== latest.current) return;
           for (const entry of page.items) {
             if (matchesFormats(byId.get(entry.id), formatsWanted)) matched.push(entry);
+            if (matched.length >= FORMAT_PAGE) break;
           }
           next = page.nextCursor;
           done = page.isDone || !page.nextCursor;
@@ -501,6 +505,8 @@ function BrowsePage({
             break;
           }
         }
+        // Hit the scan cap with more catalog left: Show more continues from here.
+        if (!done && scanned >= FORMAT_SCAN && next) done = false;
         formatCursor.current = next;
         const page: Page<Entry> = { items: matched, nextCursor: done ? null : next, isDone: done };
         const mine = new Set(libraryNow.current.map((i) => i.id));
@@ -1480,6 +1486,8 @@ type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
 
 /** How many matching apps one Browse page aims for when filtering by release format. */
 const FORMAT_PAGE = 48;
+/** Catalog pages to scan per load when filtering by format (keeps rare formats from walking the whole catalog). */
+const FORMAT_SCAN = 8;
 
 /** Runs a Windows installer's setup again for the installed version, as to repair it. */
 function ReinstallButton({ id }: { id: string }) {
