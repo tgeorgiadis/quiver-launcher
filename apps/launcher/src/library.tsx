@@ -24,7 +24,7 @@ import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, newKey, type AppFacts, type Collection } from "./sync";
 import { isOwn } from "./custom";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
-import { keepsTab, keptFilters, type LibraryFilters } from "./view";
+import { keepsTab, keptFilters, savedLibraryFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
 import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
 import { PLATFORMS, forPlatforms, type Platform } from "./platforms";
@@ -34,6 +34,7 @@ import { byWhen } from "./sidebar";
 import { GameTile, LibraryTile } from "./library-tile";
 import { closesOutside } from "./overlay";
 import { boxZoom, windowBox, zoom } from "./zoom";
+import { matchesFormats, RELEASE_FORMATS, resolveFormats, type ReleaseFormat } from "./release-formats";
 
 type Tab = "all" | "installed" | "not-installed" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
@@ -153,11 +154,13 @@ export function LibraryPage({
   const setSort = (librarySort: LibrarySort) => setSettings({ ...settings, librarySort: librarySort === "played" ? undefined : librarySort });
   const [filters, setFilters] = useState<Filters>(() => keptFilters(settings.libraryFilters));
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const formatsWanted = filters.formats ?? [];
+  // Formats each library app ships, filled when a release-format filter is on (cached; catalog releases API).
+  const [formatById, setFormatById] = useState<Map<string, ReleaseFormat[]>>(() => new Map());
   // Kept with this computer's other preferences once they settle: two changes at once (a playlist's filters cleared as it opens) save together.
   useEffect(() => {
     const libraryTab = keepsTab(tab, collections) ? tab : undefined;
-    const set = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
-    const libraryFilters = Object.keys(set).length ? set : undefined;
+    const libraryFilters = savedLibraryFilters(filters);
     if (libraryTab === settings.libraryTab && JSON.stringify(libraryFilters) === JSON.stringify(settings.libraryFilters)) return;
     setSettings({ ...settings, libraryTab, libraryFilters });
   }, [tab, filters]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -266,10 +269,29 @@ export function LibraryPage({
     if (!collection) return Boolean(item);
     return inCollection(collection, facts(entry, item), makers);
   };
-  const filtering = Object.values(filters).some(Boolean);
+  const filtering = Boolean(filters.console || filters.projectType || filters.ai || filters.tag || filters.installed || formatsWanted.length);
+  // Resolve release formats for library apps when that filter is on; reuse Browse's on-disk cache.
+  useEffect(() => {
+    if (!formatsWanted.length) return;
+    let live = true;
+    void resolveFormats(
+      client,
+      candidates.map((c) => c.entry),
+    ).then((byId) => {
+      if (live) setFormatById(byId);
+    });
+    return () => void (live = false);
+  }, [client, formatsWanted.join(","), candidates.map((c) => c.entry.id).join("\0")]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Until every candidate's formats are known, don't hide apps for this filter (avoids an empty flash).
+  const formatsReady = !formatsWanted.length || candidates.every(({ entry }) => formatById.has(entry.id));
   const matching = candidates.filter(({ entry, item }) => {
     const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
-    return words.every((w) => text.includes(w)) && inTab(entry, item) && (!filtering || matches(toPlaylist(filters), facts(entry, item), makers));
+    return (
+      words.every((w) => text.includes(w)) &&
+      inTab(entry, item) &&
+      (!filtering || matches(toPlaylist(filters), facts(entry, item), makers)) &&
+      (!formatsReady || matchesFormats(formatById.get(entry.id), formatsWanted))
+    );
   });
   // Apps for other platforms than the ones picked here, unless installed here; shown for now when the player asks.
   const elsewhere = new Set(matching.flatMap(({ entry }) => (!installs[entry.id] && !forPlatforms(entry, platforms) ? [entry.id] : [])));
@@ -450,8 +472,8 @@ export function LibraryPage({
       ]}
     />
   );
-  const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
-  const clearFilter = (key: keyof Filters) => setFilters({ ...filters, [key]: undefined });
+  const set = (key: Exclude<keyof Filters, "formats">) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
+  const clearFilter = (key: Exclude<keyof Filters, "formats">) => setFilters({ ...filters, [key]: undefined });
   const savePlaylist = () => setEditing({ key: newKey(), name: "", order: collections.length, ...toPlaylist(filters), ...(search.trim() ? { search: search.trim() } : {}) });
   const owner = loaded?.owner.name;
   const unavailable = loaded?.unavailable ?? 0;
@@ -568,13 +590,13 @@ export function LibraryPage({
               {/* The filters on, each removable, while the panel is away. */}
               {filtering && !filtersOpen && (
                 <div className="filter-bar sidebar-pills" role="group" aria-label={t`Filters on`}>
-                  <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: false, clear: clearFilter }} />
+                  <FilterFields value={filters} set={set} onFormats={(formats) => setFilters({ ...filters, formats })} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: false, clear: clearFilter }} />
                 </div>
               )}
               {filtersOpen && (
                 <FiltersPanel onClose={() => setFiltersOpen(false)}>
                   <div className="filter-bar">
-                    <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: true, clear: clearFilter }} />
+                    <FilterFields value={filters} set={set} onFormats={(formats) => setFilters({ ...filters, formats })} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: true, clear: clearFilter }} />
                   </div>
                   <div className="filter-bar sidebar-filters-foot">
                     <span className="view-label">
@@ -683,7 +705,7 @@ export function LibraryPage({
       {(view.byGame ? stacks(entries, sortFacts) : entries).map(card)}
     </div>
   );
-  const on = Object.values(filters).filter(Boolean).length;
+  const on = [filters.console, filters.projectType, filters.ai, filters.tag, filters.installed, formatsWanted.length].filter(Boolean).length;
   // An empty library over apps still installed here: their section says it all.
   const nothing = items.length === 0 && !(loose.length && tab === "all" && !search && !filtering);
   return (
@@ -785,6 +807,7 @@ export function LibraryPage({
           <FilterFields
             value={filters}
             set={set}
+            onFormats={(formats) => setFilters({ ...filters, formats })}
             entries={candidates.map((c) => c.entry)}
             ownTags={ownTags}
             pills={{ all: filtersOpen, clear: clearFilter }}
@@ -966,8 +989,11 @@ function ContinuePlaying({ entry, played, onOpen, action }: { entry: Entry; play
   );
 }
 
+/** Library filters with a single string choice (not multi-select formats). */
+type SelectFilter = Exclude<keyof Filters, "formats">;
+
 /** How a filter reads on its chip, here and in the catalog's. */
-export function filterLabel(key: keyof Filters, value: string, consoleNames: Record<string, string>) {
+export function filterLabel(key: SelectFilter, value: string, consoleNames: Record<string, string>) {
   if (key === "console") {
     if (!value.startsWith("maker:")) return consoleNames[value] ?? value.toUpperCase();
     const brand = value.slice(6);
@@ -984,27 +1010,32 @@ export function filterLabel(key: keyof Filters, value: string, consoleNames: Rec
  * tags. As `pills` (the library's filter row), each is a compact dropdown,
  * removable once it's on; `all: false` shows only the ones on.
  */
+
 function FilterFields({
   value,
   set,
+  onFormats,
   entries,
   ownTags = [],
   pills,
 }: {
   value: Filters;
-  set: (key: keyof Filters) => (e: { target: { value: string } }) => void;
+  set: (key: SelectFilter) => (e: { target: { value: string } }) => void;
+  /** When set, shows the release-format filter (library row; not playlist editor). */
+  onFormats?: (formats: ReleaseFormat[] | undefined) => void;
   entries: Entry[];
   ownTags?: string[];
-  pills?: { all: boolean; clear: (key: keyof Filters) => void };
+  pills?: { all: boolean; clear: (key: SelectFilter) => void };
 }) {
   const { consoles, consoleNames } = useLauncher();
   const here = new Set(entries.flatMap((e) => e.consoles ?? []));
   const present = consoles.filter((c) => here.has(c.id) || value.console === c.id);
   const brands = [...new Set(present.map((c) => c.brand))];
   const tags = [...new Set([...entries.flatMap((e) => e.tags), ...ownTags, ...(value.tag ? [value.tag] : [])])].sort();
+  const formats = value.formats ?? [];
   /** What a filter's empty choice says: in full in a dialog, short on a pill. */
   const none = (full: string, short: string) => (pills ? short : full);
-  const pill = (key: keyof Filters, select: ReactNode) => {
+  const pill = (key: SelectFilter, select: ReactNode) => {
     if (!pills) return select;
     const chosen = value[key];
     if (!chosen && !pills.all) return null;
@@ -1072,7 +1103,80 @@ function FilterFields({
           <option value="no">{t`Not installed only`}</option>
         </select>,
       )}
+      {/* Release formats the project ships (OR); library only — playlists don't store formats. */}
+      {onFormats && <FormatFilterPill value={formats} onChange={onFormats} open={pills?.all} />}
     </>
+  );
+}
+
+const FORMAT_LABELS: Record<ReleaseFormat, MessageDescriptor> = {
+  flatpak: msg({ message: "Flatpak", comment: "Filter: apps that ship a Flatpak release" }),
+  appimage: msg({ message: "AppImage", comment: "Filter: apps that ship an AppImage" }),
+  archive: msg({ message: "Archive", comment: "Filter: apps that ship a zip, tar or other archive" }),
+  exe: msg({ message: "EXE", comment: "Filter: apps that ship a Windows .exe" }),
+};
+const formatLabel = (format: ReleaseFormat) => i18n._(FORMAT_LABELS[format]);
+
+/**
+ * Multi-select OR for Flatpak, AppImage, Archive and EXE; used in the library's
+ * and Browse's filter rows. Hidden while closed with none picked unless `open`.
+ */
+export function FormatFilterPill({
+  value,
+  onChange,
+  open,
+}: {
+  value: readonly ReleaseFormat[];
+  onChange: (next: ReleaseFormat[] | undefined) => void;
+  open?: boolean;
+}) {
+  if (!open && !value.length) return null;
+  const label = value.length ? value.map(formatLabel).join(", ") : t`Any release format`;
+  return (
+    <span className={`pill format-pill${value.length ? " on" : ""}`}>
+      <Popover
+        label={value.length ? label : t`Release format`}
+        icon={
+          <>
+            <span className="pill-label">{label}</span>
+            {!value.length && <ChevronDown size={13} aria-hidden="true" />}
+          </>
+        }
+        role="group"
+        className="format-filter"
+        panel="format-panel view-panel"
+        panelLabel={t`Release format`}
+      >
+        {() => (
+          <div className="view-choice">
+            <span className="view-label">
+              <Trans comment="Above checkboxes for Flatpak, AppImage, Archive and EXE">Release format</Trans>
+            </span>
+            {RELEASE_FORMATS.map((format) => {
+              const on = value.includes(format);
+              return (
+                <label key={format} className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() => {
+                      const next = on ? value.filter((f) => f !== format) : [...value, format];
+                      onChange(next.length ? RELEASE_FORMATS.filter((f) => next.includes(f)) : undefined);
+                    }}
+                  />
+                  {formatLabel(format)}
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </Popover>
+      {value.length > 0 && (
+        <button type="button" className="pill-clear" aria-label={t`Remove filter ${label}`} onClick={() => onChange(undefined)}>
+          <X size={12} />
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -1406,7 +1510,7 @@ function PlaylistEditor({
   const [icon, setIcon] = useState(collection.icon);
   const isNew = !collection.name;
   const platforms = platform === collection.platforms?.[0] ? collection.platforms : platform && [platform];
-  const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
+  const set = (key: SelectFilter) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const picked = collection.apps?.length ?? 0;
   return (
     <Dialog label={isNew ? t`New playlist` : t`Edit playlist`} onClose={() => onClose()}>

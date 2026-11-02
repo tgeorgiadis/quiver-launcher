@@ -4,7 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ModSettings, ModSource, Os } from "@quiverlauncher/api";
 
-type StateFile = "library" | "installs" | "catalog" | "settings" | "collections";
+type StateFile = "library" | "installs" | "catalog" | "settings" | "collections" | "releaseFormats";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
 export type OldApp = {
   name: string;

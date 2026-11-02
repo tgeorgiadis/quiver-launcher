@@ -775,6 +775,10 @@ msgid "Any project type"
 msgstr "Beliebiger Projekttyp"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any release format"
+msgstr ""
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "Beliebiges Tag"
 
@@ -794,6 +798,11 @@ msgstr "App-Seite"
 #: ../../apps/launcher/src/App.tsx
 msgid "App sections"
 msgstr "App-Bereiche"
+
+#. Filter: apps that ship an AppImage
+#: ../../apps/launcher/src/library.tsx
+msgid "AppImage"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
@@ -839,6 +848,11 @@ msgstr "Apps, die du von GitHub hinzufügst, beziehen ihre Versionen direkt von 
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "Apps, die du noch nicht hast, werden mit „Holen“ angezeigt; nichts wird heruntergeladen, bis du darauf drückst."
+
+#. Filter: apps that ship a zip, tar or other archive
+#: ../../apps/launcher/src/library.tsx
+msgid "Archive"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Artwork"
@@ -1547,6 +1561,11 @@ msgstr "Alles ist auf dem neuesten Stand."
 msgid "Evidence"
 msgstr "Belege"
 
+#. Filter: apps that ship a Windows .exe
+#: ../../apps/launcher/src/library.tsx
+msgid "EXE"
+msgstr ""
+
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
 msgstr "Vollbild beenden"
@@ -1606,6 +1625,11 @@ msgstr "An das Fenster anpassen"
 #: ../../apps/launcher/src/detail.tsx
 msgid "flagged"
 msgstr "gemeldet"
+
+#. Filter: apps that ship a Flatpak release
+#: ../../apps/launcher/src/library.tsx
+msgid "Flatpak"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Folder name"
@@ -3219,6 +3243,11 @@ msgstr "Zuletzt aktualisiert"
 msgid "Refresh"
 msgstr "Neu laden"
 
+#. Above checkboxes for Flatpak, AppImage, Archive and EXE
+#: ../../apps/launcher/src/library.tsx
+msgid "Release format"
+msgstr ""
+
 #. Tab of an app's page
 #: ../../apps/launcher/src/App.tsx
 msgid "Releases"
@@ -3242,6 +3271,10 @@ msgstr "Entfernen"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove console {name}"
 msgstr "Konsole {name} entfernen"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Remove filter {label}"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Remove filter {on}"

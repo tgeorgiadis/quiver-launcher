@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { artFor, keepsTab, keptFilters, savedView, viewOf, DEFAULT_VIEW } from "./view";
+import { artFor, keepsTab, keptFilters, savedLibraryFilters, savedView, viewOf, DEFAULT_VIEW } from "./view";
 
 test("a library view keeps only what differs from today's look, and ignores what it doesn't know", () => {
   expect(viewOf(undefined)).toEqual(DEFAULT_VIEW);
@@ -48,6 +48,9 @@ test("the library's filters and tab come back as the player left them, when the 
   expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", console: "n64", ai: "no-ai" });
   expect(keptFilters({ installed: "maybe", ai: "some", tag: "" })).toEqual({});
   expect(keptFilters(undefined)).toEqual({});
+  expect(keptFilters({ formats: "flatpak,exe,nope" })).toEqual({ formats: ["flatpak", "exe"] });
+  expect(savedLibraryFilters({ formats: ["exe", "flatpak"], console: "n64" })).toEqual({ console: "n64", formats: "flatpak,exe" });
+  expect(savedLibraryFilters({})).toBeUndefined();
   const playlists = [{ key: "racing" }, { key: "gone", removed: true }];
   expect(keepsTab("installed", playlists)).toBe(true);
   expect(keepsTab("racing", playlists)).toBe(true);
