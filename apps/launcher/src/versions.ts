@@ -30,6 +30,19 @@ export const bare = (v: string) => v.trim().replace(/^v/i, "");
 export const versionLabel = (version = "") => (/^v/i.test(version) ? version : `v${version}`);
 
 /**
+ * What an update brings, from a history newest first: `to`, and the releases since `have` with something to say, not
+ * a blocked one. Only `to` when `have` isn't in the history or came after it; none when `to` isn't there.
+ */
+export function changesUpTo<T extends { version: string; state: ReleaseState; notes: string }>(history: T[], to: string, have?: string): T[] {
+  const at = (version: string) => history.findIndex((r) => bare(r.version) === bare(version));
+  const start = at(to);
+  if (start < 0) return [];
+  const end = have === undefined ? -1 : at(have);
+  if (end <= start) return [history[start]];
+  return history.slice(start, end).filter((r, i) => i === 0 || (r.state !== "blocked" && r.notes.trim()));
+}
+
+/**
  * Whether `a` came out after `b`: by when each came out, else by version number, as for an install from Quiver
  * Launcher 3, which has no release date.
  */

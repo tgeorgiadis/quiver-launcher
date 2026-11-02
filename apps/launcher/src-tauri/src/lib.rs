@@ -71,6 +71,13 @@ struct Config {
     /// Steam's on-screen keyboard can be asked for (keyboard.rs): what a controller types with, so TV mode offers its
     /// search here.
     steam_keyboard: bool,
+    /// Steam is running Quiver, so Add to Steam can't work now (add_to_steam): the UI greys it out.
+    steam_runs_us: bool,
+}
+
+/// Steam is running Quiver as one of its games, so it would overwrite a new shortcut as it closes.
+fn steam_runs_us() -> bool {
+    std::env::var_os("SteamGameId").is_some()
 }
 
 const OS: &str = match std::env::consts::OS.as_bytes() {
@@ -105,6 +112,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         user: std::env::var("USERNAME").or_else(|_| std::env::var("USER")).ok().filter(|u| !u.is_empty()),
         game_mode: keyboard::game_mode(|name| std::env::var(name).ok()),
         steam_keyboard: cfg!(target_os = "linux") && keyboard::offered(|name| std::env::var(name).ok()),
+        steam_runs_us: steam_runs_us(),
     }
 }
 
@@ -427,7 +435,7 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
         return Ok(format!("{} is in Steam.{proton} Start Steam to see it.", request.name));
     }
     // Steam overwrites its shortcuts as it closes, so a waiting copy writes them after.
-    if std::env::var_os("SteamGameId").is_some() {
+    if steam_runs_us() {
         return Err("Steam is running Quiver, so it can't add games now. Switch to Desktop Mode (or close Steam) and add it from there.".into());
     }
     let queued = data.0.join(format!("steam-{folder}.json"));
@@ -559,6 +567,37 @@ async fn read_music(path: String) -> Result<tauri::ipc::Response, String> {
     let size = tokio::fs::metadata(&path).await.map_err(|e| e.to_string())?.len();
     if size > MUSIC_MAX_BYTES {
         return Err("That music file is too large to play.".into());
+    }
+    Ok(tauri::ipc::Response::new(tokio::fs::read(&path).await.map_err(|e| e.to_string())?))
+}
+
+/// The kinds of picture the library's background can be, as in Quiver Launcher 3: what WebView2, Chromium (CEF) and a Mac's WebKit all show.
+const BACKGROUND_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "bmp", "webp"];
+/// A long animated GIF or a very large photo: past it, it's not a file to keep in memory.
+const BACKGROUND_MAX_BYTES: u64 = 100 * 1024 * 1024;
+
+/// Asks the player for a picture to show behind the library's grid (library-background.tsx), as Quiver Launcher 3 did;
+/// null if they cancel. `QUIVER_PICK` answers instead in end-to-end tests.
+#[tauri::command]
+async fn pick_background(app: tauri::AppHandle, window: tauri::WebviewWindow, title: String, dir: Option<String>) -> Option<String> {
+    if let Some(path) = std::env::var_os("QUIVER_PICK") {
+        return Some(path.to_string_lossy().into());
+    }
+    let path = picker::choose(&app, &window, picker::Want::File, &title, dir.as_deref().map(Path::new), Some(("Pictures", BACKGROUND_EXTENSIONS))).await?;
+    Some(path.to_string_lossy().into())
+}
+
+/// The library's background picture, for the page to show: only a picture, and not one too large to hold in memory.
+#[tauri::command]
+async fn read_background(path: String) -> Result<tauri::ipc::Response, String> {
+    let path = PathBuf::from(path);
+    let kind = path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if !kind.is_some_and(|k| BACKGROUND_EXTENSIONS.contains(&k.as_str())) {
+        return Err("That isn't a picture Quiver can show.".into());
+    }
+    let size = tokio::fs::metadata(&path).await.map_err(|e| e.to_string())?.len();
+    if size > BACKGROUND_MAX_BYTES {
+        return Err("That picture is too large to show.".into());
     }
     Ok(tauri::ipc::Response::new(tokio::fs::read(&path).await.map_err(|e| e.to_string())?))
 }
@@ -1283,6 +1322,8 @@ pub fn run() {
             pick_program,
             pick_music,
             read_music,
+            pick_background,
+            read_background,
             mod_packages,
             mod_files,
             installed_mods,

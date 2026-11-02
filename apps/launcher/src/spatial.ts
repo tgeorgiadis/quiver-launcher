@@ -245,8 +245,8 @@ let pointing = false;
 /** The focus on `el`, by a controller or the keys: with its ring. */
 const show = (el: HTMLElement, preventScroll = false) => el.focus({ preventScroll, focusVisible: true } as FocusOptions);
 
-/** The bar across the top, above the page: the launcher's, or TV mode's own while TV mode shows (tv.tsx). */
-const topBar = () => [...document.querySelectorAll<HTMLElement>(".topbar, .tv-bar")].find((bar) => bar.getClientRects().length > 0) ?? null;
+/** The bar across the top, above the page. */
+const topBar = () => document.querySelector<HTMLElement>(".topbar");
 /** What scrolls the page: main, under the top bar (app.css), the window itself not scrolling. */
 export const pageArea = () => document.querySelector<HTMLElement>(".shell > main") ?? document.documentElement;
 
@@ -285,10 +285,60 @@ function ahead(direction: Direction, current: HTMLElement, among: HTMLElement[])
  */
 const AREAS = ".topbar, .library-sidebar, .settings-nav, .menu.floating";
 
+/** Where a library starts for the d-pad: Continue playing's Play, else the app open beside its sidebar, else its first card. */
+const libraryStart = (all: HTMLElement[]) => all.find((el) => el.matches(".continue-play, .library-sidebar [aria-current], .library-grid .card-open"));
+
+let readied = false;
+/**
+ * With a controller there as the library comes, the focus on its start, once, so Confirm plays at once. Not over what
+ * already has it, and called again while there's nothing to put it on yet.
+ */
+export function readyFocus() {
+  if (readied) return;
+  const now = document.activeElement;
+  if (now && now !== document.body) return void (readied = true);
+  const start = libraryStart(candidates());
+  if (!start) return;
+  readied = true;
+  moveFocus(start);
+}
+
+/** Going up or down into one of these from outside it, what the step lands on, wherever it came from across the screen. */
+const LANDINGS = [
+  [".continue-action", ".continue-play"],
+  [".library-bar, .sidebar-top", ".search input"],
+] as const;
+
+/**
+ * What a step to `best` lands on instead, of `all`: a list beside the page, from outside it, at what it has selected;
+ * Continue playing's Play rather than past it; and the LANDINGS.
+ */
+function landing(direction: Direction, current: HTMLElement, best: HTMLElement, all: HTMLElement[]) {
+  const vertical = direction === "up" || direction === "down";
+  const among = (el: HTMLElement | null) => (el && all.includes(el) ? el : undefined);
+  const list = best.closest(".settings-nav, .library-sidebar");
+  if (list && !list.contains(current) && !(vertical && best.closest(".sidebar-top"))) return among(list.querySelector<HTMLElement>("[aria-current]")) ?? best;
+  if (!vertical) return best;
+  const play = among(document.querySelector<HTMLElement>(".continue-play"));
+  if (play && !current.closest(".continue-action")) {
+    const [from, over, to] = [current, play, best].map((el) => el.getBoundingClientRect());
+    if (direction === "down" ? from.bottom <= over.top && to.top >= over.bottom : from.top >= over.bottom && to.bottom <= over.top) return play;
+  }
+  for (const [zone, target] of LANDINGS) {
+    const into = best.closest(zone);
+    if (into && !into.contains(current)) return among(into.querySelector<HTMLElement>(target)) ?? best;
+  }
+  return best;
+}
+
 export function move(direction: Direction) {
   const all = candidates();
   const current = document.activeElement as HTMLElement | null;
-  if (!current || !all.includes(current)) return all[0] && show(all[0]);
+  if (!current || !all.includes(current)) {
+    const outside = topBar();
+    const start = libraryStart(all) ?? all.find((el) => !outside?.contains(el)) ?? all[0];
+    return start && show(start);
+  }
   // From the button of a panel it has open (library.tsx's Popover, put at the
   // page's end, outside the sidebar the button is in): into the panel, when
   // it's that way. Anywhere else, the panel closes as the focus leaves it.
@@ -333,17 +383,25 @@ export function move(direction: Direction) {
     return el.closest(AREAS) !== area || Math.max(r.top - from.bottom, from.top - r.bottom) <= Math.max(from.height, 48);
   };
   const among = vertical ? allowed.filter((el) => el.closest(AREAS) === area) : inBar ? all.filter((el) => bar.contains(el)) : allowed.filter(near);
-  let best = ahead(direction, current, among);
+  const land = (el: HTMLElement | undefined) => el && landing(direction, current, el, all);
+  // Sideways, what's on its line first, however far along: from Search, the playlists on its row, not Continue playing's
+  // buttons above it, nearer by a little.
+  const level = vertical ? [] : among.filter((el) => {
+    const r = el.getBoundingClientRect();
+    return r.bottom > from.top && r.top < from.bottom;
+  });
+  let best = land((level.length ? ahead(direction, current, level) : undefined) ?? ahead(direction, current, among));
   // Past more than a step of what's between (a README's text, a release's notes), a step's
   // scroll instead, until the next control is near: so the d-pad reads through it. Not past a dropdown's
   // list's last option, which would scroll the page from under it.
   if (vertical && !inBar && !pickerPanel() && step(current, direction === "down" ? 1 : -1, best)) return;
-  if (!best && vertical) best = ahead(direction, current, all);
+  if (!best && vertical) best = land(ahead(direction, current, all));
   const intoBar = !inBar && best !== undefined && !!bar?.contains(best);
   if (best) {
     // Not with the focus's own scroll, which jumps it into view: eased there instead. Measured for that before the
     // focus moves, which restyles the card it goes to: measured after, the page was laid out again mid-step.
-    reveal(best);
+    // Continue playing all in view, not just its buttons at its foot: the next step up isn't a scroll to the rest.
+    reveal(best.closest<HTMLElement>(".continue") ?? best);
     show(best, true);
   }
   // Up into the top bar takes the page to its top, where its title and art are.
@@ -467,7 +525,8 @@ function wheeled(e: WheelEvent) {
  */
 function reveal(el: HTMLElement) {
   const area = scrollArea(el);
-  if (area === undefined) return;
+  // Held in sight over what scrolls (a release's notes' buttons, app.css): nothing to bring into view.
+  if (area === undefined || el.closest(".changelog-foot")) return;
   const zoom = boxZoom();
   const r = el.getBoundingClientRect();
   for (const scroller of new Set([scrolling(area), pageArea()])) {
@@ -580,6 +639,9 @@ function step(current: HTMLElement, way: 1 | -1, target: HTMLElement | undefined
   if (area === undefined || !canScroll(area, way)) return false;
   const box = viewOf(area);
   const by = Math.round((box.bottom - box.top) * 0.4);
+  // Nothing more above on the page, with less than a step to its top: on to the top bar, which takes it there, not a
+  // press that only scrolls with the focus left where it is.
+  if (!target && way < 0 && !area && topBar() && scrolling(area).scrollTop * boxZoom() <= by) return false;
   const r = target?.getBoundingClientRect();
   const there = r && viewOf(area, r);
   const past = !r || !there ? Infinity : way > 0 ? r.top - there.bottom : there.top - r.bottom;
@@ -1212,8 +1274,6 @@ export function moveFocus(el: HTMLElement) {
   reveal(el);
 }
 
-/** A text field to type in, as Confirm on it does: with Steam's keyboard where there's one. */
-export const typeInto = (field: HTMLInputElement | HTMLTextAreaElement) => edit(field);
 
 const MODIFIERS = new Set(["Control", "Shift", "Alt", "Meta"]);
 /** A Steam Deck's own controls come as Steam's desktop layout's keys: its A Enter, B Escape, Y Space. */

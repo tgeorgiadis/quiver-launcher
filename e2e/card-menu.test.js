@@ -1,7 +1,7 @@
 /**
  * A library card's menu: behind its ⋯ button, a right-click, the Menu key, a
  * long press and a controller's Options button, with what the app's page has:
- * its main action first, then "Play with" its programs, "Add to" its playlists and "Manage" beside it.
+ * its main action first, then "Play with" its programs, "Add to playlist" and "Manage" beside it.
  */
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
@@ -53,9 +53,9 @@ test("the ⋯ button on a library card has the app's actions", async () => {
   await (await app.$("button*=Library")).click();
   await (await menuButton()).click();
   await (await menu()).waitForDisplayed();
-  assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "App page"]);
+  assert.deepEqual(await items(), ["Play", "Play with", "Add to playlist", "Manage", "App page"]);
   await pick("Manage");
-  assert.deepEqual(await items(), ["Play", "Play with", "Add to", "Manage", "Open folder", "Rename folder…", "Desktop shortcut", "Add to Steam", "Change version…", ...onLinux("Switch to the Windows version (Wine)"), "Hide from library", "Uninstall", "Uninstall and remove", "App page"]);
+  assert.deepEqual(await items(), ["Play", "Play with", "Add to playlist", "Manage", "Open folder", "Rename folder…", "Desktop shortcut", "Add to Steam", "Change version…", ...onLinux("Switch to the Windows version (Wine)"), "Hide from library", "Uninstall", "Uninstall and remove", "App page"]);
   await pick("Open folder");
   await until(() => existsSync(opened) && readFileSync(opened, "utf8").includes(join(apps, "test-port")));
   await (await menu()).waitForDisplayed({ reverse: true });
@@ -94,8 +94,8 @@ test("a right-click opens it where the pointer is, ready for the keyboard", asyn
   assert.ok(!(await (await app.$(".app-page")).isExisting()), "the app's page didn't open");
   await manage("Desktop shortcut");
   await until(() => existsSync(join(home, "Desktop", "Test Port.desktop")));
-  await (await app.$('.banner[role="status"]')).waitForDisplayed();
-  await (await (await app.$('.banner[role="status"]')).$("button=OK")).click();
+  await (await app.$('.toast[role="status"]')).waitForDisplayed();
+  await (await app.$('.toast[role="status"]')).click();
 });
 
 test("a right-click elsewhere shows no browser menu, but a text field keeps its own", async () => {
@@ -130,7 +130,7 @@ test("Shift+F10 and a controller's Options button open it on the focused card", 
   await press("DPadDown");
   await focused("Play with");
   await press("DPadDown");
-  await focused("Add to");
+  await focused("Add to playlist");
   await press("DPadDown");
   await focused("Manage");
   await press("DPadRight");
@@ -176,9 +176,9 @@ test("a long press on a touch screen opens it, and the tap doesn't open the app"
   await app.keys("Escape");
 });
 
-test("Add to puts the app on the player's playlists, and a new one starts with it", async () => {
+test("Add to playlist puts the app on the player's playlists, and a new one starts with it", async () => {
   await (await menuButton()).click();
-  await pick("Add to");
+  await pick("Add to playlist");
   // Lowercase: WebKit's driver types capitals without Shift here, so "Favourites" would be saved as "favourites".
   await (await (await menu()).$("input[aria-label='New playlist']")).setValue("favourites");
   await app.keys("Enter");
@@ -225,9 +225,9 @@ test("Uninstall deletes the files and keeps the app in the library to get again"
   const port = await card("test-port");
   await until(async () => (await (await port.$(".card-status")).getProperty("textContent")) === "Not installed");
   await (await menuButton()).click();
-  assert.deepEqual(await items(), ["Get", "Add to", "Manage", "App page"]);
+  assert.deepEqual(await items(), ["Get", "Add to playlist", "Manage", "App page"]);
   await pick("Manage");
-  assert.deepEqual(await items(), ["Get", "Add to", "Manage", "Choose a version…", ...onLinux("Get the Windows version (Wine)"), "Hide from library", "Remove from library", "App page"]);
+  assert.deepEqual(await items(), ["Get", "Add to playlist", "Manage", "Choose a version…", ...onLinux("Get the Windows version (Wine)"), "Hide from library", "Remove from library", "App page"]);
   await pick("Get");
   await (await port.$(".card-open")).moveTo();
   await (await port.$("button*=Play")).waitForDisplayed({ timeout: 30000 });

@@ -57,6 +57,8 @@ export type Config = {
   gameMode?: boolean;
   /** Steam's on-screen keyboard can be brought up for a text field (keyboard.rs). Missing from an older build. */
   steamKeyboard?: boolean;
+  /** Steam is running Quiver, so Quiver can't add games to it now (lib.rs). Missing from an older build. */
+  steamRunsUs?: boolean;
 };
 export type Progress = {
   id: string;
@@ -223,6 +225,10 @@ export const native = {
   pickMusic: (title: string, dir?: string) => invoke<string | null>("pick_music", { title, dir }),
   /** The music file's bytes, to play. */
   readMusic: (path: string) => invoke<ArrayBuffer>("read_music", { path }),
+  /** Asks for a picture to show behind the library's grid (library-background.tsx), opening in `dir` when given; null when the player cancels. */
+  pickBackground: (title: string, dir?: string) => invoke<string | null>("pick_background", { title, dir }),
+  /** The background picture's bytes, to show. */
+  readBackground: (path: string) => invoke<ArrayBuffer>("read_background", { path }),
   /** Asks for a folder on this computer, opening in `dir` when given; null when the player cancels. */
   pickFolder: (title: string, dir?: string) => invoke<string | null>("pick_folder", { title, dir }),
   /** In Steam's Game Mode, the pickers ask the page's own browser (file-picker.tsx) instead of the system's dialog. */

@@ -208,9 +208,9 @@ type Launcher = {
   settings: Settings;
   /** Takes the new settings, or how to change them as they are by then, for a change that may come after another. */
   setSettings: Dispatch<SetStateAction<Settings>>;
-  /** A short note for the player, such as what signing in brought over. */
-  notice: string | null;
-  setNotice: (notice: string | null) => void;
+  /** A short note for the player, such as what signing in brought over; `stays` until OK, for one that must be read. */
+  notice: { text: string; stays?: boolean } | null;
+  setNotice: (text: string | null, options?: { stays?: boolean }) => void;
   dismiss: (id: string) => void;
   /** The folders of installed apps that live in the apps folder, which moving it takes along. */
   appFolders: () => string[];
@@ -405,7 +405,7 @@ async function inTurns<T, R>(items: T[], at: number, work: (item: T) => Promise<
   return results;
 }
 
-/** Whether TV mode (tv.tsx) shows: turned on, or left to itself in Steam's Game Mode. */
+/** Whether TV mode, the library and Browse's larger look, is on: turned on, or left to itself in Steam's Game Mode. */
 export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config, "gameMode">) =>
   settings.tvMode === "on" || (settings.tvMode !== "off" && Boolean(config.gameMode));
 
@@ -415,7 +415,7 @@ export type Settings = {
   windowsRunner?: WindowsRunner;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
-  /** TV mode (tv.tsx): on, off, or unset, on by itself in Steam's Game Mode. */
+  /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */
   tvMode?: "on" | "off";
   fullscreen?: boolean;
   /** The system's title bar over the window; unset, the window's buttons are in the top bar instead. */
@@ -431,6 +431,10 @@ export type Settings = {
   music?: string;
   /** Its volume, 0 to 1; unset, music.ts's default. */
   musicVolume?: number;
+  /** A picture behind the library's grid (library-background.tsx), as in Quiver Launcher 3. */
+  libraryBackground?: string;
+  /** Its opacity, 0 to 1; unset, library-background.tsx's default. */
+  libraryBackgroundOpacity?: number;
   /** Light or dark; unset follows the system. */
   theme?: Theme;
   /** The language Quiver shows in (@quiverlauncher/i18n); unset follows the system. */
@@ -559,7 +563,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, showNotice] = useState<Launcher["notice"]>(null);
+  const setNotice = useMemo<Launcher["setNotice"]>(() => (text, options) => showNotice(text === null ? null : { text, ...options }), []);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
   const client = useMemo(() => createClient(config.api, { onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e) }) }), [config.api]);
@@ -590,7 +595,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("settings", settings);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
-  // TV mode (tv.tsx) is a size larger again, read from across a room.
+  // TV mode is a size larger again, read from across a room.
   const tv = tvModeOn(settings, config);
   useEffect(() => void document.documentElement.style.setProperty("zoom", String((settings.scale ?? 1) * (tv ? 1.15 : 1))), [settings.scale, tv]);
   // TV mode fills the screen, as a console does, and leaving it puts the window back: unless full screen is the
@@ -915,7 +920,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const msi = done.installer === "msi";
       const program = msi ? (done.program ?? (await native.pickProgram(done.location ?? undefined).catch(() => null)) ?? undefined) : undefined;
       const name = entry.projectName;
-      if (done.restart) setNotice(t`${name} is installed. Windows says to restart the computer to finish setting it up.`);
+      if (done.restart) setNotice(t`${name} is installed. Windows says to restart the computer to finish setting it up.`, { stays: true });
       // Picking a version only installs it; staying on it is the player's own choice (`pin`).
       // Going back from the verified release: Auto Update waits for the next one rather than undoing it.
       const verified = (catalog[entry.id] ?? entry).verified;
@@ -1207,7 +1212,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const name = entry.projectName;
         // The reason is the site's, as it gave it.
         const reason = pulled.reason;
-        return setNotice(t`${version} of ${name} was withdrawn: ${reason} Choose another version from its page.`);
+        return setNotice(t`${version} of ${name} was withdrawn: ${reason} Choose another version from its page.`, { stays: true });
       }
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);

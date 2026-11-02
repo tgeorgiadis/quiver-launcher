@@ -77,10 +77,6 @@ msgstr "Versión de {console}"
 msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
 msgstr "{count, plural, one {# app oculta} other {# apps ocultas}}"
 
-#: ../../apps/launcher/src/tv.tsx
-msgid "{count, plural, one {# app} other {# apps}}"
-msgstr "{count, plural, one {# app} other {# apps}}"
-
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Agregar # app} other {Agregar # apps}}"
@@ -583,12 +579,6 @@ msgstr "Agregar y obtener"
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
 msgstr "Agrega apps desde el menú de cada app. También muestra las apps que coinciden con estos filtros:"
 
-#. Menu item opening the playlists to add an app to
-#. Menu item opening the playlists to add an app to
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Add to"
-msgstr "Agregar a"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Add to library"
 msgstr "Agregar a la biblioteca"
@@ -597,6 +587,9 @@ msgstr "Agregar a la biblioteca"
 msgid "Add to my library"
 msgstr "Agregar a mi biblioteca"
 
+#. Menu item opening the playlists to add an app to
+#. Menu item opening the playlists to add an app to
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to playlist"
 msgstr "Agregar a una playlist"
@@ -648,14 +641,12 @@ msgid "AI-assisted"
 msgstr "Asistido por IA"
 
 #. Library tab: every app in the library
-#. Library tab: every app in the library
 #. Shows mods from every site
 #. Shows videos of every kind
 #. The library's platform menu while it shows every platform's apps
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "All"
 msgstr "Todo"
 
@@ -765,7 +756,6 @@ msgstr "Cualquier uso de IA"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Any console"
 msgstr "Cualquier consola"
 
@@ -949,10 +939,8 @@ msgstr "Arte de la caja"
 #. Tab listing mods to install
 #. The tab with the catalog of apps
 #. The tab with the catalog of apps
-#. The tab with the catalog of apps
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Browse"
 msgstr "Explorar"
 
@@ -1098,6 +1086,14 @@ msgstr "Elegir un archivo"
 msgid "Choose a less common password."
 msgstr "Elige una contraseña menos común."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a picture for the library's background"
+msgstr "Elige una imagen para el fondo de la biblioteca"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose a picture…"
+msgstr "Elegir una imagen…"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose a platform"
 msgstr "Elegir una plataforma"
@@ -1215,7 +1211,6 @@ msgstr "Limpiar todo"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Clear search"
 msgstr "Limpiar búsqueda"
 
@@ -1262,7 +1257,6 @@ msgstr "Confirmar / Seleccionar"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Console"
 msgstr "Consola"
 
@@ -1299,6 +1293,10 @@ msgstr "Copiar enlace"
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
 msgstr "No se pudo instalar"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Couldn't load the release notes."
+msgstr "No se pudieron cargar las notas de la versión."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Couldn't reach quiverlauncher.com to show this playlist. Check your connection."
@@ -1474,7 +1472,6 @@ msgstr "Descargando…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Downloads"
 msgstr "Descargas"
 
@@ -1835,7 +1832,6 @@ msgstr "Importante"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/game.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "In library"
 msgstr "En la biblioteca"
 
@@ -1945,12 +1941,8 @@ msgctxt "release"
 msgid "Installed"
 msgstr "Instalada"
 
-#. Library tab
-#. Library tab
 #. Tab listing the mods installed
-#: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgctxt "tab"
 msgid "Installed"
 msgstr "Instalados"
@@ -2181,7 +2173,7 @@ msgid "Leave every scope unticked: public releases need none."
 msgstr "Deja todos los scopes sin marcar: las versiones públicas no necesitan ninguno."
 
 #. Button: back from TV mode to the usual launcher
-#: ../../apps/launcher/src/tv.tsx
+#: ../../apps/launcher/src/App.tsx
 msgid "Leave TV mode"
 msgstr "Salir del modo TV"
 
@@ -2200,9 +2192,12 @@ msgstr "Letras"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/settings-page.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Library"
 msgstr "Biblioteca"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Library background"
+msgstr "Fondo de la biblioteca"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -2554,10 +2549,6 @@ msgstr "ningún motor antivirus marca sus archivos."
 msgid "No approved release yet"
 msgstr "Aún no hay una versión aprobada"
 
-#: ../../apps/launcher/src/tv.tsx
-msgid "No apps here match. Try another search, or show all of them."
-msgstr "Ninguna app coincide. Prueba otra búsqueda o muéstralas todas."
-
 #: ../../apps/launcher/src/library.tsx
 msgid "No apps in this playlist yet. Add some from each app's menu, or edit its filters."
 msgstr "Aún no hay apps en esta playlist. Agrega algunas desde el menú de cada app o edita sus filtros."
@@ -2666,14 +2657,6 @@ msgstr "No está en tu biblioteca"
 msgid "Not installed"
 msgstr "No instalado"
 
-#. Library tab
-#. Library tab
-#: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
-msgctxt "tab"
-msgid "Not installed"
-msgstr "No instalados"
-
 #: ../../apps/launcher/src/sort.ts
 msgid "Not installed first"
 msgstr "No instalados primero"
@@ -2737,6 +2720,11 @@ msgstr "Nada coincide con esa búsqueda y esos filtros."
 msgid "Nothing to choose in this folder."
 msgstr "En esta carpeta no hay nada que elegir."
 
+#. Name, for a screen reader, of the dialog saying something failed or must be read
+#: ../../apps/launcher/src/App.tsx
+msgid "Notice"
+msgstr "Aviso"
+
 #. TV mode setting
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Off"
@@ -2762,6 +2750,11 @@ msgstr "En esta computadora"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "Una tarjeta por juego"
+
+#. How strongly the library's background picture shows
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Opacity"
+msgstr "Opacidad"
 
 #. Controller hint: what Confirm does on an app card
 #: ../../apps/launcher/src/spatial.ts
@@ -3090,6 +3083,10 @@ msgstr "Quiver no pudo abrir ese archivo de música. Puede que se haya movido o 
 msgid "Quiver couldn't open your library"
 msgstr "Quiver no pudo abrir tu biblioteca"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver couldn't show that picture. It may have been moved or deleted."
+msgstr "Quiver no pudo mostrar esa imagen. Puede que se haya movido o eliminado."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver hasn't checked this app."
 msgstr "Quiver no ha revisado esta app."
@@ -3227,7 +3224,8 @@ msgstr "Las versiones se están catalogando"
 msgid "Reload"
 msgstr "Recargar"
 
-#. Button: no background music
+#. Button: no background music, or no background picture
+#. Button: no background music, or no background picture
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/settings-page.tsx
@@ -3412,9 +3410,7 @@ msgid "Scroll up"
 msgstr "Desplazar hacia arriba"
 
 #. Placeholder of the library's search field
-#. Placeholder of the library's search field
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Search"
 msgstr "Buscar"
 
@@ -3431,7 +3427,6 @@ msgid "Search the catalog"
 msgstr "Buscar en el catálogo"
 
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Search your library"
 msgstr "Buscar en tu biblioteca"
 
@@ -3451,6 +3446,10 @@ msgstr "Ver {name} en el catálogo"
 #: ../ui/src/discover.tsx
 msgid "See all"
 msgstr "Ver todo"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "See all releases"
+msgstr "Ver todas las versiones"
 
 #: ../../apps/launcher/src/discover.tsx
 msgid "See all: {title}"
@@ -3489,7 +3488,6 @@ msgstr "Configurar Quiver Launcher"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Settings"
 msgstr "Configuración"
 
@@ -3540,12 +3538,10 @@ msgid "Shortcuts"
 msgstr "Accesos directos"
 
 #. Controller hint: what Confirm does, scrolling the focused control into view
-#. Picks which library tab or playlist TV mode's library shows
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
 #. Picks which library tab or playlist the sidebar lists
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tv.tsx
 msgid "Show"
 msgstr "Mostrar"
 
@@ -3553,6 +3549,10 @@ msgstr "Mostrar"
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "Mostrar {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Show a picture of your own behind the library's grid. The Sidebar layout doesn't show it."
+msgstr "Muestra una imagen propia detrás de la cuadrícula de la biblioteca. El diseño Barra lateral no la muestra."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
@@ -3730,11 +3730,9 @@ msgstr "¿Alguien compartió una playlist? Pega su enlace para agregarla a tu bi
 #. Label of the library's sort order
 #. Label of the library's sort order
 #. Label of the library's sort order
-#. Label of the library's sort order
 #. The order the catalog's apps are listed in
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Sort"
 msgstr "Ordenar"
 
@@ -3800,6 +3798,10 @@ msgstr "Mantener la sesión iniciada"
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Staying on {installedLabel}"
 msgstr "Se mantiene en {installedLabel}"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Steam is running Quiver, so it can't add games now. Start Quiver outside Steam, in Desktop Mode, and add it from there."
+msgstr "Steam está ejecutando Quiver, así que no puede agregar juegos ahora. Inicia Quiver fuera de Steam, en el modo de escritorio, y agrégalo desde allí."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Step {n} of {total}"
@@ -4119,10 +4121,9 @@ msgstr "Intentar de nuevo"
 msgid "Turn off"
 msgstr "Desactivar"
 
-#. Setting: the launcher's full-screen layout for a controller (tv.tsx)
+#. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "TV mode"
 msgstr "Modo TV"
 
@@ -4253,6 +4254,7 @@ msgstr "Actualizar a {newer}"
 msgid "Update to {next}"
 msgstr "Actualizar a {next}"
 
+#: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Update to {out}"
 msgstr "Actualizar a {out}"
@@ -4290,9 +4292,7 @@ msgid "Updates"
 msgstr "Actualizaciones"
 
 #. Library tab: apps with an update
-#. Library tab: apps with an update
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv.tsx
 msgid "Updates ({updateCount})"
 msgstr "Actualizaciones ({updateCount})"
 
@@ -4389,6 +4389,7 @@ msgid "Versions"
 msgstr "Versiones"
 
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/update.tsx
 msgid "View {version} on {host}"
 msgstr "Ver {version} en {host}"
 
@@ -4460,6 +4461,11 @@ msgstr "¿Para qué es? (opcional)"
 #: ../../apps/launcher/src/update.tsx
 msgid "What's new"
 msgstr "Novedades"
+
+#: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/update.tsx
+msgid "What's new in {name}"
+msgstr "Novedades de {name}"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
@@ -4565,10 +4571,6 @@ msgstr "Tu opinión aún no se compartió. Lo que escribiste sigue aquí."
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"
 msgstr "Tu biblioteca está vacía"
-
-#: ../../apps/launcher/src/tv.tsx
-msgid "Your library is empty. Apps you get from Browse show here."
-msgstr "Tu biblioteca está vacía. Las apps que obtengas en Explorar aparecen aquí."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/setup.tsx

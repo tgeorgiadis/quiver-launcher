@@ -7,7 +7,6 @@ import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
 import { availableOn, canGet, catalogOs, hasUpdate, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
-import { TvHome } from "./tv";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -58,7 +57,7 @@ export function App() {
   useUpdateCheck();
   useTray();
   const { library, client, settings, setSettings, config } = useLauncher();
-  // TV mode (tv.tsx) in place of the library and Browse: turned on, or by itself in Steam's Game Mode.
+  // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
   useAnnouncementsCheck(client);
@@ -144,10 +143,10 @@ export function App() {
   // Without the system's title bar, the top bar's empty space moves the window.
   const { buttons, maximized } = useWindowButtons();
   return (
-    <div className="shell" data-tv={tv || undefined}>
+    <div className={tv ? "shell tv-mode" : "shell"}>
       <header className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? moveWindow : undefined}>
-        {/* As on the website; it goes to the library. */}
-        <button className="brand" aria-label={t`Quiver Launcher: go to your library`} onClick={() => switchTab("library")}>
+        {/* As on the website; it goes to the library. For a mouse: the Library tab beside it does the same for the d-pad and Tab. */}
+        <button className="brand" tabIndex={-1} aria-label={t`Quiver Launcher: go to your library`} onClick={() => switchTab("library")}>
           <img src="/quiver-icon-96.png" alt="" width="34" height="34" />
           <span>
             Quiver<span className="brand-label">LAUNCHER</span>
@@ -155,16 +154,19 @@ export function App() {
         </button>
         {/* data-tabs: a controller's shoulder buttons go between them, as between TV mode's tabs (spatial.ts). */}
         <nav data-tabs>
+          {tv && <TabPrompt step="prevTab" />}
           <button className={tab === "library" ? "active" : ""} aria-current={tab === "library" && !top ? "page" : undefined} onClick={() => switchTab("library")}>
             <Library size={16} aria-hidden="true" /> <Trans>Library</Trans> <span className="count">{library.length}</span>
           </button>
           <button className={tab === "browse" ? "active" : ""} aria-current={tab === "browse" && !top ? "page" : undefined} onClick={() => switchTab("browse")}>
             <Compass size={16} aria-hidden="true" /> <Trans comment="The tab with the catalog of apps">Browse</Trans>
           </button>
+          {tv && <TabPrompt step="nextTab" />}
         </nav>
+        {tv && <Clock />}
         <AccountButton onSignIn={() => setSigningIn(true)} />
         {/* The library as a grid or with its sidebar, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
-        {tab === "library" && sidebarFits && (
+        {tab === "library" && sidebarFits && !tv && (
           <button
             className="icon layout-button"
             aria-label={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
@@ -174,9 +176,18 @@ export function App() {
             {sidebar ? <LayoutGrid size={19} /> : <PanelLeft size={19} />}
           </button>
         )}
-        <button className="icon tv-button" aria-label={t`TV mode`} title={t`TV mode: for a controller, the couch and a Steam Deck`} onClick={() => setTv(true)}>
-          <Tv size={19} />
-        </button>
+        {tv ? (
+          <button type="button" className="tv-leave" onClick={() => setTv(false)}>
+            <LogOut size={17} aria-hidden="true" />{" "}
+            <span className="tv-leave-label">
+              <Trans comment="Button: back from TV mode to the usual launcher">Leave TV mode</Trans>
+            </span>
+          </button>
+        ) : (
+          <button className="icon tv-button" aria-label={t`TV mode`} title={t`TV mode: for a controller, the couch and a Steam Deck`} onClick={() => setTv(true)}>
+            <Tv size={19} />
+          </button>
+        )}
         <AnnouncementsButton onOpen={() => setAnnouncementsOpen(true)} />
         <DownloadsButton open={top?.kind === "downloads"} onOpen={openDownloads} />
         <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
@@ -223,61 +234,49 @@ export function App() {
             </div>
           ))}
         </ErrorBoundary>
-        {/* TV mode in place of the library and Browse; the pages still open over it. */}
-        {tv && (
-          <div className="tv-layer" hidden={Boolean(top)}>
-            <TvHome onOpen={openApp} onLeave={() => setTv(false)} onDownloads={openDownloads} onSettings={openSettings} action={action} />
+        {/* Kept mounted under the pages too, so going back keeps the search, filters and scroll. */}
+        <div hidden={Boolean(top)}>
+          {/* A download under way always shows how it's going, over whichever banner has its turn. */}
+          {strip && <DownloadsStrip onOpen={openDownloads} active offerUpdates={tab === "library" && !tv} />}
+          {/*
+            One banner at a time, the most pressing first (app.css shows only the first that has something to say):
+            the usage-data notice, the launcher's update, updates for apps, bringing over Quiver Launcher 3, then the
+            newest announcement. Dealing with one shows the next.
+          */}
+          <div className="banner-stack">
+            <TelemetryNotice />
+            <UpdateBanner />
+            {/* The updates waiting: the library's to offer, not Browse's; in TV mode, the Downloads button's count says so. */}
+            {strip && tab === "library" && !tv && <DownloadsStrip onOpen={openDownloads} active={false} />}
+            {/* Finishing an import shows the library, under whatever page is open. */}
+            <OldLibrary
+              onDone={() => {
+                setTab("library");
+                // Back from the page shows the library from its top, not where Browse was scrolled.
+                covered.current[0] = { y: 0, focus: null };
+              }}
+            />
+            {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
+            <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} />
           </div>
-        )}
-        {/*
-          Kept mounted under the pages too, so going back keeps the search, filters and scroll; not under TV mode, which
-          has its own, where it only did all its work again with each change (a download's progress, say).
-        */}
-        {!tv && (
-          <div hidden={Boolean(top)}>
-            {/* A download under way always shows how it's going, over whichever banner has its turn. */}
-            {strip && <DownloadsStrip onOpen={openDownloads} active offerUpdates={tab === "library"} />}
-            {/*
-              One banner at a time, the most pressing first (app.css shows only the first that has something to say):
-              what the player just did, the usage-data notice, the launcher's update, updates for apps, bringing
-              over Quiver Launcher 3, then the newest announcement. Dealing with one shows the next.
-            */}
-            <div className="banner-stack">
-              <Notice />
-              <TelemetryNotice />
-              <UpdateBanner />
-              {/* The updates waiting: the library's to offer, not Browse's. */}
-              {strip && tab === "library" && <DownloadsStrip onOpen={openDownloads} active={false} />}
-              {/* Finishing an import shows the library, under whatever page is open. */}
-              <OldLibrary
-                onDone={() => {
-                  setTab("library");
-                  // Back from the page shows the library from its top, not where Browse was scrolled.
-                  covered.current[0] = { y: 0, focus: null };
-                }}
-              />
-              {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
-              <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} />
-            </div>
-            {tab === "library" ? (
-              <LibraryPage
-                onOpen={openApp}
-                onBrowse={() => switchTab("browse")}
-                onAdd={() => setAdding(true)}
-                onSignIn={() => setSigningIn(true)}
-                downloads={<SidebarDownloads onOpen={openDownloads} />}
-                action={action}
-                page={(entry) => (
-                  <ErrorBoundary fallback={(error) => <PageProblem error={error} />}>
-                    <AppPage entry={entry} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
-                  </ErrorBoundary>
-                )}
-              />
-            ) : (
-              <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} kept={browseKept} onKeep={setBrowseKept} />
-            )}
-          </div>
-        )}
+          {tab === "library" ? (
+            <LibraryPage
+              onOpen={openApp}
+              onBrowse={() => switchTab("browse")}
+              onAdd={() => setAdding(true)}
+              onSignIn={() => setSigningIn(true)}
+              downloads={<SidebarDownloads onOpen={openDownloads} />}
+              action={action}
+              page={(entry) => (
+                <ErrorBoundary fallback={(error) => <PageProblem error={error} />}>
+                  <AppPage entry={entry} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
+                </ErrorBoundary>
+              )}
+            />
+          ) : (
+            <BrowsePage onOpen={openApp} onOpenGame={openGame} search={search} onSearch={setSearch} kept={browseKept} onKeep={setBrowseKept} />
+          )}
+        </div>
       </main>
       <BackToTop />
       {/* Under signing in, which its last step opens. */}
@@ -299,6 +298,7 @@ export function App() {
       <RenameFolderPrompt />
       <ChangeVersion />
       <ProgramPrompt />
+      <Notice />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
       <FilePicker />
     </div>
@@ -1698,16 +1698,41 @@ function SignIn({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** How long a notice that needs no answer shows, in ms. */
+const NOTICE_SHOWS = 8000;
+
+/**
+ * What just happened, over whatever is showing, in every mode and at any scroll: not a banner, which a player scrolled
+ * down the page or in TV mode never saw. One that must be read (something failed) takes the focus until OK; another
+ * shows for a moment without taking it from the player, gone sooner with a click.
+ */
 function Notice() {
   const { notice, setNotice } = useLauncher();
+  useEffect(() => {
+    if (!notice || notice.stays) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_SHOWS);
+    return () => clearTimeout(timer);
+  }, [notice]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!notice) return null;
+  const close = () => setNotice(null);
+  if (!notice.stays) {
+    return (
+      <div className="toast" role="status" onClick={close}>
+        <p>{notice.text}</p>
+      </div>
+    );
+  }
   return (
-    <div className="banner" role="status">
-      <p>{notice}</p>
-      <button onClick={() => setNotice(null)}>
-        <Trans>OK</Trans>
-      </button>
-    </div>
+    <Dialog label={t({ message: "Notice", comment: "Name, for a screen reader, of the dialog saying something failed or must be read" })} onClose={close}>
+      <div className="detail-body notice-prompt">
+        <p>{notice.text}</p>
+        <div className="row">
+          <button className="primary" autoFocus onClick={close}>
+            <Trans>OK</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 
@@ -1969,4 +1994,14 @@ function useDebounced<T>(value: T, ms: number) {
     return () => clearTimeout(t);
   }, [value, ms]);
   return current;
+}
+
+/** The time, as a console's home screen shows it. */
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 15_000);
+    return () => clearInterval(timer);
+  }, []);
+  return <span className="tv-clock">{now.toLocaleTimeString(i18n.locale, { hour: "numeric", minute: "2-digit" })}</span>;
 }

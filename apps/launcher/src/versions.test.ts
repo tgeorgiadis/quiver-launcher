@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset, HistoryRelease, Release, UnverifiedRelease } from "@quiverlauncher/api";
-import { installedFile, insteadOf, newestUnblocked, saidOf, unverifiedFile, unverifiedIn, versionList, wayOffLabel, withdrawnAsBlocked } from "./versions";
+import { changesUpTo, installedFile, insteadOf, newestUnblocked, saidOf, unverifiedFile, unverifiedIn, versionList, wayOffLabel, withdrawnAsBlocked } from "./versions";
 
 const release = (version: string, releasedAt: number, id = `gh-${version}`): Release => ({
   id,
@@ -17,6 +17,27 @@ const unverified = (version: string, releasedAt: number, state: "unverified" | "
   state,
   reasons,
   assets: state === "blocked" ? [] : [{ id: `site-${version}-file`, url: `https://github.com/o/r/${version}.zip`, filename: `${version}.zip`, os: "windows", architecture: "x64", format: "zip", checksum: "sha256:" + "a".repeat(64) }],
+});
+
+test("what an update brings: the release it goes to and those since the installed one with something to say", () => {
+  const history = [
+    { version: "v1.3.0", state: "unverified" as const, notes: "Too new." },
+    { version: "v1.2.0", state: "verified" as const, notes: "" },
+    { version: "1.1.5", state: "blocked" as const, notes: "Taken back." },
+    { version: "v1.1.0", state: "unverified" as const, notes: "Faster." },
+    { version: "v1.0.5", state: "verified" as const, notes: " " },
+    { version: "v1.0.0", state: "verified" as const, notes: "First." },
+    { version: "v0.9.0", state: "verified" as const, notes: "Older." },
+  ];
+  const versions = (to: string, have?: string) => changesUpTo(history, to, have).map((r) => r.version);
+  // The one it goes to even with nothing to say; a v on either or not, the same version.
+  expect(versions("1.2.0", "v1.0.0")).toEqual(["v1.2.0", "v1.1.0"]);
+  // Already installed, or nothing to go back to: only that one.
+  expect(versions("v1.1.0")).toEqual(["v1.1.0"]);
+  expect(versions("v1.2.0", "v0.1.0")).toEqual(["v1.2.0"]);
+  // Installed a newer one than it goes to.
+  expect(versions("v1.0.0", "v1.3.0")).toEqual(["v1.0.0"]);
+  expect(versions("v2.0.0", "v1.0.0")).toEqual([]);
 });
 
 test("marks each release verified, unverified or blocked, using the site's files for the ones it knows", () => {
