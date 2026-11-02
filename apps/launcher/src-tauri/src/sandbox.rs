@@ -89,23 +89,6 @@ pub fn data_dir(identifier: &str) -> Option<PathBuf> {
     Some(share.join(identifier))
 }
 
-/// The flatpak option for the installation the launcher's Flatpak is in:
-/// `--system` for one in /var/lib/flatpak, as GNOME Software may install a
-/// bundle, else `--user`. Flatpak notes where the app is in /.flatpak-info.
-pub fn installation() -> &'static str {
-    let info = std::fs::read_to_string("/.flatpak-info").unwrap_or_default();
-    installation_of(&info)
-}
-
-fn installation_of(info: &str) -> &'static str {
-    let app = info.lines().find_map(|line| line.strip_prefix("app-path=")).unwrap_or_default();
-    if app.starts_with("/var/lib/flatpak/") {
-        "--system"
-    } else {
-        "--user"
-    }
-}
-
 /// Starts this launcher again on the host, in a new sandbox of its own, so
 /// it outlives this one: `flatpak run` with the given arguments.
 pub fn relaunch(args: &[&OsStr]) -> Option<Command> {
@@ -116,17 +99,9 @@ pub fn relaunch(args: &[&OsStr]) -> Option<Command> {
 
 #[cfg(test)]
 mod tests {
-    use super::{installation_of, spawn_args};
+    use super::spawn_args;
     use std::ffi::OsStr;
     use std::path::Path;
-
-    #[test]
-    fn updates_the_installation_the_flatpak_is_in() {
-        let info = |path: &str| format!("[Application]\nname=com.quiverlauncher.QuiverLauncher\n\n[Instance]\napp-path={path}\nbranch=stable\n");
-        assert_eq!(installation_of(&info("/var/lib/flatpak/app/com.quiverlauncher.QuiverLauncher/x86_64/stable/abc/files")), "--system");
-        assert_eq!(installation_of(&info("/home/deck/.local/share/flatpak/app/com.quiverlauncher.QuiverLauncher/x86_64/stable/abc/files")), "--user");
-        assert_eq!(installation_of(""), "--user");
-    }
 
     #[test]
     fn carries_the_folder_and_environment_over_and_keeps_the_programs_arguments() {

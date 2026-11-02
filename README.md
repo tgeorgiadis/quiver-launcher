@@ -47,9 +47,12 @@ anywhere else isn't made by us.
 | --- | --- | --- |
 | **Windows** | `QuiverLauncher-win-Portable.zip` | Extract it anywhere and run `QuiverLauncher.exe`. It updates itself from there. |
 | **macOS** | `…_universal.dmg` | Open it and drag Quiver Launcher into Applications. Works on Intel and Apple silicon. |
-| **Linux** | `…_x86_64.flatpak` or `…_amd64.AppImage` | Flatpak: open it with your software center. AppImage: mark it executable, then run it. |
-| **Steam Deck** | `…_x86_64.flatpak` or `…_amd64.AppImage` | In Desktop Mode, install the Flatpak with Discover, or mark the AppImage executable. Then add Quiver to Steam to start it from Game Mode. |
+| **Linux** | `…_amd64.AppImage` or `…_x86_64.flatpak` | AppImage: mark it executable, then run it. Flatpak: in a terminal, run `flatpak install --user --bundle` followed by the file. |
+| **Steam Deck** | `…_amd64.AppImage` or `…_x86_64.flatpak` | In Desktop Mode, mark the AppImage executable, or install the Flatpak from Konsole as for Linux. Then add Quiver to Steam to start it from Game Mode. |
 | **Android** | `…_arm64.apk` | Open it on your phone and allow installing from this source when asked. Android 7 or newer. |
+
+**Installed the Flatpak with Discover or another software center, and it can't update itself?** Run
+`flatpak install --user --bundle` once with the newest release's file. Quiver updates itself from then on.
 
 ## Coming from Quiver Launcher 3
 

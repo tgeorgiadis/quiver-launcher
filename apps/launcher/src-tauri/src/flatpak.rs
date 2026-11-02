@@ -74,11 +74,15 @@ pub fn install(bundle: &Path) -> Result<String, String> {
     Ok(id)
 }
 
-/// Installs a newer bundle of the launcher's own Flatpak over this one, in
-/// the installation it's in. The running copy carries on until it closes.
+/// Installs a newer bundle of the launcher's own Flatpak for the player. The
+/// running copy carries on until it closes. Always `--user`, even over a
+/// copy in the system's installation (Discover installs a bundle there):
+/// polkit wants an admin's password for a system bundle, and nothing can
+/// ask for it in Game Mode. `flatpak run` prefers the player's copy, so the
+/// new one starts next.
 pub fn update(bundle: &Path) -> Result<(), String> {
     let mut install = flatpak();
-    install.args(["install", crate::sandbox::installation(), "--noninteractive", "-y", "--bundle"]).arg(bundle);
+    install.args(["install", "--user", "--noninteractive", "-y", "--bundle"]).arg(bundle);
     run(install).map(|_| ()).map_err(|e| e.replace("couldn't install it", "couldn't install the update"))
 }
 
