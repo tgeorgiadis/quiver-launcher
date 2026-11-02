@@ -6,13 +6,14 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { availableOn, canGet, catalogOs, hasUpdate, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
+import { availableOn, canGet, canMigrateToFlatpak, catalogOs, hasUpdate, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
+import { flatpakAsset } from "./assets";
 import { TvHome } from "./tv";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
 import { DownloadsButton, DownloadsPage, DownloadsStrip, SidebarDownloads } from "./downloads-page";
-import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
+import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases, type Source } from "./detail";
 import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
@@ -27,7 +28,7 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
-import { isLocal, isOwn } from "./custom";
+import { isCustom, isLocal, isOwn } from "./custom";
 import { AddApp } from "./own";
 import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
@@ -324,6 +325,7 @@ export function App() {
       {adding && <AddApp onClose={() => setAdding(false)} onOpen={openApp} />}
       <ChooseFile />
       <UnverifiedPrompt />
+      <FlatpakMigrationPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
       <ChangeVersion />
@@ -1124,6 +1126,7 @@ function AppPage({
         <ModsButton entry={entry} />
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
         {install?.installer === "msi" && !job && <ReinstallButton id={entry.id} />}
+        {install && <MigrateToFlatpak entry={entry} source={source} />}
         {renamable(install) && foldersOn(config.os) && !(job && !("error" in job)) && (
           <button className="panel-action opens" onClick={() => askRename(entry)}>
             <FolderPen size={16} aria-hidden="true" /> <Trans>Rename folder</Trans>
@@ -1433,6 +1436,46 @@ function ReinstallButton({ id }: { id: string }) {
 }
 
 /**
+ * When Settings offers Flatpak migration and this install isn't a Flatpak yet, checks the latest release for one and
+ * offers to migrate. Uses the same install path as Get; the player still confirms in the migration prompt.
+ */
+function MigrateToFlatpak({ entry, source }: { entry: Entry; source?: Source | null }) {
+  const { config, settings, installs, jobs, client, github, gitlab, get } = useLauncher();
+  const install = installs[entry.id];
+  const job = jobs[entry.id];
+  const [flatpak, setFlatpak] = useState<string | null>(null);
+  useEffect(() => {
+    if (!settings.offerFlatpakMigration || !canMigrateToFlatpak(install, config.os) || (job && !("error" in job))) {
+      setFlatpak(null);
+      return;
+    }
+    let live = true;
+    const load = isCustom(entry.id)
+      ? source
+        ? (source.provider === "github" ? github.releases(source.repository, 1) : gitlab.releases(source.repository, 1)).then((list) => list[0])
+        : Promise.resolve(undefined)
+      : client.releases(entry.slug, 1).then((page) => page.items[0]);
+    load.then(
+      (release) => {
+        if (!live || !release) return setFlatpak(null);
+        const asset = flatpakAsset(release.assets, config.os, config.arch, (release.installationOverride ?? entry.launcher).releaseAssetFilter);
+        setFlatpak(asset?.filename ?? null);
+      },
+      () => live && setFlatpak(null),
+    );
+    return () => {
+      live = false;
+    };
+  }, [entry.id, entry.slug, entry.launcher, install, settings.offerFlatpakMigration, config.os, config.arch, job, client, github, gitlab, source]);
+  if (!flatpak || !install) return null;
+  return (
+    <button className="panel-action" onClick={() => void get(entry, undefined, { asset: flatpak, migrate: true })}>
+      <PackagePlus size={16} aria-hidden="true" /> <Trans>Migrate to Flatpak</Trans>
+    </button>
+  );
+}
+
+/**
  * How an installed app updates on this computer. A local app has no releases
  * to update from; a Windows installer's setup waits for the player, so it
  * never updates by itself.
@@ -1441,7 +1484,8 @@ function UpdatesChoice({ id }: { id: string }) {
   const { installs, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
-  const auto = !install.installer;
+  // A Windows installer's setup waits for the player; Flatpak and files update without one.
+  const auto = install.installer !== "msi";
   const installedVersion = versionLabel(install.version);
   return (
     <label className="panel-field">
@@ -1920,6 +1964,44 @@ function ChooseFile() {
         </div>
       </section>
     </div>
+  );
+}
+
+/**
+ * Asks before moving an existing install to Flatpak when Settings offers it and a release has one. Never runs the
+ * install until the player says so; keeping the current format, or not asking again for this app, are both fine.
+ */
+function FlatpakMigrationPrompt() {
+  const { flatpakMigration } = useLauncher();
+  if (!flatpakMigration) return null;
+  const { entry, version, resolve } = flatpakMigration;
+  const name = entry.projectName;
+  const release = versionLabel(version);
+  return (
+    <Dialog key={`${entry.id}@flatpak:${version}`} label={t`Migrate to Flatpak?`} onClose={() => resolve("keep")}>
+      <div className="detail-body">
+        <h2>
+          <Trans>Migrate {name} to Flatpak?</Trans>
+        </h2>
+        <p>
+          <Trans>
+            {release} includes a Flatpak. Quiver can install it with Flatpak and keep {name} in your library. Your saves
+            and settings stay; the files Quiver installed before are replaced only after the Flatpak installs.
+          </Trans>
+        </p>
+        <div className="row">
+          <button className="primary" autoFocus onClick={() => resolve("migrate")}>
+            <Trans>Migrate to Flatpak</Trans>
+          </button>
+          <button onClick={() => resolve("keep")}>
+            <Trans>Keep current format</Trans>
+          </button>
+          <button onClick={() => resolve("dismiss")}>
+            <Trans>Don&apos;t ask again for this app</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 

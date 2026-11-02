@@ -6,3 +6,4 @@ target/
 !.env.example
 apps/launcher/src-tauri/gen/schemas/
 e2e/phone-screenshots/
+.tools/
