@@ -13,6 +13,12 @@ test("bindings saved before Back to top get its default, unless it's already use
   expect(withDefaults(undefined, DEFAULT_KEYS)).toBe(DEFAULT_KEYS);
 });
 
+test("bindings saved before Forward get the mouse's forward button for it, but keep Alt+→ where the player put it", () => {
+  const { forward, ...older } = { ...DEFAULT_KEYS, right: ["ArrowRight", "Alt+ArrowRight"] };
+  expect(forward).toEqual(["Alt+ArrowRight", "MouseForward"]);
+  expect(withDefaults(older as never, DEFAULT_KEYS)).toEqual({ ...older, forward: ["MouseForward"] });
+});
+
 test("swapping A and B swaps what Confirm and Back are bound to, and swapping again undoes it", () => {
   expect(confirmBackSwapped(DEFAULT_PAD)).toBe(false);
   const swapped = swapConfirmBack(DEFAULT_PAD);

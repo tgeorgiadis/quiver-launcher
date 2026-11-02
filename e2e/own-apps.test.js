@@ -86,6 +86,10 @@ test("a program already on this computer starts where it is, and removing it lea
   await (await (await page()).$("button*=Remove from library")).click();
   await until(() => !library().some((i) => i.local));
   assert.ok(existsSync(program), "the player's program is still there");
+  // Its page went with it: Forward has nothing to open again.
+  await app.keys(["Alt", "ArrowRight"]);
+  await app.pause(500);
+  assert.equal(await heading(), "");
 });
 
 test("a folder to fill, with the game's artwork matched by name, plays once a program is in it", async () => {
