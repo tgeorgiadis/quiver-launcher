@@ -5,12 +5,12 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
-import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, boxOf, cardSources, heroSources } from "@quiverlauncher/ui";
+import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
 import { availableOn, canGet, catalogOs, hasUpdate, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
 import { TvHome } from "./tv";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
-import { CATALOG_BOX, useLibraryView, useSidebarFits } from "./library-view";
+import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
 import { DownloadsButton, DownloadsPage, DownloadsStrip, SidebarDownloads } from "./downloads-page";
 import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
 import { UpdateBanner, useUpdateCheck } from "./update";
@@ -381,6 +381,7 @@ function BrowsePage({
   // As in Quiver Launcher 3, apps already in the library stay out of Browse unless the player asks for them.
   const showOwned = Boolean(settings.browseShowsLibrary);
   const setShowOwned = (on: boolean) => setSettings({ ...settings, browseShowsLibrary: on || undefined });
+  const looks = useBrowseCards();
   const libraryNow = useRef(library);
   libraryNow.current = library;
   // The apps left out: those in the library when their page came. One added since stays, with its badge.
@@ -555,6 +556,10 @@ function BrowsePage({
             <SlidersHorizontal size={15} /> <Trans>Filters</Trans>
             {filterCount > 0 && <span className="tool-count">{filterCount}</span>}
           </button>
+          {/* How Browse's cards look, as the library's View menu sets its own; Settings has the same. */}
+          <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
+            {() => <BrowseCardOptions />}
+          </Popover>
           {/* New apps come to the catalog through the website's form; adding one to the library is the library's. */}
           <button
             className="tool submit-app"
@@ -699,12 +704,12 @@ function BrowsePage({
               </h2>
             </>
           )}
-          <div className="catalog-grid boxes">
+          <div className={looks.grid}>
             {entries.map((entry) => (
               <EntryCard
                 key={entry.id}
                 entry={entry}
-                coverSources={boxOf(entry) ? cardSources(boxOf(entry)!, CATALOG_BOX) : undefined}
+                {...looks.card(entry)}
                 // A download's progress, or what went wrong, shows over the art without hover.
                 className={jobs[entry.id] ? "busy" : undefined}
                 consoleNames={consoleNames}

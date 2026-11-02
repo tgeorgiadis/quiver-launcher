@@ -95,7 +95,7 @@ test("cards show what the website's cards show", async () => {
   const port = await card("test-port");
   // A box art card, as the website's: the game it's based on under its name, then what players said.
   assert.equal(await (await port.$(".card-subtitle")).getText(), "Test Port (original)");
-  assert.match(await (await port.$(".card-line")).getText(), /Runs well · 3 players/);
+  assert.match(await (await port.$(".card-bottom")).getText(), /Runs well · 3 players/);
 });
 
 test("an app opens as a full page, with its README and a link to its repository", async () => {

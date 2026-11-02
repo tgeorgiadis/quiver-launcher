@@ -7,7 +7,7 @@
 import { msg } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import type { Entry } from "@quiverlauncher/api";
-import { coverOf } from "@quiverlauncher/ui";
+import { CARD_DETAILS, coverOf, type CardDetail } from "@quiverlauncher/ui";
 
 /** Sidebar: the library as a list down the left, the app picked in it open beside it (wide windows only). */
 export type Layout = "grid" | "sidebar";
@@ -30,13 +30,31 @@ export type LibraryView = {
   marks: boolean;
   /** The grid has a card for each game, its ports picked from it (group.ts), not one for each app. */
   byGame: boolean;
+  /** What the grid's cards show with their names, as Browse's can (browse-cards.ts): the line under the name, at first. */
+  details: readonly CardDetail[];
 };
+
+/** The details a library card can show: Browse's, but New, which is the catalog's. */
+export const LIBRARY_DETAILS = CARD_DETAILS.filter((d) => d !== "new");
+/**
+ * The same choice of details as one list each time it's read, so the cards (memo) aren't all drawn again with each
+ * change to the launcher for a list that's equal but new.
+ */
+const detailLists = new Map<string, readonly CardDetail[]>();
+function detailsOf(saved: unknown): readonly CardDetail[] {
+  if (!Array.isArray(saved)) return DEFAULT_VIEW.details;
+  const details = LIBRARY_DETAILS.filter((d) => saved.includes(d));
+  const key = details.join(" ");
+  if (!detailLists.has(key)) detailLists.set(key, details);
+  return detailLists.get(key)!;
+}
+const sameDetails = (a: readonly CardDetail[], b: readonly CardDetail[]) => a.length === b.length && a.every((d) => b.includes(d));
 
 /**
  * A shelf of box art, medium, with names: unlike Browse's wide catalog cards.
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
-export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, byGame: false };
+export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, byGame: false, details: ["subtitle"] };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const LAYOUTS: [Layout, MessageDescriptor][] = [
@@ -78,12 +96,15 @@ export function viewOf(saved?: Partial<LibraryView>): LibraryView {
     continuePlaying: typeof saved?.continuePlaying === "boolean" ? saved.continuePlaying : DEFAULT_VIEW.continuePlaying,
     marks: typeof saved?.marks === "boolean" ? saved.marks : DEFAULT_VIEW.marks,
     byGame: typeof saved?.byGame === "boolean" ? saved.byGame : DEFAULT_VIEW.byGame,
+    details: detailsOf(saved?.details),
   };
 }
 
-/** Only what differs from the defaults is saved. */
+/** Only what differs from the defaults is saved; the details in their own order. */
 export function savedView(view: LibraryView): Partial<LibraryView> | undefined {
-  const changed = Object.fromEntries(Object.entries(view).filter(([k, v]) => DEFAULT_VIEW[k as keyof LibraryView] !== v));
+  const { details, ...rest } = view;
+  const changed: Partial<LibraryView> = Object.fromEntries(Object.entries(rest).filter(([k, v]) => DEFAULT_VIEW[k as keyof LibraryView] !== v));
+  if (!sameDetails(details, DEFAULT_VIEW.details)) changed.details = LIBRARY_DETAILS.filter((d) => details.includes(d));
   return Object.keys(changed).length ? changed : undefined;
 }
 
