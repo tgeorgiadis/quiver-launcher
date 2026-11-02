@@ -355,7 +355,8 @@ export type CardEntry = {
   artwork?: string;
 };
 
-function ReleaseAge({ entry }: { entry: CardEntry }) {
+/** When its latest release came out ("Updated 3 days ago"), or that there's been none for a year or ever. */
+export function ReleaseAge({ entry }: { entry: CardEntry }) {
   const at = entry.lastReleaseAt;
   if (at === undefined) return <span className="release-age none">{t`No releases`}</span>;
   const title = `${entry.lastReleaseVersion ?? t`Latest release`} · ${fullDate(at)}`;
@@ -421,10 +422,19 @@ export const boxOf = (entry: Pick<CardEntry, "libraryArt" | "artwork">) =>
   entry.libraryArt?.capsule || entry.libraryArt?.header || entry.artwork;
 
 /**
- * How a card looks. Box: the portrait box art, as a store shelf shows games, with the app's name, its game and
- * console, and one line of what players said under it. Wide: the wide library art over the catalog's details.
+ * How a card looks. Both show the same details in the same order. Box: the portrait box art, as a store shelf shows
+ * games, the AI label and platforms on a strip over it and lines of text under it. Wide: the wide library art, with room
+ * for the details to spread out beside each other under it.
  */
 export type CardLook = "box" | "wide";
+
+/**
+ * A card's details, each shown or not (the launcher's Settings): its games, its kinds (its tags, as Quiver Launcher 3's
+ * cards had over the name), what players said, when it was last updated, the platforms and the AI label, and New on an
+ * app added lately.
+ */
+export type CardDetail = "subtitle" | "kinds" | "rating" | "updated" | "platforms" | "ai" | "new";
+export const CARD_DETAILS: readonly CardDetail[] = ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "new"];
 
 /** A box-art card's picture: the capsule; wide art shown whole over a blurred copy of itself; or the icon. */
 function BoxArt({ entry, sources, name }: { entry: CardEntry; sources?: readonly ImageSource[]; name: string }) {
@@ -439,8 +449,8 @@ function BoxArt({ entry, sources, name }: { entry: CardEntry; sources?: readonly
 }
 
 /**
- * Under a box card's title (and a library card's, in the launcher): the games it's based on and its console, or its
- * kinds when it's no game's.
+ * Under a library card's title, in the launcher: the games it's based on and its console, or its kinds when it's no
+ * game's.
  */
 export function boxSubtitle(entry: CardEntry, consoleName?: (tag: string) => string | undefined) {
   const system = entry.tags.map((tag) => consoleName?.(tag)).find(Boolean);
@@ -464,13 +474,14 @@ export function EntryCardContent({
   heading: Title = "span",
   status,
   look = "box",
+  details,
 }: {
   entry: CardEntry;
   /** The cover, in place of the default `Artwork` of `boxOf(entry)` (a box card) or `coverOf(entry)` (a wide one). */
   artwork?: ReactNode;
   /** Copies of the default cover to try first, such as resized ones (`cardSources`). */
   coverSources?: readonly ImageSource[];
-  /** Box art and three short lines (the default), or the wide art over the catalog's details. */
+  /** Box art (the default) or the wide art, with the catalog's details. */
   look?: CardLook;
   /** A label over the cover, such as "In library"; else "New" for a recently added app. */
   badge?: ReactNode;
@@ -484,47 +495,62 @@ export function EntryCardContent({
    * badge, such a card isn't marked New either.
    */
   status?: ReactNode;
+  /**
+   * The details it shows, each on or off. Unset, all of them, but for New on a box: a shelf of the newest says it, where
+   * a badge on every recent box was noise.
+   */
+  details?: readonly CardDetail[];
 }) {
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
   // A heading isn't phrasing content, so it can't sit in a span.
   const Body = Title === "span" ? "span" : "div";
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleName?.(tag) ?? tagLabel(tag));
   const shelf = status !== undefined;
+  const shows = (detail: CardDetail) => (details ? details.includes(detail) : look === "wide" || detail !== "new");
+  const score = <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />;
+  const fresh = !badge && !shelf && shows("new") && isNew(entry.addedAt);
+  const newBadge = <span className="cover-badge">{t({ message: "New", comment: "Badge on an app added to the catalog lately" })}</span>;
+  const bottom = (shows("rating") || shows("updated")) && (
+    <span className="card-bottom">
+      {shows("rating") && score}
+      {shows("updated") && (
+        <span className="card-meta">
+          <ReleaseAge entry={entry} />
+        </span>
+      )}
+    </span>
+  );
   if (look === "box") {
-    const subtitle = boxSubtitle(entry, consoleName);
-    const rated = entry.recommended + entry.reportIssues + entry.reportBroken > 0;
-    const os = entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id));
+    const games = shows("subtitle") && entry.games.map((game) => game.title).join(", ");
+    const ai = shows("ai") && entry.aiLevel && entry.aiLevel !== "none";
+    const os = shows("platforms") ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id)) : [];
     return (
       <>
         <span className="card-cover">
           {artwork ?? <BoxArt entry={entry} sources={coverSources} name={entry.projectName} />}
-          {/* No New on a box: a shelf of the newest says it, where a badge on every recent card was noise. */}
-          {badge && <span className="cover-badge">{badge}</span>}
-          {!shelf && os.length > 0 && (
-            <span className="cover-os">
-              <PlatformIcons os={os} />
-            </span>
-          )}
-          {entry.aiLevel && entry.aiLevel !== "none" && (
-            <span className="cover-ai">
-              <AiChip level={entry.aiLevel} />
+          {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
+          {!shelf && (ai || os.length > 0) && (
+            <span className="cover-strip">
+              {ai && <AiChip level={entry.aiLevel} />}
+              {os.length > 0 && <PlatformIcons os={os} />}
             </span>
           )}
         </span>
         <Body className="card-body">
+          {!shelf && shows("kinds") && kinds.length > 0 && (
+            <span className="card-kind">
+              <ScrollingText text={kinds.join(" · ")} />
+            </span>
+          )}
           <Title className="card-title">
             <ScrollingText text={entry.projectName} />
           </Title>
-          {subtitle && (
+          {games && (
             <span className="card-subtitle">
-              <ScrollingText text={subtitle} />
+              <ScrollingText text={games} />
             </span>
           )}
-          {shelf ? (
-            <span className="card-status">{status}</span>
-          ) : (
-            <span className="card-line">{rated ? <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll /> : <ReleaseAge entry={entry} />}</span>
-          )}
+          {shelf ? <span className="card-status">{status}</span> : bottom}
         </Body>
       </>
     );
@@ -533,7 +559,7 @@ export function EntryCardContent({
     <>
       <span className="card-cover">
         {artwork ?? <Artwork src={coverOf(entry)} sources={coverSources} name={entry.projectName} className={wide ? "cover-photo" : ""} />}
-        {badge ? <span className="cover-badge">{badge}</span> : !shelf && isNew(entry.addedAt) && <span className="cover-badge">{t({ message: "New", comment: "Badge on an app added to the catalog lately" })}</span>}
+        {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
         <span className="card-arrow">
           <ArrowUpRight size={17} />
         </span>
@@ -549,18 +575,18 @@ export function EntryCardContent({
         ) : (
           <>
             <span className="card-tags">
-              {kinds.length > 0 && (
+              {shows("kinds") && kinds.length > 0 && (
                 <span className="card-kind">
                   <ScrollingText text={kinds.join(" · ")} />
                 </span>
               )}
-              <AiChip level={entry.aiLevel} />
-              <PlatformIcons os={entry.supportedOS} />
+              {shows("ai") && <AiChip level={entry.aiLevel} />}
+              {shows("platforms") && <PlatformIcons os={entry.supportedOS} />}
             </span>
             <Title className="card-title">
               <ScrollingText text={entry.projectName} />
             </Title>
-            {entry.games.length > 0 && (
+            {shows("subtitle") && entry.games.length > 0 && (
               <span className="based-on">
                 <span className="based-on-label">{t({ message: "Based on", comment: "Before the game(s) an app is made from" })}</span>
                 {entry.games.length === 1 ? (
@@ -581,12 +607,7 @@ export function EntryCardContent({
                 )}
               </span>
             )}
-            <span className="card-bottom">
-              <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />
-              <span className="card-meta">
-                <ReleaseAge entry={entry} />
-              </span>
-            </span>
+            {bottom}
           </>
         )}
       </Body>
@@ -606,10 +627,13 @@ export function EntryCard({
   className,
   status,
   look = "box",
+  details,
 }: {
   entry: CardEntry & { slug: string };
-  /** Box art and three short lines (the default), or the wide art over the catalog's details. */
+  /** Box art (the default) or the wide art, with the catalog's details. */
   look?: CardLook;
+  /** The details it shows (`EntryCardContent`); unset, all of them. */
+  details?: readonly CardDetail[];
   /** A picture in place of the cover (the launcher's box art or icon cards). */
   cover?: ReactNode;
   /** Copies of the cover to try first, such as resized ones (`cardSources`). */
@@ -630,7 +654,7 @@ export function EntryCard({
   return (
     <article className={["entry-card", look, className].filter(Boolean).join(" ")} data-slug={entry.slug}>
       <button type="button" className="card-open" onClick={onOpen} aria-label={entry.projectName}>
-        <EntryCardContent entry={entry} artwork={cover} coverSources={coverSources} badge={badge} consoleName={consoleName} status={status} look={look} />
+        <EntryCardContent entry={entry} artwork={cover} coverSources={coverSources} badge={badge} consoleName={consoleName} status={status} look={look} details={details} />
       </button>
       {action && <div className="card-action">{action}</div>}
     </article>

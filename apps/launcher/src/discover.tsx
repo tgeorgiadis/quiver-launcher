@@ -7,10 +7,10 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { AppQuery, Entry, Sort } from "@quiverlauncher/api";
-import { EntryCard, boxOf, cardSources } from "@quiverlauncher/ui";
+import { EntryCard } from "@quiverlauncher/ui";
 import { ALL_APPS, CONSOLE_SHELVES, FeaturedCarousel, MORE_LIKE_THIS, SEE_ALL, SHELF_SIZE, SHELF_TITLES, Shelf, featuredDay, featuredMix, likeThis, runsWell } from "@quiverlauncher/ui/discover";
 import { availableOn, catalogOs, useLauncher } from "./store";
-import { CATALOG_BOX } from "./library-view";
+import { useBrowseCards } from "./library-view";
 
 export type ShelfKey = "rating" | "updated" | "added" | `console:${string}`;
 type SeeAll = { sort: Sort } | { console: string };
@@ -74,11 +74,12 @@ export function Discover({
     [rating, updated, added, day, showOwned], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
+  const looks = useBrowseCards();
   const card = (entry: Entry) => (
     <EntryCard
       key={entry.id}
       entry={entry}
-      coverSources={boxOf(entry) ? cardSources(boxOf(entry)!, CATALOG_BOX) : undefined}
+      {...looks.card(entry)}
       className={jobs[entry.id] ? "busy" : undefined}
       consoleNames={consoleNames}
       onOpen={() => onOpen(entry)}
@@ -107,7 +108,7 @@ export function Discover({
     );
   };
   return (
-    <div className="discover">
+    <div className={looks.look === "wide" ? "discover wide-cards" : "discover"}>
       {!featured ? (
         <div className="featured-placeholder" aria-hidden="true" />
       ) : (
@@ -136,6 +137,7 @@ export function Discover({
  */
 export function MoreLikeThis({ entry, onOpen, action }: { entry: Entry; onOpen: (entry: Entry) => void; action: (entry: Entry) => ReactNode }) {
   const { client, config, consoleNames, remember, library, jobs } = useLauncher();
+  const looks = useBrowseCards();
   const system = entry.consoles?.[0];
   const [items, setItems] = useState<{ for: string; entries: Entry[] } | null>(null);
   useEffect(() => {
@@ -157,13 +159,13 @@ export function MoreLikeThis({ entry, onOpen, action }: { entry: Entry; onOpen: 
   if (!system || (entries && !entries.length)) return null;
   const inLibrary = new Set(library.map((i) => i.id));
   return (
-    <div className="app-more">
+    <div className={looks.look === "wide" ? "app-more wide-cards" : "app-more"}>
       <Shelf title={i18n._(MORE_LIKE_THIS)} loading={!entries}>
         {entries?.map((e) => (
           <EntryCard
             key={e.id}
             entry={e}
-            coverSources={boxOf(e) ? cardSources(boxOf(e)!, CATALOG_BOX) : undefined}
+            {...looks.card(e)}
             className={jobs[e.id] ? "busy" : undefined}
             consoleNames={consoleNames}
             onOpen={() => onOpen(e)}

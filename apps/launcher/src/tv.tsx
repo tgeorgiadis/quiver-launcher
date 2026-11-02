@@ -18,7 +18,7 @@ import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
-import { EntryCard, boxOf, cardSources } from "@quiverlauncher/ui";
+import { EntryCard, boxOf, cardSources, type CardDetail } from "@quiverlauncher/ui";
 import { SHELF_TITLES, Shelf, runsWell } from "@quiverlauncher/ui/discover";
 import { hasUpdate, useLauncher } from "./store";
 import { useShelves } from "./discover";
@@ -332,6 +332,9 @@ export function TvHome({
  * downloading: one Action for the card the player is on, not one for each card on the screen, every one of which
  * redrew with each change to the launcher's state.
  */
+/** What's on a card for across a room, with a row and the next one's heading to fit on a Steam Deck's screen. */
+const TV_CARD_DETAILS: readonly CardDetail[] = ["subtitle", "ai", "platforms", "rating"];
+
 const TvCard = memo(function TvCard({
   entry,
   badge,
@@ -351,6 +354,7 @@ const TvCard = memo(function TvCard({
   const [here, setHere] = useState(false);
   return (
     <div
+      className="tv-card"
       onFocus={() => setHere(true)}
       // Leaving for its own button keeps it: it mustn't go as the focus goes to it.
       onBlur={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setHere(false)}
@@ -360,6 +364,7 @@ const TvCard = memo(function TvCard({
         coverSources={boxOf(entry) ? cardSources(boxOf(entry)!, CATALOG_BOX) : undefined}
         className={busy ? "busy" : undefined}
         consoleNames={consoleNames}
+        details={TV_CARD_DETAILS}
         onOpen={() => onOpen(entry)}
         badge={badge ? t`In library` : undefined}
         action={here || busy ? action(entry) : undefined}

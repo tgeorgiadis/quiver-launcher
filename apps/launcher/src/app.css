@@ -138,6 +138,9 @@ button.danger { color: var(--danger); }
 .discover-all { margin: 8px 0 16px; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; scroll-margin-top: 12px; }
 /* A phone: two cards a rowful, not one across the screen (176px and its gap left room for just one). */
 @media (max-width: 520px) { .shelf-row { --shelf-card: 130px; gap: 14px; } }
+/* Wide cards (browse-cards.ts): as wide as the grid's, and on a phone one across with the next peeking in. */
+.wide-cards .shelf-row { --shelf-card: 250px; }
+@media (max-width: 520px) { .wide-cards .shelf-row { --shelf-card: 230px; } }
 /* One banner at a time (App.tsx): the first that has something to say; dealing with it shows the next. */
 .banner-stack > * + * { display: none; }
 /* On a narrow screen the buttons go under the text rather than squeezing it to a word a line. */
@@ -851,7 +854,7 @@ button.download { width: 100%; text-align: left; }
  * Steam Deck each new layer showed black for a frame, or another card's art, so the cards round the focus flickered
  * black and Browse's swapped their pictures. A mouse's hover still eases them.
  */
-html[data-navigating] :is(.entry-card, .entry-card :is(.card-open, .card-cover, .card-cover > *, .card-action, .cover-os)) { transition: none; }
+html[data-navigating] :is(.entry-card, .entry-card :is(.card-open, .card-cover, .card-cover > *, .card-action)) { transition: none; }
 /* Nor does a shelf snap to its cards under a scroll eased by script (spatial.ts), which it would fight frame by frame. */
 html[data-navigating] .shelf-row { scroll-snap-type: none; }
 /*
@@ -1070,6 +1073,27 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .menu.view-panel { width: max-content; min-width: 300px; padding: 14px; }
 .menu.view-panel .toggle, .menu.view-panel .platform-hint { contain: inline-size; }
 .view-options { display: grid; gap: 12px; }
+/*
+ * Browse's card options: a sample card beside the boxes for its details. As wide as the page's cards before it's made
+ * smaller, so what fits on theirs fits on it.
+ */
+.card-preview { display: grid; grid-template-columns: max-content minmax(170px, 1fr); align-items: start; gap: 16px; }
+.card-preview > :only-child { grid-column: 1 / -1; }
+.card-sample { pointer-events: none; }
+.card-sample .entry-card { zoom: 0.8; }
+.card-sample .entry-card.box { width: 200px; }
+.card-sample .entry-card.wide { width: 300px; }
+.settings-section > .card-options { max-width: 460px; }
+/* A phone: smaller still, which leaves the boxes room in the panel; a phone's wide cards are narrower too. */
+@media (max-width: 520px) {
+  .card-preview { grid-template-columns: max-content minmax(150px, 1fr); gap: 10px; }
+  .card-sample .entry-card { zoom: 0.62; }
+  .card-sample .entry-card.wide { width: 250px; }
+}
+/* A short window: as much of the card in sight as there's room for. */
+@media (max-height: 720px) {
+  .card-sample .entry-card { zoom: 0.62; }
+}
 .view-choice { display: grid; gap: 6px; }
 .view-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segmented { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--field); }
@@ -1084,7 +1108,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .view-options .toggle:has(input:disabled) { opacity: 0.55; }
 .settings-section { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
 .settings-section h3 { font-size: 15px; }
-.settings-pane > .view-options { max-width: 380px; }
+.settings-pane > .view-options, .settings-section > .view-options { max-width: 380px; }
 .github-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
 .github-token ol { padding-left: 20px; display: grid; gap: 4px; }
 
@@ -1125,23 +1149,27 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .layout-grid.no-names:is(.image-box, .image-icon) .card-action { padding-top: 8px; }
 
 /*
- * The catalog's box-art cards (Browse, a game's ways to play): Get, Play or Update sits on the foot of the art, under
- * the pointer or with the focus on the card (a controller's), and always while it downloads or failed. A screen with
- * no pointer to hover (a phone) has it under the card instead.
+ * The catalog's cards (Browse, a game's ways to play): Get, Play or Update sits on the foot of the art, under the
+ * pointer or with the focus on the card (a controller's), and always while it downloads or failed; what's on the art
+ * there makes way. A screen with no pointer to hover (a phone) has it under the card instead.
  */
 .entry-card.box .card-action { padding: 10px 0 0; }
 .entry-card.box .card-action .row:not(.progress-row) > button { flex: 1 0 100%; }
-.entry-card.box .card-action .job-error { padding: 8px; border-radius: 8px; background: var(--panel); box-shadow: 0 6px 18px var(--shadow); }
+.entry-card:is(.box, .wide) .card-action .job-error { padding: 8px; border-radius: 8px; background: var(--panel); box-shadow: 0 6px 18px var(--shadow); }
 @media (hover: hover) {
-  .entry-card.box .card-action {
-    position: absolute; top: 0; left: 0; right: 0; aspect-ratio: 2 / 3; display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 10px; pointer-events: none; opacity: 0; transition: opacity 0.14s, transform 0.16s;
+  .entry-card.wide { position: relative; }
+  .entry-card:is(.box, .wide) .card-action {
+    position: absolute; top: 0; left: 0; right: 0; display: flex; flex-direction: column; justify-content: flex-end;
+    margin: 0; padding: 10px; pointer-events: none; opacity: 0; transition: opacity 0.14s;
   }
-  .entry-card.box .card-action > * { pointer-events: auto; }
-  .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within, .busy) .card-action { opacity: 1; }
+  .entry-card.box .card-action { aspect-ratio: 2 / 3; transition: opacity 0.14s, transform 0.16s; }
+  .entry-card.wide .card-action { height: 173px; }
+  .entry-card:is(.box, .wide) .card-action > * { pointer-events: auto; }
+  .entry-card:is(.box, .wide):is(:hover:where(:not([data-navigating] *)), :focus-within, .busy) .card-action { opacity: 1; }
+  .entry-card:is(.box, .wide):is(:hover:where(:not([data-navigating] *)), :focus-within, .busy) :is(.card-arrow, .cover-strip) { opacity: 0; }
   /* With the art as it lifts. */
   .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-action { transform: translateY(-4px); }
-  .entry-card.box .card-action :is(.primary, .row > button) { box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); }
+  .entry-card:is(.box, .wide) .card-action :is(.primary, .row > button) { box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); }
 }
 
 /* A box art or icon card's picture. */
@@ -1245,6 +1273,12 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 /* Dims with the icon on hover, as brightness(0.42) does to it. */
 .layout-grid.image-icon:not(.no-names) .library-tile:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-open { background: color-mix(in srgb, var(--field) 42%, #000); }
 .layout-grid .library-tile .card-body > .tile-name { display: flex; align-items: center; gap: 7px; min-width: 0; }
+/* The details picked (view.ts): tags, AI label and platforms in small capitals over the name; a line each under it. */
+.layout-grid .library-tile .card-body > .tile-tags { display: flex; align-items: center; gap: 6px; min-width: 0; height: 16px; color: rgb(255 255 255 / 0.7); font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
+.library-tile .tile-tags > .tile-kinds { flex: 0 1 auto; min-width: 0; }
+.library-tile .tile-tags > .ai-chip { flex: none; padding: 0 6px; font-size: 9px; }
+.library-tile .tile-tags > .platform-icons { flex: none; margin-left: auto; gap: 5px; color: inherit; font-size: 11px; }
+.layout-grid .library-tile .card-body > .tile-line { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: rgb(255 255 255 / 0.75); font-size: 12px; }
 .layout-grid .library-tile .card-title { min-width: 0; color: #fff; font-size: 17px; font-weight: 750; letter-spacing: -0.01em; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
 .layout-grid .library-tile .card-body > .card-subtitle { display: block; min-width: 0; color: rgb(255 255 255 / 0.82); font-size: 12.5px; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 6px rgb(0 0 0 / 0.5); }
 .size-small .library-tile .card-title { font-size: 14px; }
@@ -1398,13 +1432,15 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
  * in a band over it; and what hover or focus shows (the facts, the buttons, Play) on the art alone, so nothing covers
  * the names. The names keep a set height, two lines, so the art ends at the same place on every card.
  */
-.layout-grid:not(.no-names, .image-icon) .library-tile { --tile-names: 54px; overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.layout-grid:not(.no-names, .image-icon) .library-tile { --tile-names: calc(36px + 18px * var(--tile-lines, 1)); overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none; }
 .layout-grid:not(.no-names, .image-icon) .library-tile:is(:hover:where(:not([data-navigating] *)), :focus-within, [data-focus]) { border-color: transparent; box-shadow: none; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .card-cover { border: 1px solid var(--ql-card-line); border-radius: 10px; box-shadow: 0 10px 24px var(--ql-card-shadow); }
 .layout-grid:not(.no-names, .image-icon) .library-tile:is(:hover:where(:not([data-navigating] *)), [data-focus]) .card-cover { border-color: var(--ql-accent); box-shadow: 0 18px 36px var(--ql-card-shadow), 0 0 0 1px var(--ql-accent); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .card-body { position: static; height: var(--tile-names); padding: 10px 2px 0; align-content: start; background: none; border: 0; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .card-title { color: var(--strong); font-size: 14.5px; font-weight: 650; text-shadow: none; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .card-body > .card-subtitle { color: var(--muted); font-size: 12.5px; text-shadow: none; }
+.layout-grid:not(.no-names, .image-icon) .library-tile .card-body > .tile-line { color: var(--muted); }
+.layout-grid:not(.no-names, .image-icon) .library-tile .tile-tags { color: var(--ql-card-kind); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark { filter: none; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="missing"] { color: var(--muted); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="update"] { color: var(--accent); }
@@ -1847,15 +1883,17 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 .tv { --tv-card: 168px; }
 .tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--tv-card), 1fr)); gap: 26px 22px; }
 .tv .shelf-row { --shelf-card: var(--tv-card); gap: 22px; }
+.tv-card { display: flex; min-width: 0; }
+.tv-card > .entry-card { flex: 1; min-width: 0; }
 /*
  * Moving costs nothing it needn't: the focus box is the focus's mark, so a card neither lifts, nor relights its frame,
- * nor fades its button in as the focus comes to it; its button and platforms show at once. The library's own cards
+ * nor fades its button in as the focus comes to it; its button shows at once. The library's own cards
  * (library-tile.tsx) don't darken their art either, with nothing over it to read but their buttons (a withdrawn
  * release's why aside).
  */
 .tv .entry-card.box .card-cover { transition: none; }
 .tv .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-cover { transform: none; border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
-.tv .entry-card.box .card-action, .tv .entry-card.box .cover-os { transition: none; }
+.tv .entry-card.box :is(.card-action, .cover-strip) { transition: none; }
 .tv .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-action { transform: none; }
 .tv .layout-grid .library-tile, .tv .layout-grid .library-tile .card-cover { transition: none; }
 .tv .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), :focus-within, [data-focus]) { transform: none; }
@@ -1880,7 +1918,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
 .tv-count { margin-left: auto; color: rgb(255 255 255 / 0.6); font-size: 15px; font-variant-numeric: tabular-nums; }
 .tv .shelf-head h2 { font-size: 21px; color: #fff; }
 .tv .entry-card.box .card-title { color: #fff; }
-.tv .entry-card.box :is(.card-subtitle, .card-line, .card-status) { color: rgb(255 255 255 / 0.7); }
+.tv .entry-card.box :is(.card-subtitle, .card-status) { color: rgb(255 255 255 / 0.7); }
 .tv-empty { margin: 24px 0; color: rgb(255 255 255 / 0.75); font-size: 16px; }
 /*
  * An app's page over TV mode (App.tsx's AppPage with `tv`): its art taller and plainer, its name and buttons larger

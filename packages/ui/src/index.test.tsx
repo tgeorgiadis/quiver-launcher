@@ -156,7 +156,7 @@ const entry: CardEntry & { slug: string } = {
 };
 
 describe("EntryCard", () => {
-  it("shows the box art, the app's name, its game and console, and what players said, and opens it from its button", () => {
+  it("shows the box art over the catalog's details, and opens it from its button", () => {
     let opened = 0;
     const { container, getByRole } = render(
       <EntryCard
@@ -169,10 +169,11 @@ describe("EntryCard", () => {
     const card = container.querySelector('article.entry-card.box[data-slug="test-port"]')!;
     expect(card.querySelector(".artwork.cover-photo img")?.getAttribute("src")).toBe("capsule.png");
     expect(card.querySelector(".card-title")?.textContent).toBe("Test Port");
-    expect(card.querySelector(".card-subtitle")?.textContent).toBe("Test Game · Nintendo 64");
-    expect(card.querySelector(".card-line .score.positive")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
-    expect(card.querySelector(".cover-ai .ai-chip")?.textContent).toBe("AI-assisted");
-    expect(card.querySelector(".cover-os .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
+    expect(card.querySelector(".card-kind")?.textContent).toBe("Nintendo 64 · Harbour Masters");
+    expect(card.querySelector(".card-subtitle")?.textContent).toBe("Test Game");
+    expect(card.querySelector(".card-bottom .score.positive")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
+    expect(card.querySelector(".cover-strip .ai-chip")?.textContent).toBe("AI-assisted");
+    expect(card.querySelector(".cover-strip .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
     // A shelf of the newest says New; a badge on every recent box was noise.
     expect(card.querySelector(".cover-badge")).toBeNull();
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
@@ -180,11 +181,11 @@ describe("EntryCard", () => {
     expect(opened).toBe(1);
   });
 
-  it("shows wide art whole over a blurred copy when there's no box art, and its latest release when nobody's rated it", () => {
+  it("shows wide art whole over a blurred copy when there's no box art", () => {
     const { container } = render(<EntryCard entry={{ ...entry, recommended: 0, reportIssues: 0 }} badge="In library" />);
     expect(container.querySelector(".box-fallback .box-fallback-blur")).not.toBeNull();
     expect(container.querySelector(".box-fallback .artwork img")?.getAttribute("src")).toBe("header.png");
-    expect(container.querySelector(".card-line .release-age.stale")?.textContent).toBe(" No release in 1 yr+");
+    expect(container.querySelector(".card-bottom .release-age.stale")?.textContent).toBe(" No release in 1 yr+");
     expect(container.querySelector(".cover-badge")?.textContent).toBe("In library");
   });
 
@@ -213,6 +214,23 @@ describe("EntryCard", () => {
     // Icons' SVG drawing aside.
     const flow = [...inside].filter((el) => !el.closest("svg") && !["SPAN", "IMG", "SMALL"].includes(el.tagName));
     expect(flow.map((el) => el.tagName)).toEqual([]);
+  });
+
+  it.each(["box", "wide"] as const)("shows the details picked on a %s card, and leaves the rest out", (look) => {
+    const names = { n64: "Nintendo 64" };
+    const all = render(<EntryCard entry={{ ...entry, recommended: 0, reportIssues: 0 }} look={look} consoleNames={names} details={["subtitle", "kinds", "rating", "updated", "platforms", "ai", "new"]} />).container;
+    expect(all.querySelector(".card-kind")?.textContent).toBe("Nintendo 64 · Harbour Masters");
+    expect(all.querySelector(".ai-chip")).not.toBeNull();
+    expect(all.querySelector(".platform-icons")).not.toBeNull();
+    expect(all.querySelector(".card-subtitle, .based-on .game-chip")?.textContent).toBe("Test Game");
+    expect(all.querySelector(".card-bottom .score")?.textContent).toBe("Not rated yet");
+    expect(all.querySelector(".card-bottom .release-age")?.textContent).toBe(" No release in 1 yr+");
+    expect(all.querySelector(".cover-badge")?.textContent).toBe("New");
+    cleanup();
+    const none = render(<EntryCard entry={entry} look={look} consoleNames={names} details={["rating"]} />).container;
+    expect(none.querySelector(".card-title")?.textContent).toBe("Test Port");
+    expect(none.querySelector(".card-kind, .ai-chip, .platform-icons, .cover-strip, .card-subtitle, .based-on, .release-age, .cover-badge")).toBeNull();
+    expect(none.querySelector(".card-bottom .score")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
   });
 
   it("shows a given badge in place of New, and leaves tags that aren't consoles to tagLabel", () => {
