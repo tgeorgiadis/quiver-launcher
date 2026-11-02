@@ -14,20 +14,20 @@ import { Plural, Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
-import { PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
+import { OS_NAMES, PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
 import { hasUpdate, useLauncher, type LibraryItem } from "./store";
 import { haloMoved, pageArea } from "./spatial";
 import { jumpLetters, letterOf } from "./tv-library";
 import { LetterIndex } from "./letter-index";
 import { versionLabel } from "./versions";
 import { useAccount } from "./account";
-import { hasFilters, inCollection, matches, type AppFacts, type Collection } from "./sync";
+import { hasFilters, inCollection, matches, newKey, type AppFacts, type Collection } from "./sync";
 import { isOwn } from "./custom";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
 import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
-import { PLATFORMS, forPlatforms } from "./platforms";
+import { PLATFORMS, forPlatforms, type Platform } from "./platforms";
 import { gridGroupBy, isStack, sections, stacks, type Stack } from "./group";
 import { FiltersPanel, SidebarLayout, SidebarList } from "./library-sidebar";
 import { byWhen } from "./sidebar";
@@ -61,7 +61,7 @@ export function withOverrides(entry: Entry, o?: Overrides): Entry {
   return made;
 }
 
-export const newKey = () => `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+export { newKey } from "./sync";
 /** A playlist's filters from the library's, and back. */
 const toPlaylist = (f: Filters) => ({
   tags: f.tag ? [f.tag] : [],
@@ -241,6 +241,7 @@ export function LibraryPage({
     // Apps the player added match only the filters there's data for.
     projectType: isOwn(entry.id) ? undefined : entry.projectType,
     aiLevel: entry.aiLevel,
+    platforms: entry.supportedOS,
     names: [entry.projectName, ...entry.games.map((g) => g.title)],
   });
   const sortFacts = (e: Entry) => ({ lastPlayed: installs[e.id]?.lastPlayed, installedAt: installs[e.id]?.installedAt, addedAt: inLibrary.get(e.id)?.addedAt, installed: Boolean(installs[e.id]) });
@@ -1395,8 +1396,10 @@ function PlaylistEditor({
   const [name, setName] = useState(collection.name);
   const [filters, setFilters] = useState<Filters>(fromPlaylist(collection));
   const [search, setSearch] = useState(collection.search ?? "");
+  const [platform, setPlatform] = useState<Platform | undefined>(collection.platforms?.[0]);
   const [icon, setIcon] = useState(collection.icon);
   const isNew = !collection.name;
+  const platforms = platform === collection.platforms?.[0] ? collection.platforms : platform && [platform];
   const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const picked = collection.apps?.length ?? 0;
   return (
@@ -1414,6 +1417,7 @@ function PlaylistEditor({
             ...next,
             name: name.trim().slice(0, 60),
             search: search.trim() || undefined,
+            platforms,
             icon,
             tags: filters.tag === was.tag ? collection.tags : next.tags,
             consoles: filters.console === was.console ? collection.consoles : next.consoles,
@@ -1444,9 +1448,17 @@ function PlaylistEditor({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <select aria-label={t`Platform`} value={platform ?? ""} onChange={(e) => setPlatform((e.target.value || undefined) as Platform | undefined)}>
+            <option value="">{t`All platforms`}</option>
+            {PLATFORMS.map((os) => (
+              <option key={os} value={os}>
+                {OS_NAMES[os]}
+              </option>
+            ))}
+          </select>
           <FilterFields value={filters} set={set} entries={library} ownTags={ownTags} />
         </div>
-        <IconChoice entries={on({ ...collection, ...toPlaylist(filters), search })} value={icon} onChange={setIcon} />
+        <IconChoice entries={on({ ...collection, ...toPlaylist(filters), search, platforms })} value={icon} onChange={setIcon} />
         <div className="row">
           <button className="primary">
             <Trans comment="Saves a playlist">Save</Trans>

@@ -18,13 +18,37 @@ pub struct OldApp {
     version: Option<String>,
     /// The program a Windows installer (MSI) put on the computer, for an app 3.x installed that way.
     program: Option<String>,
+    /// Its tags as 3.x showed them: the player's, and the catalog's among them.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    tags: Vec<String>,
+    /// The catalog's tags when 3.x last followed its entry, which tells the player's own apart.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    catalog_tags: Vec<String>,
+    /// The player hid it in 3.x's library.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    hidden: bool,
 }
 
-/// A 3.x library: the folder holding its apps.json, and its apps.
+/// A 3.x library: the folder holding its apps.json, its apps, and the player's tag filters.
 #[derive(Serialize)]
 pub struct Library {
     folder: String,
     apps: Vec<OldApp>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    filters: Vec<TagFilter>,
+}
+
+/// A tag filter the player made in 3.x's library (its TagDisplayFilter): the
+/// apps with any of its tags, or all of them, less those with any (or all) of
+/// the tags it leaves out.
+#[derive(Serialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TagFilter {
+    name: String,
+    tags: Vec<String>,
+    all: bool,
+    exclude: Vec<String>,
+    exclude_all: bool,
 }
 
 /// The version 3.x gave an install it couldn't tell the version of
@@ -60,13 +84,26 @@ fn data_dirs() -> Vec<PathBuf> {
     known.into_iter().flatten().chain(nearby).collect()
 }
 
-/// A field by name in any letter case (3.x wrote both camelCase and PascalCase).
-fn field<'a>(v: &'a Value, name: &str) -> Option<&'a str> {
-    v.as_object()?.iter().find(|(k, _)| k.eq_ignore_ascii_case(name))?.1.as_str().filter(|s| !s.trim().is_empty())
+/// A value by name in any letter case (3.x wrote both camelCase and PascalCase).
+fn get<'a>(v: &'a Value, name: &str) -> Option<&'a Value> {
+    v.as_object()?.iter().find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v)
 }
 
+/// A text field by name, when it says something.
+fn field<'a>(v: &'a Value, name: &str) -> Option<&'a str> {
+    get(v, name)?.as_str().filter(|s| !s.trim().is_empty())
+}
+
+/// A list of texts, trimmed, without the empty ones.
+fn texts(v: Option<&Value>) -> Vec<String> {
+    let list = v.and_then(Value::as_array).into_iter().flatten();
+    list.filter_map(Value::as_str).map(str::trim).filter(|s| !s.is_empty()).map(str::to_string).collect()
+}
+
+/// A JSON file, with or without the byte order mark 3.x can start its settings.json with.
 fn read(path: &Path) -> Option<Value> {
-    serde_json::from_slice(&std::fs::read(path).ok()?).ok()
+    let bytes = std::fs::read(path).ok()?;
+    serde_json::from_slice(bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(&bytes)).ok()
 }
 
 /// The library file in a folder: apps.json, or games.json from before 3.x renamed it.
@@ -127,8 +164,27 @@ pub fn find_in(dir: &Path, apps: Option<&Path>) -> Option<Library> {
 
 /// The library in this very folder, if it holds one.
 fn library_in(dir: &Path, apps: Option<&Path>) -> Option<Library> {
-    let apps = read_library(dir, apps);
-    (!apps.is_empty()).then(|| Library { folder: dir.to_string_lossy().into(), apps })
+    let settings = read(&dir.join("settings.json")).unwrap_or(Value::Null);
+    let apps = read_library(dir, apps, &settings);
+    (!apps.is_empty()).then(|| Library { folder: dir.to_string_lossy().into(), apps, filters: tag_filters(&settings) })
+}
+
+/// The tag filters in 3.x's settings, leaving out any that filter nothing.
+fn tag_filters(settings: &Value) -> Vec<TagFilter> {
+    // 3.x saved how a filter matches as its number, 1 for All.
+    let all = |v: Option<&Value>| v.is_some_and(|v| v.as_u64() == Some(1) || v.as_str().is_some_and(|s| s.eq_ignore_ascii_case("all")));
+    let list = get(settings, "tagDisplayFilters").and_then(Value::as_array).into_iter().flatten();
+    list.filter_map(|f| {
+        let filter = TagFilter {
+            name: field(f, "name")?.trim().to_string(),
+            tags: texts(get(f, "tags")),
+            all: all(get(f, "matchMode")),
+            exclude: texts(get(f, "excludeTags")),
+            exclude_all: all(get(f, "excludeMatchMode")),
+        };
+        (!filter.tags.is_empty() || !filter.exclude.is_empty()).then_some(filter)
+    })
+    .collect()
 }
 
 /// A folder 3.x's settings or an app named, which can be relative to where 3.x
@@ -190,14 +246,16 @@ fn installed(dir: &Path) -> Option<(String, Option<String>)> {
 
 /// The apps in a folder's library file, if it's a 3.x one: each has a name,
 /// and at least one has a repository.
-fn read_library(dir: &Path, apps: Option<&Path>) -> Vec<OldApp> {
+fn read_library(dir: &Path, apps: Option<&Path>, settings: &Value) -> Vec<OldApp> {
     let Some(doc) = library_file(dir).and_then(|f| read(&f)) else { return vec![] };
     // Set when 3.x moved its data to ~/.local/share, to where its Apps folder stayed.
-    let apps_dir = apps.map(Path::to_path_buf).unwrap_or_else(|| {
-        read(&dir.join("settings.json"))
-            .and_then(|s| field(&s, "appsPath").map(|p| resolve(dir, p)))
-            .unwrap_or_else(|| dir.join("Apps"))
-    });
+    let apps_dir = apps
+        .map(Path::to_path_buf)
+        .or_else(|| field(settings, "appsPath").map(|p| resolve(dir, p)))
+        .unwrap_or_else(|| dir.join("Apps"));
+    // 3.x kept the apps the player hid in its settings, and the tags they gave a catalog app.
+    let hidden_keys = texts(get(settings, "manuallyHiddenApps"));
+    let set_tags = get(settings, "userAppTags");
     let list = doc.as_object().and_then(|o| o.iter().find(|(k, _)| k.eq_ignore_ascii_case("apps"))).map(|(_, v)| v);
     let apps = list
         .and_then(Value::as_array)
@@ -213,9 +271,23 @@ fn read_library(dir: &Path, apps: Option<&Path>) -> Vec<OldApp> {
                 Some((d, version, program)) => (Some(d.to_string_lossy().into()), Some(version), program),
                 None => (None, None, None),
             };
+            let repository = field(app, "repository");
+            // How 3.x knew a hidden app (GameManager.GetHiddenGameKey): by its folder, else its repository, else
+            // its name; or by its name alone.
+            let key = match (field(app, "folderName"), repository) {
+                (Some(f), _) => format!("folder:{f}"),
+                (None, Some(r)) => format!("repo:{r}"),
+                (None, None) => format!("name:{name}"),
+            };
+            let hidden = hidden_keys.iter().any(|h| *h == key || *h == name);
+            // Tags set in 3.x's settings stand in for the app's own (AppCatalogService.ApplyUserAppTags).
+            let set = repository.and_then(|r| set_tags.and_then(|t| get(t, r)));
             Some(OldApp {
+                tags: texts(set.or_else(|| get(app, "tags"))),
+                catalog_tags: texts(get(app, "catalog").and_then(|c| get(c, "tags"))),
+                hidden,
                 name,
-                repository: field(app, "repository").map(str::to_string),
+                repository: repository.map(str::to_string),
                 provider: field(app, "repositorySource").unwrap_or("github").to_lowercase(),
                 catalog_id: field(app, "catalogEntryId").map(str::to_string),
                 dir,
@@ -267,7 +339,7 @@ mod tests {
         std::fs::create_dir_all(portable.join("current")).unwrap();
         // The player can pick the copy's own `current` folder, as well as the folder around the copy.
         for dir in [portable.as_path(), root.path(), &portable.join("current")] {
-            let Library { folder, apps } = find_in(dir, None).unwrap();
+            let Library { folder, apps, .. } = find_in(dir, None).unwrap();
             // Where its apps.json is, whichever of them was picked: the folder picker opens there next time.
             assert_eq!(Path::new(&folder), portable);
             assert_eq!(apps.len(), 1);
@@ -424,6 +496,78 @@ mod tests {
         std::fs::remove_file(&program).unwrap();
         assert_eq!(apps_in(root.path())[0].version, None);
         assert_eq!(apps_in(root.path())[0].dir, None);
+    }
+
+    #[test]
+    fn brings_over_the_tags_and_what_the_catalog_set_of_them() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = serde_json::json!({ "Apps": [
+            { "Name": "Test Port", "Repository": "quiver/test-port", "Tags": ["n64", " favourite ", ""], "catalog": { "tags": ["n64"] } },
+            { "Name": "Other Port", "Repository": "quiver/other-port", "Tags": ["n64"] },
+        ] });
+        library(root.path(), &apps.to_string());
+        let apps = apps_in(root.path());
+        assert_eq!(apps[0].tags, ["n64", "favourite"]);
+        assert_eq!(apps[0].catalog_tags, ["n64"]);
+        assert!(apps[1].catalog_tags.is_empty());
+        // Tags the player set in 3.x's settings, by repository, are the ones it showed.
+        let settings = serde_json::json!({ "UserAppTags": { "quiver/other-port": ["mine"] } });
+        std::fs::write(root.path().join("settings.json"), settings.to_string()).unwrap();
+        let apps = apps_in(root.path());
+        assert_eq!(apps[0].tags, ["n64", "favourite"]);
+        assert_eq!(apps[1].tags, ["mine"]);
+    }
+
+    #[test]
+    fn brings_over_which_apps_the_player_hid() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = serde_json::json!({ "apps": [
+            { "name": "By Folder", "repository": "quiver/by-folder", "folderName": "ByFolder" },
+            { "name": "By Repository", "repository": "quiver/by-repository" },
+            { "name": "By Name", "repository": "quiver/by-name", "folderName": "ByName" },
+            { "name": "Shown", "repository": "quiver/shown", "folderName": "Shown" },
+            // Its folder is how 3.x knew it, not its repository.
+            { "name": "Not By Repository", "repository": "quiver/not", "folderName": "NotByRepository" },
+        ] });
+        library(root.path(), &apps.to_string());
+        let hidden = ["folder:ByFolder", "repo:quiver/by-repository", "By Name", "repo:quiver/not"];
+        std::fs::write(root.path().join("settings.json"), serde_json::json!({ "ManuallyHiddenApps": hidden }).to_string()).unwrap();
+        let hid: Vec<bool> = apps_in(root.path()).iter().map(|a| a.hidden).collect();
+        assert_eq!(hid, [true, true, true, false, false]);
+    }
+
+    #[test]
+    fn brings_over_the_players_tag_filters() {
+        let root = tempfile::tempdir().unwrap();
+        library(root.path(), PORT);
+        let filters = serde_json::json!({ "TagDisplayFilters": [
+            { "Id": "a", "Name": " Recomps ", "Tags": ["recomp", "n64"], "MatchMode": 0, "ExcludeTags": [], "ExcludeMatchMode": 0 },
+            { "Id": "b", "Name": "Finished", "Tags": ["n64", "done"], "MatchMode": 1, "ExcludeTags": ["broken", "wip"], "ExcludeMatchMode": "All" },
+            // One that filters nothing, and one without a name.
+            { "Id": "c", "Name": "Everything", "Tags": [], "ExcludeTags": [] },
+            { "Id": "d", "Name": "", "Tags": ["n64"] },
+        ] });
+        std::fs::write(root.path().join("settings.json"), filters.to_string()).unwrap();
+        let filter = |name: &str, tags: &[&str], all, exclude: &[&str], exclude_all| TagFilter {
+            name: name.into(),
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+            all,
+            exclude: exclude.iter().map(|t| t.to_string()).collect(),
+            exclude_all,
+        };
+        assert_eq!(
+            find_in(root.path(), None).unwrap().filters,
+            [filter("Recomps", &["recomp", "n64"], false, &[], false), filter("Finished", &["n64", "done"], true, &["broken", "wip"], true)]
+        );
+    }
+
+    #[test]
+    fn reads_files_that_start_with_a_byte_order_mark() {
+        let root = tempfile::tempdir().unwrap();
+        library(root.path(), &format!("\u{FEFF}{PORT}"));
+        let settings = serde_json::json!({ "ManuallyHiddenApps": ["folder:TestPort"] });
+        std::fs::write(root.path().join("settings.json"), format!("\u{FEFF}{settings}")).unwrap();
+        assert!(apps_in(root.path())[0].hidden);
     }
 
     #[test]

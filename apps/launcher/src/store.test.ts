@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, hasUpdate } from "./store";
+import { adoptedInstall, bringsAlong, hasUpdate, importedPlaylists, importedTags, type ImportedApp } from "./store";
+import type { OldApp, OldFilter } from "./native";
 
 const entry = {
   id: "port",
@@ -40,5 +41,112 @@ describe("adoptedInstall", () => {
 
   it("has nothing to keep for an app 3.x hadn't installed", () => {
     expect(adoptedInstall({ name: "Test Port", provider: "github" }, entry, "linux")).toBeUndefined();
+  });
+});
+
+describe("importedTags", () => {
+  const listed = { ...entry, tags: ["recreation", "Mod Support"], consoles: ["n64"] } as unknown as Entry;
+  const old = (tags: string[], catalogTags?: string[]) => ({ name: "Test Port", provider: "github", tags, catalogTags });
+
+  it("brings over the player's tags, not the catalog's", () => {
+    expect(importedTags(old(["n64", "recreation", "favourite", "co-op"], ["co-op"]), listed)).toEqual(["favourite"]);
+  });
+
+  it("knows the catalog's from the entry when 3.x didn't keep them", () => {
+    expect(importedTags(old(["mod support", "N64", "favourite"]), listed)).toEqual(["favourite"]);
+  });
+
+  it("keeps them as the tag field does: once each, at most 20, each up to 50 letters", () => {
+    expect(importedTags(old(["Mine", "mine", " spaced "]), listed)).toEqual(["Mine", "spaced"]);
+    expect(importedTags(old(Array.from({ length: 25 }, (_, i) => `tag ${i}`)), listed)).toHaveLength(20);
+    expect(importedTags(old(["x".repeat(60)]), listed)).toEqual(["x".repeat(50)]);
+  });
+
+  it("has none for an app without tags", () => {
+    expect(importedTags({ name: "Test Port", provider: "github" }, listed)).toEqual([]);
+  });
+});
+
+describe("importedPlaylists", () => {
+  const filter = (name: string, tags: string[], more: Partial<OldFilter> = {}): OldFilter => ({ name, tags, all: false, exclude: [], excludeAll: false, ...more });
+  // As 3.x tagged them, and as they're tagged here: the "n64" tag is a console here, so it isn't one of their tags.
+  const apps: ImportedApp[] = [
+    { id: "a", old: ["recomp", "n64"], tags: ["recomp"] },
+    { id: "b", old: ["n64", "done"], tags: ["done"] },
+    { id: "c", old: ["port", "done", "broken"], tags: ["port", "done", "broken"] },
+  ];
+
+  it("keeps a filter for any of its tags following them", () => {
+    expect(importedPlaylists([filter("Finished", ["Done"])], apps)).toEqual([{ name: "Finished", tags: ["Done"] }]);
+    // Showing nothing yet, it still finds them as they're tagged.
+    expect(importedPlaylists([filter("Later", ["wishlist"])], apps)).toEqual([{ name: "Later", tags: ["wishlist"] }]);
+  });
+
+  it("picks the apps it showed that its tags don't find here", () => {
+    expect(importedPlaylists([filter("N64", ["n64", "recomp"])], apps)).toEqual([{ name: "N64", tags: ["n64", "recomp"], apps: ["b"] }]);
+  });
+
+  it("picks the apps any other filter showed", () => {
+    expect(importedPlaylists([filter("Both", ["n64", "done"], { all: true })], apps)).toEqual([{ name: "Both", tags: [], apps: ["b"] }]);
+    expect(importedPlaylists([filter("Working", ["done"], { exclude: ["broken"] })], apps)).toEqual([{ name: "Working", tags: [], apps: ["b"] }]);
+    expect(importedPlaylists([filter("Not ports", [], { exclude: ["port", "broken"], excludeAll: true })], apps)).toEqual([{ name: "Not ports", tags: [], apps: ["a", "b"] }]);
+    // An app tagged here with a tag it had in 3.x no longer: the filter's tags would find more than it showed.
+    const retagged = [...apps, { id: "d", old: [], tags: ["done"] }];
+    expect(importedPlaylists([filter("Finished", ["done"])], retagged)).toEqual([{ name: "Finished", tags: [], apps: ["b", "c"] }]);
+  });
+
+  it("leaves out one that showed nothing it can keep", () => {
+    expect(importedPlaylists([filter("Nothing", ["n64", "port"], { all: true })], apps)).toEqual([]);
+  });
+
+  it("filters by platform for 3.x's platform tags", () => {
+    const onPlatforms: ImportedApp[] = [
+      { id: "a", old: ["android", "recomp"], tags: ["recomp"], platforms: ["windows", "android"] },
+      { id: "b", old: ["Linux"], tags: [], platforms: ["linux"] },
+      { id: "c", old: ["recomp"], tags: ["recomp"], platforms: ["windows"] },
+    ];
+    expect(importedPlaylists([filter("Phone", ["android"])], onPlatforms)).toEqual([{ name: "Phone", tags: [], platforms: ["android"] }]);
+    expect(importedPlaylists([filter("Not Windows", ["android", "linux", "mac"])], onPlatforms)).toEqual([
+      { name: "Not Windows", tags: [], platforms: ["android", "linux", "macos"] },
+    ]);
+    // All of a platform's tag and another: both filters.
+    expect(importedPlaylists([filter("Phone recomps", ["android", "recomp"], { all: true })], onPlatforms)).toEqual([
+      { name: "Phone recomps", tags: ["recomp"], platforms: ["android"] },
+    ]);
+    // Any of them is either, which a platform and a tag can't say: by its tags, as here, or picked.
+    expect(importedPlaylists([filter("Either", ["android", "recomp"])], onPlatforms)).toEqual([{ name: "Either", tags: ["android", "recomp"] }]);
+    expect(importedPlaylists([filter("Either", ["linux", "recomp"])], onPlatforms)).toEqual([{ name: "Either", tags: ["linux", "recomp"], apps: ["b"] }]);
+  });
+
+  it("filters by the tag when the platform would find apps the tag didn't", () => {
+    const tagged: ImportedApp[] = [
+      { id: "a", old: ["windows"], tags: ["windows"], platforms: ["windows"] },
+      { id: "b", old: [], tags: [], platforms: ["windows"] },
+    ];
+    expect(importedPlaylists([filter("PC", ["windows"])], tagged)).toEqual([{ name: "PC", tags: ["windows"] }]);
+  });
+
+  it("names it as 3.x did, as long as a playlist's name can be", () => {
+    expect(importedPlaylists([filter("x".repeat(70), ["done"])], apps)[0].name).toBe("x".repeat(60));
+  });
+});
+
+describe("bringsAlong", () => {
+  const app = (more: Partial<OldApp> = {}): OldApp => ({ name: "Test Port", provider: "github", repository: "quiver/test-port", ...more });
+
+  it("counts the apps with the player's own tags, the tag filters and the hidden apps", () => {
+    const apps = [
+      app({ catalogId: "a", tags: ["n64", "favourite"], catalogTags: ["n64"] }),
+      app({ catalogId: "b", tags: ["N64"], catalogTags: ["n64"], hidden: true }),
+      // Not in the catalog: its tags are all the player's.
+      app({ tags: ["mine"] }),
+      // From a 3.x that didn't keep the catalog's tags: there's no telling.
+      app({ catalogId: "c", tags: ["n64", "favourite"] }),
+      // 3.x doesn't know where it comes from, so it doesn't come over.
+      app({ repository: undefined, tags: ["mine"], hidden: true }),
+    ];
+    const filters = [{ name: "N64", tags: ["n64"], all: false, exclude: [], excludeAll: false }];
+    expect(bringsAlong({ apps, filters })).toEqual({ tagged: 2, filters: 1, hidden: 1 });
+    expect(bringsAlong({ apps: [app()] })).toEqual({ tagged: 0, filters: 0, hidden: 0 });
   });
 });

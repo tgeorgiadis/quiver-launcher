@@ -4,6 +4,8 @@
  * and pick out what still has to be saved to it. Installs are kept apart and
  * never touched here.
  */
+import type { Entry } from "@quiverlauncher/api";
+import { forPlatforms, type Platform } from "./platforms";
 import type { CustomApp, LibraryItem } from "./store";
 
 /** An app in the account's library (library.list on the site). */
@@ -104,7 +106,7 @@ export function changesFrom(local: LibraryItem[], account: string): Change[] {
  * A playlist in the library (a collection, on the site). It shows the apps
  * picked for it by hand, and the apps that match every filter it sets: any of
  * its tags (the player's or the catalog's), consoles (or a maker's, as
- * "maker:Nintendo") and project types, its AI use, installed or not, and words
+ * "maker:Nintendo"), platforms and project types, its AI use, installed or not, and words
  * in the app's name or its games' (Zelda). Without filters it's just the picked apps. A followed playlist mirrors one someone
  * shared, and its apps come from the site.
  */
@@ -119,6 +121,8 @@ export type Collection = {
   ai?: "no-generated" | "no-ai";
   /** Words the app's name or one of its games' has, all of them, like "zelda". Kept on this device; the site doesn't store it yet. */
   search?: string;
+  /** Platforms the app has a release for, any of them. */
+  platforms?: Platform[];
   /** The app whose icon shows on the playlist's tab, by library key; else its first app's. Kept on this device like `search`. */
   icon?: string;
   /** Apps picked by hand, by library key. */
@@ -134,6 +138,8 @@ export type Collection = {
   /** The account this collection last synced with. */
   account?: string;
 };
+/** A key for a collection made here. */
+export const newKey = () => `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 /** A collection in the account (libraryCollections.list on the site). */
 export type ServerCollection = Omit<Collection, "pending" | "account"> & { removed: boolean; updatedAt: number };
 
@@ -158,7 +164,7 @@ export function applyServerCollections(local: Collection[], server: ServerCollec
   return [...mine.values()];
 }
 
-type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai" | "search">;
+type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai" | "search" | "platforms">;
 /** What a playlist or the library filters ask of an app. */
 export type AppFacts = {
   id?: string;
@@ -167,6 +173,8 @@ export type AppFacts = {
   installed: boolean;
   projectType?: string;
   aiLevel?: string;
+  /** The platforms it has releases for (its entry's supportedOS). */
+  platforms?: Entry["supportedOS"];
   /** The app's name and its games'. */
   names?: string[];
 };
@@ -175,12 +183,13 @@ const wordsOf = (search?: string) => (search ?? "").toLowerCase().split(/\s+/).f
 
 /** Whether any filter is set; without one, a playlist is only its picked apps. */
 export const hasFilters = (c: Filters) =>
-  Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai || wordsOf(c.search).length);
+  Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai || c.platforms?.length || wordsOf(c.search).length);
 
 /**
  * Whether an app matches every filter that's set. `makers` gives each console's
  * maker, for "maker:Nintendo". AI use as the site filters it: "no-generated"
- * hides mostly AI-made apps, "no-ai" any AI use.
+ * hides mostly AI-made apps, "no-ai" any AI use. Platforms as the library
+ * goes by them (forPlatforms): one whose platforms aren't known matches.
  */
 export function matches(c: Filters, app: AppFacts, makers: Record<string, string> = {}) {
   const tags = new Set(app.tags.map((t) => t.toLowerCase()));
@@ -192,6 +201,7 @@ export function matches(c: Filters, app: AppFacts, makers: Record<string, string
     (!c.installed || (c.installed === "yes") === app.installed) &&
     (!c.projectTypes?.length || c.projectTypes.includes(app.projectType ?? "")) &&
     (!c.ai || (c.ai === "no-ai" ? !app.aiLevel || app.aiLevel === "none" : app.aiLevel !== "generated")) &&
+    (!c.platforms?.length || forPlatforms({ supportedOS: app.platforms ?? [] }, c.platforms)) &&
     wordsOf(c.search).every((w) => names.includes(w))
   );
 }

@@ -141,10 +141,18 @@ msgstr "Разработчик удалил {file} из версии {listed}."
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
+msgstr "{filters, plural, one {# фильтр по тегам, как плейлист} few {# фильтра по тегам, как плейлисты} many {# фильтров по тегам, как плейлисты} other {# фильтра по тегам, как плейлисты}}"
+
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "Установлена {have}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{hidden, plural, one {# hidden app, still hidden} other {# hidden apps, still hidden}}"
+msgstr "{hidden, plural, one {# скрытое приложение, останется скрытым} few {# скрытых приложения, останутся скрытыми} many {# скрытых приложений, останутся скрытыми} other {# скрытого приложения, останутся скрытыми}}"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "{hours, plural, one {# hour} other {# hours}}"
@@ -354,6 +362,10 @@ msgstr "{size} КБ"
 #: ../../apps/launcher/src/downloads.ts
 msgid "{size} MB"
 msgstr "{size} МБ"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
+msgstr "{tagged, plural, one {Ваши теги в # приложении} few {Ваши теги в # приложениях} many {Ваши теги в # приложениях} other {Ваши теги в # приложениях}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -666,6 +678,7 @@ msgid "All other platforms"
 msgstr "Все остальные платформы"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "All platforms"
 msgstr "Все платформы"
 
@@ -680,6 +693,10 @@ msgstr "Все типы проектов"
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "Все теги"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Also coming over"
+msgstr "Также перенесётся"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
@@ -2813,6 +2830,7 @@ msgid "Places"
 msgstr "Места"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/library.tsx
 msgid "Platform"
 msgstr "Платформа"
 
