@@ -123,6 +123,25 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
       },
       true,
     );
+  // A card's own click goes to its art, where a player's would. WebDriver clicks an element's middle, which with the
+  // card's text under its art is the foot of the art, where Get or Play sits (app.css): it was refused as intercepted.
+  // Something else really over the art (a dialog) still is, as this leaves those clicks to WebDriver.
+  await app.overwriteCommand(
+    "click",
+    async function (click, options) {
+      if (options?.x || options?.y || !String(this.selector).endsWith(".card-open")) return click(options);
+      await this.waitForExist();
+      const y = await app
+        .execute((el) => {
+          el.scrollIntoView({ block: "center" });
+          const { left, top, width, height } = el.getBoundingClientRect();
+          return el.contains(document.elementFromPoint(left + width / 2, top + height / 4)) ? -Math.round(height / 4) : 0;
+        }, this)
+        .catch(() => 0);
+      return click(y ? { ...options, y } : options);
+    },
+    true,
+  );
   return {
     app,
     api,
@@ -131,9 +150,20 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     // The pointer goes to a card as a player's would: a library card shows its buttons on hover.
     async card(slug) {
       const card = await app.$(`article[data-slug="${slug}"]`);
-      // Not one under an open page: moving to it would be refused, after several tries.
-      if (await card.isDisplayed()) await card.scrollIntoView({ block: "center" }).then(() => card.moveTo()).catch(() => {});
+      // Not one under an open page: moving to it would be refused, after several tries. And not with the card's own
+      // commands: for a card gone by then (a search narrowing the catalog), those look for it again for 20 seconds, as
+      // long as an `until` waiting for it to go.
+      if (await card.isDisplayed())
+        await app
+          .execute((el) => el.scrollIntoView({ block: "center" }), card)
+          .then(() => app.action("pointer", { parameters: { pointerType: "mouse" } }).move({ origin: card }).perform())
+          .catch(() => {});
       return card;
+    },
+    // Waits for a button on a card, which shows under the pointer. Just after going to a page the card may not have
+    // shown yet, or the catalog coming in moves it from under the pointer, so the pointer goes back to it as it waits.
+    async untilCardShows(slug, button, timeout = 20000) {
+      await app.waitUntil(async () => (await (await this.card(slug)).$(button)).isDisplayed(), { timeout, interval: 200, timeoutMsg: `${button} on ${slug} still not displayed after ${timeout}ms` });
     },
     until: (check, timeout = 20000) => app.waitUntil(check, { timeout, interval: 200 }),
     // The library's tabs and playlists, as its tab row lists them or, where they don't fit beside the tools, its Show
@@ -150,6 +180,19 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
         return nav ? nav.querySelector("button[aria-pressed=true]")?.innerText.trim() : document.querySelector(".library-show select")?.selectedOptions[0]?.label;
       }),
     async showTab(name) {
+      // Whether the tabs fit is measured again as the library shows, so back from a page the row can fold into the menu
+      // just after it was found. It has settled when two looks agree.
+      const shape = () => app.execute(() => (document.querySelector("nav[aria-label=Playlists]") ? "row" : document.querySelector(".library-show select") ? "menu" : null));
+      let last;
+      await app.waitUntil(
+        async () => {
+          const now = await shape();
+          const settled = now && now === last;
+          last = now;
+          return settled;
+        },
+        { interval: 200 },
+      );
       const nav = await app.$("nav[aria-label=Playlists]");
       if (await nav.isExisting()) await (await nav.$(`button=${name}`)).click();
       else await (await app.$(".library-show select")).selectByVisibleText(name);

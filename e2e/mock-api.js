@@ -886,12 +886,12 @@ function mockAccount(entries) {
     // As libraryCollections.save: whole collections, the latest save wins.
     if (path === "/collections/save") {
       // As libraryCollections.save: only the fields it knows (anything else fails the whole call); new fields merge, null clears.
-      const known = ["key", "name", "tags", "consoles", "installed", "order", "removed", "apps", "projectTypes", "ai", "follows"];
+      const known = ["key", "name", "tags", "consoles", "installed", "order", "removed", "apps", "projectTypes", "ai", "platforms", "follows"];
       if (body.collections.some((c) => Object.keys(c).some((k) => !known.includes(k)))) return send(res, { error: "ArgumentValidationError" }, 400);
       for (const c of body.collections) {
         const before = user.collections.get(c.key) ?? {};
         const merged = { ...c };
-        for (const k of ["apps", "projectTypes", "ai", "follows"]) {
+        for (const k of ["apps", "projectTypes", "ai", "platforms", "follows"]) {
           if (c[k] === undefined && before[k] !== undefined) merged[k] = before[k];
           if (c[k] === null) delete merged[k];
         }
