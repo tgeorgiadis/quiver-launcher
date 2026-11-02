@@ -56,6 +56,18 @@ pub fn refuse(from: &Path, to: &Path, folders: &[String]) -> Option<String> {
     None
 }
 
+/// Why a console's apps can't install in `to`, if they can't: it's inside an
+/// installed app's folder (`apps`, each a full path), which uninstalling that
+/// app would take with it.
+pub fn refuse_console(to: &Path, apps: &[PathBuf]) -> Option<String> {
+    if !to.is_absolute() {
+        return Some(format!("{} isn't a whole path. Type the folder's full path, or browse for it.", to.display()));
+    }
+    let inside = apps.iter().find(|app| resolved(to).starts_with(resolved(app)))?;
+    let name = inside.file_name().map_or_else(|| inside.to_string_lossy(), |n| n.to_string_lossy());
+    Some(format!("That folder is in {name}'s folder, and uninstalling {name} would remove it. Choose another folder."))
+}
+
 /// The path as the file system names it, for a folder that doesn't exist yet
 /// too: its nearest existing parent, resolved, with the rest added back. So
 /// both sides of a comparison are written alike, as Windows' `\\?\` form or
@@ -255,5 +267,20 @@ mod tests {
         assert_eq!(fs::read_to_string(root.path().join("c/b/f")).unwrap(), "x");
         #[cfg(unix)]
         assert_eq!(fs::read_link(root.path().join("c/link")).unwrap(), Path::new("b/f"));
+    }
+
+    #[test]
+    fn a_consoles_folder_is_never_inside_an_apps_own() {
+        let root = tempfile::tempdir().unwrap();
+        let game = root.path().join("apps/Game");
+        fs::create_dir_all(&game).unwrap();
+        let apps = [game.clone()];
+        // Uninstalling Game would take a folder in it, existing yet or not.
+        assert!(refuse_console(&game.join("N64"), &apps).is_some());
+        assert!(refuse_console(&game, &apps).is_some());
+        // Beside it is fine, the apps folder itself too.
+        assert!(refuse_console(&root.path().join("apps/N64"), &apps).is_none());
+        assert!(refuse_console(&root.path().join("apps"), &apps).is_none());
+        assert!(refuse_console(Path::new("N64"), &apps).is_some());
     }
 }

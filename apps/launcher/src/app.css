@@ -1134,6 +1134,26 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .settings-section { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
 .settings-section h3 { font-size: 15px; }
 .settings-pane > .view-options, .settings-section > .view-options { max-width: 380px; }
+/* Consoles' folders (settings-page.tsx ConsoleFolders), folded away till opened: each maker a panel of its own, folding its
+   consoles away too; a console's name, its folder, and changing or removing it. */
+/* Its heading folds it, as a library section's does, rather than looking like a button. */
+.console-folders > h3 .section-fold { border: 0; background: none; font-weight: inherit; }
+.console-folders > h3 .section-fold:hover, .console-folders > h3 .section-fold:focus-visible { background: var(--panel); }
+.console-folders > h3 .console-maker-count { margin-left: 4px; }
+.console-makers { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.console-makers > li { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.console-maker { display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 12px; border: 0; border-radius: 8px; background: none; color: var(--fg); text-align: start; font-weight: 600; }
+.console-maker:hover, .console-maker:focus-visible { color: var(--strong); background: color-mix(in srgb, var(--strong) 6%, transparent); }
+.console-maker:focus-visible { outline-offset: -2px; }
+.console-maker-chevron { flex: none; transition: transform 0.15s; }
+.console-maker[aria-expanded="true"] .console-maker-chevron { transform: rotate(90deg); }
+.console-maker-name { flex: 1; }
+.console-maker-count { font-size: 13px; font-weight: 400; }
+.console-folders-list { display: grid; gap: 8px; margin: 0; padding: 8px 12px 12px 35px; list-style: none; }
+.console-folders-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.console-folder-name { flex: 0 1 15em; min-width: 0; }
+.console-folder-path { flex: 1 1 14em; min-width: 0; font-size: 13px; }
+.console-folder-problem { flex-basis: 100%; margin: 0; font-size: 13px; }
 .github-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
 .github-token ol { padding-left: 20px; display: grid; gap: 4px; }
 

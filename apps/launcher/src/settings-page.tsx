@@ -5,12 +5,14 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
+import type { Console } from "@quiverlauncher/api";
 import { useLauncher } from "./store";
+import { foldersOn } from "./detail";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -117,6 +119,7 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
             ) : section === "apps" ? (
               <>
                 <AppsFolder />
+                <ConsoleFolders />
                 <WindowsRunnerSetting />
               </>
             ) : section === "controllers" ? (
@@ -506,5 +509,157 @@ export function AppsFolder() {
         </p>
       )}
     </section>
+  );
+}
+
+/**
+ * A folder for each console the player picks one for: a new install of an app
+ * for that console goes in it, in a folder of its own, not the apps folder.
+ * Apps already installed stay where they are. This device's own, as the apps
+ * folder is. Every console in the catalog, under its maker, each folded away
+ * until opened; makers and their consoles A to Z.
+ */
+export function ConsoleFolders() {
+  const { config, settings, setSettings, consoles, installs } = useLauncher();
+  // What's wrong with the folder typed or picked for a console, by its id, until it's changed again.
+  const [problems, setProblems] = useState<Record<string, string>>({});
+  // Folded away until opened, as few players use it; then each maker folded away too.
+  const [shown, setShown] = useState(false);
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const folders = settings.consoleFolders ?? {};
+  const count = Object.keys(folders).length;
+  const save = (next: Record<string, string>) => setSettings({ ...settings, consoleFolders: Object.keys(next).length ? next : undefined });
+  const problem = (id: string, text?: string) => setProblems(({ [id]: _, ...rest }) => (text ? { ...rest, [id]: text } : rest));
+  /**
+   * A console's folder, typed or picked; nothing typed, the apps folder again. Only ever the folder its apps' own
+   * folders go in (install.rs `destination`), and never in an installed app's folder, which uninstalling it would take.
+   */
+  const place = async ({ id }: Console, typed: string) => {
+    // Without the separators at its end, as a picker gives it, unless that's all there is to it ("/", "C:\").
+    const trimmed = typed.trim();
+    const bare = trimmed.replace(/[\\/]+$/, "");
+    const to = bare && !bare.endsWith(":") ? bare : trimmed;
+    problem(id);
+    if (to === (folders[id] ?? "")) return;
+    if (!to) {
+      const { [id]: _, ...rest } = folders;
+      return save(rest);
+    }
+    // A local app's files are never removed, so a folder in one's is no risk.
+    const installed = Object.values(installs).filter((i) => !i.local);
+    const refused = await native.consoleFolderRefusal(to, installed.flatMap((i) => (i.dir ? [] : [i.folder])), installed.flatMap((i) => (i.dir ? [i.dir] : [])));
+    if (refused) problem(id, refused);
+    else save({ ...folders, [id]: to });
+  };
+  const browse = async (c: Console) => {
+    const name = c.name;
+    const to = await native.pickFolder(t`Choose where to install ${name} apps`, folders[c.id]);
+    if (to) await place(c, to);
+  };
+  const toggle = (maker: string) => setOpen((o) => new Set(o.has(maker) ? [...o].filter((m) => m !== maker) : [...o, maker]));
+  if (!foldersOn(config.os)) return null;
+  // The catalog's makers by name, as the library's filters show them; its other platforms last, as the library's sections.
+  const other = t`Other platforms`;
+  const makerOf = (c: Console) => (!c.brand || c.brand === "OtherPlatforms" ? other : c.brand);
+  const byName = (a: string, b: string) => a.localeCompare(b, i18n.locale, { sensitivity: "base" });
+  const groups = new Map<string, Console[]>();
+  for (const c of consoles) groups.set(makerOf(c), [...(groups.get(makerOf(c)) ?? []), c]);
+  const makers = [...groups]
+    .sort(([a], [b]) => (a === other ? 1 : b === other ? -1 : byName(a, b)))
+    .map(([maker, list]) => [maker, list.sort((a, b) => byName(a.name, b.name))] as const);
+  return (
+    <section className="settings-section console-folders" aria-label={t`Installation directories for consoles`}>
+      <h3>
+        <button type="button" className="section-fold" aria-expanded={shown} onClick={() => setShown(!shown)}>
+          <Trans>Installation directories for consoles</Trans>
+          <ChevronDown size={16} aria-hidden="true" />
+          {count > 0 && <span className="muted console-maker-count">{plural(count, { one: "# folder", other: "# folders" })}</span>}
+        </button>
+      </h3>
+      {shown && (
+        <>
+          <p className="muted">
+            <Trans>Set the default path apps install to for each console.</Trans>
+          </p>
+          <ConsoleMakers makers={makers} folders={folders} problems={problems} open={open} onToggle={toggle} onPlace={(c, to) => void place(c, to)} onBrowse={(c) => void browse(c)} />
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Each maker, folded away until opened, over its consoles: each one's folder, typed in its box or browsed for. */
+function ConsoleMakers({
+  makers,
+  folders,
+  problems,
+  open,
+  onToggle: toggle,
+  onPlace: place,
+  onBrowse: browse,
+}: {
+  makers: (readonly [string, Console[]])[];
+  folders: Record<string, string>;
+  problems: Record<string, string>;
+  open: Set<string>;
+  onToggle: (maker: string) => void;
+  onPlace: (console: Console, typed: string) => void;
+  onBrowse: (console: Console) => void;
+}) {
+  const appsFolder = t({ message: "Apps folder", comment: "Settings: where a console's apps install when it has no folder of its own" });
+  return (
+    <ul className="console-makers">
+      {makers.map(([maker, list]) => {
+        const shown = open.has(maker);
+        const count = list.filter((c) => folders[c.id]).length;
+        return (
+          <li key={maker}>
+            <button type="button" className="console-maker" aria-expanded={shown} onClick={() => toggle(maker)}>
+              <ChevronRight size={15} aria-hidden="true" className="console-maker-chevron" />
+              <span className="console-maker-name">{maker}</span>
+              {count > 0 && <span className="muted console-maker-count">{plural(count, { one: "# folder", other: "# folders" })}</span>}
+            </button>
+            {shown && (
+              <ul className="console-folders-list">
+                {list.map((c) => {
+                  const name = c.name;
+                  const folder = folders[c.id] ?? "";
+                  const field = `console-folder-${c.id}`;
+                  return (
+                    <li key={c.id}>
+                      <label className="console-folder-name" htmlFor={field}>
+                        {name}
+                      </label>
+                      {/* Kept as typed until it's left or Enter is pressed; anew whenever the saved folder changes (Browse). */}
+                      <input
+                        key={folder}
+                        id={field}
+                        className="console-folder-path"
+                        defaultValue={folder}
+                        placeholder={appsFolder}
+                        spellCheck={false}
+                        autoComplete="off"
+                        aria-invalid={Boolean(problems[c.id])}
+                        aria-describedby={problems[c.id] ? `${field}-problem` : undefined}
+                        onBlur={(e) => place(c, e.currentTarget.value)}
+                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                      />
+                      <button aria-label={t`Browse for a folder for ${name}`} onClick={() => browse(c)}>
+                        <Trans comment="Opens a folder picker for a console's apps">Browse…</Trans>
+                      </button>
+                      {problems[c.id] && (
+                        <p id={`${field}-problem`} className="job-error console-folder-problem" role="status">
+                          {problems[c.id]}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

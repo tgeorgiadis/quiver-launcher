@@ -76,6 +76,8 @@ export type InstallRequest = {
   checksum?: string;
   folder: string;
   dir?: string;
+  /** A new install's folder goes in here, not the apps folder: the folder the player picked for its console. */
+  parent?: string;
   filesToAdd: string[];
   version: string;
   /** The catalog's preferred programs, for finding the one a Windows installer installed. */
@@ -259,6 +261,8 @@ export const native = {
   renameAppFolder: (id: string, from: string, to: string) => invoke<void>("rename_app_folder", { id, from, to }),
   /** Why the installed apps in `folders` can't move to `to`, or null. */
   appsFolderRefusal: (to: string, folders: string[]) => invoke<string | null>("apps_folder_refusal", { to, folders }),
+  /** Why a console's apps can't install in `to`, or null: the installed apps are in `folders` in the apps folder, and in `dirs` elsewhere. */
+  consoleFolderRefusal: (to: string, folders: string[], dirs: string[]) => invoke<string | null>("console_folder_refusal", { to, folders, dirs }),
   /** Moves the installed apps to `to`, which becomes the apps folder; resolves to it. */
   moveAppsFolder: (to: string, folders: string[]) => invoke<string>("move_apps_folder", { to, folders }),
   onAppsMoving: (handler: (m: { done: number; total: number; folder: string }) => void) =>

@@ -133,6 +133,21 @@ test("Downloads, and every section of Settings", async () => {
   }
 });
 
+test("Settings' installation directories for consoles: A opens them and a maker, and the d-pad gets to each console's box and Browse", async () => {
+  assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");
+  await open('nav[aria-label="Settings sections"] button', { text: "Apps folder" });
+  // Folded away, then a maker folded away in them: each opened where it is, the page staying.
+  for (const [selector, text] of [
+    [".console-folders .section-fold", "Installation directories for consoles"],
+    [".console-maker", "Nintendo"],
+  ]) {
+    assert.doesNotMatch(await reach.pressOn(app, selector, "South", { text }), /^not reached/, `the d-pad gets to ${text}`);
+    await pause(200);
+  }
+  assert.equal(await app.execute(() => document.querySelectorAll(".console-folders-list input").length), 2);
+  await everything("Settings › Apps folder, Nintendo's consoles open");
+});
+
 test("a controller rebinds a control with its own buttons", async () => {
   const binding = 'button[aria-label="Confirm / Select: controller"]';
   assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");

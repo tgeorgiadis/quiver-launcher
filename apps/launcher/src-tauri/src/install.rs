@@ -29,8 +29,11 @@ pub struct InstallRequest {
     /// a GitLab release or a repository Quiver doesn't check.
     pub checksum: Option<String>,
     pub folder: String,
-    /// Install into this folder instead (an install adopted from 3.x).
+    /// Install into this folder instead (an install adopted from 3.x, or one in its console's folder).
     pub dir: Option<String>,
+    /// A new install's folder goes in here, not the apps folder: the folder the player picked for its console.
+    #[serde(default)]
+    pub parent: Option<String>,
     pub files_to_add: Vec<String>,
     pub version: String,
     /// The catalog's preferred programs, for finding the one a Windows installer put on the computer.
@@ -104,12 +107,7 @@ pub async fn install(
 ) -> Result<Installed, String> {
     let folder = plain_name(&req.folder)?.to_string();
     let filename = plain_name(&req.filename)?.to_string();
-    // Never into a folder of files Quiver didn't put there, such as one the player fills themselves.
-    if req.dir.is_none() && !may_install_into(&apps_dir.join(&folder)) {
-        return Err(format!(
-            "The folder {folder} in your apps folder has files Quiver didn't install, so it won't install over them. Rename or move that folder, then try again."
-        ));
-    }
+    let target = destination(apps_dir, &req, &folder)?;
     // Ids can be "github:owner/repo"; the staging folder only needs to be unique.
     let stage: String = req.id.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '_' }).collect();
     let staging = apps_dir.join(".staging").join(stage);
@@ -140,7 +138,6 @@ pub async fn install(
             }
             None => filename,
         };
-        let target = req.dir.as_ref().map(PathBuf::from).unwrap_or_else(|| apps_dir.join(&folder));
         if crate::msi::is_package(&filename) {
             progress(Progress { id: req.id.clone(), phase: "installing", received: 0, total: None, setup: true });
             let (dir, version, preferred) = (target.clone(), req.version.clone(), req.preferred.clone());
@@ -241,6 +238,27 @@ fn matches_checksum(checksum: Option<&str>, hash: &str) -> bool {
         None => true,
         Some(c) => c.strip_prefix("sha256:").is_some_and(|expected| expected.eq_ignore_ascii_case(hash)),
     }
+}
+
+/// Where a release installs: the folder the app is already in (`dir`), else a
+/// folder of its own, `folder`, in its console's folder (`parent`) or the apps
+/// folder. Never into a folder of files Quiver didn't put there, such as one
+/// the player fills themselves.
+fn destination(apps_dir: &Path, req: &InstallRequest, folder: &str) -> Result<PathBuf, String> {
+    if let Some(dir) = &req.dir {
+        return Ok(PathBuf::from(dir));
+    }
+    let home = match &req.parent {
+        Some(parent) if !Path::new(parent).is_absolute() => return Err("Choose a folder on this computer for this console's apps.".into()),
+        Some(parent) => PathBuf::from(parent),
+        None => apps_dir.to_path_buf(),
+    };
+    let target = home.join(folder);
+    if !may_install_into(&target) {
+        let place = req.parent.as_deref().unwrap_or("your apps folder");
+        return Err(format!("The folder {folder} in {place} has files Quiver didn't install, so it won't install over them. Rename or move that folder, then try again."));
+    }
+    Ok(target)
 }
 
 /// Whether Quiver may install into a folder: a new or empty one, or one it
@@ -820,6 +838,37 @@ mod tests {
             assert!(plain_name(bad).is_err(), "{bad}");
         }
         assert_eq!(plain_name(" Sample-Port ").unwrap(), "Sample-Port");
+    }
+
+    #[test]
+    fn installs_in_its_consoles_folder_only_where_nothing_else_is() {
+        let apps = tempfile::tempdir().unwrap();
+        let n64 = tempfile::tempdir().unwrap();
+        let request = |dir: Option<&Path>, parent: Option<&Path>| InstallRequest {
+            id: "app".into(),
+            url: String::new(),
+            filename: "game.zip".into(),
+            checksum: None,
+            folder: "game".into(),
+            dir: dir.map(|d| d.to_string_lossy().into()),
+            parent: parent.map(|p| p.to_string_lossy().into()),
+            files_to_add: vec![],
+            version: "1.0".into(),
+            preferred: vec![],
+            program: None,
+        };
+        // The apps folder, else the console's, each in a folder of its own; one already somewhere stays there.
+        assert_eq!(destination(apps.path(), &request(None, None), "game").unwrap(), apps.path().join("game"));
+        assert_eq!(destination(apps.path(), &request(None, Some(n64.path())), "game").unwrap(), n64.path().join("game"));
+        let elsewhere = n64.path().join("Old Game");
+        assert_eq!(destination(apps.path(), &request(Some(&elsewhere), Some(n64.path())), "game").unwrap(), elsewhere);
+        // Never over the player's own files there, but again over Quiver's.
+        fs::create_dir_all(n64.path().join("game")).unwrap();
+        fs::write(n64.path().join("game/notes.txt"), "mine").unwrap();
+        assert!(destination(apps.path(), &request(None, Some(n64.path())), "game").is_err());
+        fs::write(n64.path().join("game").join(VERSION_FILE), "0.9").unwrap();
+        assert!(destination(apps.path(), &request(None, Some(n64.path())), "game").is_ok());
+        assert!(destination(apps.path(), &request(None, Some(Path::new("N64"))), "game").is_err());
     }
 
     #[test]

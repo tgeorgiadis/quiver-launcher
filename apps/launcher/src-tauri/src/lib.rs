@@ -785,6 +785,15 @@ fn apps_folder_refusal(data: State<Data>, to: String, folders: Vec<String>) -> O
     apps_folder::refuse(&data.apps(), Path::new(&to), &folders)
 }
 
+/// Why a console's apps can't install in `to`, if they can't: the installed
+/// apps are in `folders` in the apps folder, and in `dirs` elsewhere.
+#[tauri::command]
+fn console_folder_refusal(data: State<Data>, to: String, folders: Vec<String>, dirs: Vec<String>) -> Option<String> {
+    let apps = data.apps();
+    let installed: Vec<PathBuf> = folders.iter().filter_map(|f| install::plain_name(f).ok()).map(|f| apps.join(f)).chain(dirs.into_iter().map(PathBuf::from)).collect();
+    apps_folder::refuse_console(Path::new(&to), &installed)
+}
+
 /// Moves the installed apps (`folders`, in the apps folder) to `to` and
 /// installs there from now on; resolves to the new apps folder. Reports each
 /// app as it moves ("apps-moving").
@@ -1311,6 +1320,7 @@ pub fn run() {
             picker::picked,
             picker::browse,
             apps_folder_refusal,
+            console_folder_refusal,
             move_apps_folder,
             secret_get,
             secret_set,

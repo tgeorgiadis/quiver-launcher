@@ -264,6 +264,14 @@ const fromKey = (id: string): CustomApp => {
  */
 export const renamable = (install: Install | undefined) => Boolean(install && !install.dir && install.installer !== "msi");
 
+/**
+ * The folder the player picked for the console an app is for, which a new
+ * install of it goes in; none, the apps folder. An app for more than one
+ * console goes in the first of theirs, in the catalog's order, that has one.
+ */
+export const consoleFolderFor = (entry: Pick<Entry, "consoles">, folders: Settings["consoleFolders"]) =>
+  (entry.consoles ?? []).map((id) => folders?.[id]).find(Boolean);
+
 /** Whether this computer can install the app. */
 export const availableOn = (entry: Entry, os: string) =>
   entry.supportedOS.some((o) => o === os || o === "unknown" || (os === "linux" && o === "windows"));
@@ -524,6 +532,8 @@ export type Settings = {
   libraryFilters?: Record<string, string>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
+  /** Where a console's apps install here, by its id: a folder the player picked. A console with none, the apps folder. */
+  consoleFolders?: Record<string, string>;
   /** How the library shows its apps (view.ts); only what differs from the defaults. */
   library?: Partial<LibraryView>;
   /** The Sidebar layout's sidebar as wide as the player dragged it, in the page's pixels; unset fits the window. */
@@ -900,6 +910,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     // through Wine. Switching drops the file picked for the other one.
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
     const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
+    // A new install goes in its console's folder, when the player picked one; an update stays where the app is.
+    const parent = was ? undefined : consoleFolderFor(entry, settings.consoleFolders);
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = () => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -978,8 +990,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         unverified = true;
       }
       format = installFormat(asset.filename);
-      // One folder, one app: uninstalling either would take the other's files.
-      const taken = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id && !i.dir ? [i.folder] : []));
+      // One folder, one app: uninstalling either would take the other's files. In a console's folder, not the name of
+      // any other app's either, as its Proton prefix goes by it.
+      const taken = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id && (parent || !i.dir) ? [i.folder] : []));
       const folder = freeFolder(settings.folderName?.trim() || entry.slug, installs[entry.id]?.folder, taken);
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
@@ -992,6 +1005,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         checksum: asset.checksum ?? asset.unverifiedChecksum,
         folder,
         dir: was?.dir,
+        parent,
         filesToAdd: settings.filesToAdd ?? [],
         version: release.version,
         preferred: executables,
@@ -1017,7 +1031,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir ?? (parent ? done.dir : undefined), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);

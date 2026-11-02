@@ -98,6 +98,10 @@ msgstr "{count, plural, other {앱 #개, 아직 설치된 앱이 없어요. 다�
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개는 이미 설치되어 있어요.}}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {# folder} other {# folders}}"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, other {앱 #개 추가}}"
@@ -820,6 +824,7 @@ msgstr "앱"
 msgid "Apps are installed in {dir}"
 msgstr "앱 설치 위치: {dir}"
 
+#. Settings: where a console's apps install when it has no folder of its own
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folder"
 msgstr "앱 폴더"
@@ -981,9 +986,18 @@ msgstr "둘러보기"
 msgid "Browse cards"
 msgstr "둘러보기 카드"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse for a folder for {name}"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "카탈로그 둘러보기"
+
+#. Opens a folder picker for a console's apps
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse…"
+msgstr ""
 
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
@@ -1226,6 +1240,10 @@ msgstr "이 폴더 선택"
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose when it expires."
 msgstr "만료 시점을 선택하세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose where to install {name} apps"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
@@ -1981,6 +1999,10 @@ msgstr "검증된 {installedVersion} 설치"
 #: ../../apps/launcher/src/App.tsx
 msgid "Install the verified {verifiedVersion}"
 msgstr "검증된 {verifiedVersion} 설치"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Installation directories for consoles"
+msgstr ""
 
 #. A mod that's installed
 #. Filter by whether an app is installed
@@ -2868,6 +2890,7 @@ msgstr "기타"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Other platforms"
 msgstr "기타 플랫폼"
 
@@ -3546,6 +3569,10 @@ msgstr "선택"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "사용 데이터 보내기"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Set the default path apps install to for each console."
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"

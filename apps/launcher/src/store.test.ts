@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, folderGone, hasUpdate, importedPlaylists, importedTags, keptInstall, locatable, looseInstalls, relocatedInstall, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, bringsAlong, catalogMatch, consoleFolderFor, folderGone, hasUpdate, importedPlaylists, importedTags, keptInstall, locatable, looseInstalls, relocatedInstall, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -238,5 +238,20 @@ describe("bringsAlong", () => {
     const filters = [{ name: "N64", tags: ["n64"], all: false, exclude: [], excludeAll: false }];
     expect(bringsAlong({ apps, filters })).toEqual({ tagged: 2, filters: 1, hidden: 1 });
     expect(bringsAlong({ apps: [app()] })).toEqual({ tagged: 0, filters: 0, hidden: 0 });
+  });
+});
+
+describe("consoleFolderFor", () => {
+  const folders = { n64: "/games/N64", genesis: "/games/Genesis" };
+  it("is the folder picked for the app's console", () => {
+    expect(consoleFolderFor({ consoles: ["genesis"] }, folders)).toBe("/games/Genesis");
+  });
+  it("is the first of an app's consoles, in the catalog's order, with one", () => {
+    expect(consoleFolderFor({ consoles: ["snes", "n64", "genesis"] }, folders)).toBe("/games/N64");
+  });
+  it("is none for an app of no console with one, or none picked at all", () => {
+    expect(consoleFolderFor({ consoles: ["snes"] }, folders)).toBeUndefined();
+    expect(consoleFolderFor({ consoles: [] }, folders)).toBeUndefined();
+    expect(consoleFolderFor({ consoles: ["n64"] }, undefined)).toBeUndefined();
   });
 });

@@ -98,6 +98,10 @@ msgstr "{count, plural, one {# app, ainda não instalado. Se você já o instalo
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# já instalado.} other {# já instalados.}}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {# folder} other {# folders}}"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Adicionar # app} other {Adicionar # apps}}"
@@ -820,6 +824,7 @@ msgstr "Apps"
 msgid "Apps are installed in {dir}"
 msgstr "Os apps são instalados em {dir}"
 
+#. Settings: where a console's apps install when it has no folder of its own
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folder"
 msgstr "Pasta de apps"
@@ -981,9 +986,18 @@ msgstr "Explorar"
 msgid "Browse cards"
 msgstr "Cards do Explorar"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse for a folder for {name}"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Explorar o catálogo"
+
+#. Opens a folder picker for a console's apps
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse…"
+msgstr ""
 
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
@@ -1226,6 +1240,10 @@ msgstr "Escolher esta pasta"
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose when it expires."
 msgstr "Escolha quando ele expira."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose where to install {name} apps"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
@@ -1981,6 +1999,10 @@ msgstr "Instalar a {installedVersion} verificada"
 #: ../../apps/launcher/src/App.tsx
 msgid "Install the verified {verifiedVersion}"
 msgstr "Instalar a {verifiedVersion} verificada"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Installation directories for consoles"
+msgstr ""
 
 #. A mod that's installed
 #. Filter by whether an app is installed
@@ -2868,6 +2890,7 @@ msgstr "Outros"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Other platforms"
 msgstr "Outras plataformas"
 
@@ -3546,6 +3569,10 @@ msgstr "Selecionar"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "Enviar dados de uso"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Set the default path apps install to for each console."
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"
