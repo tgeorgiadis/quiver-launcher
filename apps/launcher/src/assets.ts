@@ -46,8 +46,13 @@ export function installFormat(name: string) {
   return FORMATS.slice(0, 8).some((f) => f.test(name)) ? "archive" : "executable";
 }
 
+/**
+ * When Flatpak is preferred, beat any architecture penalty for `unknown`
+ * (common for `.flatpak` bundles with no arch in the name): `archRank` costs
+ * `FORMATS.length` per step, so a `-1` bump still lost to an arch-matched AppImage.
+ */
 const formatRank = (name: string, preferFlatpak?: boolean) =>
-  preferFlatpak && isFlatpakAsset(name) ? -1 : FORMATS.findIndex((f) => f.test(name));
+  preferFlatpak && isFlatpakAsset(name) ? -(FORMATS.length + 1) : FORMATS.findIndex((f) => f.test(name));
 
 /** How well a file's architecture suits this computer's, best 0; -1 when it can't run. */
 const archRank = (a: Asset, arch: string) =>

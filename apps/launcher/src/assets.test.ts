@@ -90,6 +90,18 @@ test("preferring Flatpak puts a Flatpak bundle first, and falls back when there 
   expect(
     bestAssets([asset("Game-Flatpak.zip", "linux"), asset("Game.AppImage", "linux")], "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename),
   ).toEqual(["Game-Flatpak.zip"]);
+  // Echoes Unbound-style: Flatpak with unknown arch still beats an arch-matched AppImage when preferred.
+  expect(
+    bestAssets(
+      [asset("MetroidPrime2Port.flatpak", "linux", "unknown"), asset("MetroidPrime2-x86_64.AppImage", "linux", "x64")],
+      "linux",
+      "x64",
+      undefined,
+      undefined,
+      undefined,
+      true,
+    ).map((a) => a.filename),
+  ).toEqual(["MetroidPrime2Port.flatpak"]);
   // No Flatpak: the usual order (archives before AppImage) is unchanged.
   expect(bestAssets([asset("Game.AppImage", "linux"), asset("Game-linux.zip", "linux")], "linux", "x64", undefined, undefined, undefined, true).map((a) => a.filename)).toEqual([
     "Game-linux.zip",
