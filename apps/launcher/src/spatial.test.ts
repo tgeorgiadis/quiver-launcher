@@ -19,6 +19,14 @@ test("bindings saved before Forward get the mouse's forward button for it, but k
   expect(withDefaults(older as never, DEFAULT_KEYS)).toEqual({ ...older, forward: ["MouseForward"] });
 });
 
+test("bindings saved before Quick action get X for it, unless the player already uses X for something else", () => {
+  const { quick, ...older } = DEFAULT_PAD;
+  expect(quick).toEqual(["West"]);
+  expect(withDefaults(older as never, DEFAULT_PAD)).toEqual(DEFAULT_PAD);
+  const taken = { ...older, top: ["West"] };
+  expect(withDefaults(taken as never, DEFAULT_PAD)).toEqual({ ...taken, quick: [] });
+});
+
 test("swapping A and B swaps what Confirm and Back are bound to, and swapping again undoes it", () => {
   expect(confirmBackSwapped(DEFAULT_PAD)).toBe(false);
   const swapped = swapConfirmBack(DEFAULT_PAD);

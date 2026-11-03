@@ -1683,7 +1683,7 @@ msgstr "General"
 #. Button that installs an app
 #. Button that installs an app
 #. Button: download and install the app
-#. Controller hint: what Options does on a catalog card or an app's page, installing the app
+#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -3088,6 +3088,11 @@ msgstr "PROJECT DETAILS"
 msgid "Project type"
 msgstr "Project type"
 
+#. Controller action that presses the main button of the focused card or app's page, such as Get or Play
+#: ../../apps/launcher/src/spatial.ts
+msgid "Quick action"
+msgstr "Quick action"
+
 #. Item in the launcher's menu in the Windows system tray: closes the launcher
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quit"
@@ -3226,10 +3231,6 @@ msgstr "Read more"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Read the README"
 msgstr "Read the README"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "README"
-msgstr "README"
 
 #. Library sidebar heading: apps played or added in the last two weeks
 #: ../../apps/launcher/src/sidebar.ts

@@ -190,10 +190,10 @@ export function RepositoryLink({ source }: { source: Source }) {
  * Long text cut to its start, `height` pixels of it fading out, with Read more to show the rest and Show less to fold it
  * again: what's under a README, or a release's long notes, stays in reach. Text that nearly fits shows whole.
  */
-function Clipped({ height, children }: { height: number; children: ReactNode }) {
+function Clipped({ height, opened = false, children }: { height: number; opened?: boolean; children: ReactNode }) {
   const body = useRef<HTMLDivElement>(null);
   const [long, setLong] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(opened);
   useLayoutEffect(() => {
     const el = body.current;
     if (!el) return;
@@ -243,10 +243,18 @@ function Clipped({ height, children }: { height: number; children: ReactNode }) 
   );
 }
 
-/** The project's README: the site's copy, else straight from GitHub. */
-export function Readme({ entry, source }: { entry: Entry; source: Source | null | undefined }) {
+/** The project's README: the site's copy, else straight from GitHub. Asked for (`asked`), it's shown whole, scrolled to, with the focus to read on from. */
+export function Readme({ entry, source, asked }: { entry: Entry; source: Source | null | undefined; asked?: boolean }) {
   const { client, github } = useLauncher();
   const [readme, setReadme] = useState<ReadmeText | null | undefined>();
+  const start = useRef<HTMLSpanElement>(null);
+  const arrived = readme !== undefined;
+  useEffect(() => {
+    if (!asked || !arrived) return;
+    start.current?.parentElement?.scrollIntoView({ block: "start" });
+    start.current?.focus({ preventScroll: true });
+  }, [asked, arrived]);
+  const top = asked && <span ref={start} className="clip-fold" tabIndex={-1} />;
   useEffect(() => {
     if (source === undefined || isLocal(entry.id)) return;
     let live = true;
@@ -263,6 +271,7 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
   if (readme === null && entry.description.trim() && !isLocal(entry.id))
     return (
       <section className="readme">
+        {top}
         <h3>
           <Trans>About this project</Trans>
         </h3>
@@ -272,9 +281,10 @@ export function Readme({ entry, source }: { entry: Entry; source: Source | null 
   if (!readme) return null;
   return (
     <section className="readme">
+      {top}
       <h3>README</h3>
       <div className="readme-body">
-        <Clipped height={320}>
+        <Clipped height={320} opened={asked}>
           <Markdown text={readme.markdown} rawBase={readme.rawBase} htmlBase={readme.htmlBase} alertTitles={alertTitles()} />
         </Clipped>
       </div>
@@ -1365,18 +1375,6 @@ export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entr
   const { source } = useAppDetail(entry);
   // Over the page, not in the card, which a lifted (transformed) card would hold it inside.
   return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} />, document.body);
-}
-
-/** The app's README over the page, as from a Browse card's menu; the app's page has it under Overview. */
-export function ReadmeDialog({ entry, onClose }: { entry: Entry; onClose: () => void }) {
-  const { source } = useAppDetail(entry);
-  return createPortal(
-    <Dialog label={t`README`} onClose={onClose}>
-      <PanelFormHead title={entry.projectName} onClose={onClose} />
-      <Readme entry={entry} source={source} />
-    </Dialog>,
-    document.body,
-  );
 }
 
 /**

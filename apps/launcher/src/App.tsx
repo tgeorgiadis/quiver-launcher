@@ -43,7 +43,7 @@ import { closesOutside } from "./overlay";
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
-export type PageAt = { releases: string } | { feedback: true };
+export type PageAt = { releases: string } | { feedback: true } | { readme: true };
 type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings" };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
@@ -850,7 +850,7 @@ function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?:
   return (
     <>
       <Action entry={entry} />
-      <BrowseMenu entry={entry} onFeedback={() => onOpen(entry, { feedback: true })} />
+      <BrowseMenu entry={entry} onOpen={() => onOpen(entry)} onReadme={() => onOpen(entry, { readme: true })} onFeedback={() => onOpen(entry, { feedback: true })} />
     </>
   );
 }
@@ -1059,7 +1059,7 @@ function AppPage({
   entry: Entry;
   /** What Back goes to; none beside the library's sidebar. */
   back?: string;
-  /** Opened at its Releases, with that version's notes open, rather than its Overview. */
+  /** Opened at its Releases, with that version's notes open, at its feedback, or at its README, rather than at the top of its Overview. */
   at?: PageAt;
   /**
    * Over TV mode: a larger header with its art, read from across a room, and only the buttons for playing it there
@@ -1122,7 +1122,8 @@ function AppPage({
       el.style.minHeight = "";
     };
   }, [tab]);
-  const [readme, setReadme] = useState(false);
+  const readmeAsked = !!at && "readme" in at;
+  const [readme, setReadme] = useState(readmeAsked);
   // Every release, asked for once the player opens the Releases tab or points
   // at it: most visits never do, and an app's history is one of the site's
   // biggest reads.
@@ -1319,7 +1320,7 @@ function AppPage({
                   <Plus size={17} /> <Trans>Add to library</Trans>
                 </button>
               )}
-              {/* Out of Browse, as its card's menu has it: here for a controller, whose Options on the card gets the app. */}
+              {/* Out of Browse, as its card's menu has it. */}
               {site && !item && <BrowseHideButton id={entry.id} />}
               {/* Its files go; the app stays in the library to get again. Taking it out is under On this computer. */}
               {install && !install.local && !(job && !("error" in job)) && !tv && (
@@ -1453,7 +1454,7 @@ function AppPage({
                   <BookOpen size={18} aria-hidden="true" /> <Trans>Read the README</Trans>
                 </button>
               ) : (
-                <Readme entry={entry} source={source} />
+                <Readme entry={entry} source={source} asked={readmeAsked} />
               )}
             </>
           )}
