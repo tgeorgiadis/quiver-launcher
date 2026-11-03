@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, consoleFolderFor, folderGone, hasUpdate, importedPlaylists, importedTags, keptInstall, locatable, looseInstalls, relocatedInstall, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, bringsAlong, catalogMatch, consoleFolderFor, MULTI_CONSOLE, folderGone, hasUpdate, importedPlaylists, importedTags, keptInstall, locatable, looseInstalls, relocatedInstall, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -246,8 +246,13 @@ describe("consoleFolderFor", () => {
   it("is the folder picked for the app's console", () => {
     expect(consoleFolderFor({ consoles: ["genesis"] }, folders)).toBe("/games/Genesis");
   });
-  it("is the first of an app's consoles, in the catalog's order, with one", () => {
-    expect(consoleFolderFor({ consoles: ["snes", "n64", "genesis"] }, folders)).toBe("/games/N64");
+  it("is the folder for apps for more than one console, for one of those, and never any one console's", () => {
+    const multi = { ...folders, [MULTI_CONSOLE]: "/games/Multi" };
+    expect(consoleFolderFor({ consoles: ["gb", "gbc", "gba"] }, multi)).toBe("/games/Multi");
+    expect(consoleFolderFor({ consoles: ["n64", "genesis"] }, multi)).toBe("/games/Multi");
+    // None picked for those: the apps folder, though N64 has one.
+    expect(consoleFolderFor({ consoles: ["n64", "genesis"] }, folders)).toBeUndefined();
+    expect(consoleFolderFor({ consoles: ["n64"] }, multi)).toBe("/games/N64");
   });
   it("is none for an app of no console with one, or none picked at all", () => {
     expect(consoleFolderFor({ consoles: ["snes"] }, folders)).toBeUndefined();

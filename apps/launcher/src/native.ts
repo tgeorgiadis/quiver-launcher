@@ -260,11 +260,20 @@ export const native = {
   /** Renames an installed app's folder in the apps folder (and its Proton prefix); fails while the launcher has it running. */
   renameAppFolder: (id: string, from: string, to: string) => invoke<void>("rename_app_folder", { id, from, to }),
   /** Why the installed apps in `folders` can't move to `to`, or null. */
-  appsFolderRefusal: (to: string, folders: string[]) => invoke<string | null>("apps_folder_refusal", { to, folders }),
+  appsFolderRefusal: (to: string, folders: string[], dirs: string[]) => invoke<string | null>("apps_folder_refusal", { to, folders, dirs }),
+  /** Of the installed apps in `dirs`, those in a console's folder in the apps folder, which moving it takes along. */
+  appsFolderHolds: (dirs: string[]) => invoke<string[]>("apps_folder_holds", { dirs }),
   /** Why a console's apps can't install in `to`, or null: the installed apps are in `folders` in the apps folder, and in `dirs` elsewhere. */
   consoleFolderRefusal: (to: string, folders: string[], dirs: string[]) => invoke<string | null>("console_folder_refusal", { to, folders, dirs }),
-  /** Moves the installed apps to `to`, which becomes the apps folder; resolves to it. */
-  moveAppsFolder: (to: string, folders: string[]) => invoke<string>("move_apps_folder", { to, folders }),
+  /** Makes a console's folder if it isn't there yet; false, and nothing made, for the apps folder itself. */
+  prepareConsoleFolder: (to: string) => invoke<boolean>("prepare_console_folder", { to }),
+  /**
+   * Moves the installed apps to `to`, which becomes the apps folder: those in `folders`, and those of `dirs` in a
+   * console's folder in it. Resolves to it, where each of `dirs` and `consoles` (consoles' folders) in the old one is now,
+   * and which of `consoles` is the new one, moved into.
+   */
+  moveAppsFolder: (to: string, folders: string[], dirs: string[], consoles: string[]) =>
+    invoke<{ appsDir: string; moved: Record<string, string>; appsFolderNow: string[] }>("move_apps_folder", { to, folders, dirs, consoles }),
   onAppsMoving: (handler: (m: { done: number; total: number; folder: string }) => void) =>
     listen<{ done: number; total: number; folder: string }>("apps-moving", (e) => handler(e.payload)),
   /** Asks for a program on this computer, looking in `dir` first; null when the player cancels. */

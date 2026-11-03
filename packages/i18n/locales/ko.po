@@ -17,6 +17,11 @@ msgstr "(변경됨)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}}"
 
+#. placeholder {0}: elsewhere.staying
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# app installed outside your apps folder, such as in a console's folder elsewhere, stays where it is.} other {# apps installed outside your apps folder, such as in a console's folder elsewhere, stay where they are.}}"
+msgstr ""
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -829,6 +834,10 @@ msgstr "앱 설치 위치: {dir}"
 msgid "Apps folder"
 msgstr "앱 폴더"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps for multiple consoles"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Apps in that folder"
 msgstr "그 폴더의 앱"
@@ -852,6 +861,10 @@ msgstr "여기에 설치된 앱은 항상 표시돼요."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "이 컴퓨터에 설치된 앱은 라이브러리에 그대로 남아요. 손상된 파일은 새 파일 옆에 보관되므로 삭제되는 것은 없어요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps that are available for more than one console."
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
@@ -1248,6 +1261,10 @@ msgstr ""
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
 msgstr "앱 설치 위치 선택"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose where to install apps for multiple consoles"
+msgstr ""
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
@@ -2478,6 +2495,10 @@ msgstr "{folder} 옮기는 중… ({total}개 중 {step}개)"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps… ({step} of {total})"
 msgstr "앱 옮기는 중… ({total}개 중 {step}개)"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Multiple consoles"
+msgstr ""
 
 #. Library sort: by the app's name
 #. Library view option: which name the sidebar shows, the game's or the app's

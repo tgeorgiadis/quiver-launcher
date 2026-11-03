@@ -224,6 +224,8 @@ type Launcher = {
   dismiss: (id: string) => void;
   /** The folders of installed apps that live in the apps folder, which moving it takes along. */
   appFolders: () => string[];
+  /** Installed apps' folders outside those, each a full path: in a console's folder, or 3.x installs. */
+  appDirs: () => string[];
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
@@ -264,13 +266,19 @@ const fromKey = (id: string): CustomApp => {
  */
 export const renamable = (install: Install | undefined) => Boolean(install && !install.dir && install.installer !== "msi");
 
+/** In `Settings.consoleFolders`, the folder for apps for more than one console, as no console's id is. */
+export const MULTI_CONSOLE = "*";
+
 /**
  * The folder the player picked for the console an app is for, which a new
  * install of it goes in; none, the apps folder. An app for more than one
- * console goes in the first of theirs, in the catalog's order, that has one.
+ * console goes in the folder for those, never any one console's: none, the
+ * apps folder too.
  */
-export const consoleFolderFor = (entry: Pick<Entry, "consoles">, folders: Settings["consoleFolders"]) =>
-  (entry.consoles ?? []).map((id) => folders?.[id]).find(Boolean);
+export const consoleFolderFor = (entry: Pick<Entry, "consoles">, folders: Settings["consoleFolders"]) => {
+  const consoles = entry.consoles ?? [];
+  return folders?.[consoles.length > 1 ? MULTI_CONSOLE : (consoles[0] ?? "")] || undefined;
+};
 
 /** Whether this computer can install the app. */
 export const availableOn = (entry: Entry, os: string) =>
@@ -532,7 +540,10 @@ export type Settings = {
   libraryFilters?: Record<string, string>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
-  /** Where a console's apps install here, by its id: a folder the player picked. A console with none, the apps folder. */
+  /**
+   * Where a console's apps install here, by its id, and apps for more than one console by `MULTI_CONSOLE`: a folder the
+   * player picked. A console with none, the apps folder.
+   */
   consoleFolders?: Record<string, string>;
   /** How the library shows its apps (view.ts); only what differs from the defaults. */
   library?: Partial<LibraryView>;
@@ -1082,6 +1093,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return Object.values(installs).flatMap((i) => (i.dir ? [] : [i.folder]));
   }
 
+  /** Installed apps' folders elsewhere, each a full path: in a console's folder, or 3.x installs. A local app's are the player's own. */
+  function appDirs() {
+    return Object.values(installs).flatMap((i) => (i.dir && !i.local ? [i.dir] : []));
+  }
+
   /** Deletes an app's files; a local app's are the player's own and stay. */
   async function uninstall(id: string) {
     const install = installs[id];
@@ -1471,6 +1487,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
     appFolders,
+    appDirs,
     renaming,
     askRename,
     changingVersion,
@@ -1498,10 +1515,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return folder;
     },
     async moveApps(to) {
-      const appsDir = await native.moveAppsFolder(to, appFolders());
+      const { appsDir, moved, appsFolderNow } = await native.moveAppsFolder(to, appFolders(), appDirs(), Object.values(settings.consoleFolders ?? {}));
       setConfig((c) => ({ ...c, appsDir }));
       setTelemetryAppsDir(appsDir);
-      track("apps_folder_moved", { apps: appFolders().length });
+      // Apps in a console's folder in the apps folder went with it, and so did that console's folder.
+      setInstalls((i) => Object.fromEntries(Object.entries(i).map(([id, install]) => [id, install.dir && moved[install.dir] ? { ...install, dir: moved[install.dir] } : install])));
+      // A console's folder the apps folder was moved into is just the apps folder now, as if none were picked.
+      setSettings((s) => {
+        if (!s.consoleFolders) return s;
+        const kept = Object.entries(s.consoleFolders).flatMap(([id, f]) => (appsFolderNow.includes(f) ? [] : [[id, moved[f] ?? f]]));
+        return { ...s, consoleFolders: kept.length ? Object.fromEntries(kept) : undefined };
+      });
+      track("apps_folder_moved", { apps: appFolders().length + appDirs().filter((d) => moved[d]).length });
     },
     cancel: (id) => void native.cancelInstall(id).catch(() => {}),
   };

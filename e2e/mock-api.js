@@ -137,7 +137,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     entry("tampered-port", "Tampered Port", { consoles: ["snes"], tags: ["snes", "port"] }),
     // A second way to play Test Port's game, which players say doesn't run.
     entry("test-remake", "Test Remake", {
-      consoles: ["n64"],
+      // For more than one console, as a port of a series' games can be.
+      consoles: ["n64", "snes"],
       games: [{ id: "game_test-port", slug: "test-port", title: "Test Port (original)" }],
       recommended: 0,
       reviewCount: 1,

@@ -17,6 +17,11 @@ msgstr "(изменены)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {# приложение для других платформ не показано.} few {# приложения для других платформ не показаны.} many {# приложений для других платформ не показаны.} other {# приложения для других платформ не показаны.}}"
 
+#. placeholder {0}: elsewhere.staying
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# app installed outside your apps folder, such as in a console's folder elsewhere, stays where it is.} other {# apps installed outside your apps folder, such as in a console's folder elsewhere, stay where they are.}}"
+msgstr ""
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -829,6 +834,10 @@ msgstr "Приложения устанавливаются в {dir}"
 msgid "Apps folder"
 msgstr "Папка приложений"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps for multiple consoles"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Apps in that folder"
 msgstr "Приложения в этой папке"
@@ -852,6 +861,10 @@ msgstr "Приложения, установленные здесь, показ�
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Приложения, установленные на этом компьютере, остаются в вашей библиотеке. Повреждённый файл сохраняется рядом с новым, так что ничего не удаляется."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps that are available for more than one console."
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
@@ -1248,6 +1261,10 @@ msgstr ""
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
 msgstr "Выберите, куда устанавливать приложения"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose where to install apps for multiple consoles"
+msgstr ""
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
@@ -2478,6 +2495,10 @@ msgstr "Перемещение {folder}… ({step} из {total})"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps… ({step} of {total})"
 msgstr "Перемещение приложений… ({step} из {total})"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Multiple consoles"
+msgstr ""
 
 #. Library sort: by the app's name
 #. Library view option: which name the sidebar shows, the game's or the app's

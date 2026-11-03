@@ -250,6 +250,10 @@ fn destination(apps_dir: &Path, req: &InstallRequest, folder: &str) -> Result<Pa
     }
     let home = match &req.parent {
         Some(parent) if !Path::new(parent).is_absolute() => return Err("Choose a folder on this computer for this console's apps.".into()),
+        // Never made here: on a drive that isn't connected, it would be made on another, or fail with a system error.
+        Some(parent) if !Path::new(parent).is_dir() => {
+            return Err(format!("Quiver can't find {parent}, where this console's apps go. If it's on a drive, connect it, or change the folder in Settings › Apps folder."))
+        }
         Some(parent) => PathBuf::from(parent),
         None => apps_dir.to_path_buf(),
     };
@@ -869,6 +873,10 @@ mod tests {
         fs::write(n64.path().join("game").join(VERSION_FILE), "0.9").unwrap();
         assert!(destination(apps.path(), &request(None, Some(n64.path())), "game").is_ok());
         assert!(destination(apps.path(), &request(None, Some(Path::new("N64"))), "game").is_err());
+        // A console's folder that isn't there, as on a drive not connected: said so, and nothing made.
+        let gone = n64.path().join("card/SNES");
+        assert!(destination(apps.path(), &request(None, Some(&gone)), "game").unwrap_err().contains("can't find"));
+        assert!(!gone.exists());
     }
 
     #[test]

@@ -779,10 +779,13 @@ async fn pick_folder(app: tauri::AppHandle, window: tauri::WebviewWindow, title:
     Some(path.to_string_lossy().into())
 }
 
-/// Why the installed apps (`folders`, in the apps folder) can't move to `to`, if they can't.
+/// Why the installed apps (`folders`, in the apps folder, and those of `dirs` in a console's folder there) can't move
+/// to `to`, if they can't.
 #[tauri::command]
-fn apps_folder_refusal(data: State<Data>, to: String, folders: Vec<String>) -> Option<String> {
-    apps_folder::refuse(&data.apps(), Path::new(&to), &folders)
+fn apps_folder_refusal(data: State<Data>, to: String, folders: Vec<String>, dirs: Vec<String>) -> Option<String> {
+    let from = data.apps();
+    let all: Vec<String> = folders.into_iter().chain(in_apps_folder(&from, &dirs).into_iter().map(|(_, rest)| rest.to_string_lossy().into())).collect();
+    apps_folder::refuse(&from, Path::new(&to), &all)
 }
 
 /// Why a console's apps can't install in `to`, if they can't: the installed
@@ -794,21 +797,61 @@ fn console_folder_refusal(data: State<Data>, to: String, folders: Vec<String>, d
     apps_folder::refuse_console(Path::new(&to), &installed)
 }
 
-/// Moves the installed apps (`folders`, in the apps folder) to `to` and
-/// installs there from now on; resolves to the new apps folder. Reports each
-/// app as it moves ("apps-moving").
+/// Readies `to` as a console's folder, once it isn't refused: made if it isn't there yet, so its apps can go in it.
+/// False, and nothing made, for the apps folder itself, which is where its apps go anyway.
 #[tauri::command]
-async fn move_apps_folder(app: tauri::AppHandle, to: String, folders: Vec<String>) -> Result<String, String> {
+fn prepare_console_folder(data: State<Data>, to: String) -> Result<bool, String> {
+    let to = Path::new(&to);
+    if apps_folder::same(to, &data.apps()) {
+        return Ok(false);
+    }
+    std::fs::create_dir_all(to).map_err(|e| format!("Couldn't make that folder: {e}. Choose another folder."))?;
+    Ok(true)
+}
+
+/// Of `paths`, those in the apps folder `from`, each with the rest of its path from there.
+fn in_apps_folder(from: &Path, paths: &[String]) -> Vec<(String, PathBuf)> {
+    paths.iter().filter_map(|p| apps_folder::within(from, Path::new(p)).map(|rest| (p.clone(), rest))).collect()
+}
+
+/// Of the installed apps outside the apps folder's own folders (`dirs`, each a full path), those in it all the same,
+/// in a console's folder there: those Move all apps takes along.
+#[tauri::command]
+fn apps_folder_holds(data: State<Data>, dirs: Vec<String>) -> Vec<String> {
+    in_apps_folder(&data.apps(), &dirs).into_iter().map(|(dir, _)| dir).collect()
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MovedApps {
+    apps_dir: String,
+    /// Where each of `dirs` and `consoles` in the old apps folder is now.
+    moved: std::collections::HashMap<String, String>,
+    /// Of `consoles`, those that are the new apps folder, as the player moved it into one: no longer a folder of their own.
+    apps_folder_now: Vec<String>,
+}
+
+/// Moves the installed apps (`folders`, in the apps folder, and those of
+/// `dirs` in a console's folder there) to `to` and installs there from now
+/// on; resolves to the new apps folder, and where each of `dirs` and
+/// `consoles` (consoles' folders) that was in the old one is now. Reports
+/// each app as it moves ("apps-moving").
+#[tauri::command]
+async fn move_apps_folder(app: tauri::AppHandle, to: String, folders: Vec<String>, dirs: Vec<String>, consoles: Vec<String>) -> Result<MovedApps, String> {
     let handle = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let data = handle.state::<Data>();
         let from = data.apps();
         let to = PathBuf::from(&to);
-        apps_folder::move_apps(&data.0, &from, &to, &folders, |m| {
+        let nested = in_apps_folder(&from, &dirs);
+        let all: Vec<String> = folders.into_iter().chain(nested.iter().map(|(_, rest)| rest.to_string_lossy().into())).collect();
+        apps_folder::move_apps(&data.0, &from, &to, &all, |m| {
             let _ = handle.emit("apps-moving", m);
         })?;
         *data.1.lock().unwrap() = to.clone();
-        Ok(to.to_string_lossy().into())
+        let moved = nested.into_iter().chain(in_apps_folder(&from, &consoles)).map(|(was, rest)| (was, to.join(rest).to_string_lossy().into())).collect();
+        let apps_folder_now = consoles.into_iter().filter(|c| apps_folder::same(Path::new(c), &to)).collect();
+        Ok(MovedApps { apps_dir: to.to_string_lossy().into(), moved, apps_folder_now })
     })
     .await
     .map_err(|e| e.to_string())?
@@ -1320,7 +1363,9 @@ pub fn run() {
             picker::picked,
             picker::browse,
             apps_folder_refusal,
+            apps_folder_holds,
             console_folder_refusal,
+            prepare_console_folder,
             move_apps_folder,
             secret_get,
             secret_set,

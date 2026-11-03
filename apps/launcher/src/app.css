@@ -1151,6 +1151,8 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .console-maker-count { font-size: 13px; font-weight: 400; }
 .console-folders-list { display: grid; gap: 8px; margin: 0; padding: 8px 12px 12px 35px; list-style: none; }
 .console-folders-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+/* Apps for multiple consoles' note, over its folder, lined up with it. */
+.console-folders-note { margin: 8px 12px 0 35px; font-size: 13px; }
 .console-folder-name { flex: 0 1 15em; min-width: 0; }
 .console-folder-path { flex: 1 1 14em; min-width: 0; font-size: 13px; }
 .console-folder-problem { flex-basis: 100%; margin: 0; font-size: 13px; }
