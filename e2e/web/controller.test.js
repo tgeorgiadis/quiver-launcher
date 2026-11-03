@@ -997,7 +997,7 @@ test("at another interface size, the focus box is on what has the focus and a ga
   // Zoomed as Settings' Interface size zooms the page, which WebKit (a Steam Deck's) measures as it lays it out, not as
   // it shows: the box and the list were drawn a fraction of the way toward the window's corner.
   const game = await openApp({
-    state: { ...state, settings: { scale: 1.15, library: { byGame: true } }, library: [...state.library, { id: "entry_test-remake", slug: "test-remake", addedAt: Date.now() - 86400_000 }] },
+    state: { ...state, settings: { scale: 1.25, library: { byGame: true } }, library: [...state.library, { id: "entry_test-remake", slug: "test-remake", addedAt: Date.now() - 86400_000 }] },
   });
   const { app: g } = game;
   try {

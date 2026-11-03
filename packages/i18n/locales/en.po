@@ -1568,11 +1568,6 @@ msgstr "Exit full screen"
 msgid "Expand all sections"
 msgstr "Expand all sections"
 
-#. Interface size
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Extra large"
-msgstr "Extra large"
-
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Extra wide"
@@ -2137,9 +2132,7 @@ msgstr "Keyboard and mouse"
 msgid "Language"
 msgstr "Language"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Large"
 msgstr "Large"
@@ -2651,7 +2644,6 @@ msgstr "None of these show as installed. If you moved Quiver Launcher 3's Apps f
 msgid "None of this release's files are for this computer."
 msgstr "None of this release's files are for this computer."
 
-#. Interface size
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
@@ -3728,9 +3720,7 @@ msgstr "Signed out. Apps installed on this computer stay in your library; sign i
 msgid "Skip setup"
 msgstr "Skip setup"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Small"

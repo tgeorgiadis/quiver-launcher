@@ -1568,11 +1568,6 @@ msgstr "Quitter le plein écran"
 msgid "Expand all sections"
 msgstr "Développer toutes les sections"
 
-#. Interface size
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Extra large"
-msgstr "Très grande"
-
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Extra wide"
@@ -2137,9 +2132,7 @@ msgstr "Clavier et souris"
 msgid "Language"
 msgstr "Langue"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Large"
 msgstr "Grande"
@@ -2651,7 +2644,6 @@ msgstr "Aucune n'apparaît comme installée. Si vous avez déplacé le dossier A
 msgid "None of this release's files are for this computer."
 msgstr "Aucun fichier de cette version n'est prévu pour cet ordinateur."
 
-#. Interface size
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
@@ -3728,9 +3720,7 @@ msgstr "Déconnecté. Les apps installées sur cet ordinateur restent dans votre
 msgid "Skip setup"
 msgstr "Passer la configuration"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Petite"

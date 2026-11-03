@@ -193,8 +193,8 @@ test("an app the catalog doesn't list is added from its GitHub repository", asyn
 test("settings make the interface larger, and it stays that way", async () => {
   await s.settings("General");
   // By its label: TV mode's dropdown comes before it now.
-  await (await app.$("//section[contains(@class, 'settings-page')]//label[contains(., 'Interface size')]/select")).selectByVisibleText("Large");
+  await (await app.$("//section[contains(@class, 'settings-page')]//label[contains(., 'Interface size')]/select")).selectByVisibleText("125%");
   await s.closeSettings();
-  assert.equal(await app.execute(() => document.documentElement.style.zoom), "1.15");
-  await until(() => JSON.parse(readFileSync(join(s.data, "settings.json"), "utf8")).scale === 1.15);
+  assert.equal(await app.execute(() => document.documentElement.style.zoom), "1.25");
+  await until(() => JSON.parse(readFileSync(join(s.data, "settings.json"), "utf8")).scale === 1.25);
 });

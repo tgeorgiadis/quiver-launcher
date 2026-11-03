@@ -13,7 +13,7 @@ import { launch } from "./session.js";
 let s;
 
 before(async () => {
-  // A large interface in a small window, so the catalog runs well past a screen.
+  // A small window, so the catalog runs well past a screen, at the largest interface size it has room for.
   const data = mkdtempSync(join(tmpdir(), "quiver-data-"));
   writeFileSync(join(data, "settings.json"), JSON.stringify({ scale: 2 }));
   s = await launch({ data });
