@@ -62,15 +62,10 @@ test("a card's menu hides an app, Only hidden apps shows it, and Show in Browse 
   assert.equal(await empty().count(), 0);
 });
 
-test("a right-click's first item doesn't look picked", async () => {
+test("a right-click puts the focus on the menu's main action, Get", async () => {
   await card("tampered-port").first().click({ button: "right" });
   await item("Read the README").waitFor();
-  // Not over the items, whose hover would look the same.
-  await page.mouse.move(2, 2);
-  await page.waitForTimeout(100);
-  const focused = await page.evaluate(() => ({ role: document.activeElement.getAttribute("role"), background: getComputedStyle(document.activeElement).backgroundColor }));
-  assert.equal(focused.role, "menuitem");
-  assert.equal(focused.background, "rgba(0, 0, 0, 0)");
+  assert.equal(await page.evaluate(() => document.activeElement.innerText.trim()), "Get");
 });
 
 test("Only hidden apps says so when none is in the search", async () => {
@@ -93,13 +88,24 @@ test("Only hidden apps doesn't offer to hide the library's apps, which it shows 
   assert.equal(await page.locator(".owned-note", { hasText: "Apps in your library are shown here too." }).count(), 0);
 });
 
-test("the menu reads the README over Browse, and opens the app's page at its feedback", async () => {
-  await inMenu("tampered-port", "Read the README");
-  const dialog = page.locator('[role="dialog"][aria-label="README"]');
-  await dialog.waitFor();
+test("the menu opens the app's page at its whole README, Back returns to the same place in Browse, and it opens the page at its feedback", async () => {
+  const main = () => page.evaluate(() => document.querySelector(".shell > main").scrollTop);
+  await card("test-remake").first().scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.querySelector(".shell > main").scrollBy(0, 60));
+  await card("test-remake").first().click({ button: "right" });
+  const y = await main();
+  await item("Read the README").click();
+  const readme = page.locator(".page-layer:not([hidden]) .readme");
+  await readme.waitFor();
+  await page.waitForFunction(() => document.activeElement?.closest(".readme"));
+  assert.equal(await page.locator('[role="dialog"]').count(), 0);
+  assert.equal(await readme.locator(".clipped").count(), 0, "not folded");
+  const top = await readme.evaluate((el) => el.getBoundingClientRect().top - document.querySelector(".shell > main").getBoundingClientRect().top);
+  assert.ok(Math.abs(top) < 40, `the README is at the top (${top}px)`);
+
   await page.keyboard.press("Escape");
-  await dialog.waitFor({ state: "detached" });
-  assert.equal(await card("tampered-port").count() > 0, true, "Browse is still there");
+  await readme.waitFor({ state: "detached" });
+  assert.equal(await main(), y, "Browse is where it was");
 
   await inMenu("tampered-port", "Share feedback…");
   await page.getByRole("tab", { name: /Player feedback/, selected: true }).waitFor();
