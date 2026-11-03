@@ -140,7 +140,7 @@ export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, changeVersion, remove, saveCollection, setNotice, setLaunch } = useLauncher();
+  const { config, installs, jobs, catalog, collections, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -237,6 +237,8 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
   // Every release, verified or not, as the app's page has them: the player's own files have none.
   if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
+  // Already on this computer, somewhere Quiver doesn't know: played from there, with nothing to download.
+  if (!install && !isLocal(entry.id) && foldersOn(config.os) && !busy) manage.push({ text: t`Locate existing install…`, act: () => void locateInstall(entry) });
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better. Switching installs
   // the version Get would, so it's offered once the app is on that one; updates then keep to the build chosen.
   const newest = latest.verified?.version ?? latest.lastReleaseVersion;

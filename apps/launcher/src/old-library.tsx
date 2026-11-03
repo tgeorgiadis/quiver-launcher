@@ -77,6 +77,48 @@ const pickOldLibrary = (from?: string) => native.pickFolder(t`Choose your Quiver
 
 const notThere = () => t`That folder doesn't have Quiver Launcher 3 in it. Choose the folder its program is in.`;
 
+const installedIn = (library: V3Library) => library.apps.filter((a) => a.dir).length;
+
+/**
+ * Finds more of a library's installs in Apps folders the player points at, each adding to those found so far: one
+ * moved by hand, or on a drive with a different letter now. `onFound` hears the library with them.
+ */
+function useAppsFolders(library: V3Library | null | undefined, onFound: (found: V3Library) => void) {
+  const { findOld } = useLauncher();
+  const [chosen, setChosen] = useState<{ library: string; folders: string[] }>();
+  const [problem, setProblem] = useState<string | null>(null);
+  const choose = async () => {
+    if (!library) return;
+    const path = await native.pickFolder(t`Choose Quiver Launcher 3's Apps folder`, library.folder);
+    if (!path) return;
+    const folders = [...(chosen?.library === library.folder ? chosen.folders : []), path];
+    const found = await findOld(library.folder, folders).catch(() => null);
+    const more = found && installedIn(found) > installedIn(library);
+    if (more) {
+      setChosen({ library: library.folder, folders });
+      onFound(found);
+    }
+    setProblem(more ? null : t`None of these apps are installed in that folder.`);
+  };
+  return { choose, problem };
+}
+
+/** What to say when some of a library's apps don't show as installed, in case they are: nothing when they all do. */
+function notInstalledNote({ apps }: V3Library) {
+  const missing = apps.filter((a) => !a.dir).length;
+  if (!missing) return null;
+  if (missing === apps.length) return t`None of these show as installed. If you moved Quiver Launcher 3's Apps folder, or its drive has a different letter now, show Quiver where it is.`;
+  return t`${plural(missing, { one: "# of these doesn't show as installed. If it's in another folder or on another drive, show Quiver where it is.", other: "# of these don't show as installed. If any are in another folder or on another drive, show Quiver where it is." })}`;
+}
+
+function ChooseAppsFolder({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick}>
+      <FolderInput size={15} aria-hidden="true" /> <Trans>Choose the Apps folder…</Trans>
+    </button>
+  );
+}
+
 /**
  * Offers to import the Quiver Launcher 3 library the launcher found by
  * itself, saying where it is, with a choice of another folder in case it's
@@ -84,12 +126,13 @@ const notThere = () => t`That folder doesn't have Quiver Launcher 3 in it. Choos
  * whether there's one to find, such as a portable copy's.
  */
 export function OldLibrary({ onDone }: { onDone: () => void }) {
-  const { oldLibrary, findOld, config, settings, setSettings } = useLauncher();
+  const { oldLibrary, oldInstalls, answerOldInstalls, findOld, config, settings, setSettings } = useLauncher();
   const { state, start, reset } = useImport(() => onDone());
   // One the player pointed at from here.
   const [picked, setPicked] = useState<V3Library | null>(null);
   const [notFound, setNotFound] = useState(false);
   const library = picked ?? oldLibrary;
+  const appsFolders = useAppsFolders(library, setPicked);
   const choose = async () => {
     const path = await pickOldLibrary(library?.folder);
     if (!path) return;
@@ -107,6 +150,21 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
         </button>
       </div>
     ) : null;
+  }
+  if (!library && oldInstalls) {
+    const count = Object.keys(oldInstalls).length;
+    return (
+      <div className="banner old-library-notice" role="status" aria-label="Quiver Launcher 3">
+        <ArchiveRestore size={18} aria-hidden="true" />
+        <p>{t`${plural(count, { one: "# app in your library shows as not installed, but Quiver Launcher 3 has it installed. Play it from there, with nothing to download?", other: "# apps in your library show as not installed, but Quiver Launcher 3 has them installed. Play them from there, with nothing to download?" })}`}</p>
+        <button className="primary" onClick={() => answerOldInstalls(true)}>
+          {t`${plural(count, { one: "Use it", other: "Use them" })}`}
+        </button>
+        <button onClick={() => answerOldInstalls(false)}>
+          <Trans>Not now</Trans>
+        </button>
+      </div>
+    );
   }
   if (!library) {
     // Quiver Launcher 3 was only ever on computers.
@@ -126,13 +184,16 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
   }
   const { folder, apps } = library;
   const where = t`Found in ${folder}`;
+  const note = notInstalledNote(library);
   return (
     <div className="banner old-library-notice">
       <ArchiveRestore size={18} aria-hidden="true" />
       <p>
         {onThisComputer(apps.length)}
         <span className="old-library-folder">{where}</span>
+        {note && <span className="old-library-folder">{note}</span>}
         {notFound && <span className="old-library-folder">{notThere()}</span>}
+        {appsFolders.problem && <span className="old-library-folder">{appsFolders.problem}</span>}
       </p>
       <BringsAlong library={library} />
       {importing(state) ? (
@@ -145,6 +206,7 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
           <button onClick={choose}>
             <FolderInput size={15} aria-hidden="true" /> <Trans>Choose a different folder…</Trans>
           </button>
+          {note && <ChooseAppsFolder onClick={appsFolders.choose} />}
         </>
       )}
     </div>
@@ -164,6 +226,8 @@ export function FindOldLibrary() {
   const [notFound, setNotFound] = useState(false);
   const count = found.length;
   const installed = found.filter((a) => a.dir).length;
+  const appsFolders = useAppsFolders(library, setLibrary);
+  const note = library && notInstalledNote(library);
   return (
     <section className="settings-section" aria-label={t`Quiver Launcher 3`}>
       <h3>
@@ -199,12 +263,21 @@ export function FindOldLibrary() {
               : t`That folder has ${plural(count, { one: "# app", other: "# apps" })}, none installed. Add them here?`}
           </p>
           <BringsAlong library={library} />
+          {note && <p className="muted">{note}</p>}
+          {appsFolders.problem && (
+            <p className="job-error" role="status">
+              {appsFolders.problem}
+            </p>
+          )}
           {importing(state) ? (
             <Importing {...state} />
           ) : (
-            <button className="primary" onClick={() => start(library)}>
-              {importLabel(count)}
-            </button>
+            <div className="row">
+              <button className="primary" onClick={() => start(library)}>
+                {importLabel(count)}
+              </button>
+              {note && <ChooseAppsFolder onClick={appsFolders.choose} />}
+            </div>
           )}
         </>
       )}
@@ -233,6 +306,7 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
   const [picked, setPicked] = useState<V3Library | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const library = picked ?? oldLibrary;
+  const appsFolders = useAppsFolders(library, setPicked);
   const offering = Boolean(library) && !Array.isArray(state);
   const busy = importing(state);
   useEffect(() => onOffer(offering), [offering]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -244,14 +318,6 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
     // A folder without one leaves the library found before on offer.
     if (found) setPicked(found);
     setProblem(found ? null : notThere());
-  };
-  const chooseApps = async (folder: string) => {
-    const path = await native.pickFolder(t`Choose Quiver Launcher 3's Apps folder`, folder);
-    if (!path) return;
-    const found = await findOld(folder, path).catch(() => null);
-    const some = found?.apps.some((a) => a.dir);
-    if (some) setPicked(found);
-    setProblem(some ? null : t`None of these apps are installed in that folder.`);
   };
   if (Array.isArray(state)) {
     return <p role="status">{state.length ? notImported(state) : t`Your apps are in your library.`}</p>;
@@ -289,7 +355,8 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
     );
   }
   const { folder, apps } = library;
-  const installed = apps.filter((a) => a.dir).length;
+  const note = notInstalledNote(library);
+  const problems = problem ?? appsFolders.problem;
   return (
     <>
       <p>
@@ -311,14 +378,10 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
         ))}
       </ul>
       <BringsAlong library={library} />
-      {!installed && (
-        <p className="muted">
-          <Trans>None of these show as installed. If you moved Quiver Launcher 3's Apps folder, or its drive has a different letter now, show Quiver where it is.</Trans>
-        </p>
-      )}
-      {problem && (
+      {note && <p className="muted">{note}</p>}
+      {problems && (
         <p className="job-error" role="status">
-          {problem}
+          {problems}
         </p>
       )}
       {busy ? (
@@ -331,11 +394,7 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
           <button onClick={choose}>
             <FolderInput size={15} aria-hidden="true" /> <Trans>Choose a different folder…</Trans>
           </button>
-          {!installed && (
-            <button onClick={() => chooseApps(folder)}>
-              <FolderInput size={15} aria-hidden="true" /> <Trans>Choose the Apps folder…</Trans>
-            </button>
-          )}
+          {note && <ChooseAppsFolder onClick={appsFolders.choose} />}
         </div>
       )}
     </>

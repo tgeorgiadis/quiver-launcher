@@ -135,7 +135,7 @@ fn around(program: &Path) -> Vec<PathBuf> {
 fn best(dirs: impl IntoIterator<Item = PathBuf>) -> Option<Library> {
     let saved = |d: &Path| library_file(d).and_then(|f| f.metadata().and_then(|m| m.modified()).ok());
     dirs.into_iter()
-        .filter_map(|d| Some((saved(&d), library_in(&d, None)?)))
+        .filter_map(|d| Some((saved(&d), library_in(&d, &[])?)))
         .max_by_key(|(saved, library)| (library.apps.iter().filter(|a| a.dir.is_some()).count(), *saved))
         .map(|(_, library)| library)
 }
@@ -144,10 +144,10 @@ fn best(dirs: impl IntoIterator<Item = PathBuf>) -> Option<Library> {
 /// holding that one (a portable Windows copy's folder around `current`, or
 /// the folder of its .app), or the folder around it (the player picked a
 /// portable Windows copy's `current` folder). None when it isn't one.
-/// `apps` is its Apps folder, when the player says where it is: one moved
-/// by hand, or on a drive that has another letter now, where 3.x's settings
-/// don't point any more.
-pub fn find_in(dir: &Path, apps: Option<&Path>) -> Option<Library> {
+/// `apps` are Apps folders the player says its installs are in: one moved by
+/// hand, or on a drive that has another letter now, where 3.x's settings don't
+/// point any more.
+pub fn find_in(dir: &Path, apps: &[PathBuf]) -> Option<Library> {
     if let Some(library) = library_in(dir, apps) {
         return Some(library);
     }
@@ -163,7 +163,7 @@ pub fn find_in(dir: &Path, apps: Option<&Path>) -> Option<Library> {
 }
 
 /// The library in this very folder, if it holds one.
-fn library_in(dir: &Path, apps: Option<&Path>) -> Option<Library> {
+fn library_in(dir: &Path, apps: &[PathBuf]) -> Option<Library> {
     let settings = read(&dir.join("settings.json")).unwrap_or(Value::Null);
     let apps = read_library(dir, apps, &settings);
     (!apps.is_empty()).then(|| Library { folder: dir.to_string_lossy().into(), apps, filters: tag_filters(&settings) })
@@ -244,15 +244,26 @@ fn installed(dir: &Path) -> Option<(String, Option<String>)> {
     Some((version, None))
 }
 
+/// What's installed in a folder the player says holds an app.
+#[derive(Serialize)]
+pub struct Existing {
+    version: String,
+    program: Option<String>,
+}
+
+/// The install in a folder the player points at, as 3.x's Locate existing
+/// install took one; none when it doesn't hold an app.
+pub fn existing(dir: &Path) -> Option<Existing> {
+    installed(dir).map(|(version, program)| Existing { version, program })
+}
+
 /// The apps in a folder's library file, if it's a 3.x one: each has a name,
 /// and at least one has a repository.
-fn read_library(dir: &Path, apps: Option<&Path>, settings: &Value) -> Vec<OldApp> {
+fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
     let Some(doc) = library_file(dir).and_then(|f| read(&f)) else { return vec![] };
-    // Set when 3.x moved its data to ~/.local/share, to where its Apps folder stayed.
-    let apps_dir = apps
-        .map(Path::to_path_buf)
-        .or_else(|| field(settings, "appsPath").map(|p| resolve(dir, p)))
-        .unwrap_or_else(|| dir.join("Apps"));
+    // Where an app's folder can be: those the player named, the one 3.x was set to, and its default, since changing
+    // the setting in 3.x (or moving its data to ~/.local/share) leaves apps already installed where they were.
+    let folders: Vec<PathBuf> = apps.iter().cloned().chain(field(settings, "appsPath").map(|p| resolve(dir, p))).chain([dir.join("Apps")]).collect();
     // 3.x kept the apps the player hid in its settings, and the tags they gave a catalog app.
     let hidden_keys = texts(get(settings, "manuallyHiddenApps"));
     let set_tags = get(settings, "userAppTags");
@@ -263,10 +274,9 @@ fn read_library(dir: &Path, apps: Option<&Path>, settings: &Value) -> Vec<OldApp
         .flatten()
         .filter_map(|app| {
             let name = field(app, "name")?.to_string();
-            let folder = field(app, "installPath")
-                .map(|p| resolve(dir, p))
-                .or_else(|| field(app, "folderName").map(|f| apps_dir.join(f)));
-            let install = folder.and_then(|d| installed(&d).map(|(version, program)| (d, version, program)));
+            let own = field(app, "installPath").map(|p| resolve(dir, p));
+            let named = field(app, "folderName").into_iter().flat_map(|f| folders.iter().map(move |d| d.join(f)));
+            let install = own.into_iter().chain(named).find_map(|d| installed(&d).map(|(version, program)| (d, version, program)));
             let (dir, version, program) = match install {
                 Some((d, version, program)) => (Some(d.to_string_lossy().into()), Some(version), program),
                 None => (None, None, None),
@@ -320,7 +330,7 @@ mod tests {
 
     /// The apps of the library find_in finds from a folder.
     fn apps_in(dir: &Path) -> Vec<OldApp> {
-        find_in(dir, None).map(|l| l.apps).unwrap_or_default()
+        find_in(dir, &[]).map(|l| l.apps).unwrap_or_default()
     }
 
     /// Where an app's install came over from.
@@ -339,7 +349,7 @@ mod tests {
         std::fs::create_dir_all(portable.join("current")).unwrap();
         // The player can pick the copy's own `current` folder, as well as the folder around the copy.
         for dir in [portable.as_path(), root.path(), &portable.join("current")] {
-            let Library { folder, apps, .. } = find_in(dir, None).unwrap();
+            let Library { folder, apps, .. } = find_in(dir, &[]).unwrap();
             // Where its apps.json is, whichever of them was picked: the folder picker opens there next time.
             assert_eq!(Path::new(&folder), portable);
             assert_eq!(apps.len(), 1);
@@ -448,8 +458,66 @@ mod tests {
         let moved = root.path().join("Games");
         folder(&moved.join("TestPort"), &[("port.exe", "")]);
         assert!(apps_in(&data)[0].dir.is_none());
-        let apps = find_in(&data, Some(&moved)).unwrap().apps;
+        let apps = find_in(&data, std::slice::from_ref(&moved)).unwrap().apps;
         assert_eq!(at(&apps[0]), Some(moved.join("TestPort").as_path()));
+    }
+
+    /// A library of two apps, with this in its settings.json as 3.x writes it: with a byte order mark.
+    fn two_apps(data: &Path, settings: &Value) {
+        library(data, r#"{"apps":[
+            {"name":"One","repository":"quiver/one","folderName":"One"},
+            {"name":"Two","repository":"quiver/two","folderName":"Two"}
+        ]}"#);
+        std::fs::write(data.join("settings.json"), format!("\u{FEFF}{settings}")).unwrap();
+    }
+
+    #[test]
+    fn finds_apps_left_in_3xs_default_folder_when_its_setting_changed() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("data");
+        let custom = root.path().join("Games");
+        // 3.x doesn't move apps when the setting changes: One from before, Two from since.
+        two_apps(&data, &serde_json::json!({ "AppsPath": custom }));
+        folder(&data.join("Apps/One"), &[("one.exe", "")]);
+        folder(&custom.join("Two"), &[("two.exe", "")]);
+        let apps = apps_in(&data);
+        assert_eq!(at(&apps[0]), Some(data.join("Apps/One").as_path()));
+        assert_eq!(at(&apps[1]), Some(custom.join("Two").as_path()));
+        // The folder it's set to comes first, as it does in 3.x.
+        folder(&custom.join("One"), &[("one.exe", "")]);
+        assert_eq!(at(&apps_in(&data)[0]), Some(custom.join("One").as_path()));
+    }
+
+    #[test]
+    fn adds_each_apps_folder_the_player_points_at() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("data");
+        two_apps(&data, &serde_json::json!({}));
+        let (first, second) = (root.path().join("First"), root.path().join("Second"));
+        folder(&first.join("One"), &[("one.exe", "")]);
+        folder(&second.join("Two"), &[("two.exe", "")]);
+        let apps = find_in(&data, &[first.clone(), second.clone()]).unwrap().apps;
+        assert_eq!(at(&apps[0]), Some(first.join("One").as_path()));
+        assert_eq!(at(&apps[1]), Some(second.join("Two").as_path()));
+    }
+
+    #[test]
+    fn an_install_path_thats_gone_falls_back_to_the_apps_folder() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = serde_json::json!({ "apps": [{ "name": "Test Port", "repository": "quiver/test-port", "folderName": "TestPort", "installPath": root.path().join("gone") }] });
+        library(root.path(), &apps.to_string());
+        folder(&root.path().join("Apps/TestPort"), &[("port.exe", "")]);
+        assert_eq!(at(&apps_in(root.path())[0]), Some(root.path().join("Apps/TestPort").as_path()));
+    }
+
+    #[test]
+    fn a_located_folder_has_to_hold_an_app() {
+        let root = tempfile::tempdir().unwrap();
+        assert!(existing(root.path()).is_none());
+        folder(root.path(), &[("version.txt", "v1.0.0")]);
+        assert!(existing(root.path()).is_none(), "only 3.x's own files");
+        folder(root.path(), &[("port.exe", "")]);
+        assert_eq!(existing(root.path()).unwrap().version, "v1.0.0");
     }
 
     #[test]
@@ -556,7 +624,7 @@ mod tests {
             exclude_all,
         };
         assert_eq!(
-            find_in(root.path(), None).unwrap().filters,
+            find_in(root.path(), &[]).unwrap().filters,
             [filter("Recomps", &["recomp", "n64"], false, &[], false), filter("Finished", &["n64", "done"], true, &["broken", "wip"], true)]
         );
     }

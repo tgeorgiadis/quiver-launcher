@@ -219,8 +219,10 @@ export const native = {
   setTheme: (theme: "light" | "dark" | null) => invoke<void>("set_theme", { theme }),
   logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<V3Library | null>("find_v3_library"),
-  /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in that Apps folder. */
-  findV3LibraryIn: (path: string, apps?: string) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
+  /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in those Apps folders too. */
+  findV3LibraryIn: (path: string, apps?: string[]) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
+  /** The install in a folder the player says holds an app: null when it doesn't. */
+  findExistingInstall: (path: string) => invoke<{ version: string; program?: string | null } | null>("find_existing_install", { path }),
   /** Asks for a sound file to play behind the launcher (music.ts), opening in `dir` when given; null when the player cancels. */
   pickMusic: (title: string, dir?: string) => invoke<string | null>("pick_music", { title, dir }),
   /** The music file's bytes, to play. */

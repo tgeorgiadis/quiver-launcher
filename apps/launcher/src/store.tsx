@@ -147,7 +147,13 @@ type Launcher = {
   /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
   importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void) => Promise<string[]>;
   /** The Quiver Launcher 3 library in a folder the player picked, its installs in `apps` if given: null when there isn't one. */
-  findOld: (path: string, apps?: string) => Promise<V3Library | null>;
+  findOld: (path: string, apps?: string[]) => Promise<V3Library | null>;
+  /** Installs of Quiver Launcher 3's for apps in the library that show as not installed here, once found: a library brought over before Quiver could see them. */
+  oldInstalls: Record<string, Install> | null;
+  /** Answers the offer of `oldInstalls`: played from where they are, or left. */
+  answerOldInstalls: (use: boolean) => void;
+  /** Asks for the folder an app is already installed in and plays it from there, as Quiver Launcher 3's Locate existing install did. */
+  locateInstall: (entry: Entry) => Promise<void>;
   remember: (entries: Entry[]) => void;
   /** Keeps catalog data for apps that aren't in the library, such as those on a copy of a shared playlist. */
   cache: (entries: Entry[]) => void;
@@ -315,6 +321,37 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
 }
 
 /**
+ * The catalog's entry for a 3.x app: the one 3.x knew first, as one repository can ship several apps, each with an
+ * entry of its own (a port of two games); else the one for its repository.
+ */
+export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined {
+  return (old.catalogId && ids.get(`id:${old.catalogId}`)) || (old.repository && ids.get(`${old.provider}:${old.repository}`.toLowerCase())) || undefined;
+}
+
+/**
+ * The install an app has after bringing a 3.x library over again: what it has here stays, so one downloaded since
+ * isn't pointed back at 3.x's copy, unless that's another of 3.x's folders, which is the one 3.x says is this app's.
+ */
+export function keptInstall(now: Install | undefined, adopted: Install): Install {
+  return !now ? adopted : now.dir && now.dir !== adopted.dir ? { ...now, ...adopted } : now;
+}
+
+/** The installs 3.x has for apps in the library that have none here, by app. */
+export function looseInstalls(apps: OldApp[], ids: Map<string, { id: string }>, library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, Entry>, os: Os) {
+  const loose: Record<string, Install> = {};
+  const has = (id: string | undefined): id is string => Boolean(id && library.some((i) => i.id === id && !i.removed));
+  for (const old of apps) {
+    // A catalog app that couldn't be read when it came over is in the library as a custom one.
+    const custom = old.repository && (old.provider === "github" || old.provider === "gitlab") ? customKey(old.provider, old.repository) : undefined;
+    const id = [catalogMatch(old, ids)?.id, custom].find(has);
+    if (!id || loose[id] || installs[id] || !catalog[id]) continue;
+    const install = adoptedInstall(old, catalog[id], os);
+    if (install) loose[id] = install;
+  }
+  return loose;
+}
+
+/**
  * The tags the player gave a 3.x app, which come over as their own: its tags less the catalog's, the ones 3.x last
  * had from it and the entry's now (a 3.x from before it kept them has only those), as many as the tag field takes.
  */
@@ -476,6 +513,8 @@ export type Settings = {
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
   oldLibraryNoticeSeen?: boolean;
+  /** A library that was here already was looked over once for installs of Quiver Launcher 3's, and any offered were answered. */
+  oldInstallsChecked?: boolean;
   /** The first start's setup (setup.tsx) was finished or skipped. */
   setupDone?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
@@ -563,6 +602,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
+  const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
   const [notice, showNotice] = useState<Launcher["notice"]>(null);
   const setNotice = useMemo<Launcher["setNotice"]>(() => (text, options) => showNotice(text === null ? null : { text, ...options }), []);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
@@ -581,8 +621,20 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   useEffect(() => {
     // A library that has apps already is past bringing one over.
-    if (saved.library.length) setOldLibrary(null);
-    else native.findV3Library().then(setOldLibrary, () => setOldLibrary(null));
+    if (saved.library.length) {
+      setOldLibrary(null);
+      // Unless it came over before Quiver could see all of 3.x's installs: asked once, and again if the catalog can't be read.
+      if (!saved.settings.oldInstallsChecked)
+        native
+          .findV3Library()
+          .then(async (old) => {
+            const ids = old?.apps.some((a) => a.dir) ? await catalogRepositories() : new Map<string, { id: string }>();
+            const loose = looseInstalls(old?.apps ?? [], ids, saved.library, saved.installs, saved.catalog, saved.config.os);
+            if (Object.keys(loose).length) setOldInstalls(loose);
+            else setSettings((s) => ({ ...s, oldInstallsChecked: true }));
+          })
+          .catch(() => {});
+    } else native.findV3Library().then(setOldLibrary, () => setOldLibrary(null));
     const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
     const closed = native.onAppClosed(({ id, seconds }) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], playTime: (i[id].playTime ?? 0) + seconds } } : i)));
     return () => void [off, closed].forEach((o) => o.then((stop) => stop()));
@@ -1276,6 +1328,23 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       ),
     oldLibrary,
     findOld: (path, apps) => native.findV3LibraryIn(path, apps),
+    oldInstalls,
+    answerOldInstalls(use) {
+      const loose = oldInstalls;
+      setOldInstalls(null);
+      setSettings((s) => ({ ...s, oldInstallsChecked: true }));
+      // Anything installed here since it was found stays.
+      if (use && loose) setInstalls((i) => ({ ...loose, ...i }));
+    },
+    async locateInstall(entry) {
+      const name = entry.projectName;
+      const path = await native.pickFolder(t`Choose the folder ${name} is installed in`);
+      if (!path) return;
+      const found = await native.findExistingInstall(path).catch(() => null);
+      const install = found && adoptedInstall({ name, provider: "github", dir: path, version: found.version, program: found.program ?? undefined }, catalog[entry.id] ?? entry, config.os);
+      if (!install) return setNotice(t`That folder doesn't have an installed app in it.`, { stays: true });
+      setInstalls((i) => ({ ...i, [entry.id]: i[entry.id] ?? install }));
+    },
     /**
      * Adds the 3.x apps, keeping their installs: the catalog's as the catalog has them (found by repository, or by
      * the entry 3.x knew), any other from GitHub or GitLab as a custom app. Returns the names of those it couldn't:
@@ -1286,7 +1355,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       let done = 0;
       // Each asks the site, or its repository's host, so several at a time; then they're added in the library's order.
       const found = await inTurns(apps, 6, async (old) => {
-        const match = (old.repository && ids.get(`${old.provider}:${old.repository}`.toLowerCase())) || (old.catalogId && ids.get(`id:${old.catalogId}`));
+        const match = catalogMatch(old, ids);
         const detail = match && (await client.app(match.slug).catch(() => null));
         if (detail) return { kind: "catalog" as const, detail };
         if (!old.repository || !((old.provider === "github" && githubRepository(old.repository)) || old.provider === "gitlab")) return null;
@@ -1312,7 +1381,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           add(entry);
         } else entry = addCustom(it.custom, it.latest, it.art);
         const install = adoptedInstall(old, entry, config.os);
-        if (install) setInstalls((i) => ({ ...i, [entry.id]: install }));
+        if (install) setInstalls((i) => ({ ...i, [entry.id]: keptInstall(i[entry.id], install) }));
         const own = importedTags(old, entry);
         if (own.length) tags.set(entry.id, own);
         if (old.hidden) hidden.push(entry.id);
@@ -1341,6 +1410,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ]);
       // The player brought a library over: the one found by itself isn't offered again.
       setOldLibrary(null);
+      setOldInstalls(null);
       return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
