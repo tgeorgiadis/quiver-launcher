@@ -252,9 +252,12 @@ pub struct Existing {
 }
 
 /// The install in a folder the player points at, as 3.x's Locate existing
-/// install took one; none when it doesn't hold an app.
+/// install took one; none when it doesn't hold an app. One Quiver installed
+/// and the player moved has its version in Quiver's own file.
 pub fn existing(dir: &Path) -> Option<Existing> {
-    installed(dir).map(|(version, program)| Existing { version, program })
+    let (version, program) = installed(dir)?;
+    let own = std::fs::read_to_string(dir.join(crate::install::VERSION_FILE)).ok().map(|v| v.trim().to_string()).filter(|v| !v.is_empty());
+    Some(Existing { version: own.unwrap_or(version), program })
 }
 
 /// The apps in a folder's library file, if it's a 3.x one: each has a name,
@@ -518,6 +521,16 @@ mod tests {
         assert!(existing(root.path()).is_none(), "only 3.x's own files");
         folder(root.path(), &[("port.exe", "")]);
         assert_eq!(existing(root.path()).unwrap().version, "v1.0.0");
+    }
+
+    #[test]
+    fn a_located_folder_quiver_installed_keeps_its_version() {
+        let root = tempfile::tempdir().unwrap();
+        folder(root.path(), &[("port.exe", ""), (crate::install::VERSION_FILE, "v2.0.0\n")]);
+        assert_eq!(existing(root.path()).unwrap().version, "v2.0.0");
+        // A folder the player fills has the file, empty.
+        folder(root.path(), &[(crate::install::VERSION_FILE, "")]);
+        assert_eq!(existing(root.path()).unwrap().version, UNKNOWN_VERSION);
     }
 
     #[test]

@@ -321,6 +321,23 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
 }
 
 /**
+ * An app the player has pointed at a new folder, given the install it had: what they chose and its history stay, and
+ * what described the old copy goes, as the folder says what's there now.
+ */
+export function relocatedInstall(now: Install | undefined, found: Install): Install {
+  if (!now) return found;
+  const { lastPlayed, installedAt, playTime, updates, skip, launch, pick } = now;
+  return { ...found, lastPlayed, installedAt, playTime, updates, skip, launch, pick };
+}
+
+/** Whether starting an app failed because its folder is gone: lib.rs's FOLDER_GONE. */
+export const folderGone = (job: Job | undefined) => Boolean(job && "error" in job && job.error === "This app's folder isn't there any more.");
+
+/** Whether the player can point Quiver at where an app is: it has no install here, or the one here lost its folder. Never during a download, or for the player's own files. */
+export const locatable = (id: string, install: Install | undefined, job: Job | undefined) =>
+  !isLocal(id) && !install?.local && (!install || folderGone(job)) && !(job && !("error" in job));
+
+/**
  * The catalog's entry for a 3.x app: the one 3.x knew first, as one repository can ship several apps, each with an
  * entry of its own (a port of two games); else the one for its repository.
  */
@@ -1338,12 +1355,19 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     async locateInstall(entry) {
       const name = entry.projectName;
+      const was = installs[entry.id];
       const path = await native.pickFolder(t`Choose the folder ${name} is installed in`);
       if (!path) return;
       const found = await native.findExistingInstall(path).catch(() => null);
       const install = found && adoptedInstall({ name, provider: "github", dir: path, version: found.version, program: found.program ?? undefined }, catalog[entry.id] ?? entry, config.os);
       if (!install) return setNotice(t`That folder doesn't have an installed app in it.`, { stays: true });
-      setInstalls((i) => ({ ...i, [entry.id]: i[entry.id] ?? install }));
+      // From its page it may not be in the library yet.
+      setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
+      add(entry);
+      // Anything installed here while the player was choosing stays.
+      setInstalls((i) => ({ ...i, [entry.id]: i[entry.id] === was ? relocatedInstall(was, install) : i[entry.id] }));
+      // What it failed with is over, not a download that's started since.
+      setJobs(({ [entry.id]: job, ...rest }) => (job && !("error" in job) ? { ...rest, [entry.id]: job } : rest));
     },
     /**
      * Adds the 3.x apps, keeping their installs: the catalog's as the catalog has them (found by repository, or by

@@ -12,7 +12,7 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play } from "lucide-reac
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, hasUpdate, pulledVerified, renamable, useLauncher } from "./store";
+import { canGet, hasUpdate, locatable, pulledVerified, renamable, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote } from "./detail";
 import { bare, versionLabel } from "./versions";
@@ -238,7 +238,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   // Every release, verified or not, as the app's page has them: the player's own files have none.
   if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
   // Already on this computer, somewhere Quiver doesn't know: played from there, with nothing to download.
-  if (!install && !isLocal(entry.id) && foldersOn(config.os) && !busy) manage.push({ text: t`Locate existing install…`, act: () => void locateInstall(entry) });
+  if (locatable(entry.id, install, job) && foldersOn(config.os)) manage.push({ text: t`Locate existing install…`, act: () => void locateInstall(entry) });
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better. Switching installs
   // the version Get would, so it's offered once the app is on that one; updates then keep to the build chosen.
   const newest = latest.verified?.version ?? latest.lastReleaseVersion;
