@@ -20,8 +20,8 @@ const binary = resolve(import.meta.dirname, `../apps/launcher/src-tauri/target/d
 const windows = process.platform === "win32";
 
 /**
- * Each copy still running, as what stops it. A test file that ends without closing one (stopped by run.js at its
- * failures or by Ctrl+C, which skips after(), or a test that never closed what it launched) stops it on its way out.
+ * Each copy still running, as what stops it. A test file that ends without closing one (stopped by Ctrl+C, which
+ * skips after(), or a test that never closed what it launched) stops it on its way out.
  * Left running, the app and its driver held the file's output open, so `node --test` waited on the file for good.
  */
 const running = new Set();
@@ -33,7 +33,7 @@ for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => process.e
  * copies, and `data` to reopen a copy's data folder. Each copy takes ports no
  * other is using, so any number can run at once. The first start's setup
  * (setup.tsx) is taken as done, as the tests start from the library, unless
- * `setup`: setup.test.js goes through it.
+ * `setup`.
  */
 export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(join(tmpdir(), "quiver-data-")), setup = false } = {}) {
   if (!setup) {

@@ -36,8 +36,6 @@ jobs:
       # The translation catalogs list every string in the code: a string added without running extract fails here.
       - run: pnpm --filter @quiverlauncher/i18n check
       - run: cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
-      # The end-to-end tests aren't run here: on the runner, slow and drawing without a GPU, one of them or another
-      # failed most runs for reasons of timing, not of the app. They run in WSL (e2e/wsl.sh).
 
   # Every screen at Android phones' sizes (e2e/phone.test.js): the web side alone, so no Rust build.
   phone:

@@ -71,8 +71,6 @@ corporate version of this agreement. Open an issue and we'll sort it out before 
 - Work on a branch and open a pull request against `main`. Every change is reviewed before it's merged.
 - Keep each pull request to one change, and describe what a player would see before and after it.
 - Run `pnpm typecheck` and `pnpm test` before you push.
-- On Windows, [`e2e/wsl.sh`](e2e/wsl.sh) runs the end-to-end tests as CI's Linux check does, in WSL's Ubuntu 24.04, so
-  a failure there can be tried in minutes rather than a CI run. Its first lines say how to set it up and use it.
 
 ## How the code is laid out
 
@@ -81,7 +79,7 @@ corporate version of this agreement. Open an issue and we'll sort it out before 
 | `apps/launcher` | The Tauri app: React UI in `src`, Rust core in `src-tauri`                  |
 | `packages/api`  | Typed client for the catalog API (`https://api.quiverlauncher.com/api/v1`) |
 | `packages/ui`   | Catalog components and styles shared with quiverlauncher.com               |
-| `e2e`           | User journeys run against the real app with WebDriver and a mock catalog   |
+| `e2e`           | The web side against a mock catalog, and the real app against the real one |
 
 `announcement.json` is the banner Quiver Launcher 3 shows. 3.x reads it from `main` here, so it stays at the root even
 though Quiver Launcher 4 takes its announcements from quiverlauncher.com.
@@ -99,17 +97,9 @@ pnpm typecheck && pnpm test
 cargo test --manifest-path apps/launcher/src-tauri/Cargo.toml
 ```
 
-End-to-end journeys (Linux and Windows; needs `cargo install tauri-driver`, and on Linux `webkit2gtk-driver` and `xvfb`):
-
-```sh
-pnpm --filter @quiver/e2e build
-xvfb-run -a pnpm e2e
-```
-
-On Linux with no display at all, each copy of the app gets a virtual display of its own, so
-`pnpm --filter @quiver/e2e e2e:ci` can run two test files at once. CI doesn't run these (on its runners
-they failed for timing, not the app): on Windows, `e2e/wsl.sh` runs them in WSL. The tests against the
-real catalog (`pnpm --filter @quiver/e2e live`) run once a day in CI.
+The tests against the real catalog (`pnpm --filter @quiver/e2e live`) run once a day in CI. They need
+`cargo install tauri-driver`, and on Linux `webkit2gtk-driver` and `xvfb`, with the app built by
+`pnpm --filter @quiver/e2e build`.
 
 How every screen looks on Android phones, without one or a build of the app (Chromium, as Playwright installs it):
 
