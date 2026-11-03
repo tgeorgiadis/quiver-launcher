@@ -160,8 +160,10 @@ button.danger { color: var(--danger); }
 .banner > svg { flex-shrink: 0; color: var(--accent); }
 /* Where the Quiver Launcher 3 library is (old-library.tsx), under what's in it: a long path breaks anywhere. */
 .old-library-folder { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-/* What comes over with its apps: the player's tags, tag filters and hidden apps. */
-.old-library-extras { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.old-library-question { display: block; margin-bottom: 2px; color: var(--strong); }
+/* A quiet link in the setup's step, not one of its buttons. */
+.setup button.old-library-list, .setup button.old-library-list:hover { align-self: flex-start; padding: 0; border-radius: 0; background: none; font-size: 13px; font-weight: 400; }
+.setup h2 { text-wrap: balance; }
 .account { display: flex; align-items: center; gap: 12px; }
 .account button { padding: 7px 14px; border-radius: 7px; background: var(--field); font-weight: 500; font-size: 13px; }
 .account button:not(.link-button):hover { background: var(--field-hover); color: var(--strong); }
