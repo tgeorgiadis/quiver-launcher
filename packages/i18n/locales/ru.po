@@ -78,6 +78,10 @@ msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
 msgstr "{count, plural, one {скрыто # приложение} few {скрыто # приложения} many {скрыто # приложений} other {скрыто # приложения}}"
 
 #: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app in your library shows as not installed, but Quiver Launcher 3 has it installed. Play it from there, with nothing to download?} other {# apps in your library show as not installed, but Quiver Launcher 3 has them installed. Play them from there, with nothing to download?}}"
+msgstr "{count, plural, one {# приложение в вашей библиотеке отображается как не установленное, но в Quiver Launcher 3 оно установлено. Запускать его оттуда, ничего не скачивая?} few {# приложения в вашей библиотеке отображаются как не установленные, но в Quiver Launcher 3 они установлены. Запускать их оттуда, ничего не скачивая?} many {# приложений в вашей библиотеке отображаются как не установленные, но в Quiver Launcher 3 они установлены. Запускать их оттуда, ничего не скачивая?} other {# приложения в вашей библиотеке отображаются как не установленные, но в Quiver Launcher 3 они установлены. Запускать их оттуда, ничего не скачивая?}}"
+
+#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Добавить # приложение} few {Добавить # приложения} many {Добавить # приложений} other {Добавить # приложения}}"
 
@@ -88,6 +92,10 @@ msgstr "{count, plural, one {Переместить # установленное
 #: ../../apps/launcher/src/library.tsx
 msgid "{count, plural, one {Puts its # app on a page anyone with the link can see, and add to their library.} other {Puts its # apps on a page anyone with the link can see, and add to their library.}}"
 msgstr "{count, plural, one {Размещает его # приложение на странице, которую любой, у кого есть ссылка, может открыть и добавить в свою библиотеку.} few {Размещает его # приложения на странице, которую любой, у кого есть ссылка, может открыть и добавить в свою библиотеку.} many {Размещает его # приложений на странице, которую любой, у кого есть ссылка, может открыть и добавить в свою библиотеку.} other {Размещает его # приложения на странице, которую любой, у кого есть ссылка, может открыть и добавить в свою библиотеку.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {Use it} other {Use them}}"
+msgstr "{count, plural, one {Использовать} few {Использовать} many {Использовать} other {Использовать}}"
 
 #. A mod's newer version: v1.3 is out
 #: ../../apps/launcher/src/mods.tsx
@@ -213,6 +221,10 @@ msgstr "{minutes, plural, one {# минута} few {# минуты} many {# ми
 #: ../../apps/launcher/src/mods.tsx
 msgid "{missing, plural, one {{mod} needs {needed}, which isn't installed yet. Install it as well?} other {{mod} needs {needed}, which aren't installed yet. Install them as well?}}"
 msgstr "{missing, plural, one {Для {mod} нужен {needed}, но он ещё не установлен. Установить и его?} few {Для {mod} нужны {needed}, но они ещё не установлены. Установить и их?} many {Для {mod} нужны {needed}, но они ещё не установлены. Установить и их?} other {Для {mod} нужны {needed}, но они ещё не установлены. Установить и их?}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{missing, plural, one {# of these doesn't show as installed. If it's in another folder or on another drive, show Quiver where it is.} other {# of these don't show as installed. If any are in another folder or on another drive, show Quiver where it is.}}"
+msgstr "{missing, plural, one {# из них не отображается как установленное. Если оно в другой папке или на другом диске, покажите Quiver, где оно.} few {# из них не отображаются как установленные. Если какие-то из них в другой папке или на другом диске, покажите Quiver, где они.} many {# из них не отображаются как установленные. Если какие-то из них в другой папке или на другом диске, покажите Quiver, где они.} other {# из них не отображаются как установленные. Если какие-то из них в другой папке или на другом диске, покажите Quiver, где они.}}"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "{missing, plural, one {Install both} other {Install all}}"
@@ -1174,6 +1186,10 @@ msgstr "Выберите папку Apps от Quiver Launcher 3"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose the Apps folder…"
 msgstr "Выбрать папку Apps…"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Choose the folder {name} is installed in"
+msgstr "Выберите папку, где установлено {name}"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose the platform you tried."
@@ -2255,6 +2271,10 @@ msgstr "Загрузка версий"
 #: ../../apps/launcher/src/game.tsx
 msgid "Loading the game"
 msgstr "Загрузка игры"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Locate existing install…"
+msgstr "Указать существующую установку…"
 
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
@@ -3890,6 +3910,10 @@ msgstr "Протестированная версия"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Thanks for sharing how it ran."
 msgstr "Спасибо, что рассказали, как работало."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That folder doesn't have an installed app in it."
+msgstr "В этой папке нет установленного приложения."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "That folder doesn't have Quiver Launcher 3 in it. Choose the folder its program is in."

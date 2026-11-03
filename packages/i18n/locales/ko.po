@@ -78,6 +78,10 @@ msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
 msgstr "{count, plural, other {앱 #개 숨김}}"
 
 #: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app in your library shows as not installed, but Quiver Launcher 3 has it installed. Play it from there, with nothing to download?} other {# apps in your library show as not installed, but Quiver Launcher 3 has them installed. Play them from there, with nothing to download?}}"
+msgstr "{count, plural, other {라이브러리의 앱 #개가 설치되지 않은 것으로 보이지만 Quiver Launcher 3에는 설치되어 있어요. 다운로드 없이 그곳에서 실행할까요?}}"
+
+#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, other {앱 #개 추가}}"
 
@@ -88,6 +92,10 @@ msgstr "{count, plural, other {설치된 앱 #개를 {asking}(으)로 옮길까�
 #: ../../apps/launcher/src/library.tsx
 msgid "{count, plural, one {Puts its # app on a page anyone with the link can see, and add to their library.} other {Puts its # apps on a page anyone with the link can see, and add to their library.}}"
 msgstr "{count, plural, other {링크가 있는 누구나 볼 수 있고 자신의 라이브러리에 추가할 수 있는 페이지에 앱 #개를 올려요.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {Use it} other {Use them}}"
+msgstr "{count, plural, other {사용}}"
 
 #. A mod's newer version: v1.3 is out
 #: ../../apps/launcher/src/mods.tsx
@@ -213,6 +221,10 @@ msgstr "{minutes, plural, other {#분}}"
 #: ../../apps/launcher/src/mods.tsx
 msgid "{missing, plural, one {{mod} needs {needed}, which isn't installed yet. Install it as well?} other {{mod} needs {needed}, which aren't installed yet. Install them as well?}}"
 msgstr "{missing, plural, other {{mod}에는 아직 설치되지 않은 {needed}이(가) 필요해요. 함께 설치할까요?}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{missing, plural, one {# of these doesn't show as installed. If it's in another folder or on another drive, show Quiver where it is.} other {# of these don't show as installed. If any are in another folder or on another drive, show Quiver where it is.}}"
+msgstr "{missing, plural, other {이 중 #개가 설치된 것으로 보이지 않아요. 다른 폴더나 드라이브에 있다면 위치를 알려 주세요.}}"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "{missing, plural, one {Install both} other {Install all}}"
@@ -1174,6 +1186,10 @@ msgstr "Quiver Launcher 3의 Apps 폴더 선택"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose the Apps folder…"
 msgstr "Apps 폴더 선택…"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Choose the folder {name} is installed in"
+msgstr "{name}이(가) 설치된 폴더 선택"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose the platform you tried."
@@ -2255,6 +2271,10 @@ msgstr "버전 불러오는 중"
 #: ../../apps/launcher/src/game.tsx
 msgid "Loading the game"
 msgstr "게임 불러오는 중"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Locate existing install…"
+msgstr "기존 설치 위치 찾기…"
 
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
@@ -3890,6 +3910,10 @@ msgstr "테스트한 버전"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Thanks for sharing how it ran."
 msgstr "실행 후기를 공유해 주셔서 감사해요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "That folder doesn't have an installed app in it."
+msgstr "그 폴더에 설치된 앱이 없어요."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "That folder doesn't have Quiver Launcher 3 in it. Choose the folder its program is in."

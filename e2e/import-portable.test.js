@@ -5,7 +5,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, renameSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { launch } from "./session.js";
@@ -90,6 +90,87 @@ test("the banner says where it found a 3.x, and another folder can be chosen ins
     await s.until(async () => (await (await where()).getText()) === `Found in ${other}`);
     await bringOver(s, installed);
     assert.ok(!existsSync(join(left, "launched.txt")), "the library found first wasn't the one imported");
+  } finally {
+    await s.close();
+  }
+});
+
+/**
+ * A library brought over when its installs couldn't be seen, as the first betas left a custom Apps folder; they can be
+ * now. Returns where Test Port is installed, and the running launcher's home and data to open them again.
+ */
+async function broughtOverWithoutInstalls() {
+  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
+  const copy = join(home, "Downloads", "QuiverLauncher-linux");
+  const installed = portableLibrary(copy);
+  const apps = join(copy, "Apps");
+  renameSync(apps, `${apps}-away`);
+  const s = await launch({ env: { HOME: home } });
+  try {
+    await s.usageNoticeSeen();
+    await (await s.app.$("button=Add 1 app")).click();
+    await (await s.card("test-port")).waitForDisplayed({ timeout: 20000 });
+    // The library's saved before this copy stops.
+    await s.until(async () => !(await (await s.app.$(".old-library-notice")).isExisting()));
+    await new Promise((r) => setTimeout(r, 1000));
+  } finally {
+    await s.close();
+  }
+  renameSync(`${apps}-away`, apps);
+  return { installed, home, data: s.data };
+}
+
+test("installs that couldn't be seen when a library came over are offered once, and played from where they are", async () => {
+  const { installed, home, data } = await broughtOverWithoutInstalls();
+  let s = await launch({ data, env: { HOME: home } });
+  try {
+    await (await s.app.$("p*=1 app in your library shows as not installed")).waitForDisplayed({ timeout: 20000 });
+    await (await s.app.$("button=Use it")).click();
+    await playIt(s, installed);
+    assert.ok(!existsSync(join(s.apps, "TestPort")), "nothing was downloaded again");
+    await new Promise((r) => setTimeout(r, 1000));
+  } finally {
+    await s.close();
+  }
+  s = await launch({ data, env: { HOME: home } });
+  try {
+    await (await s.card("test-port")).waitForDisplayed({ timeout: 20000 });
+    await new Promise((r) => setTimeout(r, 2000));
+    assert.ok(!(await (await s.app.$(".old-library-notice")).isExisting()), "it isn't asked again");
+  } finally {
+    await s.close();
+  }
+});
+
+test("an app in the library can be pointed at the folder it's installed in, which has to hold an app", async () => {
+  const { installed, home, data } = await broughtOverWithoutInstalls();
+  const locate = async (s) => {
+    const port = await s.card("test-port");
+    await (await port.$(".card-open")).moveTo();
+    await (await port.$("button[aria-label='Test Port menu']")).click();
+    const menu = () => s.app.$('[role="menu"][aria-label="Test Port menu"]');
+    await (await (await menu()).$("button=Manage")).click();
+    await (await (await menu()).$("button=Locate existing install…")).click();
+  };
+  const notNow = async (s) => {
+    await (await s.app.$("p*=1 app in your library shows as not installed")).waitForDisplayed({ timeout: 20000 });
+    await (await (await s.app.$(".old-library-notice")).$("button=Not now")).click();
+  };
+  const empty = mkdtempSync(join(tmpdir(), "quiver-empty-"));
+  let s = await launch({ data, env: { HOME: home, QUIVER_PICK_FOLDER: empty } });
+  try {
+    await notNow(s);
+    await locate(s);
+    await (await s.app.$("p=That folder doesn't have an installed app in it.")).waitForDisplayed({ timeout: 10000 });
+    await new Promise((r) => setTimeout(r, 1000));
+  } finally {
+    await s.close();
+  }
+  s = await launch({ data, env: { HOME: home, QUIVER_PICK_FOLDER: installed } });
+  try {
+    await locate(s);
+    await playIt(s, installed);
+    assert.ok(!existsSync(join(s.apps, "TestPort")), "nothing was downloaded again");
   } finally {
     await s.close();
   }

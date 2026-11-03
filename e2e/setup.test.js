@@ -101,6 +101,34 @@ test("Skip setup leaves what it didn't ask to the banners", async () => {
   }
 });
 
+test("a 3.x library with only some of its installs found can be pointed at the folder of the rest", async () => {
+  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
+  const folder = join(home, "Downloads", "QuiverLauncher-linux");
+  oldLibrary(folder);
+  writeFileSync(
+    join(folder, "apps.json"),
+    JSON.stringify({ Apps: [{ Name: "Test Port", Repository: "quiver/test-port", FolderName: "TestPort" }, { Name: "Homebrew Thing", Repository: "someone/not-in-catalog", FolderName: "Homebrew" }] }),
+  );
+  const games = join(home, "Games");
+  mkdirSync(join(games, "Homebrew"), { recursive: true });
+  writeFileSync(join(games, "Homebrew", "port.sh"), "#!/bin/sh\n", { mode: 0o755 });
+  const s = await launch({ setup: true, env: { HOME: home, QUIVER_PICK_FOLDER: games } });
+  try {
+    await (await setup(s)).waitForDisplayed({ timeout: 20000 });
+    await press(s, "Next");
+    await onTo(s, "Coming from Quiver Launcher 3?");
+    const dialog = await setup(s);
+    await (await dialog.$("p*=1 of these doesn't show as installed")).waitForDisplayed({ timeout: 20000 });
+    await press(s, "Choose the Apps folder…");
+    await s.until(async () => (await (await dialog.$(".old-library-apps")).getText()).includes(`Installed in ${join(games, "Homebrew")}`));
+    // What was found already stays found, and there's nothing left to ask.
+    assert.match(await (await dialog.$(".old-library-apps")).getText(), new RegExp(`Installed in ${join(folder, "Apps", "TestPort")}`));
+    await s.until(async () => !(await (await dialog.$("button=Choose the Apps folder…")).isExisting()));
+  } finally {
+    await s.close();
+  }
+});
+
 test("a 3.x library whose installs moved is matched to its Apps folder where it is now", async () => {
   const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
   const folder = join(home, "Downloads", "QuiverLauncher-linux");

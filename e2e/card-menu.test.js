@@ -227,7 +227,7 @@ test("Uninstall deletes the files and keeps the app in the library to get again"
   await (await menuButton()).click();
   assert.deepEqual(await items(), ["Get", "Add to playlist", "Manage", "App page"]);
   await pick("Manage");
-  assert.deepEqual(await items(), ["Get", "Add to playlist", "Manage", "Choose a version…", ...onLinux("Get the Windows version (Wine)"), "Hide from library", "Remove from library", "App page"]);
+  assert.deepEqual(await items(), ["Get", "Add to playlist", "Manage", "Choose a version…", "Locate existing install…", ...onLinux("Get the Windows version (Wine)"), "Hide from library", "Remove from library", "App page"]);
   await pick("Get");
   await (await port.$(".card-open")).moveTo();
   await (await port.$("button*=Play")).waitForDisplayed({ timeout: 30000 });

@@ -1094,10 +1094,16 @@ fn find_v3_library() -> Option<v3::Library> {
 }
 
 /// The 3.x library in a folder the player picked, or the folder around it;
-/// with `apps`, its installs in that Apps folder.
+/// with `apps`, its installs in those Apps folders too.
 #[tauri::command]
-fn find_v3_library_in(path: String, apps: Option<String>) -> Option<v3::Library> {
-    v3::find_in(Path::new(&path), apps.as_deref().map(Path::new))
+fn find_v3_library_in(path: String, apps: Option<Vec<PathBuf>>) -> Option<v3::Library> {
+    v3::find_in(Path::new(&path), &apps.unwrap_or_default())
+}
+
+/// The install in a folder the player says holds an app; null when it doesn't.
+#[tauri::command]
+fn find_existing_install(path: String) -> Option<v3::Existing> {
+    v3::existing(Path::new(&path))
 }
 
 /// The window from tauri.conf.json. End-to-end tests on Windows set
@@ -1292,6 +1298,7 @@ pub fn run() {
             uninstall,
             find_v3_library,
             find_v3_library_in,
+            find_existing_install,
             pick_folder,
             picker::picked,
             picker::browse,
