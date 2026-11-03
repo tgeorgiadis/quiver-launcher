@@ -138,7 +138,7 @@ test("A opens a catalog card, and Y gets the app", async () => {
   // It has a download for each system: Y asks which.
   assert.equal(await open('article[data-slug="tampered-port"] .card-open', { key: "North" }), "dialog: Choose a download");
   await everything("Choose a download");
-  // A on one starts it (what it installs is the real app's to show: journeys.test.js).
+  // A on one starts it (what it installs is the real app's to show).
   assert.doesNotMatch(await reach.pressOn(app, '[role="dialog"] button', "South", { text: "linux" }), /^not reached/);
   await s.until(() => app.execute(() => window.__calls.some((c) => c.cmd === "install")));
 });
