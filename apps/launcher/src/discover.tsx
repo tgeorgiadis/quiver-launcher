@@ -160,7 +160,7 @@ export function MoreLikeThis({ entry, onOpen, action }: { entry: Entry; onOpen: 
     };
   }, [client, config.os, entry.id, system]); // eslint-disable-line react-hooks/exhaustive-deps
   // Less those hidden from Browse (browse-hidden.ts), as soon as they are.
-  const hidden = new Set(settings.browseHidden);
+  const hidden = new Set(settings.browseHidden?.map((h) => h.id));
   const entries = items?.for === entry.id ? items.entries.filter((e) => !hidden.has(e.id)) : null;
   if (!system || (entries && !entries.length)) return null;
   const inLibrary = new Set(library.map((i) => i.id));
