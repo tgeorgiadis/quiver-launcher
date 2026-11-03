@@ -50,6 +50,14 @@ const withArt = (entry: CatalogEntry, art?: GameArt): CatalogEntry =>
     ? { ...entry, games: [art.game], consoles: art.consoles, artwork: art.artwork ?? entry.artwork, libraryArt: art.libraryArt ?? entry.libraryArt }
     : entry;
 
+/** An app the player added with another game's artwork and consoles, or none: all of its art is its game's. */
+export const withGame = (entry: CatalogEntry, art: GameArt | null): CatalogEntry =>
+  withArt({ ...entry, games: [], consoles: undefined, artwork: undefined, libraryArt: undefined }, art ?? undefined);
+
+/** The catalog's apps for a repository: one repository can ship several, each with an entry of its own (a port of two games). */
+export const appsOfRepository = <T extends { provider: string; repository?: string }>(all: T[], { provider, repository }: Pick<CustomApp, "provider" | "repository">) =>
+  all.filter((s) => s.repository && `${s.provider}:${s.repository}`.toLowerCase() === `${provider}:${repository}`.toLowerCase());
+
 const stub = (id: string, name: string, description: string): CatalogEntry => ({
   id,
   slug: "",

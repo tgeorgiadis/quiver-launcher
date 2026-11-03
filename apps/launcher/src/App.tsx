@@ -27,7 +27,8 @@ import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
 import { isLocal, isOwn } from "./custom";
-import { AddApp } from "./own";
+import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
+import { AddApp, ChangeGame, LinkToCatalog } from "./own";
 import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
@@ -1096,7 +1097,7 @@ function AppPage({
   const item = library.find((i) => i.id === id);
   // The player's own name and artwork, live as they change them.
   const entry = withOverrides(catalog[id] ?? opened, item?.overrides);
-  const listed = useListed(entry);
+  const switchable = useListed(entry).filter((app) => !library.some((i) => i.id === app.id));
   const install = installs[entry.id];
   const job = jobs[entry.id];
   // Apps the player added have no page on the site: no releases or feedback there.
@@ -1219,6 +1220,8 @@ function AppPage({
             <Trans>Library</Trans>
           </h4>
           <Customize id={item.id} />
+          {isOwn(item.id) && <ChangeGame id={item.id} />}
+          {isLocal(item.id) && <LinkToCatalog id={item.id} />}
           <HideButton id={item.id} />
           <Consoles id={item.id} />
           <Tags id={item.id} />
@@ -1354,7 +1357,7 @@ function AppPage({
                 {problem}
               </p>
             )}
-            {listed && !library.some((i) => i.id === listed.id) && (
+            {switchable.length > 0 && (
               <p className="release-pinned-line">
                 <ShieldCheck size={14} aria-hidden="true" />
                 <span>
@@ -1364,9 +1367,21 @@ function AppPage({
                     <Trans>Quiver&apos;s catalog lists this app now, and checks its releases.</Trans>
                   )}
                 </span>
-                <button type="button" className="link-button" onClick={() => switchToCatalog(entry.id, listed)}>
-                  <Trans>Switch to the catalog&apos;s</Trans>
-                </button>
+                {switchable.length === 1 ? (
+                  <button type="button" className="link-button" onClick={() => switchToCatalog(entry.id, switchable[0])}>
+                    <Trans>Switch to the catalog&apos;s</Trans>
+                  </button>
+                ) : (
+                  // One repository's several apps: the player says which this is.
+                  switchable.map((app) => {
+                    const name = app.projectName;
+                    return (
+                      <button type="button" key={app.id} className="link-button" onClick={() => switchToCatalog(entry.id, app)}>
+                        <Trans>Switch to {name}</Trans>
+                      </button>
+                    );
+                  })
+                )}
               </p>
             )}
             {install?.blocked && !install.local && (
@@ -1579,11 +1594,11 @@ function BrowseHideButton({ entry }: { entry: Entry }) {
 
 /** Overrides the catalog's name and artwork for this player; empty shows the catalog's again. */
 function Customize({ id }: { id: string }) {
-  const { library, catalog, customize } = useLauncher();
+  const { config, library, catalog, customize } = useLauncher();
   const current = library.find((i) => i.id === id)?.overrides ?? {};
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(current.name ?? "");
-  const [cover, setCover] = useState(current.cover ?? "");
+  const [art, setArt] = useState(artValues(current));
   if (!open)
     return (
       <button className="panel-action opens" onClick={() => setOpen(true)}>
@@ -1591,16 +1606,16 @@ function Customize({ id }: { id: string }) {
       </button>
     );
   // Closing without saving puts back what's saved.
-  const close = () => (setName(current.name ?? ""), setCover(current.cover ?? ""), setOpen(false));
-  const badCover = cover.trim() !== "" && !/^https:\/\/\S+$/.test(cover.trim());
+  const close = () => (setName(current.name ?? ""), setArt(artValues(current)), setOpen(false));
+  const bad = !artValuesOk(art);
   return (
     <form
       className="panel-form customize"
       aria-label={t`Name and artwork`}
       onSubmit={(e) => {
         e.preventDefault();
-        if (badCover) return;
-        customize(id, { name: name.trim() || undefined, cover: cover.trim() || undefined });
+        if (bad) return;
+        customize(id, { name: name.trim() || undefined, ...fromArtValues(art) });
         setOpen(false);
       }}
     >
@@ -1611,18 +1626,14 @@ function Customize({ id }: { id: string }) {
         </span>
         <input aria-label={t`Name`} maxLength={200} placeholder={catalog[id]?.projectName} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      <label className="panel-field">
-        <span className="field-label">
-          <Trans>Artwork</Trans>
-        </span>
-        <input aria-label={t`Artwork address`} placeholder="https://…" value={cover} onChange={(e) => setCover(e.target.value)} />
-      </label>
-      {badCover && (
+      {/* Android's file picker gives no path to copy a picture from. */}
+      <ArtFields values={art} catalog={catalog[id]} canPick={foldersOn(config.os)} onChange={setArt} />
+      {bad && (
         <p className="job-error">
           <Trans>Use an https:// image address.</Trans>
         </p>
       )}
-      <button type="button" className="link-button" onClick={() => (setName(""), setCover(""))}>
+      <button type="button" className="link-button" onClick={() => (setName(""), setArt(artValues({})))}>
         <Trans>Use the catalog&apos;s name and artwork</Trans>
       </button>
       <div className="row">

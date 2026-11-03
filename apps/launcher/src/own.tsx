@@ -4,7 +4,7 @@
  * artwork and consoles of the game it plays, matched by its name.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, FolderPlus, GitBranch, MonitorPlay } from "lucide-react";
+import { ArrowLeft, FolderPlus, Gamepad2, GitBranch, Link2, MonitorPlay } from "lucide-react";
 import { msg, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -16,6 +16,7 @@ import { native } from "./native";
 import { assetFilterFor } from "./assets";
 import { gameArt, gamesNamed } from "./custom";
 import { closesOutside } from "./overlay";
+import { PanelFormHead } from "./detail";
 
 type Step = "choose" | "repository" | "program" | "folder";
 
@@ -86,6 +87,8 @@ function FromRepository({ onBack, onDone }: Done) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<RepositoryPreview | null>(null);
+  // The catalog lists several of the repository's apps: the player says which.
+  const [several, setSeveral] = useState<Entry[]>([]);
   const [name, setName] = useState("");
   const [file, setFile] = useState<string | undefined>();
   const [art, setArt] = useState<GameArt | null>(null);
@@ -98,6 +101,20 @@ function FromRepository({ onBack, onDone }: Done) {
       live.current = false;
     };
   }, []);
+  if (several.length)
+    return (
+      <div className="pick-listed">
+        <Heading title={t`Which app?`} onBack={() => setSeveral([])} />
+        <p className="muted">
+          <Trans>Quiver&apos;s catalog lists more than one app from this repository.</Trans>
+        </p>
+        {several.map((entry) => (
+          <button type="button" key={entry.id} onClick={() => onDone(entry)}>
+            {entry.projectName}
+          </button>
+        ))}
+      </div>
+    );
   if (!preview)
     return (
       <form
@@ -110,7 +127,7 @@ function FromRepository({ onBack, onDone }: Done) {
             setBusy(false);
             if ("error" in r) return setError(r.error);
             // The catalog lists it: its own page, with checked releases.
-            if ("listed" in r) return onDone(r.listed);
+            if ("listed" in r) return r.listed.length > 1 ? setSeveral(r.listed) : onDone(r.listed[0]);
             setPreview(r.preview);
             setName(r.preview.app.name);
             setFile(r.preview.files[0]?.filename);
@@ -277,11 +294,11 @@ function FromFolder({ onBack, onDone }: Done) {
  * catalog apps have. The best match is picked for the player; they can pick
  * another or none.
  */
-function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | null; onChange: (art: GameArt | null) => void }) {
+function ArtMatch({ name, value, keep = false, onChange }: { name: string; value: GameArt | null; keep?: boolean; onChange: (art: GameArt | null) => void }) {
   const { client } = useLauncher();
   const [matches, setMatches] = useState<GameMatch[]>([]);
-  // Undefined until the player picks: until then the best match is picked for them.
-  const picked = useRef<string | null | undefined>(undefined);
+  // Undefined until the player picks: until then the best match is picked for them. `keep`: what's there is theirs already.
+  const picked = useRef<string | null | undefined>(keep ? (value?.game.slug ?? null) : undefined);
   const latest = useRef(0);
   function choose(slug: string | null) {
     const request = ++latest.current;
@@ -331,5 +348,138 @@ function ArtMatch({ name, value, onChange }: { name: string; value: GameArt | nu
         </span>
       </button>
     </fieldset>
+  );
+}
+
+/** The game an app the player added plays, searched for by name; its artwork, consoles and "Based on" come with it. */
+export function ChangeGame({ id }: { id: string }) {
+  const { library, catalog, setGame } = useLauncher();
+  const current = library.find((i) => i.id === id)?.art ?? null;
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [art, setArt] = useState(current);
+  if (!open)
+    return (
+      <button
+        className="panel-action opens"
+        onClick={() => {
+          setSearch(current?.game.title ?? catalog[id]?.projectName ?? "");
+          setArt(current);
+          setOpen(true);
+        }}
+      >
+        <Gamepad2 size={16} aria-hidden="true" /> <Trans>Change game</Trans>
+      </button>
+    );
+  return (
+    <form
+      className="panel-form change-game"
+      aria-label={t`Change game`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        setGame(id, art);
+        setOpen(false);
+      }}
+    >
+      <PanelFormHead title={t`Change game`} onClose={() => setOpen(false)} />
+      <label className="panel-field">
+        <span className="field-label">
+          <Trans>Game</Trans>
+        </span>
+        <input aria-label={t`Search for a game`} value={search} onChange={(e) => setSearch(e.target.value)} />
+      </label>
+      <ArtMatch name={search} value={art} keep onChange={setArt} />
+      <div className="row">
+        <button className="primary">
+          <Trans>Save</Trans>
+        </button>
+        <button type="button" onClick={() => setOpen(false)}>
+          <Trans>Cancel</Trans>
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Puts a local app under the catalog's app it is: that app's page, artwork and reviews. Found among its game's apps and
+ * by name, and only ever the player's say-so, as names alone match too loosely. Its files stay theirs (`switchToCatalog`).
+ */
+export function LinkToCatalog({ id }: { id: string }) {
+  const { client, library, catalog, switchToCatalog } = useLauncher();
+  const item = library.find((i) => i.id === id);
+  const slug = item?.art?.game.slug;
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [found, setFound] = useState<Entry[]>([]);
+  const [chosen, setChosen] = useState<Entry | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    const timer = setTimeout(() => {
+      const named = search.trim() ? client.apps({ search: search.trim() }).then((page) => page.items) : Promise.resolve([]);
+      const ofGame = slug ? client.game(slug).then((detail) => detail?.entries ?? []) : Promise.resolve([]);
+      Promise.all([ofGame.catch((): Entry[] => []), named.catch((): Entry[] => [])]).then((lists) => {
+        if (!live) return;
+        const all = lists.flat().filter((e) => !library.some((i) => i.id === e.id));
+        setFound(all.filter((e, i) => all.findIndex((o) => o.id === e.id) === i).slice(0, 8));
+      });
+    }, 300);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [open, search, slug]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!open)
+    return (
+      <button
+        className="panel-action opens"
+        onClick={() => {
+          setSearch(catalog[id]?.projectName ?? "");
+          setChosen(null);
+          setOpen(true);
+        }}
+      >
+        <Link2 size={16} aria-hidden="true" /> <Trans>Link to a catalog app</Trans>
+      </button>
+    );
+  const close = () => setOpen(false);
+  return (
+    <form
+      className="panel-form link-catalog"
+      aria-label={t`Link to a catalog app`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (chosen) switchToCatalog(id, chosen);
+      }}
+    >
+      <PanelFormHead title={t`Link to a catalog app`} onClose={close} />
+      <label className="panel-field">
+        <span className="field-label">
+          <Trans>App</Trans>
+        </span>
+        <input aria-label={t`Search the catalog`} value={search} onChange={(e) => setSearch(e.target.value)} />
+      </label>
+      <div className="pick-listed">
+        {found.map((entry) => (
+          <button type="button" key={entry.id} aria-pressed={chosen?.id === entry.id} onClick={() => setChosen(entry)}>
+            {entry.projectName}
+          </button>
+        ))}
+      </div>
+      {chosen && (
+        <p className="muted small">
+          <Trans>This app gets that app&apos;s page, artwork and reviews. Its files stay yours: Quiver won&apos;t update, move or delete them, so you&apos;d get new versions yourself.</Trans>
+        </p>
+      )}
+      <div className="row">
+        <button className="primary" disabled={!chosen}>
+          <Trans>Link</Trans>
+        </button>
+        <button type="button" onClick={close}>
+          <Trans>Cancel</Trans>
+        </button>
+      </div>
+    </form>
   );
 }

@@ -465,6 +465,25 @@ main.app-main { padding: 0 0 40px; }
 .shortcuts { display: grid; gap: 8px; }
 .shortcuts p { font-size: 12.5px; }
 .field-label { font-size: 12.5px; font-weight: 500; color: var(--text-3); }
+.art-field { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: start; }
+.art-preview { width: 64px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--field); }
+.art-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.art-field[data-slot="logo"] .art-preview img, .art-field[data-slot="icon"] .art-preview img { object-fit: contain; }
+.art-inputs { display: grid; gap: 5px; min-width: 0; }
+.art-inputs p { margin: 0; }
+.art-input { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.app-panel .art-input input { flex: 1; width: 100%; min-width: 0; min-height: 34px; padding: 6px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13px; }
+.art-file { flex: 1; min-width: 0; font-size: 13px; color: var(--text-2); }
+.art-inputs .link-button { justify-self: start; font-size: 12.5px; }
+.pick-listed { display: grid; gap: 6px; }
+.pick-listed button { min-height: 36px; padding: 6px 12px; text-align: start; }
+.pick-listed button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--strong); }
+.change-game .art-match { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }
+.change-game .art-match legend { width: 100%; margin-bottom: 6px; font-size: 13px; color: var(--muted); }
+.change-game .art-match button { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 10px; text-align: start; }
+.change-game .art-match button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--strong); }
+.change-game .art-match .artwork { width: 28px; height: 40px; flex-shrink: 0; border-radius: 4px; background: var(--field); }
+.change-game .art-match .artwork svg { width: 16px; height: 16px; }
 .panel-field { display: grid; gap: 5px; }
 .app-panel .panel-field select, .app-panel .panel-field input { width: 100%; min-width: 0; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
 .panel-form { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: color-mix(in srgb, var(--panel) 55%, var(--bg)); }
@@ -1474,6 +1493,7 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="missing"] { color: var(--muted); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="update"] { color: var(--accent); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="pinned"] { color: var(--muted); }
+.layout-grid:not(.no-names, .image-icon) .library-tile .tile-mark[data-copy="listed"] { color: var(--accent); }
 .layout-grid:not(.no-names, .image-icon) .library-tile .tile-overlay { bottom: var(--tile-names); }
 .layout-grid.size-small:not(.no-names, .image-icon) .library-tile .card-title { font-size: 13.5px; }
 .layout-grid.size-large:not(.no-names, .image-icon) .library-tile .card-title { font-size: 16px; }

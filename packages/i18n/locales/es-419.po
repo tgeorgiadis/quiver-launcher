@@ -500,6 +500,10 @@ msgstr "+ Nueva playlist…"
 msgid "<0>The newest verified release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
 msgstr "<0>La versión verificada más reciente es una versión preliminar.</0> El proyecto no ha publicado una versión estable más nueva con descargas, así que Quiver Launcher instala esta. Espera errores y funciones sin terminar."
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
+msgstr "La dirección de una portada sigue a tu cuenta. Las demás imágenes, y las que vengan de un archivo, se quedan en esta computadora."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
 msgstr "Unas preguntas rápidas para empezar. Puedes cambiar cualquiera de estas opciones después en Configuración."
@@ -539,6 +543,10 @@ msgstr "Un programa en esta computadora"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "A quote isn't closed."
 msgstr "Hay comillas sin cerrar."
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "A transparent PNG. For its Steam shortcut."
+msgstr "Un PNG transparente. Para su acceso directo de Steam."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
@@ -800,6 +808,7 @@ msgid "Anyone with the link can see it on quiverlauncher.com and add it to their
 msgstr "Cualquiera con el enlace puede verla en quiverlauncher.com y agregarla a su biblioteca. Los cambios que hagas aquí les llegan cuando la actualices."
 
 #. Which name is the large one on a library card: the app's (the port's)
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "App"
 msgstr "App"
@@ -857,14 +866,6 @@ msgstr "Las apps que agregas desde GitHub obtienen sus versiones del propio GitH
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "Las apps que aún no tienes aparecen con Obtener; nada se descarga hasta que lo presionas."
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Artwork"
-msgstr "Arte"
-
-#: ../../apps/launcher/src/App.tsx
-msgid "Artwork address"
-msgstr "Dirección del arte"
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "Arte y consolas del juego"
@@ -919,6 +920,14 @@ msgstr "Música de fondo"
 msgid "Backups"
 msgstr "Copias de seguridad"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Banner"
+msgstr "Banner"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Banner address"
+msgstr "Dirección del banner"
+
 #. Before the game(s) an app is made from
 #. Before the game(s) an app is made from
 #: ../../apps/launcher/src/App.tsx
@@ -959,9 +968,14 @@ msgstr "Bloqueada"
 #. Browse card style: the portrait box art over the catalog's details
 #. Library card image: the portrait capsule
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Box art"
 msgstr "Arte de la caja"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Box art address"
+msgstr "Dirección del arte de la caja"
 
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/setup.tsx
@@ -1018,6 +1032,7 @@ msgstr "No se puede agregar: Quiver Launcher 3 no sabe de dónde viene"
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Cancel"
@@ -1063,6 +1078,10 @@ msgstr "Filtros del catálogo"
 msgctxt "README callout"
 msgid "Caution"
 msgstr "Precaución"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Change game"
+msgstr "Cambiar juego"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Change name or artwork"
@@ -1110,6 +1129,14 @@ msgstr "Elegir una descarga"
 msgid "Choose a file"
 msgstr "Elegir un archivo"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a file for {label}"
+msgstr "Elegir un archivo para {label}"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a file…"
+msgstr "Elegir un archivo…"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
 msgstr "Elige una carpeta donde buscar"
@@ -1121,6 +1148,10 @@ msgstr "Elegir una carpeta…"
 #: ../../apps/launcher/src/account.tsx
 msgid "Choose a less common password."
 msgstr "Elige una contraseña menos común."
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a picture"
+msgstr "Elegir una imagen"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose a picture for the library's background"
@@ -1234,6 +1265,10 @@ msgstr "Elegir dónde instalar las apps"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Elige tu carpeta de Quiver Launcher 3"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Clear {label}"
+msgstr "Borrar {label}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -1367,9 +1402,14 @@ msgid "Couldn't stop sharing it. Try again."
 msgstr "No se pudo dejar de compartirla. Intenta de nuevo."
 
 #. Library card image: the wide library art
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Cover"
 msgstr "Portada"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Cover address"
+msgstr "Dirección de la portada"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Crashes, poor performance, broken controls or features, or I had to do extra setup this page didn't mention."
@@ -1663,6 +1703,7 @@ msgstr "Pantalla completa"
 #. Library sort: by the game an app plays
 #. Which name is the large one on a library card: the game's
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/view.ts
 msgid "Game"
@@ -1868,9 +1909,14 @@ msgid "I understand this release was withdrawn, and I accept the risk"
 msgstr "Entiendo que esta versión fue retirada y acepto el riesgo"
 
 #. Library card image
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Icon"
 msgstr "Ícono"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Icon address"
+msgstr "Dirección del ícono"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
@@ -2272,9 +2318,17 @@ msgstr "Biblioteca sincronizada: {fromDevice, plural, one {# app} other {# apps}
 msgid "Light"
 msgstr "Claro"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Link"
+msgstr "Vincular"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Link copied."
 msgstr "Enlace copiado."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Link to a catalog app"
+msgstr "Vincular a una app del catálogo"
 
 #. Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton
 #: ../../apps/launcher/src/App.tsx
@@ -2310,6 +2364,14 @@ msgstr "Cargando el juego"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
 msgstr "Buscar instalación existente…"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Logo"
+msgstr "Logo"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Logo address"
+msgstr "Dirección del logo"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Look in another folder…"
@@ -2914,6 +2976,10 @@ msgstr "Pega el enlace de la playlist, como quiverlauncher.com/lists/…"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Elige una asignación y luego presiona la tecla o el botón que quieras usar."
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Picture from this computer"
+msgstr "Imagen de esta computadora"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Pinned to {installedVersion}."
 msgstr "Fijada en {installedVersion}."
@@ -3038,6 +3104,10 @@ msgstr "Playlists de esta app"
 #: ../../apps/launcher/src/library.tsx
 msgid "Port"
 msgstr "Port"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Portrait, about 600×900. The library's cards and TV mode."
+msgstr "Vertical, de unos 600×900. Las tarjetas de la biblioteca y el modo TV."
 
 #. A release its developer marked as not yet stable
 #. A release its developer marked as not yet stable
@@ -3219,6 +3289,14 @@ msgstr "Quiver no la instalará."
 #: ../ui/src/index.tsx
 msgid "Quiver won't install this release"
 msgstr "Quiver no instalará esta versión"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Quiver's catalog lists more than one app from this repository."
+msgstr "El catálogo de Quiver incluye más de una app de este repositorio."
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Quiver's catalog lists this app now"
+msgstr "El catálogo de Quiver ya incluye esta app"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver's catalog lists this app now, and checks its releases."
@@ -3422,6 +3500,7 @@ msgstr "Igual que el sistema"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own.tsx
 msgid "Save"
 msgstr "Guardar"
 
@@ -3475,6 +3554,10 @@ msgstr "Desplazar hacia arriba"
 msgid "Search"
 msgstr "Buscar"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Search for a game"
+msgstr "Buscar un juego"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Search mods"
 msgstr "Buscar mods"
@@ -3484,6 +3567,7 @@ msgid "Search ports, games and tools"
 msgstr "Buscar ports, juegos y herramientas"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/own.tsx
 msgid "Search the catalog"
 msgstr "Buscar en el catálogo"
 
@@ -3821,6 +3905,10 @@ msgstr "Ordenar mods"
 msgid "Source"
 msgstr "Código fuente"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Square. The app's page, the Icon view and its shortcuts."
+msgstr "Cuadrada. La página de la app, la vista de íconos y sus accesos directos."
+
 #. Project type
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -3910,6 +3998,10 @@ msgid "Swap {south} and {east}: Confirm on {east}, Back on {south}"
 msgstr "Intercambiar {south} y {east}: Confirmar con {east}, Atrás con {south}"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Switch to {name}"
+msgstr "Cambiar a {name}"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Switch to the catalog's"
 msgstr "Cambiar al del catálogo"
 
@@ -3977,6 +4069,10 @@ msgstr "Esa carpeta no tiene Quiver Launcher 3 ni ninguna de estas apps."
 #: ../../apps/launcher/src/App.tsx
 msgid "That page hit a problem as it closed: {why}"
 msgstr "Esa página tuvo un problema al cerrarse: {why}"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "That picture didn't load."
+msgstr "Esa imagen no se cargó."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "That playlist isn't shared any more, or the link is wrong."
@@ -4082,6 +4178,10 @@ msgstr "Aún no hay versiones. Busca descargas en el proyecto original."
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
 msgstr "Esta cuenta está suspendida."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "This app gets that app's page, artwork and reviews. Its files stay yours: Quiver won't update, move or delete them, so you'd get new versions yourself."
+msgstr "Esta app obtiene la página, el arte y las reseñas de esa app. Sus archivos siguen siendo tuyos: Quiver no los actualizará, moverá ni eliminará, así que las nuevas versiones las consigues tú."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app has no approved release yet."
@@ -4464,6 +4564,10 @@ msgstr "Versión {version}"
 msgid "Versions"
 msgstr "Versiones"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Very wide, about 1920×620. Behind the app's page and Continue playing."
+msgstr "Muy ancha, de unos 1920×620. Detrás de la página de la app y en Seguir jugando."
+
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "View {version} on {host}"
@@ -4559,6 +4663,10 @@ msgstr "Novedades de {name}"
 msgid "Where apps install"
 msgstr "Dónde se instalan las apps"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Which app?"
+msgstr "¿Qué app?"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "¿Qué descarga?"
@@ -4576,6 +4684,10 @@ msgstr "Ancha"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "Wide art"
 msgstr "Imagen ancha"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Wide, about 920×430. The Cover view, and anywhere there's no box art."
+msgstr "Ancha, de unos 920×430. La vista de portada y donde no haya arte de la caja."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Windows (Wine)"

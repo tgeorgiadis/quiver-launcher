@@ -51,6 +51,11 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     check_update: () => files.launcherUpdate ?? null,
     // The library's background: what the picker answers (pickBackground), and a picture for any file but a missing one.
     pick_background: () => files.pickBackground ?? null,
+    // A picture for an app: the copy's name, or a refusal when a test says so.
+    pick_artwork: ({ slot }) => {
+      if (files.artworkProblem) throw files.artworkProblem;
+      return files.pickArtwork ? `${slot}-1.png` : null;
+    },
     read_background: ({ path }) => {
       if (path.includes("missing")) throw new Error("os error 2");
       const png = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAFklEQVR4nGP8z8DAwMDAxMDAwMAAAAwuAQ8pwYnLAAAAAElFTkSuQmCC";
@@ -87,7 +92,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       return id;
     },
     unregisterCallback: (id) => void callbacks.delete(id),
-    convertFileSrc: (path) => path,
+    // The player's kept pictures (custom-art.tsx): a picture for any name.
+    convertFileSrc: (path, protocol) => (protocol === "quiverart" ? "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAFklEQVR4nGP8z8DAwMDAxMDAwMAAAAwuAQ8pwYnLAAAAAElFTkSuQmCC" : path),
     invoke: async (cmd, args) => {
       if (!cmd.startsWith("plugin:event|")) window.__calls.push({ cmd, args });
       return (await answers[cmd]?.(args ?? {})) ?? null;

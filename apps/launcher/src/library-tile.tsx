@@ -13,7 +13,7 @@
  * every port with its button, from the card.
  */
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, TriangleAlert } from "lucide-react";
+import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
@@ -60,6 +60,13 @@ function Mark({ copy, marks, gettable }: { copy: Copy; marks: boolean; gettable:
 
 /** Beside the name, an app kept on its version: it gets no updates, so no cloud says when there's one. */
 const PinMark = () => <Pin className="tile-mark" data-copy="pinned" size={14} strokeWidth={2.5} aria-hidden="true" />;
+
+/** Beside the name, a repository the player added that the catalog lists now: its page offers the switch. */
+const ListedMark = () => (
+  <ShieldCheck className="tile-mark" data-copy="listed" size={14} strokeWidth={2.5} aria-hidden="true">
+    <title>{t`Quiver's catalog lists this app now`}</title>
+  </ShieldCheck>
+);
 
 /** The line under the name alone, as cards had before they could show more. */
 const NAME_ONLY: readonly CardDetail[] = ["subtitle"];
@@ -133,9 +140,9 @@ type TileProps = {
  * which redrew every card of a large library.
  */
 export function LibraryTile(props: TileProps) {
-  const { config, installs, jobs, catalog, consoleNames } = useLauncher();
+  const { config, installs, jobs, catalog, consoleNames, inCatalog } = useLauncher();
   const id = props.entry.id;
-  return <Tile {...props} os={config.os} install={installs[id]} job={jobs[id]} latest={catalog[id] ?? props.entry} consoleNames={consoleNames} />;
+  return <Tile {...props} os={config.os} install={installs[id]} job={jobs[id]} latest={catalog[id] ?? props.entry} consoleNames={consoleNames} listed={inCatalog.has(id)} />;
 }
 
 const Tile = memo(function Tile({
@@ -157,7 +164,8 @@ const Tile = memo(function Tile({
   job,
   latest,
   consoleNames,
-}: TileProps & { os: Config["os"]; install?: Install; job?: Job; latest: CatalogEntry; consoleNames: Record<string, string> }) {
+  listed,
+}: TileProps & { os: Config["os"]; install?: Install; job?: Job; latest: CatalogEntry; consoleNames: Record<string, string>; listed: boolean }) {
   // What a press does, with the launcher as it is then.
   const now = useLauncherNow();
   const card = useRef<HTMLElement>(null);
@@ -239,6 +247,7 @@ const Tile = memo(function Tile({
                 </span>
                 <Mark copy={copy} marks={marks} gettable={gettable} />
                 {pinned && marks && <PinMark />}
+                {listed && marks && <ListedMark />}
               </span>
               {small && details.includes("subtitle") && (
                 <span className="card-subtitle">
@@ -251,6 +260,7 @@ const Tile = memo(function Tile({
             <>
               <Mark copy={copy} marks={marks} gettable={gettable} />
               {pinned && marks && <PinMark />}
+              {listed && marks && <ListedMark />}
             </>
           )}
         </span>

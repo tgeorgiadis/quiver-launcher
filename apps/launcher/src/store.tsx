@@ -7,7 +7,7 @@
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
@@ -19,7 +19,8 @@ import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccou
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
-import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { appsOfRepository, bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { artFiles, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
@@ -42,7 +43,15 @@ export type LibraryItem = {
   art?: GameArt;
   addedAt: number;
   /** The player's own choices; empty shows the catalog's. */
-  overrides?: { name?: string; cover?: string; tags?: string[]; consoles?: string[] };
+  overrides?: {
+    name?: string;
+    /** A cover's address, which syncs with the account. */
+    cover?: string;
+    /** The rest of the player's pictures, and any cover from a file: this device only (custom-art.tsx). */
+    pictures?: Pictures;
+    tags?: string[];
+    consoles?: string[];
+  };
   /** Changed here and not yet saved to the account. */
   pending?: { added?: boolean; name?: boolean; cover?: boolean; tags?: boolean; consoles?: boolean; removed?: boolean };
   /** The account this item last synced with. */
@@ -179,13 +188,18 @@ type Launcher = {
   /** Deletes the app's files (to the trash), keeping it in the library to get again. */
   uninstall: (id: string) => Promise<void>;
   /** A GitHub or GitLab repository: the catalog's app when it lists it, else what adding it would install. */
-  lookUpRepository: (input: string) => Promise<{ error: string } | { listed: Entry } | { preview: RepositoryPreview }>;
-  /** The catalog's app for an app the player added from its repository, once the catalog lists it; else null. */
-  listedAs: (id: string) => Promise<Entry | null>;
+  lookUpRepository: (input: string) => Promise<{ error: string } | { listed: Entry[] } | { preview: RepositoryPreview }>;
+  /** The catalog's apps for an app the player added from its repository, once the catalog lists it; several when the repository ships several. */
+  listedAs: (id: string) => Promise<Entry[]>;
+  /** Repositories the player added that the catalog lists an app of now, that isn't in the library yet. */
+  inCatalog: ReadonlySet<string>;
+  /** The game an app the player added plays: its artwork, consoles and "Based on". Null for none. */
+  setGame: (id: string, art: GameArt | null) => void;
   /**
-   * Moves an app the player added from its repository onto the catalog's app
-   * for it: same files and folder, play time, launch options and the
-   * player's name, artwork and tags; its updates then come from the catalog.
+   * Moves an app the player added onto the catalog's app for it: same files
+   * and folder, play time, launch options and the player's name, artwork and
+   * tags. One from its repository then updates from the catalog; a local one's
+   * files stay the player's own, never updated or deleted.
    */
   switchToCatalog: (id: string, entry: Entry) => void;
   /** Apps switched to the catalog's since the launcher started: the old key to the new. */
@@ -202,7 +216,7 @@ type Launcher = {
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
   setLaunch: (id: string, launch: LaunchOptions) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
-  customize: (id: string, overrides: { name?: string; cover?: string }) => void;
+  customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
   setTags: (id: string, tags: string[]) => void;
   /** The consoles the player says an app is for, by id; undefined, or the catalog's own, shows the catalog's again. */
@@ -303,6 +317,7 @@ export function hasUpdate(entry: CatalogEntry | undefined, install: Install | un
   return Boolean(
     entry?.verified &&
       install &&
+      !install.local &&
       !pulledVerified(entry) &&
       install.updates !== "pinned" &&
       bare(install.version) !== bare(entry.verified.version) &&
@@ -1076,32 +1091,42 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
   }
 
+  /** Every app the catalog lists, with its repository. */
+  async function catalogStatuses() {
+    const all: ReleaseStatus[] = [];
+    for (let cursor: string | null = null, done = false; !done; ) {
+      const page = await client.releaseStatus(cursor);
+      all.push(...page.items);
+      [cursor, done] = [page.nextCursor, page.isDone];
+    }
+    return all;
+  }
+
   /** Repositories the catalog lists, to send them to the catalog's app instead. */
   async function catalogRepositories() {
     const ids = new Map<string, { id: string; slug: string }>();
-    for (let cursor: string | null = null, done = false; !done; ) {
-      const page = await client.releaseStatus(cursor);
-      for (const s of page.items) {
-        if (s.repository) ids.set(`${s.provider}:${s.repository}`.toLowerCase(), s);
-        // And by its id, as Quiver Launcher 3 kept it (importOld), under a key no provider has.
-        ids.set(`id:${s.id}`, s);
-      }
-      [cursor, done] = [page.nextCursor, page.isDone];
+    for (const s of await catalogStatuses()) {
+      if (s.repository) ids.set(`${s.provider}:${s.repository}`.toLowerCase(), s);
+      // And by its id, as Quiver Launcher 3 kept it (importOld), under a key no provider has.
+      ids.set(`id:${s.id}`, s);
     }
     return ids;
   }
 
-  /** The catalog's app for a repository, or a preview of its latest release. */
+  /** The catalog's apps for each of `statuses`, as far as the site says. */
+  const entriesOf = async (statuses: ReleaseStatus[]) =>
+    (await Promise.all(statuses.map((s) => client.app(s.slug).catch(() => null)))).flatMap((detail) => (detail ? [detail.entry] : []));
+
+  /** The catalog's apps for a repository, or a preview of its latest release. */
   async function lookUpRepository(input: string): ReturnType<Launcher["lookUpRepository"]> {
     const repository = parseRepository(input);
     if (!repository) return { error: t`Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address.` };
     // Already added: its page.
     const key = customKey(repository.provider, repository.repository);
-    if (library.some((i) => i.id === key) && catalog[key]) return { listed: catalog[key] };
+    if (library.some((i) => i.id === key) && catalog[key]) return { listed: [catalog[key]] };
     try {
-      const listed = (await catalogRepositories().catch(() => new Map())).get(`${repository.provider}:${repository.repository}`.toLowerCase());
-      const detail = listed && (await client.app(listed.slug).catch(() => null));
-      if (detail) return { listed: detail.entry };
+      const listed = await entriesOf(appsOfRepository(await catalogStatuses().catch((): ReleaseStatus[] => []), repository));
+      if (listed.length) return { listed };
       const latest = latestOf(await releasesOf(repository));
       const app: CustomApp = { ...repository, name: repository.repository.split("/").at(-1)! };
       return { preview: { app, latest, files: latest ? bestAssets(latest.assets, config.os, config.arch) : [] } };
@@ -1111,8 +1136,33 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   }
 
   // Fetched once a session, for the pages of apps the player added; again after a failure.
-  const listed = useRef<ReturnType<typeof catalogRepositories> | null>(null);
+  const listed = useRef<ReturnType<typeof catalogStatuses> | null>(null);
+  const statuses = () =>
+    (listed.current ??= catalogStatuses().catch((e) => {
+      listed.current = null;
+      throw e;
+    }));
   const [switched, setSwitched] = useState<Record<string, string>>({});
+  const [statusList, setStatusList] = useState<ReleaseStatus[]>([]);
+  // The repositories the player added that the catalog lists now, for a mark on their cards; only asked with one to ask about.
+  const hasCustom = library.some((i) => i.custom);
+  useEffect(() => {
+    if (!hasCustom) return;
+    let live = true;
+    statuses().then(
+      (all) => live && setStatusList(all),
+      () => {},
+    );
+    return () => void (live = false);
+  }, [hasCustom]); // eslint-disable-line react-hooks/exhaustive-deps
+  const inCatalog = useMemo(
+    () => new Set(library.flatMap((i) => (i.custom && appsOfRepository(statusList, i.custom).some((s) => !library.some((l) => l.id === s.id)) ? [i.id] : []))),
+    [library, statusList],
+  );
+  // The pictures nothing uses any more: replaced, or their app removed. Once a run, as the library was saved at the last.
+  useEffect(() => {
+    void native.keepArtwork(artFiles(allItems.map((i) => i.overrides?.pictures))).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Adds a custom app for a repository; the caller installs it. */
   function addCustom(custom: CustomApp, latest?: Release, art?: GameArt) {
@@ -1182,17 +1232,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     async listedAs(id) {
       const app = allItems.find((i) => i.id === id)?.custom ?? (isCustom(id) ? fromKey(id) : null);
-      if (!app) return null;
-      listed.current ??= catalogRepositories().catch((e) => {
-        listed.current = null;
-        throw e;
-      });
-      const match = (await listed.current).get(`${app.provider}:${app.repository}`.toLowerCase());
-      return match ? ((await client.app(match.slug).catch(() => null))?.entry ?? null) : null;
+      return app ? entriesOf(appsOfRepository(await statuses(), app)) : [];
+    },
+    inCatalog,
+    setGame(id, art) {
+      setLibrary((l) => l.map((i) => (i.id === id ? { ...i, art: art ?? undefined } : i)));
+      setCatalog((c) => (c[id] ? { ...c, [id]: withGame(c[id], art) } : c));
     },
     switchToCatalog(id, entry) {
       const old = library.find((i) => i.id === id);
-      if (!old?.custom || library.some((i) => i.id === entry.id)) return;
+      if (!(old?.custom || old?.local) || library.some((i) => i.id === entry.id)) return;
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       const synced = userId ?? old.account;
       const moved: LibraryItem = {
@@ -1207,6 +1256,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // Its files stay where they are; the catalog's releases replace them on its next update.
       setInstalls(({ [id]: was, ...rest }) => {
         if (!was) return rest;
+        // A local app's files stay the player's own, under the catalog's name for them.
+        if (was.local) return { ...rest, [entry.id]: was };
         const { releaseId: _, ...install } = was;
         const executables = entry.launcher.preferredExecutables?.[config.os as "windows" | "linux" | "macos"] ?? was.executables;
         return { ...rest, [entry.id]: { ...install, executables, unverified: true } };
@@ -1253,7 +1304,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     settings,
     setSettings,
-    customize: (id, { name, cover }) =>
+    customize: (id, { name, cover, pictures }) =>
       setLibrary((l) =>
         l.map((i) => {
           if (i.id !== id) return i;
@@ -1261,7 +1312,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           const pending = i.account
             ? { ...i.pending, ...(name !== was.name ? { name: true } : {}), ...(cover !== was.cover ? { cover: true } : {}) }
             : i.pending;
-          return { ...i, overrides: { ...was, name, cover }, pending };
+          return { ...i, overrides: { ...was, name, cover, pictures }, pending };
         }),
       ),
     unsynced: userId ? changesFrom(allItems, userId).length : 0,
