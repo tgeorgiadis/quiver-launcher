@@ -7,7 +7,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { t } from "@lingui/core/macro";
 import { native, type PadLabels } from "./native";
 import { useLauncher } from "./store";
-import { DEFAULT_PAD, buttonsNow, confirmButton, label, pageArea, quickButton, takesText, withDefaults, type Action, type Bindings } from "./spatial";
+import { DEFAULT_PAD, buttonsNow, confirmButton, haloMoved, label, pageArea, quickButton, takesText, withDefaults, type Action, type Bindings } from "./spatial";
 import { boxZoom } from "./zoom";
 
 /** The connected controllers' names, kept up to date. */
@@ -108,6 +108,8 @@ export function PadHints() {
     const glyph = quick ? quickGlyph : confirmGlyph;
     if (marked.current !== button) marked.current?.removeAttribute("data-pad-glyph");
     if (button && button.getAttribute("data-pad-glyph") !== glyph) button.setAttribute("data-pad-glyph", glyph);
+    // The glyph makes its button wider, and moves what's beside it: the focus's box with them.
+    if (marked.current !== button) haloMoved();
     marked.current = button;
   }, []);
   useLayoutEffect(mark, [mark, quickGlyph, confirmGlyph]);

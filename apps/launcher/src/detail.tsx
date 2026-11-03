@@ -20,6 +20,7 @@ import { native, type ShortcutRequest } from "./native";
 import { hasBuildFor, runsHere } from "./assets";
 import { isCustom, isLocal } from "./custom";
 import { Dialog, PlaylistChoices } from "./library";
+import { haloMoved } from "./spatial";
 
 export type Source = { provider: "github" | "gitlab"; repository: string; url: string };
 
@@ -1056,6 +1057,8 @@ export function Versions({
   const [platform, setPlatform] = useState<Os | undefined>(builds[0]);
   const lacks = (release: Release) => Boolean(platform) && release.assets.length > 0 && !hasBuildFor(release.assets, config.os, config.arch, platform!);
   const [versions, setVersions] = useState<Version[] | string | null>(null);
+  // The list growing the dialog moves Get's button in it, the focus's box with it.
+  useEffect(() => haloMoved(), [versions]);
   // The release from `start`, once it's found in the list: cancelling its question closes the dialog, as there's no list behind it.
   const [started, setStarted] = useState<Version | null>(null);
   // An unverified release the player chose, waiting for them to confirm; `pin` keeps the app on it after.
@@ -1288,7 +1291,7 @@ export function Versions({
   // As a dialog: the list, or how it's loading, in one.
   const shown = (body: ReactNode) =>
     onClose ? (
-      <Dialog label={getting ? t`Get ${app}` : t`Versions`} onClose={onClose}>
+      <Dialog label={getting ? t`Get ${app}` : t`Versions`} className="versions-window" onClose={onClose}>
         <div className="detail-body versions-dialog">
           {head}
           {body}
