@@ -1568,11 +1568,6 @@ msgstr "전체 화면 종료"
 msgid "Expand all sections"
 msgstr "모든 섹션 펼치기"
 
-#. Interface size
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Extra large"
-msgstr "아주 크게"
-
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Extra wide"
@@ -2137,9 +2132,7 @@ msgstr "키보드 및 마우스"
 msgid "Language"
 msgstr "언어"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Large"
 msgstr "크게"
@@ -2651,7 +2644,6 @@ msgstr "설치된 앱이 보이지 않아요. Quiver Launcher 3의 Apps 폴더�
 msgid "None of this release's files are for this computer."
 msgstr "이 버전의 파일 중 이 컴퓨터용 파일이 없어요."
 
-#. Interface size
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
@@ -3728,9 +3720,7 @@ msgstr "로그아웃했어요. 이 컴퓨터에 설치된 앱은 라이브러리
 msgid "Skip setup"
 msgstr "설정 건너뛰기"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "작게"

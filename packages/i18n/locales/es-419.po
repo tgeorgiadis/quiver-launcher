@@ -1568,11 +1568,6 @@ msgstr "Salir de pantalla completa"
 msgid "Expand all sections"
 msgstr "Expandir todas las secciones"
 
-#. Interface size
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Extra large"
-msgstr "Muy grande"
-
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Extra wide"
@@ -2137,9 +2132,7 @@ msgstr "Teclado y mouse"
 msgid "Language"
 msgstr "Idioma"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Large"
 msgstr "Grande"
@@ -2651,7 +2644,6 @@ msgstr "Ninguna aparece como instalada. Si moviste la carpeta Apps de Quiver Lau
 msgid "None of this release's files are for this computer."
 msgstr "Ninguno de los archivos de esta versión es para esta computadora."
 
-#. Interface size
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
@@ -3728,9 +3720,7 @@ msgstr "Sesión cerrada. Las apps instaladas en esta computadora se quedan en tu
 msgid "Skip setup"
 msgstr "Omitir la configuración inicial"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Pequeño"

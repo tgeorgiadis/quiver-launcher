@@ -1568,11 +1568,6 @@ msgstr "Esci da schermo intero"
 msgid "Expand all sections"
 msgstr "Espandi tutte le sezioni"
 
-#. Interface size
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Extra large"
-msgstr "Molto grande"
-
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Extra wide"
@@ -2137,9 +2132,7 @@ msgstr "Tastiera e mouse"
 msgid "Language"
 msgstr "Lingua"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Large"
 msgstr "Grande"
@@ -2651,7 +2644,6 @@ msgstr "Nessuna risulta installata. Se hai spostato la cartella Apps di Quiver L
 msgid "None of this release's files are for this computer."
 msgstr "Nessuno dei file di questa versione è per questo computer."
 
-#. Interface size
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
@@ -3728,9 +3720,7 @@ msgstr "Sei uscito. Le app installate su questo computer restano nella tua libre
 msgid "Skip setup"
 msgstr "Salta la configurazione"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Piccolo"

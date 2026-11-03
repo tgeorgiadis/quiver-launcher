@@ -1568,11 +1568,6 @@ msgstr "Vollbild beenden"
 msgid "Expand all sections"
 msgstr "Alle Bereiche ausklappen"
 
-#. Interface size
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Extra large"
-msgstr "Sehr groß"
-
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Extra wide"
@@ -2137,9 +2132,7 @@ msgstr "Tastatur und Maus"
 msgid "Language"
 msgstr "Sprache"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Large"
 msgstr "Groß"
@@ -2651,7 +2644,6 @@ msgstr "Keine davon ist als installiert zu sehen. Wenn du den Apps-Ordner von Qu
 msgid "None of this release's files are for this computer."
 msgstr "Keine Datei dieser Version ist für diesen Computer."
 
-#. Interface size
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
@@ -3728,9 +3720,7 @@ msgstr "Abgemeldet. Auf diesem Computer installierte Apps bleiben in deiner Bibl
 msgid "Skip setup"
 msgstr "Einrichtung überspringen"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Klein"

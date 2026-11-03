@@ -24,6 +24,7 @@ import { UpdateSettings } from "./update";
 import { GithubTokenSetting } from "./github-token";
 import { TelemetrySetting } from "./telemetry-ui";
 import type { Theme } from "./theme";
+import { INTERFACE_SIZES } from "./zoom";
 
 type Section = "general" | "library" | "apps" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
@@ -223,10 +224,11 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       <label>
         <Trans>Interface size</Trans>{" "}
         <select value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>
-          <option value={0.9}>{t({ message: "Small", comment: "Interface size" })}</option>
-          <option value={1}>{t({ message: "Normal", comment: "Interface size" })}</option>
-          <option value={1.15}>{t({ message: "Large", comment: "Interface size" })}</option>
-          <option value={1.3}>{t({ message: "Extra large", comment: "Interface size" })}</option>
+          {INTERFACE_SIZES.map((size) => (
+            <option key={size} value={size}>
+              {new Intl.NumberFormat(i18n.locale, { style: "percent" }).format(size)}
+            </option>
+          ))}
         </select>
       </label>
       <label>

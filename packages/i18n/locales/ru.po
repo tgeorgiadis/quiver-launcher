@@ -1568,11 +1568,6 @@ msgstr "Выйти из полноэкранного режима"
 msgid "Expand all sections"
 msgstr "Развернуть все разделы"
 
-#. Interface size
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Extra large"
-msgstr "Очень крупный"
-
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Extra wide"
@@ -2137,9 +2132,7 @@ msgstr "Клавиатура и мышь"
 msgid "Language"
 msgstr "Язык"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Large"
 msgstr "Крупный"
@@ -2651,7 +2644,6 @@ msgstr "Ни одно не отображается как установлен�
 msgid "None of this release's files are for this computer."
 msgstr "Ни один файл этой версии не предназначен для этого компьютера."
 
-#. Interface size
 #. Mouse wheel speed: the system's
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Normal"
@@ -3728,9 +3720,7 @@ msgstr "Вы вышли. Приложения, установленные на �
 msgid "Skip setup"
 msgstr "Пропустить настройку"
 
-#. Interface size
 #. Library card size
-#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
 msgstr "Маленький"

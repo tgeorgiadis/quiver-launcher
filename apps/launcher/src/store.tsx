@@ -21,6 +21,7 @@ import { musicForGame, setMusic } from "./music";
 import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
+import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
@@ -573,6 +574,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         await activate(languageOf(settings ?? {})).catch(() => {});
         // Without it GitHub still answers, at its lower limit.
         const token = await githubToken(settings).catch(() => undefined);
+        if (settings?.scale) settings.scale = nearestInterfaceSize(settings.scale);
         setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token });
       });
     });
@@ -647,9 +649,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("settings", settings);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
-  // TV mode is a size larger again, read from across a room.
   const tv = tvModeOn(settings, config);
-  useEffect(() => void document.documentElement.style.setProperty("zoom", String((settings.scale ?? 1) * (tv ? 1.15 : 1))), [settings.scale, tv]);
+  // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
+  useEffect(() => {
+    const apply = () => document.documentElement.style.setProperty("zoom", String(pageZoom(settings.scale ?? 1, tv, window.innerWidth, window.innerHeight)));
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, [settings.scale, tv]);
   // TV mode fills the screen, as a console does, and leaving it puts the window back: unless full screen is the
   // player's own choice (Settings), which stays. Not at the start without TV mode, which would undo --fullscreen.
   const wasTv = useRef(false);
