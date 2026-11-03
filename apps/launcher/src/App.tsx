@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { availableOn, canGet, catalogOs, hasUpdate, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
+import { availableOn, canGet, catalogOs, hasUpdate, locatable, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -808,7 +808,7 @@ function ShowMore({ onMore }: { onMore: () => void }) {
 
 /** The one button a card needs: Get, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
 function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
-  const { config, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel } = useLauncher();
+  const { config, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
@@ -835,6 +835,12 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
           {instead && (
             <button className="primary" onClick={() => get(catalog[entry.id] ?? entry, instead)}>
               <Trans>Install {other} instead</Trans>
+            </button>
+          )}
+          {/* Its folder is gone: moved, most likely, so where it went comes before downloading it again. */}
+          {install && locatable(entry.id, install, job) && foldersOn(config.os) && (
+            <button className="primary" onClick={() => void locateInstall(entry)}>
+              <Trans>Locate existing install…</Trans>
             </button>
           )}
           {/* A local app has nothing to download: Try again plays it again. */}
@@ -1017,7 +1023,7 @@ function AppPage({
   onOpenApp: (entry: Entry) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, add, remove, confirmUninstall, askRename, consoleNames, setUpdates, get, switched, switchToCatalog } = useLauncher();
+  const { config, library, installs, jobs, catalog, add, remove, confirmUninstall, askRename, consoleNames, setUpdates, get, switched, switchToCatalog, locateInstall } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1130,6 +1136,11 @@ function AppPage({
           </button>
         )}
         {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
+        {locatable(entry.id, install, job) && foldersOn(config.os) && (
+          <button className="panel-action opens" onClick={() => void locateInstall(entry)}>
+            <FolderSearch size={16} aria-hidden="true" /> <Trans>Locate existing install…</Trans>
+          </button>
+        )}
         {item && <UpdatesChoice id={item.id} />}
       </div>
       {item && (
@@ -1240,6 +1251,12 @@ function AppPage({
             )}
             <div className="app-actions" data-autofocus={tv || undefined}>
               <Action entry={entry} apart />
+              {/* Already on this computer: an app needn't be in the library, or downloaded, for this. */}
+              {!install && locatable(entry.id, install, job) && foldersOn(config.os) && (
+                <button onClick={() => void locateInstall(entry)}>
+                  <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
+                </button>
+              )}
               {install && foldersOn(config.os) && !tv && (
                 <button onClick={() => (setProblem(null), native.openFolder(entry.id).catch((e) => setProblem(String(e))))}>
                   <FolderOpen size={17} /> <Trans>Open folder</Trans>

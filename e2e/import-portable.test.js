@@ -176,6 +176,63 @@ test("an app in the library can be pointed at the folder it's installed in, whic
   }
 });
 
+test("an app in the library can be pointed at its folder from On this computer", async () => {
+  const { installed, home, data } = await broughtOverWithoutInstalls();
+  const s = await launch({ data, env: { HOME: home, QUIVER_PICK_FOLDER: installed } });
+  try {
+    await (await (await s.app.$(".old-library-notice")).$("button=Not now")).click();
+    await (await (await s.card("test-port")).$(".card-open")).click();
+    const page = await s.app.$(".app-page");
+    await (await page.$("button*=On this computer")).click();
+    await (await (await page.$(".computer-panel")).$("button*=Locate existing install")).click();
+    await (await page.$("button*=Play")).waitForDisplayed({ timeout: 10000 });
+    assert.ok(!existsSync(join(s.apps, "TestPort")), "nothing was downloaded");
+  } finally {
+    await s.close();
+  }
+});
+
+test("an app that isn't in the library can be pointed at its folder from its page, and joins the library", async () => {
+  const installed = portableLibrary(mkdtempSync(join(tmpdir(), "quiver-elsewhere-")));
+  const s = await launch({ env: { QUIVER_PICK_FOLDER: installed } });
+  try {
+    await s.usageNoticeSeen();
+    await (await (await s.card("test-port")).$(".card-open")).click();
+    await (await (await s.app.$(".app-page")).$("button*=Locate existing install")).click();
+    await s.until(async () => (await (await s.app.$(".app-page")).$("button*=Add to library").isExisting()) === false && (await (await s.app.$(".app-page")).$("button*=Open folder").isExisting()));
+    await (await (await s.app.$(".app-page")).$("button*=Play")).click();
+    await s.until(() => existsSync(join(installed, "launched.txt")));
+    assert.ok(!existsSync(join(s.apps, "TestPort")), "nothing was downloaded");
+  } finally {
+    await s.close();
+  }
+});
+
+test("an app whose folder moved offers to find it where it went, keeping its history", async () => {
+  const { installed, home, data } = await broughtOverWithoutInstalls();
+  const page = () => s.app.$(".app-page");
+  let s = await launch({ data, env: { HOME: home, QUIVER_PICK_FOLDER: installed } });
+  try {
+    await (await s.app.$("button=Use it")).click();
+    await (await (await s.card("test-port")).$(".card-open")).click();
+    const moved = `${installed}-moved`;
+    renameSync(installed, moved);
+    await (await (await page()).$("button*=Play")).click();
+    const alert = await (await page()).$("[role=alert]");
+    await alert.waitForDisplayed({ timeout: 10000 });
+    assert.match(await alert.getText(), /This app's folder isn't there any more/);
+    assert.ok(!existsSync(join(s.apps, "TestPort")), "nothing was downloaded");
+    // Back where the picker answers: the same path, as the test can only set it when the launcher starts.
+    renameSync(moved, installed);
+    await (await alert.$("button*=Locate existing install")).click();
+    await s.until(async () => !(await (await page()).$("[role=alert]").isExisting()));
+    await (await (await page()).$("button*=Play")).click();
+    await s.until(() => existsSync(join(installed, "launched.txt")));
+  } finally {
+    await s.close();
+  }
+});
+
 test("one anywhere else is found and imported in Settings, by its folder or the folder around it", async () => {
   const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
   const elsewhere = mkdtempSync(join(tmpdir(), "quiver-elsewhere-"));

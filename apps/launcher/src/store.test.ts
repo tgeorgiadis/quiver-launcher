@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, hasUpdate, importedPlaylists, importedTags, keptInstall, looseInstalls, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, bringsAlong, catalogMatch, folderGone, hasUpdate, importedPlaylists, importedTags, keptInstall, locatable, looseInstalls, relocatedInstall, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -9,6 +9,31 @@ const entry = {
   launcher: { folderName: "TestPort", preferredExecutables: { linux: ["port.sh"] } },
   verified: { version: "v1.2.0", releasedAt: 20 },
 } as unknown as Entry;
+
+describe("locating an install", () => {
+  const found = { dir: "/new/TestPort", version: "v2.0.0", folder: "TestPort", executables: ["port.sh"] };
+  const gone = { error: "This app's folder isn't there any more." };
+
+  it("is offered with no install here, or one that lost its folder", () => {
+    expect(locatable("port", undefined, undefined)).toBe(true);
+    expect(locatable("port", found, undefined)).toBe(false);
+    expect(locatable("port", found, { error: "The download failed." })).toBe(false);
+    expect(folderGone(gone)).toBe(true);
+    expect(locatable("port", found, gone)).toBe(true);
+  });
+
+  it("isn't offered during a download, or for the player's own files", () => {
+    expect(locatable("port", undefined, { id: "port", phase: "downloading", received: 0 } as never)).toBe(false);
+    expect(locatable("port", { ...found, local: true }, gone)).toBe(false);
+  });
+
+  it("keeps what the player chose, and nothing about the copy that's gone", () => {
+    const launch = { command: "--fullscreen" };
+    const now = { version: "v1.0.0", folder: "Old", executables: [], wine: true as const, checksum: "sha256:a", unverified: true as const, installer: "msi" as const, program: "/old/port", playTime: 60, updates: "pinned" as const, launch };
+    expect(relocatedInstall(now, found)).toEqual({ ...found, playTime: 60, updates: "pinned", launch });
+    expect(relocatedInstall(undefined, found)).toEqual(found);
+  });
+});
 
 describe("adoptedInstall", () => {
   it("keeps a Quiver Launcher 3 install where it is", () => {

@@ -2265,6 +2265,7 @@ msgstr "Chargement des versions"
 msgid "Loading the game"
 msgstr "Chargement du jeu"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
 msgstr "Localiser une installation existante…"

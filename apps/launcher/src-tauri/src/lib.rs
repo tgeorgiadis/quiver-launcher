@@ -215,6 +215,18 @@ fn app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<PathBuf, St
 }
 
 const NO_PROGRAM: &str = "Couldn't find a program to start in this app's folder.";
+/// The page offers Locate existing install on these words (`folderGone`).
+const FOLDER_GONE: &str = "This app's folder isn't there any more.";
+
+/// An app's folder, as long as it's still there.
+fn present_app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<PathBuf, String> {
+    let dir = app_dir(data, folder, dir)?;
+    if dir.is_dir() {
+        Ok(dir)
+    } else {
+        Err(FOLDER_GONE.into())
+    }
+}
 
 /// What starts an installed app: its program, or Wine (on Linux) or `open` (a macOS .app) with it.
 /// `program` is one the player picked: exactly that file, never a guess.
@@ -224,7 +236,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         (Some(chosen), program) => {
             let exe = match program {
                 Some(_) => PathBuf::from(chosen),
-                None => app_dir(data, folder, dir)?.join(chosen),
+                None => present_app_dir(data, folder, dir)?.join(chosen),
             };
             if !exe.exists() {
                 return Err(format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options."));
@@ -244,7 +256,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
             (exe, wine)
         }
         (None, None) => {
-            let dir = app_dir(data, folder, dir)?;
+            let dir = present_app_dir(data, folder, dir)?;
             if msi::installed(&dir) {
                 return Err("Quiver doesn't know which program its installer put on this computer yet. Press Play to choose it.".into());
             }
@@ -476,11 +488,7 @@ fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
         }
     }
     let folder = install["folder"].as_str().unwrap_or_default();
-    let dir = app_dir(&data, folder, install["dir"].as_str().map(str::to_string))?;
-    if !dir.is_dir() {
-        return Err("This app's folder isn't there any more.".into());
-    }
-    reveal(&dir)
+    reveal(&present_app_dir(&data, folder, install["dir"].as_str().map(str::to_string))?)
 }
 
 /// Shows a folder in Explorer, Files or Finder. End-to-end tests note it in

@@ -2265,6 +2265,7 @@ msgstr "버전 불러오는 중"
 msgid "Loading the game"
 msgstr "게임 불러오는 중"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
 msgstr "기존 설치 위치 찾기…"
