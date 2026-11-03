@@ -52,8 +52,9 @@ export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry;
 }
 
 /**
- * A Browse card's menu, with no ⋯ button of its own: its main action, what its
- * page has that an app not got yet can use (its code, README and feedback), and
+ * A Browse card's menu, with no ⋯ button of its own: its main action, adding it
+ * to the library without getting it, what its page has that an app not got yet
+ * can use (its code, README and feedback), and
  * hiding it from Browse (browse-hidden.ts), or showing it again.
  */
 export function BrowseMenu({ entry, onOpen, onReadme, onFeedback }: { entry: Entry; onOpen: () => void; onReadme: () => void; onFeedback: () => void }) {
@@ -70,7 +71,7 @@ export function BrowseMenu({ entry, onOpen, onReadme, onFeedback }: { entry: Ent
 }
 
 function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry: Entry; onOpen: () => void; close: () => void; onReadme: () => void; onFeedback: () => void }) {
-  const { settings, setSettings } = useLauncher();
+  const { settings, setSettings, library, addToLibrary } = useLauncher();
   const { main, top } = useMainItems(entry, onOpen);
   // Where its code lives comes with its page's details, asked for as the menu opens.
   const { source } = useAppDetail(entry);
@@ -93,6 +94,7 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
     <div className="game-menu" data-arrows="" onKeyDown={keys}>
       {main && <MainItem main={main} onClick={() => (close(), main.act())} />}
       {top.map((i) => item(i.text, i.act))}
+      {!library.some((i) => i.id === entry.id) && item(t`Add to library`, () => addToLibrary(entry))}
       {source === undefined
         ? item(t`View repository`, () => {}, true)
         : source && item(source.provider === "gitlab" ? t`View on GitLab` : t`View on GitHub`, () => void native.openUrl(source.url))}

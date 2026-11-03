@@ -1072,7 +1072,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, add, remove, confirmUninstall, askRename, consoleNames, setUpdates, get, switched, switchToCatalog, locateInstall } = useLauncher();
+  const { config, library, installs, jobs, catalog, addToLibrary, remove, confirmUninstall, askRename, consoleNames, setUpdates, get, switched, switchToCatalog, locateInstall } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1303,6 +1303,12 @@ function AppPage({
             )}
             <div className="app-actions" data-autofocus={tv || undefined}>
               <Action entry={entry} apart />
+              {/* In the library without downloading it; or, installed here already, a way in. */}
+              {!item && (
+                <button onClick={() => addToLibrary(entry)}>
+                  <Plus size={17} /> <Trans>Add to library</Trans>
+                </button>
+              )}
               {/* Already on this computer: an app needn't be in the library, or downloaded, for this. */}
               {!install && locatable(entry.id, install, job) && foldersOn(config.os) && (
                 <button onClick={() => void locateInstall(entry)}>
@@ -1312,12 +1318,6 @@ function AppPage({
               {install && foldersOn(config.os) && !tv && (
                 <button onClick={() => (setProblem(null), native.openFolder(entry.id).catch((e) => setProblem(String(e))))}>
                   <FolderOpen size={17} /> <Trans>Open folder</Trans>
-                </button>
-              )}
-              {/* Installed here, not in the library: a way in. */}
-              {install && !item && (
-                <button onClick={() => add(entry)}>
-                  <Plus size={17} /> <Trans>Add to library</Trans>
                 </button>
               )}
               {/* Out of Browse, as its card's menu has it. */}

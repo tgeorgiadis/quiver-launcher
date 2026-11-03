@@ -195,6 +195,8 @@ type Launcher = {
   addLocalApp: (app: { kind: "program"; path: string; name: string } | { kind: "folder"; name: string }, art?: GameArt) => Promise<Entry>;
   /** Adds an app without installing it, such as one installed but not in the library. */
   add: (entry: Entry) => void;
+  /** Adds an app the player picked out, without downloading it, and says so: its card in Browse looks no different. */
+  addToLibrary: (entry: Entry) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
   setLaunch: (id: string, launch: LaunchOptions) => void;
@@ -1155,6 +1157,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     notice,
     setNotice,
     add: (entry) => add(entry),
+    addToLibrary(entry) {
+      setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
+      add(entry);
+      const name = entry.projectName;
+      setNotice(t`${name} is in your library.`);
+    },
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
     setLaunch: (id, launch) =>
       setInstalls((i) => {
