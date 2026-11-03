@@ -42,8 +42,7 @@ import { closesOutside } from "./overlay";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
-/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog). */
-/** Where an app's page opens: at a release on its Releases tab, or on its Player feedback tab. */
+/** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true };
 type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings" };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
@@ -416,6 +415,10 @@ function BrowsePage({
   // Apps the player hid from Browse (browse-hidden.ts): out of it as soon as they're hidden, unlike the library's.
   const hidden = new Set(settings.browseHidden);
   const [hiddenView, setHiddenView] = useState<HiddenView>("hide");
+  // The last one shown again: back to the rest, rather than a view of nothing.
+  useEffect(() => {
+    if (!hidden.size) setHiddenView("hide");
+  }, [hidden.size]);
   const libraryNow = useRef(library);
   libraryNow.current = library;
   // The apps left out: those in the library when their page came. One added since stays, with its badge.
@@ -545,7 +548,8 @@ function BrowsePage({
   // What the notes under the list offer to show: apps in the library, and hidden ones.
   const left = showOwned ? 0 : shown({ showOwned: true }).length - entries.length;
   const hiddenLeft = hiddenView === "hide" ? shown({ view: "show" }).length - entries.length : 0;
-  const mine = showOwned ? all.filter((e) => inLibrary.has(e.id)).length : 0;
+  // Only hidden apps has those in the library whichever way this is, so it offers nothing there.
+  const mine = showOwned && hiddenView !== "only" ? entries.filter((e) => inLibrary.has(e.id)).length : 0;
   const last = pages.at(-1);
   const typed = search.trim();
   return (
@@ -696,7 +700,7 @@ function BrowsePage({
               </select>
             </FilterPill>
           )}
-          {(filtersOpen || hiddenView !== "hide") && (hidden.size > 0 || hiddenView !== "hide") && (
+          {(filtersOpen || hiddenView !== "hide") && hidden.size > 0 && (
             <FilterPill
               on={hiddenView === "show" ? t`Hidden apps shown` : hiddenView === "only" ? t`Hidden apps only` : undefined}
               onClear={() => setHiddenView("hide")}
@@ -709,14 +713,7 @@ function BrowsePage({
             </FilterPill>
           )}
           {hiddenView === "only" && hidden.size > 0 && (
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => {
-                setSettings({ ...settings, browseHidden: undefined });
-                setHiddenView("hide");
-              }}
-            >
+            <button type="button" className="text-button" onClick={() => setSettings({ ...settings, browseHidden: undefined })}>
               <Plural value={hidden.size} one="Unhide # app" other="Unhide all # apps" />
             </button>
           )}
@@ -781,7 +778,8 @@ function BrowsePage({
               />
             ))}
           </div>
-          {!loading && !all.length && (
+          {/* Or apps came, and none of them is for here, with no note below to say why: Only hidden apps, with none in these filters. */}
+          {!loading && (!all.length || (!entries.length && !left && !hiddenLeft && last?.isDone)) && (
             <p className="empty">
               <Trans>Nothing matches that search and those filters.</Trans>
             </p>
@@ -847,7 +845,7 @@ function ShowMore({ onMore }: { onMore: () => void }) {
   );
 }
 
-/** A Browse card's button, and the menu its card opens (a right-click, a long press): its README, versions and feedback, and hiding it. */
+/** A Browse card's button, and the menu its card opens (a right-click, a long press): its repository, README and feedback, and hiding it. */
 function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?: PageAt) => void }) {
   return (
     <>

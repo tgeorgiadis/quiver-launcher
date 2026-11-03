@@ -1180,3 +1180,22 @@ test("the first start's setup: each step all reached by the d-pad, the focus on 
     await first.close();
   }
 });
+
+// WebKit, here, would show it from :focus-visible alone; Chromium needs app.css's data-navigating, which this doesn't reach.
+test("after the mouse, a menu shows where the d-pad is", async () => {
+  await page.locator(".library-tile").first().click({ button: "right" });
+  await page.locator('[role="menu"] [role="menuitem"]').first().waitFor();
+  // Not over the items, whose hover would look the same.
+  await page.mouse.move(2, 2);
+  const looks = () =>
+    app.execute(() => {
+      const items = [...document.querySelectorAll('[role="menu"] > .game-menu > button:not(:disabled, .game-menu-main)')];
+      const lit = (el) => getComputedStyle(el).backgroundColor;
+      const other = items.find((el) => el !== document.activeElement);
+      return { focused: lit(document.activeElement), other: lit(other), on: document.activeElement.innerText.trim() };
+    });
+  await reach.press(app, "DPadDown");
+  await page.waitForTimeout(100);
+  const moved = await looks();
+  assert.notEqual(moved.focused, moved.other, `${moved.on} is lit`);
+});
