@@ -74,8 +74,8 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
   const { main, top } = useMainItems(entry, onOpen);
   // Where its code lives comes with its page's details, asked for as the menu opens.
   const { source } = useAppDetail(entry);
-  const hidden = settings.browseHidden?.includes(entry.id);
-  const toggle = () => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, entry.id) });
+  const hidden = settings.browseHidden?.some((h) => h.id === entry.id);
+  const toggle = () => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, entry) });
   const item = (text: string, act: () => void, disabled = false) => (
     <button key={text} type="button" role="menuitem" data-item disabled={disabled} onClick={() => (close(), act())}>
       {text}

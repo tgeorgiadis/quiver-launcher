@@ -78,6 +78,17 @@ test("Only hidden apps says so when none is in the search", async () => {
   assert.equal(await page.locator("article[data-slug]").count(), 0);
 });
 
+test("Only hidden apps asks for the hidden apps alone, not for page after page of the catalog", async () => {
+  await inMenu("tampered-port", "Hide from Browse");
+  await filters();
+  const before = s.api.catalogQueries().filter((q) => q.path === "catalog:list").length;
+  await hiddenView("only");
+  await card("tampered-port").waitFor();
+  await page.evaluate(() => new Promise((r) => setTimeout(r, 500)));
+  assert.equal(s.api.catalogQueries().filter((q) => q.path === "catalog:list").length, before);
+  assert.equal(await page.getByRole("button", { name: "Show more" }).count(), 0);
+});
+
 test("Only hidden apps doesn't offer to hide the library's apps, which it shows whichever way that is", async () => {
   await page.locator(".owned-note button", { hasText: "Show it" }).first().click();
   await page.locator(".owned-note", { hasText: "Apps in your library are shown here too." }).waitFor();

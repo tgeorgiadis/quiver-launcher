@@ -37,7 +37,7 @@ import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
-import { browseShown, toggleHidden, type HiddenView } from "./browse-hidden";
+import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
 
 type Tab = "library" | "browse";
@@ -413,8 +413,24 @@ function BrowsePage({
   const setShowOwned = (on: boolean) => setSettings({ ...settings, browseShowsLibrary: on || undefined });
   const looks = useBrowseCards();
   // Apps the player hid from Browse (browse-hidden.ts): out of it as soon as they're hidden, unlike the library's.
-  const hidden = new Set(settings.browseHidden);
+  const hidden = new Set(settings.browseHidden?.map((h) => h.id));
   const [hiddenView, setHiddenView] = useState<HiddenView>("hide");
+  const only = hiddenView === "only";
+  // Only hidden apps: asked for by themselves, as the catalog's pages could have them anywhere in it, and empty for pages of them.
+  const [hiddenApps, setHiddenApps] = useState<Entry[] | null>(null);
+  useEffect(() => {
+    if (!only) return setHiddenApps(null);
+    let live = true;
+    Promise.allSettled((settings.browseHidden ?? []).map((h) => client.app(h.slug))).then((answers) => {
+      if (!live) return;
+      // One the catalog no longer lists just doesn't show.
+      const found = answers.flatMap((a) => (a.status === "fulfilled" ? [a.value.entry] : []));
+      if (!found.length && answers.some((a) => a.status === "rejected")) setError(t`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
+      remember(found);
+      setHiddenApps(found);
+    });
+    return () => void (live = false);
+  }, [only, client]); // eslint-disable-line react-hooks/exhaustive-deps
   // The last one shown again: back to the rest, rather than a view of nothing.
   useEffect(() => {
     if (!hidden.size) setHiddenView("hide");
@@ -542,7 +558,8 @@ function BrowsePage({
       : t`${name} (this computer)`;
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
-  const all = pages.flatMap((p) => p.items).filter((e) => filters.os !== "here" || availableOn(e, config.os));
+  const matching = only ? (hiddenApps ?? []).filter((e) => hidden.has(e.id) && hiddenMatches(e, query, filters) && (!filters.os || filters.os === "here" || e.supportedOS.includes(filters.os))) : pages.flatMap((p) => p.items);
+  const all = matching.filter((e) => filters.os !== "here" || availableOn(e, config.os));
   const shown = (o: { showOwned?: boolean; view?: HiddenView }) => browseShown(all, { owned, showOwned, hidden, view: hiddenView, ...o });
   const entries = shown({});
   // What the notes under the list offer to show: apps in the library, and hidden ones.
@@ -550,7 +567,8 @@ function BrowsePage({
   const hiddenLeft = hiddenView === "hide" ? shown({ view: "show" }).length - entries.length : 0;
   // Only hidden apps has those in the library whichever way this is, so it offers nothing there.
   const mine = showOwned && hiddenView !== "only" ? entries.filter((e) => inLibrary.has(e.id)).length : 0;
-  const last = pages.at(-1);
+  const last = only ? undefined : pages.at(-1);
+  const waiting = only ? !hiddenApps && !error : loading;
   const typed = search.trim();
   return (
     <>
@@ -779,12 +797,12 @@ function BrowsePage({
             ))}
           </div>
           {/* Or apps came, and none of them is for here, with no note below to say why: Only hidden apps, with none in these filters. */}
-          {!loading && (!all.length || (!entries.length && !left && !hiddenLeft && last?.isDone)) && (
+          {!waiting && (!all.length || (!entries.length && !left && !hiddenLeft && last?.isDone)) && (
             <p className="empty">
               <Trans>Nothing matches that search and those filters.</Trans>
             </p>
           )}
-          {!loading && left > 0 && (
+          {!waiting && left > 0 && (
             <p className={entries.length ? "owned-note" : "empty"}>
               <Plural value={left} one="# app here is already in your library." other="# apps here are already in your library." />{" "}
               <button type="button" className="link-button" onClick={() => setShowOwned(true)}>
@@ -792,7 +810,7 @@ function BrowsePage({
               </button>
             </p>
           )}
-          {!loading && hiddenLeft > 0 && (
+          {!waiting && hiddenLeft > 0 && (
             <p className={entries.length || left ? "owned-note" : "empty"}>
               <Plural value={hiddenLeft} one="# app here is hidden." other="# apps here are hidden." />{" "}
               <button type="button" className="link-button" onClick={() => setHiddenView("show")}>
@@ -800,7 +818,7 @@ function BrowsePage({
               </button>
             </p>
           )}
-          {!loading && mine > 0 && (
+          {!waiting && mine > 0 && (
             <p className="owned-note">
               <Trans>Apps in your library are shown here too.</Trans>{" "}
               <button type="button" className="link-button" onClick={() => setShowOwned(false)}>
@@ -808,7 +826,7 @@ function BrowsePage({
               </button>
             </p>
           )}
-          {loading ? (
+          {waiting ? (
             <div className="more">
               <span className="spinner" />
             </div>
@@ -1321,7 +1339,7 @@ function AppPage({
                 </button>
               )}
               {/* Out of Browse, as its card's menu has it. */}
-              {site && !item && <BrowseHideButton id={entry.id} />}
+              {site && !item && <BrowseHideButton entry={entry} />}
               {/* Its files go; the app stays in the library to get again. Taking it out is under On this computer. */}
               {install && !install.local && !(job && !("error" in job)) && !tv && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
@@ -1549,11 +1567,11 @@ function HideButton({ id }: { id: string }) {
 }
 
 /** Whether Browse shows the app (browse-hidden.ts), beside its Get on its page. */
-function BrowseHideButton({ id }: { id: string }) {
+function BrowseHideButton({ entry }: { entry: Entry }) {
   const { settings, setSettings } = useLauncher();
-  const hidden = settings.browseHidden?.includes(id);
+  const hidden = settings.browseHidden?.some((h) => h.id === entry.id);
   return (
-    <button onClick={() => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, id) })}>
+    <button onClick={() => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, entry) })}>
       {hidden ? <Eye size={17} /> : <EyeOff size={17} />} {hidden ? t`Show in Browse` : t`Hide from Browse`}
     </button>
   );

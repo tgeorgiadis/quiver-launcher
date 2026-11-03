@@ -1,10 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { browseShown, toggleHidden, type HiddenView } from "./browse-hidden";
+import type { Entry } from "@quiverlauncher/api";
+import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 
 describe("hiding an app from Browse", () => {
   it("hides it, and shows it again the second time", () => {
-    expect(toggleHidden(undefined, "a")).toEqual(["a"]);
-    expect(toggleHidden(["a", "b"], "a")).toEqual(["b"]);
+    const [a, b] = [{ id: "a", slug: "app-a" }, { id: "b", slug: "app-b" }];
+    expect(toggleHidden(undefined, a)).toEqual([a]);
+    expect(toggleHidden([a, b], a)).toEqual([b]);
+  });
+});
+
+describe("Only hidden apps' search and filters", () => {
+  const entry = { projectName: "Test Remake", projectType: "port", consoles: ["n64"], aiLevel: "generated" } as Entry;
+  it("find an app by the start of each word of its name", () => {
+    expect(hiddenMatches(entry, "re te", {})).toBe(true);
+    expect(hiddenMatches(entry, "make", {})).toBe(false);
+  });
+  it("go by its type, console and AI use", () => {
+    expect(hiddenMatches(entry, "", { projectTypes: ["port"], console: "n64" })).toBe(true);
+    expect(hiddenMatches(entry, "", { projectTypes: ["tool"] })).toBe(false);
+    expect(hiddenMatches(entry, "", { console: "snes" })).toBe(false);
+    expect(hiddenMatches(entry, "", { ai: "no-generated" })).toBe(false);
+    expect(hiddenMatches({ ...entry, aiLevel: "assisted" }, "", { ai: "no-generated" })).toBe(true);
+    expect(hiddenMatches({ ...entry, aiLevel: "assisted" }, "", { ai: "no-ai" })).toBe(false);
   });
 });
 

@@ -8,6 +8,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
+import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore } from "./assets";
@@ -512,7 +513,7 @@ export type Settings = {
   /** How Browse's cards look and which details they show (browse-cards.ts); only what differs from the defaults. */
   browseCards?: { look?: string; details?: string[] };
   /** Apps hidden from Browse here (browse-hidden.ts); apart from `hidden`, the library's. */
-  browseHidden?: string[];
+  browseHidden?: HiddenApp[];
   /** How the library is sorted (sort.ts); unset is recently played. */
   librarySort?: string;
   /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
