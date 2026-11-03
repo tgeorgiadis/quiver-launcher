@@ -232,6 +232,10 @@ export const native = {
   pickBackground: (title: string, dir?: string) => invoke<string | null>("pick_background", { title, dir }),
   /** The background picture's bytes, to show. */
   readBackground: (path: string) => invoke<ArrayBuffer>("read_background", { path }),
+  /** Asks for a picture and keeps a copy sized for `slot`; the copy's name (custom-art.tsx), null if they cancel. */
+  pickArtwork: (title: string, slot: string) => invoke<string | null>("pick_artwork", { title, slot }),
+  /** Deletes the kept pictures other than these. */
+  keepArtwork: (files: string[]) => invoke<void>("keep_artwork", { files }),
   /** Asks for a folder on this computer, opening in `dir` when given; null when the player cancels. */
   pickFolder: (title: string, dir?: string) => invoke<string | null>("pick_folder", { title, dir }),
   /** In Steam's Game Mode, the pickers ask the page's own browser (file-picker.tsx) instead of the system's dialog. */

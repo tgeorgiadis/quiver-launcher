@@ -500,6 +500,10 @@ msgstr "+ Новый плейлист…"
 msgid "<0>The newest verified release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
 msgstr "<0>Новейшая проверенная версия — предварительная сборка.</0> Проект не выпустил более новую стабильную версию с файлами для загрузки, поэтому Quiver Launcher устанавливает эту. Возможны ошибки и незавершённые функции."
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
+msgstr "Адрес обложки хранится в вашем аккаунте. Остальные изображения и всё, что выбрано из файла, остаются на этом компьютере."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
 msgstr "Несколько быстрых вопросов для начала. Всё это можно изменить позже в настройках."
@@ -539,6 +543,10 @@ msgstr "Программа на этом компьютере"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "A quote isn't closed."
 msgstr "Кавычка не закрыта."
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "A transparent PNG. For its Steam shortcut."
+msgstr "Прозрачный PNG. Для ярлыка в Steam."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
@@ -800,6 +808,7 @@ msgid "Anyone with the link can see it on quiverlauncher.com and add it to their
 msgstr "Любой, у кого есть ссылка, увидит его на quiverlauncher.com и сможет добавить в свою библиотеку. Ваши изменения дойдут до них, когда вы его обновите."
 
 #. Which name is the large one on a library card: the app's (the port's)
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "App"
 msgstr "Приложение"
@@ -857,14 +866,6 @@ msgstr "Приложения, добавленные с GitHub, получают
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "У приложений, которых у вас ещё нет, есть кнопка «Получить»; ничего не загружается, пока вы её не нажмёте."
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Artwork"
-msgstr "Изображения"
-
-#: ../../apps/launcher/src/App.tsx
-msgid "Artwork address"
-msgstr "Адрес изображения"
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "Изображения и консоли из игры"
@@ -919,6 +920,14 @@ msgstr "Фоновая музыка"
 msgid "Backups"
 msgstr "Резервные копии"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Banner"
+msgstr "Баннер"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Banner address"
+msgstr "Адрес баннера"
+
 #. Before the game(s) an app is made from
 #. Before the game(s) an app is made from
 #: ../../apps/launcher/src/App.tsx
@@ -959,9 +968,14 @@ msgstr "Заблокирована"
 #. Browse card style: the portrait box art over the catalog's details
 #. Library card image: the portrait capsule
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Box art"
 msgstr "Обложка коробки"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Box art address"
+msgstr "Адрес обложки коробки"
 
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/setup.tsx
@@ -1018,6 +1032,7 @@ msgstr "Нельзя добавить: Quiver Launcher 3 не знает, отк
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Cancel"
@@ -1063,6 +1078,10 @@ msgstr "Фильтры каталога"
 msgctxt "README callout"
 msgid "Caution"
 msgstr "Осторожно"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Change game"
+msgstr "Сменить игру"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Change name or artwork"
@@ -1110,6 +1129,14 @@ msgstr "Выберите файл для загрузки"
 msgid "Choose a file"
 msgstr "Выберите файл"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a file for {label}"
+msgstr "Выбрать файл: {label}"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a file…"
+msgstr "Выбрать файл…"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
 msgstr "Выберите папку для поиска"
@@ -1121,6 +1148,10 @@ msgstr "Выбрать папку…"
 #: ../../apps/launcher/src/account.tsx
 msgid "Choose a less common password."
 msgstr "Выберите менее распространённый пароль."
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a picture"
+msgstr "Выбрать изображение"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose a picture for the library's background"
@@ -1234,6 +1265,10 @@ msgstr "Выберите, куда устанавливать приложени
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Выберите папку Quiver Launcher 3"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Clear {label}"
+msgstr "Очистить: {label}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -1367,9 +1402,14 @@ msgid "Couldn't stop sharing it. Try again."
 msgstr "Не удалось закрыть доступ. Попробуйте ещё раз."
 
 #. Library card image: the wide library art
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Cover"
 msgstr "Обложка"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Cover address"
+msgstr "Адрес обложки"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Crashes, poor performance, broken controls or features, or I had to do extra setup this page didn't mention."
@@ -1663,6 +1703,7 @@ msgstr "Полноэкранный режим"
 #. Library sort: by the game an app plays
 #. Which name is the large one on a library card: the game's
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/view.ts
 msgid "Game"
@@ -1868,9 +1909,14 @@ msgid "I understand this release was withdrawn, and I accept the risk"
 msgstr "Я понимаю, что эта версия отозвана, и принимаю риск"
 
 #. Library card image
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Icon"
 msgstr "Значок"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Icon address"
+msgstr "Адрес значка"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
@@ -2272,9 +2318,17 @@ msgstr "Библиотека синхронизирована: {fromDevice, plur
 msgid "Light"
 msgstr "Светлая"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Link"
+msgstr "Связать"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Link copied."
 msgstr "Ссылка скопирована."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Link to a catalog app"
+msgstr "Связать с приложением из каталога"
 
 #. Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton
 #: ../../apps/launcher/src/App.tsx
@@ -2310,6 +2364,14 @@ msgstr "Загрузка игры"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
 msgstr "Указать существующую установку…"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Logo"
+msgstr "Логотип"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Logo address"
+msgstr "Адрес логотипа"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Look in another folder…"
@@ -2914,6 +2976,10 @@ msgstr "Вставьте ссылку на плейлист, например qu
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Выберите назначение, затем нажмите клавишу или кнопку для него."
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Picture from this computer"
+msgstr "Изображение с этого компьютера"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Pinned to {installedVersion}."
 msgstr "Закреплена версия {installedVersion}."
@@ -3038,6 +3104,10 @@ msgstr "Плейлисты с этим приложением"
 #: ../../apps/launcher/src/library.tsx
 msgid "Port"
 msgstr "Порт"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Portrait, about 600×900. The library's cards and TV mode."
+msgstr "Вертикальное, примерно 600×900. Карточки библиотеки и режим ТВ."
 
 #. A release its developer marked as not yet stable
 #. A release its developer marked as not yet stable
@@ -3219,6 +3289,14 @@ msgstr "Quiver не будет её устанавливать."
 #: ../ui/src/index.tsx
 msgid "Quiver won't install this release"
 msgstr "Quiver не установит эту версию"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Quiver's catalog lists more than one app from this repository."
+msgstr "В каталоге Quiver несколько приложений из этого репозитория."
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Quiver's catalog lists this app now"
+msgstr "Теперь это приложение есть в каталоге Quiver"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver's catalog lists this app now, and checks its releases."
@@ -3422,6 +3500,7 @@ msgstr "Как в системе"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own.tsx
 msgid "Save"
 msgstr "Сохранить"
 
@@ -3475,6 +3554,10 @@ msgstr "Прокрутить вверх"
 msgid "Search"
 msgstr "Поиск"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Search for a game"
+msgstr "Найти игру"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Search mods"
 msgstr "Поиск модов"
@@ -3484,6 +3567,7 @@ msgid "Search ports, games and tools"
 msgstr "Поиск портов, игр и инструментов"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/own.tsx
 msgid "Search the catalog"
 msgstr "Поиск по каталогу"
 
@@ -3821,6 +3905,10 @@ msgstr "Сортировка модов"
 msgid "Source"
 msgstr "Исходный код"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Square. The app's page, the Icon view and its shortcuts."
+msgstr "Квадратное. Страница приложения, вид значков и ярлыки."
+
 #. Project type
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -3910,6 +3998,10 @@ msgid "Swap {south} and {east}: Confirm on {east}, Back on {south}"
 msgstr "Поменять {south} и {east}: подтверждение на {east}, назад на {south}"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Switch to {name}"
+msgstr "Перейти на {name}"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Switch to the catalog's"
 msgstr "Перейти на вариант из каталога"
 
@@ -3977,6 +4069,10 @@ msgstr "В этой папке нет ни Quiver Launcher 3, ни этих пр
 #: ../../apps/launcher/src/App.tsx
 msgid "That page hit a problem as it closed: {why}"
 msgstr "При закрытии страницы возникла проблема: {why}"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "That picture didn't load."
+msgstr "Это изображение не загрузилось."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "That playlist isn't shared any more, or the link is wrong."
@@ -4082,6 +4178,10 @@ msgstr "Версий пока нет. Загрузки ищите в исход�
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
 msgstr "Этот аккаунт приостановлен."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "This app gets that app's page, artwork and reviews. Its files stay yours: Quiver won't update, move or delete them, so you'd get new versions yourself."
+msgstr "Это приложение получит страницу, оформление и отзывы того приложения. Его файлы остаются вашими: Quiver не будет их обновлять, перемещать или удалять, поэтому новые версии вы загружаете сами."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app has no approved release yet."
@@ -4464,6 +4564,10 @@ msgstr "Версия {version}"
 msgid "Versions"
 msgstr "Версии"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Very wide, about 1920×620. Behind the app's page and Continue playing."
+msgstr "Очень широкое, примерно 1920×620. За страницей приложения и в «Продолжить игру»."
+
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "View {version} on {host}"
@@ -4559,6 +4663,10 @@ msgstr "Что нового в {name}"
 msgid "Where apps install"
 msgstr "Куда устанавливаются приложения"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Which app?"
+msgstr "Какое приложение?"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "Какую загрузку?"
@@ -4576,6 +4684,10 @@ msgstr "Широкая"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "Wide art"
 msgstr "Широкая обложка"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Wide, about 920×430. The Cover view, and anywhere there's no box art."
+msgstr "Широкое, примерно 920×430. Вид обложек и всё, где нет обложки коробки."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Windows (Wine)"

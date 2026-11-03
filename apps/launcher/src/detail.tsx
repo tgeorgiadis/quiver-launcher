@@ -57,13 +57,13 @@ export function useAppDetail(entry: Entry): { source: Source | null | undefined;
   return { source, detail };
 }
 
-/** The catalog's app for one the player added from its repository, once the catalog lists it; else null. */
-export function useListed(entry: Entry): Entry | null {
+/** The catalog's apps for one the player added from its repository, once the catalog lists it. */
+export function useListed(entry: Entry): Entry[] {
   const { listedAs } = useLauncher();
   const custom = isCustom(entry.id);
-  const [listed, setListed] = useState<Entry | null>(null);
+  const [listed, setListed] = useState<Entry[]>([]);
   useEffect(() => {
-    setListed(null);
+    setListed([]);
     if (!custom) return;
     let live = true;
     listedAs(entry.id).then(

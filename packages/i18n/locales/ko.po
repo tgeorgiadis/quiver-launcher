@@ -500,6 +500,10 @@ msgstr "+ 새 재생 목록…"
 msgid "<0>The newest verified release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
 msgstr "<0>검증된 최신 버전은 미리 보기 빌드예요.</0> 이 프로젝트에 다운로드가 포함된 더 새로운 안정 버전이 없어서 Quiver Launcher가 이 버전을 설치해요. 버그나 미완성 기능이 있을 수 있어요."
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
+msgstr "커버 주소는 계정을 따라갑니다. 다른 이미지와 파일에서 가져온 이미지는 이 컴퓨터에만 남습니다."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "A few quick questions to get you started. You can change any of these later in Settings."
 msgstr "시작하기 전에 몇 가지만 물어볼게요. 나중에 설정에서 언제든 바꿀 수 있어요."
@@ -539,6 +543,10 @@ msgstr "이 컴퓨터의 프로그램"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "A quote isn't closed."
 msgstr "따옴표가 닫히지 않았어요."
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "A transparent PNG. For its Steam shortcut."
+msgstr "투명 PNG. Steam 바로 가기에 쓰입니다."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
@@ -800,6 +808,7 @@ msgid "Anyone with the link can see it on quiverlauncher.com and add it to their
 msgstr "링크가 있는 누구나 quiverlauncher.com에서 보고 자신의 라이브러리에 추가할 수 있어요. 여기서 바꾼 내용은 업데이트하면 그 사람들에게도 반영돼요."
 
 #. Which name is the large one on a library card: the app's (the port's)
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "App"
 msgstr "앱"
@@ -857,14 +866,6 @@ msgstr "GitHub에서 추가한 앱은 GitHub에서 직접 버전을 가져와요
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "아직 없는 앱에는 받기가 표시돼요. 누르기 전에는 아무것도 다운로드되지 않아요."
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Artwork"
-msgstr "아트워크"
-
-#: ../../apps/launcher/src/App.tsx
-msgid "Artwork address"
-msgstr "아트워크 주소"
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "게임의 아트워크와 콘솔"
@@ -919,6 +920,14 @@ msgstr "배경 음악"
 msgid "Backups"
 msgstr "백업"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Banner"
+msgstr "배너"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Banner address"
+msgstr "배너 주소"
+
 #. Before the game(s) an app is made from
 #. Before the game(s) an app is made from
 #: ../../apps/launcher/src/App.tsx
@@ -959,9 +968,14 @@ msgstr "차단됨"
 #. Browse card style: the portrait box art over the catalog's details
 #. Library card image: the portrait capsule
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Box art"
 msgstr "박스 아트"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Box art address"
+msgstr "박스 아트 주소"
 
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/setup.tsx
@@ -1018,6 +1032,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Cancel"
@@ -1063,6 +1078,10 @@ msgstr "카탈로그 필터"
 msgctxt "README callout"
 msgid "Caution"
 msgstr "주의"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Change game"
+msgstr "게임 변경"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Change name or artwork"
@@ -1110,6 +1129,14 @@ msgstr "다운로드 선택"
 msgid "Choose a file"
 msgstr "파일 선택"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a file for {label}"
+msgstr "{label} 파일 선택"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a file…"
+msgstr "파일 선택…"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
 msgstr "찾아볼 폴더 선택"
@@ -1121,6 +1148,10 @@ msgstr "폴더 선택…"
 #: ../../apps/launcher/src/account.tsx
 msgid "Choose a less common password."
 msgstr "흔하지 않은 비밀번호를 선택하세요."
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Choose a picture"
+msgstr "이미지 선택"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose a picture for the library's background"
@@ -1234,6 +1265,10 @@ msgstr "앱 설치 위치 선택"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Quiver Launcher 3 폴더 선택"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Clear {label}"
+msgstr "{label} 지우기"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -1367,9 +1402,14 @@ msgid "Couldn't stop sharing it. Try again."
 msgstr "공유를 중지하지 못했어요. 다시 시도하세요."
 
 #. Library card image: the wide library art
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Cover"
 msgstr "커버"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Cover address"
+msgstr "커버 주소"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Crashes, poor performance, broken controls or features, or I had to do extra setup this page didn't mention."
@@ -1663,6 +1703,7 @@ msgstr "전체 화면"
 #. Library sort: by the game an app plays
 #. Which name is the large one on a library card: the game's
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/view.ts
 msgid "Game"
@@ -1868,9 +1909,14 @@ msgid "I understand this release was withdrawn, and I accept the risk"
 msgstr "이 버전이 철회되었다는 것을 이해하고 위험을 감수해요"
 
 #. Library card image
+#: ../../apps/launcher/src/custom-art.tsx
 #: ../../apps/launcher/src/view.ts
 msgid "Icon"
 msgstr "아이콘"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Icon address"
+msgstr "아이콘 주소"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Icon on its tab"
@@ -2272,9 +2318,17 @@ msgstr "라이브러리 동기화됨: 이 컴퓨터에서 {fromDevice, plural, o
 msgid "Light"
 msgstr "밝게"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Link"
+msgstr "연결"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Link copied."
 msgstr "링크를 복사했어요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Link to a catalog app"
+msgstr "카탈로그 앱에 연결"
 
 #. Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton
 #: ../../apps/launcher/src/App.tsx
@@ -2310,6 +2364,14 @@ msgstr "게임 불러오는 중"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
 msgstr "기존 설치 위치 찾기…"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Logo"
+msgstr "로고"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Logo address"
+msgstr "로고 주소"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Look in another folder…"
@@ -2914,6 +2976,10 @@ msgstr "재생 목록 링크를 붙여 넣으세요(예: quiverlauncher.com/list
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "키 할당을 선택한 다음, 사용할 키나 버튼을 누르세요."
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Picture from this computer"
+msgstr "이 컴퓨터의 이미지"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Pinned to {installedVersion}."
 msgstr "{installedVersion}에 고정됨."
@@ -3038,6 +3104,10 @@ msgstr "이 앱의 재생 목록"
 #: ../../apps/launcher/src/library.tsx
 msgid "Port"
 msgstr "포트"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Portrait, about 600×900. The library's cards and TV mode."
+msgstr "세로형, 약 600×900. 라이브러리 카드와 TV 모드에 쓰입니다."
 
 #. A release its developer marked as not yet stable
 #. A release its developer marked as not yet stable
@@ -3219,6 +3289,14 @@ msgstr "Quiver는 이 버전을 설치하지 않아요."
 #: ../ui/src/index.tsx
 msgid "Quiver won't install this release"
 msgstr "Quiver는 이 버전을 설치하지 않아요"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Quiver's catalog lists more than one app from this repository."
+msgstr "Quiver 카탈로그에 이 저장소의 앱이 둘 이상 있습니다."
+
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Quiver's catalog lists this app now"
+msgstr "이제 Quiver 카탈로그에 이 앱이 있습니다"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver's catalog lists this app now, and checks its releases."
@@ -3422,6 +3500,7 @@ msgstr "시스템 설정과 동일"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own.tsx
 msgid "Save"
 msgstr "저장"
 
@@ -3475,6 +3554,10 @@ msgstr "위로 스크롤"
 msgid "Search"
 msgstr "검색"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Search for a game"
+msgstr "게임 검색"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Search mods"
 msgstr "모드 검색"
@@ -3484,6 +3567,7 @@ msgid "Search ports, games and tools"
 msgstr "포트, 게임, 도구 검색"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/own.tsx
 msgid "Search the catalog"
 msgstr "카탈로그 검색"
 
@@ -3821,6 +3905,10 @@ msgstr "모드 정렬"
 msgid "Source"
 msgstr "소스"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Square. The app's page, the Icon view and its shortcuts."
+msgstr "정사각형. 앱 페이지, 아이콘 보기, 바로 가기에 쓰입니다."
+
 #. Project type
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -3910,6 +3998,10 @@ msgid "Swap {south} and {east}: Confirm on {east}, Back on {south}"
 msgstr "{south}와(과) {east} 바꾸기: {east}로 확인, {south}로 뒤로"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Switch to {name}"
+msgstr "{name}(으)로 전환"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Switch to the catalog's"
 msgstr "카탈로그 버전으로 전환"
 
@@ -3977,6 +4069,10 @@ msgstr "그 폴더에는 Quiver Launcher 3도, 이 앱들도 없어요."
 #: ../../apps/launcher/src/App.tsx
 msgid "That page hit a problem as it closed: {why}"
 msgstr "페이지를 닫는 중에 문제가 생겼어요: {why}"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "That picture didn't load."
+msgstr "이미지를 불러오지 못했습니다."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "That playlist isn't shared any more, or the link is wrong."
@@ -4082,6 +4178,10 @@ msgstr "아직 버전이 없어요. 원본 프로젝트에서 다운로드를 �
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
 msgstr "이 계정은 정지됐어요."
+
+#: ../../apps/launcher/src/own.tsx
+msgid "This app gets that app's page, artwork and reviews. Its files stay yours: Quiver won't update, move or delete them, so you'd get new versions yourself."
+msgstr "이 앱은 해당 앱의 페이지, 아트워크, 리뷰를 사용합니다. 파일은 그대로 내 것입니다. Quiver가 업데이트하거나 옮기거나 삭제하지 않으므로 새 버전은 직접 받아야 합니다."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app has no approved release yet."
@@ -4464,6 +4564,10 @@ msgstr "버전 {version}"
 msgid "Versions"
 msgstr "버전"
 
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Very wide, about 1920×620. Behind the app's page and Continue playing."
+msgstr "매우 넓은 형식, 약 1920×620. 앱 페이지 뒤와 이어서 플레이에 쓰입니다."
+
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "View {version} on {host}"
@@ -4559,6 +4663,10 @@ msgstr "{name}의 새로운 기능"
 msgid "Where apps install"
 msgstr "앱 설치 위치"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Which app?"
+msgstr "어떤 앱인가요?"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "어떤 다운로드인가요?"
@@ -4576,6 +4684,10 @@ msgstr "넓게"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "Wide art"
 msgstr "가로 이미지"
+
+#: ../../apps/launcher/src/custom-art.tsx
+msgid "Wide, about 920×430. The Cover view, and anywhere there's no box art."
+msgstr "가로형, 약 920×430. 커버 보기와 박스 아트가 없는 곳에 쓰입니다."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Windows (Wine)"

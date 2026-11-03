@@ -23,6 +23,7 @@ import { versionLabel } from "./versions";
 import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, newKey, type AppFacts, type Collection } from "./sync";
 import { isOwn } from "./custom";
+import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
@@ -40,7 +41,7 @@ type Tab = "all" | "updates" | "hidden" | string;
 /** The library's filters, as the catalog's: one choice of each. */
 type Filters = LibraryFilters;
 
-type Overrides = { name?: string; cover?: string; consoles?: string[] };
+type Overrides = { name?: string; cover?: string; pictures?: Pictures; consoles?: string[] };
 // Made once for an entry and its overrides, so a card given it keeps it till either changes (LibraryTile's memo).
 const overridden = new WeakMap<Entry, WeakMap<Overrides, Entry>>();
 /** The catalog entry as this player named and pictured it. */
@@ -56,7 +57,7 @@ export function withOverrides(entry: Entry, o?: Overrides): Entry {
         ...entry,
         ...(o.name ? { projectName: o.name } : {}),
         ...(o.consoles ? { consoles: o.consoles } : {}),
-        ...(o.cover ? { libraryArt: { ...entry.libraryArt, header: o.cover, hero: o.cover } } : {}),
+        ...withPictures(entry, o),
       }),
     );
   return made;

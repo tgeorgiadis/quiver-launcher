@@ -2,6 +2,7 @@
 mod android;
 mod apps_folder;
 mod browser;
+mod custom_art;
 mod flatpak;
 mod gamepad;
 mod host;
@@ -409,7 +410,7 @@ struct Playing(std::sync::Mutex<Option<(String, std::time::Instant)>>);
 /// The app's icon, saved for shortcuts; none if it can't be fetched.
 async fn shortcut_icon(data: &Data, request: &shortcut::ShortcutRequest) -> Option<PathBuf> {
     let url = request.art.icon.as_deref()?;
-    shortcut::save_icon(url, &data.0.join("icons").join(install::plain_name(&request.folder).ok()?)).await.ok()
+    shortcut::save_icon(url, &data.0, &data.0.join("icons").join(install::plain_name(&request.folder).ok()?)).await.ok()
 }
 
 /// Puts a shortcut that starts the game on the desktop.
@@ -435,7 +436,7 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
     for (suffix, url) in art {
         let Some(url) = url else { continue };
         let path = data.0.join("steam-art").join(format!("{folder}{suffix}.png"));
-        if let Ok(image) = shortcut::download_image(url).await {
+        if let Ok(image) = shortcut::download_image(url, &data.0).await {
             if std::fs::create_dir_all(path.parent().unwrap()).is_ok() && image.save(&path).is_ok() {
                 shortcut.art.push((suffix.into(), path));
             }
@@ -608,6 +609,25 @@ async fn read_background(path: String) -> Result<tauri::ipc::Response, String> {
         return Err("That picture is too large to show.".into());
     }
     Ok(tauri::ipc::Response::new(tokio::fs::read(&path).await.map_err(|e| e.to_string())?))
+}
+
+/// Asks the player for a picture of an app and keeps a copy sized for `slot` (custom_art.rs): the copy's name, null
+/// if they cancel. `QUIVER_PICK` answers instead in end-to-end tests.
+#[tauri::command]
+async fn pick_artwork(app: tauri::AppHandle, window: tauri::WebviewWindow, title: String, slot: String) -> Result<Option<String>, String> {
+    let path = match std::env::var_os("QUIVER_PICK") {
+        Some(path) => Some(PathBuf::from(path)),
+        None => picker::choose(&app, &window, picker::Want::File, &title, None, Some(("Pictures", custom_art::EXTENSIONS))).await,
+    };
+    let Some(path) = path else { return Ok(None) };
+    let data = app.state::<Data>().0.clone();
+    tauri::async_runtime::spawn_blocking(move || custom_art::import(&path, &data, &slot)).await.map_err(|e| e.to_string())?.map(Some)
+}
+
+/// Deletes the kept pictures other than `files`.
+#[tauri::command]
+fn keep_artwork(data: State<Data>, files: Vec<String>) {
+    custom_art::keep_only(&data.0, &files);
 }
 
 /// A newer Quiver Launcher, if there is one. Debug builds only look when
@@ -1214,6 +1234,15 @@ pub fn run() {
         builder
     };
     let builder = builder.plugin(tauri_plugin_dialog::init());
+    // The player's own pictures, off the page's thread: a library shows many at once.
+    let builder = builder.register_asynchronous_uri_scheme_protocol(custom_art::PROTOCOL, |context, request, responder| {
+        let data = context.app_handle().try_state::<Data>().map(|data| data.0.clone());
+        let path = request.uri().path().to_string();
+        tauri::async_runtime::spawn_blocking(move || {
+            let response = data.map_or_else(|| tauri::http::Response::builder().status(503).body(Vec::new()).unwrap(), |data| custom_art::respond(&data, &path));
+            responder.respond(response);
+        });
+    });
     #[cfg(target_os = "android")]
     let builder = builder.plugin(android::init());
     builder
@@ -1339,6 +1368,8 @@ pub fn run() {
             read_music,
             pick_background,
             read_background,
+            pick_artwork,
+            keep_artwork,
             mod_packages,
             mod_files,
             installed_mods,
