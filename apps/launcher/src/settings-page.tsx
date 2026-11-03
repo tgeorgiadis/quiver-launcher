@@ -14,6 +14,7 @@ import { useLauncher } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
+import { DEFAULT_BACKGROUND_OPACITY, useBackgroundImage } from "./library-background";
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
@@ -23,6 +24,7 @@ import { UpdateSettings } from "./update";
 import { GithubTokenSetting } from "./github-token";
 import { TelemetrySetting } from "./telemetry-ui";
 import type { Theme } from "./theme";
+import { INTERFACE_SIZES } from "./zoom";
 
 type Section = "general" | "library" | "apps" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
@@ -156,7 +158,7 @@ function TraySettings() {
             const on = e.target.checked;
             native.setStartWithWindows(on).then(
               () => setStarts(on),
-              (error) => setNotice(String(error)),
+              (error) => setNotice(String(error), { stays: true }),
             );
           }}
         />
@@ -195,7 +197,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
         <Trans>Full screen</Trans>
       </label>
       <label>
-        <Trans comment="Setting: the launcher's full-screen layout for a controller (tv.tsx)">TV mode</Trans>{" "}
+        <Trans comment="Setting: the launcher's larger, full-screen look for a controller">TV mode</Trans>{" "}
         <select
           value={settings.tvMode ?? "auto"}
           onChange={(e) => setSettings({ ...settings, tvMode: e.target.value === "auto" ? undefined : (e.target.value as "on" | "off") })}
@@ -222,10 +224,11 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       <label>
         <Trans>Interface size</Trans>{" "}
         <select value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>
-          <option value={0.9}>{t({ message: "Small", comment: "Interface size" })}</option>
-          <option value={1}>{t({ message: "Normal", comment: "Interface size" })}</option>
-          <option value={1.15}>{t({ message: "Large", comment: "Interface size" })}</option>
-          <option value={1.3}>{t({ message: "Extra large", comment: "Interface size" })}</option>
+          {INTERFACE_SIZES.map((size) => (
+            <option key={size} value={size}>
+              {new Intl.NumberFormat(i18n.locale, { style: "percent" }).format(size)}
+            </option>
+          ))}
         </select>
       </label>
       <label>
@@ -292,9 +295,11 @@ export function LanguageSetting() {
 
 /** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
 function LibrarySettings() {
+  const { config } = useLauncher();
   return (
     <>
       <ViewOptions groups />
+      {config.os !== "android" && config.os !== "ios" && <BackgroundSetting />}
       <section className="settings-section" aria-label={t`Browse cards`}>
         <h3>
           <Trans comment="Settings section: how the catalog's cards look in Browse">Browse cards</Trans>
@@ -315,6 +320,59 @@ function LibrarySettings() {
         <Snapshots />
       </section>
     </>
+  );
+}
+
+/**
+ * A picture behind the library's grid (library-background.tsx), as Quiver Launcher 3 had: a file to choose, its opacity
+ * as it'll look over the page's background, and none. Not on a phone, whose picker gives a file without a path to read it by.
+ */
+function BackgroundSetting() {
+  const { settings, setSettings } = useLauncher();
+  const picture = settings.libraryBackground;
+  const name = picture?.split(/[\\/]/).pop();
+  const url = useBackgroundImage(picture);
+  const opacity = settings.libraryBackgroundOpacity ?? DEFAULT_BACKGROUND_OPACITY;
+  // A file it read but can't show.
+  const [broken, setBroken] = useState<string>();
+  const choose = async () => {
+    // Opening where the last one was.
+    const dir = picture && name ? picture.slice(0, -name.length) : undefined;
+    const picked = await native.pickBackground(t`Choose a picture for the library's background`, dir).catch(() => null);
+    if (picked) setSettings({ ...settings, libraryBackground: picked });
+  };
+  return (
+    <section className="settings-section" aria-label={t`Library background`}>
+      <h3>
+        <Trans>Library background</Trans>
+      </h3>
+      <p className="muted">{name ?? <Trans>Show a picture of your own behind the library's grid. The Sidebar layout doesn't show it.</Trans>}</p>
+      {url && broken !== url && (
+        <div className="background-preview">
+          <img src={url} alt="" style={{ opacity }} onError={() => setBroken(url)} />
+        </div>
+      )}
+      <div className="music-buttons">
+        <button onClick={() => void choose()}>{picture ? <Trans>Change…</Trans> : <Trans>Choose a picture…</Trans>}</button>
+        {picture && (
+          <button onClick={() => setSettings({ ...settings, libraryBackground: undefined })}>
+            <Trans comment="Button: no background music, or no background picture">Remove</Trans>
+          </button>
+        )}
+      </div>
+      {picture && (
+        <label>
+          <Trans comment="How strongly the library's background picture shows">Opacity</Trans>{" "}
+          {/* Past 60%, a bright picture is too strong for the library's words over it. */}
+          <input type="range" min={10} max={60} step={5} value={Math.round(opacity * 100)} onChange={(e) => setSettings({ ...settings, libraryBackgroundOpacity: Number(e.target.value) / 100 })} />
+        </label>
+      )}
+      {picture && (url === null || (url && broken === url)) && (
+        <p className="job-error" role="status">
+          <Trans>Quiver couldn't show that picture. It may have been moved or deleted.</Trans>
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -344,7 +402,7 @@ function MusicSetting() {
         <button onClick={() => void choose()}>{music ? <Trans>Change…</Trans> : <Trans>Choose music…</Trans>}</button>
         {music && (
           <button onClick={() => setSettings({ ...settings, music: undefined })}>
-            <Trans comment="Button: no background music">Remove</Trans>
+            <Trans comment="Button: no background music, or no background picture">Remove</Trans>
           </button>
         )}
       </div>

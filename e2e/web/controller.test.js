@@ -108,9 +108,9 @@ test("the catalog, its filters, and Sign in, which B closes", async () => {
   await everything("Sign in");
   assert.equal(await back(), "main");
   // Along the top bar: Right through each of its controls in turn, Left back, never into the page under it.
-  const inBar = () => app.execute(() => [...document.querySelectorAll(".topbar button")].filter((b) => b.getClientRects().length).map((b) => b.getAttribute("aria-label") || b.innerText.replace(/\s+/g, " ").trim()));
+  const inBar = () => app.execute(() => [...document.querySelectorAll(".topbar button:not(.brand)")].filter((b) => b.getClientRects().length).map((b) => b.getAttribute("aria-label") || b.innerText.replace(/\s+/g, " ").trim()));
   const bar = await inBar();
-  await app.execute(() => document.querySelector(".topbar button").focus());
+  await app.execute(() => document.querySelector(".topbar button:not(.brand)").focus());
   const along = [(await reach.focused(app)).match(/"(.*)"/)[1]];
   for (let i = 1; i < bar.length; i++) await reach.press(app, "DPadRight"), along.push((await reach.focused(app)).match(/"(.*)"/)[1]);
   assert.deepEqual(along, bar, "Right goes along the top bar");
@@ -146,6 +146,477 @@ test("A opens a catalog card, and Y gets the app", async () => {
 
 test("the library: a card's own buttons are its menu's, A plays it and Y opens the menu", async () => {
   await everything("the library", ".library-tile .tile-overlay button");
+});
+
+/** From the card, Y and the d-pad: the menu's item named `text`, in a submenu of Manage when `manage` says so. */
+const toMenuItem = async (a, text, { manage = false } = {}) => {
+  await reach.pressOn(a, ".library-tile .card-open", "North");
+  const move = (name) => a.execute((name) => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].find((b) => b.innerText.trim() === name)?.focus(), name);
+  await move(manage ? "Manage" : text);
+  if (manage) {
+    await reach.press(a, "DPadRight");
+    await move(text);
+  }
+};
+const focusIs = (a) => a.execute(() => document.activeElement?.getAttribute("aria-label") || document.activeElement?.innerText.trim());
+const installed = { library: state.library, installs: state.installs };
+
+const focusedSelector = (a) => a.execute(() => { const el = document.activeElement; return el?.matches(".continue-play") ? "play" : el?.matches(".library-bar .search input") ? "search" : el?.matches(".card-open") ? "card" : el?.closest(".topbar") ? "bar" : el === document.body ? "nothing" : el?.className || el?.tagName; });
+
+test("the Quiver logo isn't a stop for the d-pad: past the Library tab, it stays", async () => {
+  await reach.pressOn(app, ".topbar nav button.active", "DPadLeft");
+  await pause(100);
+  assert.equal(await app.execute(() => document.activeElement?.matches(".topbar nav button")), true);
+  assert.equal(await app.execute(() => document.querySelector(".brand").tabIndex), -1, "nor for Tab");
+});
+
+test("the first press lands on Continue playing's Play, else on the library's first card", async () => {
+  assert.equal(await focusedSelector(app), "nothing");
+  await reach.press(app, "DPadDown");
+  assert.equal(await focusedSelector(app), "play");
+  const s2 = await openApp({ state: { ...installed, settings: { library: { continuePlaying: false } } } });
+  try {
+    await s2.page.locator("article[data-slug]").first().waitFor();
+    await reach.install(s2.app);
+    await reach.press(s2.app, "DPadDown");
+    assert.equal(await focusedSelector(s2.app), "card");
+  } finally {
+    await s2.close();
+  }
+});
+
+test("with a controller there as the library comes, Play has the focus at once", async () => {
+  await s.emit("pads", ["Test pad"]);
+  await s.until(async () => (await focusedSelector(app)) === "play");
+  await s.emit("pads", []);
+});
+
+test("up and down go by way of Search and Play, wherever they start across the screen", async () => {
+  // The Add an app button, far from Search: up to Play, not the catalog button beside the banner's foot.
+  await reach.pressOn(app, ".add-app", "DPadUp");
+  assert.equal(await focusedSelector(app), "play");
+  await reach.press(app, "DPadDown");
+  assert.equal(await focusedSelector(app), "search");
+  await reach.press(app, "DPadDown");
+  assert.equal(await focusedSelector(app), "card");
+  await reach.press(app, "DPadUp");
+  assert.equal(await focusedSelector(app), "search");
+  // From the far end of the top bar, down: Play too, not past it, or whatever's under that button.
+  await reach.pressOn(app, ".topbar button[aria-label='Settings']", "DPadDown");
+  const notices = await app.execute(() => document.querySelectorAll(".banner-stack button").length);
+  if (notices) await reach.pressOn(app, ".banner-stack button", "DPadDown");
+  assert.equal(await focusedSelector(app), "play");
+});
+
+test("up to the top of a scrolled page takes one press, not one to scroll and one to move", async () => {
+  const s2 = await openApp({ state: installed, height: 520 });
+  try {
+    const a = s2.app;
+    await s2.page.locator("article[data-slug]").first().waitFor();
+    await reach.install(a);
+    await reach.pressOn(a, ".library-tile .card-open", "DPadUp");
+    const seen = [await focusIs(a)];
+    for (let i = 0; i < 6 && !(await a.execute(() => Boolean(document.activeElement?.closest(".topbar")))); i++) {
+      await reach.press(a, "DPadUp");
+      const now = await focusIs(a);
+      assert.notEqual(now, seen.at(-1), `every Up moves the focus: after ${seen.join(", ")}`);
+      seen.push(now);
+    }
+    assert.equal(await a.execute(() => Boolean(document.activeElement?.closest(".topbar"))), true);
+    await s2.until(() => a.execute(() => document.querySelector(".shell > main").scrollTop === 0));
+  } finally {
+    await s2.close();
+  }
+});
+
+test("into Settings' list from the section beside it, the d-pad lands on the section open", async () => {
+  await page.locator(".topbar button[aria-label='Settings']").click();
+  await page.locator(".settings-nav").waitFor();
+  await page.locator('.settings-nav [data-section="updates"]').click();
+  await pause(100);
+  await reach.pressOn(app, ".settings-pane button, .settings-pane input, .settings-pane select", "DPadLeft");
+  assert.equal(await app.execute(() => document.activeElement?.getAttribute("data-section")), "updates");
+});
+
+test("into the library's sidebar from the app beside it, the d-pad lands on the app open", async () => {
+  const many = { library: [...state.library, { id: "entry_test-remake", slug: "test-remake", addedAt: Date.now() - 86400_000 }], installs: state.installs };
+  const s2 = await openApp({ state: { ...many, settings: { library: { layout: "sidebar" } } }, height: 700 });
+  try {
+    const a = s2.app;
+    await s2.page.locator(".sidebar-row").first().waitFor();
+    await reach.install(a);
+    await s2.page.locator('.sidebar-row[data-slug="test-remake"]').click();
+    await pause(200);
+    await reach.pressOn(a, ".library-pane .back-link, .library-pane .app-actions button, .library-pane button", "DPadLeft");
+    assert.equal(await a.execute(() => document.activeElement?.dataset.slug), "test-remake");
+  } finally {
+    await s2.close();
+  }
+});
+
+test("TV mode is the usual pages, larger: it stays on the tab it's turned on from, with Browse's search, and goes back", async () => {
+  const s2 = await openApp({ state: installed });
+  try {
+    await s2.page.locator("article[data-slug]").first().waitFor();
+    await s2.page.locator(".topbar nav button", { hasText: "Browse" }).click();
+    await s2.page.locator(".tv-button").click();
+    await s2.page.locator(".shell.tv-mode").waitFor();
+    assert.equal(await s2.app.execute(() => document.querySelector(".topbar nav button.active").innerText.includes("Browse")), true, "still on Browse");
+    await s2.page.locator("main input[type='search'], main .search input").first().waitFor();
+    await s2.page.locator(".topbar nav button", { hasText: "Library" }).click();
+    await s2.page.locator(".library-grid.size-large.image-box article[data-slug]").first().waitFor();
+    await s2.page.locator(".tv-leave").click();
+    await s2.page.locator(".shell:not(.tv-mode) .tv-button").waitFor();
+  } finally {
+    await s2.close();
+  }
+});
+
+test("TV mode's top bar fits on one line at a Steam Deck's size, and Game Mode leaves the window's buttons to Steam", async () => {
+  for (const gameMode of [true, false]) {
+    const s2 = await openApp({ state: installed, width: 1113, height: 696, config: { gameMode } });
+    try {
+      await s2.page.locator(".topbar").waitFor();
+      if (!gameMode) await s2.page.locator(".tv-button").click();
+      await s2.page.locator(".shell.tv-mode .tv-leave").waitFor();
+      const bar = await s2.app.execute(() => {
+        const height = (selector) => document.querySelector(selector).getBoundingClientRect().height;
+        const top = document.querySelector(".topbar");
+        return { clock: height(".tv-clock"), leave: height(".tv-leave"), fits: top.scrollWidth <= top.clientWidth, controls: Boolean(document.querySelector(".window-controls")) };
+      });
+      assert.ok(bar.clock < 30, `the clock on one line: ${bar.clock}`);
+      assert.ok(bar.leave < 40, `Leave TV mode on one line: ${bar.leave}`);
+      assert.equal(bar.fits, true, "nothing past the bar's end");
+      assert.equal(bar.controls, !gameMode);
+    } finally {
+      await s2.close();
+    }
+  }
+});
+
+test("Downloads' See changelog shows what's new over the page, read and closed with a controller, and leaves it there", async () => {
+  const s2 = await openApp({ state: { library: state.library, installs: { "entry_test-port": { ...state.installs["entry_test-port"], version: "0.7.0" } } } });
+  const { page: p, app: a } = s2;
+  const notes = (version) => [`What's in ${version}.`, ...Array.from({ length: 14 }, (_, i) => `Change ${i + 1}, long enough to wrap onto a second line in a dialog this wide, as release notes do.`), `[More on ${version}](https://example.com/${version})`].join("\n\n");
+  const release = (version, rest = {}) => ({ releaseId: `rel_${version}`, version, releasedAt: Date.parse(`20${version.slice(3, 4)}${version.slice(1, 2)}-01-01`), notes: notes(version), prerelease: false, state: "verified", reasons: [], assets: [], ...rest });
+  const items = [release("v1.1.0", { state: "unverified" }), release("v1.0.0"), release("v0.9.0", { state: "unverified" }), release("v0.8.5", { state: "blocked" }), release("v0.8.0", { notes: "" }), release("v0.7.0"), release("v0.6.0")];
+  const history = (route) => route.fulfill({ json: { items, nextCursor: null, isDone: true }, headers: { "access-control-allow-origin": "*" } });
+  const seeChangelog = () => p.locator(".download-row button", { hasText: "See changelog" }).click();
+  const dialog = p.locator('[role="dialog"].changelog');
+  const focusText = () => a.execute(() => document.activeElement?.innerText?.trim());
+  try {
+    await p.route("**/release-history*", history);
+    await p.locator(".downloads-button").click();
+    await p.locator(".downloads-page").waitFor();
+    await reach.install(a);
+
+    assert.doesNotMatch(await reach.pressOn(a, ".download-row button", "South", { text: "See changelog" }), /^not reached/);
+    await dialog.locator("article h3").first().waitFor();
+    assert.deepEqual(await dialog.locator("article h3").evaluateAll((all) => all.map((h) => h.firstChild.textContent)), ["v1.0.0", "v0.9.0"], "the versions since the one installed");
+    assert.equal(await p.locator(".app-page").count(), 0, "still on Downloads");
+    assert.equal(await focusText(), "Close", "starting where A can't update");
+
+    await reach.press(a, "DPadDown");
+    await s2.until(() => dialog.evaluate((d) => d.scrollTop > 0));
+    assert.equal(await focusText(), "Close", "the d-pad scrolls what has no control on the way");
+    const { missed, outOfSight, cut } = await reach.explore(a, {});
+    assert.deepEqual({ missed, outOfSight, cut }, { missed: [], outOfSight: [], cut: [] }, "the d-pad gets to the links in the notes and the buttons, each showing");
+
+    await reach.press(a, "East");
+    await dialog.waitFor({ state: "detached" });
+    await p.locator(".downloads-page").waitFor();
+    await s2.until(async () => (await focusText())?.includes("See changelog"));
+
+    await seeChangelog();
+    await dialog.waitFor();
+    await p.keyboard.press("Escape");
+    await dialog.waitFor({ state: "detached" });
+    assert.equal(await p.locator(".downloads-page").isVisible(), true, "Escape closes it and not the page under it");
+
+    await seeChangelog();
+    await p.locator(".overlay").click({ position: { x: 5, y: 5 } });
+    await dialog.waitFor({ state: "detached" });
+
+    await seeChangelog();
+    await dialog.locator(".changelog-other").click();
+    await dialog.waitFor({ state: "detached" });
+    await p.locator(".app-page .release-section").waitFor();
+    await p.locator(".app-page .back-link").click();
+    await p.locator(".downloads-page").waitFor();
+
+    await p.unroute("**/release-history*");
+    await p.route("**/release-history*", (route) => route.abort());
+    await seeChangelog();
+    await dialog.getByText("Couldn't load the release notes.").waitFor();
+    await dialog.locator("button", { hasText: "Update to v1.0.0" }).click();
+    await dialog.waitFor({ state: "detached" });
+  } finally {
+    await s2.close();
+  }
+});
+
+test("the launcher's What's new shows the release's notes in the launcher, with a way on to its page", async () => {
+  const launcherUpdate = { version: "4.0.0-beta.2", notes: ["## Better", "The release's own words.", ...Array.from({ length: 40 }, (_, i) => `Change ${i + 1}.`)].join("\n\n"), url: "https://example.com/release", preview: true };
+  const s2 = await openApp({ state: { ...installed, launcherUpdate } });
+  const { page: p, app: a } = s2;
+  const dialog = p.locator('[role="dialog"].changelog');
+  const opened = () => a.execute(() => window.__opened);
+  try {
+    await p.locator(".launcher-update").waitFor();
+    await reach.install(a);
+    assert.doesNotMatch(await reach.pressOn(a, ".launcher-update button", "South", { text: "What's new" }), /^not reached/);
+    await dialog.waitFor();
+    assert.equal(await dialog.locator("h2").first().innerText(), "What's new in Quiver Launcher");
+    await dialog.getByText("The release's own words.").waitFor();
+    assert.deepEqual(await opened(), [], "nothing opens outside the launcher");
+    assert.equal(await dialog.evaluate((d) => d.scrollTop), 0, "open at the notes' start");
+    await reach.press(a, "DPadLeft");
+    assert.equal(await a.execute(() => document.activeElement?.innerText?.trim()), "View v4.0.0-beta.2 on GitHub");
+    assert.equal(await dialog.evaluate((d) => d.scrollTop), 0, "moving between the buttons doesn't scroll the notes");
+
+    await dialog.locator("button", { hasText: "View v4.0.0-beta.2 on GitHub" }).click();
+    assert.deepEqual(await opened(), [launcherUpdate.url]);
+
+    await reach.press(a, "East");
+    await dialog.waitFor({ state: "detached" });
+    await p.locator(".launcher-update button", { hasText: "What's new" }).click();
+    await dialog.locator("button", { hasText: "Update now" }).click();
+    await dialog.waitFor({ state: "detached" });
+    await s2.until(() => a.execute(() => window.__calls.some((c) => c.cmd === "install_update")));
+  } finally {
+    await s2.close();
+  }
+});
+
+test("TV mode's library has no banner offering updates: the Downloads button's count says so", async () => {
+  const waiting = { ...installed, installs: { "entry_test-port": { ...state.installs["entry_test-port"], version: "0.7.0" } } };
+  const usual = await openApp({ state: waiting });
+  try {
+    await usual.page.locator(".downloads-strip").waitFor();
+  } finally {
+    await usual.close();
+  }
+  const tv = await openApp({ state: { ...waiting, settings: { tvMode: "on" } } });
+  try {
+    await tv.page.locator(".library-grid").waitFor();
+    await tv.page.locator(".downloads-button .downloads-count").waitFor();
+    assert.equal(await tv.page.locator(".downloads-strip").count(), 0);
+  } finally {
+    await tv.close();
+  }
+});
+
+test("a player who kept TV mode's old screen gets the one TV mode, and Settings has no choice of look", async () => {
+  const tv = await openApp({ state: { ...installed, settings: { tvMode: "on", tvLook: "screen" } } });
+  try {
+    await tv.page.locator(".shell.tv-mode .topbar").waitFor();
+    await tv.page.locator(".library-grid").waitFor();
+    await tv.page.locator(".topbar button[aria-label='Settings']").click();
+    await tv.page.locator(".settings-nav button", { hasText: "General" }).first().click();
+    await tv.page.locator(".settings-pane label", { hasText: "TV mode" }).first().waitFor();
+    assert.equal(await tv.page.getByText("TV mode's look").count(), 0);
+  } finally {
+    await tv.close();
+  }
+});
+
+test("TV mode's library has Group by and View options, for what TV mode leaves to the player", async () => {
+  const tv = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, width: 1113, height: 696 });
+  const { page: p, app: a } = tv;
+  try {
+    await p.locator(".library-grid").waitFor();
+    await reach.install(a);
+    const tools = p.locator(".library-tools");
+    await tools.locator(".group-by select").waitFor();
+    const rows = await tools.evaluate((t) => new Set([...t.children].map((c) => Math.round(c.getBoundingClientRect().y))).size);
+    assert.equal(rows, 1, "the tools on one row, at a Deck's size");
+
+    assert.doesNotMatch(await reach.pressOn(a, 'button[aria-label="View options"]', "South"), /^not reached/);
+    const panel = p.locator(".view-panel");
+    await panel.waitFor();
+    for (const name of ["One card for each game", "Show names on cards", "Show Continue playing", "Show installed and update icons"]) await panel.getByText(name).waitFor();
+    for (const name of ["Layout", "Card image", "Card size"]) assert.equal(await panel.getByText(name, { exact: true }).count(), 0, `${name} is TV mode's`);
+
+    await panel.getByText("Show names on cards").click();
+    await p.locator(".layout-grid.no-names.size-large").waitFor();
+    assert.deepEqual(await a.execute(() => window.__files.settings.library.layout ?? "grid"), "grid");
+  } finally {
+    await tv.close();
+  }
+});
+
+test("the player's picture shows behind the library's grid and nowhere else, and Settings chooses it", async () => {
+  const picture = "/home/player/Pictures/wall.png";
+  const s2 = await openApp({ state: { ...installed, pickBackground: picture } });
+  const { page: p, app: a } = s2;
+  const behind = p.locator(".library-background img");
+  const settingsOpen = async (name) => {
+    await p.locator(".topbar button[aria-label='Settings']").click();
+    await p.locator(".settings-nav button", { hasText: name }).first().click();
+  };
+  try {
+    await p.locator(".library-grid").waitFor();
+    assert.equal(await behind.count(), 0, "none until the player chooses one");
+
+    await settingsOpen("Library");
+    const setting = p.locator('section[aria-label="Library background"]');
+    await setting.waitFor();
+    await reach.install(a);
+    assert.doesNotMatch(await reach.pressOn(a, 'section[aria-label="Library background"] button', "South", { text: "Choose a picture…" }), /^not reached/);
+    await setting.getByText("wall.png").waitFor();
+    const preview = setting.locator(".background-preview img");
+    await preview.waitFor();
+    await setting.locator('input[type="range"]').fill("60");
+    await s2.until(() => preview.evaluate((i) => i.style.opacity === "0.6"));
+
+    await s2.page.locator(".topbar nav button", { hasText: "Library" }).click();
+    await behind.waitFor({ state: "attached" });
+    assert.equal(await behind.evaluate((i) => i.style.opacity), "0.6");
+    const placed = await behind.evaluate((i) => {
+      const bar = document.querySelector(".topbar").getBoundingClientRect();
+      const card = document.querySelector(".library-tile").getBoundingClientRect();
+      const box = i.getBoundingClientRect();
+      return { wide: box.width === innerWidth, tall: box.height === innerHeight, shown: i.naturalWidth > 0, overBar: document.elementFromPoint(bar.x + bar.width / 2, bar.y + bar.height / 2) === i, overCard: document.elementFromPoint(card.x + card.width / 2, card.y + card.height / 2) === i };
+    });
+    assert.deepEqual(placed, { wide: true, tall: true, shown: true, overBar: false, overCard: false });
+    const scroller = p.locator(".shell > main");
+    await scroller.evaluate((m) => m.scrollTo(0, 200));
+    assert.equal(await behind.evaluate((i) => i.getBoundingClientRect().y), 0, "stays put as the cards scroll");
+
+    await p.locator(".topbar nav button", { hasText: "Browse" }).click();
+    await behind.waitFor({ state: "detached" });
+    await p.locator(".topbar nav button", { hasText: "Library" }).click();
+    await behind.waitFor({ state: "attached" });
+    await p.locator(".library-tile").first().click();
+    await p.locator(".app-page").first().waitFor();
+    assert.equal(await behind.isVisible(), false, "not behind an app's page");
+    await reach.press(a, "East");
+    await behind.waitFor();
+
+    await settingsOpen("Library");
+    await setting.locator("button", { hasText: "Remove" }).click();
+    await setting.locator("button", { hasText: "Choose a picture…" }).waitFor();
+    await p.locator(".topbar nav button", { hasText: "Library" }).click();
+    await p.locator(".library-grid").waitFor();
+    assert.equal(await behind.count(), 0);
+  } finally {
+    await s2.close();
+  }
+
+  // The Sidebar layout keeps its own background, with the picture still chosen for the grid.
+  const s3 = await openApp({ state: { ...installed, settings: { libraryBackground: picture, library: { layout: "sidebar" } } } });
+  try {
+    await s3.page.locator(".library-split").waitFor();
+    assert.equal(await s3.page.locator(".library-background").count(), 0);
+  } finally {
+    await s3.close();
+  }
+
+  // A file moved or deleted since: Settings says so, and the library goes on without it.
+  const s4 = await openApp({ state: { ...installed, settings: { libraryBackground: "/home/player/Pictures/missing.png" } } });
+  try {
+    await s4.page.locator(".library-grid").waitFor();
+    assert.equal(await s4.page.locator(".library-background").count(), 0);
+    await s4.page.locator(".topbar button[aria-label='Settings']").click();
+    await s4.page.locator(".settings-nav button", { hasText: "Library" }).first().click();
+    await s4.page.getByText("Quiver couldn't show that picture.", { exact: false }).waitFor();
+  } finally {
+    await s4.close();
+  }
+});
+
+test("Settings' list stays on the screen as the page scrolls, in a window with just room for it", async () => {
+  const s2 = await openApp({ state: installed, height: 345 });
+  try {
+    await s2.page.locator(".topbar").waitFor();
+    await s2.page.locator(".topbar button[aria-label='Settings']").click();
+    await s2.page.locator(".settings-nav").waitFor();
+    for (const section of ["general", "updates"]) {
+      await s2.page.locator(`.settings-nav [data-section="${section}"]`).click();
+      await pause(100);
+      const over = await s2.app.execute(() => {
+        const main = document.querySelector(".shell > main");
+        const list = document.querySelector(".settings-nav");
+        main.scrollTop = main.scrollHeight;
+        return [list.getBoundingClientRect().top - main.getBoundingClientRect().top, main.clientHeight - list.offsetHeight];
+      });
+      assert.ok(over[1] >= 0, "the window has room for all of it");
+      assert.ok(over[0] >= 0, `${section}: ${over[0]}px from the top`);
+    }
+  } finally {
+    await s2.close();
+  }
+});
+
+test("Installed and Not installed are only filters: not tabs that can disagree with them", async () => {
+  const tabs = await app.execute(() => [...document.querySelectorAll(".playlists button, .library-show option")].map((b) => b.innerText || b.label));
+  assert.ok(tabs.some((name) => name.trim() === "All"));
+  assert.ok(!tabs.some((name) => /installed/i.test(name)), tabs.join());
+});
+
+test("the new playlist's field lets the d-pad back out, with no playlists to go to instead", async () => {
+  await toMenuItem(app, "Add to playlist");
+  await reach.press(app, "DPadRight");
+  assert.equal(await focusIs(app), "New playlist", "the field has the focus, with nothing else in the list");
+  await reach.press(app, "DPadLeft");
+  await pause(100);
+  assert.equal(await focusIs(app), "Add to playlist");
+  assert.equal(await app.execute(() => Boolean(document.querySelector("[aria-label='New playlist']"))), false, "the submenu closed");
+  assert.equal(await app.execute(() => Boolean(document.querySelector('.game-menu'))), true, "the menu stayed");
+});
+
+for (const mode of ["the usual library", "TV mode"]) {
+  test(`in ${mode}, what Add to Steam says shows wherever the page is scrolled: a failure takes the focus, a success doesn't`, async () => {
+    const s2 = await openApp({ state: installed });
+    try {
+      const a = s2.app;
+      await s2.page.locator("article[data-slug]").first().waitFor();
+      if (mode === "TV mode") {
+        await s2.page.locator(".tv-button").click();
+        await s2.page.locator(".tv-mode article[data-slug]").first().waitFor();
+      }
+      await reach.install(a);
+      const steamAnswers = (answer) =>
+        s2.page.evaluate((answer) => {
+          const { invoke } = window.__TAURI_INTERNALS__;
+          window.__TAURI_INTERNALS__.invoke = (cmd, args) => (cmd !== "add_to_steam" ? invoke(cmd, args) : answer.fails ? Promise.reject(answer.text) : Promise.resolve(answer.text));
+        }, answer);
+      await steamAnswers({ fails: true, text: "Steam said no." });
+      await toMenuItem(a, "Add to Steam", { manage: true });
+      await reach.press(a, "South");
+      await s2.page.locator('[role="dialog"][aria-label="Notice"] >> text=Steam said no.').waitFor();
+      await s2.until(async () => (await focusIs(a)) === "OK");
+      await reach.press(a, "East");
+      await s2.page.locator('[role="dialog"][aria-label="Notice"]').waitFor({ state: "detached" });
+
+      await steamAnswers({ text: "Test Port is in Steam." });
+      await toMenuItem(a, "Add to Steam", { manage: true });
+      await reach.press(a, "South");
+      const toast = s2.page.locator('.toast[role="status"]');
+      await toast.waitFor();
+      assert.ok(await toast.evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; }), "it's on the screen");
+      assert.notEqual(await focusIs(a), "Test Port is in Steam.", "it leaves the focus alone");
+    } finally {
+      await s2.close();
+    }
+  });
+}
+
+test("where Steam is running Quiver, Add to Steam is greyed out, saying why", async () => {
+  const s2 = await openApp({ state: installed, config: { steamRunsUs: true } });
+  try {
+    const a = s2.app;
+    await s2.page.locator("article[data-slug]").first().waitFor();
+    await reach.install(a);
+    await reach.pressOn(a, ".library-tile .card-open", "North");
+    await a.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].find((b) => b.innerText.includes("Manage")).focus());
+    await reach.press(a, "DPadRight");
+    const item = s2.page.locator('.game-submenu [role="menuitem"]', { hasText: "Add to Steam" });
+    assert.equal(await item.isDisabled(), true);
+    await s2.page.locator(".game-submenu .game-menu-note", { hasText: "Steam is running Quiver" }).waitFor();
+  } finally {
+    await s2.close();
+  }
 });
 
 test("a library card's menu: Y opens it, the d-pad goes through it and into Manage, B steps out and closes it", async () => {
@@ -527,7 +998,7 @@ test("at another interface size, the focus box is on what has the focus and a ga
   // Zoomed as Settings' Interface size zooms the page, which WebKit (a Steam Deck's) measures as it lays it out, not as
   // it shows: the box and the list were drawn a fraction of the way toward the window's corner.
   const game = await openApp({
-    state: { ...state, settings: { scale: 1.15, library: { byGame: true } }, library: [...state.library, { id: "entry_test-remake", slug: "test-remake", addedAt: Date.now() - 86400_000 }] },
+    state: { ...state, settings: { scale: 1.25, library: { byGame: true } }, library: [...state.library, { id: "entry_test-remake", slug: "test-remake", addedAt: Date.now() - 86400_000 }] },
   });
   const { app: g } = game;
   try {
@@ -619,6 +1090,8 @@ test("moving by a controller, nothing on a card eases, and a shelf glides along 
 
 test("in Steam's desktop layout, A (which comes as Enter) on a library card plays it, as the hints say", async () => {
   await s.emit("pad-labels", { kind: "steam", south: "A", east: "B", west: "X", north: "Y", desktop: true });
+  // An event comes after the call that sent it returns (stand-in.js): here before the press.
+  await page.evaluate(() => new Promise((r) => setTimeout(r)));
   await page.focus(".library-tile .card-open");
   await page.keyboard.press("Enter");
   await s.until(() => app.execute(() => window.__calls.some((c) => c.cmd === "launch" && c.args.id === "entry_test-port")));

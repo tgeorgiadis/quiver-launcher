@@ -19,6 +19,8 @@ import { withOverrides } from "./library";
 import { dayLabel } from "./sidebar";
 import { versionLabel } from "./versions";
 import { native } from "./native";
+import { ChangelogDialog } from "./detail";
+import { isCustom, isLocal } from "./custom";
 
 /** What's downloading and waiting, and the apps by the player's names for them. */
 function useDownloads() {
@@ -178,6 +180,13 @@ export function DownloadsPage({
     const entry = entryOf(id);
     return entry && <DownloadRow key={id} entry={entry} detail={detail} onOpen={() => onOpen(catalog[id] ?? entry)} action={button ?? action(catalog[id] ?? entry)} />;
   };
+  const [changelog, setChangelog] = useState<{ id: string; to: string; have?: string } | null>(null);
+  const reading = changelog && entryOf(changelog.id);
+  /** What's new, over this page. An app the player added has no history on the site, so its own page, as for all its releases. */
+  const seeChangelog = (entry: Entry, to: string, have?: string) => {
+    if (isCustom(entry.id) || isLocal(entry.id)) onOpen(catalog[entry.id] ?? entry, { releases: to });
+    else setChangelog({ id: entry.id, to, ...(have ? { have } : {}) });
+  };
   return (
     <section className="downloads-page" aria-label={t`Downloads`}>
       <button className="back-link" onClick={onBack}>
@@ -267,7 +276,7 @@ export function DownloadsPage({
                 t`${out} is out. You have ${have}.`,
                 <span className="download-buttons">
                   {entry && catalog[id]?.verified && (
-                    <button onClick={() => onOpen(catalog[id] ?? entry, { releases: catalog[id].verified!.version })}>
+                    <button onClick={() => seeChangelog(entry, catalog[id].verified!.version, installs[id]?.version)}>
                       <ScrollText size={15} /> <Trans>See changelog</Trans>
                     </button>
                   )}
@@ -305,9 +314,9 @@ export function DownloadsPage({
                 f.id,
                 f.update ? t`Updated to ${version} · ${when}` : t`Installed ${version} · ${when}`,
                 <span className="download-buttons">
-                  {/* An update: what's new in it, its notes open on the app's Releases. */}
+                  {/* An update: what's new in it. */}
                   {f.update && entry && (
-                    <button onClick={() => onOpen(catalog[f.id] ?? entry, { releases: f.version })}>
+                    <button onClick={() => seeChangelog(entry, f.version)}>
                       <ScrollText size={15} /> <Trans>See changelog</Trans>
                     </button>
                   )}
@@ -324,6 +333,16 @@ export function DownloadsPage({
           </p>
         )}
       </DownloadSection>
+      {changelog && reading && (
+        <ChangelogDialog
+          entry={catalog[changelog.id] ?? reading}
+          to={changelog.to}
+          have={changelog.have}
+          onUpdate={downloads.updates.includes(changelog.id) && catalog[changelog.id]?.verified?.version === changelog.to ? () => (setChangelog(null), void get(catalog[changelog.id])) : undefined}
+          onAll={() => (setChangelog(null), onOpen(catalog[changelog.id] ?? reading, { releases: changelog.to }))}
+          onClose={() => setChangelog(null)}
+        />
+      )}
     </section>
   );
 }

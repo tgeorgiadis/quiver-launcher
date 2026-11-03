@@ -71,6 +71,13 @@ struct Config {
     /// Steam's on-screen keyboard can be asked for (keyboard.rs): what a controller types with, so TV mode offers its
     /// search here.
     steam_keyboard: bool,
+    /// Steam is running Quiver, so Add to Steam can't work now (add_to_steam): the UI greys it out.
+    steam_runs_us: bool,
+}
+
+/// Steam is running Quiver as one of its games, so it would overwrite a new shortcut as it closes.
+fn steam_runs_us() -> bool {
+    std::env::var_os("SteamGameId").is_some()
 }
 
 const OS: &str = match std::env::consts::OS.as_bytes() {
@@ -105,6 +112,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         user: std::env::var("USERNAME").or_else(|_| std::env::var("USER")).ok().filter(|u| !u.is_empty()),
         game_mode: keyboard::game_mode(|name| std::env::var(name).ok()),
         steam_keyboard: cfg!(target_os = "linux") && keyboard::offered(|name| std::env::var(name).ok()),
+        steam_runs_us: steam_runs_us(),
     }
 }
 
@@ -207,6 +215,18 @@ fn app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<PathBuf, St
 }
 
 const NO_PROGRAM: &str = "Couldn't find a program to start in this app's folder.";
+/// The page offers Locate existing install on these words (`folderGone`).
+const FOLDER_GONE: &str = "This app's folder isn't there any more.";
+
+/// An app's folder, as long as it's still there.
+fn present_app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<PathBuf, String> {
+    let dir = app_dir(data, folder, dir)?;
+    if dir.is_dir() {
+        Ok(dir)
+    } else {
+        Err(FOLDER_GONE.into())
+    }
+}
 
 /// What starts an installed app: its program, or Wine (on Linux) or `open` (a macOS .app) with it.
 /// `program` is one the player picked: exactly that file, never a guess.
@@ -216,7 +236,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         (Some(chosen), program) => {
             let exe = match program {
                 Some(_) => PathBuf::from(chosen),
-                None => app_dir(data, folder, dir)?.join(chosen),
+                None => present_app_dir(data, folder, dir)?.join(chosen),
             };
             if !exe.exists() {
                 return Err(format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options."));
@@ -236,7 +256,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
             (exe, wine)
         }
         (None, None) => {
-            let dir = app_dir(data, folder, dir)?;
+            let dir = present_app_dir(data, folder, dir)?;
             if msi::installed(&dir) {
                 return Err("Quiver doesn't know which program its installer put on this computer yet. Press Play to choose it.".into());
             }
@@ -427,7 +447,7 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
         return Ok(format!("{} is in Steam.{proton} Start Steam to see it.", request.name));
     }
     // Steam overwrites its shortcuts as it closes, so a waiting copy writes them after.
-    if std::env::var_os("SteamGameId").is_some() {
+    if steam_runs_us() {
         return Err("Steam is running Quiver, so it can't add games now. Switch to Desktop Mode (or close Steam) and add it from there.".into());
     }
     let queued = data.0.join(format!("steam-{folder}.json"));
@@ -468,11 +488,7 @@ fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
         }
     }
     let folder = install["folder"].as_str().unwrap_or_default();
-    let dir = app_dir(&data, folder, install["dir"].as_str().map(str::to_string))?;
-    if !dir.is_dir() {
-        return Err("This app's folder isn't there any more.".into());
-    }
-    reveal(&dir)
+    reveal(&present_app_dir(&data, folder, install["dir"].as_str().map(str::to_string))?)
 }
 
 /// Shows a folder in Explorer, Files or Finder. End-to-end tests note it in
@@ -559,6 +575,37 @@ async fn read_music(path: String) -> Result<tauri::ipc::Response, String> {
     let size = tokio::fs::metadata(&path).await.map_err(|e| e.to_string())?.len();
     if size > MUSIC_MAX_BYTES {
         return Err("That music file is too large to play.".into());
+    }
+    Ok(tauri::ipc::Response::new(tokio::fs::read(&path).await.map_err(|e| e.to_string())?))
+}
+
+/// The kinds of picture the library's background can be, as in Quiver Launcher 3: what WebView2, Chromium (CEF) and a Mac's WebKit all show.
+const BACKGROUND_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "bmp", "webp"];
+/// A long animated GIF or a very large photo: past it, it's not a file to keep in memory.
+const BACKGROUND_MAX_BYTES: u64 = 100 * 1024 * 1024;
+
+/// Asks the player for a picture to show behind the library's grid (library-background.tsx), as Quiver Launcher 3 did;
+/// null if they cancel. `QUIVER_PICK` answers instead in end-to-end tests.
+#[tauri::command]
+async fn pick_background(app: tauri::AppHandle, window: tauri::WebviewWindow, title: String, dir: Option<String>) -> Option<String> {
+    if let Some(path) = std::env::var_os("QUIVER_PICK") {
+        return Some(path.to_string_lossy().into());
+    }
+    let path = picker::choose(&app, &window, picker::Want::File, &title, dir.as_deref().map(Path::new), Some(("Pictures", BACKGROUND_EXTENSIONS))).await?;
+    Some(path.to_string_lossy().into())
+}
+
+/// The library's background picture, for the page to show: only a picture, and not one too large to hold in memory.
+#[tauri::command]
+async fn read_background(path: String) -> Result<tauri::ipc::Response, String> {
+    let path = PathBuf::from(path);
+    let kind = path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+    if !kind.is_some_and(|k| BACKGROUND_EXTENSIONS.contains(&k.as_str())) {
+        return Err("That isn't a picture Quiver can show.".into());
+    }
+    let size = tokio::fs::metadata(&path).await.map_err(|e| e.to_string())?.len();
+    if size > BACKGROUND_MAX_BYTES {
+        return Err("That picture is too large to show.".into());
     }
     Ok(tauri::ipc::Response::new(tokio::fs::read(&path).await.map_err(|e| e.to_string())?))
 }
@@ -1055,10 +1102,16 @@ fn find_v3_library() -> Option<v3::Library> {
 }
 
 /// The 3.x library in a folder the player picked, or the folder around it;
-/// with `apps`, its installs in that Apps folder.
+/// with `apps`, its installs in those Apps folders too.
 #[tauri::command]
-fn find_v3_library_in(path: String, apps: Option<String>) -> Option<v3::Library> {
-    v3::find_in(Path::new(&path), apps.as_deref().map(Path::new))
+fn find_v3_library_in(path: String, apps: Option<Vec<PathBuf>>) -> Option<v3::Library> {
+    v3::find_in(Path::new(&path), &apps.unwrap_or_default())
+}
+
+/// The install in a folder the player says holds an app; null when it doesn't.
+#[tauri::command]
+fn find_existing_install(path: String) -> Option<v3::Existing> {
+    v3::existing(Path::new(&path))
 }
 
 /// The window from tauri.conf.json. End-to-end tests on Windows set
@@ -1253,6 +1306,7 @@ pub fn run() {
             uninstall,
             find_v3_library,
             find_v3_library_in,
+            find_existing_install,
             pick_folder,
             picker::picked,
             picker::browse,
@@ -1283,6 +1337,8 @@ pub fn run() {
             pick_program,
             pick_music,
             read_music,
+            pick_background,
+            read_background,
             mod_packages,
             mod_files,
             installed_mods,

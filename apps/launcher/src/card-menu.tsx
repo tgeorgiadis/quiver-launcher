@@ -1,21 +1,21 @@
 /**
  * An app's menu, laid out like Steam's library menu: its main action (Play,
  * Get, Try again) first, its update, then "Play with" (which of its programs
- * Play starts), "Add to" its playlists and "Manage" (its
+ * Play starts), "Add to playlist" and "Manage" (its
  * folder, shortcuts, hiding and uninstalling) to the side, and its page.
  * A library card has it behind its ⋯ button; a card or a sidebar row opens it
  * on a right-click, a long press on a touch screen, the Menu key or Shift+F10,
  * or a controller's Options button. A Browse card opens its own, smaller one
  * the same ways.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as KeyEvent, type PointerEvent as PointerEv, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as KeyEvent, type PointerEvent as PointerEv, type ReactNode } from "react";
 import { Check, ChevronRight, Download, MoreHorizontal, Play } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, hasUpdate, pulledVerified, renamable, useLauncher } from "./store";
+import { canGet, hasUpdate, locatable, pulledVerified, renamable, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
-import { ReadmeDialog, foldersOn, shortcutRequest, shortcutsOn, useAppDetail } from "./detail";
+import { ReadmeDialog, foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail } from "./detail";
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
 import { toggleHidden } from "./browse-hidden";
@@ -53,10 +53,11 @@ export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry;
 
 /**
  * A Browse card's menu, with no ⋯ button of its own: what its page has that
- * an app not got yet can use (its code, README and feedback), and
- * hiding it from Browse (browse-hidden.ts), or showing it again. Opening the
- * app, getting it and choosing its version are the card's own. A controller has no way in: Options
- * on the card gets the app, and the app's page has Hide from Browse.
+ * an app not got yet can use (its code, README and feedback), and hiding it
+ * from Browse (browse-hidden.ts), or showing it again. Opening the app,
+ * getting it and choosing its version are the card's own. A controller has no
+ * way in: Options on the card gets the app, and the app's page has Hide from
+ * Browse.
  */
 export function BrowseMenu({ entry, onFeedback }: { entry: Entry; onFeedback: () => void }) {
   const anchor = useRef<HTMLSpanElement>(null);
@@ -201,7 +202,7 @@ function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" |
 }
 
 /** `icon`: the main action's, as the app's page has it. */
-type Item = { text: string; act: () => void; kind?: "danger"; disabled?: boolean; icon?: "play" | "get" };
+type Item = { text: string; act: () => void; kind?: "danger"; disabled?: boolean; icon?: "play" | "get"; note?: string };
 type Sub = { key: "programs" | "add" | "manage"; by: "hover" | "click"; focus?: boolean };
 
 /** A program's file name, without the folders it's in. */
@@ -209,7 +210,7 @@ export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, changeVersion, remove, saveCollection, setNotice, setLaunch } = useLauncher();
+  const { config, installs, jobs, catalog, collections, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -265,7 +266,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const shortcut = (make: typeof native.createShortcut) =>
     make(shortcutRequest(entry, install!, settings)).then(
       (text) => setNotice(text),
-      (e) => setNotice(String(e)),
+      (e) => setNotice(String(e), { stays: true }),
     );
 
   // The main action, as the app's page has it.
@@ -295,13 +296,19 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   if (install && !job && hasUpdate(latest, install)) top.push({ text: t`Update to ${newer}`, act: () => void get(latest) });
 
   const manage: Item[] = [];
-  if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e))) });
+  if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e), { stays: true })) });
   if (renamable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Rename folder…`, act: () => askRename(entry) });
   if (install && shortcutsOn(config.os))
-    manage.push({ text: t`Desktop shortcut`, act: () => void shortcut(native.createShortcut) }, { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) });
+    manage.push(
+      { text: t`Desktop shortcut`, act: () => void shortcut(native.createShortcut) },
+      // Steam running Quiver can't take a shortcut (lib.rs): greyed, saying why, rather than failing once it's pressed.
+      config.steamRunsUs ? { text: t`Add to Steam`, act: () => {}, disabled: true, note: steamRunsUsNote() } : { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) },
+    );
   if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
   // Every release, verified or not, as the app's page has them: the player's own files have none.
   if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
+  // Already on this computer, somewhere Quiver doesn't know: played from there, with nothing to download.
+  if (locatable(entry.id, install, job) && foldersOn(config.os)) manage.push({ text: t`Locate existing install…`, act: () => void locateInstall(entry) });
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better. Switching installs
   // the version Get would, so it's offered once the app is on that one; updates then keep to the build chosen.
   const newest = latest.verified?.version ?? latest.lastReleaseVersion;
@@ -329,7 +336,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
     install &&
     native.pickExecutable(install.folder, install.dir).then(
       (path) => path && !picked.includes(path) && pick([...picked, path]),
-      (e) => setNotice(String(e)),
+      (e) => setNotice(String(e), { stays: true }),
     );
 
   const playlists = collections.filter((c) => !c.follows);
@@ -355,10 +362,13 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
     else next();
   };
   const choose = (act: () => void) => () => (close(), act());
-  const item = ({ text, act, kind, disabled }: Item, inSub = false): ReactNode => (
-    <button key={text} type="button" role="menuitem" data-item className={kind} disabled={disabled} onClick={choose(act)} onPointerMove={inSub ? undefined : hover()}>
-      {text}
-    </button>
+  const item = ({ text, act, kind, disabled, note }: Item, inSub = false): ReactNode => (
+    <Fragment key={text}>
+      <button type="button" role="menuitem" data-item className={kind} disabled={disabled} onClick={choose(act)} onPointerMove={inSub ? undefined : hover()}>
+        {text}
+      </button>
+      {note && <p className="game-menu-note">{note}</p>}
+    </Fragment>
   );
   const opens = (key: Sub["key"], text: string) => (
     <button
@@ -406,7 +416,9 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
     } else if (e.key === "ArrowRight" && !typing && from.dataset.sub) {
       e.preventDefault();
       setSub({ key: from.dataset.sub as Sub["key"], by: "click", focus: true });
-    } else if (e.key === "ArrowLeft" && !typing && inSub) {
+    } else if (e.key === "ArrowLeft" && inSub && !(typing && e.isTrusted && (from.selectionStart || from.selectionEnd))) {
+      // In the new playlist's field, the keyboard's Left moves through the words till it's at their start; a controller's
+      // has no caret to move, and with no playlists, nowhere else to go.
       e.preventDefault();
       escape.current?.();
     }
@@ -452,10 +464,10 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
           {picked.length > 0 && item({ text: t`Let Quiver choose`, act: () => pick([]) }, true)}
         </>,
       )}
-      {opens("add", t({ message: "Add to", comment: "Menu item opening the playlists to add an app to" }))}
+      {opens("add", t({ message: "Add to playlist", comment: "Menu item opening the playlists to add an app to" }))}
       {submenu(
         "add",
-        t({ message: "Add to", comment: "Menu item opening the playlists to add an app to" }),
+        t({ message: "Add to playlist", comment: "Menu item opening the playlists to add an app to" }),
         <>
           {playlists.map((c) => (
             <button key={c.key} type="button" role="menuitemcheckbox" data-item aria-checked={on(c.key)} onClick={() => toggle(c.key)}>

@@ -36,7 +36,8 @@ export type Listing = {
 /** A Quiver Launcher 3 library: the folder its apps.json is in, and its apps. */
 /** A tag filter the player made in 3.x: apps with any of its tags (all, with `all`), less those with any of `exclude` (all, with `excludeAll`). */
 export type OldFilter = { name: string; tags: string[]; all: boolean; exclude: string[]; excludeAll: boolean };
-export type V3Library = { folder: string; apps: OldApp[]; filters?: OldFilter[] };
+/** `moved`: a folder 3.x's files name for its installs is gone. */
+export type V3Library = { folder: string; apps: OldApp[]; filters?: OldFilter[]; moved?: boolean };
 export type Config = {
   api: string;
   convex: string;
@@ -57,6 +58,8 @@ export type Config = {
   gameMode?: boolean;
   /** Steam's on-screen keyboard can be brought up for a text field (keyboard.rs). Missing from an older build. */
   steamKeyboard?: boolean;
+  /** Steam is running Quiver, so Quiver can't add games to it now (lib.rs). Missing from an older build. */
+  steamRunsUs?: boolean;
 };
 export type Progress = {
   id: string;
@@ -217,12 +220,18 @@ export const native = {
   setTheme: (theme: "light" | "dark" | null) => invoke<void>("set_theme", { theme }),
   logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<V3Library | null>("find_v3_library"),
-  /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in that Apps folder. */
-  findV3LibraryIn: (path: string, apps?: string) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
+  /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in those Apps folders too. */
+  findV3LibraryIn: (path: string, apps?: string[]) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
+  /** The install in a folder the player says holds an app: null when it doesn't. */
+  findExistingInstall: (path: string) => invoke<{ version: string; program?: string | null } | null>("find_existing_install", { path }),
   /** Asks for a sound file to play behind the launcher (music.ts), opening in `dir` when given; null when the player cancels. */
   pickMusic: (title: string, dir?: string) => invoke<string | null>("pick_music", { title, dir }),
   /** The music file's bytes, to play. */
   readMusic: (path: string) => invoke<ArrayBuffer>("read_music", { path }),
+  /** Asks for a picture to show behind the library's grid (library-background.tsx), opening in `dir` when given; null when the player cancels. */
+  pickBackground: (title: string, dir?: string) => invoke<string | null>("pick_background", { title, dir }),
+  /** The background picture's bytes, to show. */
+  readBackground: (path: string) => invoke<ArrayBuffer>("read_background", { path }),
   /** Asks for a folder on this computer, opening in `dir` when given; null when the player cancels. */
   pickFolder: (title: string, dir?: string) => invoke<string | null>("pick_folder", { title, dir }),
   /** In Steam's Game Mode, the pickers ask the page's own browser (file-picker.tsx) instead of the system's dialog. */

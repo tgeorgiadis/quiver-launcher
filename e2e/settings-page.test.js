@@ -45,10 +45,10 @@ test("side by side: General first, a section picked from the list, and Back leav
 });
 
 test("narrow: the list, then one section, and Back goes to the list first", async () => {
-  // Large in the smallest window: too narrow for the list beside a section, with the top bar's gear still in the window.
+  // 125% in the smallest window: too narrow for the list beside a section, with the top bar's gear still in the window.
   await s.settings("General");
   // By its label: TV mode's dropdown comes before it.
-  await (await s.app.$("//section[contains(@class, 'settings-page')]//label[contains(., 'Interface size')]/select")).selectByVisibleText("Large");
+  await (await s.app.$("//section[contains(@class, 'settings-page')]//label[contains(., 'Interface size')]/select")).selectByVisibleText("125%");
   await s.closeSettings();
   await s.app.setWindowSize(720, 800);
   await s.settings();

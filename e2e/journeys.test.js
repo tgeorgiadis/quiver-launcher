@@ -68,7 +68,7 @@ test("an app can stay on its version, or update by itself", async () => {
   await updates("Always stay on v1.1.0");
   api.release("1.2.0");
   await reload();
-  await (await (await card("test-port")).$("button*=Play")).waitForDisplayed();
+  await s.untilCardShows("test-port", "button*=Play");
   assert.ok(!(await (await card("test-port")).$("button*=Update").isExisting()), "no update offered");
   await updates("Install automatically");
   await reload();
@@ -87,7 +87,7 @@ test("an app can stay on its version, or update by itself", async () => {
   await (await page.$("p*=put v1.2.0 back")).waitForDisplayed({ timeout: 10000 });
   await app.keys("Escape");
   await reload();
-  await (await (await card("test-port")).$("button=Update to v1.2.0")).waitForDisplayed({ timeout: 10000 });
+  await s.untilCardShows("test-port", "button=Update to v1.2.0", 10000);
   assert.equal(readFileSync(join(apps, "test-port", ".quiver-version"), "utf8"), "v1.0.0");
   api.release("1.3.0");
   await reload();
@@ -193,8 +193,8 @@ test("an app the catalog doesn't list is added from its GitHub repository", asyn
 test("settings make the interface larger, and it stays that way", async () => {
   await s.settings("General");
   // By its label: TV mode's dropdown comes before it now.
-  await (await app.$("//section[contains(@class, 'settings-page')]//label[contains(., 'Interface size')]/select")).selectByVisibleText("Large");
+  await (await app.$("//section[contains(@class, 'settings-page')]//label[contains(., 'Interface size')]/select")).selectByVisibleText("125%");
   await s.closeSettings();
-  assert.equal(await app.execute(() => document.documentElement.style.zoom), "1.15");
-  await until(() => JSON.parse(readFileSync(join(s.data, "settings.json"), "utf8")).scale === 1.15);
+  assert.equal(await app.execute(() => document.documentElement.style.zoom), "1.25");
+  await until(() => JSON.parse(readFileSync(join(s.data, "settings.json"), "utf8")).scale === 1.25);
 });

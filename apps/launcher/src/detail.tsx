@@ -10,12 +10,12 @@ import { FaSteam } from "react-icons/fa6";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
-import { ApiError, type AiUse, type Asset, type Checking, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, type AiUse, type Asset, type Checking, type Client, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
 import { OS_NAMES, ReleaseBadge, alertTitles, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
 import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
-import { bare, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
+import { bare, changesUpTo, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
 import { hasBuildFor, runsHere } from "./assets";
 import { isCustom, isLocal } from "./custom";
@@ -120,6 +120,13 @@ const HISTORY_SHOWN = 10;
  */
 const HISTORY_PAGE = 100;
 
+/** A page of the app's history; of its verified releases from a site that doesn't list them all yet. */
+const historyPage = (client: Client, slug: string, cursor?: string | null) =>
+  client.releaseHistory(slug, HISTORY_PAGE, cursor).catch((e: unknown) => {
+    if (!(e instanceof ApiError && e.status === 404)) throw e;
+    return client.releases(slug, HISTORY_PAGE, cursor).then((page) => ({ ...page, items: page.items.map(asHistory) }));
+  });
+
 /**
  * Every release of the app's repository, newest first, verified or not, as
  * the website's Releases tab lists them: 10, then 10 more at a time. A site
@@ -133,20 +140,14 @@ export function useReleaseHistory(entry: Entry, on: boolean) {
   const [loading, setLoading] = useState(false);
   function load(cursor: string | null) {
     setLoading(true);
-    client
-      .releaseHistory(entry.slug, HISTORY_PAGE, cursor)
-      .catch((e: unknown) => {
-        if (!(e instanceof ApiError && e.status === 404)) throw e;
-        return client.releases(entry.slug, HISTORY_PAGE, cursor).then((page) => ({ ...page, items: page.items.map(asHistory) }));
-      })
-      .then(
-        (page) => {
-          setAll((list) => (cursor ? [...(list ?? []), ...page.items] : page.items));
-          setNext(page.isDone ? null : page.nextCursor);
-          setLoading(false);
-        },
-        () => (setAll((list) => list ?? []), setLoading(false)),
-      );
+    historyPage(client, entry.slug, cursor).then(
+      (page) => {
+        setAll((list) => (cursor ? [...(list ?? []), ...page.items] : page.items));
+        setNext(page.isDone ? null : page.nextCursor);
+        setLoading(false);
+      },
+      () => (setAll((list) => list ?? []), setLoading(false)),
+    );
   }
   useEffect(() => {
     setShown(HISTORY_SHOWN);
@@ -629,6 +630,127 @@ export function ReleasesTab({
   );
 }
 
+/**
+ * A release's notes, read over the page and closed again, with its buttons always in sight. It starts on Close, so a
+ * controller's A can't update by accident, and the whole dialog is what the d-pad and the right stick scroll.
+ */
+export function NotesDialog({
+  title,
+  releases,
+  other,
+  update,
+  onClose,
+}: {
+  title: string;
+  /** Newest first; undefined while loading, none when they couldn't load. */
+  releases: { version: string; releasedAt?: number; notes: string }[] | undefined;
+  /** The way to more, at the buttons' start. */
+  other: ReactNode;
+  /** The way to update, at their end, if there's an update to take. */
+  update?: ReactNode;
+  onClose: () => void;
+}) {
+  // Not autoFocus, which would scroll the notes' start away to bring Close clear of the scroll padding (app.css).
+  const close = useRef<HTMLButtonElement>(null);
+  useEffect(() => close.current?.focus({ preventScroll: true }), []);
+  // Over the page, as Change version's dialog is.
+  return createPortal(
+    <Dialog label={title} className="changelog" onClose={onClose}>
+      <h2 className="changelog-head">{title}</h2>
+      <div className="changelog-notes">
+        {releases === undefined ? (
+          <div className="more" role="status" aria-label={t`Loading releases`}>
+            <span className="spinner" />
+          </div>
+        ) : releases.length === 0 ? (
+          <p className="muted">
+            <Trans>Couldn&apos;t load the release notes.</Trans>
+          </p>
+        ) : (
+          releases.map((release) => (
+            <article key={release.version}>
+              <h3>
+                {versionLabel(release.version)}
+                {release.releasedAt ? <small>{fullDate(release.releasedAt)}</small> : null}
+              </h3>
+              {release.notes.trim() ? (
+                <div className="release-notes">
+                  <Markdown text={release.notes} alertTitles={alertTitles()} />
+                </div>
+              ) : (
+                <p className="muted release-notes">
+                  <Trans>No release notes provided.</Trans>
+                </p>
+              )}
+            </article>
+          ))
+        )}
+      </div>
+      <div className="changelog-foot">
+        {other}
+        <button type="button" ref={close} onClick={onClose}>
+          <Trans>Close</Trans>
+        </button>
+        {update}
+      </div>
+    </Dialog>,
+    document.body,
+  );
+}
+
+/** Downloads' See changelog: what an update brings, from the app's history. */
+export function ChangelogDialog({
+  entry,
+  to,
+  have,
+  onUpdate,
+  onAll,
+  onClose,
+}: {
+  entry: Entry;
+  to: string;
+  /** The version installed, for an update still to come: the notes go back to it. */
+  have?: string;
+  /** Updates to `to`; none once it's installed. */
+  onUpdate?: () => void;
+  /** The app's Releases, with all the rest. */
+  onAll: () => void;
+  onClose: () => void;
+}) {
+  const { client, catalog } = useLauncher();
+  const [history, setHistory] = useState<HistoryRelease[] | undefined>();
+  useEffect(() => {
+    let live = true;
+    historyPage(client, entry.slug).then(
+      (page) => live && setHistory(page.items),
+      () => live && setHistory([]),
+    );
+    return () => void (live = false);
+  }, [client, entry.slug]);
+  const releases = history && changesUpTo(withdrawnAsBlocked(history, (r) => r.version, catalog[entry.id]?.withdrawn), to, have);
+  const name = entry.projectName;
+  const out = versionLabel(to);
+  return (
+    <NotesDialog
+      title={t`What's new in ${name}`}
+      releases={releases}
+      other={
+        <button type="button" className="changelog-other" onClick={onAll}>
+          <Trans>See all releases</Trans>
+        </button>
+      }
+      update={
+        onUpdate && (
+          <button type="button" className="primary" onClick={onUpdate}>
+            <Download size={15} /> <Trans>Update to {out}</Trans>
+          </button>
+        )
+      }
+      onClose={onClose}
+    />
+  );
+}
+
 /** A version's feedback, in its title bar: how many said it runs well, and how many had issues or found it broken. */
 function SaidLine({ said }: { said: Said }) {
   // How many players said each: "3 runs well", "1 has issues", "2 broken".
@@ -796,6 +918,9 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
   );
 }
 
+/** Why Add to Steam is greyed out where Steam is running Quiver (lib.rs). */
+export const steamRunsUsNote = () => t`Steam is running Quiver, so it can't add games now. Start Quiver outside Steam, in Desktop Mode, and add it from there.`;
+
 /** A desktop shortcut and a Steam shortcut, both starting the game directly. */
 export function Shortcuts({ entry }: { entry: Entry }) {
   const { installs, config, settings } = useLauncher();
@@ -813,9 +938,10 @@ export function Shortcuts({ entry }: { entry: Entry }) {
       <button className="panel-action" onClick={() => run(native.createShortcut(request))}>
         <Monitor size={16} aria-hidden="true" /> <Trans>Desktop shortcut</Trans>
       </button>
-      <button className="panel-action" onClick={() => run(native.addToSteam(request))}>
+      <button className="panel-action" disabled={config.steamRunsUs} onClick={() => run(native.addToSteam(request))}>
         <FaSteam size={15} aria-hidden="true" /> <Trans>Add to Steam</Trans>
       </button>
+      {config.steamRunsUs && <p className="muted">{steamRunsUsNote()}</p>}
       {message && (
         <p className={message.error ? "job-error" : "muted"} role="status">
           {message.text}

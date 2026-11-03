@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, hasUpdate, importedPlaylists, importedTags, type ImportedApp } from "./store";
+import { adoptedInstall, bringsAlong, catalogMatch, folderGone, hasUpdate, importedPlaylists, importedTags, keptInstall, locatable, looseInstalls, relocatedInstall, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -9,6 +9,31 @@ const entry = {
   launcher: { folderName: "TestPort", preferredExecutables: { linux: ["port.sh"] } },
   verified: { version: "v1.2.0", releasedAt: 20 },
 } as unknown as Entry;
+
+describe("locating an install", () => {
+  const found = { dir: "/new/TestPort", version: "v2.0.0", folder: "TestPort", executables: ["port.sh"] };
+  const gone = { error: "This app's folder isn't there any more." };
+
+  it("is offered with no install here, or one that lost its folder", () => {
+    expect(locatable("port", undefined, undefined)).toBe(true);
+    expect(locatable("port", found, undefined)).toBe(false);
+    expect(locatable("port", found, { error: "The download failed." })).toBe(false);
+    expect(folderGone(gone)).toBe(true);
+    expect(locatable("port", found, gone)).toBe(true);
+  });
+
+  it("isn't offered during a download, or for the player's own files", () => {
+    expect(locatable("port", undefined, { id: "port", phase: "downloading", received: 0 } as never)).toBe(false);
+    expect(locatable("port", { ...found, local: true }, gone)).toBe(false);
+  });
+
+  it("keeps what the player chose, and nothing about the copy that's gone", () => {
+    const launch = { command: "--fullscreen" };
+    const now = { version: "v1.0.0", folder: "Old", executables: [], wine: true as const, checksum: "sha256:a", unverified: true as const, installer: "msi" as const, program: "/old/port", playTime: 60, updates: "pinned" as const, launch };
+    expect(relocatedInstall(now, found)).toEqual({ ...found, playTime: 60, updates: "pinned", launch });
+    expect(relocatedInstall(undefined, found)).toEqual(found);
+  });
+});
 
 describe("adoptedInstall", () => {
   it("keeps a Quiver Launcher 3 install where it is", () => {
@@ -41,6 +66,71 @@ describe("adoptedInstall", () => {
 
   it("has nothing to keep for an app 3.x hadn't installed", () => {
     expect(adoptedInstall({ name: "Test Port", provider: "github" }, entry, "linux")).toBeUndefined();
+  });
+});
+
+describe("catalogMatch", () => {
+  // One repository's two games: the catalog's list keeps the last for the repository.
+  const ids = new Map([
+    ["github:mstan/rubysapphire", { id: "sapphire" }],
+    ["id:ruby", { id: "ruby" }],
+    ["id:sapphire", { id: "sapphire" }],
+  ]);
+  const old = { name: "Pokemon Ruby", provider: "github", repository: "MStan/RubySapphire" };
+
+  it("tells apart the apps of one repository by the entry 3.x knew", () => {
+    expect(catalogMatch({ ...old, catalogId: "ruby" }, ids)?.id).toBe("ruby");
+    expect(catalogMatch({ ...old, catalogId: "sapphire" }, ids)?.id).toBe("sapphire");
+  });
+
+  it("goes by the repository when 3.x's entry isn't known or isn't in the catalog now", () => {
+    expect(catalogMatch(old, ids)?.id).toBe("sapphire");
+    expect(catalogMatch({ ...old, catalogId: "gone" }, ids)?.id).toBe("sapphire");
+    expect(catalogMatch({ name: "Other", provider: "github", repository: "someone/other" }, ids)).toBeUndefined();
+  });
+});
+
+describe("keptInstall", () => {
+  const adopted = { dir: "/old/Apps/Ruby", version: "v1.0", folder: "Ruby", executables: [] };
+
+  it("takes 3.x's install for an app with none", () => {
+    expect(keptInstall(undefined, adopted)).toBe(adopted);
+  });
+
+  it("leaves one downloaded here since, or updated from 3.x's where it is", () => {
+    const downloaded = { version: "v2.0", folder: "ruby", executables: [] };
+    expect(keptInstall(downloaded, adopted)).toBe(downloaded);
+    const updated = { ...adopted, version: "v2.0" };
+    expect(keptInstall(updated, adopted)).toBe(updated);
+  });
+
+  it("corrects another of 3.x's folders, keeping what the player did here", () => {
+    const wrong = { dir: "/old/Apps/Sapphire", version: "v1.1", folder: "Ruby", executables: [], playTime: 60 };
+    expect(keptInstall(wrong, adopted)).toEqual({ ...adopted, playTime: 60 });
+  });
+});
+
+describe("looseInstalls", () => {
+  const item = (id: string, more: Partial<LibraryItem> = {}) => ({ id, slug: id, addedAt: 1, ...more }) as LibraryItem;
+  const ids = new Map([["id:port", { id: "port" }]]);
+  const old = { name: "Test Port", provider: "github", repository: "quiver/test-port", catalogId: "port", dir: "/old/Apps/TestPort", version: "v1.0" };
+  const catalog = { port: entry };
+
+  it("finds 3.x's install of an app in the library that has none here", () => {
+    expect(looseInstalls([old], ids, [item("port")], {}, catalog, "linux")).toEqual({ port: { dir: old.dir, version: "v1.0", folder: "TestPort", executables: ["port.sh"] } });
+  });
+
+  it("finds one of an app that came over as a custom app", () => {
+    const custom = "github:quiver/test-port";
+    expect(Object.keys(looseInstalls([old], ids, [item(custom)], {}, { [custom]: entry }, "linux"))).toEqual([custom]);
+  });
+
+  it("leaves apps installed here, out of the library or removed from it, and those 3.x hadn't installed", () => {
+    const here = { port: { version: "v2.0", folder: "port", executables: [] } };
+    expect(looseInstalls([old], ids, [item("port")], here, catalog, "linux")).toEqual({});
+    expect(looseInstalls([old], ids, [], {}, catalog, "linux")).toEqual({});
+    expect(looseInstalls([old], ids, [item("port", { removed: true })], {}, catalog, "linux")).toEqual({});
+    expect(looseInstalls([{ ...old, dir: undefined, version: undefined }], ids, [item("port")], {}, catalog, "linux")).toEqual({});
   });
 });
 

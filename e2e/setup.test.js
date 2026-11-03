@@ -25,6 +25,10 @@ const heading = async (s) => (await (await setup(s)).$("h2")).getText();
 const press = async (s, name) => (await (await setup(s)).$(`button=${name}`)).click();
 /** On to the step called `name`. */
 const onTo = async (s, name) => s.until(async () => (await heading(s)) === name);
+/** The Quiver Launcher 3 step's heading once it's found a library. */
+const BRING_OVER = "Bring your apps over from Quiver Launcher 3?";
+/** Opens the list of a library's apps, there once the library's been found. */
+const seeApps = (s) => press(s, "See which apps");
 
 test("the first start asks a step at a time, importing a 3.x library on the way, and never again", async () => {
   const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
@@ -38,15 +42,16 @@ test("the first start asks a step at a time, importing a 3.x library on the way,
     await s.app.keys("Escape");
     assert.equal(await heading(s), "Welcome to Quiver Launcher!");
     await press(s, "Next");
-    await onTo(s, "Coming from Quiver Launcher 3?");
+    await onTo(s, BRING_OVER);
     const dialog = await setup(s);
-    await s.until(async () => (await (await dialog.$(".old-library-folder")).getText()) === `Found in ${folder}`);
+    await seeApps(s);
+    assert.equal(await (await dialog.$(".old-library-folder")).getText(), `Found in ${folder}`);
     assert.match(await (await dialog.$(".old-library-apps")).getText(), new RegExp(`Test Port\\s+Installed in ${join(folder, "Apps", "TestPort")}`));
     // Escape goes back a step.
     await s.app.keys("Escape");
     await onTo(s, "Welcome to Quiver Launcher!");
     await press(s, "Next");
-    await onTo(s, "Coming from Quiver Launcher 3?");
+    await onTo(s, BRING_OVER);
     await press(s, "Add 1 app");
     // All of it came, so it goes on by itself, and the next step says so.
     await s.until(async () => (await heading(s)) === "Where apps install", 20000);
@@ -101,6 +106,77 @@ test("Skip setup leaves what it didn't ask to the banners", async () => {
   }
 });
 
+test("a 3.x library with only some of its installs found can be pointed at the folder of the rest", async () => {
+  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
+  const folder = join(home, "Downloads", "QuiverLauncher-linux");
+  oldLibrary(folder);
+  writeFileSync(
+    join(folder, "apps.json"),
+    JSON.stringify({ Apps: [{ Name: "Test Port", Repository: "quiver/test-port", FolderName: "TestPort" }, { Name: "Homebrew Thing", Repository: "someone/not-in-catalog", FolderName: "Homebrew" }] }),
+  );
+  const games = join(home, "Games");
+  mkdirSync(join(games, "Homebrew"), { recursive: true });
+  writeFileSync(join(games, "Homebrew", "port.sh"), "#!/bin/sh\n", { mode: 0o755 });
+  const s = await launch({ setup: true, env: { HOME: home, QUIVER_PICK_FOLDER: games } });
+  try {
+    await (await setup(s)).waitForDisplayed({ timeout: 20000 });
+    await press(s, "Next");
+    await onTo(s, BRING_OVER);
+    const dialog = await setup(s);
+    // One found and one not is an everyday library: nothing says the other moved.
+    await (await dialog.$("p*=2 apps, 1 already installed.")).waitForDisplayed({ timeout: 20000 });
+    await seeApps(s);
+    await press(s, "Look in another folder…");
+    await s.until(async () => (await (await dialog.$(".old-library-apps")).getText()).includes(`Installed in ${join(games, "Homebrew")}`));
+    // What was found already stays found.
+    assert.match(await (await dialog.$(".old-library-apps")).getText(), new RegExp(`Installed in ${join(folder, "Apps", "TestPort")}`));
+    await (await dialog.$("p*=2 apps, all already installed")).waitForDisplayed();
+  } finally {
+    await s.close();
+  }
+});
+
+test("Not now in the setup is its answer: no banner asks again", async () => {
+  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
+  oldLibrary(join(home, "Downloads", "QuiverLauncher-linux"));
+  const s = await launch({ setup: true, env: { HOME: home } });
+  try {
+    await (await setup(s)).waitForDisplayed({ timeout: 20000 });
+    await press(s, "Next");
+    await onTo(s, BRING_OVER);
+    await press(s, "Not now");
+    await onTo(s, "Where apps install");
+    await press(s, "Skip setup");
+    await (await setup(s)).waitForDisplayed({ reverse: true });
+    await new Promise((r) => setTimeout(r, 1000));
+    assert.ok(!(await (await s.app.$(".old-library-notice")).isExisting()));
+  } finally {
+    await s.close();
+  }
+});
+
+test("the setup's folder choice brings over another 3.x instead, when it isn't more of this one's installs", async () => {
+  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
+  const downloads = join(home, "Downloads", "QuiverLauncher-linux");
+  oldLibrary(downloads);
+  const other = join(mkdtempSync(join(tmpdir(), "quiver-elsewhere-")), "Old Launcher");
+  const installed = oldLibrary(other);
+  const s = await launch({ setup: true, env: { HOME: home, QUIVER_PICK_FOLDER: other } });
+  try {
+    await (await setup(s)).waitForDisplayed({ timeout: 20000 });
+    await press(s, "Next");
+    await onTo(s, BRING_OVER);
+    await seeApps(s);
+    const dialog = await setup(s);
+    assert.equal(await (await dialog.$(".old-library-folder")).getText(), `Found in ${downloads}`);
+    await press(s, "Look in another folder…");
+    await s.until(async () => (await (await dialog.$(".old-library-folder")).getText()) === `Found in ${other}`);
+    assert.match(await (await dialog.$(".old-library-apps")).getText(), new RegExp(`Installed in ${installed}`));
+  } finally {
+    await s.close();
+  }
+});
+
 test("a 3.x library whose installs moved is matched to its Apps folder where it is now", async () => {
   const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
   const folder = join(home, "Downloads", "QuiverLauncher-linux");
@@ -111,11 +187,12 @@ test("a 3.x library whose installs moved is matched to its Apps folder where it 
   try {
     await (await setup(s)).waitForDisplayed({ timeout: 20000 });
     await press(s, "Next");
-    await onTo(s, "Coming from Quiver Launcher 3?");
+    await onTo(s, BRING_OVER);
     const dialog = await setup(s);
-    await (await dialog.$("p*=None of these show as installed")).waitForDisplayed({ timeout: 20000 });
+    await (await dialog.$("p*=1 app, not installed yet")).waitForDisplayed({ timeout: 20000 });
+    await seeApps(s);
     assert.match(await (await dialog.$(".old-library-apps")).getText(), /Not installed/);
-    await press(s, "Choose the Apps folder…");
+    await press(s, "Choose a folder…");
     await s.until(async () => (await (await dialog.$(".old-library-apps")).getText()).includes(`Installed in ${join(moved, "TestPort")}`));
   } finally {
     await s.close();

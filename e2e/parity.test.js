@@ -30,19 +30,19 @@ const dialog = () => app.$('[role="dialog"]');
 const page = () => app.$(".app-page");
 const open = async (slug) => (await (await card(slug)).$(".card-open")).click();
 
-test("the catalog's search, sort, Filters and Submit an app are one row, all one height", async () => {
+test("the catalog's search, sort, Filters, View options and Submit an app are one row, all one height", async () => {
   await (await card("tampered-port")).waitForDisplayed({ timeout: 20000 });
   const tools = await app.execute(() =>
     [document.querySelector(".browse-search"), ...document.querySelector(".browse-tools").children].map((el) => {
       const r = el.getBoundingClientRect();
       // Filters without its count (apps in the library shown counts, as here).
       const name = el.textContent.replace(el.querySelector(".tool-count")?.textContent ?? "", "").trim();
-      return [el.querySelector("input, select")?.getAttribute("aria-label") ?? name, Math.round(r.height), Math.round(r.top)];
+      return [el.querySelector("input, select")?.getAttribute("aria-label") ?? el.getAttribute("aria-label") ?? name, Math.round(r.height), Math.round(r.top)];
     }),
   );
   assert.deepEqual(
     tools.map(([name]) => name),
-    ["Search the catalog", "Sort", "Filters", "Submit an app"],
+    ["Search the catalog", "Sort", "Filters", "View options", "Submit an app"],
   );
   assert.equal(new Set(tools.map(([, height]) => height)).size, 1, `one height: ${JSON.stringify(tools)}`);
   assert.equal(new Set(tools.map(([, , top]) => top)).size, 1, `one row: ${JSON.stringify(tools)}`);
@@ -228,10 +228,14 @@ test("library playlists: installed or not, a hand-picked collection, and section
   await (await app.$("button*=Library")).click();
   const playlist = (name) => s.showTab(name);
   const shown = () => app.execute(() => [...document.querySelectorAll("main article")].map((e) => e.dataset.slug).sort());
-  await playlist("Installed");
+  await (await app.$(".filters-tool")).click();
+  const installed = await app.$("#library-filters select[aria-label='Installed']");
+  await installed.selectByVisibleText("Installed only");
   assert.deepEqual(await shown(), ["test-port"]);
-  await playlist("Not installed");
+  await installed.selectByVisibleText("Not installed only");
   assert.deepEqual(await shown(), ["tampered-port"]);
+  await installed.selectByVisibleText("Installed or not");
+  await (await app.$(".filters-tool")).click();
   await (await app.$("button[aria-label='Add a playlist']")).click();
   await (await (await app.$("[role=menu]")).$("button=New playlist")).click();
   await (await app.$("input[aria-label='Playlist name']")).setValue("Favourites");

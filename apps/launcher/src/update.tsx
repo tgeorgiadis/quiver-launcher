@@ -1,13 +1,15 @@
 /**
  * Quiver Launcher updating itself: checked when it starts and from Settings,
- * offered in a banner above the list, and installed in one click where this
- * copy can update itself (otherwise the release page opens).
+ * offered in a banner above the list with its notes a click away, and installed
+ * in one click where this copy can update itself (otherwise the release page opens).
  */
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { NotesDialog } from "./detail";
 import { native, type LauncherUpdate } from "./native";
 import { useLauncher } from "./store";
+import { versionLabel } from "./versions";
 
 type State = {
   available: LauncherUpdate | null;
@@ -71,12 +73,27 @@ export function useLauncherUpdate() {
 
 const percent = (p: { done: number; total?: number | null }) => (p.total ? Math.floor((p.done / p.total) * 100) : null);
 
+/** The update's page on GitHub, from its notes, as a release's card says it. */
+function ReleasePageButton({ update }: { update: LauncherUpdate }) {
+  const version = versionLabel(update.version);
+  const host = "GitHub";
+  return (
+    <button type="button" className="changelog-other" onClick={() => void native.openUrl(update.url)}>
+      <Trans>
+        View {version} on {host}
+      </Trans>
+    </button>
+  );
+}
+
 /** Above the list while an update is waiting. */
 export function UpdateBanner() {
   const { available, dismissed, installing, error } = useUpdateState();
+  const [reading, setReading] = useState(false);
   if (!available || dismissed) return null;
   const version = available.version;
   const done = installing && percent(installing);
+  const name = "Quiver Launcher";
   return (
     <div className="banner launcher-update" role="status" aria-label={t`Launcher update`}>
       {installing ? (
@@ -101,7 +118,7 @@ export function UpdateBanner() {
               <button className="primary" onClick={() => void install(available.version)}>
                 {error ? t`Try again` : t`Update now`}
               </button>
-              <button onClick={() => void native.openUrl(available.url)}>
+              <button onClick={() => setReading(true)}>
                 <Trans>What&apos;s new</Trans>
               </button>
             </>
@@ -109,6 +126,19 @@ export function UpdateBanner() {
           <button onClick={() => set({ dismissed: true })}>
             <Trans>Not now</Trans>
           </button>
+          {reading && (
+            <NotesDialog
+              title={t`What's new in ${name}`}
+              releases={[{ version, notes: available.notes }]}
+              other={<ReleasePageButton update={available} />}
+              update={
+                <button type="button" className="primary" onClick={() => (setReading(false), void install(version))}>
+                  {error ? t`Try again` : t`Update now`}
+                </button>
+              }
+              onClose={() => setReading(false)}
+            />
+          )}
         </>
       )}
     </div>

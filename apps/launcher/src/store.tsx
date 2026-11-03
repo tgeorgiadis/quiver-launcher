@@ -21,6 +21,7 @@ import { musicForGame, setMusic } from "./music";
 import { bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
+import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
@@ -147,7 +148,13 @@ type Launcher = {
   /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
   importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void) => Promise<string[]>;
   /** The Quiver Launcher 3 library in a folder the player picked, its installs in `apps` if given: null when there isn't one. */
-  findOld: (path: string, apps?: string) => Promise<V3Library | null>;
+  findOld: (path: string, apps?: string[]) => Promise<V3Library | null>;
+  /** Installs of Quiver Launcher 3's for apps in the library that show as not installed here, once found: a library brought over before Quiver could see them. */
+  oldInstalls: Record<string, Install> | null;
+  /** Answers the offer of `oldInstalls`: played from where they are, or left. */
+  answerOldInstalls: (use: boolean) => void;
+  /** Asks for the folder an app is already installed in and plays it from there, as Quiver Launcher 3's Locate existing install did. */
+  locateInstall: (entry: Entry) => Promise<void>;
   remember: (entries: Entry[]) => void;
   /** Keeps catalog data for apps that aren't in the library, such as those on a copy of a shared playlist. */
   cache: (entries: Entry[]) => void;
@@ -208,9 +215,9 @@ type Launcher = {
   settings: Settings;
   /** Takes the new settings, or how to change them as they are by then, for a change that may come after another. */
   setSettings: Dispatch<SetStateAction<Settings>>;
-  /** A short note for the player, such as what signing in brought over. */
-  notice: string | null;
-  setNotice: (notice: string | null) => void;
+  /** A short note for the player, such as what signing in brought over; `stays` until OK, for one that must be read. */
+  notice: { text: string; stays?: boolean } | null;
+  setNotice: (text: string | null, options?: { stays?: boolean }) => void;
   dismiss: (id: string) => void;
   /** The folders of installed apps that live in the apps folder, which moving it takes along. */
   appFolders: () => string[];
@@ -315,6 +322,54 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
 }
 
 /**
+ * An app the player has pointed at a new folder, given the install it had: what they chose and its history stay, and
+ * what described the old copy goes, as the folder says what's there now.
+ */
+export function relocatedInstall(now: Install | undefined, found: Install): Install {
+  if (!now) return found;
+  const { lastPlayed, installedAt, playTime, updates, skip, launch, pick } = now;
+  return { ...found, lastPlayed, installedAt, playTime, updates, skip, launch, pick };
+}
+
+/** Whether starting an app failed because its folder is gone: lib.rs's FOLDER_GONE. */
+export const folderGone = (job: Job | undefined) => Boolean(job && "error" in job && job.error === "This app's folder isn't there any more.");
+
+/** Whether the player can point Quiver at where an app is: it has no install here, or the one here lost its folder. Never during a download, or for the player's own files. */
+export const locatable = (id: string, install: Install | undefined, job: Job | undefined) =>
+  !isLocal(id) && !install?.local && (!install || folderGone(job)) && !(job && !("error" in job));
+
+/**
+ * The catalog's entry for a 3.x app: the one 3.x knew first, as one repository can ship several apps, each with an
+ * entry of its own (a port of two games); else the one for its repository.
+ */
+export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined {
+  return (old.catalogId && ids.get(`id:${old.catalogId}`)) || (old.repository && ids.get(`${old.provider}:${old.repository}`.toLowerCase())) || undefined;
+}
+
+/**
+ * The install an app has after bringing a 3.x library over again: what it has here stays, so one downloaded since
+ * isn't pointed back at 3.x's copy, unless that's another of 3.x's folders, which is the one 3.x says is this app's.
+ */
+export function keptInstall(now: Install | undefined, adopted: Install): Install {
+  return !now ? adopted : now.dir && now.dir !== adopted.dir ? { ...now, ...adopted } : now;
+}
+
+/** The installs 3.x has for apps in the library that have none here, by app. */
+export function looseInstalls(apps: OldApp[], ids: Map<string, { id: string }>, library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, Entry>, os: Os) {
+  const loose: Record<string, Install> = {};
+  const has = (id: string | undefined): id is string => Boolean(id && library.some((i) => i.id === id && !i.removed));
+  for (const old of apps) {
+    // A catalog app that couldn't be read when it came over is in the library as a custom one.
+    const custom = old.repository && (old.provider === "github" || old.provider === "gitlab") ? customKey(old.provider, old.repository) : undefined;
+    const id = [catalogMatch(old, ids)?.id, custom].find(has);
+    if (!id || loose[id] || installs[id] || !catalog[id]) continue;
+    const install = adoptedInstall(old, catalog[id], os);
+    if (install) loose[id] = install;
+  }
+  return loose;
+}
+
+/**
  * The tags the player gave a 3.x app, which come over as their own: its tags less the catalog's, the ones 3.x last
  * had from it and the entry's now (a 3.x from before it kept them has only those), as many as the tag field takes.
  */
@@ -405,7 +460,7 @@ async function inTurns<T, R>(items: T[], at: number, work: (item: T) => Promise<
   return results;
 }
 
-/** Whether TV mode (tv.tsx) shows: turned on, or left to itself in Steam's Game Mode. */
+/** Whether TV mode, the library and Browse's larger look, is on: turned on, or left to itself in Steam's Game Mode. */
 export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config, "gameMode">) =>
   settings.tvMode === "on" || (settings.tvMode !== "off" && Boolean(config.gameMode));
 
@@ -415,7 +470,7 @@ export type Settings = {
   windowsRunner?: WindowsRunner;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
-  /** TV mode (tv.tsx): on, off, or unset, on by itself in Steam's Game Mode. */
+  /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */
   tvMode?: "on" | "off";
   fullscreen?: boolean;
   /** The system's title bar over the window; unset, the window's buttons are in the top bar instead. */
@@ -431,6 +486,10 @@ export type Settings = {
   music?: string;
   /** Its volume, 0 to 1; unset, music.ts's default. */
   musicVolume?: number;
+  /** A picture behind the library's grid (library-background.tsx), as in Quiver Launcher 3. */
+  libraryBackground?: string;
+  /** Its opacity, 0 to 1; unset, library-background.tsx's default. */
+  libraryBackgroundOpacity?: number;
   /** Light or dark; unset follows the system. */
   theme?: Theme;
   /** The language Quiver shows in (@quiverlauncher/i18n); unset follows the system. */
@@ -474,6 +533,8 @@ export type Settings = {
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
   oldLibraryNoticeSeen?: boolean;
+  /** A library that was here already was looked over once for installs of Quiver Launcher 3's, and any offered were answered. */
+  oldInstallsChecked?: boolean;
   /** The first start's setup (setup.tsx) was finished or skipped. */
   setupDone?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
@@ -532,6 +593,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         await activate(languageOf(settings ?? {})).catch(() => {});
         // Without it GitHub still answers, at its lower limit.
         const token = await githubToken(settings).catch(() => undefined);
+        if (settings?.scale) settings.scale = nearestInterfaceSize(settings.scale);
         setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token });
       });
     });
@@ -561,7 +623,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
+  const [notice, showNotice] = useState<Launcher["notice"]>(null);
+  const setNotice = useMemo<Launcher["setNotice"]>(() => (text, options) => showNotice(text === null ? null : { text, ...options }), []);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
   const client = useMemo(() => createClient(config.api, { onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e) }) }), [config.api]);
@@ -578,8 +642,20 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   useEffect(() => {
     // A library that has apps already is past bringing one over.
-    if (saved.library.length) setOldLibrary(null);
-    else native.findV3Library().then(setOldLibrary, () => setOldLibrary(null));
+    if (saved.library.length) {
+      setOldLibrary(null);
+      // Unless it came over before Quiver could see all of 3.x's installs: asked once, and again if the catalog can't be read.
+      if (!saved.settings.oldInstallsChecked)
+        native
+          .findV3Library()
+          .then(async (old) => {
+            const ids = old?.apps.some((a) => a.dir) ? await catalogRepositories() : new Map<string, { id: string }>();
+            const loose = looseInstalls(old?.apps ?? [], ids, saved.library, saved.installs, saved.catalog, saved.config.os);
+            if (Object.keys(loose).length) setOldInstalls(loose);
+            else setSettings((s) => ({ ...s, oldInstallsChecked: true }));
+          })
+          .catch(() => {});
+    } else native.findV3Library().then(setOldLibrary, () => setOldLibrary(null));
     const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
     const closed = native.onAppClosed(({ id, seconds }) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], playTime: (i[id].playTime ?? 0) + seconds } } : i)));
     return () => void [off, closed].forEach((o) => o.then((stop) => stop()));
@@ -592,9 +668,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("settings", settings);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
-  // TV mode (tv.tsx) is a size larger again, read from across a room.
   const tv = tvModeOn(settings, config);
-  useEffect(() => void document.documentElement.style.setProperty("zoom", String((settings.scale ?? 1) * (tv ? 1.15 : 1))), [settings.scale, tv]);
+  // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
+  useEffect(() => {
+    const apply = () => document.documentElement.style.setProperty("zoom", String(pageZoom(settings.scale ?? 1, tv, window.innerWidth, window.innerHeight)));
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, [settings.scale, tv]);
   // TV mode fills the screen, as a console does, and leaving it puts the window back: unless full screen is the
   // player's own choice (Settings), which stays. Not at the start without TV mode, which would undo --fullscreen.
   const wasTv = useRef(false);
@@ -917,7 +998,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const msi = done.installer === "msi";
       const program = msi ? (done.program ?? (await native.pickProgram(done.location ?? undefined).catch(() => null)) ?? undefined) : undefined;
       const name = entry.projectName;
-      if (done.restart) setNotice(t`${name} is installed. Windows says to restart the computer to finish setting it up.`);
+      if (done.restart) setNotice(t`${name} is installed. Windows says to restart the computer to finish setting it up.`, { stays: true });
       // Picking a version only installs it; staying on it is the player's own choice (`pin`).
       // Going back from the verified release: Auto Update waits for the next one rather than undoing it.
       const verified = (catalog[entry.id] ?? entry).verified;
@@ -1209,7 +1290,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const name = entry.projectName;
         // The reason is the site's, as it gave it.
         const reason = pulled.reason;
-        return setNotice(t`${version} of ${name} was withdrawn: ${reason} Choose another version from its page.`);
+        return setNotice(t`${version} of ${name} was withdrawn: ${reason} Choose another version from its page.`, { stays: true });
       }
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
@@ -1273,6 +1354,30 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       ),
     oldLibrary,
     findOld: (path, apps) => native.findV3LibraryIn(path, apps),
+    oldInstalls,
+    answerOldInstalls(use) {
+      const loose = oldInstalls;
+      setOldInstalls(null);
+      setSettings((s) => ({ ...s, oldInstallsChecked: true }));
+      // Anything installed here since it was found stays.
+      if (use && loose) setInstalls((i) => ({ ...loose, ...i }));
+    },
+    async locateInstall(entry) {
+      const name = entry.projectName;
+      const was = installs[entry.id];
+      const path = await native.pickFolder(t`Choose the folder ${name} is installed in`);
+      if (!path) return;
+      const found = await native.findExistingInstall(path).catch(() => null);
+      const install = found && adoptedInstall({ name, provider: "github", dir: path, version: found.version, program: found.program ?? undefined }, catalog[entry.id] ?? entry, config.os);
+      if (!install) return setNotice(t`That folder doesn't have an installed app in it.`, { stays: true });
+      // From its page it may not be in the library yet.
+      setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
+      add(entry);
+      // Anything installed here while the player was choosing stays.
+      setInstalls((i) => ({ ...i, [entry.id]: i[entry.id] === was ? relocatedInstall(was, install) : i[entry.id] }));
+      // What it failed with is over, not a download that's started since.
+      setJobs(({ [entry.id]: job, ...rest }) => (job && !("error" in job) ? { ...rest, [entry.id]: job } : rest));
+    },
     /**
      * Adds the 3.x apps, keeping their installs: the catalog's as the catalog has them (found by repository, or by
      * the entry 3.x knew), any other from GitHub or GitLab as a custom app. Returns the names of those it couldn't:
@@ -1283,7 +1388,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       let done = 0;
       // Each asks the site, or its repository's host, so several at a time; then they're added in the library's order.
       const found = await inTurns(apps, 6, async (old) => {
-        const match = (old.repository && ids.get(`${old.provider}:${old.repository}`.toLowerCase())) || (old.catalogId && ids.get(`id:${old.catalogId}`));
+        const match = catalogMatch(old, ids);
         const detail = match && (await client.app(match.slug).catch(() => null));
         if (detail) return { kind: "catalog" as const, detail };
         if (!old.repository || !((old.provider === "github" && githubRepository(old.repository)) || old.provider === "gitlab")) return null;
@@ -1309,7 +1414,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           add(entry);
         } else entry = addCustom(it.custom, it.latest, it.art);
         const install = adoptedInstall(old, entry, config.os);
-        if (install) setInstalls((i) => ({ ...i, [entry.id]: install }));
+        if (install) setInstalls((i) => ({ ...i, [entry.id]: keptInstall(i[entry.id], install) }));
         const own = importedTags(old, entry);
         if (own.length) tags.set(entry.id, own);
         if (old.hidden) hidden.push(entry.id);
@@ -1338,6 +1443,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ]);
       // The player brought a library over: the one found by itself isn't offered again.
       setOldLibrary(null);
+      setOldInstalls(null);
       return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),

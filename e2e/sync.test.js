@@ -146,8 +146,8 @@ test("Browse opens with the filters saved on the website, keeping this computer'
   await (await a.app.$("button[aria-label='Remove filter Port, Standalone game']")).click();
   await a.until(() => !api.lastQuery().has("projectTypes"));
   api.setCatalogDefaults("player", undefined);
-  await browse();
-  await a.until(() => [...api.lastQuery().keys()].join() === (os ? "os,sort" : "sort"));
+  // Opened again as it waits, as above: the filters' going can reach the app after Browse opens, and a shelf's query come last.
+  await a.until(async () => (await browse(), [...api.lastQuery().keys()].join() === (os ? "os,sort" : "sort")));
 });
 
 test("signing out keeps the apps installed here in the library, and signing back in carries on", async () => {

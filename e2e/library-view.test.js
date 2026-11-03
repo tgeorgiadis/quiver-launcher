@@ -95,12 +95,9 @@ test("tabs that don't fit beside the tools fold into a Show menu at their start,
   const [menu, search] = await s.app.execute(() => [".library-show", ".library-search"].map((q) => document.querySelector(q).getBoundingClientRect().top));
   assert.ok(Math.abs(menu - search) < 2, "the menu is on the search's row");
   const choices = await s.app.execute(() => [...document.querySelector(".library-show select").options].map((o) => o.label));
-  assert.deepEqual(choices.slice(0, 3), ["All", "Installed", "Not installed"]);
-  // Picking one is picking its tab.
-  await (await s.app.$(".library-show select")).selectByVisibleText("Not installed");
-  await s.until(async () => (await shown()).join() === "tampered-port");
-  await (await s.app.$(".library-show select")).selectByVisibleText("All");
-  await s.until(async () => (await shown()).length === 3);
+  // Installed and Not installed are filters only, so they can't disagree with a tab.
+  assert.equal(choices[0], "All");
+  assert.ok(!choices.includes("Installed") && !choices.includes("Not installed"));
   // Wide again, the tabs are back.
   await s.app.setWindowSize(1280, 800);
   await s.until(async () => !(await folded()));

@@ -72,7 +72,7 @@ test("an update waiting shows as a count, in the strip, and on the page, which i
   // Browse, opened again, brings in the new release.
   await (await app.$("button*=Library")).click();
   await (await app.$("button=Browse")).click();
-  await (await (await card("test-port")).$("button=Update to v1.1.0")).waitForDisplayed();
+  await s.untilCardShows("test-port", "button=Update to v1.1.0");
   await (await app.$("button*=Library")).click();
   await until(async () => (await (await button()).getAttribute("aria-label")) === "Downloads: 1 waiting");
   assert.equal(await (await app.$(".downloads-count")).getText(), "1");
@@ -121,7 +121,7 @@ test("in the Sidebar layout the way to Downloads is at the sidebar's foot, in pl
 
   api.release("1.2.0");
   await (await app.$("button=Browse")).click();
-  await (await (await card("test-port")).$("button=Update to v1.2.0")).waitForDisplayed();
+  await s.untilCardShows("test-port", "button=Update to v1.2.0");
   // Browse's strip is only for downloads under way: the updates waiting are the library's to offer.
   assert.ok(!(await (await app.$(".downloads-strip")).isExisting()));
   await (await app.$("button*=Library")).click();
