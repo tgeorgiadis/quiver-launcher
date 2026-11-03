@@ -31,6 +31,10 @@ export async function openApp({ state = {}, width = 1280, height = 800, config =
   shared ??= await start();
   const api = await startMockApi();
   const context = await shared.browser.newContext({ viewport: { width, height } });
+  // A wrong selector fails in good time, rather than after Playwright's usual 30 seconds.
+  context.setDefaultTimeout(10000);
+  // But a first load can take far longer, each test file's server preparing the launcher's files at once.
+  context.setDefaultNavigationTimeout(90000);
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
