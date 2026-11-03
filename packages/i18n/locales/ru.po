@@ -293,6 +293,10 @@ msgid "{name} icon"
 msgstr "Значок {name}"
 
 #: ../../apps/launcher/src/store.tsx
+msgid "{name} is in your library."
+msgstr "{name} теперь в библиотеке."
+
+#: ../../apps/launcher/src/store.tsx
 msgid "{name} is installed. Windows says to restart the computer to finish setting it up."
 msgstr "Приложение {name} установлено. Windows просит перезагрузить компьютер, чтобы завершить установку."
 
@@ -606,6 +610,7 @@ msgid "Add apps from each app's menu. It also shows apps that match these filter
 msgstr "Добавляйте приложения через их меню. Здесь также показаны приложения, подходящие под эти фильтры:"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 msgid "Add to library"
 msgstr "Добавить в библиотеку"
 

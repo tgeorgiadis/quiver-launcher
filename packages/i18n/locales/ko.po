@@ -293,6 +293,10 @@ msgid "{name} icon"
 msgstr "{name} 아이콘"
 
 #: ../../apps/launcher/src/store.tsx
+msgid "{name} is in your library."
+msgstr "{name}을(를) 라이브러리에 추가했어요."
+
+#: ../../apps/launcher/src/store.tsx
 msgid "{name} is installed. Windows says to restart the computer to finish setting it up."
 msgstr "{name}이(가) 설치됐어요. 설정을 마치려면 컴퓨터를 다시 시작해야 한다고 Windows가 알려 왔어요."
 
@@ -606,6 +610,7 @@ msgid "Add apps from each app's menu. It also shows apps that match these filter
 msgstr "각 앱의 메뉴에서 앱을 추가하세요. 다음 필터와 일치하는 앱도 표시돼요:"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 msgid "Add to library"
 msgstr "라이브러리에 추가"
 

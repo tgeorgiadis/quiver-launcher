@@ -99,6 +99,30 @@ test("Only hidden apps doesn't offer to hide the library's apps, which it shows 
   assert.equal(await page.locator(".owned-note", { hasText: "Apps in your library are shown here too." }).count(), 0);
 });
 
+test("the menu and the app's page add it to the library without downloading it", async () => {
+  await card("tampered-port").first().click({ button: "right" });
+  const items = await menu().getByRole("menuitem").allInnerTexts();
+  assert.deepEqual(items.slice(0, 2), ["Get", "Add to library"]);
+  await item("Add to library").click();
+  await page.getByText("Tampered Port is in your library.").waitFor();
+  // Its card stays for now, as Get's does, and isn't offered again.
+  await card("tampered-port").first().click({ button: "right" });
+  await item("Read the README").waitFor();
+  assert.equal(await item("Add to library").count(), 0);
+  await page.keyboard.press("Escape");
+
+  await card("test-remake").locator(".card-open").first().click();
+  const add = page.locator(".page-layer:not([hidden]) .app-actions").getByRole("button", { name: "Add to library" });
+  await add.click();
+  await add.waitFor({ state: "detached" });
+  await page.locator(".page-layer:not([hidden]) .app-actions").getByRole("button", { name: "Get", exact: true }).waitFor();
+
+  // In the library, ready to get from there, with nothing downloaded.
+  await page.locator(".topbar button", { hasText: "Library" }).first().click();
+  for (const slug of ["tampered-port", "test-remake"]) await page.locator(`.library-tile[data-slug="${slug}"] .tile-get`).first().waitFor({ state: "attached" });
+  assert.equal(await page.locator(".job, .job-error").count(), 0);
+});
+
 test("the menu opens the app's page at its whole README, Back returns to the same place in Browse, and it opens the page at its feedback", async () => {
   const main = () => page.evaluate(() => document.querySelector(".shell > main").scrollTop);
   await card("test-remake").first().scrollIntoViewIfNeeded();
