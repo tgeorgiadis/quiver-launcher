@@ -281,7 +281,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       slug === "test-port"
         ? { markdown: "# Test Port\n\nA **test** port. See [the guide](docs/guide.md).", rawBase: "https://raw.example/", htmlBase: "https://github.com/quiver/test-port/blob/HEAD/", fetchedAt: 1 }
         : slug === "test-remake"
-          ? // Long, with a link only at its end: read through with a controller (web/controller.test.js).
+          ? // Long, with a link only at its end: read through with a controller (web/catalog-page.test.js).
             {
               markdown: `# Test Remake\n\n${Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1} of the remake's notes, long enough to wrap onto a second line at most window sizes.`).join("\n\n")}\n\nSee [the notes](docs/notes.md).`,
               rawBase: "https://raw.example/",
