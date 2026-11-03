@@ -176,6 +176,22 @@ test("an app in the library can be pointed at the folder it's installed in, whic
   }
 });
 
+test("an app in the library can be pointed at its folder from On this computer", async () => {
+  const { installed, home, data } = await broughtOverWithoutInstalls();
+  const s = await launch({ data, env: { HOME: home, QUIVER_PICK_FOLDER: installed } });
+  try {
+    await (await (await s.app.$(".old-library-notice")).$("button=Not now")).click();
+    await (await (await s.card("test-port")).$(".card-open")).click();
+    const page = await s.app.$(".app-page");
+    await (await page.$("button*=On this computer")).click();
+    await (await (await page.$(".computer-panel")).$("button*=Locate existing install")).click();
+    await (await page.$("button*=Play")).waitForDisplayed({ timeout: 10000 });
+    assert.ok(!existsSync(join(s.apps, "TestPort")), "nothing was downloaded");
+  } finally {
+    await s.close();
+  }
+});
+
 test("an app that isn't in the library can be pointed at its folder from its page, and joins the library", async () => {
   const installed = portableLibrary(mkdtempSync(join(tmpdir(), "quiver-elsewhere-")));
   const s = await launch({ env: { QUIVER_PICK_FOLDER: installed } });

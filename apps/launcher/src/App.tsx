@@ -1136,6 +1136,11 @@ function AppPage({
           </button>
         )}
         {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
+        {locatable(entry.id, install, job) && foldersOn(config.os) && (
+          <button className="panel-action opens" onClick={() => void locateInstall(entry)}>
+            <FolderSearch size={16} aria-hidden="true" /> <Trans>Locate existing install…</Trans>
+          </button>
+        )}
         {item && <UpdatesChoice id={item.id} />}
       </div>
       {item && (
@@ -1247,7 +1252,7 @@ function AppPage({
             <div className="app-actions" data-autofocus={tv || undefined}>
               <Action entry={entry} apart />
               {/* Already on this computer: an app needn't be in the library, or downloaded, for this. */}
-              {!install && locatable(entry.id, install, job) && foldersOn(config.os) && !tv && (
+              {!install && locatable(entry.id, install, job) && foldersOn(config.os) && (
                 <button onClick={() => void locateInstall(entry)}>
                   <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
                 </button>
