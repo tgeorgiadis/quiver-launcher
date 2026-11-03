@@ -3,7 +3,7 @@
  * reaches every control the player can see, from where the focus lands (or
  * the first press puts it), and B leaves it. Screens are opened the same way:
  * the control that opens one is moved to with the d-pad and pressed with A
- * (or Y, Options). Presses go in as the Rust side sends a controller's
+ * (or Y, Options, or X, Quick action). Presses go in as the Rust side sends a controller's
  * ("pad" events), so this is spatial.ts as a controller drives it: in the
  * launcher's web side on its own (app.js), Test Port installed and played.
  */
@@ -75,9 +75,10 @@ const home = async () => {
 const BACK_TO_TOP = 'button[aria-label="Back to top"]';
 // The sidebar's edge is a pointer's (and Tab's): the d-pad goes past it, and View options set its width.
 const SIDEBAR_EDGE = ".sidebar-edge";
-// A card's only button (Get, Play), or Get and its arrow: Y on the card presses Get, so the d-pad goes card to card
-// past them. The arrow's choices are on the app's page too.
-const CARD_MAIN = ".card-action > .primary:only-child, .card-action .get-split > .primary";
+// A card's only button (Get, Play), or Get and its arrow: X on the card presses Get, so the d-pad goes card to card
+// past them. The arrow's choices are on the app's page too. A Browse card's menu (card-menu.tsx) is beside them, with
+// no button of its own.
+const CARD_MAIN = ".card-action > .primary:only-of-type, .card-action .get-split > .primary";
 /** Asserts the d-pad reaches everything showing (but Back to top, the sidebar's edge, a card's only button and `ignore`), each with all of its focus ring showing. */
 const everything = async (name, ignore) => {
   const { missed, reached, cut, outOfSight, unmarked } = await reach.explore(app, { ignore: [BACK_TO_TOP, SIDEBAR_EDGE, CARD_MAIN, ignore].filter(Boolean).join(", ") });
@@ -127,16 +128,24 @@ test("the catalog, its filters, and Sign in, which B closes", async () => {
   assert.match(look.art, /0px 0px 0px 1px/);
 });
 
-test("A opens a catalog card, and Y gets the app", async () => {
+test("A opens a catalog card, Y opens its menu with Get first, and X gets the app", async () => {
   await open("button", { text: "Browse" });
-  // Down from a card skips its Get, which Y on the card presses.
+  // Down from a card skips its Get, which X on the card presses.
   await app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-open').focus());
   await reach.press(app, "DPadDown");
   assert.doesNotMatch(await reach.focused(app), /"Get"/);
   assert.equal(await open('article[data-slug="tampered-port"] .card-open'), "page: Tampered Port");
   assert.equal(await back(), "main");
-  // It has a download for each system: Y asks which.
-  assert.equal(await open('article[data-slug="tampered-port"] .card-open', { key: "North" }), "dialog: Choose a download");
+  await reach.pressOn(app, 'article[data-slug="tampered-port"] .card-open', "North");
+  await s.until(() => app.execute(() => Boolean(document.querySelector('[role="menu"] .game-menu-main'))));
+  const items = await app.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map((b) => b.innerText.trim()));
+  assert.equal(items[0], "Get");
+  assert.ok(items.includes("Hide from Browse"), items.join());
+  assert.equal(await app.execute(() => document.activeElement.innerText.trim()), "Get", "the focus is on Get");
+  await reach.press(app, "East");
+  await s.until(() => app.execute(() => !document.querySelector('[role="menu"]')));
+  // It has a download for each system: X asks which.
+  assert.equal(await open('article[data-slug="tampered-port"] .card-open', { key: "West" }), "dialog: Choose a download");
   await everything("Choose a download");
   // A on one starts it (what it installs is the real app's to show).
   assert.doesNotMatch(await reach.pressOn(app, '[role="dialog"] button', "South", { text: "linux" }), /^not reached/);
@@ -901,6 +910,22 @@ test("Back on the Get button: the focus box takes in the glyph it gains as the v
   await s.emit("pads", []);
 });
 
+test("a Browse card's Read the README: the page opens at it, and the d-pad reads on from there", async () => {
+  await home();
+  await open("button", { text: "Browse" });
+  await reach.pressOn(app, 'article[data-slug="test-remake"] .card-open', "North");
+  await s.until(() => app.execute(() => Boolean(document.querySelector('[role="menu"] .game-menu-main'))));
+  await app.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].find((b) => b.innerText.trim() === "Read the README").focus());
+  await reach.press(app, "South");
+  await s.until(() => app.execute(() => Boolean(document.activeElement?.closest(".readme"))));
+  const y = () => app.execute(() => document.querySelector(".shell > main").scrollTop);
+  const start = await y();
+  assert.ok(start > 0, "scrolled to it");
+  await reach.press(app, "DPadDown");
+  assert.ok((await y()) >= start, "on down the page, not back to the top");
+  assert.ok(await app.execute(() => document.querySelector(".page-layer:not([hidden]) .readme").contains(document.activeElement)), "still in the README");
+});
+
 test("with a controller connected, the bottom says what its buttons do, as it labels them, and Settings hides it", async () => {
   // As gamepad.rs says a controller has come (and which), so it runs the same with none plugged in.
   const send = (event, payload) => app.execute((event, payload) => window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event, payload }), event, payload);
@@ -914,6 +939,12 @@ test("with a controller connected, the bottom says what its buttons do, as it la
   // On a library card: A plays it, Y opens its menu.
   await app.execute(() => document.querySelector(".library-tile .card-open").focus());
   await s.until(async () => (await hints()).join(", ").startsWith("A Play, Y Menu"));
+  // On a catalog card: A opens it, Y opens its menu, X gets it, with that button showing X.
+  await open("button", { text: "Browse" });
+  await app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-open').focus());
+  await s.until(async () => (await hints()).join(", ").startsWith("A Open, Y Menu, X Get"));
+  await s.until(() => app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-action .primary')?.getAttribute("data-pad-glyph") === "X"));
+  await open("button", { text: "Library" });
   // It doesn't cover the page: the d-pad still gets everywhere, every move in sight above it.
   await everything("the library, with the hints");
   // In the Sidebar layout: only beside the sidebar, which runs to the window's bottom.
@@ -1196,7 +1227,7 @@ test("in Steam's desktop layout, A (which comes as Enter) on a library card play
   assert.equal(await where(), "main", "not its page");
 });
 
-test("apps installed here but not in the library: each card is one stop, A opens its page, Y adds it, and none has Uninstall", async () => {
+test("apps installed here but not in the library: each card is one stop, A opens its page, X adds it, and none has Uninstall", async () => {
   const done = { version: "1.0.0", executables: [], lastPlayed: Date.now() - 86400_000 };
   // Removed from the library, their catalog details kept, as the saved catalog keeps them.
   const known = (slug, name) => ({
@@ -1230,9 +1261,9 @@ test("apps installed here but not in the library: each card is one stop, A opens
     await loose.until(() => l.execute(() => Boolean([...document.querySelectorAll(".page-layer")].find((x) => !x.hidden))));
     await reach.press(l, "East");
     await loose.until(() => l.execute(() => document.activeElement?.matches(".loose .card-open") ?? false));
-    // Y: Add, into the library, the card going from the section to it.
+    // X: Add, into the library, the card going from the section to it.
     const slug = await l.execute(() => document.activeElement.closest("article").getAttribute("data-slug"));
-    await reach.press(l, "North");
+    await reach.press(l, "West");
     await loose.until(() => l.execute((s) => !document.querySelector(`.loose article[data-slug="${s}"]`) && Boolean(document.querySelector(`article[data-slug="${s}"]:not(.loose article)`)), slug));
   } finally {
     await loose.close();
@@ -1277,4 +1308,36 @@ test("the first start's setup: each step all reached by the d-pad, the focus on 
   } finally {
     await first.close();
   }
+});
+
+// WebKit, here, would show it from :focus-visible alone; Chromium needs app.css's data-navigating, which this doesn't reach.
+test("after the mouse, a menu shows where the d-pad is", async () => {
+  await page.locator(".library-tile").first().click({ button: "right" });
+  await page.locator('[role="menu"] [role="menuitem"]').first().waitFor();
+  // Not over the items, whose hover would look the same.
+  await page.mouse.move(2, 2);
+  const looks = () =>
+    app.execute(() => {
+      const items = [...document.querySelectorAll('[role="menu"] > .game-menu > button:not(:disabled, .game-menu-main)')];
+      const lit = (el) => getComputedStyle(el).backgroundColor;
+      const other = items.find((el) => el !== document.activeElement);
+      return { focused: lit(document.activeElement), other: lit(other), on: document.activeElement.innerText.trim() };
+    });
+  await reach.press(app, "DPadDown");
+  await page.waitForTimeout(100);
+  const moved = await looks();
+  assert.notEqual(moved.focused, moved.other, `${moved.on} is lit`);
+});
+
+test("in Steam's desktop layout, where X isn't Quiver's, a catalog card offers its menu and doesn't mark Get with X", async () => {
+  await s.emit("pads", ["Steam Deck"]);
+  await s.emit("pad-labels", { kind: "steam", south: "A", east: "B", west: "X", north: "Y", desktop: true });
+  await page.evaluate(() => new Promise((r) => setTimeout(r)));
+  await open("button", { text: "Browse" });
+  const CARD = page.locator('article[data-slug="tampered-port"]').first();
+  await CARD.locator(".card-open").focus();
+  const hints = () => app.execute(() => [...document.querySelectorAll(".pad-hints > span")].map((h) => h.innerText.replace(/\s+/g, " ").trim()).join(", "));
+  await s.until(async () => (await hints()).startsWith("A Open, Y Menu"));
+  assert.doesNotMatch(await hints(), /\bX\b/);
+  assert.equal(await CARD.locator("[data-pad-glyph]").count(), 0);
 });

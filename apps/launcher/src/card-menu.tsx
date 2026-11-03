@@ -5,18 +5,20 @@
  * folder, shortcuts, hiding and uninstalling) to the side, and its page.
  * A library card has it behind its ⋯ button; a card or a sidebar row opens it
  * on a right-click, a long press on a touch screen, the Menu key or Shift+F10,
- * or a controller's Options button.
+ * or a controller's Options button. A Browse card opens its own, smaller one
+ * the same ways.
  */
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as KeyEvent, type PointerEvent as PointerEv, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as KeyEvent, type PointerEvent as PointerEv, type PointerEventHandler, type ReactNode } from "react";
 import { Check, ChevronRight, Download, MoreHorizontal, Play } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { canGet, hasUpdate, locatable, pulledVerified, renamable, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
-import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote } from "./detail";
+import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail } from "./detail";
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
+import { toggleHidden } from "./browse-hidden";
 import { native } from "./native";
 import { track } from "./telemetry";
 import { boxZoom, windowBox, zoom } from "./zoom";
@@ -39,8 +41,77 @@ export function CardMenu({ entry, onOpen }: { entry: Entry; onOpen: () => void }
  * `bare`, there's no ⋯ button: closing it puts focus back on what had it.
  */
 export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry; onOpen: () => void; target: () => Element | null; bare?: boolean; where: "card" | "sidebar" }) {
-  const opener = useRef<((x: number, y: number) => void) | null>(null);
+  const opener = useMenuOpener(target, where);
   const escape = useRef<(() => boolean) | null>(null);
+  const name = entry.projectName;
+  return (
+    <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={<MoreHorizontal size={16} />} bare={bare} role="menu" opener={opener} escape={escape} align="end" panel="card-menu-panel">
+      {(close) => <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />}
+    </Popover>
+  );
+}
+
+/**
+ * A Browse card's menu, with no ⋯ button of its own: its main action, what its
+ * page has that an app not got yet can use (its code, README and feedback), and
+ * hiding it from Browse (browse-hidden.ts), or showing it again.
+ */
+export function BrowseMenu({ entry, onOpen, onReadme, onFeedback }: { entry: Entry; onOpen: () => void; onReadme: () => void; onFeedback: () => void }) {
+  const anchor = useRef<HTMLSpanElement>(null);
+  const opener = useMenuOpener(() => anchor.current?.closest("article") ?? null, "browse");
+  const name = entry.projectName;
+  return (
+    <span ref={anchor} hidden>
+      <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={null} bare role="menu" opener={opener} panel="card-menu-panel">
+        {(close) => <BrowseMenuItems entry={entry} onOpen={onOpen} close={close} onReadme={onReadme} onFeedback={onFeedback} />}
+      </Popover>
+    </span>
+  );
+}
+
+function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry: Entry; onOpen: () => void; close: () => void; onReadme: () => void; onFeedback: () => void }) {
+  const { settings, setSettings } = useLauncher();
+  const { main, top } = useMainItems(entry, onOpen);
+  // Where its code lives comes with its page's details, asked for as the menu opens.
+  const { source } = useAppDetail(entry);
+  const hidden = settings.browseHidden?.includes(entry.id);
+  const toggle = () => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, entry.id) });
+  const item = (text: string, act: () => void, disabled = false) => (
+    <button key={text} type="button" role="menuitem" data-item disabled={disabled} onClick={() => (close(), act())}>
+      {text}
+    </button>
+  );
+  // Up and down go through the items, round again at the end.
+  const keys = (e: KeyEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>(":scope > [data-item]:not(:disabled)")];
+    const i = items.indexOf(e.target as HTMLElement);
+    items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
+  };
+  return (
+    <div className="game-menu" data-arrows="" onKeyDown={keys}>
+      {main && <MainItem main={main} onClick={() => (close(), main.act())} />}
+      {top.map((i) => item(i.text, i.act))}
+      {source === undefined
+        ? item(t`View repository`, () => {}, true)
+        : source && item(source.provider === "gitlab" ? t`View on GitLab` : t`View on GitHub`, () => void native.openUrl(source.url))}
+      {item(t`Read the README`, onReadme)}
+      <hr />
+      {item(t`Share feedback…`, onFeedback)}
+      <hr />
+      {item(hidden ? t`Show in Browse` : t`Hide from Browse`, toggle)}
+    </div>
+  );
+}
+
+/**
+ * Opens a menu over `target` (a card, a sidebar row) on a right-click, a long
+ * press, the Menu key or Shift+F10, or a controller's Options button; set as
+ * the menu's `opener`.
+ */
+function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" | "browse") {
+  const opener = useRef<((x: number, y: number) => void) | null>(null);
   useEffect(() => {
     const card = target();
     if (!card) return;
@@ -123,12 +194,7 @@ export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry;
       card.removeEventListener("click", click, true);
     };
   }, []);
-  const name = entry.projectName;
-  return (
-    <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={<MoreHorizontal size={16} />} bare={bare} role="menu" opener={opener} escape={escape} align="end" panel="card-menu-panel">
-      {(close) => <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />}
-    </Popover>
-  );
+  return opener;
 }
 
 /** `icon`: the main action's, as the app's page has it. */
@@ -137,6 +203,52 @@ type Sub = { key: "programs" | "add" | "manage"; by: "hover" | "click"; focus?: 
 
 /** A program's file name, without the folders it's in. */
 export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
+
+/** An app's main action, as its page has it, and what goes with it at the top of its menus. */
+function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Item[] } {
+  const { config, installs, jobs, catalog, get, play, cancel, dismiss } = useLauncher();
+  const install = installs[entry.id];
+  const job = jobs[entry.id];
+  const failed = job && "error" in job;
+  const busy = job && !failed;
+  const latest = catalog[entry.id] ?? entry;
+  const percent = busy && job.total ? Math.round((job.received / job.total) * 100) : null;
+  const main: Item | undefined = failed
+    ? // A local app has nothing to download: Try again plays it again.
+      { text: t`Try again`, act: () => (install?.local ? (dismiss(entry.id), void play(entry.id)) : void get(entry)) }
+    : busy
+      ? { text: job.phase === "installing" ? t`Installing…` : percent === null ? t`Downloading…` : t`Downloading ${percent}%`, act: () => {}, disabled: true }
+      : install
+        ? { text: t({ message: "Play", comment: "Menu item that starts an installed app" }), act: () => void play(entry.id), icon: "play" }
+        : canGet(entry, config.os)
+          ? // Its verified release was withdrawn: the app's page has its versions.
+            pulledVerified(latest)
+            ? { text: t`Choose a version…`, act: onOpen }
+            : { text: t({ message: "Get", comment: "Menu item that installs an app" }), act: () => void get(entry), icon: "get" }
+          : undefined;
+  const top: Item[] = [];
+  // Once its files are going in, an install finishes: stopping then could leave the app half there.
+  if (busy && job.phase !== "installing") top.push({ text: t`Cancel download`, act: () => cancel(entry.id) });
+  // Its file was gone or not the one Quiver checked: the newest other verified release, in its place.
+  const instead = job && "error" in job ? job.instead : undefined;
+  const other = versionLabel(instead?.version);
+  if (instead) top.push({ text: t`Install ${other} instead`, act: () => void get(latest, instead) });
+  if (failed) top.push({ text: t({ message: "Dismiss", comment: "Menu item that clears a failed download" }), act: () => dismiss(entry.id) });
+  const newer = versionLabel(latest.verified?.version);
+  if (install && !job && hasUpdate(latest, install)) top.push({ text: t`Update to ${newer}`, act: () => void get(latest) });
+  return { main, top };
+}
+
+/** `main`, as the app's page has it. */
+function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () => void; onPointerMove?: PointerEventHandler }) {
+  return (
+    <button type="button" role="menuitem" data-item className="game-menu-main" disabled={main.disabled} onClick={onClick} onPointerMove={onPointerMove}>
+      {main.icon === "play" && <Play size={15} aria-hidden="true" />}
+      {main.icon === "get" && <Download size={15} aria-hidden="true" />}
+      {main.text}
+    </button>
+  );
+}
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
@@ -199,31 +311,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
       (e) => setNotice(String(e), { stays: true }),
     );
 
-  // The main action, as the app's page has it.
-  const percent = busy && job.total ? Math.round((job.received / job.total) * 100) : null;
-  const main: Item | undefined = failed
-    ? // A local app has nothing to download: Try again plays it again.
-      { text: t`Try again`, act: () => (install?.local ? (dismiss(entry.id), void play(entry.id)) : void get(entry)) }
-    : busy
-      ? { text: job.phase === "installing" ? t`Installing…` : percent === null ? t`Downloading…` : t`Downloading ${percent}%`, act: () => {}, disabled: true }
-      : install
-        ? { text: t({ message: "Play", comment: "Menu item that starts an installed app" }), act: () => void play(entry.id), icon: "play" }
-        : canGet(entry, config.os)
-          ? // Its verified release was withdrawn: the app's page has its versions.
-            pulledVerified(latest)
-            ? { text: t`Choose a version…`, act: onOpen }
-            : { text: t({ message: "Get", comment: "Menu item that installs an app" }), act: () => void get(entry), icon: "get" }
-          : undefined;
-  const top: Item[] = [];
-  // Once its files are going in, an install finishes: stopping then could leave the app half there.
-  if (busy && job.phase !== "installing") top.push({ text: t`Cancel download`, act: () => cancel(entry.id) });
-  // Its file was gone or not the one Quiver checked: the newest other verified release, in its place.
-  const instead = job && "error" in job ? job.instead : undefined;
-  const other = versionLabel(instead?.version);
-  if (instead) top.push({ text: t`Install ${other} instead`, act: () => void get(latest, instead) });
-  if (failed) top.push({ text: t({ message: "Dismiss", comment: "Menu item that clears a failed download" }), act: () => dismiss(entry.id) });
-  const newer = versionLabel(latest.verified?.version);
-  if (install && !job && hasUpdate(latest, install)) top.push({ text: t`Update to ${newer}`, act: () => void get(latest) });
+  const { main, top } = useMainItems(entry, onOpen);
 
   const manage: Item[] = [];
   if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e), { stays: true })) });
@@ -356,14 +444,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
 
   return (
     <div ref={root} className="game-menu" data-arrows="" onKeyDown={keys}>
-      {main && (
-        <button type="button" role="menuitem" data-item className="game-menu-main" disabled={main.disabled} onClick={choose(main.act)} onPointerMove={hover()}>
-          {/* As the app's page has it. */}
-          {main.icon === "play" && <Play size={15} aria-hidden="true" />}
-          {main.icon === "get" && <Download size={15} aria-hidden="true" />}
-          {main.text}
-        </button>
-      )}
+      {main && <MainItem main={main} onClick={choose(main.act)} onPointerMove={hover()} />}
       {top.map((i) => item(i))}
       {programsOn && opens("programs", t`Play with`)}
       {submenu(

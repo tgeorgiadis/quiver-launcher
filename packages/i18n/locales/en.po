@@ -27,6 +27,11 @@ msgstr "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidde
 msgid "{0, plural, one {Showing # app for other platforms.} other {Showing # apps for other platforms.}}"
 msgstr "{0, plural, one {Showing # app for other platforms.} other {Showing # apps for other platforms.}}"
 
+#. placeholder {0}: hidden.size
+#: ../../apps/launcher/src/App.tsx
+msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
+msgstr "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{active, plural, one {# downloading, {percent}%} other {# downloading, {percent}%}}"
 msgstr "{active, plural, one {# downloading, {percent}%} other {# downloading, {percent}%}}"
@@ -162,6 +167,14 @@ msgstr "{files, plural, one {# file} other {# files}}"
 msgid "{have} installed"
 msgstr "{have} installed"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+msgstr "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{hiddenLeft, plural, one {Show it} other {Show them}}"
+msgstr "{hiddenLeft, plural, one {Show it} other {Show them}}"
+
 #: ../../apps/launcher/src/sidebar.ts
 msgid "{hours, plural, one {# hour} other {# hours}}"
 msgstr "{hours, plural, one {# hour} other {# hours}}"
@@ -287,6 +300,7 @@ msgstr "{name} is installed. Windows says to restart the computer to finish sett
 msgid "{name} is shared"
 msgstr "{name} is shared"
 
+#. An app's menu, named for the app
 #. An app's menu, named for the app
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "{name} menu"
@@ -1669,7 +1683,7 @@ msgstr "General"
 #. Button that installs an app
 #. Button that installs an app
 #. Button: download and install the app
-#. Controller hint: what Options does on a catalog card or an app's page, installing the app
+#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -1737,10 +1751,26 @@ msgstr "Has issues"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Hidden"
+msgstr "Hidden"
+
 #. Library tab: apps the player hid
 #: ../../apps/launcher/src/library.tsx
 msgid "Hidden ({hiddenCount})"
 msgstr "Hidden ({hiddenCount})"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Hidden apps"
+msgstr "Hidden apps"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Hidden apps only"
+msgstr "Hidden apps only"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Hidden apps shown"
+msgstr "Hidden apps shown"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide"
@@ -1765,8 +1795,17 @@ msgstr "Hide dismissed"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+msgid "Hide from Browse"
+msgstr "Hide from Browse"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 msgid "Hide from library"
 msgstr "Hide from library"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Hide hidden apps"
+msgstr "Hide hidden apps"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Hide mostly AI-generated"
@@ -2762,6 +2801,10 @@ msgstr "On this computer"
 msgid "One card for each game"
 msgstr "One card for each game"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Only hidden apps"
+msgstr "Only hidden apps"
+
 #. How strongly the library's background picture shows
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Opacity"
@@ -3045,6 +3088,11 @@ msgstr "PROJECT DETAILS"
 msgid "Project type"
 msgstr "Project type"
 
+#. Controller action that presses the main button of the focused card or app's page, such as Get or Play
+#: ../../apps/launcher/src/spatial.ts
+msgid "Quick action"
+msgstr "Quick action"
+
 #. Item in the launcher's menu in the Windows system tray: closes the launcher
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quit"
@@ -3180,6 +3228,7 @@ msgid "Read more"
 msgstr "Read more"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 msgid "Read the README"
 msgstr "Read the README"
 
@@ -3532,6 +3581,10 @@ msgstr "Share {name}"
 msgid "Share a playlist"
 msgstr "Share a playlist"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Share feedback…"
+msgstr "Share feedback…"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Share how it ran"
 msgstr "Share how it ran"
@@ -3593,6 +3646,15 @@ msgstr "Show Continue playing"
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show dismissed ({count})"
 msgstr "Show dismissed ({count})"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Show hidden apps"
+msgstr "Show hidden apps"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Show in Browse"
+msgstr "Show in Browse"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -4402,10 +4464,22 @@ msgstr "Versions"
 msgid "View {version} on {host}"
 msgstr "View {version} on {host}"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "View on GitHub"
+msgstr "View on GitHub"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "View on GitLab"
+msgstr "View on GitLab"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "View options"
 msgstr "View options"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "View repository"
+msgstr "View repository"
 
 #. Background music's volume
 #: ../../apps/launcher/src/settings-page.tsx

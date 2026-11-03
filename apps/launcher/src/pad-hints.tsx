@@ -89,29 +89,30 @@ export function PadHints() {
   const pads = usePads();
   const labels = usePadLabels();
   const shown = pads.length > 0 && !settings.padOff && !settings.padHintsOff;
-  // The button a press of the controller's presses from the focus shows which: the Get (or Play) that Options presses
-  // (a catalog card's, or the page's), as A opens such a card; else the Play or Get that Confirm presses on a library
-  // card, where it has a word beside it (not an icon card's round Play, with no room).
+  // The button a press of the controller's presses from the focus shows which: the Play or Get that Confirm presses on a
+  // library card, where it has a word beside it (not an icon card's round Play, with no room); else the Get (or Play)
+  // that Quick action presses (a catalog card's, or the page's), as A opens such a card. Not in Steam's desktop layout,
+  // where that button isn't Quiver's (desktopHints).
   const bound = withDefaults(settings.pad, DEFAULT_PAD);
-  const optionsGlyph = shown && bound.options[0] ? label("pad", bound.options[0], labels) : "";
+  const quickGlyph = shown && !labels?.desktop && bound.quick[0] ? label("pad", bound.quick[0], labels) : "";
   const confirmGlyph = shown && bound.confirm[0] ? label("pad", bound.confirm[0], labels) : "";
-  const glyphs = useRef({ optionsGlyph, confirmGlyph });
-  glyphs.current = { optionsGlyph, confirmGlyph };
+  const glyphs = useRef({ quickGlyph, confirmGlyph });
+  glyphs.current = { quickGlyph, confirmGlyph };
   // Changed only when it does, and the mark taken off and put back restyled the button each time.
   const marked = useRef<HTMLElement | null>(null);
   const mark = useCallback(() => {
-    const { optionsGlyph, confirmGlyph } = glyphs.current;
-    const quick = optionsGlyph ? quickButton(document.activeElement) : null;
-    const play = !quick && confirmGlyph ? confirmButton(document.activeElement) : null;
+    const { quickGlyph, confirmGlyph } = glyphs.current;
+    const play = confirmGlyph ? confirmButton(document.activeElement) : null;
+    const quick = !play && quickGlyph ? quickButton(document.activeElement) : null;
     const button = quick ?? (play && !play.closest(".image-icon") ? play : null);
-    const glyph = quick ? optionsGlyph : confirmGlyph;
+    const glyph = quick ? quickGlyph : confirmGlyph;
     if (marked.current !== button) marked.current?.removeAttribute("data-pad-glyph");
     if (button && button.getAttribute("data-pad-glyph") !== glyph) button.setAttribute("data-pad-glyph", glyph);
     // The glyph makes its button wider, and moves what's beside it: the focus's box with them.
     if (marked.current !== button) haloMoved();
     marked.current = button;
   }, []);
-  useLayoutEffect(mark, [mark, optionsGlyph, confirmGlyph]);
+  useLayoutEffect(mark, [mark, quickGlyph, confirmGlyph]);
   useEffect(() => () => marked.current?.removeAttribute("data-pad-glyph"), []);
   // Looked at again whenever the focus moves, the page changes (a dialog, a menu) or has scrolled, and drawn again
   // only when what it says does: on a Steam Deck, drawing it anew with each frame a held d-pad scrolled the page, and
