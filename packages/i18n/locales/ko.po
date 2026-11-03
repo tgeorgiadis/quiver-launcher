@@ -82,6 +82,18 @@ msgid "{count, plural, one {# app in your library shows as not installed, but Qu
 msgstr "{count, plural, other {라이브러리의 앱 #개가 설치되지 않은 것으로 보이지만 Quiver Launcher 3에는 설치되어 있어요. 다운로드 없이 그곳에서 실행할까요?}}"
 
 #: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app, already installed.} other {# apps, all already installed.}}"
+msgstr "{count, plural, other {앱 #개, 모두 이미 설치되어 있어요.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app, not installed yet. If you already installed it somewhere else, show Quiver the folder.} other {# apps, none installed yet. If you already installed them somewhere else, show Quiver the folder.}}"
+msgstr "{count, plural, other {앱 #개, 아직 설치된 앱이 없어요. 다른 곳에 이미 설치했다면 Quiver에 폴더를 알려 주세요.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
+msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개는 이미 설치되어 있어요.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, other {앱 #개 추가}}"
 
@@ -145,18 +157,10 @@ msgstr "개발자가 {listed}에서 {file}을(를) 삭제했어요."
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, other {파일 #개}}"
 
-#: ../../apps/launcher/src/old-library.tsx
-msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
-msgstr "{filters, plural, other {태그 필터 #개, 재생 목록으로}}"
-
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "{have} 설치됨"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "{hidden, plural, one {# hidden app, still hidden} other {# hidden apps, still hidden}}"
-msgstr "{hidden, plural, other {숨긴 앱 #개, 계속 숨김}}"
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "{hours, plural, one {# hour} other {# hours}}"
@@ -223,8 +227,8 @@ msgid "{missing, plural, one {{mod} needs {needed}, which isn't installed yet. I
 msgstr "{missing, plural, other {{mod}에는 아직 설치되지 않은 {needed}이(가) 필요해요. 함께 설치할까요?}}"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "{missing, plural, one {# of these doesn't show as installed. If it's in another folder or on another drive, show Quiver where it is.} other {# of these don't show as installed. If any are in another folder or on another drive, show Quiver where it is.}}"
-msgstr "{missing, plural, other {이 중 #개가 설치된 것으로 보이지 않아요. 다른 폴더나 드라이브에 있다면 위치를 알려 주세요.}}"
+msgid "{missing, plural, one {If you moved the other one, show Quiver the folder.} other {If you moved the others, show Quiver the folder.}}"
+msgstr "{missing, plural, other {나머지를 옮겼다면 Quiver에 폴더를 알려 주세요.}}"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "{missing, plural, one {Install both} other {Install all}}"
@@ -375,10 +379,6 @@ msgstr "{size} MB"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{speed}×"
 msgstr "{speed}×"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "{tagged, plural, one {Your tags on # app} other {Your tags on # apps}}"
-msgstr "{tagged, plural, other {앱 #개의 내 태그}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -707,10 +707,6 @@ msgstr "모든 프로젝트 유형"
 msgid "All tags"
 msgstr "모든 태그"
 
-#: ../../apps/launcher/src/old-library.tsx
-msgid "Also coming over"
-msgstr "함께 가져오는 항목"
-
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
 msgstr "다른 이름: {matched}"
@@ -948,6 +944,11 @@ msgstr "차단됨"
 msgid "Box art"
 msgstr "박스 아트"
 
+#: ../../apps/launcher/src/old-library.tsx
+#: ../../apps/launcher/src/setup.tsx
+msgid "Bring your apps over from Quiver Launcher 3?"
+msgstr "Quiver Launcher 3의 앱을 가져올까요?"
+
 #. Tab listing mods to install
 #. The tab with the catalog of apps
 #. The tab with the catalog of apps
@@ -1082,10 +1083,6 @@ msgstr "확인 중…"
 msgid "Choose a backup…"
 msgstr "백업 선택…"
 
-#: ../../apps/launcher/src/old-library.tsx
-msgid "Choose a different folder…"
-msgstr "다른 폴더 선택…"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Choose a download"
 msgstr "다운로드 선택"
@@ -1093,6 +1090,14 @@ msgstr "다운로드 선택"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Choose a file"
 msgstr "파일 선택"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Choose a folder to look in"
+msgstr "찾아볼 폴더 선택"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Choose a folder…"
+msgstr "폴더 선택…"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Choose a less common password."
@@ -1178,14 +1183,6 @@ msgstr "내 Quiver Launcher 3 폴더 선택…"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Choose program…"
 msgstr "프로그램 선택…"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "Choose Quiver Launcher 3's Apps folder"
-msgstr "Quiver Launcher 3의 Apps 폴더 선택"
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "Choose the Apps folder…"
-msgstr "Apps 폴더 선택…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
@@ -2270,6 +2267,10 @@ msgstr "게임 불러오는 중"
 msgid "Locate existing install…"
 msgstr "기존 설치 위치 찾기…"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Look in another folder…"
+msgstr "다른 폴더에서 찾기…"
+
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Look it up"
@@ -2632,14 +2633,6 @@ msgstr "없음"
 #: ../../apps/launcher/src/App.tsx
 msgid "None of {name} {version}'s files are marked for your computer. If you know which one runs on it, pick it."
 msgstr "{name} {version}의 파일 중 이 컴퓨터용으로 표시된 파일이 없어요. 이 컴퓨터에서 실행되는 파일을 알고 있다면 선택하세요."
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "None of these apps are installed in that folder."
-msgstr "그 폴더에 설치된 앱이 없어요."
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "None of these show as installed. If you moved Quiver Launcher 3's Apps folder, or its drive has a different letter now, show Quiver where it is."
-msgstr "설치된 앱이 보이지 않아요. Quiver Launcher 3의 Apps 폴더를 옮겼거나 드라이브 문자가 바뀌었다면 지금 위치를 알려 주세요."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
@@ -3138,10 +3131,6 @@ msgstr "Quiver Launcher {version}이(가) 나왔어요."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
-#: ../../apps/launcher/src/old-library.tsx
-msgid "Quiver Launcher 3 is on this computer, with {count, plural, one {# app. Add it here?} other {# apps. Add them here?}} Anything already installed stays where it is, so nothing needs to download again."
-msgstr "이 컴퓨터에 Quiver Launcher 3이 있고, {count, plural, other {앱이 #개 있어요. 여기에 추가할까요?}} 이미 설치된 앱은 그 자리에 그대로 있으므로 다시 다운로드할 필요가 없어요."
-
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher에 문제가 생겼어요"
@@ -3490,6 +3479,10 @@ msgstr "카탈로그에서 보기"
 #: ../../apps/launcher/src/detail.tsx
 msgid "See the report"
 msgstr "보고서 보기"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "See which apps"
+msgstr "어떤 앱인지 보기"
 
 #. Controller hint: what Confirm does on any other control
 #: ../../apps/launcher/src/spatial.ts
@@ -3911,12 +3904,8 @@ msgid "That folder doesn't have Quiver Launcher 3 in it. Choose the folder its p
 msgstr "그 폴더에는 Quiver Launcher 3이 없어요. 프로그램이 들어 있는 폴더를 선택하세요."
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "That folder has {count, plural, one {# app} other {# apps}}, {installed, plural, one {# installed} other {# installed}}. Add them here? Anything already installed stays where it is, so nothing needs to download again."
-msgstr "그 폴더에는 {count, plural, other {앱 #개}}가 있고, {installed, plural, other {#개가 설치돼 있어요}}. 여기에 추가할까요? 이미 설치된 앱은 그 자리에 그대로 있으므로 다시 다운로드할 필요가 없어요."
-
-#: ../../apps/launcher/src/old-library.tsx
-msgid "That folder has {count, plural, one {# app} other {# apps}}, none installed. Add them here?"
-msgstr "그 폴더에는 {count, plural, other {앱 #개}}가 있고, 설치된 앱은 없어요. 여기에 추가할까요?"
+msgid "That folder doesn't have Quiver Launcher 3 or any of these apps in it."
+msgstr "그 폴더에는 Quiver Launcher 3도, 이 앱들도 없어요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "That page hit a problem as it closed: {why}"
@@ -4604,3 +4593,7 @@ msgstr "내 플레이"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Your tags"
 msgstr "내 태그"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Your tags, filters and hidden apps will be imported too."
+msgstr "내 태그, 필터, 숨긴 앱도 함께 가져와요."

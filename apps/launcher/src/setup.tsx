@@ -71,7 +71,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   });
   const titles: Record<Step, string> = {
     welcome: t`Welcome to Quiver Launcher!`,
-    v3: t`Coming from Quiver Launcher 3?`,
+    v3: offering ? t`Bring your apps over from Quiver Launcher 3?` : t`Coming from Quiver Launcher 3?`,
     apps: t`Where apps install`,
     usage: t`Usage data`,
     account: t`Sign in to sync your library`,

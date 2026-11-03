@@ -45,9 +45,64 @@ test("a portable 3.x in Downloads is found when the launcher starts", async () =
   const s = await launch({ env: { HOME: home } });
   try {
     await s.usageNoticeSeen();
-    await (await s.app.$("p*=Quiver Launcher 3 is on this computer, with 1 app")).waitForDisplayed({ timeout: 20000 });
+    const banner = await s.app.$(".old-library-notice");
+    await (await banner.$("strong=Bring your apps over from Quiver Launcher 3?")).waitForDisplayed({ timeout: 20000 });
+    assert.match(await banner.getText(), /1 app, already installed\./);
+    // Nothing looks moved, so there's no folder to ask about.
+    assert.ok(!(await (await banner.$("button*=folder")).isExisting()));
     await bringOver(s, installed);
     assert.ok(!existsSync(join(s.apps, "TestPort")), "nothing was downloaded again");
+  } finally {
+    await s.close();
+  }
+});
+
+test("Not now on the banner stands, and Settings can still bring the library over", async () => {
+  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
+  const folder = join(home, "Downloads", "QuiverLauncher-linux");
+  const installed = portableLibrary(folder);
+  let s = await launch({ env: { HOME: home } });
+  try {
+    await s.usageNoticeSeen();
+    await (await (await s.app.$(".old-library-notice")).$("button=Not now")).click();
+    await s.until(async () => !(await (await s.app.$(".old-library-notice")).isExisting()));
+    await new Promise((r) => setTimeout(r, 1000));
+  } finally {
+    await s.close();
+  }
+  s = await launch({ data: s.data, env: { HOME: home, QUIVER_PICK_FOLDER: folder } });
+  try {
+    await (await s.card("test-port")).waitForDisplayed({ timeout: 20000 });
+    await new Promise((r) => setTimeout(r, 2000));
+    assert.ok(!(await (await s.app.$(".old-library-notice")).isExisting()), "it isn't asked again");
+    await s.settings("Library");
+    const page = await s.app.$("section.settings-page");
+    await (await page.$("button=Choose my Quiver Launcher 3 folder…")).click();
+    await (await page.$("button=Add 1 app")).click();
+    await (await page.$("p=Your apps are in your library.")).waitForDisplayed({ timeout: 20000 });
+    await s.closeSettings();
+    await playIt(s, installed);
+  } finally {
+    await s.close();
+  }
+});
+
+test("a banner whose installs look moved asks for the folder, and one more folder finds them", async () => {
+  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
+  const folder = join(home, "Downloads", "QuiverLauncher-linux");
+  portableLibrary(folder);
+  const moved = join(home, "Games");
+  renameSync(join(folder, "Apps"), moved);
+  const s = await launch({ env: { HOME: home, QUIVER_PICK_FOLDER: moved } });
+  try {
+    await s.usageNoticeSeen();
+    const banner = await s.app.$(".old-library-notice");
+    await (await banner.$("button=Choose a folder…")).waitForDisplayed({ timeout: 20000 });
+    assert.match(await banner.getText(), /1 app, not installed yet/);
+    await (await banner.$("button=Choose a folder…")).click();
+    await s.until(async () => /1 app, already installed/.test(await banner.getText()));
+    assert.ok(!(await (await banner.$("button=Choose a folder…")).isExisting()));
+    await bringOver(s, join(moved, "TestPort"));
   } finally {
     await s.close();
   }
@@ -64,32 +119,8 @@ test("a 3.x beside the launcher is the one found, over another elsewhere", async
   const s = await launch({ env: { HOME: home, APPIMAGE: join(copy, "QuiverLauncher_4.0.0_amd64.AppImage") } });
   try {
     await s.usageNoticeSeen();
-    const where = await s.app.$(".old-library-notice .old-library-folder");
-    await where.waitForDisplayed({ timeout: 20000 });
-    assert.equal(await where.getText(), `Found in ${copy}`);
     await bringOver(s, installed);
     assert.ok(!existsSync(join(left, "launched.txt")));
-  } finally {
-    await s.close();
-  }
-});
-
-test("the banner says where it found a 3.x, and another folder can be chosen instead", async () => {
-  const home = mkdtempSync(join(tmpdir(), "quiver-home-"));
-  const downloads = join(home, "Downloads", "QuiverLauncher-linux");
-  const left = portableLibrary(downloads);
-  const other = join(mkdtempSync(join(tmpdir(), "quiver-elsewhere-")), "Old Launcher");
-  const installed = portableLibrary(other);
-  const s = await launch({ env: { HOME: home, QUIVER_PICK_FOLDER: other } });
-  try {
-    await s.usageNoticeSeen();
-    const where = () => s.app.$(".old-library-notice .old-library-folder");
-    await (await where()).waitForDisplayed({ timeout: 20000 });
-    assert.equal(await (await where()).getText(), `Found in ${downloads}`);
-    await (await s.app.$("button=Choose a different folder…")).click();
-    await s.until(async () => (await (await where()).getText()) === `Found in ${other}`);
-    await bringOver(s, installed);
-    assert.ok(!existsSync(join(left, "launched.txt")), "the library found first wasn't the one imported");
   } finally {
     await s.close();
   }
@@ -258,8 +289,8 @@ test("one anywhere else is found and imported in Settings, by its folder or the 
     await s.usageNoticeSeen();
     await settings(s);
     // Settings says what it found and brings it over itself, with no banner asking as well.
-    await (await (await s.app.$("section.settings-page")).$("p*=That folder has 1 app, 1 installed")).waitForDisplayed({ timeout: 10000 });
-    assert.ok(!(await (await s.app.$("p*=Quiver Launcher 3 is on this computer")).isExisting()));
+    await (await (await s.app.$("section.settings-page")).$("p*=1 app, already installed")).waitForDisplayed({ timeout: 10000 });
+    assert.ok(!(await (await s.app.$(".old-library-question")).isExisting()));
     await (await (await s.app.$("section.settings-page")).$("button=Add 1 app")).click();
     await (await (await s.app.$("section.settings-page")).$("p=Your apps are in your library.")).waitForDisplayed({ timeout: 20000 });
     await s.closeSettings();

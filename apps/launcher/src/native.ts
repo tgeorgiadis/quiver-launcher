@@ -36,7 +36,8 @@ export type Listing = {
 /** A Quiver Launcher 3 library: the folder its apps.json is in, and its apps. */
 /** A tag filter the player made in 3.x: apps with any of its tags (all, with `all`), less those with any of `exclude` (all, with `excludeAll`). */
 export type OldFilter = { name: string; tags: string[]; all: boolean; exclude: string[]; excludeAll: boolean };
-export type V3Library = { folder: string; apps: OldApp[]; filters?: OldFilter[] };
+/** `moved`: a folder 3.x's files name for its installs is gone. */
+export type V3Library = { folder: string; apps: OldApp[]; filters?: OldFilter[]; moved?: boolean };
 export type Config = {
   api: string;
   convex: string;

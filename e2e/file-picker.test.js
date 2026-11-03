@@ -43,14 +43,15 @@ test("a folder is chosen by going into it from a place, and Settings finds the l
   await (await row("QuiverLauncher-linux")).click();
   await (await (await picker()).$("button=Choose this folder")).click();
   await (await picker()).waitForDisplayed({ reverse: true });
-  await (await (await settings()).$("p*=That folder has 1 app, 1 installed")).waitForDisplayed({ timeout: 10000 });
+  await (await (await settings()).$("p*=1 app, already installed")).waitForDisplayed({ timeout: 10000 });
 });
 
 test("Escape, a controller's B, cancels it and nothing is chosen", async () => {
-  await (await (await settings()).$("button=Choose my Quiver Launcher 3 folder…")).click();
-  await (await picker()).waitForDisplayed({ timeout: 10000 });
+  await (await (await settings()).$("button=Look in another folder…")).click();
+  const looking = await s.app.$('[role=dialog][aria-label="Choose a folder to look in"]');
+  await looking.waitForDisplayed({ timeout: 10000 });
   await s.app.keys("Escape");
-  await (await picker()).waitForDisplayed({ reverse: true });
-  assert.ok(!(await (await (await settings()).$("p*=That folder doesn't have Quiver Launcher 3 in it")).isExisting()));
+  await looking.waitForDisplayed({ reverse: true });
+  assert.ok(!(await (await (await settings()).$("p*=That folder doesn't have Quiver Launcher 3")).isExisting()));
   assert.ok(await (await settings()).isDisplayed(), "still in Settings: the Escape was the picker's");
 });

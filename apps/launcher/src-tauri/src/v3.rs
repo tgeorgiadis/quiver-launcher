@@ -27,6 +27,9 @@ pub struct OldApp {
     /// The player hid it in 3.x's library.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     hidden: bool,
+    /// 3.x says it's installed in a folder that's gone, and it wasn't found anywhere else.
+    #[serde(skip)]
+    lost: bool,
 }
 
 /// A 3.x library: the folder holding its apps.json, its apps, and the player's tag filters.
@@ -36,6 +39,10 @@ pub struct Library {
     apps: Vec<OldApp>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     filters: Vec<TagFilter>,
+    /// A folder 3.x's files name for its installs is gone, so some have likely moved. An app that simply isn't found
+    /// says nothing: most never were installed, as a library lists apps the player only added.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    moved: bool,
 }
 
 /// A tag filter the player made in 3.x's library (its TagDisplayFilter): the
@@ -166,7 +173,8 @@ pub fn find_in(dir: &Path, apps: &[PathBuf]) -> Option<Library> {
 fn library_in(dir: &Path, apps: &[PathBuf]) -> Option<Library> {
     let settings = read(&dir.join("settings.json")).unwrap_or(Value::Null);
     let apps = read_library(dir, apps, &settings);
-    (!apps.is_empty()).then(|| Library { folder: dir.to_string_lossy().into(), apps, filters: tag_filters(&settings) })
+    let moved = field(&settings, "appsPath").is_some_and(|p| !resolve(dir, p).is_dir()) || apps.iter().any(|a| a.lost);
+    (!apps.is_empty()).then(|| Library { folder: dir.to_string_lossy().into(), apps, filters: tag_filters(&settings), moved })
 }
 
 /// The tag filters in 3.x's settings, leaving out any that filter nothing.
@@ -279,7 +287,9 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
             let name = field(app, "name")?.to_string();
             let own = field(app, "installPath").map(|p| resolve(dir, p));
             let named = field(app, "folderName").into_iter().flat_map(|f| folders.iter().map(move |d| d.join(f)));
+            let gone = own.as_ref().is_some_and(|d| !d.is_dir());
             let install = own.into_iter().chain(named).find_map(|d| installed(&d).map(|(version, program)| (d, version, program)));
+            let lost = gone && install.is_none();
             let (dir, version, program) = match install {
                 Some((d, version, program)) => (Some(d.to_string_lossy().into()), Some(version), program),
                 None => (None, None, None),
@@ -299,6 +309,7 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
                 tags: texts(set.or_else(|| get(app, "tags"))),
                 catalog_tags: texts(get(app, "catalog").and_then(|c| get(c, "tags"))),
                 hidden,
+                lost,
                 name,
                 repository: repository.map(str::to_string),
                 provider: field(app, "repositorySource").unwrap_or("github").to_lowercase(),
@@ -521,6 +532,21 @@ mod tests {
         assert!(existing(root.path()).is_none(), "only 3.x's own files");
         folder(root.path(), &[("port.exe", "")]);
         assert_eq!(existing(root.path()).unwrap().version, "v1.0.0");
+    }
+
+    #[test]
+    fn says_a_library_moved_only_when_a_folder_it_names_is_gone() {
+        let moved = |settings: &str, apps: &str| {
+            let root = tempfile::tempdir().unwrap();
+            library(root.path(), apps);
+            std::fs::write(root.path().join("settings.json"), settings).unwrap();
+            find_in(root.path(), &[]).unwrap().moved
+        };
+        // Apps it only lists, as most of a library's are.
+        assert!(!moved("{}", PORT));
+        assert!(!moved(r#"{"AppsPath":""}"#, PORT));
+        assert!(moved(r#"{"AppsPath":"Z:\\Games"}"#, PORT));
+        assert!(moved("{}", r#"{"Apps":[{"Name":"Test Port","Repository":"quiver/test-port","InstallPath":"Z:\\Games\\TestPort"}]}"#));
     }
 
     #[test]
