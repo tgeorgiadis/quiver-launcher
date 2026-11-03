@@ -10,6 +10,7 @@ import type { AppQuery, Entry, Sort } from "@quiverlauncher/api";
 import { EntryCard } from "@quiverlauncher/ui";
 import { ALL_APPS, CONSOLE_SHELVES, FeaturedCarousel, MORE_LIKE_THIS, SEE_ALL, SHELF_SIZE, SHELF_TITLES, Shelf, featuredDay, featuredMix, likeThis, runsWell } from "@quiverlauncher/ui/discover";
 import { availableOn, catalogOs, useLauncher } from "./store";
+import { browseShown } from "./browse-hidden";
 import { useBrowseCards } from "./library-view";
 
 export type ShelfKey = "rating" | "updated" | "added" | `console:${string}`;
@@ -49,6 +50,7 @@ export function Discover({
   onSeeAll,
   action,
   showOwned,
+  hidden,
 }: {
   onOpen: (entry: Entry) => void;
   /** Shows a shelf's whole list in the grid under it: its order, or its console. */
@@ -57,11 +59,13 @@ export function Discover({
   action: (entry: Entry) => ReactNode;
   /** Browse shows apps already in the library too (as its grid does, else they stay out). */
   showOwned: boolean;
+  /** The apps hidden from Browse (browse-hidden.ts), out of it as the grid has them. */
+  hidden: ReadonlySet<string>;
 }) {
   const { consoles, consoleNames, library, jobs } = useLauncher();
   // As in the grid: the apps in the library when the page came stay out; one added since stays, with its badge.
   const [owned] = useState(() => new Set(library.map((i) => i.id)));
-  const showing = (entries: Entry[]) => (showOwned ? entries : entries.filter((e) => !owned.has(e.id)));
+  const showing = (entries: Entry[]) => browseShown(entries, { owned, showOwned, hidden, view: "hide" });
   const systems = CONSOLE_SHELVES.filter((id) => consoles.some((c) => c.id === id));
   const shelves = useShelves(["rating", "updated", "added", ...systems.map((id): ShelfKey => `console:${id}`)]);
   const inLibrary = new Set(library.map((i) => i.id));
@@ -71,7 +75,7 @@ export function Discover({
   const { rating, updated, added } = shelves;
   const featured = useMemo(
     () => (rating && updated && added ? featuredMix({ rating: showing(rating), updated: showing(updated), added: showing(added) }, day) : null),
-    [rating, updated, added, day, showOwned], // eslint-disable-line react-hooks/exhaustive-deps
+    [rating, updated, added, day, showOwned, [...hidden].join()], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const consoleName = (tag: string) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined);
   const looks = useBrowseCards();
@@ -136,7 +140,7 @@ export function Discover({
  * None for an app with no console (the player's own, a tool) or when there's nothing else to show.
  */
 export function MoreLikeThis({ entry, onOpen, action }: { entry: Entry; onOpen: (entry: Entry) => void; action: (entry: Entry) => ReactNode }) {
-  const { client, config, consoleNames, remember, library, jobs } = useLauncher();
+  const { client, config, consoleNames, remember, library, jobs, settings } = useLauncher();
   const looks = useBrowseCards();
   const system = entry.consoles?.[0];
   const [items, setItems] = useState<{ for: string; entries: Entry[] } | null>(null);
@@ -155,7 +159,9 @@ export function MoreLikeThis({ entry, onOpen, action }: { entry: Entry; onOpen: 
       live = false;
     };
   }, [client, config.os, entry.id, system]); // eslint-disable-line react-hooks/exhaustive-deps
-  const entries = items?.for === entry.id ? items.entries : null;
+  // Less those hidden from Browse (browse-hidden.ts), as soon as they are.
+  const hidden = new Set(settings.browseHidden);
+  const entries = items?.for === entry.id ? items.entries.filter((e) => !hidden.has(e.id)) : null;
   if (!system || (entries && !entries.length)) return null;
   const inLibrary = new Set(library.map((i) => i.id));
   return (

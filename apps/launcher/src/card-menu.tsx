@@ -5,7 +5,8 @@
  * folder, shortcuts, hiding and uninstalling) to the side, and its page.
  * A library card has it behind its ⋯ button; a card or a sidebar row opens it
  * on a right-click, a long press on a touch screen, the Menu key or Shift+F10,
- * or a controller's Options button.
+ * or a controller's Options button. A Browse card opens its own, smaller one
+ * the same ways.
  */
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as KeyEvent, type PointerEvent as PointerEv, type ReactNode } from "react";
 import { Check, ChevronRight, Download, MoreHorizontal, Play } from "lucide-react";
@@ -14,9 +15,10 @@ import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { canGet, hasUpdate, locatable, pulledVerified, renamable, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
-import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote } from "./detail";
+import { ReadmeDialog, foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail } from "./detail";
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
+import { toggleHidden } from "./browse-hidden";
 import { native } from "./native";
 import { track } from "./telemetry";
 import { boxZoom, windowBox, zoom } from "./zoom";
@@ -39,13 +41,86 @@ export function CardMenu({ entry, onOpen }: { entry: Entry; onOpen: () => void }
  * `bare`, there's no ⋯ button: closing it puts focus back on what had it.
  */
 export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry; onOpen: () => void; target: () => Element | null; bare?: boolean; where: "card" | "sidebar" }) {
-  const opener = useRef<((x: number, y: number) => void) | null>(null);
+  const opener = useMenuOpener(target, where);
   const escape = useRef<(() => boolean) | null>(null);
+  const name = entry.projectName;
+  return (
+    <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={<MoreHorizontal size={16} />} bare={bare} role="menu" opener={opener} escape={escape} align="end" panel="card-menu-panel">
+      {(close) => <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />}
+    </Popover>
+  );
+}
+
+/**
+ * A Browse card's menu, with no ⋯ button of its own: what its page has that
+ * an app not got yet can use (its code, README and feedback), and hiding it
+ * from Browse (browse-hidden.ts), or showing it again. Opening the app,
+ * getting it and choosing its version are the card's own. A controller has no
+ * way in: Options on the card gets the app, and the app's page has Hide from
+ * Browse.
+ */
+export function BrowseMenu({ entry, onFeedback }: { entry: Entry; onFeedback: () => void }) {
+  const anchor = useRef<HTMLSpanElement>(null);
+  const opener = useMenuOpener(() => anchor.current?.closest("article") ?? null, "browse");
+  // Opened from the menu, the README stays once it has closed.
+  const [readme, setReadme] = useState(false);
+  const name = entry.projectName;
+  return (
+    <span ref={anchor} hidden>
+      <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={null} bare role="menu" opener={opener} panel="card-menu-panel">
+        {(close) => <BrowseMenuItems entry={entry} close={close} onReadme={() => setReadme(true)} onFeedback={onFeedback} />}
+      </Popover>
+      {readme && <ReadmeDialog entry={entry} onClose={() => setReadme(false)} />}
+    </span>
+  );
+}
+
+function BrowseMenuItems({ entry, close, onReadme, onFeedback }: { entry: Entry; close: () => void; onReadme: () => void; onFeedback: () => void }) {
+  const { settings, setSettings } = useLauncher();
+  // Where its code lives comes with its page's details, asked for as the menu opens.
+  const { source } = useAppDetail(entry);
+  const hidden = settings.browseHidden?.includes(entry.id);
+  const toggle = () => setSettings({ ...settings, browseHidden: toggleHidden(settings.browseHidden, entry.id) });
+  const item = (text: string, act: () => void, disabled = false) => (
+    <button key={text} type="button" role="menuitem" data-item disabled={disabled} onClick={() => (close(), act())}>
+      {text}
+    </button>
+  );
+  // Up and down go through the items, round again at the end.
+  const keys = (e: KeyEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>(":scope > [data-item]:not(:disabled)")];
+    const i = items.indexOf(e.target as HTMLElement);
+    items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
+  };
+  return (
+    <div className="game-menu" data-arrows="" onKeyDown={keys}>
+      {source === undefined
+        ? item(t`View repository`, () => {}, true)
+        : source && item(source.provider === "gitlab" ? t`View on GitLab` : t`View on GitHub`, () => void native.openUrl(source.url))}
+      {item(t`Read the README`, onReadme)}
+      <hr />
+      {item(t`Share feedback…`, onFeedback)}
+      <hr />
+      {item(hidden ? t`Show in Browse` : t`Hide from Browse`, toggle)}
+    </div>
+  );
+}
+
+/**
+ * Opens a menu over `target` (a card, a sidebar row) on a right-click, a long
+ * press, the Menu key or Shift+F10, or a controller's Options button (not on
+ * a Browse card, where Options gets the app); set as the menu's `opener`.
+ */
+function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" | "browse") {
+  const opener = useRef<((x: number, y: number) => void) | null>(null);
   useEffect(() => {
     const card = target();
     if (!card) return;
-    // Where a controller's Options button looks for a menu (spatial.ts).
-    card.setAttribute("data-menu", "");
+    // Where a controller's Options button looks for a menu (spatial.ts). Not a Browse card's: there it presses Get.
+    const pad = where !== "browse";
+    if (pad) card.setAttribute("data-menu", "");
     let pressed = false;
     const open = (x: number, y: number, how: string) => {
       opener.current?.(x, y);
@@ -113,7 +188,7 @@ export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry;
       window.removeEventListener("pointerdown", anew, true);
       window.removeEventListener("mousedown", swallow, true);
       clearTimeout(timer);
-      card.removeAttribute("data-menu");
+      if (pad) card.removeAttribute("data-menu");
       card.removeEventListener("contextmenu", contextmenu);
       card.removeEventListener("keydown", keydown);
       card.removeEventListener("pointerdown", down);
@@ -123,12 +198,7 @@ export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry;
       card.removeEventListener("click", click, true);
     };
   }, []);
-  const name = entry.projectName;
-  return (
-    <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={<MoreHorizontal size={16} />} bare={bare} role="menu" opener={opener} escape={escape} align="end" panel="card-menu-panel">
-      {(close) => <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />}
-    </Popover>
-  );
+  return opener;
 }
 
 /** `icon`: the main action's, as the app's page has it. */

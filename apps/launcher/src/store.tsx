@@ -511,6 +511,8 @@ export type Settings = {
   browseShowsLibrary?: boolean;
   /** How Browse's cards look and which details they show (browse-cards.ts); only what differs from the defaults. */
   browseCards?: { look?: string; details?: string[] };
+  /** Apps hidden from Browse here (browse-hidden.ts); apart from `hidden`, the library's. */
+  browseHidden?: string[];
   /** How the library is sorted (sort.ts); unset is recently played. */
   librarySort?: string;
   /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */

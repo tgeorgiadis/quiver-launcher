@@ -1367,6 +1367,18 @@ export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entr
   return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} />, document.body);
 }
 
+/** The app's README over the page, as from a Browse card's menu; the app's page has it under Overview. */
+export function ReadmeDialog({ entry, onClose }: { entry: Entry; onClose: () => void }) {
+  const { source } = useAppDetail(entry);
+  return createPortal(
+    <Dialog label={t`README`} onClose={onClose}>
+      <PanelFormHead title={entry.projectName} onClose={onClose} />
+      <Readme entry={entry} source={source} />
+    </Dialog>,
+    document.body,
+  );
+}
+
 /**
  * The consoles a library app is for, as the library groups and filters it:
  * the catalog's (or its game's, for an app the player added), unless the

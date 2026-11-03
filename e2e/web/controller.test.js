@@ -76,8 +76,9 @@ const BACK_TO_TOP = 'button[aria-label="Back to top"]';
 // The sidebar's edge is a pointer's (and Tab's): the d-pad goes past it, and View options set its width.
 const SIDEBAR_EDGE = ".sidebar-edge";
 // A card's only button (Get, Play), or Get and its arrow: Y on the card presses Get, so the d-pad goes card to card
-// past them. The arrow's choices are on the app's page too.
-const CARD_MAIN = ".card-action > .primary:only-child, .card-action .get-split > .primary";
+// past them. The arrow's choices are on the app's page too. A Browse card's menu (card-menu.tsx) is beside them, with
+// no button of its own.
+const CARD_MAIN = ".card-action > .primary:only-of-type, .card-action .get-split > .primary";
 /** Asserts the d-pad reaches everything showing (but Back to top, the sidebar's edge, a card's only button and `ignore`), each with all of its focus ring showing. */
 const everything = async (name, ignore) => {
   const { missed, reached, cut, outOfSight, unmarked } = await reach.explore(app, { ignore: [BACK_TO_TOP, SIDEBAR_EDGE, CARD_MAIN, ignore].filter(Boolean).join(", ") });
@@ -1178,4 +1179,23 @@ test("the first start's setup: each step all reached by the d-pad, the focus on 
   } finally {
     await first.close();
   }
+});
+
+// WebKit, here, would show it from :focus-visible alone; Chromium needs app.css's data-navigating, which this doesn't reach.
+test("after the mouse, a menu shows where the d-pad is", async () => {
+  await page.locator(".library-tile").first().click({ button: "right" });
+  await page.locator('[role="menu"] [role="menuitem"]').first().waitFor();
+  // Not over the items, whose hover would look the same.
+  await page.mouse.move(2, 2);
+  const looks = () =>
+    app.execute(() => {
+      const items = [...document.querySelectorAll('[role="menu"] > .game-menu > button:not(:disabled, .game-menu-main)')];
+      const lit = (el) => getComputedStyle(el).backgroundColor;
+      const other = items.find((el) => el !== document.activeElement);
+      return { focused: lit(document.activeElement), other: lit(other), on: document.activeElement.innerText.trim() };
+    });
+  await reach.press(app, "DPadDown");
+  await page.waitForTimeout(100);
+  const moved = await looks();
+  assert.notEqual(moved.focused, moved.other, `${moved.on} is lit`);
 });
