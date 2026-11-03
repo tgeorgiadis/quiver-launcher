@@ -1436,7 +1436,11 @@ span.tile-mark[data-copy="failed"] { background: #ff6b6b; }
 .get-choices .segmented button[aria-pressed="true"] { background: var(--segment-on); color: var(--strong); box-shadow: 0 1px 3px var(--card-shadow), inset 0 0 0 1px var(--line-strong); }
 .get-choices > .primary { justify-self: start; min-height: 40px; padding: 0 20px; font-size: 14px; }
 .versions-heading { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--text-2); }
-.versions-dialog .versions ul { max-height: min(60vh, 480px); }
+/* One scrollbar, the list's, in what room the window leaves it. */
+.detail.choose.versions-window { display: flex; flex-direction: column; overflow: hidden; }
+.versions-dialog { min-height: 0; }
+.versions-dialog .versions { display: flex; flex-direction: column; min-height: 0; }
+.versions-dialog .versions ul { min-height: 96px; max-height: none; }
 /* In its own dialog, the list needs no frame of its own. */
 .versions-dialog .panel-form { padding: 0; border: 0; background: none; }
 /* The page stays put under a dialog: the wheel scrolls the dialog, never the library behind it. Its scrollbar's room stays, so nothing moves. */

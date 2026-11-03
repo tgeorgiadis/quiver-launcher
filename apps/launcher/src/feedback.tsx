@@ -128,12 +128,27 @@ export function FeedbackBox({
 }) {
   const { user } = useAccount();
   const [open, setOpen] = useState(() => Boolean(user && readDraft(user.id, entry.id)));
+  const box = useRef<HTMLElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  // Escape or Back closes it, ahead of the page going back. Not from under a dialog or menu, or on a page covered by another.
+  useEffect(() => {
+    if (!open) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !box.current?.getClientRects().length || document.querySelector('[role="dialog"], [role="menu"], .menu.floating')) return;
+      e.stopImmediatePropagation();
+      if (box.current.contains(document.activeElement)) toggle.current?.focus({ preventScroll: true });
+      setOpen(false);
+    };
+    window.addEventListener("keydown", key, true);
+    return () => window.removeEventListener("keydown", key, true);
+  }, [open]);
   const name = entry.projectName;
   return (
-    <section className="panel feedback-box" data-open={open || undefined} aria-label={t`What players said`}>
+    <section ref={box} className="panel feedback-box" data-open={open || undefined} aria-label={t`What players said`}>
       <div className="feedback-box-head">
         <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} />
         <button
+          ref={toggle}
           type="button"
           className="feedback-box-toggle"
           aria-expanded={open}
