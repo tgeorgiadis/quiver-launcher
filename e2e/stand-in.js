@@ -13,7 +13,7 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     api,
     // Nothing listens at either: no account, and no usage data sent anywhere.
     convex: "http://127.0.0.1:1/convex",
-    posthogHost: "http://127.0.0.1:1/posthog",
+    usageHost: "http://127.0.0.1:1/usage",
     githubApi: "https://api.github.com",
     gitlabApi: "https://gitlab.com/api/v4",
     returnTo: "",

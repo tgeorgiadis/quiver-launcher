@@ -734,6 +734,11 @@ msgstr "Todos os tipos de projeto"
 msgid "All tags"
 msgstr "Todas as tags"
 
+#. Allow usage data to be sent
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Allow"
+msgstr "Permitir"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
 msgstr "Também conhecido como {matched}"
@@ -1020,6 +1025,10 @@ msgstr "Conhecido como {title} ({region})"
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in the {region}"
 msgstr "Conhecido como {title} ({region})"
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Can Quiver Launcher send usage data to help improve it? It isn't linked to your Quiver account, and nothing is sent unless you allow it. You can change this in Settings."
+msgstr "O Quiver Launcher pode enviar dados de uso para ajudar a melhorá-lo? Eles não são vinculados à sua conta Quiver, e nada é enviado sem a sua permissão. Você pode mudar isso nas Configurações."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Can't be added: Quiver Launcher 3 doesn't know where it comes from"
@@ -1493,6 +1502,11 @@ msgstr "Dispensar tudo"
 #: ../ui/src/index.tsx
 msgid "Doesn't run"
 msgstr "Não roda"
+
+#. Don't send usage data
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Don't allow"
+msgstr "Não permitir"
 
 #. Closes a dialog
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2137,6 +2151,10 @@ msgstr "Não rodou"
 msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "O Quiver instala os arquivos que viu quando ela saiu e recusa os que mudaram desde então."
 
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "It isn't linked to your Quiver account."
+msgstr "Eles não são vinculados à sua conta Quiver."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "Rodou, mas tive problemas"
@@ -2152,10 +2170,6 @@ msgstr "Funcionou bem"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It wouldn't install, open, or start."
 msgstr "Não instalou, não abriu ou não iniciou."
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "It's anonymous while you're signed out."
-msgstr "São anônimos enquanto você não estiver conectado."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -3267,8 +3281,8 @@ msgid "Quiver Launcher only updates to verified releases. It installs an unverif
 msgstr "O Quiver Launcher só atualiza para versões verificadas. Ele só instala uma não verificada ou bloqueada se você escolhê-la e confirmar. Verificada significa que cada arquivo da versão está publicado há 48 horas, então houve tempo para perceber um envio malicioso, e que um mantenedor do Quiver revisou qualquer arquivo que o VirusTotal sinalizou. O Quiver Launcher confere cada download com o arquivo que o Quiver verificou. Se um arquivo for substituído depois, o novo espera as próprias 48 horas."
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "Quiver Launcher sends usage data to help improve it. It's anonymous unless you sign in. You can turn this off in Settings."
-msgstr "O Quiver Launcher envia dados de uso para ajudar a melhorá-lo. Eles são anônimos, a menos que você entre na sua conta. Você pode desativar isso nas Configurações."
+msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
+msgstr "O Quiver Launcher envia dados de uso para ajudar a melhorá-lo. Eles não são vinculados à sua conta Quiver. Você pode desativar isso nas Configurações."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver Launcher: go to your library"
@@ -4670,10 +4684,6 @@ msgstr "Qual app?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "Qual download?"
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "While you're signed in, it's linked to your Quiver account."
-msgstr "Enquanto você estiver conectado, eles ficam vinculados à sua conta do Quiver."
 
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts

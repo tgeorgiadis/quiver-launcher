@@ -59,8 +59,8 @@ struct Config {
     os: &'static str,
     arch: &'static str,
     apps_dir: String,
-    /// Where anonymous usage data goes: PostHog, or a stand-in in end-to-end tests.
-    posthog_host: String,
+    /// Where anonymous usage data goes: the website, or a stand-in in end-to-end tests.
+    usage_host: String,
     /// This build's version, sent with usage data.
     version: String,
     /// The home folder and the user's name on this computer, which usage data
@@ -107,7 +107,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         os: OS,
         arch: ARCH,
         apps_dir: data.apps().to_string_lossy().into(),
-        posthog_host: std::env::var("QUIVER_POSTHOG_HOST").unwrap_or_else(|_| "https://us.i.posthog.com".into()),
+        usage_host: std::env::var("QUIVER_USAGE_HOST").unwrap_or_else(|_| "https://quiverlauncher.com".into()),
         version: app.package_info().version.to_string(),
         home: std::env::var(if OS == "windows" { "USERPROFILE" } else { "HOME" }).ok().filter(|h| !h.is_empty()),
         user: std::env::var("USERNAME").or_else(|_| std::env::var("USER")).ok().filter(|u| !u.is_empty()),

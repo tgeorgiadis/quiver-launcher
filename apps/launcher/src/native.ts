@@ -49,7 +49,7 @@ export type Config = {
   arch: string;
   appsDir: string;
   /** Where anonymous usage data goes (telemetry.ts). */
-  posthogHost: string;
+  usageHost: string;
   version: string;
   /** The home folder and user name, which usage data never contains. */
   home: string | null;

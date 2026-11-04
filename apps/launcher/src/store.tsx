@@ -545,6 +545,8 @@ export type Settings = {
   sidebarWidth?: number;
   /** Anonymous usage data turned off here (telemetry.ts); signed in, the account's setting wins. */
   telemetryOff?: boolean;
+  /** The player said yes to usage data here, which it needs first in some countries (telemetry.ts). */
+  telemetryConsent?: boolean;
   /** The first-run notice about usage data was answered. */
   telemetryNoticeSeen?: boolean;
   /** Quiver Launcher has started here before. */

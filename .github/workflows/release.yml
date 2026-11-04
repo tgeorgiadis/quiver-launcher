@@ -13,7 +13,8 @@ name: Release
 #     downloads; unset, the release has no .sig files and can't update anyone.
 #   QUIVER_UPDATE_PUBKEY (variable): the matching .pub file. Built into the
 #     launcher so it can check those signatures; unset, it can't update itself.
-#   POSTHOG_PROJECT_TOKEN (variable): usage data, as in CI.
+#   SENTRY_AUTH_TOKEN (secret): uploads the source maps for error reports; unset,
+#     they still arrive, but as minified code.
 # And in the signing environment (Settings > Environments > signing), for
 # Windows code signing: AZURE_CLIENT_ID, AZURE_TENANT_ID and
 # AZURE_SUBSCRIPTION_ID (secrets); AZURE_TRUSTED_SIGNING_ENDPOINT, _ACCOUNT,
@@ -38,7 +39,9 @@ concurrency:
 
 env:
   QUIVER_UPDATE_PUBKEY: ${{ vars.QUIVER_UPDATE_PUBKEY }}
-  VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+  VITE_USAGE_DATA: "1"
+  VITE_SENTRY_DSN: https://84d1ea0079a275f2356a6605b1823ff5@o4512369991942144.ingest.de.sentry.io/4512370215551056
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 jobs:
   version:
@@ -223,7 +226,7 @@ jobs:
         run: .github/cef-appimage-check.sh apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage
       - name: The AppImage starts
         run: |
-          export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke QUIVER_POSTHOG_HOST=http://127.0.0.1:9 QUIVER_SKIP_UPDATES=1
+          export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke QUIVER_USAGE_HOST=http://127.0.0.1:9 QUIVER_SKIP_UPDATES=1
           status=0; xvfb-run -a timeout 15 apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage > $RUNNER_TEMP/app.log 2>&1 || status=$?
           cat $RUNNER_TEMP/app.log $QUIVER_DATA/quiver.log 2>/dev/null || true
           test $status -eq 124
@@ -249,7 +252,7 @@ jobs:
       - name: The Flatpak starts
         run: |
           flatpak install --user -y --noninteractive --bundle out/*.flatpak
-          export QUIVER_DATA=$RUNNER_TEMP/quiver-flatpak-smoke QUIVER_POSTHOG_HOST=http://127.0.0.1:9 QUIVER_SKIP_UPDATES=1
+          export QUIVER_DATA=$RUNNER_TEMP/quiver-flatpak-smoke QUIVER_USAGE_HOST=http://127.0.0.1:9 QUIVER_SKIP_UPDATES=1
           status=0; xvfb-run -a dbus-run-session -- timeout 15 flatpak run com.quiverlauncher.QuiverLauncher > $RUNNER_TEMP/flatpak.log 2>&1 || status=$?
           cat $RUNNER_TEMP/flatpak.log $QUIVER_DATA/quiver.log 2>/dev/null || true
           test $status -eq 124

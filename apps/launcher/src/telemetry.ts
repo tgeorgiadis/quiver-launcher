@@ -1,24 +1,24 @@
 /**
- * Usage data and errors, sent to PostHog as the website does (its
- * src/analytics.tsx): on unless the player turns it off, in Settings or on
- * their Quiver account. Either one off is off: an account that has it on
- * doesn't turn it back on for a computer where it was turned off. Signed in,
- * events join the same person as on the website; signed out, they stay
- * anonymous.
+ * Usage data and errors: named events go to quiverlauncher.com, which passes
+ * them on to Google Analytics (the website's worker/launcherUsage.ts), and
+ * errors go to Sentry. As on the website (its src/analytics.tsx), it's on unless
+ * the player turns it off, in Settings or on their Quiver account, and either
+ * one off is off. Where the website asks first (the EU, UK and Switzerland),
+ * nothing is sent until the player says yes, nor if that can't be found out.
+ * Neither is linked to a Quiver account.
  *
  * Only the events below are sent, never clicks or text on the screen, and
  * nothing that looks like a file or folder, or the computer's user name, ever
- * leaves (`scrub`). Without a project token (VITE_POSTHOG_PROJECT_TOKEN) at
- * build time nothing loads at all, and `pnpm dev` sends nothing unless
- * VITE_POSTHOG_DEV=1 is set too.
+ * leaves (`scrub`). Without VITE_USAGE_DATA=1 at build time nothing is sent at
+ * all, and `pnpm dev` sends nothing unless VITE_USAGE_DEV=1 is set too.
  */
 import { useSyncExternalStore } from "react";
-import type { PostHog, CaptureResult, Properties } from "posthog-js";
+import type { ErrorEvent } from "@sentry/browser";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 
-/** PostHog's US cloud, where the website's events go too. */
-export const DEFAULT_HOST = "https://us.i.posthog.com";
+/** The website, which keeps the secret Google Analytics asks for. */
+export const DEFAULT_HOST = "https://quiverlauncher.com";
 
 /** What every event says about this copy of the launcher, and what none may contain. */
 export type TelemetryContext = {
@@ -32,164 +32,186 @@ export type TelemetryContext = {
   appsDir?: string | null;
 };
 
-/** The signed-in account, as the website's users.me has it. */
-export type TelemetryAccount = { id: string; name?: string; role?: string; provider?: string; createdAt?: number; optOut: boolean };
+/** The signed-in account's setting, as the website's users.me has it. */
+export type TelemetryAccount = { optOut: boolean };
 
-type Client = Promise<PostHog | null>;
+export type Properties = Record<string, unknown>;
+
+type Sentry = typeof import("@sentry/browser");
+
+const ID_KEY = "quiver-usage-id";
+/** Google Analytics' limit for one request. */
+const MAX_BATCH = 25;
+const SEND_AFTER_MS = 10_000;
+/** The longest time between events counted as using the launcher. */
+const MAX_ENGAGEMENT_MS = 30 * 60_000;
+/** Sentry's parts that report by themselves, whatever beforeSend says, or keep what the player did. */
+const LEFT_OUT = new Set(["BrowserSession", "Breadcrumbs", "Console"]);
 
 const env = () => import.meta.env;
-const token = () => (env().VITE_POSTHOG_PROJECT_TOKEN as string | undefined)?.trim() || undefined;
 
-/** Whether this build sends anything at all: it has a token, and isn't `pnpm dev` (unless asked). */
+/** Whether this build sends anything at all: it's asked to, and isn't `pnpm dev` (unless asked). */
 export function telemetryAvailable() {
-  if (!token()) return false;
-  return !env().DEV || env().VITE_POSTHOG_DEV === "1";
+  if (env().VITE_USAGE_DATA !== "1") return false;
+  return !env().DEV || env().VITE_USAGE_DEV === "1";
 }
 
 let context: TelemetryContext | null = null;
 /** This computer's choice (Settings). */
 let localOff = false;
+/** The player said yes on this computer (Settings). */
+let consented = false;
+/** Whether the player must say yes first; undefined until the website has answered. */
+let askFirst: boolean | undefined;
+let lookingUp = false;
 /** The signed-in account's choice; null signed out. */
 let accountOff: boolean | null = null;
-/** undefined until known: nothing starts before the account's choice can be followed. */
-let account: TelemetryAccount | null | undefined;
-let client: Client | null = null;
-let identified: string | null = null;
+/** False until known: nothing starts before the account's choice can be followed. */
+let accountKnown = false;
+let errors: Promise<Sentry | null> | null = null;
+let clientId: string | null = null;
+let sessionId: string | null = null;
+let lastEventAt = 0;
+let outbox: { name: string; params: Properties }[] = [];
+let sendTimer: ReturnType<typeof setTimeout> | null = null;
+let listeningForClose = false;
 /** Screens already sent, each with its app or step (`trackScreen`). */
 const screens = new Set<string>();
-/** Events from before PostHog loaded (the start, the first screen), sent once it has. */
+/** Events from before it could send (the start, the first screen), sent once it can. */
 let queue: [string, Properties | undefined][] = [];
 const listeners = new Set<() => void>();
 
 /** Off if this computer or the signed-in account says so: an opt-out never comes undone by itself. */
 const off = () => localOff || accountOff === true;
+/** No yes is needed here, or the player gave it. */
+const cleared = () => consented || askFirst === false;
+const allowed = () => telemetryAvailable() && context !== null && accountKnown && !off() && cleared();
 
-/**
- * PostHog's own switch, kept with ours: off, it captures nothing at all, and one it stored as off before doesn't
- * outlast turning it back on. Opting in records no event of its own.
- */
-function follow(posthog: PostHog | null) {
-  if (!posthog) return;
-  if (off()) posthog.opt_out_capturing();
-  else if (posthog.has_opted_out_capturing()) posthog.opt_in_capturing({ captureEventName: false });
-}
-
-const superProperties = (c: TelemetryContext) => ({ app: "launcher", launcher_version: c.version, os: c.os, arch: c.arch });
-
-/** A test token (phc_test…) only ever goes to a stand-in, never to PostHog itself. */
-const isPostHogCloud = (host: string) => /(^|\.)posthog\.com$/i.test(hostname(host));
-function hostname(url: string) {
+/** A random identifier for this computer, kept until usage data is turned off. Nothing else says who it is. */
+function usageId() {
+  if (clientId) return clientId;
   try {
-    return new URL(url).hostname;
+    clientId = localStorage.getItem(ID_KEY);
   } catch {
-    return url;
+    // Without storage it lasts until the launcher closes.
   }
+  if (!clientId) {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    clientId = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    try {
+      localStorage.setItem(ID_KEY, clientId);
+    } catch {
+      // As above.
+    }
+  }
+  return clientId;
 }
 
-function start(): Client | null {
-  if (client || !context || account === undefined || off() || !telemetryAvailable()) return client;
-  const projectToken = token()!;
-  const ctx = context;
-  if (/^phc_test/i.test(projectToken) && isPostHogCloud(ctx.host)) return null;
-  client = Promise.all([
-    // The bundle that never loads scripts from elsewhere: nothing remote runs in the launcher's window.
-    import("posthog-js/no-external"),
-    // Error tracking's handlers, bundled in for the same reason.
-    import("posthog-js/dist/exception-autocapture"),
-  ])
-    .then(([{ default: posthog }]) => {
-      posthog.init(projectToken, {
-        api_host: ctx.host,
-        // Links in PostHog's toolbar still go to PostHog itself, as on the website.
-        ui_host: "https://us.posthog.com",
-        defaults: "2026-05-30",
-        persistence: "localStorage",
-        person_profiles: "identified_only",
-        // Explicit events only: no clicks, text or pages captured by themselves.
-        autocapture: false,
-        rageclick: false,
-        capture_pageview: false,
-        capture_pageleave: false,
-        capture_dead_clicks: false,
-        capture_heatmaps: false,
-        capture_performance: false,
-        save_referrer: false,
-        save_campaign_params: false,
-        // Errors are tracked: uncaught ones and rejected promises.
-        capture_exceptions: { capture_unhandled_errors: true, capture_unhandled_rejections: true, capture_console_errors: false },
-        disable_session_recording: true,
-        disable_surveys: true,
-        disable_product_tours: true,
-        disable_conversations: true,
-        disable_web_experiments: true,
-        disable_external_dependency_loading: true,
-        // No feature flags or remote config: only events are sent.
-        advanced_disable_flags: true,
-        // PostHog drops events from a window that WebDriver controls (navigator.webdriver), which on Linux is how
-        // the end-to-end tests drive the app. A desktop app isn't crawled by bots, so nothing real is lost by keeping them.
-        opt_out_useragent_filter: true,
-        // A stand-in (end-to-end tests) reads plain JSON.
-        disable_compression: hostname(ctx.host) !== hostname(DEFAULT_HOST),
-        // Turning it off after PostHog loaded drops everything, and browser noise goes too; what's left is scrubbed.
-        before_send: (event) => (!event || off() || isNoise(event) ? null : scrubEvent(event)),
+function sendNow() {
+  if (sendTimer) clearTimeout(sendTimer);
+  sendTimer = null;
+  if (!outbox.length || !context || !allowed()) return;
+  const events = outbox;
+  outbox = [];
+  // As plain text, which needs no preflight; keepalive lets the last ones outlive the window.
+  void fetch(`${context.host}/api/launcher/usage`, {
+    method: "POST",
+    body: JSON.stringify({ client_id: usageId(), events }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+function send(name: string, properties: Properties | undefined, ctx: TelemetryContext) {
+  const now = Date.now();
+  sessionId ??= String(Math.floor(now / 1000));
+  const engaged = lastEventAt ? Math.min(now - lastEventAt, MAX_ENGAGEMENT_MS) : 0;
+  lastEventAt = now;
+  const params = scrubValue({
+    app: "launcher",
+    launcher_version: ctx.version,
+    os: ctx.os,
+    arch: ctx.arch,
+    ...properties,
+    session_id: sessionId,
+    // Google Analytics only counts someone as active with some time spent.
+    engagement_time_msec: Math.max(engaged, 1),
+  }) as Properties;
+  outbox.push({ name, params });
+  if (outbox.length >= MAX_BATCH) sendNow();
+  else sendTimer ??= setTimeout(sendNow, SEND_AFTER_MS);
+}
+
+/** Sentry, once it may send; only where events really go, so tests and smoke runs report nothing. */
+function startErrors(ctx: TelemetryContext) {
+  const dsn = (env().VITE_SENTRY_DSN as string | undefined)?.trim();
+  if (errors || !dsn || ctx.host !== DEFAULT_HOST) return;
+  errors = import("@sentry/browser")
+    .then((sentry) => {
+      sentry.init({
+        dsn,
+        release: `quiver-launcher@${ctx.version}`,
+        environment: env().MODE,
+        sendClientReports: false,
+        integrations: (defaults) => defaults.filter(({ name }) => !LEFT_OUT.has(name)),
+        // Turning it off after it loaded drops everything, and browser noise goes too; what's left is scrubbed.
+        beforeSend: (event) => (!allowed() || isNoise(event) ? null : scrubEvent(event)),
       });
-      posthog.register(superProperties(ctx));
-      follow(posthog);
-      return posthog;
+      return sentry;
     })
     .catch(() => null);
-  void client.then((posthog) => {
-    if (!posthog) return;
-    syncIdentity();
-    const waiting = queue;
-    queue = [];
-    if (!off()) for (const [event, properties] of waiting) posthog.capture(event, properties);
-  });
-  return client;
 }
 
-/** A fresh anonymous identifier, keeping what every event says about the launcher. */
-function forget() {
-  identified = null;
-  screens.clear();
+/** Starts sending, if it may now, with what was waiting. */
+function start() {
   const ctx = context;
-  void client?.then((posthog) => {
-    posthog?.reset();
-    if (ctx) posthog?.register(superProperties(ctx));
-  });
+  if (!ctx || !allowed()) return;
+  startErrors(ctx);
+  if (!listeningForClose) {
+    listeningForClose = true;
+    window.addEventListener("pagehide", sendNow);
+  }
+  const waiting = queue;
+  queue = [];
+  for (const [event, properties] of waiting) send(event, properties, ctx);
 }
 
-/** Links events to the signed-in account, as the website does, and forgets it on sign-out or opting out. */
-function syncIdentity() {
-  const a = account;
-  if (!a || off()) {
-    if (identified) forget();
-    return;
+/** A fresh identifier, and nothing left to send. */
+function forget() {
+  queue = [];
+  outbox = [];
+  if (sendTimer) clearTimeout(sendTimer);
+  sendTimer = null;
+  screens.clear();
+  clientId = null;
+  sessionId = null;
+  lastEventAt = 0;
+  try {
+    localStorage.removeItem(ID_KEY);
+  } catch {
+    // Nothing stored, then.
   }
-  const current = client ?? start();
-  if (!current) return;
-  const props = Object.fromEntries(
-    Object.entries({ name: a.name, role: a.role, provider: a.provider }).filter(([, v]) => v !== undefined),
-  );
-  // Again when the name or role changes, so the person stays current.
-  const key = JSON.stringify([a.id, props]);
-  if (identified === key) return;
-  identified = key;
-  void current.then((posthog) =>
-    posthog?.identify(a.id, props, a.createdAt ? { created_at: new Date(a.createdAt).toISOString() } : undefined),
-  );
+}
+
+/** Asks the website whether the player must say yes first; if it can't say, they must. Not once it's off or answered. */
+function lookUpAskFirst() {
+  if (askFirst !== undefined || lookingUp || consented || off() || !context || !telemetryAvailable()) return;
+  lookingUp = true;
+  void fetch(`${context.host}/api/launcher/consent`)
+    .then((response) => (response.ok ? response.json() : null))
+    .then((answer: { askFirst?: unknown } | null) => answer?.askFirst === false)
+    .catch(() => false)
+    .then((free) => {
+      askFirst = !free;
+      lookingUp = false;
+      changed(off());
+    });
 }
 
 /** Acts on a change of choice and tells the switches. */
 function changed(wasOff: boolean) {
-  if (!off()) start();
-  else if (!wasOff) {
-    queue = [];
-    forget();
-  }
-  // After forget's reset, which would otherwise put PostHog's own switch back.
-  void client?.then(follow);
-  syncIdentity();
+  if (off() && !wasOff) forget();
+  lookUpAskFirst();
+  start();
   snapshot = telemetryChoice();
   listeners.forEach((listener) => listener());
 }
@@ -197,8 +219,7 @@ function changed(wasOff: boolean) {
 /** Starts sending (if it may), once the launcher knows where to and what it is. */
 export function startTelemetry(next: TelemetryContext) {
   context = next;
-  start();
-  syncIdentity();
+  changed(off());
 }
 
 /** The apps folder moved: it's taken out of what's sent too. */
@@ -206,10 +227,11 @@ export function setTelemetryAppsDir(appsDir: string) {
   if (context) context = { ...context, appsDir };
 }
 
-/** This computer's choice, from Settings. */
-export function setTelemetryLocal(enabled: boolean) {
+/** This computer's choices, from Settings: on or off, and whether the player has said yes. */
+export function setTelemetryLocal(enabled: boolean, consent = false) {
   const was = off();
   localOff = !enabled;
+  consented = consent;
   changed(was);
 }
 
@@ -217,7 +239,7 @@ export function setTelemetryLocal(enabled: boolean) {
 export function setTelemetryAccount(next: TelemetryAccount | null | undefined) {
   if (next === undefined) return;
   const was = off();
-  account = next;
+  accountKnown = true;
   accountOff = next ? next.optOut : null;
   changed(was);
 }
@@ -226,19 +248,28 @@ export function setTelemetryAccount(next: TelemetryAccount | null | undefined) {
  * The player turning it off or back on: this computer remembers it, and while
  * someone is signed in it stands for their account until the saved setting
  * (users.setAnalytics) comes back. If saving it fails, this computer's off
- * still holds.
+ * still holds. Turning it on is the yes the player may have been asked for.
  */
 export function setTelemetryEnabled(enabled: boolean) {
   const was = off();
   localOff = !enabled;
+  consented = enabled;
   if (accountOff !== null) accountOff = !enabled;
   changed(was);
 }
 
-/** Whether this build sends anything, whether it's on, and whether the choice is the account's. */
+/**
+ * Whether this build sends anything, whether it's on, whether the choice is the
+ * account's, and whether the player must be asked first.
+ */
 export function telemetryChoice() {
   const available = telemetryAvailable();
-  return { available, enabled: available && !off(), signedIn: accountOff !== null };
+  return {
+    available,
+    enabled: available && !off() && cleared(),
+    signedIn: accountOff !== null,
+    ask: available && !off() && !consented && askFirst === true,
+  };
 }
 
 let snapshot = telemetryChoice();
@@ -256,11 +287,11 @@ export function useTelemetryChoice() {
 /** Records a product event; does nothing when it's off. */
 export function track(event: string, properties?: Properties) {
   if (!telemetryAvailable() || off()) return;
-  if (!client) {
+  if (!allowed() || !context) {
     if (queue.length < 50) queue.push([event, properties]);
     return;
   }
-  void client.then((posthog) => posthog?.capture(event, properties));
+  send(event, properties, context);
 }
 
 /** A screen shown, once per launch (and again for a fresh identifier): coming back to it says nothing new. */
@@ -277,16 +308,15 @@ export function trackScreen(properties: Properties) {
  * more than one frame to settle, harmless and in nearly every window.
  */
 const NOISE = /^ResizeObserver loop (completed with undelivered notifications|limit exceeded)/;
-function isNoise(event: CaptureResult) {
-  if (event.event !== "$exception") return false;
-  const list = event.properties?.$exception_list as { value?: unknown }[] | undefined;
+function isNoise(event: ErrorEvent) {
+  const list = event.exception?.values;
   return Array.isArray(list) && list.length > 0 && list.every((e) => typeof e?.value === "string" && NOISE.test(e.value));
 }
 
 /** Reports an error caught on the way (an error boundary's) to error tracking. */
 export function captureError(error: unknown, properties?: Properties) {
-  if (!telemetryAvailable() || off()) return;
-  void (client ?? start())?.then((posthog) => posthog?.captureException(error, properties));
+  if (!allowed()) return;
+  void errors?.then((sentry) => sentry?.captureException(error, { extra: properties }));
 }
 
 /**
@@ -324,7 +354,7 @@ const PATHS = [
 ];
 
 /** Takes paths, the home and apps folders, and the computer's user name out of a string. */
-export function scrub(text: string, { keepName = false }: { keepName?: boolean } = {}) {
+export function scrub(text: string) {
   let out = text;
   for (const folder of [context?.appsDir, context?.home]) {
     if (folder && folder.length > 2) out = out.replace(new RegExp(escape(folder), "gi"), PATH);
@@ -332,33 +362,19 @@ export function scrub(text: string, { keepName = false }: { keepName?: boolean }
   for (const pattern of PATHS) out = out.replace(pattern, PATH);
   out = out.replace(/(<path>)+/g, PATH);
   const user = context?.user;
-  if (!keepName && user && user.length >= 2)
+  if (user && user.length >= 2)
     out = out.replace(new RegExp(`(?<![\\p{L}\\p{N}_-])${escape(user)}(?![\\p{L}\\p{N}_-])`, "giu"), "<user>");
   return out;
 }
 
-function scrubValue(value: unknown, keepName: boolean, depth = 0): unknown {
-  if (typeof value === "string") return scrub(value, { keepName });
+function scrubValue(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") return scrub(value);
   if (depth > 10 || value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map((v) => scrubValue(v, false, depth + 1));
-  return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, scrubValue(v, false, depth + 1)]));
+  if (Array.isArray(value)) return value.map((v) => scrubValue(v, depth + 1));
+  return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, scrubValue(v, depth + 1)]));
 }
 
-/** The person's properties: their Quiver name is theirs to send, as on the website, even if it's their user name too. */
-function scrubPerson(set: unknown) {
-  if (!set || typeof set !== "object" || Array.isArray(set)) return scrubValue(set, false);
-  return Object.fromEntries(Object.entries(set).map(([k, v]) => [k, scrubValue(v, k === "name")]));
-}
-
-/** An event with every string scrubbed: its properties, error messages and stack frames, and the person's. */
-export function scrubEvent(event: CaptureResult): CaptureResult {
-  const properties: Properties = {};
-  for (const [key, value] of Object.entries(event.properties ?? {}))
-    properties[key] = key === "$set" || key === "$set_once" ? scrubPerson(value) : scrubValue(value, false);
-  return {
-    ...event,
-    properties,
-    ...(event.$set ? { $set: scrubPerson(event.$set) as Properties } : {}),
-    ...(event.$set_once ? { $set_once: scrubPerson(event.$set_once) as Properties } : {}),
-  };
+/** An error report with every string scrubbed: its messages, stack frames and anything added to it. */
+export function scrubEvent<T>(event: T) {
+  return scrubValue(event) as T;
 }

@@ -12,12 +12,12 @@ let started = false;
 export function useTelemetrySetup() {
   const { config, settings, setSettings } = useLauncher();
   const { ready, user } = useAccount();
-  useEffect(() => setTelemetryLocal(!settings.telemetryOff), [settings.telemetryOff]);
+  useEffect(() => setTelemetryLocal(!settings.telemetryOff, Boolean(settings.telemetryConsent)), [settings.telemetryOff, settings.telemetryConsent]);
   useEffect(() => {
     if (started) return;
     started = true;
     startTelemetry({
-      host: config.posthogHost,
+      host: config.usageHost,
       version: config.version,
       os: config.os,
       arch: config.arch,
@@ -29,20 +29,8 @@ export function useTelemetrySetup() {
     if (!settings.launched) setSettings({ ...settings, launched: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(
-    () =>
-      setTelemetryAccount(
-        !ready
-          ? undefined
-          : user && {
-              id: user.id,
-              name: user.name,
-              role: user.role,
-              provider: user.provider,
-              createdAt: user.createdAt,
-              optOut: Boolean(user.analyticsOptOut),
-            },
-      ),
-    [ready, user?.id, user?.name, user?.role, user?.provider, user?.createdAt, user?.analyticsOptOut], // eslint-disable-line react-hooks/exhaustive-deps
+    () => setTelemetryAccount(!ready ? undefined : user && { optOut: Boolean(user.analyticsOptOut) }),
+    [ready, Boolean(user), user?.analyticsOptOut], // eslint-disable-line react-hooks/exhaustive-deps
   );
 }
 
@@ -52,7 +40,7 @@ export function useTelemetrySwitch() {
   const { user, setAnalytics } = useAccount();
   const choice = useTelemetryChoice();
   const setEnabled = (enabled: boolean, more: Partial<Settings> = {}) => {
-    setSettings({ ...settings, telemetryOff: enabled ? undefined : true, ...more });
+    setSettings({ ...settings, telemetryOff: enabled ? undefined : true, telemetryConsent: enabled ? true : undefined, ...more });
     setTelemetryEnabled(enabled);
     if (user) void setAnalytics(enabled).catch(() => {});
   };
@@ -71,11 +59,7 @@ export function TelemetrySetting() {
       </label>
       <p className="muted">
         <Trans>Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders.</Trans>{" "}
-        {signedIn ? (
-          <Trans>While you&apos;re signed in, it&apos;s linked to your Quiver account.</Trans>
-        ) : (
-          <Trans>It&apos;s anonymous while you&apos;re signed out.</Trans>
-        )}
+        <Trans>It isn&apos;t linked to your Quiver account.</Trans>
       </p>
       {signedIn && (
         <p className="muted">
@@ -86,15 +70,32 @@ export function TelemetrySetting() {
   );
 }
 
-/** Once, on the first start: what's sent, and the way to turn it off. Above the list, never over it. */
+/**
+ * Once, on the first start: what's sent, and the way to turn it off. Where the player must say yes first, it asks
+ * until they answer, whatever an earlier version told them. Above the list, never over it.
+ */
 export function TelemetryNotice() {
   const { settings, setSettings } = useLauncher();
-  const { available, enabled, setEnabled } = useTelemetrySwitch();
+  const { available, enabled, ask, setEnabled } = useTelemetrySwitch();
+  if (ask)
+    return (
+      <div className="banner telemetry-notice" role="status" aria-label={t`Usage data`}>
+        <p>
+          <Trans>Can Quiver Launcher send usage data to help improve it? It isn&apos;t linked to your Quiver account, and nothing is sent unless you allow it. You can change this in Settings.</Trans>
+        </p>
+        <button className="primary" onClick={() => setEnabled(true, { telemetryNoticeSeen: true })}>
+          <Trans comment="Allow usage data to be sent">Allow</Trans>
+        </button>
+        <button onClick={() => setEnabled(false, { telemetryNoticeSeen: true })}>
+          <Trans comment="Don't send usage data">Don&apos;t allow</Trans>
+        </button>
+      </div>
+    );
   if (!available || !enabled || settings.telemetryNoticeSeen) return null;
   return (
     <div className="banner telemetry-notice" role="status" aria-label={t`Usage data`}>
       <p>
-        <Trans>Quiver Launcher sends usage data to help improve it. It&apos;s anonymous unless you sign in. You can turn this off in Settings.</Trans>
+        <Trans>Quiver Launcher sends usage data to help improve it. It isn&apos;t linked to your Quiver account. You can turn this off in Settings.</Trans>
       </p>
       <button className="primary" onClick={() => setSettings({ ...settings, telemetryNoticeSeen: true })}>
         <Trans comment="Accept the usage data notice">OK</Trans>
