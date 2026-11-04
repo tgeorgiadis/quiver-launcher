@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, folderGone, hasUpdate, importedPlaylists, importedTags, keptInstall, locatable, looseInstalls, relocatedInstall, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, bringsAlong, catalogMatch, filesAddable, folderGone, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, relocatedInstall, uniqueFiles, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -238,5 +238,40 @@ describe("bringsAlong", () => {
     const filters = [{ name: "N64", tags: ["n64"], all: false, exclude: [], excludeAll: false }];
     expect(bringsAlong({ apps, filters })).toEqual({ tagged: 2, filters: 1, hidden: 1 });
     expect(bringsAlong({ apps: [app()] })).toEqual({ tagged: 0, filters: 0, hidden: 0 });
+  });
+});
+
+describe("the files in an app's folder", () => {
+  const install = { version: "1", folder: "x", executables: [] };
+
+  it("follows the catalog until the player or Settings chooses", () => {
+    expect(installFiles(undefined, ["portable.txt"], false)).toBeUndefined();
+    expect(installFiles(install, ["portable.txt"], false)).toBeUndefined();
+  });
+
+  it("adds Settings' default to a new install, not one already here, whose saves it would seem to lose", () => {
+    expect(installFiles(undefined, ["config.ini"], true)).toEqual(["config.ini", "portable.txt"]);
+    expect(installFiles(undefined, ["Portable.txt"], true)).toEqual(["Portable.txt"]);
+    expect(installFiles(install, ["config.ini"], true)).toBeUndefined();
+  });
+
+  it("keeps to what the player chose through updates, over the catalog and Settings", () => {
+    expect(installFiles({ ...install, files: [] }, ["portable.txt"], true)).toEqual([]);
+    expect(installFiles({ ...install, files: ["a.txt"] }, ["portable.txt"], false)).toEqual(["a.txt"]);
+  });
+
+  it("keeps them when the app is pointed at a new folder", () => {
+    expect(relocatedInstall({ ...install, files: ["a.txt"] }, install).files).toEqual(["a.txt"]);
+  });
+
+  it("takes names without blanks or repeats", () => {
+    expect(uniqueFiles([" a.txt ", "", "A.TXT", "b.txt"])).toEqual(["a.txt", "b.txt"]);
+  });
+
+  it("isn't for a program added from where it is, or one a Windows installer put elsewhere", () => {
+    expect(filesAddable(undefined)).toBe(false);
+    expect(filesAddable(install)).toBe(true);
+    expect(filesAddable({ ...install, program: "/games/a.exe" })).toBe(false);
+    expect(filesAddable({ ...install, installer: "msi" })).toBe(false);
   });
 });

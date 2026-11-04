@@ -261,6 +261,10 @@ export const native = {
   createAppFolder: (name: string) => invoke<string>("create_app_folder", { name }),
   /** Renames an installed app's folder in the apps folder (and its Proton prefix); fails while the launcher has it running. */
   renameAppFolder: (id: string, from: string, to: string) => invoke<void>("rename_app_folder", { id, from, to }),
+  /** Those of `names` that are files in an installed app's folder. */
+  appFiles: (folder: string, dir: string | undefined, names: string[]) => invoke<string[]>("app_files", { folder, dir, names }),
+  /** Adds empty files to an installed app's folder and takes others away; returns those that stayed because they weren't empty. */
+  setAppFiles: (id: string, folder: string, dir: string | undefined, add: string[], remove: string[]) => invoke<string[]>("set_app_files", { id, folder, dir, add, remove }),
   /** Why the installed apps in `folders` can't move to `to`, or null. */
   appsFolderRefusal: (to: string, folders: string[]) => invoke<string | null>("apps_folder_refusal", { to, folders }),
   /** Moves the installed apps to `to`, which becomes the apps folder; resolves to it. */

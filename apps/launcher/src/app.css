@@ -498,6 +498,11 @@ main.app-main { padding: 0 0 40px; }
 .app-panel .versions .panel-form-head { padding-left: 4px; }
 .app-panel .versions ul { max-height: 360px; }
 .app-panel .versions li { background: var(--panel); }
+/* Add files to folder (app-files.tsx), on an app's page or as a dialog. */
+.add-files { display: grid; gap: 12px; }
+.add-files .toggle { align-items: flex-start; color: var(--text-2); }
+.add-files .chips input { flex: 1 1 160px; width: auto; }
+.add-files-warning { margin: 0; color: var(--strong); font-size: 13px; }
 /* Playlists and tags: a label over a row of chips that ends in a place to type a new one. */
 .app-panel .tags { gap: 14px; margin: 6px 0 0; }
 .tag-field { display: grid; gap: 7px; }

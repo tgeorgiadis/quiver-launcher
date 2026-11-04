@@ -92,6 +92,8 @@ export type Install = {
   launch?: LaunchOptions;
   /** The file the player picked among several for this computer, as a filter (`assetFilterFor`): updates take it again. */
   pick?: string;
+  /** The empty files its folder has, once the player or Settings chose them (Add files to folder); unset, the catalog's. Kept through updates. */
+  files?: string[];
 };
 /** A repository the catalog doesn't list, before it's added: its latest release and the files for this computer. */
 export type RepositoryPreview = { app: CustomApp; latest?: Release; files: Asset[] };
@@ -215,6 +217,8 @@ type Launcher = {
   setUpdates: (id: string, updates: Install["updates"]) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
   setLaunch: (id: string, launch: LaunchOptions) => void;
+  /** The empty files the player chose for an app's folder, which updates keep to. */
+  setFiles: (id: string, files: string[]) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
@@ -241,6 +245,9 @@ type Launcher = {
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /** The app whose folder the player is adding files to, from its menu; null closes the prompt. */
+  addingFiles: Entry | null;
+  askAddFiles: (entry: Entry | null) => void;
   /** The app whose versions are open from its menu's Change version; null closes them. */
   changingVersion: Entry | null;
   changeVersion: (entry: Entry | null) => void;
@@ -277,6 +284,22 @@ const fromKey = (id: string): CustomApp => {
  * installer's, whose files are wherever its setup put them.
  */
 export const renamable = (install: Install | undefined) => Boolean(install && !install.dir && install.installer !== "msi");
+
+/** The empty file that has many apps keep their saves and settings in their own folder. */
+export const PORTABLE_FILE = "portable.txt";
+/** Whether files can be added to an app's folder: not a program the player added from where it is, or one its Windows installer put elsewhere. */
+export const filesAddable = (install: Install | undefined) => Boolean(install && !install.program && install.installer !== "msi");
+/** File names without blanks or repeats; on Windows, names in different case are one file. */
+export const uniqueFiles = (names: string[]) => {
+  const seen = new Set<string>();
+  return names.map((n) => n.trim()).filter((n) => n && !seen.has(n.toLowerCase()) && seen.add(n.toLowerCase()));
+};
+/**
+ * The files an install keeps to itself, rather than following the catalog's: an update's are what it had, and Settings'
+ * default only reaches a new install, as adding `portable.txt` to one already played would seem to lose its saves.
+ */
+export const installFiles = (was: Install | undefined, catalog: string[], portableByDefault: boolean | undefined) =>
+  was ? was.files : portableByDefault ? uniqueFiles([...catalog, PORTABLE_FILE]) : undefined;
 
 /** Whether this computer can install the app. */
 export const availableOn = (entry: Entry, os: string) =>
@@ -345,8 +368,8 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
  */
 export function relocatedInstall(now: Install | undefined, found: Install): Install {
   if (!now) return found;
-  const { lastPlayed, installedAt, playTime, updates, skip, launch, pick } = now;
-  return { ...found, lastPlayed, installedAt, playTime, updates, skip, launch, pick };
+  const { lastPlayed, installedAt, playTime, updates, skip, launch, pick, files } = now;
+  return { ...found, lastPlayed, installedAt, playTime, updates, skip, launch, pick, files };
 }
 
 /** Whether starting an app failed because its folder is gone: lib.rs's FOLDER_GONE. */
@@ -512,6 +535,8 @@ export type Settings = {
   theme?: Theme;
   /** The language Quiver shows in (@quiverlauncher/i18n); unset follows the system. */
   language?: Language;
+  /** New installs get `portable.txt` in their folder, beside what the catalog asks for. */
+  portableByDefault?: boolean;
   /** Apps hidden from the library here. */
   hidden?: string[];
   /** Keyboard and controller bindings; unset uses the defaults. */
@@ -640,6 +665,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
@@ -904,6 +930,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const ref = appRef(entry.id, entry.slug);
     const was = installs[entry.id];
     const from = was?.version;
+    const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
     let version = chosen?.version ?? entry.verified?.version;
     let format: string | undefined;
     // A release Quiver hasn't verified, or a file of one it has, that the player said to install.
@@ -1001,6 +1028,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
       tried = { release, asset };
+      const catalogFiles = settings.filesToAdd ?? [];
+      const files = installFiles(was, catalogFiles, portableByDefault);
       const done = await native.install({
         id: entry.id,
         url: asset.url,
@@ -1009,7 +1038,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         checksum: asset.checksum ?? asset.unverifiedChecksum,
         folder,
         dir: was?.dir,
-        filesToAdd: settings.filesToAdd ?? [],
+        filesToAdd: files ?? catalogFiles,
         version: release.version,
         preferred: executables,
         program: was?.installer === "msi" ? was.program : undefined,
@@ -1034,7 +1063,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -1224,6 +1253,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const set = Object.fromEntries(Object.entries(launch).filter(([, v]) => v !== undefined && v !== "")) as LaunchOptions;
         return { ...i, [id]: Object.keys(set).length ? { ...install, launch: set } : install };
       }),
+    setFiles: (id, files) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], files } } : i)),
     lookUpRepository(input) {
       // A lookup that never answers ends with a message, and the button tries again.
       let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1512,6 +1542,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     appFolders,
     renaming,
     askRename,
+    addingFiles,
+    askAddFiles,
     changingVersion,
     changeVersion,
     async renameFolder(id, name) {

@@ -1449,6 +1449,12 @@ export function Consoles({ id }: { id: string }) {
   );
 }
 
+/** An app's tags with a typed one added: within what a tag and an app may have, and not one it has already. */
+export const withTag = (tags: string[], input: string) => {
+  const tag = input.trim().slice(0, 50);
+  return tag && !tags.some((t) => t.toLowerCase() === tag.toLowerCase()) && tags.length < 20 ? [...tags, tag] : tags;
+};
+
 /** The player's playlists the app is on (or a new one), and their own tags on it. */
 export function Tags({ id }: { id: string }) {
   const { library, collections, setTags } = useLauncher();
@@ -1470,8 +1476,8 @@ export function Tags({ id }: { id: string }) {
         className="tag-field"
         onSubmit={(e) => {
           e.preventDefault();
-          const tag = input.trim().slice(0, 50);
-          if (tag && !has(tag) && tags.length < 20) setTags(id, [...tags, tag]);
+          const next = withTag(tags, input);
+          if (next !== tags) setTags(id, next);
           setInput("");
         }}
       >

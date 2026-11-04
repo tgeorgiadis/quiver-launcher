@@ -208,12 +208,7 @@ pub async fn install(
                 let _ = fs::remove_file(&apk);
                 fs::write(dir.join(crate::android::FILE), installed?.package_name).map_err(text)?;
             }
-            for name in &files {
-                let path = dir.join(plain_name(name)?);
-                if !path.exists() {
-                    fs::write(path, "").map_err(text)?;
-                }
-            }
+            set_files(&dir, &files, &[])?;
             fs::write(dir.join(VERSION_FILE), &version).map_err(text)
         })
         .await
@@ -519,6 +514,49 @@ fn records() -> Vec<&'static str> {
     names
 }
 
+/// A name for a file added to an app's folder: a plain name, and never one of
+/// the files that say how the app was installed.
+fn added_file_name(name: &str) -> Result<&str, String> {
+    let name = plain_name(name)?;
+    let reserved = records().into_iter().chain(["version.txt"]).any(|r| r.eq_ignore_ascii_case(name));
+    if reserved {
+        return Err(format!("\"{name}\" is a file Quiver keeps for itself."));
+    }
+    Ok(name)
+}
+
+/// Those of `names` that are files in an app's folder.
+pub fn files_present(dir: &Path, names: &[String]) -> Vec<String> {
+    names.iter().filter(|name| plain_name(name).is_ok_and(|n| dir.join(n).is_file())).cloned().collect()
+}
+
+/// Makes the empty files `add` names in an app's folder, leaving any already
+/// there, and takes away those `remove` names. A file with something in it is
+/// more than a marker, so it stays: its name comes back. Every name is checked
+/// before anything changes.
+pub fn set_files(dir: &Path, add: &[String], remove: &[String]) -> Result<Vec<String>, String> {
+    let add = add.iter().map(|n| added_file_name(n)).collect::<Result<Vec<_>, _>>()?;
+    let remove = remove.iter().map(|n| added_file_name(n)).collect::<Result<Vec<_>, _>>()?;
+    let mut kept = Vec::new();
+    for name in remove {
+        let path = dir.join(name);
+        let Ok(meta) = fs::symlink_metadata(&path) else { continue };
+        if meta.is_file() && meta.len() == 0 {
+            writable(&path);
+            fs::remove_file(&path).map_err(text)?;
+        } else {
+            kept.push(name.to_string());
+        }
+    }
+    for name in add {
+        let path = dir.join(name);
+        if !path.exists() {
+            fs::write(path, "").map_err(text)?;
+        }
+    }
+    Ok(kept)
+}
+
 /// Takes Quiver's own records out of what a download unpacked: only Quiver
 /// writes them, never a release.
 fn drop_records(out: &Path) {
@@ -752,6 +790,41 @@ mod tests {
         fs::write(ours.join("game.exe"), "").unwrap();
         fs::write(ours.join(VERSION_FILE), "1.0").unwrap();
         assert!(may_install_into(&ours) && may_remove(&ours, false));
+    }
+
+    #[test]
+    fn adds_empty_files_and_takes_away_only_empty_ones() {
+        let dir = tempfile::tempdir().unwrap();
+        let names = |list: &[&str]| list.iter().map(|n| n.to_string()).collect::<Vec<_>>();
+        assert!(set_files(dir.path(), &names(&["portable.txt", " config.ini "]), &[]).unwrap().is_empty());
+        assert_eq!(fs::metadata(dir.path().join("portable.txt")).unwrap().len(), 0);
+        assert!(dir.path().join("config.ini").is_file(), "its name is trimmed");
+        assert_eq!(files_present(dir.path(), &names(&["portable.txt", "gone.txt", "../portable.txt"])), ["portable.txt"]);
+
+        // A file already there keeps what's in it.
+        fs::write(dir.path().join("config.ini"), "volume=3").unwrap();
+        set_files(dir.path(), &names(&["config.ini"]), &[]).unwrap();
+        assert_eq!(fs::read_to_string(dir.path().join("config.ini")).unwrap(), "volume=3");
+
+        // Only what's empty goes; what isn't is named, and one that isn't there is fine.
+        let kept = set_files(dir.path(), &[], &names(&["portable.txt", "config.ini", "gone.txt"])).unwrap();
+        assert_eq!(kept, ["config.ini"]);
+        assert!(!dir.path().join("portable.txt").exists());
+        assert!(dir.path().join("config.ini").exists());
+    }
+
+    #[test]
+    fn a_bad_name_for_an_added_file_changes_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let keep = dir.path().join("keep.txt");
+        fs::write(&keep, "").unwrap();
+        for bad in ["../up.txt", "a/b.txt", "NUL", VERSION_FILE, "VERSION.TXT", crate::msi::FILE] {
+            let remove = ["keep.txt".to_string()];
+            assert!(set_files(dir.path(), &[bad.to_string()], &remove).is_err(), "{bad}");
+            assert!(keep.exists(), "nothing was taken away for {bad}");
+            assert!(set_files(dir.path(), &[], &[bad.to_string()]).is_err(), "{bad}");
+        }
+        assert!(!dir.path().parent().unwrap().join("up.txt").exists());
     }
 
     #[test]
