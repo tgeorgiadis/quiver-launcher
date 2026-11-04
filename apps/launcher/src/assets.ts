@@ -24,6 +24,9 @@ const FORMATS = [
   /^(?!.*\.[a-z][a-z0-9]{0,4}$)/i,
 ];
 
+/** A file the launcher unpacks: .zip, .7z, .rar or a tar archive. */
+const isArchive = (name: string) => FORMATS.slice(0, 8).some((f) => f.test(name));
+
 /** A Windows installer package, whose own setup installs it. */
 export const isMsi = (name: string) => /\.msi$/i.test(name);
 
@@ -36,7 +39,7 @@ export function installFormat(name: string) {
   if (isMsi(name)) return "msi";
   if (/\.appimage$/i.test(name)) return "appimage";
   if (isApk(name)) return "apk";
-  return FORMATS.slice(0, 8).some((f) => f.test(name)) ? "archive" : "executable";
+  return isArchive(name) ? "archive" : "executable";
 }
 
 const formatRank = (name: string) => FORMATS.findIndex((f) => f.test(name));
@@ -128,6 +131,15 @@ export function installable(assets: Asset[], os: Os): Asset[] {
       // Android only installs APKs, and only Android does.
       isApk(a.filename) === (os === "android"),
   );
+}
+
+/**
+ * A release's archives to offer for Download archive: this computer's, else any, as saving one needn't run it. The
+ * store takes the newest release this finds any in, and asks which when there are several.
+ */
+export function archivesHere(assets: Asset[], os: Os, arch: string): Asset[] {
+  const archives = assets.filter((a) => isArchive(a.filename) && !AUXILIARY.test(a.filename));
+  return osFallbacks(os).map((o) => archives.filter((a) => a.os === o && archRank(a, arch) >= 0)).find((list) => list.length) ?? archives;
 }
 
 /**

@@ -45,6 +45,24 @@ pub struct InstallRequest {
     pub github_token: Option<String>,
 }
 
+/// A release's file to save as it is, not installed: Download archive.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveRequest {
+    pub id: String,
+    pub url: String,
+    pub filename: String,
+    /// `sha256:<hex>`, as an install's.
+    pub checksum: Option<String>,
+    /// The player's GitHub token, as an install's.
+    #[serde(default)]
+    pub github_token: Option<String>,
+    /// The folder the player picked.
+    pub to: String,
+    /// When the release came out, in milliseconds: the saved file's modified date. 0, not known: left as today's.
+    pub released_at: u64,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Installed {
@@ -122,16 +140,7 @@ pub async fn install(
     fs::create_dir_all(&staging).map_err(text)?;
     let result = async {
         let mut file = staging.join(&filename);
-        let hash = {
-            let stop = std::pin::pin!(cancel.wait_for(|c| *c));
-            match futures_util::future::select(std::pin::pin!(download(&req, &file, &progress)), stop).await {
-                futures_util::future::Either::Left((hash, _)) => hash?,
-                futures_util::future::Either::Right(_) => return Err(CANCELLED.to_string()),
-            }
-        };
-        if *cancel.borrow() {
-            return Err(CANCELLED.to_string());
-        }
+        let hash = download_unless_cancelled(&req.id, &req.url, req.github_token.as_deref(), &file, &mut cancel, &progress).await?;
         if !matches_checksum(req.checksum.as_deref(), &hash) {
             return Err(MISMATCH.to_string());
         }
@@ -233,6 +242,38 @@ pub async fn install(
     result
 }
 
+/// Saves a release's file into a folder as it is, dated when the release came out; resolves to where it went. A file
+/// there already stays: this one takes a free name beside it. Cancelling, or failing, leaves nothing behind.
+pub async fn save(req: SaveRequest, mut cancel: tokio::sync::watch::Receiver<bool>, progress: impl Fn(Progress)) -> Result<String, String> {
+    let filename = plain_name(&req.filename)?;
+    let dir = Path::new(&req.to);
+    let part = dir.join(format!("{filename}.part"));
+    let result = async {
+        let hash = download_unless_cancelled(&req.id, &req.url, req.github_token.as_deref(), &part, &mut cancel, &progress).await?;
+        if !matches_checksum(req.checksum.as_deref(), &hash) {
+            return Err(MISMATCH.to_string());
+        }
+        if req.released_at > 0 {
+            let released = std::time::UNIX_EPOCH + std::time::Duration::from_millis(req.released_at);
+            fs::File::options().write(true).open(&part).and_then(|f| f.set_modified(released)).map_err(text)?;
+        }
+        let saved = free_name(dir, filename);
+        fs::rename(&part, &saved).map_err(text)?;
+        Ok(saved.to_string_lossy().into_owned())
+    }
+    .await;
+    if result.is_err() {
+        let _ = fs::remove_file(&part);
+    }
+    result
+}
+
+/// `name` in `dir`, or the first of "name (1)", "name (2)" and on that nothing has: never over a file there.
+fn free_name(dir: &Path, name: &str) -> PathBuf {
+    let (stem, extension) = name.rsplit_once('.').map_or((name, String::new()), |(stem, end)| (stem, format!(".{end}")));
+    std::iter::once(dir.join(name)).chain((1..).map(|n| dir.join(format!("{stem} ({n}){extension}")))).find(|path| !path.exists()).unwrap()
+}
+
 /// Whether a download's SHA-256 is the one it was pinned to. A file pinned to
 /// nothing passes (the page asked first where that matters); one pinned in a
 /// way Quiver can't check fails, rather than going in unchecked.
@@ -255,10 +296,25 @@ pub fn may_remove(dir: &Path, adopted: bool) -> bool {
     dir.join(VERSION_FILE).is_file() || (adopted && dir.join("version.txt").is_file())
 }
 
+/// `download`, stopping with `CANCELLED` once `cancel` turns true.
+async fn download_unless_cancelled(id: &str, url: &str, token: Option<&str>, to: &Path, cancel: &mut tokio::sync::watch::Receiver<bool>, progress: &impl Fn(Progress)) -> Result<String, String> {
+    let hash = {
+        let stop = std::pin::pin!(cancel.wait_for(|c| *c));
+        match futures_util::future::select(std::pin::pin!(download(id, url, token, to, progress)), stop).await {
+            futures_util::future::Either::Left((hash, _)) => hash?,
+            futures_util::future::Either::Right(_) => return Err(CANCELLED.to_string()),
+        }
+    };
+    if *cancel.borrow() {
+        return Err(CANCELLED.to_string());
+    }
+    Ok(hash)
+}
+
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
-async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
-    let mut request = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?.get(&req.url);
-    if let Some(token) = req.github_token.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+async fn download(id: &str, url: &str, token: Option<&str>, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
+    let mut request = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?.get(url);
+    if let Some(token) = token.map(str::trim).filter(|t| !t.is_empty()) {
         request = request.bearer_auth(token).header(reqwest::header::ACCEPT, "application/octet-stream");
     }
     let response = request
@@ -282,7 +338,7 @@ async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress))
         received += chunk.len() as u64;
         if received - reported >= 256 * 1024 || Some(received) == total {
             reported = received;
-            progress(Progress { id: req.id.clone(), phase: "downloading", received, total, setup: false });
+            progress(Progress { id: id.to_string(), phase: "downloading", received, total, setup: false });
         }
     }
     file.flush().await.map_err(text)?;
@@ -743,21 +799,8 @@ mod tests {
     }
 
     fn fetch(url: String, github_token: Option<&str>) -> Result<String, String> {
-        let req = InstallRequest {
-            id: "github:quiver/private".into(),
-            url,
-            filename: "game.zip".into(),
-            checksum: None,
-            folder: "private".into(),
-            dir: None,
-            files_to_add: vec![],
-            version: "v1.0.0".into(),
-            preferred: vec![],
-            program: None,
-            github_token: github_token.map(Into::into),
-        };
         let dir = tempfile::tempdir().unwrap();
-        tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))
+        tauri::async_runtime::block_on(download("github:quiver/private", &url, github_token, &dir.path().join("game.zip"), &|_| {}))
     }
 
     #[test]
@@ -888,6 +931,42 @@ mod tests {
             assert!(set_files(dir.path(), &[], &[bad.to_string()]).is_err(), "{bad}");
         }
         assert!(!dir.path().parent().unwrap().join("up.txt").exists());
+    }
+
+    /// Saves what a one-request server on this computer answers with into `dir`.
+    fn save_from_server(dir: &Path, checksum: Option<String>, released_at: u64) -> Result<String, String> {
+        let (port, _heard) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\nzip".to_string());
+        let (_keep, cancel) = tokio::sync::watch::channel(false);
+        let req = SaveRequest { id: "a".into(), url: format!("http://127.0.0.1:{port}/Game.zip"), filename: "Game.zip".into(), checksum, github_token: None, to: dir.to_string_lossy().into(), released_at };
+        tauri::async_runtime::block_on(save(req, cancel, |_| {}))
+    }
+
+    #[test]
+    fn a_saved_file_is_the_download_as_it_is_dated_when_its_release_came_out() {
+        let dir = tempfile::tempdir().unwrap();
+        let saved = save_from_server(dir.path(), None, 1_600_000_000_000).unwrap();
+        assert_eq!(Path::new(&saved), dir.path().join("Game.zip"));
+        assert_eq!(fs::read(&saved).unwrap(), b"zip");
+        let modified = fs::metadata(&saved).unwrap().modified().unwrap();
+        assert_eq!(modified, std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_600_000_000));
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1, "nothing else is left beside it");
+    }
+
+    #[test]
+    fn a_download_that_doesnt_match_leaves_nothing_where_it_was_to_be_saved() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(save_from_server(dir.path(), Some("sha256:00".into()), 1).unwrap_err(), MISMATCH);
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
+    }
+
+    #[test]
+    fn a_saved_file_takes_a_free_name_beside_one_already_there() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(free_name(dir.path(), "Game.zip"), dir.path().join("Game.zip"));
+        fs::write(dir.path().join("Game.zip"), "").unwrap();
+        assert_eq!(free_name(dir.path(), "Game.zip"), dir.path().join("Game (1).zip"));
+        fs::write(dir.path().join("Game (1).zip"), "").unwrap();
+        assert_eq!(free_name(dir.path(), "Game.zip"), dir.path().join("Game (2).zip"));
     }
 
     #[test]

@@ -11,7 +11,7 @@ import { ApiError, createClient, createGithub, createGitlab, githubAsset, github
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
+import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor, runsHere, archivesHere } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { captureError, captureFailure, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, track, type TelemetryContext } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
@@ -132,6 +132,8 @@ export type Asking = {
   scan?: ReleaseScan;
   /** When it's verified by itself, if nothing changes. */
   checkEndsAt?: number;
+  /** Download archive's question: saving the file, not installing it. */
+  saving?: true;
   resolve: (install: boolean) => void;
 };
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
@@ -190,6 +192,8 @@ type Launcher = {
   get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os }) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
   play: (id: string, executable?: string) => Promise<void>;
+  /** Saves the newest release's archive where the player picks, as it is: nothing is installed or changed in the library. */
+  downloadArchive: (entry: Entry) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
   reinstall: (id: string) => Promise<void>;
   /** Stops a download; whatever was installed before stays as it was. */
@@ -1521,6 +1525,44 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         () => (musicForGame(), track("app_launched", ref)),
         (e) => (fail(id, e), track("app_launch_failed", { ...ref, reason: reasonOf(e) }), captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) })),
       );
+    },
+    async downloadArchive(entry) {
+      const id = entry.id;
+      if (isLocal(id) || installs[id]?.local || (jobs[id] && !("error" in jobs[id]))) return;
+      const name = entry.projectName;
+      const custom = isCustom(id) ? (allItems.find((i) => i.id === id)?.custom ?? fromKey(id)) : null;
+      setJobs((j) => ({ ...j, [id]: { id, phase: "downloading", received: 0, total: null } }));
+      try {
+        const listed = custom ? await releasesOf(custom) : (await client.releases(entry.slug, 100)).items;
+        const pulled = catalog[id]?.withdrawn ?? [];
+        const offered = listed.filter((r) => !pulled.some((w) => bare(w.version) === bare(r.version)));
+        // A custom app's newest that isn't a pre-release, as an install takes.
+        const pool = custom && offered.some((r) => !r.prerelease) ? offered.filter((r) => !r.prerelease) : offered;
+        const release = pool.find((r) => archivesHere(r.assets, config.os, config.arch).length);
+        if (!release) return setNotice(t`${name} has no archive to download.`, { stays: true });
+        const archives = archivesHere(release.assets, config.os, config.arch);
+        const unmatched = !archives.some((a) => runsHere(a, config.os, config.arch));
+        let asset = pickedBefore(archives, installs[id]?.pick) ?? (archives.length === 1 && !unmatched ? archives[0] : null);
+        if (!asset) {
+          asset = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: archives, unmatched, resolve }));
+          setChoice(null);
+          if (!asset) return;
+        }
+        // Not verified itself: asks first, as an install of it does, in words for saving it.
+        const why = !custom ? unverifiedFile(asset, release) : undefined;
+        if (why && !(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt, saving: true }))) return;
+        const to = await native.pickFolder(t`Save the archive of ${name} in`);
+        if (!to) return;
+        const viaApi = custom?.provider === "github" && githubToken ? githubAsset(config.githubApi, custom.repository, asset.id) : undefined;
+        const saved = await native.saveReleaseFile({ id, url: viaApi ?? asset.url, ...(viaApi && { githubToken }), filename: asset.filename, checksum: asset.checksum ?? asset.unverifiedChecksum, to, releasedAt: Math.trunc(release.releasedAt) });
+        setNotice(t`Saved ${saved}`);
+      } catch (error) {
+        if (error === "cancelled") return;
+        const problem = error === "missing" ? t`Its developer removed this file from the release.` : error === "mismatch" ? t`This download doesn't match the file Quiver checked, so it wasn't saved.` : error instanceof Error ? error.message : String(error);
+        setNotice(problem, { stays: true });
+      } finally {
+        setJobs(({ [id]: _, ...rest }) => rest);
+      }
     },
     async reinstall(id) {
       const install = installs[id];

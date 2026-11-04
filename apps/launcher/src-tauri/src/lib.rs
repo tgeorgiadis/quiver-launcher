@@ -195,6 +195,20 @@ async fn install(app: tauri::AppHandle, request: install::InstallRequest) -> Res
     result
 }
 
+/// Saves a release's file where the player picked (Download archive), not installing it; `cancel_install` stops it too.
+#[tauri::command]
+async fn save_release_file(app: tauri::AppHandle, request: install::SaveRequest) -> Result<String, String> {
+    let id = request.id.clone();
+    let (cancel, cancelled) = tokio::sync::watch::channel(false);
+    app.state::<Installing>().0.lock().unwrap().insert(id.clone(), cancel);
+    let result = install::save(request, cancelled, |p| {
+        let _ = app.emit("install-progress", p);
+    })
+    .await;
+    app.state::<Installing>().0.lock().unwrap().remove(&id);
+    result
+}
+
 /// Installs under way, by app id: sending true cancels one.
 #[derive(Default)]
 struct Installing(std::sync::Mutex<std::collections::HashMap<String, tokio::sync::watch::Sender<bool>>>);
@@ -1341,6 +1355,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             config,
             cancel_install,
+            save_release_file,
             read_state,
             write_state,
             state_problems,

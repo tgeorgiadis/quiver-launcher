@@ -85,6 +85,19 @@ export type InstallRequest = {
   /** The player's GitHub token, with `url` a file of a GitHub repository asked for through its API (githubAsset). */
   githubToken?: string;
 };
+/** A release's file to save where the player picked, not installed (Download archive). */
+export type SaveRequest = {
+  id: string;
+  url: string;
+  filename: string;
+  checksum?: string;
+  /** As an install's. */
+  githubToken?: string;
+  /** The folder it goes in. */
+  to: string;
+  /** Its modified date, when the release came out; 0 when that isn't known. */
+  releasedAt: number;
+};
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {
   dir: string;
@@ -189,6 +202,8 @@ export const native = {
   onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
   cancelInstall: (id: string) => invoke<void>("cancel_install", { id }),
+  /** Saves a release's file as it is; resolves to where it went. `cancelInstall` stops it too. */
+  saveReleaseFile: (request: SaveRequest) => invoke<string>("save_release_file", { request }),
   /** Fails with "cancelled" when the player says no to Windows uninstalling it. */
   uninstall: (folder: string, dir?: string) => invoke<void>("uninstall", { folder, dir }),
   secretGet: (key: string) => invoke<string | null>("secret_get", { key }),

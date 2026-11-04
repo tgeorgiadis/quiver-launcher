@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FileArchive, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -1096,7 +1096,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, addToLibrary, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall } = useLauncher();
+  const { config, library, installs, jobs, catalog, addToLibrary, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, downloadArchive } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1217,6 +1217,11 @@ function AppPage({
           </button>
         )}
         {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
+        {item && !isLocal(item.id) && !install?.local && foldersOn(config.os) && !(job && !("error" in job)) && (
+          <button className="panel-action opens" onClick={() => void downloadArchive(entry)}>
+            <FileArchive size={16} aria-hidden="true" /> <Trans>Download archive…</Trans>
+          </button>
+        )}
         {locatable(entry.id, install, job) && foldersOn(config.os) && (
           <button className="panel-action opens" onClick={() => void locateInstall(entry)}>
             <FolderSearch size={16} aria-hidden="true" /> <Trans>Locate existing install…</Trans>
@@ -2128,7 +2133,7 @@ function ChooseFile() {
 function UnverifiedPrompt() {
   const { asking } = useLauncher();
   if (!asking) return null;
-  const { entry, file, reasons, scan, checkEndsAt, resolve } = asking;
+  const { entry, file, reasons, scan, checkEndsAt, saving, resolve } = asking;
   // Put in the sentences below by name.
   const release = versionLabel(asking.version);
   const app = entry.projectName;
@@ -2136,10 +2141,10 @@ function UnverifiedPrompt() {
   const unchecked = file?.why === "unchecked";
   const waits = checkEndsAt !== undefined;
   const hours = waits ? hoursFrom(checkEndsAt) : 0;
-  const title = unchecked ? t`Install a file Quiver didn't check?` : t`Install ${release} before it's verified?`;
+  const title = saving ? (unchecked ? t`Save a file Quiver didn't check?` : t`Save ${name} before it's verified?`) : unchecked ? t`Install a file Quiver didn't check?` : t`Install ${release} before it's verified?`;
   return (
     // Each question its own: the next one in turn starts afresh, its first button focused.
-    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked ? title : t`Install a release before it's verified`} onClose={() => resolve(false)}>
+    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked || saving ? title : t`Install a release before it's verified`} onClose={() => resolve(false)}>
       <div className="detail-body unverified-prompt">
         <h2>
           <ShieldAlert size={18} /> {title}
@@ -2149,7 +2154,9 @@ function UnverifiedPrompt() {
             ? `${t`${app} has no verified release yet.`} ${t`Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since.`}`
             : unchecked
               ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
-              : t`${name} changed after Quiver verified ${release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since.`}
+              : saving
+                ? t`${name} changed after Quiver verified ${release}, and Quiver hasn't verified the new file yet. It saves the file Quiver saw, and refuses one that changed since.`
+                : t`${name} changed after Quiver verified ${release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since.`}
         </p>
         {reasons.length > 0 && (
           <ul className="unverified-reasons">
@@ -2179,7 +2186,7 @@ function UnverifiedPrompt() {
             {waits ? t({ message: "Wait", comment: "Button: waits for the release to be verified instead of installing it now" }) : t`Cancel`}
           </button>
           <button onClick={() => resolve(true)}>
-            <Trans>Install anyway</Trans>
+            {saving ? <Trans>Save anyway</Trans> : <Trans>Install anyway</Trans>}
           </button>
         </div>
       </div>

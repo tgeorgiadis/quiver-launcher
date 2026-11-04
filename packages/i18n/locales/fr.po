@@ -288,6 +288,14 @@ msgstr "Jaquette de {name}"
 msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since."
 msgstr "{name} a changé après que Quiver a vérifié {release}, et Quiver n'a pas encore vérifié le nouveau fichier. Il installe le fichier que Quiver a vu, et le refuse s'il a changé depuis."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It saves the file Quiver saw, and refuses one that changed since."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} has no archive to download."
+msgstr ""
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "Icône de {name}"
@@ -1563,6 +1571,11 @@ msgid "Downgrade to {version}"
 msgstr "Rétrograder vers {version}"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Download archive…"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -2214,6 +2227,10 @@ msgstr "Ça a bien fonctionné"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It wouldn't install, open, or start."
 msgstr "Ça ne s'installait pas, ne s'ouvrait pas ou ne se lançait pas."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Its developer removed this file from the release."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -3582,13 +3599,33 @@ msgstr "Comme le système"
 msgid "Save"
 msgstr "Enregistrer"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Save {name} before it's verified?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Save a file Quiver didn't check?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Save anyway"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Save as playlist"
 msgstr "Enregistrer comme playlist"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Save the archive of {name} in"
+msgstr ""
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Save token"
 msgstr "Enregistrer le jeton"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Saved {saved}"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
@@ -4288,6 +4325,10 @@ msgstr "Le dossier de cette app ne peut pas être renommé."
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "Ce téléchargement ne correspond pas au fichier vérifié par Quiver, il n'a donc pas été installé."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This download doesn't match the file Quiver checked, so it wasn't saved."
+msgstr ""
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "This mod has no files to download."
