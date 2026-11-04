@@ -4302,6 +4302,7 @@ msgid "This playlist isn't shared any more."
 msgstr "Esta playlist não é mais compartilhada."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This release has no download for your computer."
 msgstr "Esta versão não tem download para o seu computador."
 
