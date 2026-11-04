@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { useLauncher, type Settings } from "./store";
+import { telemetryContext, useLauncher, type Settings } from "./store";
 import { useAccount } from "./account";
 import { setTelemetryAccount, setTelemetryEnabled, setTelemetryLocal, startTelemetry, track, useTelemetryChoice } from "./telemetry";
 
@@ -16,15 +16,7 @@ export function useTelemetrySetup() {
   useEffect(() => {
     if (started) return;
     started = true;
-    startTelemetry({
-      host: config.usageHost,
-      version: config.version,
-      os: config.os,
-      arch: config.arch,
-      home: config.home,
-      user: config.user,
-      appsDir: config.appsDir,
-    });
+    startTelemetry(telemetryContext(config));
     track("launcher_started", { first_run: !settings.launched });
     if (!settings.launched) setSettings({ ...settings, launched: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

@@ -39,7 +39,11 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     config: () => config,
     read_state: ({ name }) => files[name] ?? null,
     write_state: ({ name, value }) => void (files[name] = value),
-    state_problems: () => [],
+    // Damaged files, if `state` says so (stateProblems), or the Rust side not answering (stateFailure).
+    state_problems: () => {
+      if (files.stateFailure) throw files.stateFailure;
+      return files.stateProblems ?? [];
+    },
     list_snapshots: () => [],
     find_v3_library: () => null,
     controllers: () => [],

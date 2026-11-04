@@ -13,7 +13,7 @@ import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, t
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
-import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
+import { captureError, captureFailure, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, track, type TelemetryContext } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
 import type { Platform } from "./platforms";
@@ -651,13 +651,32 @@ type Saved = {
   githubToken?: string;
 };
 
+/** What usage data says about this copy of the launcher, and takes out of what it sends. */
+export const telemetryContext = (config: Config): TelemetryContext => ({
+  host: config.usageHost,
+  version: config.version,
+  os: config.os,
+  arch: config.arch,
+  home: config.home,
+  user: config.user,
+  appsDir: config.appsDir,
+});
+
+/** The launcher can't go on to the point where usage data starts by itself. */
+export const startupFailed = () => native.config().then((config) => reportStartupFailure(telemetryContext(config)), () => {});
+
 export function LauncherProvider({ children }: { children: ReactNode }) {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [problems, setProblems] = useState<StateProblem[]>([]);
+  const [broken, setBroken] = useState<Error | null>(null);
   useEffect(() => {
     // A file that can't be read isn't started over: the first save would replace what a snapshot could restore.
     native.stateProblems().then((found) => {
-      if (found.length) return setProblems(found);
+      if (found.length) {
+        found.forEach((p) => captureError(new Error(`A saved file is ${p.problem}: ${p.name}`), { handled: "recovery" }));
+        void startupFailed();
+        return setProblems(found);
+      }
       return Promise.all([
         native.config(),
         native.readState<LibraryItem[]>("library"),
@@ -673,8 +692,10 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         if (settings?.scale) settings.scale = nearestInterfaceSize(settings.scale);
         setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token });
       });
-    });
+    }).catch((e) => setBroken(e instanceof Error ? e : new Error(String(e))));
   }, []);
+  // To the last-resort boundary (main.tsx), for its message and report, not a window left blank.
+  if (broken) throw broken;
   if (problems.length) return <Recovery problems={problems} />;
   if (!saved) return null;
   return (
@@ -1183,6 +1204,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       fail(entry.id, problem, true, instead);
       track("app_install_failed", { ...ref, version: version ?? null, update: Boolean(from), reason: reasonOf(problem), format: format ?? null });
+      captureFailure("install", problem, { ...ref, version: version ?? null, update: Boolean(from), format: format ?? null });
     }
   }
 
@@ -1494,7 +1516,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
         () => (musicForGame(), track("app_launched", ref)),
-        (e) => (fail(id, e), track("app_launch_failed", { ...ref, reason: reasonOf(e) })),
+        (e) => (fail(id, e), track("app_launch_failed", { ...ref, reason: reasonOf(e) }), captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) })),
       );
     },
     async reinstall(id) {
@@ -1513,11 +1535,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         await installEntry(entry, release, { unverified: Boolean(install.unverified), blocked: install.blocked });
       } catch (e) {
         fail(id, e, true);
+        captureFailure("reinstall", e, appRef(id, entry.slug));
       }
     },
     async remove(id) {
       // Saying no when Windows asks to uninstall it keeps it, in the library too.
-      if (await uninstall(id).then(() => false, (e) => e === "cancelled")) return;
+      if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>
@@ -1530,7 +1553,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     uninstall: (id) =>
       uninstall(id).then(
         () => setInstalls(({ [id]: _, ...rest }) => rest),
-        (e) => void (e !== "cancelled" && fail(id, e)),
+        (e) => void (e !== "cancelled" && (fail(id, e), captureFailure("uninstall", e, appRef(id, catalog[id]?.slug ?? "")))),
       ),
     oldLibrary,
     findOld: (path, apps) => native.findV3LibraryIn(path, apps),
