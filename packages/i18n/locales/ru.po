@@ -2333,8 +2333,8 @@ msgid "Layout"
 msgstr "Вид"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "Не отмечайте никакие разрешения: публичным версиям они не нужны."
+msgid "Leave every scope unticked: public releases need none. For a private repository's releases, tick repo."
+msgstr "Не отмечайте никакие разрешения: публичным версиям они не нужны. Для релизов приватного репозитория отметьте repo."
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx

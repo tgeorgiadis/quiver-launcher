@@ -82,6 +82,8 @@ export type InstallRequest = {
   preferred?: string[];
   /** The program the app started with before an update. */
   program?: string;
+  /** The player's GitHub token, with `url` a file of a GitHub repository asked for through its API (githubAsset). */
+  githubToken?: string;
 };
 /** What an install did. A Windows installer (MSI) puts its files where its setup chose. */
 export type Installed = {

@@ -113,7 +113,7 @@ export function GithubTokenSetting() {
             <Trans>Choose when it expires.</Trans>
           </li>
           <li>
-            <Trans>Leave every scope unticked: public releases need none.</Trans>
+            <Trans>Leave every scope unticked: public releases need none. For a private repository's releases, tick repo.</Trans>
           </li>
           <li>
             <Trans comment="Generate token is the name of GitHub's button, as GitHub shows it in English">

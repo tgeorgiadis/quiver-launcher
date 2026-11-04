@@ -72,7 +72,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       window.__installs.get(id)?.reject("cancelled");
       window.__installs.delete(id);
     },
-    secret_get: () => null,
+    // The keychain: a test's own `secrets`, such as a GitHub token; none else.
+    secret_get: ({ key }) => files.secrets?.[key] ?? null,
     "plugin:event|listen": ({ event, handler }) => {
       const id = ++next;
       if (!listeners.has(event)) listeners.set(event, new Map());
