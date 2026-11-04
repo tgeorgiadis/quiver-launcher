@@ -56,6 +56,30 @@ pub fn refuse(from: &Path, to: &Path, folders: &[String]) -> Option<String> {
     None
 }
 
+/// Why a console's apps can't install in `to`, if they can't: it's inside an
+/// installed app's folder (`apps`, each a full path), which uninstalling that
+/// app would take with it.
+pub fn refuse_console(to: &Path, apps: &[PathBuf]) -> Option<String> {
+    if !to.is_absolute() {
+        return Some(format!("{} isn't a whole path. Type the folder's full path, or browse for it.", to.display()));
+    }
+    let inside = apps.iter().find(|app| resolved(to).starts_with(resolved(app)))?;
+    let name = inside.file_name().map_or_else(|| inside.to_string_lossy(), |n| n.to_string_lossy());
+    Some(format!("That folder is in {name}'s folder, and uninstalling {name} would remove it. Choose another folder."))
+}
+
+/// Whether `a` and `b` are the same folder, however each is written.
+pub fn same(a: &Path, b: &Path) -> bool {
+    resolved(a) == resolved(b)
+}
+
+/// Where `path` is in `folder`, if it's in it: the rest of its path from there.
+/// So an app in a console's folder in the apps folder can move with it.
+pub fn within(folder: &Path, path: &Path) -> Option<PathBuf> {
+    let rest = resolved(path).strip_prefix(resolved(folder)).ok()?.to_path_buf();
+    (!rest.as_os_str().is_empty()).then_some(rest)
+}
+
 /// The path as the file system names it, for a folder that doesn't exist yet
 /// too: its nearest existing parent, resolved, with the rest added back. So
 /// both sides of a comparison are written alike, as Windows' `\\?\` form or
@@ -78,8 +102,10 @@ fn resolved(path: &Path) -> PathBuf {
 }
 
 /// Moves each app's folder from `from` into `to`, then makes `to` the apps
-/// folder. A move across drives copies, then deletes the original only once
-/// the copy is complete. Stops at the first failure: what moved stays moved,
+/// folder. A folder can be further in, as an app in a console's folder there
+/// is ("N64/Game"): it goes to the same place in `to`, and the folder it was
+/// in goes once it's empty. A move across drives copies, then deletes the
+/// original only once the copy is complete. Stops at the first failure: what moved stays moved,
 /// and the apps folder stays `from` with the rest.
 pub fn move_apps(data: &Path, from: &Path, to: &Path, folders: &[String], progress: impl Fn(Moving)) -> Result<(), String> {
     if let Some(why) = refuse(from, to, folders) {
@@ -90,11 +116,18 @@ pub fn move_apps(data: &Path, from: &Path, to: &Path, folders: &[String], progre
     for (done, folder) in present.iter().enumerate() {
         progress(Moving { done, total: present.len(), folder: folder.to_string() });
         let (old, new) = (from.join(folder), to.join(folder));
+        if let Some(parent) = new.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("Couldn't move {folder}: {e}. It's still in the old folder."))?;
+        }
         if fs::rename(&old, &new).is_err() {
             copy(&old, &new).and_then(|_| fs::remove_dir_all(&old)).map_err(|e| {
                 let _ = fs::remove_dir_all(&new);
                 format!("Couldn't move {folder}: {e}. It's still in the old folder.")
             })?;
+        }
+        // A console's folder it was in, if that's all that was in it; never the apps folder itself.
+        if let Some(parent) = old.parent().filter(|p| *p != from) {
+            let _ = fs::remove_dir(parent);
         }
     }
     // Downloads under way are never moved; a stale staging folder is just left out.
@@ -179,6 +212,30 @@ mod tests {
     }
 
     #[test]
+    fn moves_an_app_in_a_consoles_folder_to_the_same_place() {
+        let data = tempfile::tempdir().unwrap();
+        let elsewhere = tempfile::tempdir().unwrap();
+        let from = current(data.path());
+        fs::create_dir_all(from.join("N64/Game")).unwrap();
+        fs::write(from.join("N64/Game/save.dat"), "saved").unwrap();
+        fs::create_dir_all(from.join("Genesis/Other")).unwrap();
+        fs::write(from.join("Genesis/notes.txt"), "mine").unwrap();
+        // Where each is in the apps folder; one outside it isn't.
+        assert_eq!(within(&from, &from.join("N64/Game")), Some(PathBuf::from("N64/Game")));
+        assert_eq!(within(&from, &from), None);
+        assert_eq!(within(&from, elsewhere.path()), None);
+        let to = elsewhere.path().join("Games");
+        move_apps(data.path(), &from, &to, &["N64/Game".into(), "Genesis/Other".into()], |_| {}).unwrap();
+        assert_eq!(fs::read_to_string(to.join("N64/Game/save.dat")).unwrap(), "saved");
+        // The console's folder goes once it's empty, but not with the player's own files in it.
+        assert!(!from.join("N64").exists());
+        assert!(from.join("Genesis/notes.txt").exists() && to.join("Genesis/Other").is_dir());
+        // A folder of that name already there is refused, as for an app's own.
+        fs::create_dir_all(from.join("N64/Game")).unwrap();
+        assert!(refuse(&from, &to, &["N64/Game".into()]).is_some());
+    }
+
+    #[test]
     fn refuses_the_same_folder_one_inside_it_or_a_name_already_taken() {
         let root = tempfile::tempdir().unwrap();
         let from = root.path().join("apps");
@@ -255,5 +312,23 @@ mod tests {
         assert_eq!(fs::read_to_string(root.path().join("c/b/f")).unwrap(), "x");
         #[cfg(unix)]
         assert_eq!(fs::read_link(root.path().join("c/link")).unwrap(), Path::new("b/f"));
+    }
+
+    #[test]
+    fn a_consoles_folder_is_never_inside_an_apps_own() {
+        let root = tempfile::tempdir().unwrap();
+        let game = root.path().join("apps/Game");
+        fs::create_dir_all(&game).unwrap();
+        let apps = [game.clone()];
+        // Uninstalling Game would take a folder in it, existing yet or not.
+        assert!(refuse_console(&game.join("N64"), &apps).is_some());
+        assert!(refuse_console(&game, &apps).is_some());
+        // Beside it is fine, the apps folder itself too.
+        assert!(refuse_console(&root.path().join("apps/N64"), &apps).is_none());
+        assert!(refuse_console(&root.path().join("apps"), &apps).is_none());
+        assert!(refuse_console(Path::new("N64"), &apps).is_some());
+        // The same folder written two ways; one beside it isn't.
+        assert!(same(&root.path().join("apps"), &root.path().join("apps/Game/..")));
+        assert!(!same(&root.path().join("apps"), &root.path().join("apps/N64")));
     }
 }

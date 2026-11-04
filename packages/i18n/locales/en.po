@@ -17,6 +17,11 @@ msgstr "(changed)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 
+#. placeholder {0}: elsewhere.staying
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# app installed outside your apps folder, such as in a console's folder elsewhere, stays where it is.} other {# apps installed outside your apps folder, such as in a console's folder elsewhere, stay where they are.}}"
+msgstr "{0, plural, one {# app installed outside your apps folder, such as in a console's folder elsewhere, stays where it is.} other {# apps installed outside your apps folder, such as in a console's folder elsewhere, stay where they are.}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -97,6 +102,10 @@ msgstr "{count, plural, one {# app, not installed yet. If you already installed 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {# folder} other {# folders}}"
+msgstr "{count, plural, one {# folder} other {# folders}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
@@ -834,9 +843,14 @@ msgstr "Apps"
 msgid "Apps are installed in {dir}"
 msgstr "Apps are installed in {dir}"
 
+#. Settings: where a console's apps install when it has no folder of its own
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folder"
 msgstr "Apps folder"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps for multiple consoles"
+msgstr "Apps for multiple consoles"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Apps in that folder"
@@ -861,6 +875,10 @@ msgstr "Apps installed here always show."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps that are available for more than one console."
+msgstr "Apps that are available for more than one console."
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
@@ -1000,9 +1018,18 @@ msgstr "Browse"
 msgid "Browse cards"
 msgstr "Browse cards"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse for a folder for {name}"
+msgstr "Browse for a folder for {name}"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Browse the catalog"
+
+#. Opens a folder picker for a console's apps
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browse…"
+msgstr "Browse…"
 
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
@@ -1268,8 +1295,16 @@ msgid "Choose when it expires."
 msgstr "Choose when it expires."
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose where to install {name} apps"
+msgstr "Choose where to install {name} apps"
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
 msgstr "Choose where to install apps"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Choose where to install apps for multiple consoles"
+msgstr "Choose where to install apps for multiple consoles"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
@@ -2042,6 +2077,10 @@ msgstr "Install the verified {installedVersion}"
 msgid "Install the verified {verifiedVersion}"
 msgstr "Install the verified {verifiedVersion}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Installation directories for consoles"
+msgstr "Installation directories for consoles"
+
 #. A mod that's installed
 #. Filter by whether an app is installed
 #: ../../apps/launcher/src/library.tsx
@@ -2533,6 +2572,10 @@ msgstr "Moving {folder}… ({step} of {total})"
 msgid "Moving apps… ({step} of {total})"
 msgstr "Moving apps… ({step} of {total})"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Multiple consoles"
+msgstr "Multiple consoles"
+
 #. Library sort: by the app's name
 #. Library view option: which name the sidebar shows, the game's or the app's
 #. Sort order for mods
@@ -2944,6 +2987,7 @@ msgstr "Other"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Other platforms"
 msgstr "Other platforms"
 
@@ -3644,6 +3688,10 @@ msgstr "Select"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "Send usage data"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Set the default path apps install to for each console."
+msgstr "Set the default path apps install to for each console."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"

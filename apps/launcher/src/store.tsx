@@ -238,6 +238,8 @@ type Launcher = {
   dismiss: (id: string) => void;
   /** The folders of installed apps that live in the apps folder, which moving it takes along. */
   appFolders: () => string[];
+  /** Installed apps' folders outside those, each a full path: in a console's folder, or 3.x installs. */
+  appDirs: () => string[];
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
@@ -277,6 +279,20 @@ const fromKey = (id: string): CustomApp => {
  * installer's, whose files are wherever its setup put them.
  */
 export const renamable = (install: Install | undefined) => Boolean(install && !install.dir && install.installer !== "msi");
+
+/** In `Settings.consoleFolders`, the folder for apps for more than one console, as no console's id is. */
+export const MULTI_CONSOLE = "*";
+
+/**
+ * The folder the player picked for the console an app is for, which a new
+ * install of it goes in; none, the apps folder. An app for more than one
+ * console goes in the folder for those, never any one console's: none, the
+ * apps folder too.
+ */
+export const consoleFolderFor = (entry: Pick<Entry, "consoles">, folders: Settings["consoleFolders"]) => {
+  const consoles = entry.consoles ?? [];
+  return folders?.[consoles.length > 1 ? MULTI_CONSOLE : (consoles[0] ?? "")] || undefined;
+};
 
 /** Whether this computer can install the app. */
 export const availableOn = (entry: Entry, os: string) =>
@@ -539,6 +555,11 @@ export type Settings = {
   libraryFilters?: Record<string, string>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
+  /**
+   * Where a console's apps install here, by its id, and apps for more than one console by `MULTI_CONSOLE`: a folder the
+   * player picked. A console with none, the apps folder.
+   */
+  consoleFolders?: Record<string, string>;
   /** How the library shows its apps (view.ts); only what differs from the defaults. */
   library?: Partial<LibraryView>;
   /** The Sidebar layout's sidebar as wide as the player dragged it, in the page's pixels; unset fits the window. */
@@ -917,6 +938,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     // through Wine. Switching drops the file picked for the other one.
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
     const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
+    // A new install goes in its console's folder, when the player picked one; an update stays where the app is.
+    const parent = was ? undefined : consoleFolderFor(entry, settings.consoleFolders);
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
     const stop = () => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
@@ -995,8 +1018,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         unverified = true;
       }
       format = installFormat(asset.filename);
-      // One folder, one app: uninstalling either would take the other's files.
-      const taken = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id && !i.dir ? [i.folder] : []));
+      // One folder, one app: uninstalling either would take the other's files. In a console's folder, not the name of
+      // any other app's either, as its Proton prefix goes by it.
+      const taken = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id && (parent || !i.dir) ? [i.folder] : []));
       const folder = freeFolder(settings.folderName?.trim() || entry.slug, installs[entry.id]?.folder, taken);
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
@@ -1009,6 +1033,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         checksum: asset.checksum ?? asset.unverifiedChecksum,
         folder,
         dir: was?.dir,
+        parent,
         filesToAdd: settings.filesToAdd ?? [],
         version: release.version,
         preferred: executables,
@@ -1034,7 +1059,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir ?? (parent ? done.dir : undefined), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -1083,6 +1108,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   /** Installed apps' folders in the apps folder: not 3.x installs or programs left where they are. */
   function appFolders() {
     return Object.values(installs).flatMap((i) => (i.dir ? [] : [i.folder]));
+  }
+
+  /** Installed apps' folders elsewhere, each a full path: in a console's folder, or 3.x installs. A local app's are the player's own. */
+  function appDirs() {
+    return Object.values(installs).flatMap((i) => (i.dir && !i.local ? [i.dir] : []));
   }
 
   /** Deletes an app's files; a local app's are the player's own and stay. */
@@ -1510,6 +1540,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
     appFolders,
+    appDirs,
     renaming,
     askRename,
     changingVersion,
@@ -1537,10 +1568,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return folder;
     },
     async moveApps(to) {
-      const appsDir = await native.moveAppsFolder(to, appFolders());
+      const { appsDir, moved, appsFolderNow } = await native.moveAppsFolder(to, appFolders(), appDirs(), Object.values(settings.consoleFolders ?? {}));
       setConfig((c) => ({ ...c, appsDir }));
       setTelemetryAppsDir(appsDir);
-      track("apps_folder_moved", { apps: appFolders().length });
+      // Apps in a console's folder in the apps folder went with it, and so did that console's folder.
+      setInstalls((i) => Object.fromEntries(Object.entries(i).map(([id, install]) => [id, install.dir && moved[install.dir] ? { ...install, dir: moved[install.dir] } : install])));
+      // A console's folder the apps folder was moved into is just the apps folder now, as if none were picked.
+      setSettings((s) => {
+        if (!s.consoleFolders) return s;
+        const kept = Object.entries(s.consoleFolders).flatMap(([id, f]) => (appsFolderNow.includes(f) ? [] : [[id, moved[f] ?? f]]));
+        return { ...s, consoleFolders: kept.length ? Object.fromEntries(kept) : undefined };
+      });
+      track("apps_folder_moved", { apps: appFolders().length + appDirs().filter((d) => moved[d]).length });
     },
     cancel: (id) => void native.cancelInstall(id).catch(() => {}),
   };

@@ -5,12 +5,14 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
-import { useLauncher } from "./store";
+import type { Console } from "@quiverlauncher/api";
+import { MULTI_CONSOLE, useLauncher } from "./store";
+import { foldersOn } from "./detail";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -117,6 +119,7 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
             ) : section === "apps" ? (
               <>
                 <AppsFolder />
+                <ConsoleFolders />
                 <WindowsRunnerSetting />
               </>
             ) : section === "controllers" ? (
@@ -426,12 +429,15 @@ function MusicSetting() {
  * Games folder): it asks first, says what's moving, and installs there after.
  */
 export function AppsFolder() {
-  const { config, jobs, appFolders, moveApps } = useLauncher();
+  const { config, jobs, appFolders, appDirs, moveApps } = useLauncher();
   const [asking, setAsking] = useState<string | null>(null);
+  // Of the apps installed outside the apps folder's own folders, how many are in a console's folder in it, which go
+  // with it, and how many aren't, which stay where they are.
+  const [elsewhere, setElsewhere] = useState({ going: 0, staying: 0 });
   const [moving, setMoving] = useState<{ done: number; total: number; folder: string } | null>(null);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const busy = Object.values(jobs).some((j) => !("error" in j));
-  const count = appFolders().length;
+  const count = appFolders().length + elsewhere.going;
   const dir = config.appsDir;
   useEffect(() => {
     const off = native.onAppsMoving(setMoving);
@@ -441,9 +447,11 @@ export function AppsFolder() {
     setMessage(null);
     const to = await native.pickFolder(t`Choose where to install apps`);
     if (!to) return;
-    const refused = await native.appsFolderRefusal(to, appFolders());
-    if (refused) setMessage({ text: refused, error: true });
-    else setAsking(to);
+    const dirs = appDirs();
+    const [refused, going] = await Promise.all([native.appsFolderRefusal(to, appFolders(), dirs), native.appsFolderHolds(dirs)]);
+    if (refused) return setMessage({ text: refused, error: true });
+    setElsewhere({ going: going.length, staying: dirs.length - going.length });
+    setAsking(to);
   };
   const move = (to: string) => {
     setAsking(null);
@@ -474,6 +482,14 @@ export function AppsFolder() {
                 })
               : t`Install apps in ${asking} from now on?`}
           </p>
+          {elsewhere.staying > 0 && (
+            <p className="muted">
+              {plural(elsewhere.staying, {
+                one: "# app installed outside your apps folder, such as in a console's folder elsewhere, stays where it is.",
+                other: "# apps installed outside your apps folder, such as in a console's folder elsewhere, stay where they are.",
+              })}
+            </p>
+          )}
           <div className="row">
             <button className="primary" onClick={() => move(asking)}>
               {count ? t`Move apps` : t`Use this folder`}
@@ -506,5 +522,226 @@ export function AppsFolder() {
         </p>
       )}
     </section>
+  );
+}
+
+/**
+ * A folder for each console the player picks one for: a new install of an app
+ * for that console goes in it, in a folder of its own, not the apps folder.
+ * Apps already installed stay where they are. This device's own, as the apps
+ * folder is. Every console in the catalog, under its maker, each folded away
+ * until opened; makers and their consoles A to Z.
+ */
+export function ConsoleFolders() {
+  const { config, settings, setSettings, consoles, installs } = useLauncher();
+  // What's wrong with the folder typed or picked for a console, by its id, until it's changed again.
+  const [problems, setProblems] = useState<Record<string, string>>({});
+  // Folded away until opened, as few players use it; then each maker folded away too.
+  const [shown, setShown] = useState(false);
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const folders = settings.consoleFolders ?? {};
+  const count = Object.keys(folders).length;
+  const save = (next: Record<string, string>) => setSettings({ ...settings, consoleFolders: Object.keys(next).length ? next : undefined });
+  const problem = (id: string, text?: string) => setProblems(({ [id]: _, ...rest }) => (text ? { ...rest, [id]: text } : rest));
+  // Each time a box is emptied though its saved folder stays the same (none), so it shows that anew.
+  const [cleared, setCleared] = useState(0);
+  const remove = (id: string) => {
+    const { [id]: _, ...rest } = folders;
+    save(rest);
+  };
+  /**
+   * A console's folder, typed or picked; nothing typed, the apps folder again. Only ever the folder its apps' own
+   * folders go in (install.rs `destination`), and never in an installed app's folder, which uninstalling it would take.
+   */
+  const place = async (id: string, typed: string) => {
+    // Without the separators at its end, as a picker gives it, unless that's all there is to it ("/", "C:\").
+    const trimmed = typed.trim();
+    const bare = trimmed.replace(/[\\/]+$/, "");
+    const to = bare && !bare.endsWith(":") ? bare : trimmed;
+    problem(id);
+    if (to === (folders[id] ?? "")) return;
+    if (!to) return remove(id);
+    // A local app's files are never removed, so a folder in one's is no risk.
+    const installed = Object.values(installs).filter((i) => !i.local);
+    const refused = await native.consoleFolderRefusal(to, installed.flatMap((i) => (i.dir ? [] : [i.folder])), installed.flatMap((i) => (i.dir ? [i.dir] : [])));
+    if (refused) return problem(id, refused);
+    // Made if it isn't there yet. The apps folder itself is where its apps go anyway: as if nothing were typed.
+    const used = await native.prepareConsoleFolder(to).catch((e: unknown) => problem(id, String(e)));
+    if (used === undefined) return;
+    if (used) return save({ ...folders, [id]: to });
+    setCleared((n) => n + 1);
+    remove(id);
+  };
+  const browse = async (id: string, title: string) => {
+    const to = await native.pickFolder(title, folders[id]);
+    if (to) await place(id, to);
+  };
+  const toggle = (maker: string) => setOpen((o) => new Set(o.has(maker) ? [...o].filter((m) => m !== maker) : [...o, maker]));
+  if (!foldersOn(config.os)) return null;
+  // The catalog's makers by name, as the library's filters show them; its other platforms last, as the library's sections.
+  const other = t`Other platforms`;
+  const makerOf = (c: Console) => (!c.brand || c.brand === "OtherPlatforms" ? other : c.brand);
+  const byName = (a: string, b: string) => a.localeCompare(b, i18n.locale, { sensitivity: "base" });
+  const groups = new Map<string, Console[]>();
+  for (const c of consoles) groups.set(makerOf(c), [...(groups.get(makerOf(c)) ?? []), c]);
+  const makers = [...groups]
+    .sort(([a], [b]) => (a === other ? 1 : b === other ? -1 : byName(a, b)))
+    .map(([maker, list]) => [maker, list.sort((a, b) => byName(a.name, b.name))] as const);
+  return (
+    <section className="settings-section console-folders" aria-label={t`Installation directories for consoles`}>
+      <h3>
+        <button type="button" className="section-fold" aria-expanded={shown} onClick={() => setShown(!shown)}>
+          <Trans>Installation directories for consoles</Trans>
+          <ChevronDown size={16} aria-hidden="true" />
+          {count > 0 && <span className="muted console-maker-count">{plural(count, { one: "# folder", other: "# folders" })}</span>}
+        </button>
+      </h3>
+      {shown && (
+        <>
+          <p className="muted">
+            <Trans>Set the default path apps install to for each console.</Trans>
+          </p>
+          <ConsoleMakers
+            cleared={cleared}
+            multi={
+              // Before any maker's, as it comes first for an app for more than one console.
+              <ConsoleFold name={t`Apps for multiple consoles`} count={folders[MULTI_CONSOLE] ? 1 : 0} shown={open.has(MULTI_CONSOLE)} onToggle={() => toggle(MULTI_CONSOLE)}>
+                <p className="muted console-folders-note">
+                  <Trans>Apps that are available for more than one console.</Trans>
+                </p>
+                <ul className="console-folders-list">
+                  <ConsoleFolder
+                    cleared={cleared}
+                    id={MULTI_CONSOLE}
+                    name={t`Multiple consoles`}
+                    folder={folders[MULTI_CONSOLE] ?? ""}
+                    problem={problems[MULTI_CONSOLE]}
+                    onPlace={(to) => void place(MULTI_CONSOLE, to)}
+                    onBrowse={() => void browse(MULTI_CONSOLE, t`Choose where to install apps for multiple consoles`)}
+                  />
+                </ul>
+              </ConsoleFold>
+            }
+            makers={makers}
+            folders={folders}
+            problems={problems}
+            open={open}
+            onToggle={toggle}
+            onPlace={(c, to) => void place(c.id, to)}
+            onBrowse={(c) => {
+              const name = c.name;
+              void browse(c.id, t`Choose where to install ${name} apps`);
+            }}
+          />
+        </>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Apps for multiple consoles' folder (`multi`), then each maker, folded away until opened, over its consoles: each one's
+ * folder, typed in its box or browsed for.
+ */
+function ConsoleMakers({
+  cleared,
+  multi,
+  makers,
+  folders,
+  problems,
+  open,
+  onToggle: toggle,
+  onPlace: place,
+  onBrowse: browse,
+}: {
+  cleared: number;
+  multi: ReactNode;
+  makers: (readonly [string, Console[]])[];
+  folders: Record<string, string>;
+  problems: Record<string, string>;
+  open: Set<string>;
+  onToggle: (maker: string) => void;
+  onPlace: (console: Console, typed: string) => void;
+  onBrowse: (console: Console) => void;
+}) {
+  return (
+    <ul className="console-makers">
+      {multi}
+      {makers.map(([maker, list]) => (
+        <ConsoleFold key={maker} name={maker} count={list.filter((c) => folders[c.id]).length} shown={open.has(maker)} onToggle={() => toggle(maker)}>
+          <ul className="console-folders-list">
+            {list.map((c) => (
+              <ConsoleFolder key={c.id} cleared={cleared} id={c.id} name={c.name} folder={folders[c.id] ?? ""} problem={problems[c.id]} onPlace={(to) => place(c, to)} onBrowse={() => browse(c)} />
+            ))}
+          </ul>
+        </ConsoleFold>
+      ))}
+    </ul>
+  );
+}
+
+/** A maker, or apps for multiple consoles: its name and how many folders it has, folding what's under it away till opened. */
+function ConsoleFold({ name, count, shown, onToggle: toggle, children }: { name: string; count: number; shown: boolean; onToggle: () => void; children: ReactNode }) {
+  return (
+    <li>
+      <button type="button" className="console-maker" aria-expanded={shown} onClick={toggle}>
+        <ChevronRight size={15} aria-hidden="true" className="console-maker-chevron" />
+        <span className="console-maker-name">{name}</span>
+        {count > 0 && <span className="muted console-maker-count">{plural(count, { one: "# folder", other: "# folders" })}</span>}
+      </button>
+      {shown && children}
+    </li>
+  );
+}
+
+/** A folder for a console's apps, or for apps for multiple consoles: typed in its box, or browsed for. */
+function ConsoleFolder({
+  cleared,
+  id,
+  name,
+  folder,
+  problem,
+  onPlace: place,
+  onBrowse: browse,
+}: {
+  cleared: number;
+  id: string;
+  name: string;
+  folder: string;
+  problem?: string;
+  onPlace: (typed: string) => void;
+  onBrowse: () => void;
+}) {
+  const appsFolder = t({ message: "Apps folder", comment: "Settings: where a console's apps install when it has no folder of its own" });
+  const field = `console-folder-${id === MULTI_CONSOLE ? "multi" : id}`;
+  return (
+    <li>
+      <label className="console-folder-name" htmlFor={field}>
+        {name}
+      </label>
+      {/* Kept as typed until it's left or Enter is pressed; anew whenever the saved folder changes (Browse), or the apps
+          folder typed is taken as none. */}
+      <input
+        key={`${folder}:${cleared}`}
+        id={field}
+        className="console-folder-path"
+        defaultValue={folder}
+        placeholder={appsFolder}
+        spellCheck={false}
+        autoComplete="off"
+        aria-invalid={Boolean(problem)}
+        aria-describedby={problem ? `${field}-problem` : undefined}
+        onBlur={(e) => place(e.currentTarget.value)}
+        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+      />
+      <button aria-label={t`Browse for a folder for ${name}`} onClick={browse}>
+        <Trans comment="Opens a folder picker for a console's apps">Browse…</Trans>
+      </button>
+      {problem && (
+        <p id={`${field}-problem`} className="job-error console-folder-problem" role="status">
+          {problem}
+        </p>
+      )}
+    </li>
   );
 }
