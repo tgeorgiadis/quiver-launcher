@@ -13,7 +13,9 @@ sign-out, and errors. Every event carries the launcher's version, OS and archite
 
 Events go to quiverlauncher.com (the website's `worker/launcherUsage.ts`), which keeps the secret Google Analytics
 needs and passes them on with your country, so Google doesn't get your IP address. Error reports go directly to
-Sentry's EU region, which is set not to store IP addresses.
+Sentry's EU region, which is set not to store IP addresses, or any location more exact than your country. Those are
+settings in the Sentry project (Security & Privacy), not in this code: its Advanced Data Scrubbing rules remove
+`user.geo.city` and `user.geo.subdivision`, which Sentry works out from your IP address even when it doesn't store it.
 
 Nothing is captured automatically (no clicks, text, page views or replays), and paths, home and apps folders,
 and the computer's user name are removed from data sent.
