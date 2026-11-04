@@ -15,6 +15,7 @@ import {
   platformList,
   relativeTime,
   tagLabel,
+  verdict,
   type CardEntry,
 } from "./index";
 
@@ -90,6 +91,19 @@ it("scores only what players said, in words that read naturally", () => {
   // A tie shows the more careful answer.
   expect(text(2, 2, 1)).toBe("Has issues · 2 run well, 2 with issues, 1 doesn't run");
   expect(text(0, 2, 2)).toBe("Doesn't run · 2 with issues, 2 don't run");
+});
+
+it("sums up what players said in one verdict, as the score does, for Browse's Players say filter", () => {
+  const of = (recommended: number, reportIssues: number, reportBroken: number) => verdict({ recommended, reportIssues, reportBroken });
+  expect(of(0, 0, 0)).toBe("unrated");
+  expect(of(4, 0, 0)).toBe("runs");
+  expect(of(5, 1, 0)).toBe("runs");
+  expect(of(0, 1, 0)).toBe("issues");
+  expect(of(1, 0, 3)).toBe("broken");
+  // A tie goes to the more careful answer.
+  expect(of(2, 2, 1)).toBe("issues");
+  expect(of(0, 2, 2)).toBe("broken");
+  expect(of(3, 0, 3)).toBe("broken");
 });
 
 describe("resized pictures", () => {

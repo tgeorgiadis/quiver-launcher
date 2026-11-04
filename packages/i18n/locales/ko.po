@@ -831,6 +831,10 @@ msgid "Any console"
 msgstr "모든 콘솔"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Any player reports"
+msgstr "모든 플레이어 평가"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Any project type"
 msgstr "모든 프로젝트 유형"
@@ -1538,6 +1542,7 @@ msgstr "닫기"
 msgid "Dismiss all"
 msgstr "모두 닫기"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Doesn't run"
@@ -1846,6 +1851,7 @@ msgstr "개발자별로 그룹화"
 msgid "Group by game"
 msgstr "게임별로 그룹화"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Has issues"
@@ -2864,6 +2870,7 @@ msgstr "나중에"
 msgid "Not played yet"
 msgstr "아직 플레이 안 함"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../ui/src/index.tsx
 msgid "Not rated yet"
 msgstr "아직 평가 없음"
@@ -3147,6 +3154,11 @@ msgstr "어제 플레이함"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Player feedback"
 msgstr "플레이어 피드백"
+
+#. Browse's filter by what players reported about how an app runs
+#: ../../apps/launcher/src/App.tsx
+msgid "Players say"
+msgstr "플레이어 평가"
 
 #. A shelf on the catalog's front page: the apps players rated best
 #: ../ui/src/discover.tsx
@@ -3559,6 +3571,7 @@ msgstr "설정 다시 하기"
 msgid "Run with"
 msgstr "실행 도구"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Runs well"
