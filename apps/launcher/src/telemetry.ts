@@ -11,6 +11,10 @@
  * nothing that looks like a file or folder, or the computer's user name, ever
  * leaves (`scrub`). Without VITE_USAGE_DATA=1 at build time nothing is sent at
  * all, and `pnpm dev` sends nothing unless VITE_USAGE_DEV=1 is set too.
+ *
+ * Errors from before the player's choices are known wait in memory until they
+ * are. If the launcher can't get that far (`reportStartupFailure`), they go only
+ * where usage data was allowed the last time it ran.
  */
 import { useSyncExternalStore } from "react";
 import type { ErrorEvent } from "@sentry/browser";
@@ -38,8 +42,14 @@ export type TelemetryAccount = { optOut: boolean };
 export type Properties = Record<string, unknown>;
 
 type Sentry = typeof import("@sentry/browser");
+/** What's sent with an error, besides the error. */
+type ErrorScope = { extra?: Properties; tags?: Record<string, string>; fingerprint?: string[] };
 
 const ID_KEY = "quiver-usage-id";
+/** Set while usage data is allowed on this computer, for a launch that fails before it can find out again. */
+const ALLOWED_KEY = "quiver-usage-allowed";
+/** Errors kept until it's known whether they may be sent. */
+const MAX_HELD_ERRORS = 20;
 /** Google Analytics' limit for one request. */
 const MAX_BATCH = 25;
 const SEND_AFTER_MS = 10_000;
@@ -69,6 +79,12 @@ let accountOff: boolean | null = null;
 /** False until known: nothing starts before the account's choice can be followed. */
 let accountKnown = false;
 let errors: Promise<Sentry | null> | null = null;
+/** Sentry is running, with its own handlers for uncaught errors. */
+let sentryRunning = false;
+/** This launch failed before it could learn the choices, and the last one was allowed to send. */
+let lastResort = false;
+/** Errors from before it could send. */
+let heldErrors: [unknown, ErrorScope][] = [];
 let clientId: string | null = null;
 let sessionId: string | null = null;
 let lastEventAt = 0;
@@ -85,7 +101,7 @@ const listeners = new Set<() => void>();
 const off = () => localOff || accountOff === true;
 /** No yes is needed here, or the player gave it. */
 const cleared = () => consented || askFirst === false;
-const allowed = () => telemetryAvailable() && context !== null && accountKnown && !off() && cleared();
+const allowed = () => telemetryAvailable() && context !== null && !off() && (lastResort || (accountKnown && cleared()));
 
 /** A random identifier for this computer, kept until usage data is turned off. Nothing else says who it is. */
 function usageId() {
@@ -156,6 +172,7 @@ function startErrors(ctx: TelemetryContext) {
         // Turning it off after it loaded drops everything, and browser noise goes too; what's left is scrubbed.
         beforeSend: (event) => (!allowed() || isNoise(event) ? null : scrubEvent(event)),
       });
+      sentryRunning = true;
       return sentry;
     })
     .catch(() => null);
@@ -165,7 +182,17 @@ function startErrors(ctx: TelemetryContext) {
 function start() {
   const ctx = context;
   if (!ctx || !allowed()) return;
+  if (!lastResort) {
+    try {
+      localStorage.setItem(ALLOWED_KEY, "1");
+    } catch {
+      // Then a launch that fails early reports nothing.
+    }
+  }
   startErrors(ctx);
+  const held = heldErrors;
+  heldErrors = [];
+  for (const [error, scope] of held) report(error, scope);
   if (!listeningForClose) {
     listeningForClose = true;
     window.addEventListener("pagehide", sendNow);
@@ -179,6 +206,7 @@ function start() {
 function forget() {
   queue = [];
   outbox = [];
+  heldErrors = [];
   if (sendTimer) clearTimeout(sendTimer);
   sendTimer = null;
   screens.clear();
@@ -187,6 +215,7 @@ function forget() {
   lastEventAt = 0;
   try {
     localStorage.removeItem(ID_KEY);
+    localStorage.removeItem(ALLOWED_KEY);
   } catch {
     // Nothing stored, then.
   }
@@ -220,6 +249,24 @@ function changed(wasOff: boolean) {
 export function startTelemetry(next: TelemetryContext) {
   context = next;
   changed(off());
+}
+
+/**
+ * The launcher stopped before it could learn this launch's choices (the settings
+ * or account never loaded), so what's held would wait forever. It goes if usage
+ * data was allowed the last time the launcher ran, and that hasn't been undone:
+ * turning it off clears that here, and a first launch has nothing to go by.
+ */
+export function reportStartupFailure(next: TelemetryContext) {
+  context ??= next;
+  if (!allowed()) {
+    try {
+      lastResort = localStorage.getItem(ALLOWED_KEY) === "1";
+    } catch {
+      return;
+    }
+  }
+  start();
 }
 
 /** The apps folder moved: it's taken out of what's sent too. */
@@ -313,10 +360,59 @@ function isNoise(event: ErrorEvent) {
   return Array.isArray(list) && list.length > 0 && list.every((e) => typeof e?.value === "string" && NOISE.test(e.value));
 }
 
+function report(error: unknown, scope: ErrorScope) {
+  if (!telemetryAvailable() || off()) return;
+  if (!allowed()) {
+    if (heldErrors.length < MAX_HELD_ERRORS) heldErrors.push([error, scope]);
+    return;
+  }
+  void errors?.then((sentry) => sentry?.captureException(error, scope));
+}
+
 /** Reports an error caught on the way (an error boundary's) to error tracking. */
 export function captureError(error: unknown, properties?: Properties) {
-  if (!allowed()) return;
-  void errors?.then((sentry) => sentry?.captureException(error, { extra: properties }));
+  report(error, { extra: properties });
+}
+
+/** An uncaught error: Sentry's own handlers report it once it's running, so only those from before that come here. */
+export function captureUncaught(error: unknown) {
+  if (!sentryRunning) captureError(error, { handled: "before_start" });
+}
+
+/**
+ * Failures that aren't the launcher's to fix: the connection, a service that's
+ * down or limiting requests, a full disk. Usage data still counts them.
+ */
+const EXPECTED = new RegExp(
+  [
+    "check your connection",
+    "error sending request",
+    "timed? ?out",
+    "connection (closed|reset|refused|aborted)",
+    "dns error",
+    "error decoding response body",
+    "failed to fetch",
+    "networkerror",
+    "HTTP status (client|server) error \\((403|429|5\\d\\d)",
+    "no space left",
+    "not enough space",
+    "os error (28|112)\\b",
+  ].join("|"),
+  "i",
+);
+
+/** The player said no, or it's a failure the launcher already understands and words for them (`Problem`). */
+const expected = (error: unknown) => error === "cancelled" || error instanceof Problem || EXPECTED.test(messageOf(error));
+
+/**
+ * A failure the player was told about, which no error handler sees: `step` says
+ * what was being done. The Rust side's come as plain text, all from the same
+ * line here, so they're told apart by what they say.
+ */
+export function captureFailure(step: string, error: unknown, properties?: Properties) {
+  if (expected(error)) return;
+  if (error instanceof Error) return report(error, { tags: { failure: step }, extra: properties });
+  report(new Error(messageOf(error)), { tags: { failure: step }, extra: properties, fingerprint: ["failure", step, reasonOf(error)] });
 }
 
 /**
@@ -331,10 +427,11 @@ export class Problem extends Error {
   }
 }
 
+const messageOf = (error: unknown) => (error instanceof Problem ? error.english : error instanceof Error ? error.message : String(error));
+
 /** A short, safe reason for a failure: the error's message without paths or names, at most 120 characters. */
 export function reasonOf(error: unknown) {
-  const message = error instanceof Problem ? error.english : error instanceof Error ? error.message : String(error);
-  return scrub(message).slice(0, 120);
+  return scrub(messageOf(error)).slice(0, 120);
 }
 
 const PATH = "<path>";

@@ -368,6 +368,161 @@ test("errors caught by an error boundary go to error tracking", async () => {
   expect(sentry.captureException).toHaveBeenCalledWith(error, { extra: { boundary: "page" } });
 });
 
+test("errors from before it could send wait for the choices, and go once they're known", async () => {
+  const telemetry = await import("./telemetry");
+  const error = new Error("too early");
+  telemetry.captureError(error, { handled: "error_boundary" });
+  telemetry.startTelemetry(context);
+  await settle();
+  expect(sentry.captureException).not.toHaveBeenCalled();
+  telemetry.setTelemetryAccount(null);
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledTimes(1);
+  expect(sentry.captureException).toHaveBeenCalledWith(error, { extra: { handled: "error_boundary" } });
+});
+
+test("errors held where it asks first go only on a yes, and a no drops them", async () => {
+  consent = async () => Response.json({ askFirst: true });
+  let telemetry = await started();
+  telemetry.captureError(new Error("held"));
+  await settle();
+  expect(sentry.captureException).not.toHaveBeenCalled();
+  telemetry.setTelemetryEnabled(true);
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledTimes(1);
+
+  vi.resetModules();
+  sentry.captureException.mockReset();
+  telemetry = await started();
+  telemetry.captureError(new Error("held"));
+  telemetry.setTelemetryEnabled(false);
+  telemetry.setTelemetryEnabled(true);
+  await settle();
+  expect(sentry.captureException).not.toHaveBeenCalled();
+});
+
+test("only so many errors are held", async () => {
+  const telemetry = await import("./telemetry");
+  for (let i = 0; i < 30; i++) telemetry.captureError(new Error(String(i)));
+  telemetry.startTelemetry(context);
+  telemetry.setTelemetryAccount(null);
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledTimes(20);
+});
+
+test("uncaught errors are held only until Sentry's own handlers are running", async () => {
+  const telemetry = await import("./telemetry");
+  const early = new Error("early");
+  telemetry.captureUncaught(early);
+  telemetry.startTelemetry(context);
+  telemetry.setTelemetryAccount(null);
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledWith(early, { extra: { handled: "before_start" } });
+  telemetry.captureUncaught(new Error("late"));
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledTimes(1);
+});
+
+/** A launch that stops before the choices can be known, after one that did or didn't allow it. */
+async function failedStart(lastLaunch: () => void) {
+  lastLaunch();
+  vi.resetModules();
+  sentry.init.mockReset();
+  const telemetry = await import("./telemetry");
+  telemetry.captureError(new Error("no start"));
+  telemetry.reportStartupFailure(context);
+  await settle();
+  return telemetry;
+}
+
+test("a launch that can't start reports what's held if the last one was allowed to", async () => {
+  const before = await started();
+  await failedStart(() => before.track("e"));
+  expect(sentry.captureException).toHaveBeenCalledTimes(1);
+  expect(beforeSend({ message: "boom" })).not.toBeNull();
+});
+
+test("a first launch that can't start reports nothing", async () => {
+  const telemetry = await failedStart(() => {});
+  expect(sentry.init).not.toHaveBeenCalled();
+  expect(sentry.captureException).not.toHaveBeenCalled();
+  expect(telemetry.telemetryChoice().enabled).toBe(false);
+});
+
+test("a launch that can't start reports nothing after a launch that wasn't allowed to, or was turned off", async () => {
+  consent = async () => Response.json({ askFirst: true });
+  await started();
+  await failedStart(() => {});
+  expect(sentry.captureException).not.toHaveBeenCalled();
+
+  vi.resetModules();
+  consent = async () => Response.json({ askFirst: false });
+  const on = await started();
+  await failedStart(() => on.setTelemetryEnabled(false));
+  expect(sentry.captureException).not.toHaveBeenCalled();
+
+  vi.resetModules();
+  const account = await started({ account: { optOut: true } });
+  await failedStart(() => account.track("e"));
+  expect(sentry.captureException).not.toHaveBeenCalled();
+});
+
+test("a failure from the Rust side is told apart by what it says, with what was being done", async () => {
+  const telemetry = await started();
+  telemetry.captureFailure("install", "Couldn't unpack C:\\Users\\Ada Lovelace\\x.zip", { slug: "test-port" });
+  await settle();
+  const [error, scope] = sentry.captureException.mock.calls[0];
+  expect(error).toBeInstanceOf(Error);
+  expect(error.message).toBe("Couldn't unpack C:\\Users\\Ada Lovelace\\x.zip");
+  expect(scope).toEqual({ tags: { failure: "install" }, extra: { slug: "test-port" }, fingerprint: ["failure", "install", "Couldn't unpack <path>"] });
+});
+
+test("a failure that's a real error keeps it, and is grouped by its stack", async () => {
+  const telemetry = await started();
+  const error = new TypeError("x is undefined");
+  telemetry.captureFailure("launch", error);
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledWith(error, { tags: { failure: "launch" }, extra: undefined });
+});
+
+test.each([
+  ["cancelled"],
+  ["The download failed. Check your connection and try again."],
+  ["The download stopped: error decoding response body"],
+  ["Couldn't check for updates: error sending request for url (https://api.github.com/x)"],
+  ["Couldn't check for updates: HTTP status client error (403 Forbidden) for url (https://api.github.com/x)"],
+  ["Couldn't download the update: HTTP status server error (503 Service Unavailable) for url (https://x)"],
+  ["operation timed out"],
+  ["No space left on device (os error 28)"],
+  ["There is not enough space on the disk. (os error 112)"],
+  [new TypeError("Failed to fetch")],
+])("%s isn't the launcher's to fix", async (failure) => {
+  const telemetry = await started();
+  telemetry.captureFailure("install", failure);
+  await settle();
+  expect(sentry.captureException).not.toHaveBeenCalled();
+});
+
+test("a failure already worded for the player isn't reported; others that look close are", async () => {
+  const telemetry = await started();
+  telemetry.captureFailure("install", new telemetry.Problem(msg`This release has no download for your computer.`));
+  await settle();
+  expect(sentry.captureException).not.toHaveBeenCalled();
+  telemetry.captureFailure("install", "HTTP status client error (404 Not Found) for url (https://x)");
+  telemetry.captureFailure("launch", "Access is denied. (os error 5)");
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledTimes(2);
+});
+
+test("failures while it's off are dropped", async () => {
+  const telemetry = await started();
+  telemetry.setTelemetryEnabled(false);
+  telemetry.captureFailure("install", "Couldn't unpack it");
+  telemetry.setTelemetryEnabled(true);
+  await settle();
+  expect(sentry.captureException).not.toHaveBeenCalled();
+});
+
 test("each screen is sent once per launch, and again after turning it off and on", async () => {
   const telemetry = await started();
   telemetry.trackScreen({ screen: "browse" });

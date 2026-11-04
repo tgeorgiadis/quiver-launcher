@@ -9,6 +9,7 @@ import { Trans } from "@lingui/react/macro";
 import { NotesDialog } from "./detail";
 import { native, type LauncherUpdate } from "./native";
 import { useLauncher } from "./store";
+import { captureFailure } from "./telemetry";
 import { versionLabel } from "./versions";
 
 type State = {
@@ -41,6 +42,7 @@ async function check(preview: boolean, asked: boolean) {
   } catch (e) {
     // A check that fails on its own is quiet; one the player asked for says why.
     if (asked) set({ error: String(e) });
+    captureFailure("launcher_update_check", e, { asked });
   } finally {
     set({ checking: false });
   }
@@ -54,6 +56,7 @@ async function install(version: string) {
     await native.installUpdate(version);
   } catch (e) {
     set({ installing: null, error: String(e) });
+    captureFailure("launcher_update", e, { version });
   } finally {
     void off.then((stop) => stop());
   }
