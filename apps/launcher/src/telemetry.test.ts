@@ -1,24 +1,13 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { CaptureResult } from "posthog-js";
 import { msg } from "@lingui/core/macro";
 import type { TelemetryContext } from "./telemetry";
 
-const posthog = vi.hoisted(() => ({
-  init: vi.fn(),
-  register: vi.fn(),
-  identify: vi.fn(),
-  reset: vi.fn(),
-  capture: vi.fn(),
-  captureException: vi.fn(),
-  opt_out_capturing: vi.fn(),
-  opt_in_capturing: vi.fn(),
-  has_opted_out_capturing: vi.fn(() => false),
-}));
-vi.mock("posthog-js/no-external", () => ({ default: posthog }));
-vi.mock("posthog-js/dist/exception-autocapture", () => ({}));
+const sentry = vi.hoisted(() => ({ init: vi.fn(), captureException: vi.fn() }));
+vi.mock("@sentry/browser", () => sentry);
 
+const HOST = "https://quiverlauncher.com";
 const context: TelemetryContext = {
-  host: "https://us.i.posthog.com",
+  host: HOST,
   version: "4.0.0",
   os: "windows",
   arch: "x64",
@@ -27,80 +16,120 @@ const context: TelemetryContext = {
   appsDir: "D:\\Quiver\\apps",
 };
 
+/** What the website says about asking first; a rejection stands for not reaching it. */
+let consent: () => Promise<Response>;
+const fetched = vi.fn();
+const usageCalls = () => fetched.mock.calls.filter(([url]) => String(url).endsWith("/api/launcher/usage"));
+const consentCalls = () => fetched.mock.calls.filter(([url]) => String(url).endsWith("/api/launcher/consent"));
+const sentBodies = () => usageCalls().map(([, init]) => JSON.parse(init.body as string));
+const sentEvents = () => sentBodies().flatMap((body) => body.events);
+
 beforeEach(() => {
   vi.resetModules();
-  vi.stubEnv("VITE_POSTHOG_PROJECT_TOKEN", "phc_project");
+  vi.stubEnv("VITE_USAGE_DATA", "1");
+  vi.stubEnv("VITE_SENTRY_DSN", "https://key@sentry.test/1");
   vi.stubEnv("DEV", false);
-  Object.values(posthog).forEach((f) => f.mockClear());
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+  const stored = new Map<string, string>();
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => stored.get(key) ?? null,
+    setItem: (key: string, value: string) => stored.set(key, value),
+    removeItem: (key: string) => stored.delete(key),
+  });
+  vi.stubGlobal("window", new EventTarget());
+  fetched.mockReset();
+  sentry.init.mockReset();
+  sentry.captureException.mockReset();
+  consent = async () => Response.json({ askFirst: false });
+  fetched.mockImplementation((url: string) => (url.endsWith("/consent") ? consent() : Promise.resolve(new Response(null, { status: 204 }))));
+  vi.stubGlobal("fetch", fetched);
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(async () => {
+  vi.useRealTimers();
+  // Sentry loading from a test that didn't wait for it doesn't land in the next one.
+  await new Promise((r) => setTimeout(r, 20));
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
+/** Lets the consent lookup and Sentry's import finish. */
+const settle = async () => {
+  vi.useRealTimers();
+  await new Promise((r) => setTimeout(r, 20));
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+};
+/** Past the wait for more events. */
+const sendWaiting = () => vi.advanceTimersByTime(10_000);
 
 /** A fresh copy of the module, started signed out unless told otherwise. */
 async function started(options: { account?: Parameters<typeof import("./telemetry").setTelemetryAccount>[0]; host?: string } = {}) {
   const telemetry = await import("./telemetry");
   telemetry.startTelemetry({ ...context, host: options.host ?? context.host });
   telemetry.setTelemetryAccount(options.account === undefined ? null : options.account);
+  await settle();
   return telemetry;
 }
-const config = () => posthog.init.mock.calls[0][1];
-const beforeSend = (event: Partial<CaptureResult>) => config().before_send({ uuid: "1", event: "e", properties: {}, ...event });
-const settle = () => new Promise((r) => setTimeout(r, 10));
+const beforeSend = (event: object) => sentry.init.mock.calls[0][0].beforeSend(event);
 
-test("without a project token nothing loads or sends", async () => {
-  vi.stubEnv("VITE_POSTHOG_PROJECT_TOKEN", "");
+test("a build not asked to send sends and asks nothing", async () => {
+  vi.stubEnv("VITE_USAGE_DATA", "");
   const telemetry = await started();
   telemetry.track("screen_viewed", { screen: "library" });
-  await settle();
-  expect(posthog.init).not.toHaveBeenCalled();
-  expect(telemetry.telemetryChoice()).toEqual({ available: false, enabled: false, signedIn: false });
+  sendWaiting();
+  expect(fetched).not.toHaveBeenCalled();
+  expect(sentry.init).not.toHaveBeenCalled();
+  expect(telemetry.telemetryChoice()).toEqual({ available: false, enabled: false, signedIn: false, ask: false });
 });
 
-test("pnpm dev sends nothing unless VITE_POSTHOG_DEV=1", async () => {
+test("pnpm dev sends nothing unless VITE_USAGE_DEV=1", async () => {
   vi.stubEnv("DEV", true);
   let telemetry = await started();
-  await settle();
   expect(telemetry.telemetryAvailable()).toBe(false);
-  expect(posthog.init).not.toHaveBeenCalled();
+  expect(fetched).not.toHaveBeenCalled();
 
   vi.resetModules();
-  vi.stubEnv("VITE_POSTHOG_DEV", "1");
+  vi.stubEnv("VITE_USAGE_DEV", "1");
   telemetry = await started();
-  await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled());
   expect(telemetry.telemetryAvailable()).toBe(true);
+  expect(consentCalls()).toHaveLength(1);
 });
 
-test("a test token never goes to PostHog itself, only to a stand-in", async () => {
-  vi.stubEnv("VITE_POSTHOG_PROJECT_TOKEN", "phc_test");
-  await started();
-  await settle();
-  expect(posthog.init).not.toHaveBeenCalled();
+test("events go to the website in a batch, each saying it's the launcher, under a random id", async () => {
+  const telemetry = await started();
+  telemetry.track("launcher_started", { first_run: true });
+  telemetry.track("screen_viewed", { screen: "browse" });
+  expect(usageCalls()).toHaveLength(0);
+  sendWaiting();
+  expect(usageCalls()).toHaveLength(1);
+  expect(usageCalls()[0][0]).toBe(`${HOST}/api/launcher/usage`);
+  const [{ client_id: id, events }] = sentBodies();
+  expect(id).toMatch(/^[0-9a-f]{32}$/);
+  expect(events.map((e: { name: string }) => e.name)).toEqual(["launcher_started", "screen_viewed"]);
+  expect(events[0].params).toMatchObject({ app: "launcher", launcher_version: "4.0.0", os: "windows", arch: "x64", first_run: true });
+  expect(events[0].params.session_id).toMatch(/^\d+$/);
+  expect(events[0].params.engagement_time_msec).toBeGreaterThan(0);
+});
+
+test("a full batch goes at once, and what's waiting goes when the window closes", async () => {
+  const telemetry = await started();
+  for (let i = 0; i < 25; i++) telemetry.track("e");
+  expect(sentEvents()).toHaveLength(25);
+  telemetry.track("last");
+  (window as unknown as EventTarget).dispatchEvent(new Event("pagehide"));
+  expect(sentEvents()).toHaveLength(26);
+  expect(usageCalls()[1][1].keepalive).toBe(true);
+});
+
+test("the same id is kept across launches", async () => {
+  let telemetry = await started();
+  telemetry.track("e");
+  sendWaiting();
   vi.resetModules();
-  await started({ host: "http://127.0.0.1:5000/posthog" });
-  await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled());
-  expect(config()).toMatchObject({ api_host: "http://127.0.0.1:5000/posthog", disable_compression: true });
-});
-
-test("explicit events only, no replays or remote scripts, and every event says it's the launcher", async () => {
-  await started();
-  await vi.waitFor(() => expect(posthog.register).toHaveBeenCalled());
-  expect(posthog.init.mock.calls[0][0]).toBe("phc_project");
-  expect(config()).toMatchObject({
-    api_host: "https://us.i.posthog.com",
-    ui_host: "https://us.posthog.com",
-    defaults: "2026-05-30",
-    persistence: "localStorage",
-    person_profiles: "identified_only",
-    autocapture: false,
-    capture_pageview: false,
-    capture_pageleave: false,
-    disable_session_recording: true,
-    disable_surveys: true,
-    disable_external_dependency_loading: true,
-    disable_compression: false,
-    opt_out_useragent_filter: true,
-    capture_exceptions: { capture_unhandled_errors: true, capture_unhandled_rejections: true },
-  });
-  expect(posthog.register).toHaveBeenCalledWith({ app: "launcher", launcher_version: "4.0.0", os: "windows", arch: "x64" });
+  telemetry = await started();
+  telemetry.track("e");
+  sendWaiting();
+  const [first, second] = sentBodies();
+  expect(second.client_id).toBe(first.client_id);
 });
 
 test("nothing starts until the account's choice is known; events from before are sent once it is", async () => {
@@ -108,149 +137,182 @@ test("nothing starts until the account's choice is known; events from before are
   telemetry.startTelemetry(context);
   telemetry.track("launcher_started", { first_run: true });
   await settle();
-  expect(posthog.init).not.toHaveBeenCalled();
+  sendWaiting();
+  expect(usageCalls()).toHaveLength(0);
+  expect(sentry.init).not.toHaveBeenCalled();
   telemetry.setTelemetryAccount(null);
-  await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledWith("launcher_started", { first_run: true }));
-  telemetry.track("screen_viewed", { screen: "browse" });
-  await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledWith("screen_viewed", { screen: "browse" }));
+  sendWaiting();
+  expect(sentEvents().map((e) => e.name)).toEqual(["launcher_started"]);
 });
 
-test("turning it off forgets the person and drops events; turning it on sends again", async () => {
+test("where it must ask first, nothing goes until the player says yes", async () => {
+  consent = async () => Response.json({ askFirst: true });
   const telemetry = await started();
-  await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled());
-  telemetry.setTelemetryEnabled(false);
-  expect(telemetry.telemetryChoice().enabled).toBe(false);
-  await vi.waitFor(() => expect(posthog.reset).toHaveBeenCalled());
-  // What every event says about the launcher survives the reset.
-  expect(posthog.register).toHaveBeenCalledTimes(2);
-  expect(beforeSend({ event: "$exception" })).toBeNull();
-  telemetry.track("screen_viewed", { screen: "library" });
-  telemetry.captureError(new Error("boom"));
+  telemetry.track("launcher_started");
+  sendWaiting();
   await settle();
-  expect(posthog.capture).not.toHaveBeenCalled();
-  expect(posthog.captureException).not.toHaveBeenCalled();
+  expect(usageCalls()).toHaveLength(0);
+  expect(sentry.init).not.toHaveBeenCalled();
+  expect(telemetry.telemetryChoice()).toEqual({ available: true, enabled: false, signedIn: false, ask: true });
 
   telemetry.setTelemetryEnabled(true);
-  telemetry.track("screen_viewed", { screen: "library" });
-  await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledTimes(1));
-  expect(beforeSend({ event: "screen_viewed" })).not.toBeNull();
+  sendWaiting();
+  await settle();
+  expect(sentEvents().map((e) => e.name)).toEqual(["launcher_started"]);
+  expect(sentry.init).toHaveBeenCalled();
+  expect(telemetry.telemetryChoice()).toEqual({ available: true, enabled: true, signedIn: false, ask: false });
 });
 
-test("this computer's choice off means nothing loads at all", async () => {
+test("saying no where it asks drops what was waiting and stops asking", async () => {
+  consent = async () => Response.json({ askFirst: true });
+  const telemetry = await started();
+  telemetry.track("launcher_started");
+  telemetry.setTelemetryEnabled(false);
+  sendWaiting();
+  expect(fetched.mock.calls.filter(([url]) => String(url).endsWith("/usage"))).toHaveLength(0);
+  expect(telemetry.telemetryChoice().ask).toBe(false);
+});
+
+test.each([
+  ["can't be reached", () => Promise.reject(new Error("offline"))],
+  ["answers with an error", async () => new Response(null, { status: 500 })],
+  ["answers with nonsense", async () => Response.json({})],
+])("where the website %s, it asks", async (_, answer) => {
+  consent = answer;
+  const telemetry = await started();
+  telemetry.track("launcher_started");
+  sendWaiting();
+  expect(usageCalls()).toHaveLength(0);
+  expect(telemetry.telemetryChoice().ask).toBe(true);
+});
+
+test("a yes from before needs no lookup", async () => {
+  const telemetry = await import("./telemetry");
+  telemetry.setTelemetryLocal(true, true);
+  telemetry.startTelemetry(context);
+  telemetry.setTelemetryAccount(null);
+  telemetry.track("launcher_started");
+  sendWaiting();
+  expect(consentCalls()).toHaveLength(0);
+  expect(sentEvents().map((e) => e.name)).toEqual(["launcher_started"]);
+});
+
+test("turned off here, it contacts nothing at all", async () => {
   const telemetry = await import("./telemetry");
   telemetry.setTelemetryLocal(false);
   telemetry.startTelemetry(context);
   telemetry.setTelemetryAccount(null);
   telemetry.track("launcher_started");
   await settle();
-  expect(posthog.init).not.toHaveBeenCalled();
+  sendWaiting();
+  expect(fetched).not.toHaveBeenCalled();
+  expect(sentry.init).not.toHaveBeenCalled();
+});
+
+test("turning it off forgets the id and drops what's waiting and errors; on again sends under a new id", async () => {
+  const telemetry = await started();
+  telemetry.track("before");
+  sendWaiting();
+  telemetry.track("waiting");
+  telemetry.setTelemetryEnabled(false);
+  expect(localStorage.getItem("quiver-usage-id")).toBeNull();
+  sendWaiting();
+  expect(beforeSend({ message: "boom" })).toBeNull();
+  telemetry.track("while_off");
+  telemetry.captureError(new Error("boom"));
+  sendWaiting();
+  await settle();
+  expect(sentEvents().map((e) => e.name)).toEqual(["before"]);
+  expect(sentry.captureException).not.toHaveBeenCalled();
+
+  telemetry.setTelemetryEnabled(true);
+  telemetry.track("after");
+  sendWaiting();
+  const bodies = sentBodies();
+  expect(bodies[1].events.map((e: { name: string }) => e.name)).toEqual(["after"]);
+  expect(bodies[1].client_id).not.toBe(bodies[0].client_id);
+  expect(beforeSend({ message: "boom" })).not.toBeNull();
 });
 
 test("off on the account or on this computer is off; signed out, this computer's choice alone", async () => {
-  const telemetry = await started({ account: { id: "u1", name: "MagicTurtle", optOut: true } });
-  expect(telemetry.telemetryChoice()).toEqual({ available: true, enabled: false, signedIn: true });
-  await settle();
-  expect(posthog.init).not.toHaveBeenCalled();
-  expect(posthog.identify).not.toHaveBeenCalled();
+  const telemetry = await started({ account: { optOut: true } });
+  expect(telemetry.telemetryChoice()).toMatchObject({ enabled: false, signedIn: true });
+  telemetry.track("while_off");
+  sendWaiting();
+  expect(usageCalls()).toHaveLength(0);
 
   telemetry.setTelemetryAccount(null);
-  expect(telemetry.telemetryChoice()).toEqual({ available: true, enabled: true, signedIn: false });
+  await settle();
+  expect(telemetry.telemetryChoice()).toMatchObject({ enabled: true, signedIn: false });
 
   // Off here, on for the account (its saving failed, or it was turned off before signing in): still off.
   telemetry.setTelemetryLocal(false);
-  telemetry.setTelemetryAccount({ id: "u1", optOut: false });
-  expect(telemetry.telemetryChoice()).toEqual({ available: true, enabled: false, signedIn: true });
-  telemetry.track("screen_viewed", { screen: "library" });
-  await settle();
-  expect(posthog.capture).not.toHaveBeenCalled();
-  expect(posthog.identify).not.toHaveBeenCalled();
+  telemetry.setTelemetryAccount({ optOut: false });
+  expect(telemetry.telemetryChoice()).toMatchObject({ enabled: false, signedIn: true });
 
   // The switch turned on while signed in turns it on for both.
   telemetry.setTelemetryEnabled(true);
   expect(telemetry.telemetryChoice().enabled).toBe(true);
-  await vi.waitFor(() => expect(posthog.identify).toHaveBeenCalledWith("u1", {}, undefined));
-});
-
-test("PostHog's own switch follows: off captures nothing, and on again records no opt-in event", async () => {
-  const telemetry = await started();
-  await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled());
-  telemetry.setTelemetryEnabled(false);
-  await vi.waitFor(() => expect(posthog.opt_out_capturing).toHaveBeenCalled());
-  // Opted out after forgetting the person, so the reset doesn't undo it.
-  expect(posthog.opt_out_capturing.mock.invocationCallOrder[0]).toBeGreaterThan(posthog.reset.mock.invocationCallOrder[0]);
-
-  posthog.has_opted_out_capturing.mockReturnValueOnce(true);
-  telemetry.setTelemetryEnabled(true);
-  await vi.waitFor(() => expect(posthog.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false }));
-});
-
-test("turned off on an earlier run and on now, PostHog is let capture again", async () => {
-  posthog.has_opted_out_capturing.mockReturnValueOnce(true);
-  await started();
-  await vi.waitFor(() => expect(posthog.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false }));
-  expect(posthog.opt_out_capturing).not.toHaveBeenCalled();
-});
-
-test("signed in, events join the account's person, with its name, role and provider; signing out forgets it", async () => {
-  const telemetry = await started({
-    account: { id: "u1", name: "MagicTurtle", role: "member", provider: "discord", createdAt: Date.UTC(2026, 8, 30), optOut: false },
-  });
-  await vi.waitFor(() => expect(posthog.identify).toHaveBeenCalledTimes(1));
-  expect(posthog.identify).toHaveBeenCalledWith(
-    "u1",
-    { name: "MagicTurtle", role: "member", provider: "discord" },
-    { created_at: "2026-09-30T00:00:00.000Z" },
-  );
-  // The same account again doesn't identify again.
-  telemetry.setTelemetryAccount({ id: "u1", name: "MagicTurtle", role: "member", provider: "discord", createdAt: Date.UTC(2026, 8, 30), optOut: false });
-  telemetry.setTelemetryAccount(null);
-  await vi.waitFor(() => expect(posthog.reset).toHaveBeenCalledTimes(1));
-  expect(posthog.identify).toHaveBeenCalledTimes(1);
 });
 
 test("the switch flipped while signed in stands for the account until its setting comes back", async () => {
-  const telemetry = await started({ account: { id: "u1", optOut: false } });
+  const telemetry = await started({ account: { optOut: false } });
   telemetry.setTelemetryEnabled(false);
-  expect(telemetry.telemetryChoice()).toEqual({ available: true, enabled: false, signedIn: true });
-  await vi.waitFor(() => expect(posthog.reset).toHaveBeenCalled());
+  expect(telemetry.telemetryChoice()).toMatchObject({ enabled: false, signedIn: true });
   // Signed out afterwards, this computer remembers it too.
   telemetry.setTelemetryAccount(null);
   expect(telemetry.telemetryChoice().enabled).toBe(false);
 });
 
-test("paths, the home and apps folders and the user name never leave, in properties or errors", async () => {
+test("nothing about the account is sent", async () => {
+  const telemetry = await started({ account: { optOut: false } });
+  telemetry.track("e");
+  sendWaiting();
+  expect(Object.keys(sentBodies()[0])).toEqual(["client_id", "events"]);
+});
+
+test("Sentry reports nothing by itself and keeps nothing the player did", async () => {
   await started();
-  await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled());
-  const sent = beforeSend({
-    event: "$exception",
-    properties: {
-      reason: "Couldn't start C:\\Users\\Ada Lovelace\\Games\\port.exe: Access is denied.",
-      drive: "D:/Quiver/apps/test-port/port.exe",
-      posix: "No such file: /home/ada/games/port.sh",
-      mac: "at /Users/ada/Library/x (line 2)",
-      tilde: "~/Games/port.sh",
-      share: "\\\\nas\\games\\port.exe",
-      spaces: "Couldn't start C:\\Program Files\\Game\\game.exe",
-      who: "Made by Ada",
-      slug: "test-port",
-      web: "https://github.com/Users/x and http://tauri.localhost/assets/index.js",
-      nested: { list: ["/tmp/quiver-data-abc/apps", 3, null] },
-      $exception_list: [
-        {
-          type: "Error",
-          value: "ENOENT: no such file or directory, open 'C:\\Users\\Ada Lovelace\\AppData\\x.json'",
-          stacktrace: {
-            frames: [
-              { filename: "file:///C:/Users/Ada%20Lovelace/app.js", lineno: 1 },
-              { filename: "http://tauri.localhost/assets/index-abc.js", function: "go", lineno: 2 },
-            ],
-          },
-        },
-      ],
-      $set: { name: "ada" },
-    },
-  })!;
-  const p = sent.properties;
+  const options = sentry.init.mock.calls[0][0];
+  expect(options).toMatchObject({ release: "quiver-launcher@4.0.0", sendClientReports: false });
+  expect(options.sendDefaultPii).toBeFalsy();
+  expect(options.tracesSampleRate).toBeUndefined();
+  expect(options.replaysSessionSampleRate).toBeUndefined();
+  const names = ["BrowserSession", "Breadcrumbs", "Console", "GlobalHandlers", "Dedupe"].map((name) => ({ name }));
+  expect(options.integrations(names).map((i: { name: string }) => i.name)).toEqual(["GlobalHandlers", "Dedupe"]);
+});
+
+test("anywhere but the website, as in tests and smoke runs, no errors are reported", async () => {
+  await started({ host: "http://127.0.0.1:9" });
+  expect(sentry.init).not.toHaveBeenCalled();
+});
+
+test("without a DSN no errors are reported, and events still go", async () => {
+  vi.stubEnv("VITE_SENTRY_DSN", "");
+  const telemetry = await started();
+  telemetry.track("e");
+  sendWaiting();
+  expect(sentry.init).not.toHaveBeenCalled();
+  expect(sentEvents()).toHaveLength(1);
+});
+
+test("paths, the home and apps folders and the user name never leave, in events", async () => {
+  const telemetry = await started();
+  telemetry.track("app_launch_failed", {
+    reason: "Couldn't start C:\\Users\\Ada Lovelace\\Games\\port.exe: Access is denied.",
+    drive: "D:/Quiver/apps/test-port/port.exe",
+    posix: "No such file: /home/ada/games/port.sh",
+    mac: "at /Users/ada/Library/x (line 2)",
+    tilde: "~/Games/port.sh",
+    share: "\\\\nas\\games\\port.exe",
+    spaces: "Couldn't start C:\\Program Files\\Game\\game.exe",
+    who: "Made by Ada",
+    slug: "test-port",
+    web: "https://github.com/Users/x and http://tauri.localhost/assets/index.js",
+    nested: { list: ["/tmp/quiver-data-abc/apps", 3, null] },
+  });
+  sendWaiting();
+  const p = sentEvents()[0].params;
   expect(p.reason).toBe("Couldn't start <path> Access is denied.");
   expect(p.drive).toBe("<path>");
   expect(p.posix).toBe("No such file: <path>");
@@ -262,13 +324,33 @@ test("paths, the home and apps folders and the user name never leave, in propert
   expect(p.slug).toBe("test-port");
   expect(p.web).toBe("https://github.com/Users/x and http://tauri.localhost/assets/index.js");
   expect(p.nested).toEqual({ list: ["<path>", 3, null] });
-  expect(p.$exception_list[0].value).toBe("ENOENT: no such file or directory, open '<path>'");
-  expect(p.$exception_list[0].stacktrace.frames[0].filename).toBe("<path>");
-  expect(p.$exception_list[0].stacktrace.frames[1]).toEqual({ filename: "http://tauri.localhost/assets/index-abc.js", function: "go", lineno: 2 });
-  // Their Quiver name is theirs to send, as on the website.
-  expect(p.$set).toEqual({ name: "ada" });
-  const { $set: _, ...rest } = p;
-  expect(JSON.stringify(rest)).not.toMatch(/ada|lovelace|quiver[\\/]apps/i);
+  expect(JSON.stringify(p)).not.toMatch(/ada|lovelace|quiver[\\/]apps/i);
+});
+
+test("paths, folders and the user name never leave, in error reports", async () => {
+  await started();
+  const sent = beforeSend({
+    exception: {
+      values: [
+        {
+          type: "Error",
+          value: "ENOENT: no such file or directory, open 'C:\\Users\\Ada Lovelace\\AppData\\x.json'",
+          stacktrace: {
+            frames: [
+              { filename: "file:///C:/Users/Ada%20Lovelace/app.js", lineno: 1 },
+              { filename: "http://tauri.localhost/assets/index-abc.js", function: "go", lineno: 2 },
+            ],
+          },
+        },
+      ],
+    },
+    extra: { note: "ada was here" },
+  });
+  const [value] = sent.exception.values;
+  expect(value.value).toBe("ENOENT: no such file or directory, open '<path>'");
+  expect(value.stacktrace.frames[0].filename).toBe("<path>");
+  expect(value.stacktrace.frames[1]).toEqual({ filename: "http://tauri.localhost/assets/index-abc.js", function: "go", lineno: 2 });
+  expect(sent.extra.note).toBe("<user> was here");
 });
 
 test("a failure's reason is short and safe", async () => {
@@ -281,7 +363,8 @@ test("errors caught by an error boundary go to error tracking", async () => {
   const telemetry = await started();
   const error = new Error("page failed");
   telemetry.captureError(error, { boundary: "page" });
-  await vi.waitFor(() => expect(posthog.captureException).toHaveBeenCalledWith(error, { boundary: "page" }));
+  await settle();
+  expect(sentry.captureException).toHaveBeenCalledWith(error, { extra: { boundary: "page" } });
 });
 
 test("each screen is sent once per launch, and again after turning it off and on", async () => {
@@ -291,28 +374,23 @@ test("each screen is sent once per launch, and again after turning it off and on
   telemetry.trackScreen({ screen: "browse" });
   telemetry.trackScreen({ screen: "app", slug: "other-port" });
   telemetry.trackScreen({ screen: "app", slug: "test-port" });
-  await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledTimes(3));
-  expect(posthog.capture.mock.calls.map((c) => c[1])).toEqual([
-    { screen: "browse" },
-    { screen: "app", slug: "test-port" },
-    { screen: "app", slug: "other-port" },
-  ]);
+  sendWaiting();
+  expect(sentEvents().map((e) => e.params.screen + (e.params.slug ?? ""))).toEqual(["browse", "apptest-port", "appother-port"]);
 
   telemetry.setTelemetryEnabled(false);
   telemetry.setTelemetryEnabled(true);
   telemetry.trackScreen({ screen: "browse" });
-  await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledTimes(4));
+  sendWaiting();
+  expect(sentEvents()).toHaveLength(4);
 });
 
 test("the browser's harmless ResizeObserver warning isn't sent; other errors are", async () => {
   await started();
-  await vi.waitFor(() => expect(posthog.init).toHaveBeenCalled());
-  const error = (...values: string[]) => beforeSend({ event: "$exception", properties: { $exception_list: values.map((value) => ({ type: "Error", value })) } });
+  const error = (...values: string[]) => beforeSend({ exception: { values: values.map((value) => ({ type: "Error", value })) } });
   expect(error("ResizeObserver loop completed with undelivered notifications.")).toBeNull();
   expect(error("ResizeObserver loop limit exceeded")).toBeNull();
   expect(error("Cannot read properties of undefined (reading 'length')")).not.toBeNull();
   expect(error("ResizeObserver loop limit exceeded", "Failed to fetch")).not.toBeNull();
-  expect(beforeSend({ event: "screen_viewed", properties: { reason: "ResizeObserver loop limit exceeded" } })).not.toBeNull();
 });
 
 test("a problem reaches usage data in English, whatever language it showed in", async () => {

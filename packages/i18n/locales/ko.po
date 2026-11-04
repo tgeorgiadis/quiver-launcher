@@ -734,6 +734,11 @@ msgstr "모든 프로젝트 유형"
 msgid "All tags"
 msgstr "모든 태그"
 
+#. Allow usage data to be sent
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Allow"
+msgstr "허용"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
 msgstr "다른 이름: {matched}"
@@ -1020,6 +1025,10 @@ msgstr "{region} 이름: {title}"
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in the {region}"
 msgstr "{region} 이름: {title}"
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Can Quiver Launcher send usage data to help improve it? It isn't linked to your Quiver account, and nothing is sent unless you allow it. You can change this in Settings."
+msgstr "Quiver Launcher 개선을 위해 사용 데이터를 보내도 될까요? 이 데이터는 Quiver 계정과 연결되지 않으며, 허용하지 않으면 아무것도 보내지 않습니다. 설정에서 변경할 수 있습니다."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Can't be added: Quiver Launcher 3 doesn't know where it comes from"
@@ -1493,6 +1502,11 @@ msgstr "모두 닫기"
 #: ../ui/src/index.tsx
 msgid "Doesn't run"
 msgstr "실행 안 됨"
+
+#. Don't send usage data
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Don't allow"
+msgstr "허용 안 함"
 
 #. Closes a dialog
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2137,6 +2151,10 @@ msgstr "실행되지 않았어요"
 msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "출시 당시 Quiver가 확인한 파일을 설치하고, 그 뒤로 바뀐 파일은 거부해요."
 
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "It isn't linked to your Quiver account."
+msgstr "Quiver 계정과 연결되지 않습니다."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "실행됐지만 문제가 있었어요"
@@ -2152,10 +2170,6 @@ msgstr "잘 작동했어요"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It wouldn't install, open, or start."
 msgstr "설치, 열기 또는 시작이 되지 않았어요."
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "It's anonymous while you're signed out."
-msgstr "로그아웃 상태에서는 익명이에요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -3267,8 +3281,8 @@ msgid "Quiver Launcher only updates to verified releases. It installs an unverif
 msgstr "Quiver Launcher는 검증된 버전으로만 업데이트해요. 미검증 또는 차단된 버전은 직접 선택하고 확인할 때만 설치해요. 검증됨은 버전의 모든 파일이 공개된 지 48시간이 지나 악성 업로드를 발견할 시간이 있었고, VirusTotal이 탐지한 파일은 Quiver 관리자가 확인했다는 뜻이에요. Quiver Launcher는 모든 다운로드를 Quiver가 검증한 파일과 대조해요. 그 후 파일이 교체되면 새 파일은 따로 48시간을 기다려요."
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "Quiver Launcher sends usage data to help improve it. It's anonymous unless you sign in. You can turn this off in Settings."
-msgstr "Quiver Launcher는 개선을 위해 사용 데이터를 보내요. 로그인하지 않으면 익명이에요. 설정에서 끌 수 있어요."
+msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
+msgstr "Quiver Launcher는 개선을 위해 사용 데이터를 보냅니다. 이 데이터는 Quiver 계정과 연결되지 않습니다. 설정에서 끌 수 있습니다."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver Launcher: go to your library"
@@ -4670,10 +4684,6 @@ msgstr "어떤 앱인가요?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "어떤 다운로드인가요?"
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "While you're signed in, it's linked to your Quiver account."
-msgstr "로그인되어 있는 동안에는 Quiver 계정에 연결돼요."
 
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts

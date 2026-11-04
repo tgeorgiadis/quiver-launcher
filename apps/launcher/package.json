@@ -18,10 +18,10 @@
     "@quiverlauncher/api": "workspace:*",
     "@quiverlauncher/i18n": "workspace:*",
     "@quiverlauncher/ui": "workspace:*",
+    "@sentry/browser": "11.10.0",
     "@tauri-apps/api": "^2",
     "convex": "^1.46.0",
     "lucide-react": "^0.468.0",
-    "posthog-js": "~1.434.18",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^5.7.0"
@@ -29,6 +29,7 @@
   "devDependencies": {
     "@lingui/babel-plugin-lingui-macro": "6.10.1",
     "@lingui/conf": "6.10.1",
+    "@sentry/vite-plugin": "11.10.0",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

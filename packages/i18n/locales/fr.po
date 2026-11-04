@@ -734,6 +734,11 @@ msgstr "Tous les types de projet"
 msgid "All tags"
 msgstr "Tous les tags"
 
+#. Allow usage data to be sent
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Allow"
+msgstr "Autoriser"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
 msgstr "Aussi appelé {matched}"
@@ -1020,6 +1025,10 @@ msgstr "Appelé {title} ({region})"
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in the {region}"
 msgstr "Appelé {title} ({region})"
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Can Quiver Launcher send usage data to help improve it? It isn't linked to your Quiver account, and nothing is sent unless you allow it. You can change this in Settings."
+msgstr "Quiver Launcher peut-il envoyer des données d'utilisation pour aider à l'améliorer ? Elles ne sont pas liées à votre compte Quiver, et rien n'est envoyé sans votre autorisation. Vous pouvez changer cela dans les paramètres."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Can't be added: Quiver Launcher 3 doesn't know where it comes from"
@@ -1493,6 +1502,11 @@ msgstr "Tout masquer"
 #: ../ui/src/index.tsx
 msgid "Doesn't run"
 msgstr "Ne fonctionne pas"
+
+#. Don't send usage data
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Don't allow"
+msgstr "Ne pas autoriser"
 
 #. Closes a dialog
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2137,6 +2151,10 @@ msgstr "Ça n'a pas fonctionné"
 msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Elle installe les fichiers que Quiver a vus à sa sortie, et refuse ceux qui ont changé depuis."
 
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "It isn't linked to your Quiver account."
+msgstr "Elles ne sont pas liées à votre compte Quiver."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "Ça a fonctionné, mais avec des problèmes"
@@ -2152,10 +2170,6 @@ msgstr "Ça a bien fonctionné"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It wouldn't install, open, or start."
 msgstr "Ça ne s'installait pas, ne s'ouvrait pas ou ne se lançait pas."
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "It's anonymous while you're signed out."
-msgstr "Tant que vous êtes déconnecté, elles sont anonymes."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -3267,8 +3281,8 @@ msgid "Quiver Launcher only updates to verified releases. It installs an unverif
 msgstr "Quiver Launcher ne met à jour que vers des versions vérifiées. Il n'installe une version non vérifiée ou bloquée que si vous la choisissez et confirmez. « Vérifiée » signifie que chaque fichier de la version est publié depuis 48 heures, ce qui a laissé le temps de repérer un envoi malveillant, et qu'un mainteneur de Quiver a examiné tout fichier signalé par VirusTotal. Quiver Launcher compare chaque téléchargement au fichier que Quiver a vérifié. Si un fichier est remplacé ensuite, le nouveau attend ses propres 48 heures."
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "Quiver Launcher sends usage data to help improve it. It's anonymous unless you sign in. You can turn this off in Settings."
-msgstr "Quiver Launcher envoie des données d'utilisation pour aider à l'améliorer. Elles sont anonymes, sauf si vous vous connectez. Vous pouvez désactiver cela dans les Paramètres."
+msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
+msgstr "Quiver Launcher envoie des données d'utilisation pour aider à l'améliorer. Elles ne sont pas liées à votre compte Quiver. Vous pouvez désactiver cela dans les paramètres."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver Launcher: go to your library"
@@ -4670,10 +4684,6 @@ msgstr "Quelle app ?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "Quel téléchargement ?"
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "While you're signed in, it's linked to your Quiver account."
-msgstr "Tant que vous êtes connecté, elles sont liées à votre compte Quiver."
 
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts

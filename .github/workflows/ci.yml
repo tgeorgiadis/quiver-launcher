@@ -111,9 +111,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Unsigned until there are signing keys.
       - run: pnpm --filter @quiver/launcher tauri build --bundles nsis
-        # Usage data (telemetry.ts): the PostHog project token, a repository variable; unset, the build sends nothing.
+        # Usage data and error reports (telemetry.ts), as in a release.
         env:
-          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+          VITE_USAGE_DATA: "1"
+          VITE_SENTRY_DSN: https://84d1ea0079a275f2356a6605b1823ff5@o4512369991942144.ingest.de.sentry.io/4512370215551056
       - uses: actions/upload-artifact@v4
         with:
           name: Quiver Launcher Windows installer
@@ -159,7 +160,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: sh apps/launcher/scripts/tauri-cef.sh build --bundles appimage
         env:
-          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+          VITE_USAGE_DATA: "1"
+          VITE_SENTRY_DSN: https://84d1ea0079a275f2356a6605b1823ff5@o4512369991942144.ingest.de.sentry.io/4512370215551056
       - if: always() && steps.dist.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with: { path: ~/.cache/cef, key: "${{ steps.dist.outputs.cache-primary-key }}" }
@@ -169,7 +171,7 @@ jobs:
         run: |
           export QUIVER_DATA=$RUNNER_TEMP/quiver-smoke
           # A smoke test isn't usage: its events go nowhere.
-          export QUIVER_POSTHOG_HOST=http://127.0.0.1:9
+          export QUIVER_USAGE_HOST=http://127.0.0.1:9
           # Output goes to a file so nothing left running holds the step open.
           status=0; xvfb-run -a timeout 15 apps/launcher/src-tauri/target/release/bundle/appimage/*.AppImage > $RUNNER_TEMP/app.log 2>&1 || status=$?
           cat $RUNNER_TEMP/app.log $QUIVER_DATA/quiver.log 2>/dev/null || true

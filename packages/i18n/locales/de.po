@@ -734,6 +734,11 @@ msgstr "Alle Projekttypen"
 msgid "All tags"
 msgstr "Alle Tags"
 
+#. Allow usage data to be sent
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Allow"
+msgstr "Erlauben"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Also known as {matched}"
 msgstr "Auch bekannt als {matched}"
@@ -1020,6 +1025,10 @@ msgstr "Bekannt als {title} ({region})"
 #: ../../apps/launcher/src/game.tsx
 msgid "Called {title} in the {region}"
 msgstr "Bekannt als {title} ({region})"
+
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Can Quiver Launcher send usage data to help improve it? It isn't linked to your Quiver account, and nothing is sent unless you allow it. You can change this in Settings."
+msgstr "Darf Quiver Launcher Nutzungsdaten senden, die helfen, ihn zu verbessern? Sie sind nicht mit deinem Quiver-Konto verknüpft, und ohne deine Erlaubnis wird nichts gesendet. Du kannst das in den Einstellungen ändern."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Can't be added: Quiver Launcher 3 doesn't know where it comes from"
@@ -1493,6 +1502,11 @@ msgstr "Alle ausblenden"
 #: ../ui/src/index.tsx
 msgid "Doesn't run"
 msgstr "Läuft nicht"
+
+#. Don't send usage data
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "Don't allow"
+msgstr "Nicht erlauben"
 
 #. Closes a dialog
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2137,6 +2151,10 @@ msgstr "Es lief nicht"
 msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Es werden die Dateien installiert, die Quiver bei ihrem Erscheinen gesehen hat; alle, die sich seitdem geändert haben, werden abgelehnt."
 
+#: ../../apps/launcher/src/telemetry-ui.tsx
+msgid "It isn't linked to your Quiver account."
+msgstr "Sie sind nicht mit deinem Quiver-Konto verknüpft."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "Es lief, aber ich hatte Probleme"
@@ -2152,10 +2170,6 @@ msgstr "Es lief gut"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It wouldn't install, open, or start."
 msgstr "Es ließ sich nicht installieren, öffnen oder starten."
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "It's anonymous while you're signed out."
-msgstr "Solange du abgemeldet bist, sind sie anonym."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -3267,8 +3281,8 @@ msgid "Quiver Launcher only updates to verified releases. It installs an unverif
 msgstr "Quiver Launcher aktualisiert nur auf geprüfte Versionen. Eine ungeprüfte oder gesperrte installiert er nur, wenn du sie auswählst und bestätigst. „Geprüft“ bedeutet, dass jede Datei einer Version seit 48 Stunden veröffentlicht ist, sodass Zeit war, einen schädlichen Upload zu bemerken, und dass ein Quiver-Maintainer jede Datei geprüft hat, die VirusTotal gemeldet hat. Quiver Launcher gleicht jeden Download mit der Datei ab, die Quiver geprüft hat. Wird eine Datei danach ersetzt, wartet die neue ihre eigenen 48 Stunden."
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "Quiver Launcher sends usage data to help improve it. It's anonymous unless you sign in. You can turn this off in Settings."
-msgstr "Quiver Launcher sendet Nutzungsdaten, die helfen, ihn zu verbessern. Sie sind anonym, solange du dich nicht anmeldest. Du kannst das in den Einstellungen ausschalten."
+msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
+msgstr "Quiver Launcher sendet Nutzungsdaten, die helfen, ihn zu verbessern. Sie sind nicht mit deinem Quiver-Konto verknüpft. Du kannst das in den Einstellungen ausschalten."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver Launcher: go to your library"
@@ -4670,10 +4684,6 @@ msgstr "Welche App?"
 #: ../../apps/launcher/src/App.tsx
 msgid "Which download?"
 msgstr "Welcher Download?"
-
-#: ../../apps/launcher/src/telemetry-ui.tsx
-msgid "While you're signed in, it's linked to your Quiver account."
-msgstr "Solange du angemeldet bist, sind sie mit deinem Quiver-Konto verknüpft."
 
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts

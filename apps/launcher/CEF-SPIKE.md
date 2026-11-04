@@ -111,7 +111,7 @@ file picker, sign-in through the browser, and self-update to a next bundle.
 | File picker | **Works on the desktop.** The KDE portal dialog opened, Esc returned nothing, and CEF survived the mouse afterwards. **In Game Mode** there's no FileChooser portal, so rfd would fall back to zenity: the same desktop-sized dialog as GTK's. The launcher's own picker (picker.rs, file-picker.tsx, merged from `feature/first-start-setup`) takes over there, and works on CEF: the first start's setup chose an apps folder through it. Linux's WebKitGTK build now uses the portal too. |
 | AppImage self-update (`update.rs`) | **Works.** A signed "4.0.0-alpha.6" served locally was downloaded, verified, swapped in, backed up, and relaunched. The new copy started and drew. |
 | Remembered window place | **Changes.** CEF names the monitor `eDP-1`, GTK `ANX7530 U`, so a saved window position doesn't carry over between engines. |
-| Web storage | **Starts empty.** CEF keeps its profile in `~/.cache/AppImage-Cache/com.quiverlauncher.app/cef`. Only review drafts and PostHog's anonymous id live in localStorage, so a switch loses little. |
+| Web storage | **Starts empty.** CEF keeps its profile in `~/.cache/AppImage-Cache/com.quiverlauncher.app/cef`. Only review drafts and usage data's random id live in localStorage, so a switch loses little. |
 | Not tested | The KWin script that steps out of full screen for Steam's keyboard on the desktop (`keyboard::kwin`). Bringing the browser forward for sign-in on Wayland (`browser.rs`). Both use `gtk_window()`, which has no GTK window behind it under CEF, so they likely need another way. |
 
 ## Before it could ship

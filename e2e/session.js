@@ -56,8 +56,8 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     QUIVER_GITLAB_API: api.gitlab,
     QUIVER_THUNDERSTORE: api.thunderstore,
     QUIVER_GAMEBANANA: api.gamebanana,
-    // Usage data goes to the mock too, never to PostHog (the e2e build has a test token).
-    QUIVER_POSTHOG_HOST: api.posthog,
+    // Usage data goes to the mock too, never to the website.
+    QUIVER_USAGE_HOST: api.usage,
     QUIVER_BROWSER: resolve(import.meta.dirname, "fake-browser.js"),
     QUIVER_SITE: api.site,
     QUIVER_UPDATE_API: api.updates,
@@ -66,7 +66,7 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     QUIVER_V3_DATA: join(data, "none"),
     // On it, not on a Wayland desktop that GTK would find on its own (WSLg's, even with WAYLAND_DISPLAY unset).
     ...(xvfb && { DISPLAY: xvfb.display, GDK_BACKEND: "x11" }),
-    // WebKitGTK's storage (localStorage, where PostHog keeps who it's sending as) beside the
+    // WebKitGTK's storage (localStorage, where usage data keeps its identifier) beside the
     // data folder rather than shared by every copy, as on Windows, so copies running at once
     // don't share it.
     ...(!windows && { XDG_DATA_HOME: `${data}-webview` }),

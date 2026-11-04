@@ -10,7 +10,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { gunzipSync, zstdCompressSync } from "node:zlib";
+import { zstdCompressSync } from "node:zlib";
 
 /** A zip with a wrapper folder and a program that leaves a mark when run. */
 function buildZip() {
@@ -105,14 +105,6 @@ const entry = (slug, name, overrides = {}) => ({
   ...overrides,
 });
 
-/** PostHog's request bodies: JSON, gzipped JSON, or base64 form data (a page closing). */
-function decodePosthog(raw, url) {
-  const zipped = url.searchParams.get("compression") === "gzip-js" || (raw[0] === 0x1f && raw[1] === 0x8b);
-  const text = (zipped ? gunzipSync(raw) : raw).toString("utf8");
-  const form = text.startsWith("data=") && new URLSearchParams(text).get("data");
-  return form ? Buffer.from(form, "base64").toString("utf8") : text;
-}
-
 /** `pageSize` caps how many apps a catalog page has, to try paging. */
 export async function startMockApi({ pageSize = Infinity } = {}) {
   const zip = buildZip();
@@ -154,7 +146,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   let stalled = null;
   let unstall = () => {};
   const stalls = new Set();
-  // Usage data sent to the stand-in for PostHog (QUIVER_POSTHOG_HOST): events, and every request body as sent.
+  // Usage data sent to the stand-in for the website (QUIVER_USAGE_HOST): events, and every request body as sent.
   const telemetry = [];
   const telemetryBodies = [];
   // The original games, and their apps in the site's (unsorted) order.
@@ -452,33 +444,23 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       res.writeHead(200, { "Content-Type": "text/html" });
       return res.end("<title>Signed in</title>");
     }
-    // PostHog: events are recorded; flags and remote config answer with nothing to change.
-    if (url.pathname.startsWith("/posthog/")) {
-      const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": req.headers.origin ?? "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
-      if (req.method === "OPTIONS") {
-        res.writeHead(204, headers);
-        return res.end();
-      }
-      const path = url.pathname.slice("/posthog".length);
-      if (/^\/(flags|decide)\/?$/.test(path) || path.startsWith("/array/")) {
+    // The website's routes for usage data: it needn't ask first here, and events are recorded.
+    if (url.pathname.startsWith("/usage/api/launcher/")) {
+      const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+      if (url.pathname.endsWith("/consent")) {
         res.writeHead(200, headers);
-        return res.end(JSON.stringify({ featureFlags: {}, featureFlagPayloads: {}, errorsWhileComputingFlags: false }));
+        return res.end(JSON.stringify({ askFirst: false }));
       }
       const raw = await new Promise((resolve) => {
         const chunks = [];
         req.on("data", (c) => chunks.push(c));
         req.on("end", () => resolve(Buffer.concat(chunks)));
       });
-      const text = decodePosthog(raw, url);
+      const text = raw.toString("utf8");
       telemetryBodies.push(text);
-      try {
-        const parsed = JSON.parse(text);
-        telemetry.push(...(Array.isArray(parsed) ? parsed : (parsed.batch ?? [parsed])));
-      } catch {
-        // Kept in telemetryBodies, for tests to look at.
-      }
-      res.writeHead(200, headers);
-      return res.end(JSON.stringify({ status: 1 }));
+      telemetry.push(...JSON.parse(text).events);
+      res.writeHead(204, headers);
+      return res.end();
     }
     const send = (body, status = 200) => {
       res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
@@ -737,7 +719,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     gamebanana: `${base}/gamebanana`,
     publishMod,
     modDownloads,
-    posthog: `${base}/posthog`,
+    usage: `${base}/usage`,
     site: `${base}/site`,
     /** Visits to the website's signed-in page, by query string ("" or "?error=..."). */
     signedInPages,
