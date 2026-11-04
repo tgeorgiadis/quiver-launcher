@@ -14,7 +14,7 @@ import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
 import { OS_NAMES, PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
-import { hasUpdate, tvModeOn, useLauncher, type LibraryItem } from "./store";
+import { hasUpdate, tvModeOn, updateFor, useLauncher, type LibraryItem } from "./store";
 import { haloMoved, pageArea, readyFocus } from "./spatial";
 import { usePads } from "./pad-hints";
 import { jumpLetters, letterOf } from "./letters";
@@ -938,7 +938,7 @@ function ContinuePlaying({ entry, played, onOpen, action }: { entry: Entry; play
   const latest = catalog[entry.id] ?? entry;
   const update = install && !jobs[entry.id] && hasUpdate(latest, install);
   const name = entry.projectName;
-  const newer = versionLabel(latest.verified?.version);
+  const newer = versionLabel(updateFor(latest, install)?.version);
   return (
     <section className={`continue app-backdrop${art ? " has-art" : ""}`} aria-label={t`Continue playing`}>
       {art && <SourcedImage key={art} className="backdrop-art" sources={heroSources(art)} alt="" priority onFail={() => {}} />}

@@ -402,6 +402,11 @@ msgstr "{size} MB"
 msgid "{speed}×"
 msgstr "{speed}×"
 
+#. A release with files for these systems and none for this computer, as 'Linux only'
+#: ../../apps/launcher/src/detail.tsx
+msgid "{systems} only"
+msgstr "Solo {systems}"
+
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
 msgstr "{total, plural, one {# giocatore} other {# giocatori}}"
@@ -425,6 +430,10 @@ msgstr "{updateCount, plural, one {# app ha un aggiornamento.} other {# app hann
 #: ../../apps/launcher/src/mods.tsx
 msgid "{updateCount, plural, one {# mod has an update.} other {# mods have updates.}}"
 msgstr "{updateCount, plural, one {# mod ha un aggiornamento.} other {# mod hanno aggiornamenti.}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{updateVersion} is available."
+msgstr "È disponibile {updateVersion}."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{verifiedVersion} · files can't be verified"
@@ -907,8 +916,8 @@ msgid "As in Settings: {name}"
 msgstr "Come nelle Impostazioni: {name}"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Auto Update won't put {verifiedVersion} back. It installs the next new release."
-msgstr "L'aggiornamento automatico non reinstallerà la {verifiedVersion}. Installerà la prossima nuova versione."
+msgid "Auto Update won't put {updateVersion} back. It installs the next new release."
+msgstr "L'aggiornamento automatico non reinstallerà la {updateVersion}. Installerà la prossima nuova versione."
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic"
@@ -3048,8 +3057,8 @@ msgid "Pinned to {installedVersion}."
 msgstr "Fissata a {installedVersion}."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Pinned to {installedVersion}. {verifiedVersion} is available."
-msgstr "Fissata a {installedVersion}. È disponibile {verifiedVersion}."
+msgid "Pinned to {installedVersion}. {updateVersion} is available."
+msgstr "Fissata a {installedVersion}. È disponibile {updateVersion}."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Pinned to {version}"
@@ -3934,6 +3943,11 @@ msgstr "Sei uscito. Le app installate su questo computer restano nella tua libre
 msgid "Skip setup"
 msgstr "Salta la configurazione"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Skip this update"
+msgstr "Salta questo aggiornamento"
+
 #. Library card size
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
@@ -4516,8 +4530,12 @@ msgid "Update to {out}"
 msgstr "Aggiorna a {out}"
 
 #: ../../apps/launcher/src/library-tile.tsx
-msgid "Update to {verifiedLabel}"
-msgstr "Aggiorna a {verifiedLabel}"
+msgid "Update to {updateLabel}"
+msgstr "Aggiorna a {updateLabel}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Update to {updateVersion}"
+msgstr "Aggiorna a {updateVersion}"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Update your feedback"
@@ -4799,6 +4817,10 @@ msgstr "Ce l'hai installata. Se accetti il rischio, puoi continuare a usarla; al
 #: ../../apps/launcher/src/update.tsx
 msgid "You have the newest version."
 msgstr "Hai la versione più recente."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
+msgstr "Hai saltato {updateVersion}. Quiver Launcher proporrà la prossima nuova versione."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."

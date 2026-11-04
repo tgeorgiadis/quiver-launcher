@@ -3,7 +3,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { appsOfRepository, withGame, type GameArt } from "./custom";
 import { artFiles, artValues, artValuesOk, fromArtValues, withPictures } from "./custom-art";
 import { changesFrom, applyServer } from "./sync";
-import { hasUpdate, type Install, type LibraryItem } from "./store";
+import { forHereKey, hasUpdate, type Install, type LibraryItem } from "./store";
 
 vi.mock("@tauri-apps/api/core", () => ({ convertFileSrc: (file: string, protocol: string) => `${protocol}://localhost/${file}`, invoke: vi.fn() }));
 
@@ -66,5 +66,6 @@ test("a local app under a catalog entry is never offered an update", () => {
   const listed = { verified: { version: "v2", releasedAt: 20 } } as unknown as Entry;
   const install: Install = { local: true, version: "", folder: "game.exe", executables: [] };
   expect(hasUpdate(listed, install)).toBe(false);
-  expect(hasUpdate(listed, { ...install, local: undefined, version: "v1", releasedAt: 10 })).toBe(true);
+  const theirs = { ...install, local: undefined, version: "v1", releasedAt: 10 };
+  expect(hasUpdate({ ...listed, forHere: { of: forHereKey(listed.verified!, theirs), release: listed.verified } }, theirs)).toBe(true);
 });

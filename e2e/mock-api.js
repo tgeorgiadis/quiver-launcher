@@ -281,7 +281,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
               fetchedAt: 1,
             }
           : null,
-    "catalog:releases": ({ slug, paginationOpts }) => page(entries.some((e) => e.slug === slug) ? [release(slug)] : [], paginationOpts),
+    "catalog:releases": ({ slug, paginationOpts }) => page(listedReleases[slug] ?? (entries.some((e) => e.slug === slug) ? [release(slug)] : []), paginationOpts),
     // Test Port's releases the site hasn't verified: one being checked, one no maintainer looked at, one a maintainer stopped.
     "catalog:unverifiedReleases": ({ slug }) => unverifiedFor(slug),
     // Every release, newest first, each with its state.
@@ -343,6 +343,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     },
   };
   let version = "1.0.0";
+  const listedReleases = {};
   const releasedAt = (v) => Date.UTC(2026, 0, Number(v.split(".")[1]) + 1);
   const release = (slug) => ({
     id: `release_${slug}_${version}`,
@@ -750,6 +751,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     },
     /** Downloads stopped halfway that the launcher is still waiting on. */
     stalled: () => stalls.size,
+    /** The verified releases an app lists in place of its one, newest first. */
+    setReleases: (slug, list) => (listedReleases[slug] = list),
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     /** Quiver Launcher's releases, for updates, and the key they're signed with. */

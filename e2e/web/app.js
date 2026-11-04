@@ -26,10 +26,11 @@ async function start() {
   return { vite, browser, url: vite.resolvedUrls.local[0] };
 }
 
-/** An app with `state` as its saved files (settings, library, installs…), opened at the window's size. */
-export async function openApp({ state = {}, width = 1280, height = 800, config = {} } = {}) {
+/** An app with `state` as its saved files (settings, library, installs…), opened at the window's size. `prepare` sets up the mock catalog first. */
+export async function openApp({ state = {}, width = 1280, height = 800, config = {}, prepare } = {}) {
   shared ??= await start();
   const api = await startMockApi();
+  prepare?.(api);
   const context = await shared.browser.newContext({ viewport: { width, height } });
   // A wrong selector fails in good time, rather than after Playwright's usual 30 seconds.
   context.setDefaultTimeout(10000);

@@ -53,12 +53,18 @@ test("A opens a catalog card, Y opens its menu with Get first, and X gets the ap
   assert.equal(await app.execute(() => document.activeElement.innerText.trim()), "Get", "the focus is on Get");
   await reach.press(app, "East");
   await s.until(() => app.execute(() => !document.querySelector('[role="menu"]')));
-  // It has a download for each system: X asks which.
-  assert.equal(await open('article[data-slug="tampered-port"] .card-open', { key: "West" }), "dialog: Choose a download");
-  await everything("Choose a download");
-  // A on one starts it (what it installs is the real app's to show).
-  assert.doesNotMatch(await reach.pressOn(app, '[role="dialog"] button', "South", { text: "linux" }), /^not reached/);
-  await s.until(() => app.execute(() => window.__calls.some((c) => c.cmd === "install")));
+  // It has two downloads for this computer: X asks which.
+  const file = (filename) => ({ id: filename, url: `https://example.com/${filename}`, filename, os: "linux", architecture: "x64", format: "zip", checksum: `sha256:${"a".repeat(64)}` });
+  s.api.setReleases("tampered-port", [{ id: "two-files", version: "1.0.0", releasedAt: Date.UTC(2026, 0, 1), prerelease: false, assets: [file("port-linux-a.zip"), file("port-linux-b.zip")] }]);
+  try {
+    assert.equal(await open('article[data-slug="tampered-port"] .card-open', { key: "West" }), "dialog: Choose a download");
+    await everything("Choose a download");
+    // A on one starts it (what it installs is the real app's to show).
+    assert.doesNotMatch(await reach.pressOn(app, '[role="dialog"] button', "South", { text: "linux" }), /^not reached/);
+    await s.until(() => app.execute(() => window.__calls.some((c) => c.cmd === "install")));
+  } finally {
+    s.api.setReleases("tampered-port", undefined);
+  }
 });
 
 test("a Browse card's Read the README: the page opens at it, and the d-pad reads on from there", async () => {

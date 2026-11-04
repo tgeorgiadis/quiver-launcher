@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
 import { Artwork, cardSources, coverOf } from "@quiverlauncher/ui";
-import { useLauncher } from "./store";
+import { updateFor, useLauncher } from "./store";
 import { downloadsLine, downloadsOf, sizeLabel, type Downloads } from "./downloads";
 import { useLauncherUpdate } from "./update";
 import { namesOf } from "./library-tile";
@@ -267,7 +267,7 @@ export function DownloadsPage({
               </li>
             )}
             {downloads.updates.map((id) => {
-              const out = versionLabel(catalog[id]?.verified?.version);
+              const out = versionLabel(updateFor(catalog[id], installs[id])?.version);
               const have = versionLabel(installs[id]?.version);
               const entry = entryOf(id);
               // Update only: Play comes once it's updated, under Recently finished. What's new in it first, if wanted.
@@ -338,7 +338,7 @@ export function DownloadsPage({
           entry={catalog[changelog.id] ?? reading}
           to={changelog.to}
           have={changelog.have}
-          onUpdate={downloads.updates.includes(changelog.id) && catalog[changelog.id]?.verified?.version === changelog.to ? () => (setChangelog(null), void get(catalog[changelog.id])) : undefined}
+          onUpdate={downloads.updates.includes(changelog.id) && updateFor(catalog[changelog.id], installs[changelog.id])?.version === changelog.to ? () => (setChangelog(null), void get(catalog[changelog.id])) : undefined}
           onAll={() => (setChangelog(null), onOpen(catalog[changelog.id] ?? reading, { releases: changelog.to }))}
           onClose={() => setChangelog(null)}
         />

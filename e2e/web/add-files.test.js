@@ -178,8 +178,6 @@ test("an update keeps to the files the player chose, over the catalog's", async 
     const p = s2.page;
     await p.locator("article[data-slug]").first().click({ button: "right" });
     await p.locator('[role="menu"] [role="menuitem"]', { hasText: "Update to" }).click();
-    // The mock release's files aren't marked for a computer, so the launcher asks which.
-    await p.locator(".choose button").first().click();
     await p.waitForFunction(() => window.__calls.some((c) => c.cmd === "install"));
     const request = await p.evaluate(() => window.__calls.find((c) => c.cmd === "install").args.request);
     assert.deepEqual(request.filesToAdd, ["mine.txt"]);

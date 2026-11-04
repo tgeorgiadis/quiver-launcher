@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, filesAddable, hasUpdate, locatable, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -17,7 +17,7 @@ import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
 import { LaunchOptionsButton } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
-import { cameAfter, versionLabel, wayOffLabel } from "./versions";
+import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { Discover, MoreLikeThis } from "./discover";
@@ -974,7 +974,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
     );
   }
   if (install && hasUpdate(catalog[entry.id] ?? entry, install)) {
-    const next = versionLabel((catalog[entry.id] ?? entry).verified?.version);
+    const next = versionLabel(updateFor(catalog[entry.id] ?? entry, install)?.version);
     return (
       <div className="row">
         <button className="primary" onClick={() => play(entry.id)}>
@@ -1093,7 +1093,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, addToLibrary, remove, confirmUninstall, askRename, consoleNames, setUpdates, get, switched, switchToCatalog, locateInstall } = useLauncher();
+  const { config, library, installs, jobs, catalog, addToLibrary, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1177,6 +1177,10 @@ function AppPage({
   const eyebrow = [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].join(", ");
   // Put in the sentences below by name.
   const verifiedVersion = versionLabel(entry.verified?.version);
+  // The release this computer could update to, which may not be the verified one: that may be for another system.
+  const known = catalog[entry.id] ?? entry;
+  const update = updateFor(known, install);
+  const updateVersion = versionLabel(update?.version);
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
   const blockedWhy = install?.blocked ?? "";
@@ -1416,8 +1420,8 @@ function AppPage({
                 <Pin size={14} aria-hidden="true" />
                 <span>
                   {/* Quietly: no badge or count, but a pin never hides that there's more. */}
-                  {entry.verified && bare(entry.verified.version) !== bare(install.version) && cameAfter(entry.verified, install) ? (
-                    <Trans>Pinned to {installedVersion}. {verifiedVersion} is available.</Trans>
+                  {update ? (
+                    <Trans>Pinned to {installedVersion}. {updateVersion} is available.</Trans>
                   ) : (
                     <Trans>Pinned to {installedVersion}.</Trans>
                   )}
@@ -1427,10 +1431,30 @@ function AppPage({
                 </button>
               </p>
             )}
-            {install && !install.local && install.updates === "auto" && skipped(entry, install) && (
+            {update && hasUpdate(known, install) && (
               <p className="release-pinned-line">
                 <span>
-                  <Trans>Auto Update won&apos;t put {verifiedVersion} back. It installs the next new release.</Trans>
+                  <Trans>{updateVersion} is available.</Trans>
+                </span>
+                <button type="button" className="link-button" onClick={() => declineUpdate(entry.id, update.version)}>
+                  <Trans>Skip this update</Trans>
+                </button>
+              </p>
+            )}
+            {update && install?.updates !== "pinned" && declinedUpdate(known, install) && (
+              <p className="release-pinned-line">
+                <span>
+                  <Trans>You skipped {updateVersion}. Quiver Launcher offers the next new release.</Trans>
+                </span>
+                <button type="button" className="link-button" onClick={() => get(known)}>
+                  <Trans>Update to {updateVersion}</Trans>
+                </button>
+              </p>
+            )}
+            {install && !install.local && install.updates === "auto" && skipped(known, install) && (
+              <p className="release-pinned-line">
+                <span>
+                  <Trans>Auto Update won&apos;t put {updateVersion} back. It installs the next new release.</Trans>
                 </span>
                 <button type="button" className="link-button" onClick={() => setUpdates(entry.id, "pinned")}>
                   <Trans>Always stay on {installedVersion}</Trans>
