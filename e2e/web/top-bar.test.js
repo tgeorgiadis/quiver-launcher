@@ -54,6 +54,35 @@ for (const language of ["en", "de"]) {
   });
 }
 
+for (const language of ["en", "de"]) {
+  test(`in ${language}, a wider window never compacts the bar more than a narrower one`, async () => {
+    const opened = await openApp({ state: { settings: { language } } });
+    const { page } = opened;
+    try {
+      // As the bar is, then with room taken as by one and two more buttons (Announcements, once there are any).
+      for (const extra of [0, 62, 124]) {
+        await page.evaluate((extra) => {
+          document.querySelector(".top-bar-spare")?.remove();
+          const spare = document.createElement("span");
+          spare.className = "top-bar-spare";
+          spare.style.cssText = `flex: none; width: ${extra}px; margin-left: -28px`;
+          document.querySelector(".topbar nav").after(spare);
+        }, extra);
+        let last = { width: 0, level: Infinity };
+        for (let width = 760; width <= 1300; width += 10) {
+          await page.setViewportSize({ width, height: 700 });
+          await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+          const { level } = await measure(page);
+          assert.ok(level <= last.level, `${extra}px more: level ${level} at ${width}, but ${last.level} at ${last.width}`);
+          last = { width, level };
+        }
+      }
+    } finally {
+      await opened.close();
+    }
+  });
+}
+
 test("a long name leaves the bar when it doesn't fit, and is in the account's menu instead", async () => {
   const name = "A rather long player name here";
   const opened = await openApp({ state: { settings: { language: "de" } } });
@@ -73,7 +102,7 @@ test("a long name leaves the bar when it doesn't fit, and is in the account's me
 
     await acrossWidths(page, "signed in");
     await page.setViewportSize({ width: 1000, height: 700 });
-    await opened.until(async () => (await measure(page)).level > 0);
+    await opened.until(async () => (await measure(page)).level > 1);
     await account.click();
     await page.locator(".account-menu-name").getByText(name).waitFor();
     await page.keyboard.press("Escape");

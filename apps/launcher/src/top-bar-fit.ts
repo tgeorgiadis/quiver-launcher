@@ -5,7 +5,7 @@
  */
 import { useLayoutEffect, type RefObject } from "react";
 
-const LEVELS = 2;
+const LEVELS = 3;
 
 function fit(bar: HTMLElement) {
   const room = bar.parentElement?.clientWidth;
