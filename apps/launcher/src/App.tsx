@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { availableOn, canGet, catalogOs, hasUpdate, locatable, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, filesAddable, hasUpdate, locatable, pulledVerified, renamable, skipped, tvModeOn, useLauncher } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -16,6 +16,7 @@ import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
 import { LaunchOptionsButton } from "./launch-options";
+import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { cameAfter, versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
@@ -327,6 +328,7 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
       <Notice />
@@ -1200,6 +1202,7 @@ function AppPage({
         </h4>
         <ModsButton entry={entry} />
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
+        {filesAddable(install) && foldersOn(config.os) && !(job && !("error" in job)) && <AddFilesButton entry={entry} />}
         {install?.installer === "msi" && !job && <ReinstallButton id={entry.id} />}
         {renamable(install) && foldersOn(config.os) && !(job && !("error" in job)) && (
           <button className="panel-action opens" onClick={() => askRename(entry)}>
@@ -1908,7 +1911,20 @@ function ProgramPrompt() {
 
 /** Deleting an app's files takes a yes. Cancel comes first, where a controller starts, and B or Escape is Cancel too. */
 function UninstallPrompt() {
-  const { confirming, confirmUninstall, uninstall, remove, library } = useLauncher();
+  const { confirming, confirmUninstall, uninstall, remove, library, installs } = useLauncher();
+  const [portable, setPortable] = useState(false);
+  const going = confirming ? installs[confirming.entry.id] : undefined;
+  // Saves kept in its folder leave with it, which a player wouldn't otherwise expect of an uninstall.
+  useEffect(() => {
+    setPortable(false);
+    if (!going) return;
+    let current = true;
+    native.appFiles(going.folder, going.dir, [PORTABLE_FILE]).then(
+      (found) => current && setPortable(Boolean(found?.length)),
+      () => {},
+    );
+    return () => void (current = false);
+  }, [confirming]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!confirming) return null;
   const { entry, then } = confirming;
   const name = entry.projectName;
@@ -1928,6 +1944,11 @@ function UninstallPrompt() {
               ? t`Its files go to the trash.`
               : t`Its files go to the trash. ${name} stays in your library, so you can get it again.`}
         </p>
+        {portable && (
+          <p>
+            <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+          </p>
+        )}
         <div className="row">
           <button className="primary" autoFocus onClick={close}>
             <Trans>Cancel</Trans>
@@ -2012,6 +2033,18 @@ function RenameFolderPrompt() {
           </button>
         </div>
       </form>
+    </Dialog>
+  );
+}
+
+/** Add files to folder (app-files.tsx), from an app's menu. */
+function AddFilesPrompt() {
+  const { addingFiles, askAddFiles } = useLauncher();
+  if (!addingFiles) return null;
+  const close = () => askAddFiles(null);
+  return (
+    <Dialog label={t`Add files to folder`} onClose={close}>
+      <AddFilesDialogBody key={addingFiles.id} entry={addingFiles} onClose={close} />
     </Dialog>
   );
 }

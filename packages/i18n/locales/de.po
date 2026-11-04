@@ -322,6 +322,10 @@ msgstr "{name}: Controller"
 msgid "{name}: keyboard"
 msgstr "{name}: Tastatur"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "{names} has something in it, so it stays in the folder."
+msgstr "{names} enthält Daten und bleibt deshalb im Ordner."
+
 #: ../../apps/launcher/src/update.tsx
 msgid "{newer} is ready to install: see the banner above the list."
 msgstr "{newer} ist bereit zur Installation: siehe das Banner über der Liste."
@@ -496,6 +500,10 @@ msgstr "{years, plural, one {Vor # J. gespielt} other {Vor # J. gespielt}}"
 msgid "+ New playlist…"
 msgstr "+ Neue Playlist…"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "+ New tag…"
+msgstr "+ Neuer Tag…"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "<0>The newest verified release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
 msgstr "<0>Die neueste geprüfte Version ist eine Vorschauversion.</0> Das Projekt hat keine neuere stabile Version mit Downloads veröffentlicht, daher installiert Quiver Launcher diese. Rechne mit Fehlern und unfertigen Funktionen."
@@ -568,6 +576,10 @@ msgstr "Aktion"
 msgid "Add"
 msgstr "Hinzufügen"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Add <0>portable.txt</0> to new installs"
+msgstr "<0>portable.txt</0> zu neuen Installationen hinzufügen"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a console"
 msgstr "Konsole hinzufügen"
@@ -584,6 +596,7 @@ msgstr "Playlist hinzufügen"
 msgid "Add a shared playlist"
 msgstr "Geteilte Playlist hinzufügen"
 
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a tag"
 msgstr "Tag hinzufügen"
@@ -616,6 +629,15 @@ msgstr "Hinzufügen und holen"
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
 msgstr "Füge Apps über das Menü der jeweiligen App hinzu. Sie zeigt auch Apps, die zu diesen Filtern passen:"
+
+#: ../../apps/launcher/src/app-files.tsx
+#: ../../apps/launcher/src/App.tsx
+msgid "Add files to folder"
+msgstr "Dateien zum Ordner hinzufügen"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Add files to folder…"
+msgstr "Dateien zum Ordner hinzufügen…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -862,6 +884,10 @@ msgstr "Hier installierte Apps werden immer angezeigt."
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Apps, die auf diesem Computer installiert sind, bleiben in deiner Bibliothek. Eine beschädigte Datei wird neben der neuen aufbewahrt, es wird also nichts gelöscht."
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
+msgstr "Apps, die das unterstützen, behalten ihre Spielstände und Einstellungen im eigenen Ordner. Bereits installierte Apps ändern sich nicht."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "Apps, die du von GitHub hinzufügst, beziehen ihre Versionen direkt von GitHub, das diesem Netzwerk 60 Anfragen pro Stunde erlaubt, oder 5.000 mit einem Token. Apps aus dem Katalog brauchen keinen."
@@ -1034,6 +1060,7 @@ msgstr "Darf Quiver Launcher Nutzungsdaten senden, die helfen, ihn zu verbessern
 msgid "Can't be added: Quiver Launcher 3 doesn't know where it comes from"
 msgstr "Kann nicht hinzugefügt werden: Quiver Launcher 3 weiß nicht, woher sie stammt"
 
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/feedback.tsx
@@ -1440,6 +1467,10 @@ msgstr "Ein Konto erstellen"
 msgid "Create your Quiver account"
 msgstr "Erstelle dein Quiver-Konto"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Creates an empty file with each name. Separate several names with commas. Some apps look for these files to change how they run."
+msgstr "Erstellt für jeden Namen eine leere Datei. Trenne mehrere Namen mit Kommas. Manche Apps suchen nach diesen Dateien, um anders zu laufen."
+
 #. Theme
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Dark"
@@ -1647,6 +1678,10 @@ msgstr "Sehr breit"
 #: ../ui/src/discover.tsx
 msgid "Featured"
 msgstr "Empfohlen"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "File name, like config.ini"
+msgstr "Dateiname, z. B. config.ini"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -2220,6 +2255,11 @@ msgstr "{keep} behalten"
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "Halte den Token geheim. Wenn er abläuft, erstelle einen neuen und speichere ihn hier."
 
+#. Adding this file to an app's folder has the app keep its saves there
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
+msgstr "Daten dieser App in ihrem Ordner behalten (<0>portable.txt</0>)"
+
 #. Controller hint: what the button bringing up Steam's on-screen keyboard does
 #: ../../apps/launcher/src/pad-hints.tsx
 msgid "Keyboard"
@@ -2635,6 +2675,10 @@ msgctxt "one app"
 msgid "New in the catalog"
 msgstr "Neu im Katalog"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "New installs"
+msgstr "Neue Installationen"
+
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "New playlist"
@@ -2940,6 +2984,11 @@ msgstr "oder"
 #: ../../apps/launcher/src/media.tsx
 msgid "Other"
 msgstr "Sonstiges"
+
+#. Files to add to an app's folder, other than portable.txt
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Other files"
+msgstr "Weitere Dateien"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -3385,6 +3434,10 @@ msgstr "Neu laden"
 msgid "Remove"
 msgstr "Entfernen"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Remove {name}"
+msgstr "{name} entfernen"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove console {name}"
 msgstr "Konsole {name} entfernen"
@@ -3511,6 +3564,8 @@ msgid "Same as the system"
 msgstr "Wie im System"
 
 #. Saves a playlist
+#. Saves the files for an app's folder
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4038,7 +4093,10 @@ msgid "Tag"
 msgstr "Tag"
 
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#. Menu item opening the player's tags for an app
+#. Menu item opening the player's tags for an app
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/card-menu.tsx
 msgid "Tags"
 msgstr "Tags"
 
@@ -4200,6 +4258,14 @@ msgstr "Diese App bekommt die Seite, das Artwork und die Bewertungen der anderen
 #: ../../apps/launcher/src/store.tsx
 msgid "This app has no approved release yet."
 msgstr "Diese App hat noch keine freigegebene Version."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "This app may keep its saves in this folder. They'll be removed with it."
+msgstr "Diese App speichert ihre Spielstände möglicherweise in diesem Ordner. Sie werden mit ihm entfernt."
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
+msgstr "Diese App findet ihre Spielstände und Einstellungen möglicherweise nicht mehr, weil sie an einem anderen Ort danach sucht. Es wird nichts gelöscht."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be renamed."

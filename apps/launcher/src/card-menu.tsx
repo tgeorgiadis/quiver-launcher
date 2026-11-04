@@ -1,7 +1,7 @@
 /**
  * An app's menu, laid out like Steam's library menu: its main action (Play,
  * Get, Try again) first, its update, then "Play with" (which of its programs
- * Play starts), "Add to playlist" and "Manage" (its
+ * Play starts), "Add to playlist", "Tags" and "Manage" (its
  * folder, shortcuts, hiding and uninstalling) to the side, and its page.
  * A library card has it behind its ⋯ button; a card or a sidebar row opens it
  * on a right-click, a long press on a touch screen, the Menu key or Shift+F10,
@@ -13,9 +13,9 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play } from "lucide-reac
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, hasUpdate, locatable, pulledVerified, renamable, useLauncher } from "./store";
+import { canGet, filesAddable, hasUpdate, locatable, pulledVerified, renamable, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
-import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail } from "./detail";
+import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
 import { toggleHidden } from "./browse-hidden";
@@ -201,7 +201,7 @@ function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" |
 
 /** `icon`: the main action's, as the app's page has it. */
 type Item = { text: string; act: () => void; kind?: "danger"; disabled?: boolean; icon?: "play" | "get"; note?: string };
-type Sub = { key: "programs" | "add" | "manage"; by: "hover" | "click"; focus?: boolean };
+type Sub = { key: "programs" | "add" | "tags" | "manage"; by: "hover" | "click"; focus?: boolean };
 
 /** A program's file name, without the folders it's in. */
 export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
@@ -254,11 +254,12 @@ function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () =>
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch } = useLauncher();
+  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
   const [name, setName] = useState("");
+  const [newTag, setNewTag] = useState("");
   // The programs in the app's folder, looked for as Play with opens.
   const [found, setFound] = useState<string[] | null>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -318,6 +319,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const manage: Item[] = [];
   if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e), { stays: true })) });
   if (renamable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Rename folder…`, act: () => askRename(entry) });
+  if (filesAddable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Add files to folder…`, act: () => askAddFiles(entry) });
   if (install && shortcutsOn(config.os))
     manage.push(
       { text: t`Desktop shortcut`, act: () => void shortcut(native.createShortcut) },
@@ -369,6 +371,18 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
     if (!name.trim()) return;
     saveCollection({ key: newKey(), name: name.trim().slice(0, 60), tags: [], consoles: [], apps: [entry.id], order: collections.length });
     setName("");
+  };
+
+  // The player's tags: this app's, and those on their other apps, to tick.
+  const inLibrary = library.find((i) => i.id === entry.id);
+  const tags = inLibrary?.overrides?.tags ?? [];
+  const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase());
+  const allTags = [...tags, ...library.flatMap((i) => i.overrides?.tags ?? [])].filter((tag, i, all) => all.findIndex((x) => x.toLowerCase() === tag.toLowerCase()) === i);
+  const toggleTag = (tag: string) => setTags(entry.id, hasTag(tag) ? tags.filter((x) => x.toLowerCase() !== tag.toLowerCase()) : withTag(tags, tag));
+  const addTag = () => {
+    const next = withTag(tags, newTag);
+    if (next !== tags) setTags(entry.id, next);
+    setNewTag("");
   };
 
   // The mouse opens a submenu by moving onto its item, and moving onto another item of the menu closes it.
@@ -500,6 +514,30 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
           />
         </>,
       )}
+      {inLibrary && opens("tags", t({ message: "Tags", comment: "Menu item opening the player's tags for an app" }))}
+      {inLibrary &&
+        submenu(
+          "tags",
+          t({ message: "Tags", comment: "Menu item opening the player's tags for an app" }),
+          <>
+            {allTags.map((tag) => (
+              <button key={tag} type="button" role="menuitemcheckbox" data-item aria-checked={hasTag(tag)} onClick={() => toggleTag(tag)}>
+                <span className="game-menu-check">{hasTag(tag) && <Check size={14} />}</span>
+                {tag}
+              </button>
+            ))}
+            <input
+              data-item
+              className="game-menu-new"
+              aria-label={t`Add a tag`}
+              placeholder={t`+ New tag…`}
+              maxLength={50}
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+            />
+          </>,
+        )}
       {opens("manage", t({ message: "Manage", comment: "Menu item opening an app's folder, shortcuts and uninstalling" }))}
       {submenu(
         "manage",

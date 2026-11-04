@@ -533,6 +533,23 @@ fn rename_app_folder(data: State<Data>, running: State<Running>, id: String, fro
     apps_folder::rename(&data.apps(), &data.0.join("proton"), from, to)
 }
 
+/// Those of `names` that are files in an installed app's folder.
+#[tauri::command]
+fn app_files(data: State<Data>, folder: String, dir: Option<String>, names: Vec<String>) -> Result<Vec<String>, String> {
+    Ok(install::files_present(&present_app_dir(&data, &folder, dir)?, &names))
+}
+
+/// Adds and takes away the empty files in an installed app's folder (Add files
+/// to folder); returns those that stayed because they weren't empty. Not while
+/// the launcher has it running: it wouldn't see them until its next start.
+#[tauri::command]
+fn set_app_files(data: State<Data>, running: State<Running>, id: String, folder: String, dir: Option<String>, add: Vec<String>, remove: Vec<String>) -> Result<Vec<String>, String> {
+    if running.has(&id) {
+        return Err("Close the app first, then change the files in its folder.".into());
+    }
+    install::set_files(&present_app_dir(&data, &folder, dir)?, &add, &remove)
+}
+
 /// Asks the player for a program on this computer, looking in `dir` first; null if they cancel.
 /// `QUIVER_PICK` answers instead in end-to-end tests.
 #[tauri::command]
@@ -1363,6 +1380,8 @@ pub fn run() {
             open_folder,
             create_app_folder,
             rename_app_folder,
+            app_files,
+            set_app_files,
             pick_program,
             pick_music,
             read_music,

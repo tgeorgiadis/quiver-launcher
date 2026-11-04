@@ -322,6 +322,10 @@ msgstr "{name}: 컨트롤러"
 msgid "{name}: keyboard"
 msgstr "{name}: 키보드"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "{names} has something in it, so it stays in the folder."
+msgstr "{names}에 내용이 있어 폴더에 그대로 둡니다."
+
 #: ../../apps/launcher/src/update.tsx
 msgid "{newer} is ready to install: see the banner above the list."
 msgstr "{newer}을(를) 설치할 준비가 됐어요. 목록 위의 배너를 확인하세요."
@@ -496,6 +500,10 @@ msgstr "{years, plural, other {#년 전 플레이}}"
 msgid "+ New playlist…"
 msgstr "+ 새 재생 목록…"
 
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "+ New tag…"
+msgstr "+ 새 태그…"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "<0>The newest verified release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
 msgstr "<0>검증된 최신 버전은 미리 보기 빌드예요.</0> 이 프로젝트에 다운로드가 포함된 더 새로운 안정 버전이 없어서 Quiver Launcher가 이 버전을 설치해요. 버그나 미완성 기능이 있을 수 있어요."
@@ -568,6 +576,10 @@ msgstr "동작"
 msgid "Add"
 msgstr "추가"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Add <0>portable.txt</0> to new installs"
+msgstr "새로 설치할 때 <0>portable.txt</0> 추가"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a console"
 msgstr "콘솔 추가"
@@ -584,6 +596,7 @@ msgstr "재생 목록 추가"
 msgid "Add a shared playlist"
 msgstr "공유 재생 목록 추가"
 
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a tag"
 msgstr "태그 추가"
@@ -616,6 +629,15 @@ msgstr "추가 후 받기"
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
 msgstr "각 앱의 메뉴에서 앱을 추가하세요. 다음 필터와 일치하는 앱도 표시돼요:"
+
+#: ../../apps/launcher/src/app-files.tsx
+#: ../../apps/launcher/src/App.tsx
+msgid "Add files to folder"
+msgstr "폴더에 파일 추가"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Add files to folder…"
+msgstr "폴더에 파일 추가…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -862,6 +884,10 @@ msgstr "여기에 설치된 앱은 항상 표시돼요."
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "이 컴퓨터에 설치된 앱은 라이브러리에 그대로 남아요. 손상된 파일은 새 파일 옆에 보관되므로 삭제되는 것은 없어요."
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
+msgstr "지원하는 앱은 저장 데이터와 설정을 자체 폴더에 보관합니다. 이미 설치한 앱은 바뀌지 않습니다."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "GitHub에서 추가한 앱은 GitHub에서 직접 버전을 가져와요. GitHub는 이 네트워크에 시간당 60회, 토큰이 있으면 5,000회까지 요청을 허용해요. 카탈로그의 앱에는 토큰이 필요 없어요."
@@ -1034,6 +1060,7 @@ msgstr "Quiver Launcher 개선을 위해 사용 데이터를 보내도 될까요
 msgid "Can't be added: Quiver Launcher 3 doesn't know where it comes from"
 msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 몰라요"
 
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/feedback.tsx
@@ -1440,6 +1467,10 @@ msgstr "계정 만들기"
 msgid "Create your Quiver account"
 msgstr "Quiver 계정 만들기"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Creates an empty file with each name. Separate several names with commas. Some apps look for these files to change how they run."
+msgstr "이름마다 빈 파일을 만듭니다. 이름이 여러 개면 쉼표로 구분하세요. 일부 앱은 이 파일을 찾아 실행 방식을 바꿉니다."
+
 #. Theme
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Dark"
@@ -1647,6 +1678,10 @@ msgstr "아주 넓게"
 #: ../ui/src/discover.tsx
 msgid "Featured"
 msgstr "추천"
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "File name, like config.ini"
+msgstr "파일 이름(예: config.ini)"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -2220,6 +2255,11 @@ msgstr "{keep} 유지"
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "토큰은 비공개로 보관하세요. 만료되면 새로 만들어 여기에 저장하세요."
 
+#. Adding this file to an app's folder has the app keep its saves there
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
+msgstr "이 앱의 데이터를 앱 폴더에 보관(<0>portable.txt</0>)"
+
 #. Controller hint: what the button bringing up Steam's on-screen keyboard does
 #: ../../apps/launcher/src/pad-hints.tsx
 msgid "Keyboard"
@@ -2635,6 +2675,10 @@ msgctxt "one app"
 msgid "New in the catalog"
 msgstr "카탈로그 신규"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "New installs"
+msgstr "새 설치"
+
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "New playlist"
@@ -2940,6 +2984,11 @@ msgstr "또는"
 #: ../../apps/launcher/src/media.tsx
 msgid "Other"
 msgstr "기타"
+
+#. Files to add to an app's folder, other than portable.txt
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Other files"
+msgstr "기타 파일"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -3385,6 +3434,10 @@ msgstr "다시 불러오기"
 msgid "Remove"
 msgstr "삭제"
 
+#: ../../apps/launcher/src/app-files.tsx
+msgid "Remove {name}"
+msgstr "{name} 제거"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove console {name}"
 msgstr "콘솔 {name} 삭제"
@@ -3511,6 +3564,8 @@ msgid "Same as the system"
 msgstr "시스템 설정과 동일"
 
 #. Saves a playlist
+#. Saves the files for an app's folder
+#: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4038,7 +4093,10 @@ msgid "Tag"
 msgstr "태그"
 
 #. Browse card detail: the app's tags, such as Recomp or its console, over its name
+#. Menu item opening the player's tags for an app
+#. Menu item opening the player's tags for an app
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/card-menu.tsx
 msgid "Tags"
 msgstr "태그"
 
@@ -4200,6 +4258,14 @@ msgstr "이 앱은 해당 앱의 페이지, 아트워크, 리뷰를 사용합니
 #: ../../apps/launcher/src/store.tsx
 msgid "This app has no approved release yet."
 msgstr "이 앱은 아직 승인된 버전이 없어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "This app may keep its saves in this folder. They'll be removed with it."
+msgstr "이 앱은 저장 데이터를 이 폴더에 보관할 수 있습니다. 폴더와 함께 제거됩니다."
+
+#: ../../apps/launcher/src/app-files.tsx
+msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
+msgstr "이 앱이 다른 위치를 찾게 되어 저장 데이터와 설정을 찾지 못할 수 있습니다. 삭제되는 것은 없습니다."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be renamed."

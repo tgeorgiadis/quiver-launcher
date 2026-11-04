@@ -96,7 +96,7 @@ export const appPage = async () => {
   await home();
   await open("button", { text: "Library" });
   assert.equal(await open(".library-tile .card-open", { key: "North" }), "main");
-  for (let i = 0; i < 4; i++) await reach.press(app, "DPadDown");
+  for (let i = 0; i < 5; i++) await reach.press(app, "DPadDown");
   assert.match(await reach.focused(app), /App page/);
   await reach.press(app, "South");
   return changed("main");
