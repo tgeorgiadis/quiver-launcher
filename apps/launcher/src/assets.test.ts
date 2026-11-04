@@ -1,9 +1,20 @@
 import { describe, expect, it, test } from "vitest";
 import type { Asset, Os } from "@quiverlauncher/api";
-import { assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, otherSystems, pickedBefore, releaseFor, runsHere } from "./assets";
+import { assetFilterFor, bestAssets, hasBuildFor, installable, installFormat, otherSystems, pickedBefore, releaseFor, runsHere, archivesHere } from "./assets";
 
 const asset = (filename: string, os: Asset["os"], architecture: Asset["architecture"] = "x64"): Asset => ({
   id: filename, url: `https://example.com/${filename}`, filename, os, architecture, format: "",
+});
+
+test("Download archive offers a release's archives of the app itself, whatever kind", () => {
+  const files = [asset("Game-win64.zip", "windows"), asset("Game-win64.7z", "windows"), asset("Game-win64.tar.gz", "windows"), asset("Game-win64.exe", "windows"), asset("Game-source.zip", "windows"), asset("Game-win64.zip.sha256", "windows")];
+  expect(archivesHere(files, "windows", "x64").map((a) => a.filename)).toEqual(["Game-win64.zip", "Game-win64.7z", "Game-win64.tar.gz"]);
+});
+
+test("Download archive offers this computer's archives first, else any", () => {
+  const files = [asset("Game-win64.zip", "windows"), asset("Game-linux.tar.gz", "linux")];
+  expect(archivesHere(files, "linux", "x64").map((a) => a.filename)).toEqual(["Game-linux.tar.gz"]);
+  expect(archivesHere(files, "macos", "arm64").map((a) => a.filename)).toEqual(["Game-win64.zip", "Game-linux.tar.gz"]);
 });
 
 test("picks this platform's archive over installers, checksums and other systems", () => {

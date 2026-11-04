@@ -288,6 +288,14 @@ msgstr "{name} 박스 아트"
 msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since."
 msgstr "Quiver가 {release}을(를) 검증한 뒤 {name}이(가) 바뀌었고, 새 파일은 아직 검증하지 않았어요. Quiver가 확인한 파일만 설치하고, 그 이후 바뀌었다면 거부해요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It saves the file Quiver saw, and refuses one that changed since."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} has no archive to download."
+msgstr ""
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "{name} 아이콘"
@@ -1563,6 +1571,11 @@ msgid "Downgrade to {version}"
 msgstr "{version}(으)로 다운그레이드"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Download archive…"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -2215,6 +2228,10 @@ msgstr "잘 작동했어요"
 msgid "It wouldn't install, open, or start."
 msgstr "설치, 열기 또는 시작이 되지 않았어요."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Its developer removed this file from the release."
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
 msgstr "파일은 휴지통으로 이동하고, 라이브러리에서도 제거돼요."
@@ -2333,8 +2350,8 @@ msgid "Layout"
 msgstr "레이아웃"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요."
+msgid "Leave every scope unticked: public releases need none. For a private repository's releases, tick repo."
+msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요. 비공개 저장소의 릴리스에는 repo를 선택하세요."
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx
@@ -3582,13 +3599,33 @@ msgstr "시스템 설정과 동일"
 msgid "Save"
 msgstr "저장"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Save {name} before it's verified?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Save a file Quiver didn't check?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Save anyway"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Save as playlist"
 msgstr "재생 목록으로 저장"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Save the archive of {name} in"
+msgstr ""
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Save token"
 msgstr "토큰 저장"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Saved {saved}"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
@@ -4288,6 +4325,10 @@ msgstr "이 앱의 폴더는 이름을 바꿀 수 없어요."
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "이 다운로드가 Quiver가 확인한 파일과 일치하지 않아 설치하지 않았어요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This download doesn't match the file Quiver checked, so it wasn't saved."
+msgstr ""
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "This mod has no files to download."

@@ -288,6 +288,14 @@ msgstr "Обложка коробки {name}"
 msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since."
 msgstr "Файл {name} изменился после того, как Quiver проверил {release}, а новый файл Quiver ещё не проверил. Устанавливается файл, который видел Quiver, а изменённый с тех пор отклоняется."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It saves the file Quiver saw, and refuses one that changed since."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} has no archive to download."
+msgstr ""
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
 msgstr "Значок {name}"
@@ -1563,6 +1571,11 @@ msgid "Downgrade to {version}"
 msgstr "Откатить до {version}"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Download archive…"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -2215,6 +2228,10 @@ msgstr "Работало хорошо"
 msgid "It wouldn't install, open, or start."
 msgstr "Не устанавливалось, не открывалось или не запускалось."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Its developer removed this file from the release."
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
 msgstr "Его файлы отправятся в корзину, а само оно уйдёт из вашей библиотеки."
@@ -2333,8 +2350,8 @@ msgid "Layout"
 msgstr "Вид"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "Не отмечайте никакие разрешения: публичным версиям они не нужны."
+msgid "Leave every scope unticked: public releases need none. For a private repository's releases, tick repo."
+msgstr "Не отмечайте никакие разрешения: публичным версиям они не нужны. Для релизов приватного репозитория отметьте repo."
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx
@@ -3582,13 +3599,33 @@ msgstr "Как в системе"
 msgid "Save"
 msgstr "Сохранить"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Save {name} before it's verified?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Save a file Quiver didn't check?"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Save anyway"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Save as playlist"
 msgstr "Сохранить как плейлист"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Save the archive of {name} in"
+msgstr ""
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Save token"
 msgstr "Сохранить токен"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Saved {saved}"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
@@ -4288,6 +4325,10 @@ msgstr "Папку этого приложения нельзя переимен
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "Эта загрузка не совпадает с файлом, который проверил Quiver, поэтому она не установлена."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This download doesn't match the file Quiver checked, so it wasn't saved."
+msgstr ""
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "This mod has no files to download."
