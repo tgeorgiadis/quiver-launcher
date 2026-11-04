@@ -831,6 +831,10 @@ msgid "Any console"
 msgstr "Qualsiasi console"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Any player reports"
+msgstr "Qualsiasi feedback dei giocatori"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Any project type"
 msgstr "Qualsiasi tipo di progetto"
@@ -1538,6 +1542,7 @@ msgstr "Ignora"
 msgid "Dismiss all"
 msgstr "Ignora tutti"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Doesn't run"
@@ -1846,6 +1851,7 @@ msgstr "Raggruppa per sviluppatore"
 msgid "Group by game"
 msgstr "Raggruppa per gioco"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Has issues"
@@ -2864,6 +2870,7 @@ msgstr "Non ora"
 msgid "Not played yet"
 msgstr "Non ancora giocato"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../ui/src/index.tsx
 msgid "Not rated yet"
 msgstr "Non ancora valutato"
@@ -3147,6 +3154,11 @@ msgstr "Giocato ieri"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Player feedback"
 msgstr "Feedback dei giocatori"
+
+#. Browse's filter by what players reported about how an app runs
+#: ../../apps/launcher/src/App.tsx
+msgid "Players say"
+msgstr "Secondo i giocatori"
 
 #. A shelf on the catalog's front page: the apps players rated best
 #: ../ui/src/discover.tsx
@@ -3559,6 +3571,7 @@ msgstr "Ripeti la configurazione"
 msgid "Run with"
 msgstr "Esegui con"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Runs well"

@@ -290,6 +290,20 @@ export function ScrollingText({
   );
 }
 
+/** What players say about an app, in one word: how `Score` sums it up, and what Browse's Players say filter picks. */
+export type Verdict = "runs" | "issues" | "broken" | "unrated";
+
+/**
+ * Always one verdict, as ProtonDB always shows one tier: what most players
+ * said, and when it's a tie the more careful of the answers tied (`Score`'s
+ * counts after it show the split).
+ */
+export function verdict({ recommended: runs, reportIssues: issues, reportBroken: broken }: Pick<Entry, "recommended" | "reportIssues" | "reportBroken">): Verdict {
+  if (runs + issues + broken === 0) return "unrated";
+  const max = Math.max(runs, issues, broken);
+  return broken === max ? "broken" : issues === max ? "issues" : "runs";
+}
+
 /** What players said about an app, in one line. */
 export function Score({
   runs,
@@ -303,13 +317,9 @@ export function Score({
   /** On a catalog card: truncate to one line and scroll it while the card is hovered. */
   scroll?: boolean;
 }) {
-  if (runs + issues + broken === 0) return <span className="score muted">{t`Not rated yet`}</span>;
-  // Always one verdict, as ProtonDB always shows one tier: what most players
-  // said, and when it's a tie the more careful of the answers tied (the
-  // counts after it show the split).
-  const max = Math.max(runs, issues, broken);
-  const [label, tone] =
-    broken === max ? [t`Doesn't run`, "negative"] : issues === max ? [t`Has issues`, "caution"] : [t`Runs well`, "positive"];
+  const which = verdict({ recommended: runs, reportIssues: issues, reportBroken: broken });
+  if (which === "unrated") return <span className="score muted">{t`Not rated yet`}</span>;
+  const [label, tone] = which === "broken" ? [t`Doesn't run`, "negative"] : which === "issues" ? [t`Has issues`, "caution"] : [t`Runs well`, "positive"];
   // Only what people actually said, in words that read naturally.
   const said = [
     runs && plural(runs, { one: "# runs well", other: "# run well" }),

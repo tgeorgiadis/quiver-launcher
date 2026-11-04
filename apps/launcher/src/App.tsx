@@ -5,7 +5,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
-import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
+import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources, verdict, type Verdict } from "@quiverlauncher/ui";
 import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
@@ -480,9 +480,10 @@ function BrowsePage({
     const request = ++latest.current;
     setLoading(true);
     setError(null);
+    const { players: _, ...asked } = filters;
     client
       // A search orders by relevance.
-      .apps({ ...filters, os: filters.os === "here" ? catalogOs(config.os) : filters.os, search: query, sort: searching ? undefined : filters.sort, cursor })
+      .apps({ ...asked, os: filters.os === "here" ? catalogOs(config.os) : filters.os, search: query, sort: searching ? undefined : filters.sort, cursor })
       .then((page) => {
         if (request !== latest.current) return;
         remember(page.items);
@@ -533,7 +534,7 @@ function BrowsePage({
   const brands = [...new Set(consoles.map((c) => c.brand))];
   const [filtersOpen, setFiltersOpen] = useState(false);
   // How many filters differ from the defaults: any platform but what this computer runs counts.
-  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== "here"].filter(Boolean).length;
+  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.players, filters.os !== "here"].filter(Boolean).length;
   // An order the player picked (the sort, or a shelf's See all): the whole list in it, in place of the front page, as a
   // search or a filter has it; its pill goes back to the front page.
   const [sorted, setSorted] = useState(kept?.sorted ?? false);
@@ -541,13 +542,15 @@ function BrowsePage({
   useEffect(() => {
     if (picked.current) onKeep({ filters, sorted });
   }, [filters, sorted]); // eslint-disable-line react-hooks/exhaustive-deps
+  // In the words of the cards' own verdicts (Score).
+  const playersSay: Record<Verdict, string> = { runs: t`Runs well`, issues: t`Has issues`, broken: t`Doesn't run`, unrated: t`Not rated yet` };
   const sortName = (sort: BrowseFilters["sort"]) =>
     ({ added: t`Recently added`, updated: t`Recently updated`, rating: t`Top rated`, name: t`Name A–Z` })[sort ?? "added"];
   // Apps in your library shown, a choice kept from before: on the Filters button's count, not a row of its own.
   const filterCount = filtering + (showOwned ? 1 : 0) + (hiddenView !== "hide" ? 1 : 0);
   const types = filters.projectTypes ?? [];
   /** A filter's pill: `on` names it while it differs from the default, and removing it goes back to the default. */
-  const pill = (key: "os" | "console" | "projectTypes" | "ai", on: string | undefined, select: ReactNode) =>
+  const pill = (key: "os" | "console" | "projectTypes" | "ai" | "players", on: string | undefined, select: ReactNode) =>
     !on && !filtersOpen ? null : (
       <FilterPill key={key} on={on} onClear={() => choose({ ...filters, [key]: key === "os" ? "here" : undefined })}>
         {select}
@@ -565,7 +568,7 @@ function BrowsePage({
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
   const matching = only ? (hiddenApps ?? []).filter((e) => hidden.has(e.id) && hiddenMatches(e, query, filters) && (!filters.os || filters.os === "here" || e.supportedOS.includes(filters.os))) : pages.flatMap((p) => p.items);
-  const all = matching.filter((e) => filters.os !== "here" || availableOn(e, config.os));
+  const all = matching.filter((e) => (filters.os !== "here" || availableOn(e, config.os)) && (!filters.players || verdict(e) === filters.players));
   const shown = (o: { showOwned?: boolean; view?: HiddenView }) => browseShown(all, { owned, showOwned, hidden, view: hiddenView, ...o });
   const entries = shown({});
   // What the notes under the list offer to show: apps in the library, and hidden ones.
@@ -715,6 +718,18 @@ function BrowsePage({
               <option value="no-ai">{t`Hide apps with any AI use`}</option>
             </select>,
           )}
+          {pill(
+            "players",
+            filters.players && playersSay[filters.players],
+            <select aria-label={t({ message: "Players say", comment: "Browse's filter by what players reported about how an app runs" })} value={filters.players ?? ""} onChange={set("players")}>
+              <option value="">{t`Any player reports`}</option>
+              {(Object.keys(playersSay) as Verdict[]).map((v) => (
+                <option key={v} value={v}>
+                  {playersSay[v]}
+                </option>
+              ))}
+            </select>,
+          )}
           {/* Up here with the filters, not under the list, which loads more as it's reached. */}
           {(filtersOpen || showOwned) && (
             <FilterPill on={showOwned ? t`Apps in your library shown` : undefined} onClear={() => setShowOwned(false)}>
@@ -802,8 +817,12 @@ function BrowsePage({
               />
             ))}
           </div>
-          {/* Or apps came, and none of them is for here, with no note below to say why: Only hidden apps, with none in these filters. */}
-          {!waiting && (!all.length || (!entries.length && !left && !hiddenLeft && last?.isDone)) && (
+          {/*
+            Or apps came, and none of them is for here, with no note below to say why: Only hidden apps, with none in these
+            filters. Not while the catalog has more pages, which Show more is getting: a filter Browse applies itself, such
+            as Players say, can find none on one page and some on the next.
+          */}
+          {!waiting && (last ? last.isDone : true) && (!all.length || (!entries.length && !left && !hiddenLeft)) && (
             <p className="empty">
               <Trans>Nothing matches that search and those filters.</Trans>
             </p>
@@ -1552,7 +1571,9 @@ const PROJECT_TYPES: Record<string, MessageDescriptor> = {
 const SORTS = ["added", "updated", "rating", "name"] as const;
 /** Browse's catalog filters; several kinds of project come from saved filters. */
 /** The catalog's filters, with "here" for the platforms this computer runs (catalogOs). */
-type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & { os?: Os | "here" };
+// `players`: what players say about the apps, as their cards sum it up. The site has no such filter, so Browse picks
+// them out of each page it gets.
+type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & { os?: Os | "here"; players?: Verdict };
 /** Browse's filters as the player left them, and whether they picked its sort. */
 type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
 
