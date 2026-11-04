@@ -46,8 +46,8 @@ beforeEach(() => {
 });
 afterEach(async () => {
   vi.useRealTimers();
-  // Sentry loading from a test that didn't wait for it doesn't land in the next one.
-  await new Promise((r) => setTimeout(r, 20));
+  // Sentry loading from a test that didn't wait for it doesn't land in the next one, however slowly it loads.
+  await vi.dynamicImportSettled();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -55,6 +55,7 @@ afterEach(async () => {
 /** Lets the consent lookup and Sentry's import finish. */
 const settle = async () => {
   vi.useRealTimers();
+  await vi.dynamicImportSettled();
   await new Promise((r) => setTimeout(r, 20));
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
 };
