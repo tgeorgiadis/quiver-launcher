@@ -6,10 +6,19 @@ change your mind on first start, in Settings ("Send usage data"), or through you
 your account's setting while you're signed in, but what it sends isn't linked to your account: only to a random
 identifier for this computer, which is replaced if you turn usage data off.
 
-The launcher sends named events only (`apps/launcher/src/telemetry.ts`): screens opened (each once per launch), catalog apps installed,
-updated, launched and uninstalled (by slug; apps players add only by kind), failed installs and launches and why,
-playlists made, shared and followed, searches that found nothing (their length, not their words), sign-in and
-sign-out, and errors. Every event carries the launcher's version, OS and architecture.
+The launcher sends named events only (`apps/launcher/src/telemetry.ts`): the launcher starting and first-run setup
+finishing, screens opened (each once per launch), catalog apps installed, updated, launched and uninstalled (by slug;
+apps players add only by kind), failed installs and launches and why, apps added, an app's folder renamed and the apps
+folder moved, playlists made, shared and followed, searches that found nothing (their length, not their words), an
+app's menu opened and its videos played, announcements dismissed and their links opened, the catalog falling back to
+its backup, and sign-in and sign-out. Every event carries the launcher's version, OS and architecture.
+
+Error reports cover crashes in the window, and failures installing, launching, uninstalling or reinstalling an app or
+updating the launcher, with the app's slug and what was being done. Failures that aren't the launcher's to fix aren't
+reported, such as no connection, a service that's down, a full disk, or a message already written for the player.
+Errors from before the launcher knows your choice wait in memory until it does. If it can't start far enough to find
+out (or opens on the library recovery screen), they're sent only if usage data was allowed the last time it ran and you
+haven't turned it off on this computer since, so a change made on your account meanwhile counts from its next full start.
 
 Events go to quiverlauncher.com (the website's `worker/launcherUsage.ts`), which keeps the secret Google Analytics
 needs and passes them on with your country, so Google doesn't get your IP address. Error reports go directly to

@@ -8,12 +8,13 @@ import "./base.css";
 import "@quiverlauncher/ui/catalog.css";
 import "./app.css";
 import { App } from "./App";
-import { LauncherProvider } from "./store";
+import { LauncherProvider, startupFailed } from "./store";
+import { captureUncaught } from "./telemetry";
 import { PadHints } from "./pad-hints";
 import { onBackButtonPress } from "@tauri-apps/api/app";
 import { goBack, startSpatialNavigation } from "./spatial";
 import { native } from "./native";
-import { ErrorBoundary } from "./boundary";
+import { ErrorBoundary, errorText } from "./boundary";
 import { showTheme, systemTheme } from "./theme";
 import { startFpsProbe } from "./fps-probe";
 import { invoke } from "@tauri-apps/api/core";
@@ -34,8 +35,14 @@ void native
     if (config.os === "android") return onBackButtonPress(() => void (goBack() || native.toBackground().catch(() => {})));
   })
   .catch(() => {});
-window.addEventListener("error", (e) => void native.logError(`ui: ${e.message} at ${e.filename}:${e.lineno}`).catch(() => {}));
-window.addEventListener("unhandledrejection", (e) => void native.logError(`ui: ${String(e.reason?.stack ?? e.reason)}`).catch(() => {}));
+window.addEventListener("error", (e) => {
+  void native.logError(`ui: ${e.message} at ${e.filename}:${e.lineno}`).catch(() => {});
+  captureUncaught(e.error ?? e.message);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  void native.logError(`ui: ${errorText(e.reason)}`).catch(() => {});
+  captureUncaught(e.reason);
+});
 
 // Web links (README, repository) open in the browser, not in the launcher's window. Caught on the way down, before a
 // dialog's own click handler stops it on the way up (a link in Announcements took the whole window to the website).
@@ -79,6 +86,7 @@ void activate(pick(navigator.languages)).finally(() =>
       <I18nProvider i18n={i18n}>
         {/* Last resort: a message and a way out, never a blank window. */}
         <ErrorBoundary
+          onCaught={() => void startupFailed()}
           fallback={(error) => (
             <div className="empty" role="alert">
               <h2>
