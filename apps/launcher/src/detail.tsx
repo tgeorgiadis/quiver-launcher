@@ -17,7 +17,7 @@ import { i18n } from "@quiverlauncher/i18n";
 import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
 import { bare, changesUpTo, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
-import { hasBuildFor, runsHere } from "./assets";
+import { hasBuildFor, otherSystems, releaseFor, runsHere } from "./assets";
 import { isCustom, isLocal } from "./custom";
 import { Dialog, PlaylistChoices } from "./library";
 import { haloMoved } from "./spatial";
@@ -1255,11 +1255,16 @@ export function Versions({
   }
   // Get's own choices: the build, then what Get installs of it (its newest verified release), over the other versions.
   const newest = entry.verified && !pulledVerified(catalog[entry.id] ?? entry) ? entry.verified.version : undefined;
-  const newestRelease = Array.isArray(versions) ? versions.find((v) => newest && bare(v.release.version) === bare(newest))?.release : undefined;
+  // The newest verified one this computer can install, as Get would take: the site's newest may only have another system's build.
+  const listed = Array.isArray(versions) ? versions : [];
+  const checked = listed.filter((v) => custom || v.state === "verified").map((v) => v.release);
+  const stable = custom && checked.some((r) => !r.prerelease) ? checked.filter((r) => !r.prerelease) : checked;
+  const fitting = newest ? releaseFor(stable, config.os, config.arch, { filter: custom ? undefined : (r) => (r.installationOverride ?? entry.launcher).releaseAssetFilter, platform }) : undefined;
+  const newestRelease = fitting ?? listed.find((v) => newest && bare(v.release.version) === bare(newest))?.release;
   const buildName = (os: Os) => (os === "windows" ? t`Windows (Wine)` : (OS_NAMES[os] ?? os));
   const build = platform && buildName(platform);
   const missing = build && t`No ${build} build`;
-  const newestLabel = versionLabel(newest);
+  const newestLabel = versionLabel(newestRelease?.version);
   const head = getting && (
     <div className="get-choices">
       <PanelFormHead title={t`Get ${app}`} onClose={onClose!} />
@@ -1283,7 +1288,7 @@ export function Versions({
             void get(entry, undefined, platform ? { platform } : undefined);
           }}
         >
-          <Download size={15} aria-hidden="true" /> {newest ? t`Get ${newestLabel}` : t({ message: "Get", comment: "Button that installs an app" })}
+          <Download size={15} aria-hidden="true" /> {newestRelease ? t`Get ${newestLabel}` : t({ message: "Get", comment: "Button that installs an app" })}
         </button>
       )}
     </div>
@@ -1329,12 +1334,15 @@ export function Versions({
           const unavailable = !custom && state === "blocked" && release.assets.length === 0;
           const why =
             custom || state !== "blocked" ? "" : [...(version.withdrawn ? [t({ message: "Withdrawn:", comment: "Before why a release was withdrawn" })] : []), ...reasons, ...(unavailable ? [t`Quiver won't install it.`] : [])].join(" ");
+          // Files for other systems only: still the player's to install, as the site can mark a file wrongly, but it says so.
+          const elsewhere = otherSystems(release.assets, config.os, config.arch);
+          const systems = platformList(elsewhere);
           // One row each: the badge as its icon (its word for screen readers and on hover), the version with when under it, its buttons, and why.
           return (
             <li key={release.id + release.version} className={`version ${custom ? "verified" : state}`}>
               {!custom && <ReleaseBadge state={state} title={reasons.join(" ") || undefined} />}
               <strong>{release.version}</strong>
-              {(release.releasedAt || release.prerelease) && (
+              {(release.releasedAt || release.prerelease || elsewhere.length > 0) && (
                 <span className="version-date muted">
                   {release.releasedAt ? <span>{fullDate(release.releasedAt)}</span> : null}
                   {release.prerelease && (
@@ -1342,6 +1350,11 @@ export function Versions({
                 <Trans comment="A release its developer marked as not yet stable">Pre-release</Trans>
               </span>
             )}
+                  {elsewhere.length > 0 && (
+                    <span className="other-system-tag">
+                      <Trans comment="A release with files for these systems and none for this computer, as 'Linux only'">{systems} only</Trans>
+                    </span>
+                  )}
                 </span>
               )}
               {install && bare(install.version) === bare(release.version) ? (

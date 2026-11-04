@@ -18,7 +18,7 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     gitlabApi: "https://gitlab.com/api/v4",
     returnTo: "",
     os: "linux",
-    arch: "x86_64",
+    arch: "x64",
     appsDir: "/home/player/Games/Quiver",
     version: "4.0.0",
     home: "/home/player",

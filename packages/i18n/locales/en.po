@@ -402,6 +402,11 @@ msgstr "{size} MB"
 msgid "{speed}×"
 msgstr "{speed}×"
 
+#. A release with files for these systems and none for this computer, as 'Linux only'
+#: ../../apps/launcher/src/detail.tsx
+msgid "{systems} only"
+msgstr "{systems} only"
+
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
 msgstr "{total, plural, one {# player} other {# players}}"
@@ -425,6 +430,10 @@ msgstr "{updateCount, plural, one {# app has an update.} other {# apps have upda
 #: ../../apps/launcher/src/mods.tsx
 msgid "{updateCount, plural, one {# mod has an update.} other {# mods have updates.}}"
 msgstr "{updateCount, plural, one {# mod has an update.} other {# mods have updates.}}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{updateVersion} is available."
+msgstr "{updateVersion} is available."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{verifiedVersion} · files can't be verified"
@@ -907,8 +916,8 @@ msgid "As in Settings: {name}"
 msgstr "As in Settings: {name}"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Auto Update won't put {verifiedVersion} back. It installs the next new release."
-msgstr "Auto Update won't put {verifiedVersion} back. It installs the next new release."
+msgid "Auto Update won't put {updateVersion} back. It installs the next new release."
+msgstr "Auto Update won't put {updateVersion} back. It installs the next new release."
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic"
@@ -3048,8 +3057,8 @@ msgid "Pinned to {installedVersion}."
 msgstr "Pinned to {installedVersion}."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Pinned to {installedVersion}. {verifiedVersion} is available."
-msgstr "Pinned to {installedVersion}. {verifiedVersion} is available."
+msgid "Pinned to {installedVersion}. {updateVersion} is available."
+msgstr "Pinned to {installedVersion}. {updateVersion} is available."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Pinned to {version}"
@@ -3934,6 +3943,11 @@ msgstr "Signed out. Apps installed on this computer stay in your library; sign i
 msgid "Skip setup"
 msgstr "Skip setup"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Skip this update"
+msgstr "Skip this update"
+
 #. Library card size
 #: ../../apps/launcher/src/view.ts
 msgid "Small"
@@ -4516,8 +4530,12 @@ msgid "Update to {out}"
 msgstr "Update to {out}"
 
 #: ../../apps/launcher/src/library-tile.tsx
-msgid "Update to {verifiedLabel}"
-msgstr "Update to {verifiedLabel}"
+msgid "Update to {updateLabel}"
+msgstr "Update to {updateLabel}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Update to {updateVersion}"
+msgstr "Update to {updateVersion}"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Update your feedback"
@@ -4799,6 +4817,10 @@ msgstr "You have it installed. If you're happy to accept the risk, you can keep 
 #: ../../apps/launcher/src/update.tsx
 msgid "You have the newest version."
 msgstr "You have the newest version."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
+msgstr "You skipped {updateVersion}. Quiver Launcher offers the next new release."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."

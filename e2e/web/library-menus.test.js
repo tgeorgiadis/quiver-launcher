@@ -106,6 +106,8 @@ test("a game's card: Y lists its ports, B and Get there put the focus back on th
   // Test Port's game, with Test Remake too: one card for both, as View options' One card for each game has them.
   const game = await openApp({
     state: { ...state, settings: { library: { byGame: true } }, library: [...state.library, { id: "entry_test-remake", slug: "test-remake", addedAt: Date.now() - 86400_000 }] },
+    // A computer none of the mock's files are for, so Get asks which.
+    config: { arch: "arm64" },
   });
   const { app: g } = game;
   try {
@@ -132,7 +134,7 @@ test("a game's card: Y lists its ports, B and Get there put the focus back on th
     const GET = '.port-row[data-slug="test-remake"] .port-action button';
     const get = async () => {
       assert.doesNotMatch(await reach.pressOn(g, GET, "South"), /^not reached/);
-      // The mock's files are marked for no computer: which one.
+      // None of the files are for this computer: which one.
       await game.until(() => g.execute(() => Boolean(document.querySelector('[role="dialog"]'))));
       assert.doesNotMatch(await reach.pressOn(g, '[role="dialog"] button', "South", { text: "linux" }), /^not reached/);
       await game.until(() => g.execute(() => window.__installs.has("entry_test-remake")));

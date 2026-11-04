@@ -11,7 +11,7 @@ import { ApiError, createClient, createGithub, createGitlab, githubRepository, p
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
-import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore } from "./assets";
+import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { Problem, reasonOf, setTelemetryAppsDir, track } from "./telemetry";
 import { AccountProvider, useAccount } from "./account";
@@ -60,7 +60,14 @@ export type LibraryItem = {
   removed?: boolean;
 };
 /** Catalog data for a library app, with releases pulled since. */
-export type CatalogEntry = Entry & { withdrawn?: Withdrawn[] };
+export type CatalogEntry = Entry & {
+  withdrawn?: Withdrawn[];
+  /**
+   * The newest release an install here can update to, as the verified release may only have another system's build.
+   * `of` says which verified release and build it was looked up for (`forHereKey`); none found, no `release`.
+   */
+  forHere?: { of: string; release?: { version: string; releasedAt: number } };
+};
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
   dir?: string;
@@ -74,6 +81,8 @@ export type Install = {
   updates?: "auto" | "pinned";
   /** A verified version Auto Update leaves alone: the one the player went back from by picking an older release. */
   skip?: string;
+  /** A release the player said to skip: not offered or installed by itself, until a newer one comes. */
+  declined?: string;
   /** Installed before Quiver verified it; cleared once the site verifies this version with the same file. */
   unverified?: true;
   /** Installed though Quiver blocked it, the player having insisted: why it was blocked. Cleared as `unverified` is. */
@@ -215,6 +224,8 @@ type Launcher = {
   /** Adds an app the player picked out, without downloading it, and says so: its card in Browse looks no different. */
   addToLibrary: (entry: Entry) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
+  /** Stops offering this release of an app; a newer one is offered as usual. */
+  declineUpdate: (id: string, version: string) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
   setLaunch: (id: string, launch: LaunchOptions) => void;
   /** The empty files the player chose for an app's folder, which updates keep to. */
@@ -321,10 +332,6 @@ export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Bo
 /** "v1.2" and "1.2" are the same release. */
 const bare = (version: string) => version.trim().replace(/^v/i, "");
 
-/** Auto Update leaves this verified release alone: the player went back from it. */
-export const skipped = (entry: Entry | undefined, install: Install | undefined) =>
-  Boolean(install?.skip && entry?.verified && bare(install.skip) === bare(entry.verified.version));
-
 /**
  * The site's verified release when it's one that was withdrawn since: the site
  * should have moved verified back to an earlier release, and until it has,
@@ -335,17 +342,42 @@ export const pulledVerified = (entry: CatalogEntry | undefined) => {
   return verified ? entry.withdrawn?.find((w) => bare(w.version) === bare(verified)) : undefined;
 };
 
-export function hasUpdate(entry: CatalogEntry | undefined, install: Install | undefined) {
+const newerThan = (release: { version: string; releasedAt?: number }, install: Install) => bare(install.version) !== bare(release.version) && cameAfter(release, install);
+
+/** What `forHere` was looked up for: this verified release, and the kind of build installed. */
+export const forHereKey = (verified: { version: string }, install: Install) =>
+  `${bare(verified.version)}:${install.wine ? "windows" : "own"}:${install.installer === "msi" ? "msi" : "files"}`;
+
+/** Whether there might be an update, which only the app's releases can say: the catalog's verified release is newer. */
+export const mayUpdate = (entry: CatalogEntry | undefined, install: Install | undefined) =>
   // Only newer releases: a pulled one rolls back through the withdrawn warning instead, and a withdrawn one is never an update.
-  return Boolean(
-    entry?.verified &&
-      install &&
-      !install.local &&
-      !pulledVerified(entry) &&
-      install.updates !== "pinned" &&
-      bare(install.version) !== bare(entry.verified.version) &&
-      cameAfter(entry.verified, install),
-  );
+  Boolean(entry?.verified && install && !install.local && !pulledVerified(entry) && newerThan(entry.verified, install));
+
+/**
+ * The release this install could update to, whatever the player chose to do about it. None until `forHere` is looked
+ * up: a false update is worse than one that shows a moment late, as installing it could replace what works.
+ */
+export function updateFor(entry: CatalogEntry | undefined, install: Install | undefined) {
+  if (!mayUpdate(entry, install)) return undefined;
+  const found = entry!.forHere;
+  if (found?.of !== forHereKey(entry!.verified!, install!)) return undefined;
+  return found.release && newerThan(found.release, install!) ? found.release : undefined;
+}
+
+/** The update the player said to skip, while it's still the one there is. */
+export function declinedUpdate(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const update = updateFor(entry, install);
+  return update && install?.declined && bare(install.declined) === bare(update.version) ? update : undefined;
+}
+
+/** Auto Update leaves this release alone: the player went back from it. */
+export function skipped(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const update = updateFor(entry, install);
+  return Boolean(update && install?.skip && bare(install.skip) === bare(update.version));
+}
+
+export function hasUpdate(entry: CatalogEntry | undefined, install: Install | undefined) {
+  return Boolean(updateFor(entry, install) && install?.updates !== "pinned" && !declinedUpdate(entry, install));
 }
 
 /**
@@ -368,8 +400,8 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
  */
 export function relocatedInstall(now: Install | undefined, found: Install): Install {
   if (!now) return found;
-  const { lastPlayed, installedAt, playTime, updates, skip, launch, pick, files } = now;
-  return { ...found, lastPlayed, installedAt, playTime, updates, skip, launch, pick, files };
+  const { lastPlayed, installedAt, playTime, updates, skip, declined, launch, pick, files } = now;
+  return { ...found, lastPlayed, installedAt, playTime, updates, skip, declined, launch, pick, files };
 }
 
 /** Whether starting an app failed because its folder is gone: lib.rs's FOLDER_GONE. */
@@ -763,13 +795,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       if (custom) {
         releasesOf(custom).then(
-          (releases) => setCatalog((c) => ({ ...c, [item.id]: customEntry(item.id, custom, latestOf(releases), art) })),
+          (releases) => setCatalog((c) => ({ ...c, [item.id]: { ...customEntry(item.id, custom, latestOf(releases), art), forHere: c[item.id]?.forHere } })),
           () => setCatalog((c) => (c[item.id] ? c : { ...c, [item.id]: customEntry(item.id, custom, undefined, art) })),
         );
         continue;
       }
       client.app(item.slug).then(
-        (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn } })),
+        (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn, forHere: c[item.id]?.forHere } })),
         () => {},
       );
     }
@@ -842,11 +874,50 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     for (const item of library) {
       const entry = catalog[item.id];
       const install = installs[item.id];
-      const waits = entry?.verified && (waiting.current.get(`${item.id}@${bare(entry.verified.version)}`) ?? 0) > Date.now();
+      const update = updateFor(entry, install);
+      const waits = update && (waiting.current.get(`${item.id}@${bare(update.version)}`) ?? 0) > Date.now();
       if (entry && install?.updates === "auto" && !install.installer && !jobs[item.id] && hasUpdate(entry, install) && !skipped(entry, install) && !waits)
         void installEntry(entry, undefined, { auto: true });
     }
   }, [catalog]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** The newest of an app's releases this computer can install: for an install, of the build it has. */
+  const releaseHere = (entry: Entry, list: Release[], custom: boolean, was?: Install, platform?: Os) => {
+    const pulled = catalog[entry.id]?.withdrawn ?? [];
+    const listed = list.filter((r) => !pulled.some((w) => bare(w.version) === bare(r.version)));
+    // A custom app takes its newest that isn't a pre-release, as `latestOf`; a file it picked that's named differently now, it picks again.
+    const pool = custom && listed.some((r) => !r.prerelease) ? listed.filter((r) => !r.prerelease) : listed;
+    return releaseFor(pool, config.os, config.arch, {
+      filter: custom ? undefined : (r) => (r.installationOverride ?? entry.launcher).releaseAssetFilter,
+      kind: was ? (was.installer === "msi" ? "msi" : "files") : undefined,
+      platform: platform ?? (was ? (was.wine ? "windows" : config.os) : undefined),
+    });
+  };
+
+  // The catalog's verified release may only have another system's build: which release an install here can update to
+  // is for its releases to say. Asked once for each verified release, only of apps it's newer than what's installed.
+  const lookingUp = useRef(new Set<string>());
+  useEffect(() => {
+    for (const item of library) {
+      const entry = catalog[item.id];
+      const install = installs[item.id];
+      if (!entry || !install || !mayUpdate(entry, install)) continue;
+      const of = forHereKey(entry.verified!, install);
+      const asked = `${item.id}@${of}`;
+      if (entry.forHere?.of === of || lookingUp.current.has(asked)) continue;
+      lookingUp.current.add(asked);
+      const custom = isCustom(item.id) ? (item.custom ?? fromKey(item.id)) : null;
+      (custom ? releasesOf(custom) : client.releases(entry.slug, 100).then((p) => p.items))
+        .then((list) => {
+          const found = releaseHere(entry, list, Boolean(custom), install);
+          const release = found && { version: found.version, releasedAt: found.releasedAt };
+          setCatalog((c) => (c[item.id] ? { ...c, [item.id]: { ...c[item.id], forHere: { of, ...(release ? { release } : {}) } } } : c));
+        })
+        // Offline, or the site's down: no update shows, and it's asked again when something next changes.
+        .catch(() => {})
+        .finally(() => lookingUp.current.delete(asked));
+    }
+  }, [catalog, installs, library, client]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // An app installed unverified turns verified once the site verifies that
   // version, if it's the same file; otherwise the player hears it differs. A
@@ -951,13 +1022,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     };
     track("app_install_started", { ...ref, version: version ?? null, update: Boolean(from), verified: !unverified, blocked: Boolean(blocked) });
     try {
-      let release =
-        chosen ??
-        (custom
-          ? latestOf(await releasesOf(custom))
-          : (await client.releases(entry.slug).catch(() => {
+      // The newest this computer can install, which may not be the newest there is: what a new install starts from, and an update goes to.
+      const listed = chosen
+        ? undefined
+        : custom
+          ? await releasesOf(custom)
+          : (await client.releases(entry.slug, 100).catch(() => {
               throw noAnswer();
-            })).items[0]);
+            })).items;
+      const here = listed && releaseHere(entry, listed, Boolean(custom), was, options.platform);
+      let release = chosen ?? here ?? (custom ? latestOf(listed!) : listed![0]);
+      // An update with no release for the build installed: never another system's file in its place.
+      const stray = Boolean(was && listed?.length && !here);
       // No verified release: its newest that isn't blocked, once the player says so, as Quiver Launcher 3 offers it.
       if (!release && !custom) {
         const newest = await newestUnverified(entry).catch(() => {
@@ -977,14 +1053,21 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const settings = release.installationOverride ?? entry.launcher;
       // The file the player picked on the app's Releases tab: that one, unless it isn't the kind installed.
       const clicked = options.asset ? release.assets.find((a) => a.filename === options.asset) : undefined;
-      let candidates = clicked
-        ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
-        : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind, platform);
+      let candidates = stray
+        ? []
+        : clicked
+          ? !kind || isMsi(clicked.filename) === (kind === "msi") ? [clicked] : []
+          : bestAssets(release.assets, config.os, config.arch, settings.releaseAssetFilter, kind, platform);
       // A file the player picked that a later release names differently: they pick again, even from one.
-      const missed = !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
+      const missed = !stray && !candidates.length && !clicked && Boolean(custom && settings.releaseAssetFilter);
       if (missed) candidates = bestAssets(release.assets, config.os, config.arch, undefined, kind, platform);
       let [asset, ...others] = candidates;
-      if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length)
+      // An automatic update never stops to ask: it waits until the launcher starts again, or the player updates it.
+      const waitForPlayer = (until = Infinity) => {
+        waiting.current.set(`${entry.id}@${bare(release!.version)}`, until);
+        setJobs(({ [entry.id]: _, ...rest }) => rest);
+      };
+      if (!asset && kind && bestAssets(release.assets, config.os, config.arch).length && !bestAssets(release.assets, config.os, config.arch, undefined, kind).length)
         throw new Problem(
           kind === "msi"
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
@@ -992,8 +1075,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         );
       // None marked for this computer: the player picks from the files there are, as they may know which runs.
       const unmatched = !asset;
-      if (unmatched) [asset, ...others] = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-      if (!asset) throw new Problem(msg`This release has no download for your computer.`);
+      if (unmatched && !stray) [asset, ...others] = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
+      if (!asset) {
+        if (auto) return waitForPlayer();
+        throw new Problem(msg`This release has no download for your computer.`);
+      }
       // The file the player picked last time, when it's still one of these: taken again without asking.
       const again = pickedBefore([asset, ...others], lastPick);
       let pick = lastPick;
@@ -1003,6 +1089,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         pick = files.length > 1 ? assetFilterFor(clicked.filename, files) : undefined;
       } else if (again) asset = again;
       else if (others.length || missed || unmatched) {
+        if (auto) return waitForPlayer();
         const choices = [asset, ...others];
         const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
         setChoice(null);
@@ -1014,10 +1101,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // automatic update waits instead: until the site says it's verified by itself, else till the launcher starts again.
       const why = !custom && !unverified ? unverifiedFile(asset, release) : undefined;
       if (why) {
-        if (auto) {
-          waiting.current.set(`${entry.id}@${bare(release.version)}`, asset.checkEndsAt ?? Infinity);
-          return setJobs(({ [entry.id]: _, ...rest }) => rest);
-        }
+        if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
         if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop();
         unverified = true;
       }
@@ -1050,8 +1134,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (done.restart) setNotice(t`${name} is installed. Windows says to restart the computer to finish setting it up.`, { stays: true });
       // Picking a version only installs it; staying on it is the player's own choice (`pin`).
       // Going back from the verified release: Auto Update waits for the next one rather than undoing it.
-      const verified = (catalog[entry.id] ?? entry).verified;
-      const skip = chosen && verified && release.releasedAt < verified.releasedAt ? verified.version : undefined;
+      const known = catalog[entry.id] ?? entry;
+      const newest = (was && known.verified && known.forHere?.of === forHereKey(known.verified, was) && known.forHere.release) || known.verified;
+      const skip = chosen && newest && release.releasedAt < newest.releasedAt ? newest.version : undefined;
+      // The same version again keeps what the player said about the next one.
+      const declined = was?.declined && bare(was.version) === bare(release.version) ? was.declined : undefined;
       // The file's own, which tells it from the one its release is verified with later.
       const checksum = done.checksum ?? asset.checksum ?? asset.unverifiedChecksum;
       setInstalls((i) => {
@@ -1063,7 +1150,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -1246,6 +1333,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setNotice(t`${name} is in your library.`);
     },
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
+    declineUpdate: (id, version) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], declined: version } } : i)),
     setLaunch: (id, launch) =>
       setInstalls((i) => {
         if (!i[id]) return i;
@@ -1502,7 +1590,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (it.kind === "catalog") {
           const { detail } = it;
           entry = detail.entry;
-          setCatalog((c) => ({ ...c, [detail.entry.id]: { ...detail.entry, withdrawn: detail.withdrawn } }));
+          setCatalog((c) => ({ ...c, [detail.entry.id]: { ...detail.entry, withdrawn: detail.withdrawn, forHere: c[detail.entry.id]?.forHere } }));
           add(entry);
         } else entry = addCustom(it.custom, it.latest, it.art);
         const install = adoptedInstall(old, entry, config.os);

@@ -257,6 +257,7 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .versions li > .release-badge { grid-area: badge; align-self: start; height: 17.5px; gap: 0; font-size: 0; }
 .versions li > .version-date { grid-area: when; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; min-width: 0; font-size: 12px; }
 .versions li > .version-date .prerelease-tag { padding: 0 5px; font-size: 9.5px; }
+.versions li > .version-date .other-system-tag { padding: 0 5px; border: 1px solid var(--muted); border-radius: 4px; color: var(--text-2); font-size: 9.5px; font-weight: 600; white-space: nowrap; }
 .versions li > .version-actions { grid-area: actions; }
 .version-actions { display: inline-flex; align-items: center; gap: 6px; }
 /* The pin: an icon, with its words shown when a keyboard or controller is on it. */

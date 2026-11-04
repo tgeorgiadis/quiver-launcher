@@ -13,7 +13,7 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play } from "lucide-reac
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, filesAddable, hasUpdate, locatable, pulledVerified, renamable, useLauncher } from "./store";
+import { canGet, filesAddable, hasUpdate, locatable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
@@ -208,7 +208,7 @@ export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
 
 /** An app's main action, as its page has it, and what goes with it at the top of its menus. */
 function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Item[] } {
-  const { config, installs, jobs, catalog, get, play, cancel, dismiss } = useLauncher();
+  const { config, installs, jobs, catalog, get, play, cancel, dismiss, declineUpdate } = useLauncher();
   const install = installs[entry.id];
   const job = jobs[entry.id];
   const failed = job && "error" in job;
@@ -236,8 +236,12 @@ function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Ite
   const other = versionLabel(instead?.version);
   if (instead) top.push({ text: t`Install ${other} instead`, act: () => void get(latest, instead) });
   if (failed) top.push({ text: t({ message: "Dismiss", comment: "Menu item that clears a failed download" }), act: () => dismiss(entry.id) });
-  const newer = versionLabel(latest.verified?.version);
-  if (install && !job && hasUpdate(latest, install)) top.push({ text: t`Update to ${newer}`, act: () => void get(latest) });
+  const update = updateFor(latest, install);
+  const newer = versionLabel(update?.version);
+  if (update && !job && hasUpdate(latest, install)) {
+    top.push({ text: t`Update to ${newer}`, act: () => void get(latest) });
+    top.push({ text: t`Skip this update`, act: () => declineUpdate(entry.id, update.version) });
+  }
   return { main, top };
 }
 

@@ -18,7 +18,7 @@ import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel, type CardDetail } from "@quiverlauncher/ui";
-import { canGet, hasUpdate, pulledVerified, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
+import { canGet, hasUpdate, pulledVerified, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
 import { VersionsDialog, foldersOn } from "./detail";
 import { native, type Config } from "./native";
@@ -208,6 +208,7 @@ const Tile = memo(function Tile({
   // Plain names for the sentences below to put in place.
   const name = entry.projectName;
   const verifiedLabel = versionLabel(verified);
+  const updateLabel = versionLabel(updateFor(latest, install)?.version);
   const installedLabel = install ? versionLabel(install.version) : "";
   const pulledLabel = pulled ? versionLabel(pulled.version) : "";
   const newerLabel = newer ? versionLabel(newer) : "";
@@ -318,10 +319,10 @@ const Tile = memo(function Tile({
         {!tv && (
           <div className="tile-icons">
             {update && !busy && !pulled && (
-              <button type="button" className="tile-icon tile-icon-update" title={t`Update to ${verifiedLabel}`} onClick={() => get(latest)}>
+              <button type="button" className="tile-icon tile-icon-update" title={t`Update to ${updateLabel}`} onClick={() => get(latest)}>
                 <CloudDownload size={17} />
                 <span className="sr-only">
-                  <Trans>Update to {verifiedLabel}</Trans>
+                  <Trans>Update to {updateLabel}</Trans>
                 </span>
               </button>
             )}
@@ -395,10 +396,10 @@ const Tile = memo(function Tile({
                 </span>
               </button>
               {update && (
-                <button type="button" className="tile-update" title={t`Update to ${verifiedLabel}`} onClick={() => get(latest)}>
+                <button type="button" className="tile-update" title={t`Update to ${updateLabel}`} onClick={() => get(latest)}>
                   {/* To which version; on a narrow card, the word alone (app.css). */}
                   <span className="tile-label tile-label-long">
-                    <Trans>Update to {verifiedLabel}</Trans>
+                    <Trans>Update to {updateLabel}</Trans>
                   </span>
                   <span className="tile-label tile-label-short">
                     <Trans context="button" comment="Button on a library card: update the app to its newest verified version">

@@ -63,8 +63,37 @@ export const runsHere = (asset: Asset, os: Os, arch: string) =>
  * Whether a release has `platform`'s build (Windows' on Linux) for this computer: what installing it with that choice
  * would take is that build, or a file the site couldn't place on a platform, not the other one's.
  */
-export const hasBuildFor = (assets: Asset[], os: Os, arch: string, platform: Os) =>
-  bestAssets(assets, os, arch, undefined, undefined, platform).some((a) => a.os === platform || a.os === "unknown");
+export const hasBuildFor = (assets: Asset[], os: Os, arch: string, platform: Os, filter?: string, kind?: "msi" | "files") =>
+  bestAssets(assets, os, arch, filter, kind, platform).some((a) => a.os === platform || a.os === "unknown");
+
+/**
+ * The systems a release's files are marked for, when they're all others: none for one that runs here, or one built for
+ * this system on another architecture, whose name wouldn't explain anything.
+ */
+export function otherSystems(assets: Asset[], os: Os, arch: string): Os[] {
+  if (assets.some((a) => runsHere(a, os, arch))) return [];
+  const files = assets.filter((a) => !AUXILIARY.test(a.filename) && formatRank(a.filename) >= 0);
+  if (files.some((a) => a.os === os)) return [];
+  return [...new Set(files.map((a) => a.os).filter((o) => o !== "unknown"))];
+}
+
+/**
+ * The newest of these releases (newest first) that this computer can install, as the catalog's verified release may
+ * only have another system's build. With `platform`, it keeps to that system's build: an update doesn't move a player
+ * between a native build and Windows' through Wine. Only where none has a native build does one here take Windows',
+ * as an app that came over from Quiver Launcher 3 may be running that without saying so.
+ */
+export function releaseFor<R extends { assets: Asset[] }>(
+  releases: R[],
+  os: Os,
+  arch: string,
+  { filter, kind, platform }: { filter?: (release: R) => string | undefined; kind?: "msi" | "files"; platform?: Os } = {},
+): R | undefined {
+  const runs = (r: R) => bestAssets(r.assets, os, arch, filter?.(r), kind).length > 0;
+  if (!platform) return releases.find(runs);
+  const own = releases.find((r) => hasBuildFor(r.assets, os, arch, platform, filter?.(r), kind));
+  return own ?? (platform === os ? releases.find(runs) : undefined);
+}
 
 /**
  * The release files that suit this computer, narrowed to the best match.

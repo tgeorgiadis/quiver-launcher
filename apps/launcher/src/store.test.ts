@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, filesAddable, folderGone, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, relocatedInstall, uniqueFiles, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -48,15 +48,15 @@ describe("adoptedInstall", () => {
   it("brings one 3.x didn't know the version of up to date", () => {
     const install = adoptedInstall({ name: "Test Port", provider: "github", dir: "/old/Apps/TestPort", version: "0.0.0" }, entry, "linux");
     expect(install?.version).toBe("0.0.0");
-    expect(hasUpdate(entry, install)).toBe(true);
+    expect(mayUpdate(entry, install)).toBe(true);
   });
 
   it("is offered only newer releases, by version number, as it has no release date", () => {
     const at = (version: string) => adoptedInstall({ name: "Test Port", provider: "github", dir: "/old/Apps/TestPort", version }, entry, "linux");
-    expect(hasUpdate(entry, at("v1.1.9"))).toBe(true);
-    expect(hasUpdate(entry, at("v1.10.0"))).toBe(false);
+    expect(mayUpdate(entry, at("v1.1.9"))).toBe(true);
+    expect(mayUpdate(entry, at("v1.10.0"))).toBe(false);
     // Unverified in 3.x, newer than the verified one: never an update back to it.
-    expect(hasUpdate({ ...entry, verified: { version: "v0.1.6", releasedAt: 20 } } as unknown as Entry, at("v0.1.7"))).toBe(false);
+    expect(mayUpdate({ ...entry, verified: { version: "v0.1.6", releasedAt: 20 } } as unknown as Entry, at("v0.1.7"))).toBe(false);
   });
 
   it("starts the program a Windows installer put on the computer", () => {
@@ -273,5 +273,54 @@ describe("the files in an app's folder", () => {
     expect(filesAddable(install)).toBe(true);
     expect(filesAddable({ ...install, program: "/games/a.exe" })).toBe(false);
     expect(filesAddable({ ...install, installer: "msi" })).toBe(false);
+  });
+});
+
+describe("an update for this computer", () => {
+  const linuxOnly = { version: "linux-v0.1.0-beta", releasedAt: 30 };
+  const listed = { verified: linuxOnly } as unknown as Entry;
+  const install = { version: "v0.3.1-beta", releasedAt: 10, folder: "Port", executables: [] };
+  const found = (release?: { version: string; releasedAt: number }, on = install) => ({ ...listed, forHere: { of: forHereKey(linuxOnly, on), ...(release ? { release } : {}) } });
+  const windows = { version: "v0.3.2-beta", releasedAt: 20 };
+
+  it("isn't offered until the app's releases say there's one", () => {
+    expect(mayUpdate(listed, install)).toBe(true);
+    expect(hasUpdate(listed, install)).toBe(false);
+  });
+
+  it("is the newest release with a build for it, not the verified one", () => {
+    expect(updateFor(found(windows), install)).toEqual(windows);
+    expect(hasUpdate(found(windows), install)).toBe(true);
+  });
+
+  it("isn't offered when the verified release has the only newer files, for another system", () => {
+    expect(hasUpdate(found(), install)).toBe(false);
+    expect(hasUpdate(found(windows), { ...install, version: "v0.3.2-beta", releasedAt: 20 })).toBe(false);
+  });
+
+  it("is looked up again for a newer verified release, or another build", () => {
+    const stale = found(windows);
+    expect(hasUpdate({ ...stale, verified: { version: "v0.4.0", releasedAt: 40 } } as unknown as Entry, install)).toBe(false);
+    expect(hasUpdate(stale, { ...install, wine: true })).toBe(false);
+  });
+
+  it("isn't offered once skipped, until a newer one comes", () => {
+    const declined = { ...install, declined: "0.3.2-beta" };
+    expect(hasUpdate(found(windows), declined)).toBe(false);
+    expect(declinedUpdate(found(windows), declined)).toEqual(windows);
+    const newer = { version: "v0.3.3-beta", releasedAt: 25 };
+    expect(hasUpdate(found(newer), declined)).toBe(true);
+    expect(declinedUpdate(found(newer), declined)).toBeUndefined();
+  });
+
+  it("is what Auto Update leaves alone after going back from it", () => {
+    expect(skipped(found(windows), { ...install, skip: "v0.3.2-beta" })).toBe(true);
+    expect(skipped(found(windows), { ...install, skip: "linux-v0.1.0-beta" })).toBe(false);
+  });
+
+  it("stays quiet under a pin, while the app's page can still say there's one", () => {
+    const pinned = { ...install, updates: "pinned" as const };
+    expect(hasUpdate(found(windows), pinned)).toBe(false);
+    expect(updateFor(found(windows), pinned)).toEqual(windows);
   });
 });
