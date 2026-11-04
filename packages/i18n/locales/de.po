@@ -83,10 +83,6 @@ msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
 msgstr "{count, plural, one {# App ausgeblendet} other {# Apps ausgeblendet}}"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app in your library shows as not installed, but Quiver Launcher 3 has it installed. Play it from there, with nothing to download?} other {# apps in your library show as not installed, but Quiver Launcher 3 has them installed. Play them from there, with nothing to download?}}"
-msgstr "{count, plural, one {# App in deiner Bibliothek ist als nicht installiert zu sehen, aber in Quiver Launcher 3 ist sie installiert. Von dort spielen, ganz ohne Download?} other {# Apps in deiner Bibliothek sind als nicht installiert zu sehen, aber in Quiver Launcher 3 sind sie installiert. Von dort spielen, ganz ohne Download?}}"
-
-#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, already installed.} other {# apps, all already installed.}}"
 msgstr "{count, plural, one {# App, schon installiert.} other {# Apps, alle schon installiert.}}"
 
@@ -109,6 +105,10 @@ msgstr "{count, plural, one {# installierte App nach {asking} verschieben? Ihre 
 #: ../../apps/launcher/src/library.tsx
 msgid "{count, plural, one {Puts its # app on a page anyone with the link can see, and add to their library.} other {Puts its # apps on a page anyone with the link can see, and add to their library.}}"
 msgstr "{count, plural, one {Stellt ihre # App auf eine Seite, die alle mit dem Link sehen und zur eigenen Bibliothek hinzufügen können.} other {Stellt ihre # Apps auf eine Seite, die alle mit dem Link sehen und zur eigenen Bibliothek hinzufügen können.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {Quiver Launcher 3 already installed # app in your library. Use that copy where it is, instead of downloading it again?} other {Quiver Launcher 3 already installed # apps in your library. Use those copies where they are, instead of downloading them again?}}"
+msgstr "{count, plural, one {Quiver Launcher 3 hat # App aus deiner Bibliothek bereits installiert. Diese Kopie dort verwenden, wo sie ist, statt sie noch einmal herunterzuladen?} other {Quiver Launcher 3 hat # Apps aus deiner Bibliothek bereits installiert. Diese Kopien dort verwenden, wo sie sind, statt sie noch einmal herunterzuladen?}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"

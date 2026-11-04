@@ -17,6 +17,12 @@ describe("the window's buttons in the top bar", () => {
     expect(windowButtons("linux", false, true)).toBe("fullscreen");
   });
 
+  it("are only Close in Steam's Game Mode, whatever the other settings", () => {
+    expect(windowButtons("linux", false, false, true)).toBe("close");
+    expect(windowButtons("linux", true, false, true)).toBe("close");
+    expect(windowButtons("linux", false, true, true)).toBe("close");
+  });
+
   it("leave a Mac its own", () => {
     expect(windowButtons("macos", false, false)).toBe("none");
     expect(windowButtons("macos", false, true)).toBe("none");

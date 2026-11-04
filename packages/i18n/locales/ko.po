@@ -83,10 +83,6 @@ msgid "{count, plural, one {# app hidden} other {# apps hidden}}"
 msgstr "{count, plural, other {앱 #개 숨김}}"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "{count, plural, one {# app in your library shows as not installed, but Quiver Launcher 3 has it installed. Play it from there, with nothing to download?} other {# apps in your library show as not installed, but Quiver Launcher 3 has them installed. Play them from there, with nothing to download?}}"
-msgstr "{count, plural, other {라이브러리의 앱 #개가 설치되지 않은 것으로 보이지만 Quiver Launcher 3에는 설치되어 있어요. 다운로드 없이 그곳에서 실행할까요?}}"
-
-#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, already installed.} other {# apps, all already installed.}}"
 msgstr "{count, plural, other {앱 #개, 모두 이미 설치되어 있어요.}}"
 
@@ -109,6 +105,10 @@ msgstr "{count, plural, other {설치된 앱 #개를 {asking}(으)로 옮길까�
 #: ../../apps/launcher/src/library.tsx
 msgid "{count, plural, one {Puts its # app on a page anyone with the link can see, and add to their library.} other {Puts its # apps on a page anyone with the link can see, and add to their library.}}"
 msgstr "{count, plural, other {링크가 있는 누구나 볼 수 있고 자신의 라이브러리에 추가할 수 있는 페이지에 앱 #개를 올려요.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {Quiver Launcher 3 already installed # app in your library. Use that copy where it is, instead of downloading it again?} other {Quiver Launcher 3 already installed # apps in your library. Use those copies where they are, instead of downloading them again?}}"
+msgstr "{count, plural, other {Quiver Launcher 3이 라이브러리의 앱 #개를 이미 설치했어요. 다시 다운로드하지 않고 지금 있는 위치에서 그대로 사용할까요?}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"

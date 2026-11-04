@@ -154,7 +154,7 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
     return (
       <div className="banner old-library-notice" role="status" aria-label="Quiver Launcher 3">
         <ArchiveRestore size={18} aria-hidden="true" />
-        <p>{t`${plural(count, { one: "# app in your library shows as not installed, but Quiver Launcher 3 has it installed. Play it from there, with nothing to download?", other: "# apps in your library show as not installed, but Quiver Launcher 3 has them installed. Play them from there, with nothing to download?" })}`}</p>
+        <p>{t`${plural(count, { one: "Quiver Launcher 3 already installed # app in your library. Use that copy where it is, instead of downloading it again?", other: "Quiver Launcher 3 already installed # apps in your library. Use those copies where they are, instead of downloading them again?" })}`}</p>
         <button className="primary" onClick={() => answerOldInstalls(true)}>
           {t`${plural(count, { one: "Use it", other: "Use them" })}`}
         </button>
