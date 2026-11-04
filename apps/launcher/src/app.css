@@ -8,7 +8,7 @@
 .shell {
   --gutter: clamp(24px, 3.5vw, 56px); position: fixed; inset: 0; display: flex; flex-direction: column;
   padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--pad-hints, 0px));
-  /* A top bar too wide for the window (a large interface size in a small one) scrolls sideways to its last buttons. */
+  /* A top bar too wide for the window, even compacted (top-bar-fit.ts), scrolls sideways to its last buttons. */
   overflow-x: auto;
   /* Behind the page, which scrolls over it: drawn once, not with each step of a scroll. */
   background: var(--glow), var(--bg);
@@ -23,7 +23,9 @@
 }
 /* Edge to edge in every layout: the logo and the gear (its own padding aside) 14px from the window's sides, or the window's buttons in its corner. */
 .topbar.with-window-controls { padding-right: 0; }
-.window-controls { align-self: stretch; display: flex; margin: -12px 0 -12px -16px; }
+/* Always in the window's corner, even with a bar too wide for it. */
+.window-controls { position: sticky; right: 0; z-index: 1; flex: none; align-self: stretch; display: flex; margin: -12px 0 -12px -16px; }
+.topbar[data-overflows] .window-controls { background: linear-gradient(var(--topbar), var(--topbar)), var(--bg); }
 .window-controls button { width: 46px; display: grid; place-items: center; color: var(--text-3); }
 .window-controls button:hover { background: var(--field); color: var(--strong); }
 .window-controls button.close-window:hover { background: #c42b1c; color: #fff; }
@@ -73,6 +75,20 @@
 .topbar nav button.active svg { color: var(--accent); }
 .topbar nav button.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 1px; height: 2px; border-radius: 2px; background: var(--accent); }
 .count { margin-left: 4px; color: var(--muted); font-size: 12px; }
+/* As wide as what's in it, not squeezed (a button's words on two lines), past a phone's: top-bar-fit.ts measures this. */
+@media (min-width: 521px) { .topbar { min-width: max-content; } }
+/* What top-bar-fit.ts takes away for room, a step at a time: the logo alone, then all that's left to tighten. */
+.topbar[data-compact] { gap: 14px; }
+.topbar[data-compact] nav { margin-left: 0; }
+.topbar[data-compact] nav button { padding-inline: 10px; }
+.topbar[data-compact] .window-controls { margin-left: -2px; }
+.topbar[data-compact] .brand > span { display: none; }
+.topbar[data-compact] .account-button > span { display: none; }
+/* :has, as the menu is over the page, outside the shell. */
+body:has(.topbar[data-compact]) .account-menu-name { display: block; }
+.topbar[data-compact="2"] .count { display: none; }
+.topbar[data-compact="2"] nav button { padding-inline: 8px; }
+.topbar[data-compact="2"] button.icon { padding: 6px; }
 main { padding: 28px var(--gutter) 48px; }
 .toolbar { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; flex-wrap: wrap; }
 .search {
