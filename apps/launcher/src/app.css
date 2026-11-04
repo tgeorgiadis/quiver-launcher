@@ -37,8 +37,8 @@
 .brand > img { width: 34px; height: 34px; }
 .brand > span { display: flex; align-items: center; gap: 14px; font-size: 28px; font-weight: 750; letter-spacing: -1.3px; }
 .brand-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text-4); font-weight: 600; border-left: 1px solid var(--line-strong); padding-left: 14px; }
-@media (max-width: 1050px) { .brand-label { display: none; } }
 @media (max-width: 760px) {
+  .brand-label { display: none; }
   .brand > span { font-size: 24px; }
   .brand > img { width: 29px; height: 29px; }
 }
@@ -77,18 +77,19 @@
 .count { margin-left: 4px; color: var(--muted); font-size: 12px; }
 /* As wide as what's in it, not squeezed (a button's words on two lines), past a phone's: top-bar-fit.ts measures this. */
 @media (min-width: 521px) { .topbar { min-width: max-content; } }
-/* What top-bar-fit.ts takes away for room, a step at a time: the logo alone, then all that's left to tighten. */
-.topbar[data-compact] { gap: 14px; }
-.topbar[data-compact] nav { margin-left: 0; }
-.topbar[data-compact] nav button { padding-inline: 10px; }
-.topbar[data-compact] .window-controls { margin-left: -2px; }
-.topbar[data-compact] .brand > span { display: none; }
-.topbar[data-compact] .account-button > span { display: none; }
+/* What top-bar-fit.ts takes away for room, a step at a time: the word Launcher, the logo alone, then all that's left to tighten. */
+.topbar[data-compact] .brand-label { display: none; }
+.topbar:is([data-compact="2"], [data-compact="3"]) { gap: 14px; }
+.topbar:is([data-compact="2"], [data-compact="3"]) nav { margin-left: 0; }
+.topbar:is([data-compact="2"], [data-compact="3"]) nav button { padding-inline: 10px; }
+.topbar:is([data-compact="2"], [data-compact="3"]) .window-controls { margin-left: -2px; }
+.topbar:is([data-compact="2"], [data-compact="3"]) .brand > span { display: none; }
+.topbar:is([data-compact="2"], [data-compact="3"]) .account-button > span { display: none; }
 /* :has, as the menu is over the page, outside the shell. */
-body:has(.topbar[data-compact]) .account-menu-name { display: block; }
-.topbar[data-compact="2"] .count { display: none; }
-.topbar[data-compact="2"] nav button { padding-inline: 8px; }
-.topbar[data-compact="2"] button.icon { padding: 6px; }
+body:has(.topbar:is([data-compact="2"], [data-compact="3"])) .account-menu-name { display: block; }
+.topbar[data-compact="3"] .count { display: none; }
+.topbar[data-compact="3"] nav button { padding-inline: 8px; }
+.topbar[data-compact="3"] button.icon { padding: 6px; }
 main { padding: 28px var(--gutter) 48px; }
 .toolbar { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; flex-wrap: wrap; }
 .search {
