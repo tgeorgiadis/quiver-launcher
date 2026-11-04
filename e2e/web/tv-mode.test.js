@@ -27,7 +27,7 @@ test("TV mode is the usual pages, larger: it stays on the tab it's turned on fro
   }
 });
 
-test("TV mode's top bar fits on one line at a Steam Deck's size, and Game Mode leaves the window's buttons to Steam", async () => {
+test("TV mode's top bar fits on one line at a Steam Deck's size, and Game Mode has only Close of the window's buttons", async () => {
   for (const gameMode of [true, false]) {
     const s2 = await openApp({ state: installed, width: 1113, height: 696, config: { gameMode } });
     try {
@@ -37,15 +37,30 @@ test("TV mode's top bar fits on one line at a Steam Deck's size, and Game Mode l
       const bar = await s2.app.execute(() => {
         const height = (selector) => document.querySelector(selector).getBoundingClientRect().height;
         const top = document.querySelector(".topbar");
-        return { clock: height(".tv-clock"), leave: height(".tv-leave"), fits: top.scrollWidth <= top.clientWidth, controls: Boolean(document.querySelector(".window-controls")) };
+        return { clock: height(".tv-clock"), leave: height(".tv-leave"), fits: top.scrollWidth <= top.clientWidth, controls: document.querySelectorAll(".window-controls button").length, close: document.querySelector(".window-controls button:last-child").matches(".close-window"), closeShows: document.querySelector(".close-window").getBoundingClientRect().right <= innerWidth + 0.5 };
       });
       assert.ok(bar.clock < 30, `the clock on one line: ${bar.clock}`);
       assert.ok(bar.leave < 40, `Leave TV mode on one line: ${bar.leave}`);
       assert.equal(bar.fits, true, "nothing past the bar's end");
-      assert.equal(bar.controls, !gameMode);
+      assert.equal(bar.controls, gameMode ? 1 : 3);
+      assert.equal(bar.close, true, "Close is one of them");
+      assert.equal(bar.closeShows, true, "and on the screen");
     } finally {
       await s2.close();
     }
+  }
+});
+
+test("Game Mode has Close with TV mode off too, and a controller can reach it", async () => {
+  const s2 = await openApp({ state: { ...installed, settings: { tvMode: "off" } }, width: 1113, height: 696, config: { gameMode: true } });
+  try {
+    await s2.page.locator(".shell:not(.tv-mode) .topbar").waitFor();
+    assert.equal(await s2.page.locator(".window-controls button").count(), 1);
+    await reach.install(s2.app);
+    await reach.pressOn(s2.app, ".topbar button[aria-label='Settings']", "DPadRight");
+    await s2.until(() => s2.app.execute(() => document.activeElement?.matches(".close-window")));
+  } finally {
+    await s2.close();
   }
 });
 

@@ -11,16 +11,20 @@ import type { Os } from "@quiverlauncher/api";
 import { useLauncher } from "./store";
 import { native } from "./native";
 
-export type WindowButtons = "none" | "window" | "fullscreen";
+export type WindowButtons = "none" | "window" | "fullscreen" | "close";
 
-/** Which buttons the top bar shows: none under the system's title bar, which has its own. */
-export function windowButtons(os: Os, systemTitleBar: boolean, fullscreen: boolean): WindowButtons {
+/**
+ * Which buttons the top bar shows: none under the system's title bar, which has its own. Only Close in Steam's Game
+ * Mode: Steam has the window, so it can't be minimized or resized, but a player shouldn't have to know Steam's menu to leave.
+ */
+export function windowButtons(os: Os, systemTitleBar: boolean, fullscreen: boolean, gameMode = false): WindowButtons {
   if (os !== "windows" && os !== "linux") return "none";
+  if (gameMode) return "close";
   if (fullscreen) return "fullscreen";
   return systemTitleBar ? "none" : "window";
 }
 
-/** The buttons to show, and whether the window is maximized, kept as the window changes. None in Steam's Game Mode: Steam has the window, and its own way out. */
+/** The buttons to show, and whether the window is maximized, kept as the window changes. */
 export function useWindowButtons() {
   const { settings, config } = useLauncher();
   const [state, setState] = useState({ maximized: false, fullscreen: Boolean(settings.fullscreen) });
@@ -30,7 +34,7 @@ export function useWindowButtons() {
     const off = native.onWindowResized(check);
     return () => void off.then((stop) => stop());
   }, []);
-  return { buttons: config.gameMode ? "none" : windowButtons(config.os, Boolean(settings.systemTitleBar), state.fullscreen), maximized: state.maximized };
+  return { buttons: windowButtons(config.os, Boolean(settings.systemTitleBar), state.fullscreen, config.gameMode), maximized: state.maximized };
 }
 
 /** What a press in the top bar can't move the window from: its buttons, links and fields. */
@@ -77,17 +81,21 @@ export function WindowControls({ buttons, maximized }: { buttons: WindowButtons;
   const close = t({ message: "Close", comment: "Window button: close Quiver's window" });
   return (
     <div className="window-controls">
-      <button aria-label={minimize} title={minimize} onClick={() => void native.minimize()}>
-        <Minus size={16} strokeWidth={1.5} />
-      </button>
-      {buttons === "fullscreen" ? (
-        <button aria-label={exit} title={exit} onClick={exitFullscreen}>
-          <Minimize2 size={15} strokeWidth={1.5} />
-        </button>
-      ) : (
-        <button aria-label={size} title={size} onClick={() => void native.toggleMaximize()}>
-          {maximized ? <Copy size={14} strokeWidth={1.5} className="restore" /> : <Square size={13} strokeWidth={1.5} />}
-        </button>
+      {buttons !== "close" && (
+        <>
+          <button aria-label={minimize} title={minimize} onClick={() => void native.minimize()}>
+            <Minus size={16} strokeWidth={1.5} />
+          </button>
+          {buttons === "fullscreen" ? (
+            <button aria-label={exit} title={exit} onClick={exitFullscreen}>
+              <Minimize2 size={15} strokeWidth={1.5} />
+            </button>
+          ) : (
+            <button aria-label={size} title={size} onClick={() => void native.toggleMaximize()}>
+              {maximized ? <Copy size={14} strokeWidth={1.5} className="restore" /> : <Square size={13} strokeWidth={1.5} />}
+            </button>
+          )}
+        </>
       )}
       <button className="close-window" aria-label={close} title={close} onClick={() => void native.closeWindow()}>
         <X size={17} strokeWidth={1.5} />
