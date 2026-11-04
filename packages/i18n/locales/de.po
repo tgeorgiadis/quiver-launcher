@@ -836,6 +836,10 @@ msgid "Any project type"
 msgstr "Beliebiger Projekttyp"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "Beliebige Quelle"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "Beliebiges Tag"
 
@@ -860,6 +864,10 @@ msgstr "App-Bereiche"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Apps"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "Von diesem Computer hinzugefügte Apps, die Quiver nicht herunterlädt oder aktualisiert"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -892,6 +900,10 @@ msgstr "Hier installierte Apps werden immer angezeigt."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Apps, die auf diesem Computer installiert sind, bleiben in deiner Bibliothek. Eine beschädigte Datei wird neben der neuen aufbewahrt, es wird also nichts gelöscht."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Apps, die Quiver herunterlädt und aktualisiert, aus dem Katalog oder einem Repository"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -2483,6 +2495,19 @@ msgstr "Erstellt in deinem App-Ordner einen Ordner, in den du die App legst."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "Verwalten"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "Verwaltet von"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Von Quiver verwaltet"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "Manuell verwaltet"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"

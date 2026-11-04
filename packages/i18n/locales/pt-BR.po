@@ -836,6 +836,10 @@ msgid "Any project type"
 msgstr "Qualquer tipo de projeto"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "Qualquer origem"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "Qualquer tag"
 
@@ -860,6 +864,10 @@ msgstr "Seções do app"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Apps"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "Apps adicionados deste computador, que o Quiver não baixa nem atualiza"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -892,6 +900,10 @@ msgstr "Os apps instalados aqui sempre aparecem."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Os apps instalados neste computador continuam na sua biblioteca. Um arquivo danificado é guardado ao lado do novo, então nada é apagado."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Apps que o Quiver baixa e atualiza, do catálogo ou de um repositório"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -2483,6 +2495,19 @@ msgstr "Cria uma pasta dentro da sua pasta de apps para colocar o app."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "Gerenciar"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "Gerenciado por"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Gerenciado pelo Quiver"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "Gerenciado manualmente"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"

@@ -22,7 +22,7 @@ import { LetterIndex } from "./letter-index";
 import { versionLabel } from "./versions";
 import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, newKey, type AppFacts, type Collection } from "./sync";
-import { isOwn } from "./custom";
+import { isLocal, isOwn } from "./custom";
 import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
@@ -274,9 +274,16 @@ export function LibraryPage({
     return inCollection(collection, facts(entry, item), makers);
   };
   const filtering = Object.values(filters).some(Boolean);
+  // A playlist keeps every filter but Managed by, so that one alone makes none.
+  const saveable = Object.entries(filters).some(([key, value]) => key !== "managed" && value);
   const matching = candidates.filter(({ entry, item }) => {
     const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
-    return words.every((w) => text.includes(w)) && inTab(entry, item) && (!filtering || matches(toPlaylist(filters), facts(entry, item), makers));
+    return (
+      words.every((w) => text.includes(w)) &&
+      inTab(entry, item) &&
+      (!filters.managed || isLocal(entry.id) === (filters.managed === "manual")) &&
+      (!filtering || matches(toPlaylist(filters), facts(entry, item), makers))
+    );
   });
   // Apps for other platforms than the ones picked here, unless installed here; shown for now when the player asks.
   const elsewhere = new Set(matching.flatMap(({ entry }) => (!installs[entry.id] && !forPlatforms(entry, platforms) ? [entry.id] : [])));
@@ -605,7 +612,7 @@ export function LibraryPage({
                   </div>
                   <div className="filter-bar sidebar-filters-foot">
                     {/* A playlist of whatever matches these filters, now and later. */}
-                    <button type="button" className="save-playlist" disabled={!filtering && !search.trim()} onClick={savePlaylist}>
+                    <button type="button" className="save-playlist" disabled={!saveable && !search.trim()} onClick={savePlaylist}>
                       <ListPlus size={14} /> <Trans>Save as playlist</Trans>
                     </button>
                     {filtering && (
@@ -804,13 +811,15 @@ export function LibraryPage({
               <button type="button" className="text-button" onClick={() => setFilters({})}>
                 <Trans>Clear all</Trans>
               </button>
-              <button
-                type="button"
-                className="save-playlist"
-                onClick={savePlaylist}
-              >
-                <ListPlus size={14} /> <Trans>Save as playlist</Trans>
-              </button>
+              {saveable && (
+                <button
+                  type="button"
+                  className="save-playlist"
+                  onClick={savePlaylist}
+                >
+                  <ListPlus size={14} /> <Trans>Save as playlist</Trans>
+                </button>
+              )}
             </span>
           )}
         </div>
@@ -986,6 +995,7 @@ export function filterLabel(key: keyof Filters, value: string, consoleNames: Rec
   if (key === "projectType") return PROJECT_TYPES[value] ? i18n._(PROJECT_TYPES[value]) : value;
   if (key === "ai") return AI[value] && i18n._(AI[value]);
   if (key === "installed") return value === "yes" ? t`Installed` : t`Not installed`;
+  if (key === "managed") return value === "manual" ? t`Manually managed` : t`Managed by Quiver`;
   return tagLabel(value);
 }
 
@@ -1082,6 +1092,20 @@ function FilterFields({
           <option value="no">{t`Not installed only`}</option>
         </select>,
       )}
+      {/* Only on the library's own filters: a playlist doesn't keep it. */}
+      {pills &&
+        pill(
+          "managed",
+          <select aria-label={t({ message: "Managed by", comment: "Filter by whether Quiver downloads and updates an app, or the player looks after it" })} value={value.managed ?? ""} onChange={set("managed")}>
+            <option value="">{t`Any source`}</option>
+            <option value="quiver" title={t`Apps Quiver downloads and updates, from the catalog or a repository`}>
+              {t`Managed by Quiver`}
+            </option>
+            <option value="manual" title={t`Apps added from this computer, which Quiver doesn't download or update`}>
+              {t`Manually managed`}
+            </option>
+          </select>,
+        )}
     </>
   );
 }
