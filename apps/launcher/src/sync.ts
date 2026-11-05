@@ -106,7 +106,7 @@ export function changesFrom(local: LibraryItem[], account: string): Change[] {
  * A playlist in the library (a collection, on the site). It shows the apps
  * picked for it by hand, and the apps that match every filter it sets: any of
  * its tags (the player's or the catalog's), consoles (or a maker's, as
- * "maker:Nintendo"), platforms and project types, its AI use, installed or not, and words
+ * "maker:Nintendo"), platforms and project types, its AI use, installed or not, who manages it, and words
  * in the app's name or its games' (Zelda). Without filters it's just the picked apps. A followed playlist mirrors one someone
  * shared, and its apps come from the site.
  */
@@ -119,6 +119,8 @@ export type Collection = {
   installed?: "yes" | "no";
   projectTypes?: string[];
   ai?: "no-generated" | "no-ai";
+  /** Who looks after its apps: Quiver, or the player (added from this computer). Each computer answers this for its own apps. */
+  managed?: "quiver" | "manual";
   /** Words the app's name or one of its games' has, all of them, like "zelda". Kept on this device; the site doesn't store it yet. */
   search?: string;
   /** Platforms the app has a release for, any of them. */
@@ -164,13 +166,15 @@ export function applyServerCollections(local: Collection[], server: ServerCollec
   return [...mine.values()];
 }
 
-type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai" | "search" | "platforms">;
+type Filters = Pick<Collection, "tags" | "consoles" | "installed" | "projectTypes" | "ai" | "managed" | "search" | "platforms">;
 /** What a playlist or the library filters ask of an app. */
 export type AppFacts = {
   id?: string;
   tags: string[];
   consoles: string[];
   installed: boolean;
+  /** The player looks after it here: added from this computer, or linked to a catalog app and still played from its own files. */
+  manual?: boolean;
   projectType?: string;
   aiLevel?: string;
   /** The platforms it has releases for (its entry's supportedOS). */
@@ -183,7 +187,7 @@ const wordsOf = (search?: string) => (search ?? "").toLowerCase().split(/\s+/).f
 
 /** Whether any filter is set; without one, a playlist is only its picked apps. */
 export const hasFilters = (c: Filters) =>
-  Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai || c.platforms?.length || wordsOf(c.search).length);
+  Boolean(c.tags.length || c.consoles.length || c.installed || c.projectTypes?.length || c.ai || c.managed || c.platforms?.length || wordsOf(c.search).length);
 
 /**
  * Whether an app matches every filter that's set. `makers` gives each console's
@@ -199,6 +203,7 @@ export function matches(c: Filters, app: AppFacts, makers: Record<string, string
     (!c.tags.length || c.tags.some((t) => tags.has(t.toLowerCase()))) &&
     (!c.consoles.length || c.consoles.some(consoleOk)) &&
     (!c.installed || (c.installed === "yes") === app.installed) &&
+    (!c.managed || (c.managed === "manual") === Boolean(app.manual)) &&
     (!c.projectTypes?.length || c.projectTypes.includes(app.projectType ?? "")) &&
     (!c.ai || (c.ai === "no-ai" ? !app.aiLevel || app.aiLevel === "none" : app.aiLevel !== "generated")) &&
     (!c.platforms?.length || forPlatforms({ supportedOS: app.platforms ?? [] }, c.platforms)) &&

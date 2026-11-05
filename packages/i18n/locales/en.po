@@ -836,6 +836,10 @@ msgid "Any project type"
 msgstr "Any project type"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "Any source"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "Any tag"
 
@@ -860,6 +864,10 @@ msgstr "App sections"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Apps"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "Apps added from this computer, which Quiver doesn't download or update"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -892,6 +900,10 @@ msgstr "Apps installed here always show."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Apps Quiver downloads and updates, from the catalog or a repository"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -2483,6 +2495,19 @@ msgstr "Makes a folder in your apps folder to put the app in."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "Manage"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "Managed by"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Managed by Quiver"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "Manually managed"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"

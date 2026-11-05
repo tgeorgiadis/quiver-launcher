@@ -836,6 +836,10 @@ msgid "Any project type"
 msgstr "Cualquier tipo de proyecto"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "Cualquier origen"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "Cualquier etiqueta"
 
@@ -860,6 +864,10 @@ msgstr "Secciones de la app"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Apps"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "Apps agregadas desde esta computadora, que Quiver no descarga ni actualiza"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -892,6 +900,10 @@ msgstr "Las apps instaladas aquí siempre se muestran."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Las apps instaladas en esta computadora se quedan en tu biblioteca. Un archivo dañado se guarda junto al nuevo, así que no se borra nada."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Apps que Quiver descarga y actualiza, del catálogo o de un repositorio"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -2483,6 +2495,19 @@ msgstr "Crea una carpeta dentro de tu carpeta de apps para poner la app."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "Administrar"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "Administrado por"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Administrado por Quiver"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "Administrado manualmente"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"

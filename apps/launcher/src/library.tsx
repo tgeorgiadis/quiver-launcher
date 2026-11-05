@@ -22,7 +22,7 @@ import { LetterIndex } from "./letter-index";
 import { versionLabel } from "./versions";
 import { useAccount } from "./account";
 import { hasFilters, inCollection, matches, newKey, type AppFacts, type Collection } from "./sync";
-import { isOwn } from "./custom";
+import { isLocal, isOwn } from "./custom";
 import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
@@ -71,6 +71,7 @@ const toPlaylist = (f: Filters) => ({
   projectTypes: f.projectType ? [f.projectType] : undefined,
   ai: f.ai,
   installed: f.installed,
+  managed: f.managed,
 });
 const fromPlaylist = (c: Collection): Filters => ({
   tag: c.tags[0],
@@ -78,6 +79,7 @@ const fromPlaylist = (c: Collection): Filters => ({
   projectType: c.projectTypes?.[0],
   ai: c.ai,
   installed: c.installed,
+  managed: c.managed,
 });
 const PROJECT_TYPES: Record<string, MessageDescriptor> = {
   port: msg({ message: "Port", comment: "Project type: a game ported to another platform" }),
@@ -247,6 +249,7 @@ export function LibraryPage({
     tags: [...entry.tags, ...(item?.overrides?.tags ?? [])],
     consoles: entry.consoles ?? [],
     installed: Boolean(installs[entry.id]),
+    manual: isLocal(entry.id) || Boolean(installs[entry.id]?.local),
     // Apps the player added match only the filters there's data for.
     projectType: isOwn(entry.id) ? undefined : entry.projectType,
     aiLevel: entry.aiLevel,
@@ -276,7 +279,11 @@ export function LibraryPage({
   const filtering = Object.values(filters).some(Boolean);
   const matching = candidates.filter(({ entry, item }) => {
     const text = [entry.projectName, ...entry.games.map((g) => g.title), ...entry.tags, ...(item?.overrides?.tags ?? [])].join(" ").toLowerCase();
-    return words.every((w) => text.includes(w)) && inTab(entry, item) && (!filtering || matches(toPlaylist(filters), facts(entry, item), makers));
+    return (
+      words.every((w) => text.includes(w)) &&
+      inTab(entry, item) &&
+      (!filtering || matches(toPlaylist(filters), facts(entry, item), makers))
+    );
   });
   // Apps for other platforms than the ones picked here, unless installed here; shown for now when the player asks.
   const elsewhere = new Set(matching.flatMap(({ entry }) => (!installs[entry.id] && !forPlatforms(entry, platforms) ? [entry.id] : [])));
@@ -986,6 +993,7 @@ export function filterLabel(key: keyof Filters, value: string, consoleNames: Rec
   if (key === "projectType") return PROJECT_TYPES[value] ? i18n._(PROJECT_TYPES[value]) : value;
   if (key === "ai") return AI[value] && i18n._(AI[value]);
   if (key === "installed") return value === "yes" ? t`Installed` : t`Not installed`;
+  if (key === "managed") return value === "manual" ? t`Manually managed` : t`Managed by Quiver`;
   return tagLabel(value);
 }
 
@@ -1080,6 +1088,18 @@ function FilterFields({
           <option value="">{t`Installed or not`}</option>
           <option value="yes">{t`Installed only`}</option>
           <option value="no">{t`Not installed only`}</option>
+        </select>,
+      )}
+      {pill(
+        "managed",
+        <select aria-label={t({ message: "Managed by", comment: "Filter by whether Quiver downloads and updates an app, or the player looks after it" })} value={value.managed ?? ""} onChange={set("managed")}>
+          <option value="">{t`Any source`}</option>
+          <option value="quiver" title={t`Apps Quiver downloads and updates, from the catalog or a repository`}>
+            {t`Managed by Quiver`}
+          </option>
+          <option value="manual" title={t`Apps added from this computer, which Quiver doesn't download or update`}>
+            {t`Manually managed`}
+          </option>
         </select>,
       )}
     </>

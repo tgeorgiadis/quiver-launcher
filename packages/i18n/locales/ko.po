@@ -836,6 +836,10 @@ msgid "Any project type"
 msgstr "모든 프로젝트 유형"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "모든 출처"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "모든 태그"
 
@@ -860,6 +864,10 @@ msgstr "앱 섹션"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "앱"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "이 컴퓨터에서 추가한 앱으로, Quiver가 다운로드하거나 업데이트하지 않습니다"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -892,6 +900,10 @@ msgstr "여기에 설치된 앱은 항상 표시돼요."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "이 컴퓨터에 설치된 앱은 라이브러리에 그대로 남아요. 손상된 파일은 새 파일 옆에 보관되므로 삭제되는 것은 없어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Quiver가 카탈로그나 저장소에서 다운로드하고 업데이트하는 앱"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -2483,6 +2495,19 @@ msgstr "앱 폴더 안에 앱을 넣을 폴더를 만들어요."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "관리"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "관리 주체"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Quiver가 관리"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "직접 관리"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"

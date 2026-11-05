@@ -47,6 +47,9 @@ test("box art and icon cards fall back to the cover, then to nothing", () => {
 test("the library's filters and tab come back as the player left them, when the library still has them", () => {
   expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", console: "n64", ai: "no-ai" });
   expect(keptFilters({ installed: "maybe", ai: "some", tag: "" })).toEqual({});
+  expect(keptFilters({ managed: "manual" })).toEqual({ managed: "manual" });
+  expect(keptFilters({ managed: "quiver" })).toEqual({ managed: "quiver" });
+  expect(keptFilters({ managed: "someone" })).toEqual({});
   expect(keptFilters(undefined)).toEqual({});
   // Installed and Not installed were tabs too: left on one, the library opens with the filter on.
   expect(keptFilters({ console: "n64" }, "installed")).toEqual({ console: "n64", installed: "yes" });
