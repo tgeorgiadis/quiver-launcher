@@ -22,6 +22,26 @@ const state = {
   installs: { "entry_test-port": { version: "1.0.0", folder: "test-port", executables: [], lastPlayed: Date.now() - 3600_000, playTime: 5400 } },
 };
 
+test("an app removed in Android's settings offers Get again once Quiver comes back into view", async () => {
+  const s = await openPhone({ state: { library: state.library, installs: state.installs } });
+  try {
+    const { page } = s;
+    const card = page.locator('article[data-slug="test-port"]').first();
+    await card.waitFor();
+    // These stay hidden here on a phone's screen: there or not is what counts.
+    await card.locator(".tile-play").waitFor({ state: "attached" });
+    assert.equal(await card.locator(".tile-get").count(), 0, "installed, while Android still has it");
+    await page.evaluate(() => {
+      const { invoke } = window.__TAURI_INTERNALS__;
+      window.__TAURI_INTERNALS__.invoke = (cmd, args) => (cmd === "android_app_gone" ? Promise.resolve(args.folder === "test-port") : invoke(cmd, args));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await card.locator(".tile-get").waitFor({ state: "attached" });
+  } finally {
+    await s.close();
+  }
+});
+
 for (const [device, theme] of [
   ["Pixel 7", "dark"],
   ["Galaxy S8", "light"],

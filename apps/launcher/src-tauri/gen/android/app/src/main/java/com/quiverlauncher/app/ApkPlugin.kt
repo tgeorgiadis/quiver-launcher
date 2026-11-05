@@ -69,6 +69,13 @@ class ApkPlugin(private val activity: Activity) : Plugin(activity) {
     }
   }
 
+  /** Whether an app is still on this device: the player can remove one in Android's own settings. */
+  @Command
+  fun isInstalled(invoke: Invoke) {
+    val name = invoke.parseArgs(PackageArgs::class.java).packageName
+    invoke.resolve(JSObject().put("installed", installed(name) != null))
+  }
+
   /** Starts an installed app. */
   @Command
   fun launch(invoke: Invoke) {

@@ -801,6 +801,31 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       void closed.then((stop) => stop());
     };
   }, []);
+  // On Android a player can remove an app in the system's settings, which Quiver isn't told about. Checked when Quiver
+  // comes back into view, so its card offers Get rather than a Play that can only fail.
+  const forAndroid = useRef({ installs, jobs });
+  forAndroid.current = { installs, jobs };
+  useEffect(() => {
+    if (config.os !== "android") return;
+    const check = () => {
+      if (document.visibilityState !== "visible") return;
+      for (const [id, install] of Object.entries(forAndroid.current.installs)) {
+        void native.androidAppGone(install.folder, install.dir).then(
+          (gone) => {
+            const job = forAndroid.current.jobs[id];
+            // One being got again is on its way back.
+            if (!gone || (job && !("error" in job))) return;
+            setInstalls(({ [id]: _, ...rest }) => rest);
+            setJobs(({ [id]: _, ...rest }) => rest);
+          },
+          () => {},
+        );
+      }
+    };
+    check();
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, [config.os]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {
