@@ -1,8 +1,16 @@
 /** The Rust side of the launcher (src-tauri/src/lib.rs). */
-import { invoke } from "@tauri-apps/api/core";
+import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ModSettings, ModSource, Os } from "@quiverlauncher/api";
+import { noteFailure } from "./command-failures";
+
+/** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
+const invoke = <T>(...[command, args, options]: Parameters<typeof tauriInvoke>) =>
+  tauriInvoke<T>(command, args, options).catch((e) => {
+    noteFailure(command, e);
+    throw e;
+  });
 
 type StateFile = "library" | "installs" | "catalog" | "settings" | "collections";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
