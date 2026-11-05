@@ -275,11 +275,12 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
 }
 
 /** What the site stores of a collection; apps on this computer only never leave it. null clears a field there. */
-const toServer = ({ key, name, tags, consoles, installed, order, removed, apps, projectTypes, ai, platforms, follows }: Collection) => ({
+const toServer = ({ key, name, tags, consoles, installed, order, removed, apps, projectTypes, ai, managed, platforms, follows }: Collection) => ({
   key, name, tags, consoles, ...(installed ? { installed } : {}), order, removed: Boolean(removed),
   apps: (apps ?? []).filter((id) => !id.startsWith("local:")),
   projectTypes: projectTypes?.length ? projectTypes : null,
   ai: ai ?? null,
+  managed: managed ?? null,
   platforms: platforms?.length ? platforms : null,
   follows: follows ?? null,
 });

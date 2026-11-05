@@ -141,7 +141,7 @@ export function artFor(entry: Pick<Entry, "libraryArt" | "artwork">, image: Excl
 /**
  * What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). `managed`: Quiver's, which it
  * downloads and updates (from the catalog or a repository), or the player's, added from this computer, as 3.x's manually
- * managed apps were. Playlists don't keep it.
+ * managed apps were.
  */
 export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no"; managed?: "quiver" | "manual" };
 
