@@ -60,6 +60,12 @@ export type Config = {
   steamKeyboard?: boolean;
   /** Steam is running Quiver, so Quiver can't add games to it now (lib.rs). Missing from an older build. */
   steamRunsUs?: boolean;
+  /** The system's version, for usage data (device.rs). Missing from an older build. */
+  osVersion?: string | null;
+  /** A Steam Deck, for usage data. Missing from an older build. */
+  steamDeck?: boolean;
+  /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
+  package?: string;
 };
 export type Progress = {
   id: string;

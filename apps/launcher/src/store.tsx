@@ -13,7 +13,8 @@ import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, t
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
-import { captureError, captureFailure, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, track, type TelemetryContext } from "./telemetry";
+import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, telemetryChoice, track, type TelemetryContext } from "./telemetry";
+import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
 import type { Platform } from "./platforms";
@@ -645,6 +646,12 @@ export const appRef = (id: string, slug: string) => ({
   source: isLocal(id) ? "local" : isCustom(id) ? "custom" : "catalog",
 });
 
+/** An app being played, as usage data names it: a catalog app with its version too; one the player added stays named only by kind. */
+export const playedRef = (ref: ReturnType<typeof appRef>, version: string) => ({ ...ref, version: ref.slug ? version : null });
+
+/** How long after starting usage data counts what's in the library. */
+const USAGE_COUNTED_AFTER_MS = 20_000;
+
 type Saved = {
   settings: Settings;
   config: Config;
@@ -661,6 +668,10 @@ export const telemetryContext = (config: Config): TelemetryContext => ({
   version: config.version,
   os: config.os,
   arch: config.arch,
+  osVersion: config.osVersion,
+  steamDeck: config.steamDeck,
+  package: config.package,
+  gameMode: config.gameMode,
   home: config.home,
   user: config.user,
   appsDir: config.appsDir,
@@ -731,7 +742,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const setNotice = useMemo<Launcher["setNotice"]>(() => (text, options) => showNotice(text === null ? null : { text, ...options }), []);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
-  const client = useMemo(() => createClient(config.api, { onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e) }) }), [config.api]);
+  const client = useMemo(() => createClient(config.api, {
+        onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e), error: failureKind(e) }),
+        onUnreachable: (e) => track("catalog_load_failed", { reason: reasonOf(e), error: failureKind(e) }),
+      }), [config.api]);
   const gitlab = useMemo(() => createGitlab(config.gitlabApi), [config.gitlabApi]);
   /** A custom app's releases, newest first. */
   const releasesOf = (app: Pick<CustomApp, "provider" | "repository">) =>
@@ -771,6 +785,26 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("settings", settings);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
+  // What usage data reads later on, as it stands by then.
+  const forUsage = useRef({ library, installs, catalog, settings });
+  forUsage.current = { library, installs, catalog, settings };
+  useEffect(() => {
+    const closed = native.onAppClosed(({ id, seconds }) => {
+      const { catalog, installs } = forUsage.current;
+      track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds });
+    });
+    // Once the catalog and the account have had time to come in, so its counts are of the library as it is.
+    const counted = setTimeout(() => {
+      if (!telemetryChoice().enabled) return;
+      const { library, installs, catalog, settings } = forUsage.current;
+      track("library_loaded", librarySummary(library, installs, catalog, settings, telemetryChoice().signedIn));
+      if (appsDueToday(new Date())) appsOnComputer(library, installs, catalog).forEach((app) => track("app_on_computer", app));
+    }, USAGE_COUNTED_AFTER_MS);
+    return () => {
+      clearTimeout(counted);
+      void closed.then((stop) => stop());
+    };
+  }, []);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {
@@ -1041,9 +1075,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
     const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
-    const stop = () => {
+    const stop = (stage: "unverified_prompt" | "file_choice") => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
-      track("app_install_cancelled", { ...ref, version: version ?? null });
+      track("app_install_cancelled", { ...ref, version: version ?? null, update: Boolean(from), stage });
     };
     track("app_install_started", { ...ref, version: version ?? null, update: Boolean(from), verified: !unverified, blocked: Boolean(blocked) });
     try {
@@ -1067,7 +1101,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (newest) {
           version = newest.version;
           if (newest.state !== "verified") {
-            if (!(await ask({ entry, version: newest.version, reasons: newest.reasons, scan: newest.scan, checkEndsAt: newest.checkEndsAt }))) return stop();
+            if (!(await ask({ entry, version: newest.version, reasons: newest.reasons, scan: newest.scan, checkEndsAt: newest.checkEndsAt }))) return stop("unverified_prompt");
             unverified = true;
           }
           release = fromSite(newest);
@@ -1118,7 +1152,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const choices = [asset, ...others];
         const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
         setChoice(null);
-        if (!picked) return stop();
+        if (!picked) return stop("file_choice");
         asset = picked;
         pick = assetFilterFor(picked.filename, choices.map((a) => a.filename));
       }
@@ -1127,7 +1161,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const why = !custom && !unverified ? unverifiedFile(asset, release) : undefined;
       if (why) {
         if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
-        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop();
+        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop("unverified_prompt");
         unverified = true;
       }
       format = installFormat(asset.filename);
@@ -1185,7 +1219,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // A Windows installer's setup the player closed is cancelled too.
       if (error === "cancelled") {
         setJobs(({ [entry.id]: _, ...rest }) => rest);
-        track("app_install_cancelled", { ...ref, version: version ?? null, format: format ?? null });
+        track("app_install_cancelled", { ...ref, version: version ?? null, update: Boolean(from), stage: "installing", format: format ?? null });
         return;
       }
       let problem = error;
@@ -1207,7 +1241,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         }
       }
       fail(entry.id, problem, true, instead);
-      track("app_install_failed", { ...ref, version: version ?? null, update: Boolean(from), reason: reasonOf(problem), format: format ?? null });
+      // By the first error: "missing" and "mismatch" say exactly what `problem` then words for the player.
+      track("app_install_failed", { ...ref, version: version ?? null, update: Boolean(from), reason: reasonOf(problem), error: failureKind(error), format: format ?? null });
       captureFailure("install", problem, { ...ref, version: version ?? null, update: Boolean(from), format: format ?? null });
     }
   }
@@ -1354,6 +1389,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     add: (entry) => add(entry),
     addToLibrary(entry) {
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
+      if (!library.some((i) => i.id === entry.id)) track("app_added", { kind: "catalog", slug: entry.slug });
       add(entry);
       const name = entry.projectName;
       setNotice(t`${name} is in your library.`);
@@ -1518,11 +1554,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
+      const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
-        () => (musicForGame(), track("app_launched", ref)),
+        () => (musicForGame(), track("app_launched", played)),
         async (e) => {
           fail(id, e);
-          track("app_launch_failed", { ...ref, reason: reasonOf(e) });
+          track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) });
           // No program found: what is there says why, since it's different apps on every system.
           const kinds = e === NO_PROGRAM ? await native.fileKinds(install.folder, install.dir).catch(() => null) : null;
           captureFailure("launch", e, { ...ref, wine: Boolean(install.wine), ...(kinds ? { kinds: kinds.join(",") } : {}) });
@@ -1551,6 +1588,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     async remove(id) {
       // Saying no when Windows asks to uninstall it keeps it, in the library too.
       if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
+      track("app_removed", appRef(id, catalog[id]?.slug ?? ""));
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>

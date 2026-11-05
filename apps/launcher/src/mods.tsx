@@ -13,6 +13,7 @@ import type { Entry, ModSettings } from "@quiverlauncher/api";
 import { native, type InstalledMod, type ModFile, type ModPackage } from "./native";
 import { useLauncher } from "./store";
 import { closesOutside } from "./overlay";
+import { failureKind, reasonOf, track, trackScreen } from "./telemetry";
 import { i18n } from "@quiverlauncher/i18n";
 
 const PAGE = 30;
@@ -64,12 +65,13 @@ export function ModsButton({ entry }: { entry: Entry }) {
       <button className="panel-action opens" onClick={() => setOpen(true)}>
         <Puzzle size={16} aria-hidden="true" /> <Trans>Mods</Trans>
       </button>
-      {open && <ModsDialog name={entry.projectName} folder={install.folder} dir={install.dir} mods={mods} onClose={() => setOpen(false)} />}
+      {open && <ModsDialog name={entry.projectName} slug={entry.slug} folder={install.folder} dir={install.dir} mods={mods} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function ModsDialog({ name, folder, dir, mods, onClose }: { name: string; folder: string; dir?: string; mods: ModSettings; onClose: () => void }) {
+function ModsDialog({ name, slug, folder, dir, mods, onClose }: { name: string; slug: string; folder: string; dir?: string; mods: ModSettings; onClose: () => void }) {
+  useEffect(() => trackScreen({ screen: "mods", slug }), [slug]);
   const [packages, setPackages] = useState<ModPackage[] | null>(null);
   const [failed, setFailed] = useState<string[]>([]);
   const [installed, setInstalled] = useState<InstalledMod[]>([]);
@@ -148,16 +150,23 @@ function ModsDialog({ name, folder, dir, mods, onClose }: { name: string; folder
 
   /** Installs or updates one mod; a GameBanana mod with several files asks which. */
   const put = async (pkg: ModPackage, file?: ModFile) => {
-    const files = file ? [file] : await native.modFiles(pkg);
     const before = mine.get(pkg.key);
-    const chosen = file ?? (files.length === 1 ? files[0] : files.find((f) => f.name === before?.file));
-    if (!chosen) {
-      if (!files.length) throw new Error(t`This mod has no files to download.`);
-      setPicking({ pkg, files });
-      return;
+    const named = { slug, mod: pkg.key, provider: pkg.provider };
+    try {
+      const files = file ? [file] : await native.modFiles(pkg);
+      const chosen = file ?? (files.length === 1 ? files[0] : files.find((f) => f.name === before?.file));
+      if (!chosen) {
+        if (!files.length) throw new Error(t`This mod has no files to download.`);
+        setPicking({ pkg, files });
+        return;
+      }
+      const done = await native.installMod(folder, dir, mods, pkg, chosen);
+      setInstalled((list) => [...list.filter((m) => m.key !== done.key), done]);
+      track(before ? "mod_updated" : "mod_installed", named);
+    } catch (e) {
+      track("mod_install_failed", { ...named, update: Boolean(before), reason: reasonOf(e), error: failureKind(e) });
+      throw e;
     }
-    const done = await native.installMod(folder, dir, mods, pkg, chosen);
-    setInstalled((list) => [...list.filter((m) => m.key !== done.key), done]);
   };
 
   const install = (pkg: ModPackage, needed: ModPackage[] = []) =>
@@ -178,6 +187,7 @@ function ModsDialog({ name, folder, dir, mods, onClose }: { name: string; folder
     act(key, t`Removing…`, async () => {
       await native.uninstallMod(folder, dir, mods, key);
       setInstalled((list) => list.filter((m) => m.key !== key));
+      track("mod_uninstalled", { slug, mod: key });
     });
 
   const providers = [...new Set(mods.sources.map((s) => s.provider))];

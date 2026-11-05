@@ -4,13 +4,15 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { telemetryContext, useLauncher, type Settings } from "./store";
 import { useAccount } from "./account";
-import { setTelemetryAccount, setTelemetryEnabled, setTelemetryLocal, startTelemetry, track, useTelemetryChoice } from "./telemetry";
+import { native, type PadLabels } from "./native";
+import { setTelemetryAccount, setTelemetryEnabled, setTelemetryLocal, startTelemetry, telemetryAvailable, track, useTelemetryChoice } from "./telemetry";
+import { settingsSummary } from "./usage-summary";
 
 let started = false;
 
 /** Starts usage data once, following this computer's choice and, signed in, the account's. */
 export function useTelemetrySetup() {
-  const { config, settings, setSettings } = useLauncher();
+  const { config, settings, setSettings, githubToken } = useLauncher();
   const { ready, user } = useAccount();
   useEffect(() => setTelemetryLocal(!settings.telemetryOff, Boolean(settings.telemetryConsent)), [settings.telemetryOff, settings.telemetryConsent]);
   useEffect(() => {
@@ -18,8 +20,22 @@ export function useTelemetrySetup() {
     started = true;
     startTelemetry(telemetryContext(config));
     track("launcher_started", { first_run: !settings.launched });
+    track("settings_loaded", settingsSummary(settings, config, Boolean(githubToken), window.screen));
     if (!settings.launched) setSettings({ ...settings, launched: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Each kind of controller once per launch: its kind, as a controller's own name can be one the player gave it.
+  useEffect(() => {
+    if (!telemetryAvailable()) return;
+    const seen = new Set<string>();
+    const note = (labels: PadLabels | null) => {
+      if (!labels || seen.has(labels.kind)) return;
+      seen.add(labels.kind);
+      track("gamepad_connected", { kind: labels.kind });
+    };
+    void native.controllerLabels().then(note, () => {});
+    const off = native.onControllerLabels(note);
+    return () => void off.then((stop) => stop());
+  }, []);
   useEffect(
     () => setTelemetryAccount(!ready ? undefined : user && { optOut: Boolean(user.analyticsOptOut) }),
     [ready, Boolean(user), user?.analyticsOptOut], // eslint-disable-line react-hooks/exhaustive-deps
@@ -34,6 +50,8 @@ export function useTelemetrySwitch() {
   const setEnabled = (enabled: boolean, more: Partial<Settings> = {}) => {
     setSettings({ ...settings, telemetryOff: enabled ? undefined : true, telemetryConsent: enabled ? true : undefined, ...more });
     setTelemetryEnabled(enabled);
+    // Turned off, this goes nowhere, as it should.
+    if (enabled) track("usage_data_enabled", { via: more.telemetryNoticeSeen ? "notice" : "settings" });
     if (user) void setAnalytics(enabled).catch(() => {});
   };
   return { ...choice, setEnabled };
