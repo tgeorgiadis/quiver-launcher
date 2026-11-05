@@ -42,6 +42,31 @@ test("an app removed in Android's settings offers Get again once Quiver comes ba
   }
 });
 
+test("an app removed in Android's settings while Quiver stayed in view offers Get again once Play finds it gone", async () => {
+  const s = await openPhone({ state: { library: state.library, installs: state.installs } });
+  try {
+    const { page } = s;
+    await page.locator('article[data-slug="test-port"] .card-open').first().click();
+    await page.locator(".detail-tabs").waitFor();
+    const play = page.locator("main").getByRole("button", { name: "Play", exact: true }).first();
+    await play.waitFor();
+    // Android still had it a moment ago, so the check as Quiver came into view found nothing; Play finds it gone.
+    await page.evaluate(() => {
+      const { invoke } = window.__TAURI_INTERNALS__;
+      window.__TAURI_INTERNALS__.invoke = (cmd, args) =>
+        cmd === "launch" ? Promise.reject("This app isn't installed on this device any more. Get it again to play it.") : cmd === "android_app_gone" ? Promise.resolve(args.folder === "test-port") : invoke(cmd, args);
+    });
+    await play.click();
+    const error = page.locator(".job-error", { hasText: "isn't installed on this device any more" }).first();
+    await error.waitFor();
+    await error.getByRole("button", { name: "Dismiss" }).click();
+    await page.locator("main").getByRole("button", { name: "Get", exact: true }).first().waitFor();
+    assert.equal(await page.locator("main").getByRole("button", { name: "Play", exact: true }).count(), 0, "Play, for an app that's gone");
+  } finally {
+    await s.close();
+  }
+});
+
 for (const [device, theme] of [
   ["Pixel 7", "dark"],
   ["Galaxy S8", "light"],

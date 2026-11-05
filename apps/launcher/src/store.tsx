@@ -1578,7 +1578,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
         () => (musicForGame(), track("app_launched", played)),
-        (e) => (fail(id, e), track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) }), captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) })),
+        (e) => {
+          fail(id, e);
+          track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) });
+          const report = () => captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) });
+          if (config.os !== "android") return report();
+          // Removed in Android's settings while Quiver stayed in view: its card offers Get again, and there's nothing to report.
+          void native.androidAppGone(install.folder, install.dir).then((gone) => (gone ? setInstalls(({ [id]: _, ...rest }) => rest) : report()), report);
+        },
       );
     },
     async reinstall(id) {
