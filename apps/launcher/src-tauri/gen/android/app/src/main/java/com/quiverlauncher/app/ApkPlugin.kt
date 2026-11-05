@@ -14,6 +14,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.result.ActivityResult
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.PackageInfoCompat
 import app.tauri.annotation.ActivityCallback
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
@@ -135,6 +136,11 @@ class ApkPlugin(private val activity: Activity) : Plugin(activity) {
       try {
         val file = File(path)
         val info = archiveInfo(path) ?: return@Thread invoke.reject("This file isn't an Android app (APK).")
+        // Android never replaces an app with an older one, and says so only in its own words.
+        val current = installed(info.packageName)
+        if (current != null && PackageInfoCompat.getLongVersionCode(current) > PackageInfoCompat.getLongVersionCode(info)) {
+          return@Thread invoke.reject("A newer copy of this app is already on this device, and Android won't replace it with an older one. To install this version, uninstall that copy in Android's settings first.")
+        }
         val installer = packages.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
         params.setAppPackageName(info.packageName)
