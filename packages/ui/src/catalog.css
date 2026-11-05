@@ -503,6 +503,8 @@
   border-radius: 16px;
   background: var(--ql-cover-1);
   box-shadow: 0 24px 60px var(--ql-card-shadow);
+  /* A finger's swipe across steps the slides (discover.tsx); up and down still scrolls the page. */
+  touch-action: pan-y pinch-zoom;
 }
 /*
  * Its frame, drawn over the art from outside what clips it: a border of the slides' own, under the art moving, and
@@ -683,7 +685,7 @@
   background: var(--ql-accent);
 }
 
-/* A phone: taller, the words across it, and the dots along its foot (a finger taps them; the arrows go). */
+/* A phone: taller, the words across it, and the dots along its foot (a finger swipes or taps them; the arrows go). */
 @media (max-width: 760px) {
   .featured-slides,
   .featured::after {
