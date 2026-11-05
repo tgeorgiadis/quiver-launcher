@@ -1553,7 +1553,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
         () => (musicForGame(), track("app_launched", played)),
-        (e) => (fail(id, e), track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) }), captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) })),
+        // Windows asked for administrator rights and the player said no.
+        (e) => void (e !== "cancelled" && (fail(id, e), track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) }), captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) }))),
       );
     },
     async reinstall(id) {

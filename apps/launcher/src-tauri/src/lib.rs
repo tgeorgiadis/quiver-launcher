@@ -4,6 +4,8 @@ mod apps_folder;
 mod browser;
 mod custom_art;
 mod device;
+#[cfg(windows)]
+mod elevate;
 mod flatpak;
 mod gamepad;
 mod host;
@@ -343,6 +345,10 @@ async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>
     start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default())
 }
 
+/// Waits for a started program to close; whether that could be told.
+#[cfg(not(target_os = "android"))]
+type Waiting = Box<dyn FnOnce() -> bool + Send>;
+
 #[cfg(not(target_os = "android"))]
 #[allow(clippy::too_many_arguments)]
 fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>, launch: &launch::LaunchOptions) -> Result<(), String> {
@@ -351,7 +357,7 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
-    sandbox::check(&program)
+    let spawned: std::io::Result<Waiting> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::host(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
@@ -360,13 +366,21 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
                 .stderr(std::process::Stdio::null())
                 .spawn()
         })
-        .map(|mut child| {
+        .map(|mut child| Box::new(move || child.wait().is_ok()) as Waiting);
+    // One that needs administrator rights: Windows asks the player, as a double click would.
+    #[cfg(windows)]
+    let spawned = spawned.or_else(|e| match e.raw_os_error() {
+        Some(elevate::REQUIRED) => elevate::start(&program, &args, &target.dir).map(|process| Box::new(move || process.is_some_and(|p| p.wait())) as Waiting),
+        _ => Err(e),
+    });
+    spawned
+        .map(|wait| {
             // Its play time: from now until it closes. A program that hands off to another and returns at once counts only its own time.
             let Some(id) = id else { return };
             let started = std::time::Instant::now();
             app.state::<Running>().started(&id);
             std::thread::spawn(move || {
-                let closed = child.wait().is_ok();
+                let closed = wait();
                 app.state::<Running>().closed(&id);
                 if closed {
                     let _ = app.emit("app-closed", Played { id, seconds: started.elapsed().as_secs() });
@@ -374,6 +388,9 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
             });
         })
         .map_err(|e| match e.kind() {
+            // No, at Windows' prompt for administrator rights.
+            #[cfg(windows)]
+            _ if e.raw_os_error() == Some(elevate::DECLINED) => "cancelled".into(),
             // Automatic found no Proton either; or the player chose Wine.
             std::io::ErrorKind::NotFound if wine && target.steam_proton => "This is a Windows app. Install Steam (it brings Proton) or Wine to play it on Linux.".into(),
             std::io::ErrorKind::NotFound if wine => "Wine isn't installed. Install it, or choose a Proton under Run with, in Settings or the app's launch options.".into(),
