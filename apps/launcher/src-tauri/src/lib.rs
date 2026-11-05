@@ -973,9 +973,9 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
                 flatpak::uninstall(&id);
             }
             #[cfg(not(target_os = "android"))]
-            trash::delete(&dir).or_else(|_| std::fs::remove_dir_all(&dir)).map_err(|e| e.to_string())?;
+            install::remove_install(&dir, |d| trash::delete(d).or_else(|_| std::fs::remove_dir_all(d))).map_err(|e| e.to_string())?;
             #[cfg(target_os = "android")]
-            std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+            install::remove_install(&dir, |d| std::fs::remove_dir_all(d)).map_err(|e| e.to_string())?;
         }
         Ok(())
     })

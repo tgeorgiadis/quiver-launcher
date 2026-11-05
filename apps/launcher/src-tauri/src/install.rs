@@ -250,6 +250,28 @@ pub fn may_remove(dir: &Path, adopted: bool) -> bool {
     dir.join(VERSION_FILE).is_file() || (adopted && dir.join("version.txt").is_file())
 }
 
+/// Removes an install's folder with `remove`. One cut short, by a file still in use say, can have taken the version
+/// file that says the folder is Quiver's: it gets that back, or the player couldn't remove the rest or install it again.
+pub fn remove_install(dir: &Path, remove: impl Fn(&Path) -> io::Result<()>) -> io::Result<()> {
+    let markers: Vec<_> = [VERSION_FILE, "version.txt"]
+        .into_iter()
+        .filter_map(|name| Some((dir.join(name), fs::read(dir.join(name)).ok()?)))
+        .collect();
+    // A file that went while it was being removed (an antivirus's doing, or the game's own) needs no second thought.
+    let removed = remove(dir).or_else(|e| if e.kind() == io::ErrorKind::NotFound { remove(dir) } else { Err(e) });
+    match removed {
+        Err(e) if dir.exists() => {
+            for (path, contents) in markers {
+                if !path.exists() {
+                    let _ = fs::write(path, contents);
+                }
+            }
+            Err(e)
+        }
+        _ => Ok(()),
+    }
+}
+
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
     let response = reqwest::Client::builder()
@@ -790,6 +812,78 @@ mod tests {
         fs::write(ours.join("game.exe"), "").unwrap();
         fs::write(ours.join(VERSION_FILE), "1.0").unwrap();
         assert!(may_install_into(&ours) && may_remove(&ours, false));
+    }
+
+    #[test]
+    fn a_removal_cut_short_still_leaves_quivers_folder() {
+        let apps = tempfile::tempdir().unwrap();
+        let dir = apps.path().join("Game");
+        fs::create_dir(&dir).unwrap();
+        fs::write(dir.join("game.exe"), "").unwrap();
+        fs::write(dir.join(VERSION_FILE), "v1.2").unwrap();
+        let failed = remove_install(&dir, |d| {
+            fs::remove_file(d.join(VERSION_FILE))?;
+            Err(io::ErrorKind::PermissionDenied.into())
+        });
+        assert_eq!(failed.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(fs::read_to_string(dir.join(VERSION_FILE)).unwrap(), "v1.2");
+        assert!(may_install_into(&dir) && may_remove(&dir, false));
+    }
+
+    #[test]
+    fn a_removal_cut_short_still_leaves_an_adopted_install() {
+        let apps = tempfile::tempdir().unwrap();
+        let dir = apps.path().join("Old");
+        fs::create_dir(&dir).unwrap();
+        fs::write(dir.join("game.exe"), "").unwrap();
+        fs::write(dir.join("version.txt"), "v1.0").unwrap();
+        let failed = remove_install(&dir, |d| {
+            fs::remove_file(d.join("version.txt"))?;
+            Err(io::ErrorKind::PermissionDenied.into())
+        });
+        assert!(failed.is_err());
+        assert!(may_remove(&dir, true));
+        assert!(!dir.join(VERSION_FILE).exists(), "still not one Quiver installed");
+    }
+
+    #[test]
+    fn a_file_gone_during_removal_is_no_failure() {
+        let apps = tempfile::tempdir().unwrap();
+        let dir = apps.path().join("Game");
+        fs::create_dir(&dir).unwrap();
+        fs::write(dir.join(VERSION_FILE), "v1.2").unwrap();
+        let tries = std::cell::Cell::new(0);
+        let removed = remove_install(&dir, |d| {
+            tries.set(tries.get() + 1);
+            if tries.get() == 1 {
+                return Err(io::ErrorKind::NotFound.into());
+            }
+            fs::remove_dir_all(d)
+        });
+        assert!(removed.is_ok());
+        assert_eq!(tries.get(), 2);
+        assert!(!dir.exists());
+        // The folder itself gone by the time it's removed: it's what was asked for.
+        assert!(remove_install(&dir, |d| fs::remove_dir_all(d)).is_ok());
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn a_file_in_use_keeps_the_folder_quivers() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let apps = tempfile::tempdir().unwrap();
+        let dir = apps.path().join("Game");
+        fs::create_dir(&dir).unwrap();
+        fs::write(dir.join(VERSION_FILE), "v1.2").unwrap();
+        fs::write(dir.join("game.exe"), "").unwrap();
+        // Open with no sharing, as a running game or a scanner can hold it.
+        let held = fs::OpenOptions::new().read(true).share_mode(0).open(dir.join("game.exe")).unwrap();
+        assert!(remove_install(&dir, |d| fs::remove_dir_all(d)).is_err());
+        assert!(may_install_into(&dir) && may_remove(&dir, false));
+        drop(held);
+        // Once it's let go, removing it again finishes the job.
+        assert!(remove_install(&dir, |d| fs::remove_dir_all(d)).is_ok());
+        assert!(!dir.exists());
     }
 
     #[test]
