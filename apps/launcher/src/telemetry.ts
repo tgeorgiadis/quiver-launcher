@@ -422,7 +422,21 @@ const expected = (error: unknown) => error === "cancelled" || error instanceof P
 export function captureFailure(step: string, error: unknown, properties?: Properties) {
   if (expected(error)) return;
   if (error instanceof Error) return report(error, { tags: { failure: step }, extra: properties });
-  report(new Error(messageOf(error)), { tags: { failure: step }, extra: properties, fingerprint: ["failure", step, reasonOf(error)] });
+  report(new Error(messageOf(error)), { tags: { failure: step }, extra: properties, fingerprint: ["failure", step, groupOf(error)] });
+}
+
+/**
+ * What says two failures are the same one: not the operating system's sentence, which comes in the player's language,
+ * but its error number; and not the versions in the message.
+ */
+function groupOf(error: unknown) {
+  const said = scrub(messageOf(error));
+  const os = said.match(/\(os error (\d+)\)/);
+  if (os) return `os error ${os[1]}`;
+  return said
+    .replace(/\bv?\d+(\.\d+)+\S*/g, "<version>")
+    .replace(/\b(version code|current) \d+/g, "$1 <version>")
+    .slice(0, 120);
 }
 
 /**

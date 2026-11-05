@@ -477,6 +477,31 @@ test("a failure from the Rust side is told apart by what it says, with what was 
   expect(scope).toEqual({ tags: { failure: "install" }, extra: { slug: "test-port" }, fingerprint: ["failure", "install", "Couldn't unpack <path>"] });
 });
 
+test.each([
+  ["an operating system's error, whatever language it's in", "Couldn't start C:\\a.exe: The requested operation requires elevation. (os error 740)", "Couldn't start C:\\b.exe: 要求された操作には管理者特権が必要です。 (os error 740)"],
+  ["versions", "Couldn't install v1.2.0-beta: it broke", "Couldn't install 3.14: it broke"],
+  ["Android's version codes", "INSTALL_FAILED_VERSION_DOWNGRADE: Update version code 92 is older than current 93.", "INSTALL_FAILED_VERSION_DOWNGRADE: Update version code 7 is older than current 12."],
+])("failures that differ only by %s group together", async (_, one, other) => {
+  const telemetry = await started();
+  telemetry.captureFailure("launch", one);
+  telemetry.captureFailure("launch", other);
+  await settle();
+  const [first, second] = sentry.captureException.mock.calls.map(([, scope]) => scope.fingerprint);
+  expect(first).toEqual(second);
+});
+
+test("different failures stay apart: another operating system error, another step, another message, another HTTP status", async () => {
+  const telemetry = await started();
+  telemetry.captureFailure("launch", "Couldn't start it: nope (os error 740)");
+  telemetry.captureFailure("launch", "Couldn't start it: nope (os error 5)");
+  telemetry.captureFailure("install", "Couldn't start it: nope (os error 740)");
+  telemetry.captureFailure("install", "HTTP status client error (404 Not Found)");
+  telemetry.captureFailure("install", "HTTP status client error (410 Gone)");
+  await settle();
+  const groups = sentry.captureException.mock.calls.map(([, scope]) => scope.fingerprint.join("|"));
+  expect(new Set(groups).size).toBe(5);
+});
+
 test("a failure that's a real error keeps it, and is grouped by its stack", async () => {
   const telemetry = await started();
   const error = new TypeError("x is undefined");
