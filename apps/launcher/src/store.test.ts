@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, noProgram, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -20,6 +20,12 @@ describe("locating an install", () => {
     expect(locatable("port", found, { error: "The download failed." })).toBe(false);
     expect(folderGone(gone)).toBe(true);
     expect(locatable("port", found, gone)).toBe(true);
+  });
+
+  it("knows when no program was found, which lets the player choose one", () => {
+    expect(noProgram({ error: "Couldn't find a program to start in this app's folder." })).toBe(true);
+    expect(noProgram(gone)).toBe(false);
+    expect(noProgram(undefined)).toBe(false);
   });
 
   it("isn't offered during a download, or for the player's own files", () => {

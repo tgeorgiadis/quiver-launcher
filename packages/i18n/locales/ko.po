@@ -1275,6 +1275,10 @@ msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인�
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "프로그램 선택…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
 msgstr "배경에서 재생할 음악 선택"
