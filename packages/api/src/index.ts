@@ -623,6 +623,13 @@ const fromGithub = (r: RawRelease): Release => ({
   })),
 });
 
+/**
+ * A release file of a GitHub repository, through GitHub's API (`fromGithub`'s asset id): with a token and
+ * `Accept: application/octet-stream`, the way a private repository's files download, where its browser link 404s.
+ * None for an id that isn't GitHub's.
+ */
+export const githubAsset = (base: string, repository: string, id: string) => (/^\d+$/.test(id) ? `${base}/repos/${repository}/releases/assets/${id}` : undefined);
+
 export function createGithub(base = "https://api.github.com", token?: string) {
   const auth: Record<string, string> = token?.trim() ? { Authorization: `Bearer ${token.trim()}` } : {};
   const fail = (response: Response) => githubError(response, Boolean(auth.Authorization));

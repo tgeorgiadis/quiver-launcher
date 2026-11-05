@@ -2345,8 +2345,8 @@ msgid "Layout"
 msgstr "레이아웃"
 
 #: ../../apps/launcher/src/github-token.tsx
-msgid "Leave every scope unticked: public releases need none."
-msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요."
+msgid "Leave every scope unticked: public releases need none. For a private repository's releases, tick repo."
+msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요. 비공개 저장소의 릴리스에는 repo를 선택하세요."
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx

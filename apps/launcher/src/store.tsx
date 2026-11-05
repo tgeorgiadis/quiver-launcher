@@ -7,7 +7,7 @@
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, githubAsset, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
@@ -1169,9 +1169,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       tried = { release, asset };
       const catalogFiles = settings.filesToAdd ?? [];
       const files = installFiles(was, catalogFiles, portableByDefault);
+      // A GitHub repository's file through GitHub's API, with the player's token, which a private repository's needs.
+      const viaApi = custom?.provider === "github" && githubToken ? githubAsset(config.githubApi, custom.repository, asset.id) : undefined;
       const done = await native.install({
         id: entry.id,
-        url: asset.url,
+        url: viaApi ?? asset.url,
+        ...(viaApi && { githubToken }),
         filename: asset.filename,
         // A file still in its own wait is checked against what Quiver saw of it, as any other.
         checksum: asset.checksum ?? asset.unverifiedChecksum,

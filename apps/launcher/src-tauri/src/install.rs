@@ -38,6 +38,11 @@ pub struct InstallRequest {
     pub preferred: Vec<String>,
     /// The program the app started with before an update.
     pub program: Option<String>,
+    /// The player's GitHub token, for a file of a GitHub repository asked for through GitHub's API: a private
+    /// repository's files come only that way. GitHub answers with a redirect to where the file is, which reqwest
+    /// follows without the token, as it leaves `Authorization` behind going to another host.
+    #[serde(default)]
+    pub github_token: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -274,11 +279,11 @@ pub fn remove_install(dir: &Path, remove: impl Fn(&Path) -> io::Result<()>) -> i
 
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
-    let response = reqwest::Client::builder()
-        .user_agent("QuiverLauncher/4")
-        .build()
-        .map_err(text)?
-        .get(&req.url)
+    let mut request = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(text)?.get(&req.url);
+    if let Some(token) = req.github_token.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+        request = request.bearer_auth(token).header(reqwest::header::ACCEPT, "application/octet-stream");
+    }
+    let response = request
         .send()
         .await
         .map_err(|_| "The download failed. Check your connection and try again.".to_string())?;
@@ -741,6 +746,64 @@ fn unrar_into(_file: &Path, _out: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A one-request HTTP server on this computer: what `answer` says to the request it gets, which goes to `seen`.
+    fn serve(answer: impl FnOnce(&str) -> String + Send + 'static) -> (u16, std::sync::mpsc::Receiver<String>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (seen, heard) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = [0u8; 8192];
+            let n = stream.read(&mut buf).unwrap();
+            let request = String::from_utf8_lossy(&buf[..n]).to_lowercase();
+            stream.write_all(answer(&request).as_bytes()).unwrap();
+            seen.send(request).unwrap();
+        });
+        (port, heard)
+    }
+
+    fn fetch(url: String, github_token: Option<&str>) -> Result<String, String> {
+        let req = InstallRequest {
+            id: "github:quiver/private".into(),
+            url,
+            filename: "game.zip".into(),
+            checksum: None,
+            folder: "private".into(),
+            dir: None,
+            files_to_add: vec![],
+            version: "v1.0.0".into(),
+            preferred: vec![],
+            program: None,
+            github_token: github_token.map(Into::into),
+        };
+        let dir = tempfile::tempdir().unwrap();
+        tauri::async_runtime::block_on(download(&req, &dir.path().join("game.zip"), &|_| {}))
+    }
+
+    #[test]
+    fn a_private_repositorys_file_comes_through_githubs_api_with_the_token_which_its_redirect_leaves_behind() {
+        let (file_port, file_saw) = serve(|_| "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhello".into());
+        // As GitHub's API: the file for the token, else as if there were no such repository.
+        let (api_port, api_saw) = serve(move |request| {
+            if request.contains("authorization: bearer secret") && request.contains("accept: application/octet-stream") {
+                format!("HTTP/1.1 302 Found\r\nLocation: http://localhost:{file_port}/file\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            } else {
+                "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into()
+            }
+        });
+        let sha = fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), Some(" secret "));
+        assert_eq!(sha.unwrap(), hex::encode(Sha256::digest(b"hello")));
+        assert!(api_saw.recv().unwrap().contains("authorization: bearer secret"));
+        assert!(!file_saw.recv().unwrap().contains("authorization"), "the token stays with GitHub's API");
+    }
+
+    #[test]
+    fn without_a_token_a_private_repositorys_file_is_missing() {
+        let (api_port, _) = serve(|_| "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".into());
+        assert_eq!(fetch(format!("http://127.0.0.1:{api_port}/repos/quiver/private/releases/assets/7"), None), Err(MISSING.into()));
+    }
 
     #[test]
     fn a_release_cant_bring_quivers_own_records() {
