@@ -3,6 +3,7 @@ mod android;
 mod apps_folder;
 mod browser;
 mod custom_art;
+mod device;
 mod flatpak;
 mod gamepad;
 mod host;
@@ -74,6 +75,12 @@ struct Config {
     steam_keyboard: bool,
     /// Steam is running Quiver, so Add to Steam can't work now (add_to_steam): the UI greys it out.
     steam_runs_us: bool,
+    /// The system's version, sent with usage data (device.rs).
+    os_version: Option<String>,
+    /// A Steam Deck, sent with usage data.
+    steam_deck: bool,
+    /// How this copy was installed, sent with usage data (update.rs).
+    package: &'static str,
 }
 
 /// Steam is running Quiver as one of its games, so it would overwrite a new shortcut as it closes.
@@ -114,6 +121,9 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         game_mode: keyboard::game_mode(|name| std::env::var(name).ok()),
         steam_keyboard: cfg!(target_os = "linux") && keyboard::offered(|name| std::env::var(name).ok()),
         steam_runs_us: steam_runs_us(),
+        os_version: device::os_version(),
+        steam_deck: device::steam_deck(|name| std::env::var(name).ok(), device::board_vendor()),
+        package: update::package(),
     }
 }
 

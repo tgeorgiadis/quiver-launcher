@@ -30,6 +30,12 @@ export type TelemetryContext = {
   version: string;
   os: string;
   arch: string;
+  osVersion?: string | null;
+  steamDeck?: boolean;
+  /** How this copy was installed: installer, portable, flatpak… */
+  package?: string;
+  /** Steam's Game Mode, or another Gamescope session. */
+  gameMode?: boolean;
   /** Folders and the OS user name, taken out of anything sent. */
   home?: string | null;
   user?: string | null;
@@ -147,6 +153,10 @@ function send(name: string, properties: Properties | undefined, ctx: TelemetryCo
     launcher_version: ctx.version,
     os: ctx.os,
     arch: ctx.arch,
+    os_version: ctx.osVersion ?? null,
+    steam_deck: Boolean(ctx.steamDeck),
+    package: ctx.package ?? null,
+    game_mode: Boolean(ctx.gameMode),
     ...properties,
     session_id: sessionId,
     // Google Analytics only counts someone as active with some time spent.
@@ -432,6 +442,26 @@ const messageOf = (error: unknown) => (error instanceof Problem ? error.english 
 /** A short, safe reason for a failure: the error's message without paths or names, at most 120 characters. */
 export function reasonOf(error: unknown) {
   return scrub(messageOf(error)).slice(0, 120);
+}
+
+/** What kind of failure it was, in a word: the reason's wording changes, and each app's says something different. */
+const FAILURE_KINDS: [string, RegExp][] = [
+  ["checksum_mismatch", /^mismatch$|doesn't match the file|checksum|sha-?256/i],
+  ["missing", /^missing$|was removed from|HTTP status client error \(404|\b404\b/i],
+  ["rate_limited", /HTTP status client error \(429|rate.?limit|too many requests|\b429\b/i],
+  ["disk_full", /no space left|not enough space|os error (28|112)\b/i],
+  ["permission", /permission denied|access is denied|os error (5|13)\b/i],
+  ["in_use", /being used by another process|os error (32|16|26)\b|resource busy|text file busy/i],
+  ["no_release", /no releases yet|no approved release|isn't available any more/i],
+  ["no_download", /no download for|no Windows installer|no files to download/i],
+  ["network", /check your connection|error sending request|timed? ?out|took too long|connection (closed|reset|refused|aborted)|dns error|error decoding response body|failed to fetch|networkerror|HTTP status server error/i],
+  ["not_found", /os error (2|3)\b|no such file|cannot find the (file|path)/i],
+];
+
+/** Which kind of failure this is, for counting them; "other" when it's none of the known ones. */
+export function failureKind(error: unknown) {
+  const message = messageOf(error);
+  return FAILURE_KINDS.find(([, pattern]) => pattern.test(message))?.[0] ?? "other";
 }
 
 const PATH = "<path>";

@@ -258,3 +258,24 @@ test("a saved GitHub token goes with every request to GitHub, and the limit is r
   expect(asked.at(-1)!.auth).toBeNull();
   await expect(createGithub("https://gh.test", "bad").rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
 });
+
+test("says once when neither address answers, and not when the other one does", async () => {
+  const lost: unknown[] = [];
+  const fell: unknown[] = [];
+  const fetch = (async () => {
+    throw new TypeError("Failed to fetch");
+  }) as typeof globalThis.fetch;
+  const client = createClient(DEFAULT_API, { fetch, onUnreachable: (e) => lost.push(e), onFallback: (e) => fell.push(e) });
+  await expect(client.facets()).rejects.toThrow("Failed to fetch");
+  await expect(client.facets()).rejects.toThrow("Failed to fetch");
+  expect(lost).toHaveLength(1);
+  expect(fell).toHaveLength(0);
+
+  const answered: unknown[] = [];
+  const other = (async (url: string) => {
+    if (url.startsWith(DEFAULT_API)) throw new TypeError("Failed to fetch");
+    return new Response("{}", { status: 200 });
+  }) as typeof globalThis.fetch;
+  await createClient(DEFAULT_API, { fetch: other, onUnreachable: (e) => answered.push(e) }).facets();
+  expect(answered).toHaveLength(0);
+});
