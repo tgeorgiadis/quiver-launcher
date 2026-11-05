@@ -39,6 +39,8 @@ class UrlArgs {
   lateinit var url: String
 }
 
+private const val NEWER_COPY = "A newer copy of this app is already on this device, and Android won't replace it with an older one. To install this version, uninstall that copy in Android's settings first."
+
 /**
  * Installs, starts and removes the Android apps Quiver downloads, through
  * the system's package installer. android.rs calls it.
@@ -139,7 +141,7 @@ class ApkPlugin(private val activity: Activity) : Plugin(activity) {
         // Android never replaces an app with an older one, and says so only in its own words.
         val current = installed(info.packageName)
         if (current != null && PackageInfoCompat.getLongVersionCode(current) > PackageInfoCompat.getLongVersionCode(info)) {
-          return@Thread invoke.reject("A newer copy of this app is already on this device, and Android won't replace it with an older one. To install this version, uninstall that copy in Android's settings first.")
+          return@Thread invoke.reject(NEWER_COPY)
         }
         val installer = packages.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
@@ -191,7 +193,18 @@ class ApkPlugin(private val activity: Activity) : Plugin(activity) {
         PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> invoke.reject("This app doesn't run on this device.")
         PackageInstaller.STATUS_FAILURE_STORAGE -> invoke.reject("There isn't enough space on this device to install it.")
         PackageInstaller.STATUS_FAILURE_BLOCKED -> invoke.reject("This device blocked installing the app.")
-        else -> invoke.reject("Android couldn't install the app: ${intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "no reason given"}.")
+        else -> {
+          val said = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "no reason given"
+          invoke.reject(
+            when {
+              // A newer copy uninstalled with its data kept isn't an installed app, so the check before installing can't see it.
+              "INSTALL_FAILED_VERSION_DOWNGRADE" in said && "DELETE_KEEP_DATA" in said ->
+                "Android kept the data of a newer copy of this app when it was uninstalled, and won't install an older one over it. Install a newer version, or remove what's left of that copy in Android's settings first."
+              "INSTALL_FAILED_VERSION_DOWNGRADE" in said -> NEWER_COPY
+              else -> "Android couldn't install the app: $said."
+            }
+          )
+        }
       }
     }
   }
