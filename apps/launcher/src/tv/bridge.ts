@@ -5,7 +5,8 @@
  * installs never both wait on the store's single release-file choice.
  */
 import type { LibraryArt, ProjectType } from "@quiverlauncher/api";
-import { hasUpdate, type CatalogEntry, type Install, type Job, type LibraryItem } from "../store";
+import { hasUpdate, updateFor, type CatalogEntry, type Install, type Job, type LibraryItem } from "../store";
+import { withPictures } from "../custom-art";
 
 export type TvState = "notInstalled" | "queued" | "downloading" | "installed" | "updateAvailable" | "updating" | "error";
 
@@ -29,8 +30,16 @@ export type TvApp = {
   /** Upstream's per-app update choice: undefined asks. */
   updates?: Install["updates"];
   lastPlayed?: number;
+  /** When it was installed (the launcher's; ms). */
+  installedAt?: number;
+  /** Seconds played, all told (the launcher's). */
+  playTime?: number;
+  /** The program Play starts, when the player picked one (the launcher's launch options). */
+  program?: string;
   addedAt?: number;
   consoles: string[];
+  /** The consoles the player gave it (an app's page, or Details → Console), over the catalog's; none is no console. */
+  ownConsoles?: string[];
   basedOn?: string;
   projectType: ProjectType;
   tags: string[];
@@ -61,8 +70,9 @@ function stateOf(entry: CatalogEntry, install: Install | undefined, job: Job | u
 export function toTvApp(entry: CatalogEntry, input: BridgeInput, item?: LibraryItem): TvApp {
   const install = input.installs[entry.id];
   const job = input.jobs[entry.id];
-  const cover = item?.overrides?.cover;
-  const art = { ...entry.libraryArt, ...(cover ? { header: cover, hero: cover } : {}), icon: entry.artwork };
+  // The player's own pictures over the catalog's, as the library shows them.
+  const own = item?.overrides ? withPictures(entry, item.overrides) : {};
+  const art = { ...(own.libraryArt ?? entry.libraryArt), icon: own.artwork ?? entry.artwork };
   const progress = job && !("error" in job) && job.total ? Math.min(1, job.received / job.total) : null;
   return {
     id: entry.id,
@@ -73,14 +83,18 @@ export function toTvApp(entry: CatalogEntry, input: BridgeInput, item?: LibraryI
     inLibrary: Boolean(item),
     state: stateOf(entry, install, job, input.queued?.has(entry.id) ?? false),
     installedVersion: install?.version,
-    latestVersion: entry.verified?.version,
+    latestVersion: updateFor(entry, install)?.version ?? entry.verified?.version,
     progress,
     phase: job && !("error" in job) ? job.phase : undefined,
     error: job && "error" in job ? job.error : undefined,
     updates: install?.updates,
     lastPlayed: install?.lastPlayed,
+    installedAt: install?.installedAt,
+    playTime: install?.playTime,
+    program: install?.launch?.executable,
     addedAt: item?.addedAt,
     consoles: entry.consoles ?? [],
+    ownConsoles: item?.overrides?.consoles,
     basedOn: entry.basedOn?.console,
     projectType: entry.projectType,
     tags: [...entry.tags, ...(item?.overrides?.tags ?? [])],
@@ -103,14 +117,6 @@ export function libraryApps(input: BridgeInput): TvApp[] {
  */
 export const isInstalled = (app: TvApp) =>
   app.state === "installed" || app.state === "updateAvailable" || app.state === "updating" || (app.state === "error" && Boolean(app.installedVersion));
-
-/**
- * A download or update has just finished: it was in progress and now isn't. Not while it's still
- * "updating", which counts as installed: noting it then changed the sidecar, which made new apps,
- * which noted it again, until React gave up (reinstalling the installed version froze Big Picture).
- */
-export const justInstalled = (before: TvState | undefined, app: TvApp) =>
-  (before === "downloading" || before === "updating") && app.state !== "downloading" && app.state !== "updating" && isInstalled(app);
 
 /** `done` holds everyone waiting on this install: who asked first, and anyone who asked again meanwhile. */
 /** What the library's tabs show: installed games, and ones in the library downloading for the first time (as Steam does). */

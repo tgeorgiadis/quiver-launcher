@@ -1,7 +1,5 @@
 /** What Discover and Downloads list (spec §8), and the remembered release file. Pure. */
-import type { Asset } from "@quiverlauncher/api";
 import { inLibraryView, isInstalled, type TvApp } from "../bridge";
-import type { TvSidecar } from "../data/sidecar";
 import { isBusy } from "./tileActions";
 
 /** Search (spec §8.3): every word of the query in the game's names or tags, any case. */
@@ -44,14 +42,14 @@ export type DownloadRow = { kind: "updateAll"; apps: TvApp[] } | { kind: "app"; 
  * Downloads: Update all (when there are updates), then what's downloading, what's waiting, what failed,
  * and what finished since `since` (this session), newest first.
  */
-export function downloadRows(apps: readonly TvApp[], data: TvSidecar, since: number): DownloadRow[] {
+export function downloadRows(apps: readonly TvApp[], since: number): DownloadRow[] {
   const updates = apps.filter((a) => a.state === "updateAvailable");
   const active = apps.filter((a) => a.state === "downloading" || a.state === "updating");
   const queued = apps.filter((a) => a.state === "queued");
   const failed = apps.filter((a) => a.state === "error");
   const done = apps
-    .filter((a) => isInstalled(a) && !isBusy(a) && a.state !== "error" && (data.apps[a.id]?.installedAt ?? 0) >= since)
-    .sort((a, b) => (data.apps[b.id]?.installedAt ?? 0) - (data.apps[a.id]?.installedAt ?? 0));
+    .filter((a) => isInstalled(a) && !isBusy(a) && a.state !== "error" && (a.installedAt ?? 0) >= since)
+    .sort((a, b) => (b.installedAt ?? 0) - (a.installedAt ?? 0));
   return [
     ...(updates.length ? [{ kind: "updateAll" as const, apps: updates }] : []),
     ...active.map((app) => ({ kind: "app" as const, app, status: "active" as const })),
@@ -61,10 +59,3 @@ export function downloadRows(apps: readonly TvApp[], data: TvSidecar, since: num
   ];
 }
 
-/** The file the player picked before, found again among a new release's (spec §4: never asked again); null when it's not clear which. */
-export function rememberedAsset(assets: readonly Asset[], pattern: string | undefined): Asset | null {
-  const wanted = pattern?.trim().toLowerCase();
-  if (!wanted) return null;
-  const matches = assets.filter((a) => a.filename.toLowerCase().includes(wanted));
-  return matches.length === 1 ? matches[0] : null;
-}

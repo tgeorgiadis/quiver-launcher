@@ -8,7 +8,7 @@ import { inLibraryView, type TvApp } from "../bridge";
 import { resolveConsole } from "../consoles/resolve";
 import { buildTabs, consoleTabId, cycleTab, keepTab } from "../consoles/tabs";
 import type { InputAction } from "../input/actions";
-import type { AllSort } from "../data/sidecar";
+import type { AllSort } from "../settings";
 import { TabStrip } from "./TabStrip";
 import { GridTab } from "./GridTab";
 import { HintBar } from "./HintBar";
@@ -31,12 +31,11 @@ export function sortApps(apps: TvApp[], sort: AllSort) {
 }
 
 export function Shell() {
-  const { bridge, data, consoles } = useTv();
-  const { settings } = data;
+  const { bridge, settings, consoles } = useTv();
 
   const consoleOf = useMemo(
-    () => new Map(bridge.apps.map((app) => [app.id, resolveConsole(app, data.apps[app.id]?.consoleOverride)])),
-    [bridge.apps, data.apps],
+    () => new Map(bridge.apps.map((app) => [app.id, resolveConsole(app)])),
+    [bridge.apps],
   );
   /** The library's tabs: installed games and first downloads. */
   const installed = useMemo(() => bridge.apps.filter(inLibraryView), [bridge.apps]);
@@ -88,7 +87,7 @@ export function Shell() {
    */
   const pending = useRef<{ tabId: string; until: number } | null>(null);
   const goToGame = (app: TvApp) => {
-    const tabId = consoleTabId(resolveConsole(app, data.apps[app.id]?.consoleOverride));
+    const tabId = consoleTabId(resolveConsole(app));
     memory.current.set(tabId, app.id);
     memory.current.set("all", app.id);
     pending.current = { tabId, until: Date.now() + 8000 };
@@ -138,7 +137,7 @@ export function Shell() {
   const shown = tab.kind === "downloads" ? null : focused;
   const openDetails = (app: TvApp) => setOverlay({ kind: "details", app });
   const toDownloads = () => go("downloads");
-  const consoleName = (app: TvApp) => consoles.get(consoleOf.get(app.id) ?? resolveConsole(app, data.apps[app.id]?.consoleOverride)).name;
+  const consoleName = (app: TvApp) => consoles.get(consoleOf.get(app.id) ?? resolveConsole(app)).name;
 
   return (
     <>

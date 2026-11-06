@@ -2,16 +2,14 @@
  * TV mode: a fullscreen, controller-first layer over the launcher, mounted around <App/> (main.tsx). The desktop
  * stays mounted underneath, inert, so both share one store and leaving TV mode finds the desktop as it was.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { native } from "../native";
 import { useLauncher } from "../store";
 import { DEFAULT_KEYS, DEFAULT_PAD, suspendSpatialNavigation, withDefaults } from "../spatial";
 import { usePadLabels, usePads } from "../pad-hints";
 import { tvNative } from "./tvNative";
-import { SidecarStore } from "./data/sidecar";
-import { useTvMode } from "./mode";
+import { useTvMode, useTvSettings } from "./mode";
 import { TvContext, type Tv, type InputFamily } from "./context";
 import { keyAction, padAction, type InputAction } from "./input/actions";
 import { RepeatFilter } from "./input/repeat";
@@ -19,8 +17,6 @@ import { InputGate } from "./input/gate";
 import { InputRouter } from "./input/router";
 import { ConsoleCatalog } from "./consoles/consoles";
 import { useBridge } from "./useBridge";
-import { justInstalled, type TvState } from "./bridge";
-import { withArtOverrides } from "./art/art";
 import { Shell } from "./views/Shell";
 import { usePlayFlow } from "./updates/PlayFlow";
 import { AssetPicker } from "./updates/AssetPicker";
@@ -30,27 +26,20 @@ import { useFailures } from "./programs/usePrograms";
 import { RomDialogDesktop, RomDialogTv } from "./programs/RomDialog";
 import "./tv.css";
 
-const io = { read: tvNative.readSidecar, write: tvNative.writeSidecar };
-
 export function TvHost({ children }: { children: ReactNode }) {
   const tv = useTvMode();
-  const [sidecar, setSidecar] = useState<SidecarStore | null>(null);
+  const { settings } = useTvSettings();
   const [debug, setDebug] = useState(false);
   // Games that fail right after starting, in both modes.
   useFailures();
   const turnOn = useCallback(() => tv.set(true), [tv]);
 
+  // Started with --tv-mode (a Steam shortcut's), or QUIVER_TV_DEBUG=1.
   useEffect(() => {
-    let cancelled = false;
-    const logError = (e: unknown) => void native.logError(`tv.json: ${String(e)}`).catch(() => {});
-    void SidecarStore.load(io, 500, logError).then(async (store) => {
-      if (cancelled) return;
-      setSidecar(store);
-      const args = (await tvNative.launchArgs().catch(() => null)) ?? { tvMode: false, debug: false };
-      setDebug(args.debug);
-      if (args.tvMode) turnOn();
-    });
-    return () => void (cancelled = true);
+    void tvNative.launchArgs().then((args) => {
+      setDebug(Boolean(args?.debug));
+      if (args?.tvMode) turnOn();
+    }, () => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -58,8 +47,8 @@ export function TvHost({ children }: { children: ReactNode }) {
       <div className="tv-desktop" inert={tv.open}>
         {children}
       </div>
-      {tv.open && sidecar && <TvMode sidecar={sidecar} debug={debug} exit={() => tv.set(false)} />}
-      {!tv.open && sidecar && <ControllerToast enabled={sidecar.settings.offerTvModeOnControllerConnect} onOpen={turnOn} />}
+      {tv.open && <TvMode debug={debug} exit={() => tv.set(false)} />}
+      {!tv.open && <ControllerToast enabled={settings.offerOnController} onOpen={turnOn} />}
       {!tv.open && <RomDialogDesktop />}
     </>
   );
@@ -79,13 +68,10 @@ function useWindowHeight() {
 const familyOf = (kind: string | undefined): InputFamily =>
   kind === "playstation" || kind === "nintendo" || kind === "steam" ? kind : "xbox";
 
-function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolean; exit: () => void }) {
+function TvMode({ debug, exit }: { debug: boolean; exit: () => void }) {
   const launcher = useLauncher();
-  const store = useBridge();
-  const data = useSyncExternalStore(sidecar.subscribe, () => sidecar.snapshot);
-  // The player's own pictures over the catalog's; everything else reads the bridge as it is.
-  const apps = useMemo(() => withArtOverrides(store.apps, data.apps), [store.apps, data.apps]);
-  const bridge = useMemo(() => ({ ...store, apps }), [store, apps]);
+  const bridge = useBridge();
+  const { settings, set: setSettings } = useTvSettings();
   const pads = usePads();
   const labels = usePadLabels();
   /** Whether a controller was pressed last, not a key: its kind (labels) can be told after the press. */
@@ -103,25 +89,16 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
   /** A game TV mode started is running: input is closed and animations rest. */
   const [inGame, setInGame] = useState(false);
   const height = useWindowHeight();
-  const scale = Math.max(0.6, (height / 720) * data.settings.uiScale);
+  const scale = Math.max(0.6, (height / 720) * (launcher.settings.scale ?? 1));
 
   const router = useMemo(() => new InputRouter(), []);
   const gate = useMemo(() => new InputGate(new RepeatFilter((e) => router.dispatch(e))), [router]);
   const consoles = useMemo(() => new ConsoleCatalog(launcher.consoles), [launcher.consoles]);
 
-  // When a download finishes, note when: Home's "Recently installed".
-  const states = useRef(new Map<string, TvState>());
-  useEffect(() => {
-    for (const app of bridge.apps) {
-      if (justInstalled(states.current.get(app.id), app)) sidecar.updateApp(app.id, { installedAt: Date.now() });
-      states.current.set(app.id, app.state);
-    }
-  }, [bridge.apps, sidecar]);
-
   // Start + Select closes the game being played (gamepad.rs), unless the player turned it off.
-  const closeCombo = data.settings.closeGameCombo;
+  const closeCombo = settings.closeGameCombo;
   useEffect(() => void tvNative.closeCombo(closeCombo).catch(() => {}), [closeCombo]);
-  const pointerWithSelect = data.settings.pointerWithSelect;
+  const pointerWithSelect = settings.pointerWithSelect;
   useEffect(() => void tvNative.pointer(pointerWithSelect).catch(() => {}), [pointerWithSelect]);
 
   // Keys and controllers only reach the window in front: take it.
@@ -130,7 +107,7 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
   }, []);
 
   // The chosen monitor (Settings → Screen).
-  const monitor = data.settings.monitor;
+  const monitor = settings.monitor;
   useEffect(() => {
     if (monitor) void tvNative.useMonitor(monitor).catch(() => {});
   }, [monitor]);
@@ -223,18 +200,15 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
     };
   }, [gate, router, debug]);
 
-  /** Starts the game (no more questions) and counts the play. */
-  const launch = (id: string) => {
-    sidecar.updateApp(id, (s) => ({ ...s, playCount: (s.playCount ?? 0) + 1 }));
-    void bridge.play(id);
-  };
-  const flow = usePlayFlow({ bridge, sidecar, data, launch });
+  /** Starts the game, no more questions. */
+  const launch = (id: string) => void bridge.play(id);
+  const flow = usePlayFlow({ bridge, settings, launch, decline: launcher.declineUpdate });
 
   const value: Tv = {
     bindings,
     labels,
-    sidecar,
-    data,
+    settings,
+    setSettings,
     router,
     family,
     bridge,
@@ -247,16 +221,13 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
       router.dispatch({ action, phase: "release" });
     },
     play: flow.play,
-    exit: () => {
-      void sidecar.flush();
-      exit();
-    },
+    exit,
   };
 
   return (
     <TvContext.Provider value={value}>
       <div
-        className={`tv-root${data.settings.reduceMotion ? " tv-reduce-motion" : ""}${pointer ? " tv-pointer" : ""}${inGame ? " tv-in-game" : ""}`}
+        className={`tv-root${settings.reduceMotion ? " tv-reduce-motion" : ""}${pointer ? " tv-pointer" : ""}${inGame ? " tv-in-game" : ""}`}
         style={{ "--u": `${scale}px` } as CSSProperties}
         role="application"
         aria-label="Quiver Launcher, TV mode"

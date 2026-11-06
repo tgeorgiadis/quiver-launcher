@@ -1,7 +1,7 @@
 /** What every TV mode view shares while it's open. */
 import { createContext, useContext, useEffect, useRef } from "react";
 import type { Bridge } from "./useBridge";
-import type { TvSidecar, SidecarStore } from "./data/sidecar";
+import type { TvSettings } from "./settings";
 import type { ConsoleCatalog } from "./consoles/consoles";
 import type { ControllerFamily, InputAction } from "./input/actions";
 import { LAYER, type InputHandler, type InputRouter, type Layer } from "./input/router";
@@ -16,16 +16,16 @@ export type Tv = {
   bindings: { keys: Bindings; pad: Bindings };
   /** What the controller used last calls its buttons. */
   labels: PadLabels | null;
-  sidecar: SidecarStore;
-  /** The sidecar now; a new object after every change. */
-  data: TvSidecar;
+  /** TV mode's settings (settings.ts), and changing some of them. */
+  settings: TvSettings;
+  setSettings(patch: Partial<TvSettings>): void;
   router: InputRouter;
   family: InputFamily;
   bridge: Bridge;
   consoles: ConsoleCatalog;
-  /** 1 at 720p, times the player's UI scale. */
+  /** 1 at 720p, times the launcher's interface size. */
   scale: number;
-  /** Play: through the update policy (it may ask, or update first), then starts the game and counts the play. */
+  /** Play: through the update policy (it may ask, or update first), then starts the game. */
   play(id: string): void;
   /** Controllers connected now, by name. */
   pads: string[];

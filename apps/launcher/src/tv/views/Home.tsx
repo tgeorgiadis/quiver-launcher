@@ -100,9 +100,9 @@ function cellAt(target: EventTarget) {
 }
 
 export function Home({ nav, onFocus, onGlobal, onDetails, onDownloads, consoleName }: Props) {
-  const { bridge, data, scale, pointer } = useTv();
+  const { bridge, settings, scale, pointer } = useTv();
   const actions = useTileActions(onDownloads);
-  const shelves = useMemo(() => homeShelves(bridge.apps, data), [bridge.apps, data]);
+  const shelves = useMemo(() => homeShelves(bridge.apps), [bridge.apps]);
   const lengths = shelves.map(rowLength);
   nav.reset(lengths);
   const [, setVersion] = useState(0);
@@ -117,8 +117,8 @@ export function Home({ nav, onFocus, onGlobal, onDetails, onDownloads, consoleNa
 
   const list = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    list.current?.querySelector(`[data-row="${nav.row}"]`)?.scrollIntoView({ block: "nearest", behavior: data.settings.reduceMotion ? "auto" : "smooth" });
-  }, [nav.row, data.settings.reduceMotion]);
+    list.current?.querySelector(`[data-row="${nav.row}"]`)?.scrollIntoView({ block: "nearest", behavior: settings.reduceMotion ? "auto" : "smooth" });
+  }, [nav.row, settings.reduceMotion]);
 
   useInputHandler({
     onAction(action) {

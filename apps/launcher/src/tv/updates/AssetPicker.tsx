@@ -1,36 +1,22 @@
 /**
- * Which download, when a release has several files for this computer (spec §4):
- * the store waits on its `choice`. The file picked before is taken again when
- * it's clear which it is; otherwise the player picks with the controller, and
- * that pick is remembered (upstream's own filter for it, in bigpicture.json).
+ * Which download, when a release has several files for this computer: the store waits on its `choice`, and
+ * remembers the pick for later releases itself (an install's `pick`), so this only asks.
  */
 import { useEffect, useState } from "react";
 import { FileArchive } from "lucide-react";
 import { useTv, useInputHandler } from "../context";
 import { LAYER } from "../input/router";
-import { assetFilterFor } from "../../assets";
 import { versionLabel } from "../../versions";
-import { rememberedAsset } from "../views/lists";
 
 const size = (bytes?: number) => (bytes ? `${(bytes / 1_048_576).toFixed(bytes < 10_485_760 ? 1 : 0)} MB` : "");
 
 export function AssetPicker() {
-  const { bridge, sidecar, data } = useTv();
+  const { bridge } = useTv();
   const choice = bridge.choice;
   const [index, setIndex] = useState(0);
-  const remembered = choice ? rememberedAsset(choice.assets, data.apps[choice.entry.id]?.assetPattern) : null;
+  useEffect(() => setIndex(0), [choice]);
 
-  useEffect(() => {
-    setIndex(0);
-    if (choice && remembered) choice.resolve(remembered);
-  }, [choice, remembered]);
-
-  const pick = (i: number) => {
-    if (!choice) return;
-    const asset = choice.assets[i];
-    sidecar.updateApp(choice.entry.id, { assetPattern: assetFilterFor(asset.filename, choice.assets.map((a) => a.filename)) });
-    choice.resolve(asset);
-  };
+  const pick = (i: number) => choice?.resolve(choice.assets[i]);
 
   useInputHandler(
     {
@@ -47,10 +33,10 @@ export function AssetPicker() {
       ],
     },
     LAYER.dialog,
-    Boolean(choice && !remembered),
+    Boolean(choice),
   );
 
-  if (!choice || remembered) return null;
+  if (!choice) return null;
   return (
     <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Choose a download">
       <section className="tv-dialog">

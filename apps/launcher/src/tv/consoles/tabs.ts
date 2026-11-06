@@ -3,7 +3,7 @@
  * installed game, then Discover and Downloads. A console with nothing
  * installed has no tab.
  */
-import type { TvSettings } from "../data/sidecar";
+import type { TvSettings } from "../settings";
 import type { ConsoleCatalog, ConsoleInfo } from "./consoles";
 
 export type TabKind = "home" | "all" | "console" | "discover" | "downloads";

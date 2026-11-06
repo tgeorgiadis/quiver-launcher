@@ -14,7 +14,7 @@ import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import { listSlug, listUrl, type Entry, type SharedList } from "@quiverlauncher/api";
 import { OS_NAMES, PlatformIcons, SourcedImage, heroSources, tagLabel } from "@quiverlauncher/ui";
-import { hasUpdate, tvModeOn, updateFor, useLauncher, type LibraryItem } from "./store";
+import { hasUpdate, updateFor, useLauncher, type LibraryItem } from "./store";
 import { haloMoved, pageArea, readyFocus } from "./spatial";
 import { usePads } from "./pad-hints";
 import { jumpLetters, letterOf } from "./letters";
@@ -109,10 +109,8 @@ export function LibraryPage({
   /** An app's page, beside the sidebar in the Sidebar layout. */
   page?: (entry: Entry) => ReactNode;
 }) {
-  const { client, config, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
+  const { client, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
   const { view, groupBy } = useLibraryView();
-  // TV mode's look: the cards as TV mode's own screen has them, and fewer stops on the way to them.
-  const tv = tvModeOn(settings, config);
   // The cards' Get or Play and opening, the same functions every render, so a card is drawn again only as its app changes.
   const latest = useRef({ action, onOpen });
   latest.current = { action, onOpen };
@@ -150,10 +148,10 @@ export function LibraryPage({
   const { user, unshareList } = useAccount();
   // The tab and filters as the player left them, across Browse and restarts (kept below).
   const [tab, setTab] = useState<Tab>(() => (keepsTab(settings.libraryTab, collections) ? settings.libraryTab! : "all"));
-  // A controller there as the library comes, or TV mode: ready to play.
+  // A controller there as the library comes: ready to play.
   const pads = usePads();
   useEffect(() => {
-    if ((pads.length && !settings.padOff) || tv) readyFocus();
+    if (pads.length && !settings.padOff) readyFocus();
   });
   const [editing, setEditing] = useState<Collection | null>(null);
   const [sharing, setSharing] = useState<Collection | null>(null);
@@ -667,13 +665,11 @@ export function LibraryPage({
         inLibrary={(id) => inLibrary.has(id)}
         action={cardAction}
         onOpen={cardOpen}
-        tv={tv}
       />
     ) : (
       <LibraryTile
         key={entry.id}
         entry={entry}
-        tv={tv}
         letter={byLetter ? letterFor(entry) : undefined}
         image={view.image}
         size={view.size}
@@ -704,8 +700,8 @@ export function LibraryPage({
     <>
       <LibraryBackground />
       {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
-      <div ref={bar} className={`library-bar${stacked || tv ? " stacked" : ""}`}>
-        {!stacked && !tv && (
+      <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}`}>
+        {!stacked && (
           <nav ref={tabRow} className="playlists" aria-label={t`Playlists`}>
             {tabs.map(([key, name]) => (
               <span key={key} className="playlist-tab">
@@ -732,7 +728,7 @@ export function LibraryPage({
         )}
         <div className="library-tools page-tools">
           {/* The tabs, folded: every tab and playlist in one menu, the open playlist's menu and Add a playlist beside it. */}
-          {(stacked || tv) && (
+          {stacked && (
             <span className="library-show">
               <span className="quiet-select">
                 <select aria-label={t({ message: "Show", comment: "Picks which library tab or playlist the library shows, where the tabs don't fit" })} value={collection || tabs.some(([key]) => key === tab) ? tab : "all"} onChange={(e) => setTab(e.target.value)}>
@@ -786,14 +782,12 @@ export function LibraryPage({
           <Popover label={t`View options`} icon={<LayoutGrid size={17} />} role="group" className="tool icon-only" panel="view-panel" align="end">
             {() => <ViewOptions groups={narrow} />}
           </Popover>
-          {!tv && (
-            <button className="primary add-app" onClick={onAdd}>
-              <Plus size={15} />{" "}
-              <span className="tool-label">
-                <Trans>Add an app</Trans>
-              </span>
-            </button>
-          )}
+          <button className="primary add-app" onClick={onAdd}>
+            <Plus size={15} />{" "}
+            <span className="tool-label">
+              <Trans>Add an app</Trans>
+            </span>
+          </button>
         </div>
       </div>
       {/* Filters: pills to pick from while open; the ones on stay, each removable, while it's closed. */}

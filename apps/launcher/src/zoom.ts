@@ -21,13 +21,11 @@ const NARROWEST_PAGE = 1060;
 export const nearestInterfaceSize = (scale: number) => INTERFACE_SIZES.reduce((best, size) => (Math.abs(size - scale) < Math.abs(best - scale) ? size : best));
 
 /**
- * The page's zoom: the interface size, and in TV mode a size larger again, read from across a room, and as much larger
- * as the window is past 1080p, which a 4K TV with no display scale of its own would otherwise show at half the size.
- * No further than the window has room for.
+ * The page's zoom: the interface size, no further than the window has room for. None in TV mode, which sizes itself
+ * by the screen's height with the interface size on top (tv/TvHost.tsx), 4K as 1080p is.
  */
-export function pageZoom(scale: number, tv: boolean, width: number, height: number) {
-  const wanted = tv ? scale * 1.15 * Math.max(1, Math.min(width / 1920, height / 1080)) : scale;
-  return Math.min(wanted, Math.max(1, width / NARROWEST_PAGE));
+export function pageZoom(scale: number, tv: boolean, width: number) {
+  return tv ? 1 : Math.min(scale, Math.max(1, width / NARROWEST_PAGE));
 }
 
 let zoomedBoxes: boolean | undefined;

@@ -9,6 +9,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type D
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
+import type { TvSettings } from "./tv/settings";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
@@ -552,6 +553,8 @@ export type Settings = {
   projectDetailsClosed?: boolean;
   /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */
   tvMode?: "on" | "off";
+  /** TV mode's own settings (tv/settings.ts), only those changed from the defaults. */
+  tv?: Partial<TvSettings>;
   fullscreen?: boolean;
   /** The system's title bar over the window; unset, the window's buttons are in the top bar instead. */
   systemTitleBar?: boolean;
@@ -835,7 +838,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {
-    const apply = () => document.documentElement.style.setProperty("zoom", String(pageZoom(settings.scale ?? 1, tv, window.innerWidth, window.innerHeight)));
+    const apply = () => document.documentElement.style.setProperty("zoom", String(pageZoom(settings.scale ?? 1, tv, window.innerWidth)));
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);

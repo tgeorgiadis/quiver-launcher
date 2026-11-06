@@ -9,8 +9,11 @@ import { useTv, useInputHandler } from "../context";
 import { LAYER } from "../input/router";
 import type { TvApp } from "../bridge";
 import { tvNative } from "../tvNative";
-import type { TvSettings } from "../data/sidecar";
-import { APPS, OTHER } from "../consoles/consoles";
+import type { TvSettings } from "../settings";
+import { OTHER } from "../consoles/consoles";
+import { useLauncher } from "../../store";
+import { native } from "../../native";
+import { INTERFACE_SIZES, nearestInterfaceSize } from "../../zoom";
 import { resolveConsole } from "../consoles/resolve";
 
 type Option<T> = { value: T; label: string };
@@ -22,7 +25,7 @@ const onOff: Option<boolean>[] = [
   { value: true, label: "On" },
   { value: false, label: "Off" },
 ];
-const SCALES = [0.75, 0.85, 1, 1.15, 1.3, 1.5].map((value) => ({ value, label: `${Math.round(value * 100)}%` }));
+const SCALES = INTERFACE_SIZES.map((value) => ({ value, label: `${Math.round(value * 100)}%` }));
 
 /** A list of rows with the focused one's value changeable left and right. */
 function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof typeof LAYER] = LAYER.overlay, active = true) {
@@ -88,24 +91,28 @@ function RowList({ rows, index, setIndex, step }: { rows: Row[]; index: number; 
   );
 }
 
-/** Which console tab a game goes in: the catalog's (Automatic), or one the player picks. */
+/**
+ * Which console tab a game goes in: the catalog's (Automatic), or one the player picks. The pick is the first of the
+ * app's own consoles, as its page in the launcher shows them; No console files it under Apps & Tools or Other.
+ */
 export function ConsolePicker({ app, onClose }: { app: TvApp; onClose: () => void }) {
-  const { consoles, sidecar, data } = useTv();
-  const current = data.apps[app.id]?.consoleOverride;
-  const automatic = consoles.get(resolveConsole(app)).name;
+  const { consoles } = useTv();
+  const { setConsoles } = useLauncher();
+  const own = app.ownConsoles;
+  const automatic = consoles.get(resolveConsole({ ...app, ownConsoles: undefined })).name;
   const rows: Row[] = useMemo(() => {
     const ids = [...consoles.ids()].map((id) => consoles.get(id)).sort(consoles.compare);
-    const pick = (id: string | undefined) => () => {
-      sidecar.updateApp(app.id, (s) => ({ ...s, consoleOverride: id }));
+    const chosen = own ?? app.consoles;
+    const pick = (consoles: string[] | undefined) => () => {
+      setConsoles(app.id, consoles);
       onClose();
     };
     return [
-      { kind: "action", label: `Automatic (${automatic})`, value: current ? "" : "✓", run: pick(undefined) },
-      ...[...ids, consoles.get(APPS), consoles.get(OTHER)].map(
-        (c): Row => ({ kind: "action", label: c.name, value: current === c.id ? "✓" : "", run: pick(c.id) }),
-      ),
+      { kind: "action", label: `Automatic (${automatic})`, value: own ? "" : "✓", run: pick(undefined) },
+      ...ids.map((c): Row => ({ kind: "action", label: c.name, value: own?.[0] === c.id ? "✓" : "", run: pick([c.id, ...chosen.filter((id) => id !== c.id)]) })),
+      { kind: "action", label: "No console", value: own && !own.length ? "✓" : "", run: pick([]) },
     ];
-  }, [consoles, sidecar, app.id, current, automatic, onClose]);
+  }, [consoles, setConsoles, app.id, app.consoles, own, automatic, onClose]);
   const list = useRows(rows, onClose, LAYER.dialog);
   return (
     <div className="tv-dialog-backdrop" role="dialog" aria-label={`Console for ${app.title}`}>
@@ -122,9 +129,9 @@ export function ConsolePicker({ app, onClose }: { app: TvApp; onClose: () => voi
 
 /** Games filed under Other (spec §7.2): pick each one's console. */
 function Unassigned({ onClose }: { onClose: () => void }) {
-  const { bridge, data } = useTv();
+  const { bridge } = useTv();
   const [picking, setPicking] = useState<TvApp | null>(null);
-  const games = bridge.apps.filter((a) => resolveConsole(a, data.apps[a.id]?.consoleOverride) === OTHER);
+  const games = bridge.apps.filter((a) => resolveConsole(a) === OTHER);
   const rows: Row[] = games.map((app) => ({ kind: "action", label: app.title, value: "Other", run: () => setPicking(app) }));
   const list = useRows(rows.length ? rows : [{ kind: "action", label: "Nothing here: every game has a console", run: onClose }], onClose, LAYER.overlay, !picking);
   return (
@@ -140,13 +147,13 @@ function Unassigned({ onClose }: { onClose: () => void }) {
 }
 
 export function Settings({ onClose }: { onClose: () => void }) {
-  const { sidecar, data, exit, bridge } = useTv();
-  const s = data.settings;
+  const { settings: s, setSettings, exit, bridge } = useTv();
+  const launcher = useLauncher();
   const [screen, setScreen] = useState<"main" | "unassigned">("main");
   const [monitors, setMonitors] = useState<string[]>([]);
   useEffect(() => void tvNative.monitors().then((m) => setMonitors(Array.isArray(m) ? m : []), () => {}), []);
-  const set = <K extends keyof TvSettings>(key: K) => (value: unknown) => sidecar.setSettings({ [key]: value } as Partial<TvSettings>);
-  const unassigned = bridge.apps.filter((a) => resolveConsole(a, data.apps[a.id]?.consoleOverride) === OTHER).length;
+  const set = <K extends keyof TvSettings>(key: K) => (value: unknown) => setSettings({ [key]: value } as Partial<TvSettings>);
+  const unassigned = bridge.apps.filter((a) => resolveConsole(a) === OTHER).length;
 
   const rows: Row[] = [
     {
@@ -177,8 +184,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
       label: "Offer TV mode when a controller connects",
       detail: "Outside TV mode, a note offers it when you turn a controller on",
       options: onOff,
-      value: s.offerTvModeOnControllerConnect,
-      set: set("offerTvModeOnControllerConnect"),
+      value: s.offerOnController,
+      set: set("offerOnController"),
     },
     { kind: "choice", label: "Home tab", options: onOff, value: s.showHomeTab, set: set("showHomeTab") },
     {
@@ -202,7 +209,14 @@ export function Settings({ onClose }: { onClose: () => void }) {
       value: s.allSort,
       set: set("allSort"),
     },
-    { kind: "choice", label: "Size", detail: "Everything bigger or smaller, on top of fitting the screen", options: SCALES, value: s.uiScale, set: set("uiScale") },
+    {
+      kind: "choice",
+      label: "Size",
+      detail: "Everything bigger or smaller, on top of fitting the screen: the launcher's interface size",
+      options: SCALES,
+      value: nearestInterfaceSize(launcher.settings.scale ?? 1),
+      set: (value) => launcher.setSettings((settings) => ({ ...settings, scale: value as number })),
+    },
     { kind: "choice", label: "Reduce motion", detail: "No zooming, sliding or sweeping", options: onOff, value: s.reduceMotion, set: set("reduceMotion") },
     {
       kind: "choice",
@@ -237,6 +251,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
     },
     { kind: "action", label: "Unassigned games", detail: "Give games under Other their console", value: String(unassigned), run: () => setScreen("unassigned") },
     { kind: "action", label: "Switch to desktop mode", detail: "Signing in and accounts are there too", run: exit },
+    // Steam's Game Mode has no window buttons: the way out of Quiver, back to Steam.
+    ...(launcher.config.gameMode ? [{ kind: "action" as const, label: "Close Quiver", detail: "Back to Steam", run: () => void native.closeWindow() }] : []),
   ];
   const list = useRows(rows, onClose, LAYER.overlay, screen === "main");
 

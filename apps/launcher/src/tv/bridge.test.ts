@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogEntry, Install, LibraryItem } from "../store";
-import { InstallQueue, isInstalled, justInstalled, libraryApps, toTvApp, type BridgeInput } from "./bridge";
+import { InstallQueue, isInstalled, libraryApps, toTvApp, type BridgeInput } from "./bridge";
 
 const entry = (id: string, over: Partial<CatalogEntry> = {}): CatalogEntry =>
   ({
@@ -113,23 +113,16 @@ describe("libraryApps", () => {
     expect(apps.filter(isInstalled).map((a) => a.id)).toEqual(["a", "b", "c"]);
   });
 
-  it("notes an install once it has finished, not while it's still updating", () => {
-    const [updating] = libraryApps(
+  it("shows what the launcher keeps: install and play times, the program picked, the player's consoles and pictures", () => {
+    const [app] = libraryApps(
       input({
-        library: [item("a")],
+        library: [item("a", { overrides: { consoles: ["gc"], pictures: { box: "https://me/box", logo: "https://me/logo" } } })],
         catalog: { a: entry("a") },
-        installs: { a: install() },
-        jobs: { a: { id: "a", phase: "downloading", received: 0, total: null } },
+        installs: { a: install({ installedAt: 5, playTime: 90, launch: { executable: "Game.exe" } }) },
       }),
     );
-    const [done] = libraryApps(input({ library: [item("a")], catalog: { a: entry("a") }, installs: { a: install() } }));
-    expect(updating.state).toBe("updating");
-    // Reinstalling the installed version: "updating" again and again must not count (it looped).
-    expect(justInstalled("updating", updating)).toBe(false);
-    expect(justInstalled("updateAvailable", updating)).toBe(false);
-    expect(justInstalled("updating", done)).toBe(true);
-    expect(justInstalled("downloading", done)).toBe(true);
-    expect(justInstalled("installed", done)).toBe(false);
+    expect(app).toMatchObject({ installedAt: 5, playTime: 90, program: "Game.exe", ownConsoles: ["gc"] });
+    expect(app.art).toMatchObject({ capsule: "https://me/box", logo: "https://me/logo", hero: "https://art/a/hero.png", icon: "https://art/a/icon.png" });
   });
 });
 

@@ -12,6 +12,8 @@ import type { TvApp } from "../bridge";
 import { isInstalled } from "../bridge";
 import { resolveConsole } from "../consoles/resolve";
 import { native } from "../../native";
+import { useLauncher } from "../../store";
+import { playTimeLabel } from "../../sidebar";
 import { versionLabel } from "../../versions";
 import { GameChips, GameLogo, playedLabel } from "./GameHeader";
 import { ConsolePicker } from "./Settings";
@@ -93,14 +95,14 @@ function VersionPicker({ app, onClose }: { app: TvApp; onClose: () => void }) {
 
 /** `app` as it was opened; shown live from the library when it's in it (a game from Discover may not be). */
 export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => void }) {
-  const { bridge, play, consoles, data, router, sidecar } = useTv();
+  const { bridge, play, consoles, router } = useTv();
+  const { installs, setLaunch } = useLauncher();
   const app = bridge.apps.find((a) => a.id === opened.id) ?? bridge.view(opened.entry);
   const [sub, setSub] = useState<"version" | "console" | null>(null);
   const [index, setIndex] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const installed = isInstalled(app) && app.installedVersion;
-  const consoleName = consoles.get(resolveConsole(app, data.apps[app.id]?.consoleOverride)).name;
-  const plays = data.apps[app.id]?.playCount ?? 0;
+  const consoleName = consoles.get(resolveConsole(app)).name;
 
   const buttons: Button[] = [
     ...(installed ? [{ id: "play", label: "Play", icon: <Play />, run: () => play(app.id) }] : []),
@@ -110,15 +112,16 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
     ...(app.state === "updateAvailable" ? [{ id: "update", label: `Update to ${versionLabel(app.latestVersion)}`, icon: <ArrowUpCircle />, run: () => void bridge.update(app.id) }] : []),
     ...(app.slug && !isBusy(app) ? [{ id: "version", label: "Change version", icon: <History />, run: () => setSub("version") }] : []),
     ...(app.inLibrary ? [{ id: "console", label: "Console", icon: <Gamepad2 />, run: () => setSub("console") }] : []),
-    ...(data.apps[app.id]?.program
+    ...(app.program && installs[app.id]
       ? [
           {
             id: "program",
             label: "Change program",
             icon: <SquareTerminal />,
             run: () => {
-              sidecar.updateApp(app.id, ({ program: _, ...rest }) => rest);
-              setNotice(`It started ${data.apps[app.id]?.program}. The next Play asks which program starts it.`);
+              const { executable: _, ...launch } = installs[app.id].launch ?? {};
+              setLaunch(app.id, launch);
+              setNotice(`It started ${app.program}. The next Play asks which program starts it.`);
             },
           },
         ]
@@ -213,12 +216,10 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
               <dd>{playedLabel(app.lastPlayed).replace(/^Played /, "")}</dd>
             </div>
           )}
-          {plays > 0 && (
+          {app.playTime !== undefined && (
             <div>
-              <dt>Played</dt>
-              <dd>
-                {plays} {plays === 1 ? "time" : "times"}
-              </dd>
+              <dt>Play time</dt>
+              <dd>{playTimeLabel(app.playTime)}</dd>
             </div>
           )}
         </dl>

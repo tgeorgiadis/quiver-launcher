@@ -23,7 +23,9 @@ const app = (over: Partial<Resolvable> = {}): Resolvable => ({ consoles: [], pro
 
 describe("resolveConsole", () => {
   it("puts the player's choice first", () => {
-    expect(resolveConsole(app({ basedOn: "n64", consoles: ["n64"] }), "pc")).toBe("pc");
+    expect(resolveConsole(app({ basedOn: "n64", consoles: ["n64"], ownConsoles: ["pc"] }))).toBe("pc");
+    expect(resolveConsole(app({ basedOn: "n64", consoles: ["n64"], ownConsoles: [] }))).toBe(OTHER);
+    expect(resolveConsole(app({ projectType: "tool", ownConsoles: [] }))).toBe(APPS);
   });
 
   it("uses the console version the app is based on before its games' consoles", () => {

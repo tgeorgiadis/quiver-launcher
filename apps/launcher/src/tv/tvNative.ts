@@ -2,10 +2,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
 export const tvNative = {
-  /** tv.json from the data folder; null when there's none yet or it's unreadable. */
-  readSidecar: () => invoke<unknown>("tv_read_sidecar"),
-  /** Replaces tv.json atomically. */
-  writeSidecar: (value: unknown) => invoke<void>("tv_write_sidecar", { value }),
   /** Whether the launcher was started with --tv-mode, and QUIVER_TV_DEBUG (an input overlay for testing controllers). */
   launchArgs: () => invoke<{ tvMode: boolean; debug: boolean }>("tv_launch_args"),
   /** Brings the window in front with the keyboard; resolves to whether it's focused now. */

@@ -1372,8 +1372,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            tv::tv_read_sidecar,
-            tv::tv_write_sidecar,
             tv::tv_launch_args,
             tv::tv_focus,
             tv::tv_use_monitor,

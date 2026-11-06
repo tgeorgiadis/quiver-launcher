@@ -1,28 +1,7 @@
 /**
- * Artwork (spec §10, translated for v4 in PLAN-v4 §7). First found wins:
- * the player's own pick in bigpicture.json, then upstream's own cover (already
- * in the app's header and hero), then the catalog's library art; tiles without
- * a 2:3 picture get a stand-in drawn from the app's icon. Pure.
+ * Artwork: the player's own pictures (an app's page → Pictures), then the catalog's library art, both already in
+ * the app (bridge.ts); tiles without a 2:3 picture get a stand-in drawn from the app's icon. Pure.
  */
-import type { TvApp } from "../bridge";
-import type { TvAppState } from "../data/sidecar";
-
-/** Apps with the player's own pictures (Details → Change artwork) over the catalog's. Unchanged apps stay the same objects. */
-export function withArtOverrides(apps: readonly TvApp[], states: Record<string, TvAppState>): TvApp[] {
-  return apps.map((app) => {
-    const own = states[app.id]?.art;
-    if (!own?.grid && !own?.hero && !own?.logo) return app;
-    return {
-      ...app,
-      art: {
-        ...app.art,
-        ...(own.grid ? { capsule: own.grid } : {}),
-        ...(own.hero ? { hero: own.hero } : {}),
-        ...(own.logo ? { logo: own.logo } : {}),
-      },
-    };
-  });
-}
 
 /**
  * The two colours an icon is mostly made of, for a stand-in tile's gradient: the

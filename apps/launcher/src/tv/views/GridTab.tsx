@@ -68,7 +68,7 @@ const tileIndex = (target: EventTarget) => {
 };
 
 export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetails, onDownloads, active = true, onEdge, onNearEnd, onGet, onPointerFocus, empty }: Props) {
-  const { scale, data, pointer } = useTv();
+  const { scale, settings, pointer } = useTv();
   const actions = useTileActions(onDownloads, onGet);
   const scroller = useRef<HTMLDivElement>(null);
   const { width, height } = useElementSize(scroller);
@@ -106,8 +106,8 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
     else if (target > maxTop) target = maxTop;
     else if (target < minTop) target = minTop;
     target = Math.max(0, target);
-    if (Math.abs(target - el.scrollTop) > 1) el.scrollTo({ top: target, behavior: data.settings.reduceMotion ? "auto" : "smooth" });
-  }, [row, height, m.rowH, m.tileH, m.padY, data.settings.reduceMotion]);
+    if (Math.abs(target - el.scrollTop) > 1) el.scrollTo({ top: target, behavior: settings.reduceMotion ? "auto" : "smooth" });
+  }, [row, height, m.rowH, m.tileH, m.padY, settings.reduceMotion]);
 
   const rows = Math.ceil(apps.length / m.columns);
   const firstRow = Math.max(0, Math.floor(scrollTop / m.rowH) - 2);

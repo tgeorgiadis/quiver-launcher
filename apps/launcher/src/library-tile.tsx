@@ -24,7 +24,7 @@ import { VersionsDialog, foldersOn } from "./detail";
 import { native, type Config } from "./native";
 import { CardArt, artSizes } from "./library-view";
 import { CopyStatus, PlaylistPicker, Popover } from "./library";
-import { CardMenu, GameMenu } from "./card-menu";
+import { CardMenu } from "./card-menu";
 import { gameVersionLabel } from "./game";
 import type { Stack } from "./group";
 import type { CardImage, CardSize, NameOrder } from "./view";
@@ -127,11 +127,6 @@ type TileProps = {
   onOpen: (entry: Entry) => void;
   /** The letter it files under in a library by name, for the triggers' jumps and the letters beside it. */
   letter?: string;
-  /**
-   * In TV mode's library: on focus its buttons alone (and a withdrawn release's why), the facts and the small
-   * buttons being for a mouse, and small from across a room; its menu from Options or a right-click.
-   */
-  tv?: boolean;
 };
 
 /**
@@ -158,7 +153,6 @@ const Tile = memo(function Tile({
   action,
   onOpen,
   letter,
-  tv = false,
   os,
   install,
   job,
@@ -234,8 +228,6 @@ const Tile = memo(function Tile({
       data-withdrawn={pulled ? "" : undefined}
       data-round={round || undefined}
     >
-      {/* TV mode's has no ⋯ button (a mouse's), and its menu, closed, gives the focus back to the card. */}
-      {tv && inLibrary && <GameMenu entry={entry} onOpen={open} target={() => card.current} bare where="card" />}
       <button type="button" className="card-open" onClick={open} aria-label={pulled ? t`${name}, ${pulledLabel} was withdrawn` : name}>
         <span className="card-cover">{cover}</span>
         <span className="card-body">
@@ -268,85 +260,79 @@ const Tile = memo(function Tile({
       </button>
       <div className="tile-overlay">
         {/* Its page in the catalog, in the top left corner, with Browse's compass, as Continue playing has it: not only from its menu. */}
-        {!tv && (
-          <button type="button" className="tile-icon tile-page" title={t`See it in the catalog`} onClick={open}>
-            <Compass size={17} />
-            <span className="sr-only">
-              <Trans>See {name} in the catalog</Trans>
-            </span>
-          </button>
-        )}
+        <button type="button" className="tile-icon tile-page" title={t`See it in the catalog`} onClick={open}>
+          <Compass size={17} />
+          <span className="sr-only">
+            <Trans>See {name} in the catalog</Trans>
+          </span>
+        </button>
         {/* A withdrawn release: why, in place of the rest, which the app's page has. */}
-        {(!tv || pulled) && (
-          <div className="tile-facts">
-            {pulled ? (
-              <span className="tile-withdrawn">
-                <strong>
-                  <Trans>{pulledLabel} was withdrawn.</Trans>
-                </strong>{" "}
-                {pulled.reason}
+        <div className="tile-facts">
+          {pulled ? (
+            <span className="tile-withdrawn">
+              <strong>
+                <Trans>{pulledLabel} was withdrawn.</Trans>
+              </strong>{" "}
+              {pulled.reason}
+            </span>
+          ) : (
+            <>
+              <span className="card-status">
+                <CopyStatus entry={entry} inLibrary={inLibrary} />
               </span>
-            ) : (
-              <>
-                <span className="card-status">
-                  <CopyStatus entry={entry} inLibrary={inLibrary} />
+              {install && (
+                <span>
+                  <Trans>Installed {installedLabel}</Trans>
                 </span>
-                {install && (
-                  <span>
-                    <Trans>Installed {installedLabel}</Trans>
-                  </span>
-                )}
-                {verified && (
-                  <span>
-                    <Trans>Verified {verifiedLabel}</Trans>
-                  </span>
-                )}
-                {newer && (
-                  <span className="tile-unverified">
-                    <Trans>{newerLabel} not verified yet</Trans>
-                  </span>
-                )}
-                {install?.unverified && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`This version isn't verified`}</span>}
-                {pinned && (
-                  <span>
-                    <Trans>Staying on {installedLabel}</Trans>
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-        )}
-        {!tv && (
-          <div className="tile-icons">
-            {update && !busy && !pulled && (
-              <button type="button" className="tile-icon tile-icon-update" title={t`Update to ${updateLabel}`} onClick={() => get(latest)}>
-                <CloudDownload size={17} />
-                <span className="sr-only">
-                  <Trans>Update to {updateLabel}</Trans>
+              )}
+              {verified && (
+                <span>
+                  <Trans>Verified {verifiedLabel}</Trans>
                 </span>
-              </button>
-            )}
-            {install && foldersOn(os) && (
-              <button
-                type="button"
-                className="tile-icon"
-                title={t`Open folder`}
-                onClick={() => void native.openFolder(entry.id).catch((e) => now.current.setNotice(String(e), { stays: true }))}
-              >
-                <FolderOpen size={17} />
-                <span className="sr-only">
-                  <Trans>Open folder</Trans>
+              )}
+              {newer && (
+                <span className="tile-unverified">
+                  <Trans>{newerLabel} not verified yet</Trans>
                 </span>
-              </button>
-            )}
-            {inLibrary && (
-              <>
-                <PlaylistPicker id={entry.id} />
-                <CardMenu entry={entry} onOpen={open} />
-              </>
-            )}
-          </div>
-        )}
+              )}
+              {install?.unverified && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`This version isn't verified`}</span>}
+              {pinned && (
+                <span>
+                  <Trans>Staying on {installedLabel}</Trans>
+                </span>
+              )}
+            </>
+          )}
+        </div>
+        <div className="tile-icons">
+          {update && !busy && !pulled && (
+            <button type="button" className="tile-icon tile-icon-update" title={t`Update to ${updateLabel}`} onClick={() => get(latest)}>
+              <CloudDownload size={17} />
+              <span className="sr-only">
+                <Trans>Update to {updateLabel}</Trans>
+              </span>
+            </button>
+          )}
+          {install && foldersOn(os) && (
+            <button
+              type="button"
+              className="tile-icon"
+              title={t`Open folder`}
+              onClick={() => void native.openFolder(entry.id).catch((e) => now.current.setNotice(String(e), { stays: true }))}
+            >
+              <FolderOpen size={17} />
+              <span className="sr-only">
+                <Trans>Open folder</Trans>
+              </span>
+            </button>
+          )}
+          {inLibrary && (
+            <>
+              <PlaylistPicker id={entry.id} />
+              <CardMenu entry={entry} onOpen={open} />
+            </>
+          )}
+        </div>
         <div className="tile-main">
           {busy ? (
             action(entry)
@@ -560,7 +546,6 @@ const Game = memo(
     action,
     onOpen,
     letter,
-    tv = false,
     copy,
     gettable,
     ready,
@@ -642,7 +627,7 @@ const Game = memo(
           )}
         </Popover>
         <div className="tile-overlay">
-          {!tv && ready && (
+          {ready && (
             <div className="tile-facts">
               <span className="card-status">
                 <CopyStatus entry={ready} inLibrary={inLibrary(ready.id)} />
@@ -684,7 +669,6 @@ const Game = memo(
     a.marks === b.marks &&
     a.details === b.details &&
     a.letter === b.letter &&
-    a.tv === b.tv &&
     a.consoleNames === b.consoleNames &&
     a.action === b.action &&
     a.onOpen === b.onOpen,

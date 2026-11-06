@@ -45,9 +45,9 @@ function hintsFor(row: DownloadRow | undefined, back?: Back): ButtonHint[] {
 }
 
 export function Downloads({ onFocus, onGlobal, back, onDetails }: Props) {
-  const { bridge, data } = useTv();
+  const { bridge } = useTv();
   const actions = useTileActions(() => {});
-  const rows = useMemo(() => downloadRows(bridge.apps, data, SESSION_START), [bridge.apps, data]);
+  const rows = useMemo(() => downloadRows(bridge.apps, SESSION_START), [bridge.apps]);
   // Focus follows the row's app, not its place: rows move as downloads finish.
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const keyOf = (r: DownloadRow) => (r.kind === "updateAll" ? "updateAll" : r.app.id);

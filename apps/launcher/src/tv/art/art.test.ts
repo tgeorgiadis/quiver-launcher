@@ -1,22 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TvApp } from "../bridge";
-import { dominantColors, withArtOverrides } from "./art";
-
-const app = (id: string) => ({ id, art: { capsule: `cat/${id}.jpg`, hero: `hero/${id}.jpg`, logo: `logo/${id}.png`, icon: `icon/${id}.png` } }) as TvApp;
-
-describe("withArtOverrides", () => {
-  it("puts the player's own pictures over the catalog's, picture by picture", () => {
-    const [a] = withArtOverrides([app("a")], { a: { art: { grid: "C:/mine.png" } } });
-    expect(a.art).toEqual({ capsule: "C:/mine.png", hero: "hero/a.jpg", logo: "logo/a.png", icon: "icon/a.png" });
-  });
-
-  it("leaves apps without their own pictures as the same objects", () => {
-    const apps = [app("a"), app("b")];
-    const out = withArtOverrides(apps, { b: { playCount: 3, art: {} } });
-    expect(out[0]).toBe(apps[0]);
-    expect(out[1]).toBe(apps[1]);
-  });
-});
+import { dominantColors } from "./art";
 
 describe("dominantColors", () => {
   const pixels = (...colors: [number, number, number, number, number][]) =>

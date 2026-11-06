@@ -55,8 +55,6 @@ const sameDetails = (a: readonly CardDetail[], b: readonly CardDetail[]) => a.le
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
 export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, byGame: false, details: ["subtitle"] };
-/** TV mode's look (tvModeOn), over the player's own view, which stays saved for when it's left. */
-export const TV_VIEW: Pick<LibraryView, "layout" | "image" | "size"> = { layout: "grid", image: "box", size: "large" };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const LAYOUTS: [Layout, MessageDescriptor][] = [

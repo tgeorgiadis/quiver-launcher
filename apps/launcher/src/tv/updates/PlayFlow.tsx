@@ -10,7 +10,7 @@ import { AlertTriangle, ArrowUpCircle } from "lucide-react";
 import { useTv, useInputHandler } from "../context";
 import type { TvApp } from "../bridge";
 import type { Bridge } from "../useBridge";
-import type { TvSidecar, SidecarStore } from "../data/sidecar";
+import type { TvSettings } from "../settings";
 import type { InputAction } from "../input/actions";
 import { LAYER, type ButtonHint } from "../input/router";
 import { versionLabel } from "../../versions";
@@ -26,14 +26,14 @@ type Flow =
 
 const bare = (version = "") => version.trim().replace(/^v/i, "");
 
-export function usePlayFlow({ bridge, sidecar, data, launch }: { bridge: Bridge; sidecar: SidecarStore; data: TvSidecar; launch: (id: string) => void }) {
+export function usePlayFlow({ bridge, settings, launch, decline }: { bridge: Bridge; settings: TvSettings; launch: (id: string) => void; decline: (id: string, version: string) => void }) {
   const [flow, setFlowState] = useState<Flow>(null);
   // Async steps check the flow is still theirs: the player may have backed out meanwhile.
   const current = useRef<Flow>(null);
   const setFlow = (next: Flow) => setFlowState((current.current = next));
   const tokens = useRef(0);
-  const latest = useRef({ bridge, data });
-  latest.current = { bridge, data };
+  const latest = useRef({ bridge, settings });
+  latest.current = { bridge, settings };
 
   async function updateThenLaunch(app: TvApp) {
     const token = ++tokens.current;
@@ -49,10 +49,10 @@ export function usePlayFlow({ bridge, sidecar, data, launch }: { bridge: Bridge;
   }
 
   function play(id: string) {
-    const { bridge, data } = latest.current;
+    const { bridge, settings } = latest.current;
     const app = bridge.apps.find((a) => a.id === id);
     if (!app) return;
-    const decision = decide(app, data.settings.updateBehavior, data.apps[id]?.skippedVersion);
+    const decision = decide(app, settings.updateBehavior);
     if (decision === "launch") return launch(id);
     if (decision === "update") return void updateThenLaunch(app);
     setFlow({ kind: "ask", app, notes: [] });
@@ -78,7 +78,8 @@ export function usePlayFlow({ bridge, sidecar, data, launch }: { bridge: Bridge;
           if (choice === "update") void updateThenLaunch(flow.app);
           else if (choice === "play") launch(flow.app.id);
           else if (choice === "skip") {
-            sidecar.updateApp(flow.app.id, { skippedVersion: flow.app.latestVersion });
+            // The launcher's own skip: no update shown for it anywhere until a newer one comes.
+            if (flow.app.latestVersion) decline(flow.app.id, flow.app.latestVersion);
             launch(flow.app.id);
           }
         }}

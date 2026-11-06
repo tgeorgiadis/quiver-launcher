@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, noProgram, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, noProgram, pulledVerified, renamable, skipped, updateFor, useLauncher } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -60,9 +60,8 @@ export function App() {
   useTelemetrySetup();
   useUpdateCheck();
   useTray();
-  const { library, client, settings, setSettings, config } = useLauncher();
-  // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
-  const tv = tvModeOn(settings, config);
+  const { library, client, settings, setSettings } = useLauncher();
+  // TV mode (tv/TvHost.tsx) shows over all this once turned on, or by itself in Steam's Game Mode.
   const setTv = (on: boolean) => setSettings({ ...settings, tvMode: on ? "on" : "off" });
   useAnnouncementsCheck(client);
   useTidyDismissals();
@@ -178,7 +177,7 @@ export function App() {
   const topBar = useRef<HTMLElement>(null);
   useTopBarFit(topBar);
   return (
-    <div className={tv ? "shell tv-mode" : "shell"}>
+    <div className="shell">
       <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? moveWindow : undefined}>
         {/* As on the website; it goes to the library. For a mouse: the Library tab beside it does the same for the d-pad and Tab. */}
         <button className="brand" tabIndex={-1} aria-label={t`Quiver Launcher: go to your library`} onClick={() => switchTab("library")}>
@@ -187,21 +186,18 @@ export function App() {
             Quiver<span className="brand-label">LAUNCHER</span>
           </span>
         </button>
-        {/* data-tabs: a controller's shoulder buttons go between them, as between TV mode's tabs (spatial.ts). */}
+        {/* data-tabs: a controller's shoulder buttons go between them (spatial.ts). */}
         <nav data-tabs>
-          {tv && <TabPrompt step="prevTab" />}
           <button className={tab === "library" ? "active" : ""} aria-current={tab === "library" && !top ? "page" : undefined} onClick={() => switchTab("library")}>
             <Library size={16} aria-hidden="true" /> <Trans>Library</Trans> <span className="count">{library.length}</span>
           </button>
           <button className={tab === "browse" ? "active" : ""} aria-current={tab === "browse" && !top ? "page" : undefined} onClick={() => switchTab("browse")}>
             <Compass size={16} aria-hidden="true" /> <Trans comment="The tab with the catalog of apps">Browse</Trans>
           </button>
-          {tv && <TabPrompt step="nextTab" />}
         </nav>
-        {tv && <Clock />}
         <AccountButton onSignIn={() => setSigningIn(true)} />
         {/* The library as a grid or with its sidebar, from wherever the library is, as TV mode is beside it; none where the sidebar doesn't fit (a phone). */}
-        {tab === "library" && sidebarFits && !tv && (
+        {tab === "library" && sidebarFits && (
           <button
             className="icon layout-button"
             aria-label={sidebar ? t`Show the library as a grid` : t`Show the library with a sidebar`}
@@ -211,18 +207,9 @@ export function App() {
             {sidebar ? <LayoutGrid size={19} /> : <PanelLeft size={19} />}
           </button>
         )}
-        {tv ? (
-          <button type="button" className="tv-leave" onClick={() => setTv(false)}>
-            <LogOut size={17} aria-hidden="true" />{" "}
-            <span className="tv-leave-label">
-              <Trans comment="Button: back from TV mode to the usual launcher">Leave TV mode</Trans>
-            </span>
-          </button>
-        ) : (
-          <button className="icon tv-button" aria-label={t`TV mode`} title={t`TV mode: for a controller, the couch and a Steam Deck`} onClick={() => setTv(true)}>
-            <Tv size={19} />
-          </button>
-        )}
+        <button className="icon tv-button" aria-label={t`TV mode`} title={t`TV mode: for a controller, the couch and a Steam Deck`} onClick={() => setTv(true)}>
+          <Tv size={19} />
+        </button>
         <AnnouncementsButton onOpen={() => setAnnouncementsOpen(true)} />
         <DownloadsButton open={top?.kind === "downloads"} onOpen={openDownloads} />
         <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
@@ -257,7 +244,7 @@ export function App() {
             <div key={viewKey(view)} className="page-layer" hidden={i !== stack.length - 1}>
               <ErrorBoundary fallback={(error) => <PageProblem error={error} back={backFrom(i)} onBack={goBack} />}>
                 {view.kind === "app" ? (
-                  <AppPage entry={view.entry} at={view.at} tv={tv} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
+                  <AppPage entry={view.entry} at={view.at} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
                 ) : view.kind === "downloads" ? (
                   <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={action} />
                 ) : view.kind === "settings" ? (
@@ -272,7 +259,7 @@ export function App() {
         {/* Kept mounted under the pages too, so going back keeps the search, filters and scroll. */}
         <div hidden={Boolean(top)}>
           {/* A download under way always shows how it's going, over whichever banner has its turn. */}
-          {strip && <DownloadsStrip onOpen={openDownloads} active offerUpdates={tab === "library" && !tv} />}
+          {strip && <DownloadsStrip onOpen={openDownloads} active offerUpdates={tab === "library"} />}
           {/*
             One banner at a time, the most pressing first (app.css shows only the first that has something to say):
             the usage-data notice, the launcher's update, updates for apps, bringing over Quiver Launcher 3, then the
@@ -282,7 +269,7 @@ export function App() {
             <TelemetryNotice />
             <UpdateBanner />
             {/* The updates waiting: the library's to offer, not Browse's; in TV mode, the Downloads button's count says so. */}
-            {strip && tab === "library" && !tv && <DownloadsStrip onOpen={openDownloads} active={false} />}
+            {strip && tab === "library" && <DownloadsStrip onOpen={openDownloads} active={false} />}
             {/* Finishing an import shows the library, under whatever page is open. */}
             <OldLibrary
               onDone={() => {
@@ -1093,7 +1080,6 @@ function AppPage({
   entry: opened,
   back,
   at,
-  tv = false,
   onClose,
   onOpenGame,
   onOpenApp,
@@ -1104,11 +1090,6 @@ function AppPage({
   back?: string;
   /** Opened at its Releases, with that version's notes open, at its feedback, or at its README, rather than at the top of its Overview. */
   at?: PageAt;
-  /**
-   * Over TV mode: a larger header with its art, read from across a room, and only the buttons for playing it there
-   * (its folder and uninstalling are on its On this computer tab); Back (B) goes home; the README waits to be asked for.
-   */
-  tv?: boolean;
   onClose?: () => void;
   onOpenGame: (game: GameLink) => void;
   /** Opens another app's page, from More like this. */
@@ -1166,7 +1147,6 @@ function AppPage({
     };
   }, [tab]);
   const readmeAsked = !!at && "readme" in at;
-  const [readme, setReadme] = useState(readmeAsked);
   // Every release, asked for once the player opens the Releases tab or points
   // at it: most visits never do, and an app's history is one of the site's
   // biggest reads.
@@ -1276,11 +1256,11 @@ function AppPage({
     </section>
   );
   return (
-    <section className="app-page" data-tv={tv || undefined} aria-label={entry.projectName}>
+    <section className="app-page" aria-label={entry.projectName}>
       <div className={`app-backdrop${hero ? " has-art" : ""}`}>
         {hero && <SourcedImage key={hero} className="backdrop-art" sources={heroSources(hero)} alt="" priority onFail={() => {}} />}
         <div className="backdrop-inner">
-          {onClose && !tv && (
+          {onClose && (
             <button className="back-link" onClick={onClose}>
               <ArrowLeft size={15} /> {back}
             </button>
@@ -1351,7 +1331,7 @@ function AppPage({
                 </p>
               </div>
             )}
-            <div className="app-actions" data-autofocus={tv || undefined}>
+            <div className="app-actions">
               <Action entry={entry} apart />
               {/* In the library without downloading it; or, installed here already, a way in. */}
               {!item && (
@@ -1365,7 +1345,7 @@ function AppPage({
                   <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
                 </button>
               )}
-              {install && foldersOn(config.os) && !tv && (
+              {install && foldersOn(config.os) && (
                 <button onClick={() => (setProblem(null), native.openFolder(entry.id).catch((e) => setProblem(String(e))))}>
                   <FolderOpen size={17} /> <Trans>Open folder</Trans>
                 </button>
@@ -1373,7 +1353,7 @@ function AppPage({
               {/* Out of Browse, as its card's menu has it. */}
               {site && !item && <BrowseHideButton entry={entry} />}
               {/* Its files go; the app stays in the library to get again. Taking it out is under On this computer. */}
-              {install && !install.local && !(job && !("error" in job)) && !tv && (
+              {install && !install.local && !(job && !("error" in job)) && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
                 </button>
@@ -1530,14 +1510,7 @@ function AppPage({
             <>
               {/* Short, general facts first, over the README, which can run long. */}
               {site && <ProjectDetails entry={entry} detail={detail} source={source} />}
-              {/* In TV mode, long and full of links: there when asked for. */}
-              {tv && !readme ? (
-                <button type="button" className="panel-action opens tv-readme" onClick={() => setReadme(true)}>
-                  <BookOpen size={18} aria-hidden="true" /> <Trans>Read the README</Trans>
-                </button>
-              ) : (
-                <Readme entry={entry} source={source} asked={readmeAsked} />
-              )}
+              <Readme entry={entry} source={source} asked={readmeAsked} />
             </>
           )}
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
@@ -2213,14 +2186,4 @@ function useDebounced<T>(value: T, ms: number) {
     return () => clearTimeout(t);
   }, [value, ms]);
   return current;
-}
-
-/** The time, as a console's home screen shows it. */
-function Clock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 15_000);
-    return () => clearInterval(timer);
-  }, []);
-  return <span className="tv-clock">{now.toLocaleTimeString(i18n.locale, { hour: "numeric", minute: "2-digit" })}</span>;
 }

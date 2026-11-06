@@ -1,6 +1,5 @@
 /** Home's shelves (spec §8): recently played, updates waiting, recently installed. Empty shelves aren't shown. */
 import { isInstalled, type TvApp } from "../bridge";
-import type { TvSidecar } from "../data/sidecar";
 
 export type Shelf = {
   id: "recent" | "updates" | "installed";
@@ -13,16 +12,16 @@ export type Shelf = {
 export const SHELF_LENGTH = 15;
 
 /** When it was installed: when Big Picture saw it finish, else when it was added to the library. */
-export const installedAt = (app: TvApp, data: TvSidecar) => data.apps[app.id]?.installedAt ?? app.addedAt ?? 0;
+export const installedAt = (app: TvApp) => app.installedAt ?? app.addedAt ?? 0;
 
-export function homeShelves(apps: readonly TvApp[], data: TvSidecar): Shelf[] {
+export function homeShelves(apps: readonly TvApp[]): Shelf[] {
   const installed = apps.filter(isInstalled);
   const recent = installed
     .filter((a) => a.lastPlayed)
     .sort((a, b) => b.lastPlayed! - a.lastPlayed!)
     .slice(0, SHELF_LENGTH);
   const updates = installed.filter((a) => a.state === "updateAvailable").sort((a, b) => a.title.localeCompare(b.title));
-  const newest = [...installed].sort((a, b) => installedAt(b, data) - installedAt(a, data)).slice(0, SHELF_LENGTH);
+  const newest = [...installed].sort((a, b) => installedAt(b) - installedAt(a)).slice(0, SHELF_LENGTH);
   const shelves: Shelf[] = [
     { id: "recent", title: "Recently played", apps: recent },
     { id: "updates", title: "Updates available", apps: updates, updateAll: true },
