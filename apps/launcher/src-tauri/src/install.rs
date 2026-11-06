@@ -372,9 +372,28 @@ fn named_for_contents(name: &str, file: &Path) -> Option<String> {
 
 pub(crate) fn extract(file: &Path, name: &str, out: &Path) -> Result<(), String> {
     unpack(file, name, out)?;
+    unpack_inner(out)?;
     #[cfg(unix)]
     open_up(out);
     Ok(())
+}
+
+/// A build's artifact is often an archive holding just one archive (a zip with a .tar.gz in it): that one's
+/// unpacked in its place.
+fn unpack_inner(out: &Path) -> Result<(), String> {
+    let entries: Vec<_> = fs::read_dir(out).map_err(text)?.flatten().collect();
+    let [only] = entries.as_slice() else { return Ok(()) };
+    let name = only.file_name().to_string_lossy().into_owned();
+    let lower = name.to_lowercase();
+    let archive = tarball(&lower).is_some() || [".zip", ".7z", ".rar"].iter().any(|end| lower.ends_with(end));
+    if !archive || !only.path().is_file() {
+        return Ok(());
+    }
+    let staged = out.with_extension("inner");
+    fs::rename(only.path(), &staged).map_err(text)?;
+    let unpacked = unpack(&staged, &name, out);
+    let _ = fs::remove_file(&staged);
+    unpacked
 }
 
 /// Lets the player into everything an archive unpacked and run its programs.
@@ -1233,6 +1252,35 @@ mod tests {
         for escape in ["..\\x", "Game\\..\\..\\x", "../x", "/etc/x", "\\x", "\\\\server\\share\\x", "C:\\x", "c:x", "a\0b", "", "."] {
             assert_eq!(enclosed(escape), None, "{escape:?}");
         }
+    }
+
+    #[test]
+    fn unpacks_an_archive_that_holds_only_an_archive() {
+        let dir = tempfile::tempdir().unwrap();
+        let tarball = {
+            let mut tar = tar::Builder::new(Vec::new());
+            let mut header = tar::Header::new_gnu();
+            header.set_size(2);
+            header.set_mode(0o755);
+            header.set_cksum();
+            tar.append_data(&mut header, "Game/game.x86_64", &b"\x7fE"[..]).unwrap();
+            let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+            io::Write::write_all(&mut gz, &tar.into_inner().unwrap()).unwrap();
+            gz.finish().unwrap()
+        };
+        let zip = {
+            let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+            w.start_file("Game-linux.tar.gz", zip::write::SimpleFileOptions::default()).unwrap();
+            io::Write::write_all(&mut w, &tarball).unwrap();
+            w.finish().unwrap().into_inner()
+        };
+        let file = dir.path().join("artifact.zip");
+        fs::write(&file, zip).unwrap();
+        let out = dir.path().join("Game");
+        extract(&file, "artifact.zip", &out).unwrap();
+        flatten(&out).unwrap();
+        assert!(out.join("game.x86_64").is_file());
+        assert!(!out.join("Game-linux.tar.gz").exists() && !dir.path().join("Game.inner").exists());
     }
 
     #[test]

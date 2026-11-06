@@ -39,7 +39,13 @@ export function installFormat(name: string) {
   return FORMATS.slice(0, 8).some((f) => f.test(name)) ? "archive" : "executable";
 }
 
-const formatRank = (name: string) => FORMATS.findIndex((f) => f.test(name));
+/** A Flatpak bundle, zipped as some releases ship one ("Game-flatpak.zip"), ranks as a bundle: after the regular builds. */
+const FLATPAK_BUNDLE = /(^|[\s._-])flatpak([\s._-]|$)/i;
+const FLATPAK_RANK = FORMATS.findIndex((f) => f.test("app.flatpak"));
+function formatRank(name: string) {
+  const rank = FORMATS.findIndex((f) => f.test(name));
+  return rank >= 0 && FLATPAK_BUNDLE.test(name) ? Math.max(rank, FLATPAK_RANK) : rank;
+}
 
 /** How well a file's architecture suits this computer's, best 0; -1 when it can't run. */
 const archRank = (a: Asset, arch: string) =>

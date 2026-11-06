@@ -25,6 +25,7 @@ import { Notices } from "./views/Notices";
 import { ControllerToast } from "./ControllerToast";
 import { useFailures } from "./programs/usePrograms";
 import { RomDialogDesktop, RomDialogTv } from "./programs/RomDialog";
+import { ProgramPrompt } from "./programs/ProgramPrompt";
 import "./tv.css";
 
 export function TvHost({ children }: { children: ReactNode }) {
@@ -254,6 +255,7 @@ function TvMode({ debug, picking, exit }: { debug: boolean; picking: boolean; ex
         {flow.ui}
         <AssetPicker />
         <RomDialogTv play={flow.play} />
+        <ProgramPrompt />
         <Notices />
         {debug && (
           <aside className="tv-debug">

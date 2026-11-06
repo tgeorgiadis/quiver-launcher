@@ -21,5 +21,5 @@ export const tvNative = {
   openReadme: (path: string) => invoke<void>("tv_open_readme", { path }),
   /** The programs in a game's folder (relative paths), and the file name of the first one matching `hints` (programs/programs.ts). `unsure`: Windows, where the launcher's own pick would be a guess. */
   programs: (folder: string, dir: string | undefined, hints: string[]) =>
-    invoke<{ matched: string | null; choices: string[]; flatpak: string | null; unsure?: boolean }>("tv_programs", { folder, dir, hints }),
+    invoke<{ matched: string | null; choices: string[]; unsure: boolean }>("tv_programs", { folder, dir, hints }),
 };

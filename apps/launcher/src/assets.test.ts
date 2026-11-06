@@ -25,6 +25,12 @@ test("installs tarballs however they're packed, and RAR archives, after zip and 
   expect(assetFilterFor("GameB-Linux.tar.xz", ["GameA-Linux.tar.xz", "GameB-Linux.tar.xz"])).toBe("gameb");
 });
 
+test("takes a regular Linux build over a zipped Flatpak bundle, which is a bundle all the same", () => {
+  const files = [asset("BanjoRecompiled-Linux-X64-Flatpak.zip", "linux"), asset("BanjoRecompiled-Linux-X64.tar.gz", "linux")];
+  expect(bestAssets(files, "linux", "x64").map((a) => a.filename)).toEqual(["BanjoRecompiled-Linux-X64.tar.gz"]);
+  expect(bestAssets([files[0]], "linux", "x64").map((a) => a.filename)).toEqual(["BanjoRecompiled-Linux-X64-Flatpak.zip"]);
+});
+
 test("applies the catalog's file filter and leaves real ties to the player", () => {
   const files = [asset("Game-vulkan.zip", "windows"), asset("Game-dx12.zip", "windows")];
   expect(bestAssets(files, "windows", "x64")).toHaveLength(2);

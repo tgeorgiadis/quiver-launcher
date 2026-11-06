@@ -3,7 +3,7 @@
 //! a tool beside the game: Star Fox Enhanced's Linux build has
 //! starfox_asset_builder before starfox_pc, and Bloodborne's Windows port has
 //! five programs in out\ (bb-gpu-capabilities.exe first) and starts from
-//! launch_gui.bat. TV mode asks the player instead, when it's a real choice.
+//! launch_gui.bat. Play asks the player instead (store.tsx), when it's a real choice.
 //!
 //! The candidates are the launcher's own (install::programs). On Windows the
 //! launcher is only guessing when several programs sit side by side at the
@@ -16,7 +16,7 @@ use crate::Data;
 
 #[derive(Serialize)]
 pub struct Programs {
-    /// The file name of the first program matching the hints, if any.
+    /// The first program matching the hints, if any, relative to the folder.
     matched: Option<String>,
     /// Every program in the folder, relative to it, shallowest first.
     choices: Vec<String>,
@@ -35,7 +35,8 @@ fn programs(dir: &Path, found: Vec<PathBuf>, hints: &[String], os: &str) -> Prog
     let name = |p: &Path| p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
     let matched = hints.iter().find_map(|hint| {
         let glob = glob::Pattern::new(&hint.to_lowercase()).ok()?;
-        found.iter().map(|p| name(p)).find(|n| glob.matches(&n.to_lowercase()))
+        let hit = found.iter().find(|p| glob.matches(&name(p).to_lowercase()))?;
+        Some(hit.strip_prefix(dir).unwrap_or(hit).to_string_lossy().into_owned())
     });
     let relative: Vec<&Path> = found.iter().filter_map(|p| p.strip_prefix(dir).ok()).collect();
     let unsure = os == "windows" && {

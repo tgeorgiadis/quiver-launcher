@@ -1897,11 +1897,16 @@ function Notice() {
 
 /** Play, for an app with more than one of its programs picked (its menu's Play with): which one starts. */
 function ProgramPrompt() {
-  const { choosingProgram: id, chooseProgram, installs, catalog, play } = useLauncher();
-  const install = id ? installs[id] : undefined;
-  const programs = install?.launch?.programs ?? [];
-  if (!id || !programs.length) return null;
+  const { choosingProgram: choice, chooseProgram, installs, catalog, play, setLaunch } = useLauncher();
+  if (!choice?.programs.length) return null;
+  const { id, programs, remember } = choice;
   const close = () => chooseProgram(null);
+  const start = (program: string) => {
+    close();
+    // Its program from now on: the app's folder didn't say which, so Play asked once.
+    if (remember && installs[id]) setLaunch(id, { ...installs[id].launch, executable: program });
+    void play(id, program);
+  };
   const name = catalog[id]?.projectName;
   return (
     <Dialog label={name ? t`Play ${name}` : t({ message: "Play", comment: "Button that starts an app" })} onClose={close}>
@@ -1911,14 +1916,18 @@ function ProgramPrompt() {
         </h2>
         <div className="choices">
           {programs.map((p, i) => (
-            <button key={p} autoFocus={i === 0} onClick={() => (close(), void play(id, p))}>
+            <button key={p} autoFocus={i === 0} onClick={() => start(p)}>
               <strong>{fileName(p)}</strong>
               {p !== fileName(p) && <span className="muted">{p}</span>}
             </button>
           ))}
         </div>
         <p className="muted small">
-          <Trans>The programs Play offers are under Play with in the app&apos;s menu.</Trans>
+          {remember ? (
+            <Trans>Its folder has more than one program, and the catalog doesn&apos;t say which starts it here. Play remembers the one you pick: change it in Launch options.</Trans>
+          ) : (
+            <Trans>The programs Play offers are under Play with in the app&apos;s menu.</Trans>
+          )}
         </p>
       </div>
     </Dialog>

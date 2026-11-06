@@ -10,6 +10,8 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import type { TvSettings } from "./tv/settings";
+import { programHints } from "./tv/programs/programs";
+import { tvNative } from "./tv/tvNative";
 import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
@@ -164,8 +166,8 @@ type Launcher = {
   /** Asks the player before uninstalling (or uninstalling and removing) an app; null closes the prompt. */
   confirmUninstall: (confirming: Confirming | null) => void;
   /** The app whose Play asks which of the player's programs to start; null closes the prompt. */
-  choosingProgram: string | null;
-  chooseProgram: (id: string | null) => void;
+  choosingProgram: ProgramChoice | null;
+  chooseProgram: (choice: ProgramChoice | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
   /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
@@ -413,6 +415,12 @@ export const folderGone = (job: Job | undefined) => Boolean(job && "error" in jo
 
 const NO_PROGRAM = "Couldn't find a program to start in this app's folder.";
 /** Whether starting an app failed because Quiver can't tell which program starts it: lib.rs's NO_PROGRAM. */
+/** Play's question, which of an app's programs starts (App.tsx, tv/programs/ProgramPrompt.tsx); `remember` keeps the answer as its program. */
+export type ProgramChoice = { id: string; programs: string[]; remember?: boolean };
+
+/** Play looks in the app's folder for its program: not the player's own program, a Windows installer's, or one they chose. */
+const ownFolder = (install: Install) => !install.local && !install.installer && !install.program && !install.launch?.executable;
+
 export const noProgram = (job: Job | undefined) => Boolean(job && "error" in job && job.error === NO_PROGRAM);
 
 /** Whether the player can point Quiver at where an app is: it has no install here, or the one here lost its folder. Never during a download, or for the player's own files. */
@@ -740,7 +748,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [renaming, askRename] = useState<Entry | null>(null);
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
-  const [choosingProgram, chooseProgram] = useState<string | null>(null);
+  const [choosingProgram, chooseProgram] = useState<ProgramChoice | null>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
   const [notice, showNotice] = useState<Launcher["notice"]>(null);
@@ -1573,7 +1581,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!install) return;
       // The programs the player picked for Play: one starts; more, and they choose.
       const programs = install.launch?.programs ?? [];
-      if (!executable && programs.length > 1) return chooseProgram(id);
+      if (!executable && programs.length > 1) return chooseProgram({ id, programs });
+      // None picked: the catalog's name for it, else the player says which of several (tv/programs.rs), once.
+      if (!executable && !programs.length && ownFolder(install) && config.os !== "android" && config.os !== "ios") {
+        const hints = programHints(config.os, install.executables, catalog[id]?.launcher?.preferredExecutables);
+        const found = await tvNative.programs(install.folder, install.dir, hints).catch(() => null);
+        if (found?.matched) executable = found.matched;
+        else if (found && found.choices.length > 1 && (config.os !== "windows" || found.unsure)) return chooseProgram({ id, programs: found.choices, remember: true });
+      }
       const chosen = executable ?? programs[0];
       const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner };
       let program = install.program;
