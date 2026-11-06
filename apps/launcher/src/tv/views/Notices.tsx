@@ -7,7 +7,7 @@ import { t } from "@lingui/core/macro";
 import { AlertTriangle } from "lucide-react";
 import { useTv } from "../context";
 import type { TvState } from "../bridge";
-import { romNeed } from "../programs/RomDialog";
+import { romNeed } from "../programs/romNeed";
 
 const SHOWN_FOR = 7000;
 

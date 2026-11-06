@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { t } from "@lingui/core/macro";
 import { useLauncher } from "../../store";
-import { romNeed } from "./RomDialog";
+import { romNeed } from "./romNeed";
 
 type Failure = {
   /** The app's id, when the launcher started it for one. */

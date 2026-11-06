@@ -3874,7 +3874,7 @@ msgstr "O Quiver Launcher só atualiza para versões verificadas. Ele só instal
 msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
 msgstr "O Quiver Launcher envia dados de uso para ajudar a melhorá-lo. Eles não são vinculados à sua conta Quiver. Você pode desativar isso nas Configurações."
 
-#: ../../apps/launcher/src/tv/TvHost.tsx
+#: ../../apps/launcher/src/tv/TvMode.tsx
 msgid "Quiver Launcher, TV mode"
 msgstr "Quiver Launcher, modo TV"
 
