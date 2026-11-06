@@ -650,7 +650,7 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
     // A Windows build's helper script (a run.sh beside its .exe) isn't the
     // game: with no Linux program here, there's none, and Wine runs the .exe.
     let scripts = files.iter().any(|p| linux(p, &name(p))) || !files.iter().any(|p| name(p).ends_with(".exe") && !helper(&name(p)));
-    files.into_iter().find(|p| {
+    let found = files.iter().find(|p| {
         let n = name(p);
         let program = match os {
             "windows" => n.ends_with(".exe"),
@@ -658,7 +658,35 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
             _ => linux(p, &n) || (scripts && n.ends_with(".sh")),
         };
         program && !helper(&n)
-    })
+    });
+    // With nothing better: a Windows build a script starts, a Mac build that's a bare program rather than an .app.
+    found
+        .or_else(|| {
+            files.iter().find(|p| {
+                let n = name(p);
+                let program = match os {
+                    "windows" => n.ends_with(".bat") || n.ends_with(".cmd"),
+                    "macos" => is_unix_binary(p),
+                    _ => false,
+                };
+                program && !helper(&n)
+            })
+        })
+        .cloned()
+}
+
+/// The kinds of file in an app's folder (their extensions, never their names), for an error report to say what was
+/// there when no program was found.
+pub fn file_kinds(dir: &Path) -> Vec<String> {
+    let mut files = Vec::new();
+    walk(dir, 0, &mut files);
+    let kinds: std::collections::BTreeSet<String> = files
+        .iter()
+        .filter_map(|p| p.extension())
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .filter(|e| e.len() <= 8 && e.chars().all(|c| c.is_ascii_alphanumeric()))
+        .collect();
+    kinds.into_iter().take(20).collect()
 }
 
 /// Every program in an app's folder the player might start: its own, its
@@ -947,6 +975,51 @@ mod tests {
         };
         assert_eq!(found(&[]), "Game.exe");
         assert_eq!(found(&["tool*.exe"]), "Tool.exe");
+    }
+
+    #[test]
+    fn a_script_starts_a_windows_build_with_no_program_of_its_own() {
+        let dir = tempfile::tempdir().unwrap();
+        for f in ["setup.bat", "bin/Start Game.bat", "bin/data.pak"] {
+            let p = dir.path().join(f);
+            fs::create_dir_all(p.parent().unwrap()).unwrap();
+            fs::write(p, "").unwrap();
+        }
+        assert_eq!(find_executable(dir.path(), &[], "windows"), Some(dir.path().join("bin/Start Game.bat")));
+        // A program comes first, deeper or not.
+        fs::create_dir_all(dir.path().join("bin/x64")).unwrap();
+        fs::write(dir.path().join("bin/x64/Game.exe"), "").unwrap();
+        assert_eq!(find_executable(dir.path(), &[], "windows"), Some(dir.path().join("bin/x64/Game.exe")));
+        // A folder of only a helper still has none.
+        let helpers = tempfile::tempdir().unwrap();
+        fs::write(helpers.path().join("setup.bat"), "").unwrap();
+        assert_eq!(find_executable(helpers.path(), &[], "windows"), None);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn a_bare_program_starts_a_mac_build_with_no_app() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let game = dir.path().join("sm64coopdx");
+        fs::write(&game, "").unwrap();
+        fs::write(dir.path().join("readme"), "").unwrap();
+        fs::set_permissions(&game, fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(find_executable(dir.path(), &[], "macos"), Some(game));
+        // An .app comes first.
+        fs::create_dir(dir.path().join("Game.app")).unwrap();
+        assert_eq!(find_executable(dir.path(), &[], "macos"), Some(dir.path().join("Game.app")));
+    }
+
+    #[test]
+    fn says_what_kinds_of_file_a_folder_has_but_not_their_names() {
+        let dir = tempfile::tempdir().unwrap();
+        for f in ["My Secret Game.PAK", "bin/a.dll", "bin/b.dll", "notes", ".quiver-version", "odd.has space"] {
+            let p = dir.path().join(f);
+            fs::create_dir_all(p.parent().unwrap()).unwrap();
+            fs::write(p, "").unwrap();
+        }
+        assert_eq!(file_kinds(dir.path()), ["dll", "pak"]);
     }
 
     #[test]

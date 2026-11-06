@@ -1275,6 +1275,10 @@ msgstr "Wähle „Token auf GitHub erstellen“ und melde dich bei GitHub an."
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Wähle „Generate token“, kopiere den Token, füge ihn oben ein und wähle „Token speichern“."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "Programm auswählen…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
 msgstr "Musik für den Hintergrund auswählen"
@@ -4295,6 +4299,7 @@ msgid "This app gets that app's page, artwork and reviews. Its files stay yours:
 msgstr "Diese App bekommt die Seite, das Artwork und die Bewertungen der anderen App. Ihre Dateien bleiben deine: Quiver aktualisiert, verschiebt und löscht sie nicht, neue Versionen holst du dir also selbst."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This app has no approved release yet."
 msgstr "Diese App hat noch keine freigegebene Version."
 

@@ -1275,6 +1275,10 @@ msgstr "Choisissez « Créer un jeton sur GitHub », puis connectez-vous à Gi
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Choisissez « Generate token », copiez le jeton, collez-le ci-dessus et choisissez « Enregistrer le jeton »."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "Choisir son programme…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
 msgstr "Choisir une musique à jouer en fond"
@@ -4295,6 +4299,7 @@ msgid "This app gets that app's page, artwork and reviews. Its files stay yours:
 msgstr "Cette app reçoit la page, les visuels et les avis de cette autre app. Ses fichiers restent les tiens : Quiver ne les mettra pas à jour, ne les déplacera pas et ne les supprimera pas, donc les nouvelles versions sont à récupérer toi-même."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This app has no approved release yet."
 msgstr "Cette app n'a pas encore de version approuvée."
 

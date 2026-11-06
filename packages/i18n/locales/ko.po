@@ -1275,6 +1275,10 @@ msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인�
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "프로그램 선택…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
 msgstr "배경에서 재생할 음악 선택"
@@ -4295,6 +4299,7 @@ msgid "This app gets that app's page, artwork and reviews. Its files stay yours:
 msgstr "이 앱은 해당 앱의 페이지, 아트워크, 리뷰를 사용합니다. 파일은 그대로 내 것입니다. Quiver가 업데이트하거나 옮기거나 삭제하지 않으므로 새 버전은 직접 받아야 합니다."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This app has no approved release yet."
 msgstr "이 앱은 아직 승인된 버전이 없어요."
 

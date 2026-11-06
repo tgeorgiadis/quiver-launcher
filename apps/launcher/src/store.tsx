@@ -408,6 +408,10 @@ export function relocatedInstall(now: Install | undefined, found: Install): Inst
 /** Whether starting an app failed because its folder is gone: lib.rs's FOLDER_GONE. */
 export const folderGone = (job: Job | undefined) => Boolean(job && "error" in job && job.error === "This app's folder isn't there any more.");
 
+const NO_PROGRAM = "Couldn't find a program to start in this app's folder.";
+/** Whether starting an app failed because Quiver can't tell which program starts it: lib.rs's NO_PROGRAM. */
+export const noProgram = (job: Job | undefined) => Boolean(job && "error" in job && job.error === NO_PROGRAM);
+
 /** Whether the player can point Quiver at where an app is: it has no install here, or the one here lost its folder. Never during a download, or for the player's own files. */
 export const locatable = (id: string, install: Install | undefined, job: Job | undefined) =>
   !isLocal(id) && !install?.local && (!install || folderGone(job)) && !(job && !("error" in job));
@@ -1553,8 +1557,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
         () => (musicForGame(), track("app_launched", played)),
-        // Windows asked for administrator rights and the player said no.
-        (e) => void (e !== "cancelled" && (fail(id, e), track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) }), captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) }))),
+        async (e) => {
+          // Windows asked for administrator rights and the player said no.
+          if (e === "cancelled") return;
+          fail(id, e);
+          track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) });
+          // No program found: what is there says why, since it's different apps on every system.
+          const kinds = e === NO_PROGRAM ? await native.fileKinds(install.folder, install.dir).catch(() => null) : null;
+          captureFailure("launch", e, { ...ref, wine: Boolean(install.wine), ...(kinds ? { kinds: kinds.join(",") } : {}) });
+        },
       );
     },
     async reinstall(id) {
