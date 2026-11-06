@@ -370,6 +370,7 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
     command.args(&args).envs(env).current_dir(&target.dir);
     // Its output, in a log of its own (game-logs/), so a game that fails can say why.
     let log = tv::session::GameLog::new(&data.0, folder);
+    let_it_come_to_the_front();
     sandbox::check(&program)
         .and_then(|_| {
             sandbox::host(command)
@@ -407,6 +408,24 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
             ),
             _ => format!("Couldn't start {}: {e}", target.exe.display()),
         })
+}
+
+/// Windows lets a window come in front only for a program the one in front started, and only soon after the player's
+/// last key or click there. A game started from a controller (no key or click), or by a script that starts it (a
+/// .bat starting Python starting the game's window, as Bloodborne's), opened behind Quiver, in TV mode's full
+/// screen. Quiver, in front as Play is pressed, lets whatever the game starts come in front.
+fn let_it_come_to_the_front() {
+    #[cfg(windows)]
+    {
+        #[link(name = "user32")]
+        extern "system" {
+            fn AllowSetForegroundWindow(process: u32) -> i32;
+        }
+        /// ASFW_ANY: any process.
+        const ANY: u32 = u32::MAX;
+        // SAFETY: a plain call with a constant; it fails harmlessly when Quiver isn't in front.
+        unsafe { AllowSetForegroundWindow(ANY) };
+    }
 }
 
 /// The Android app the player last started from Quiver, and when.

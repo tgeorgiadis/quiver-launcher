@@ -5124,8 +5124,10 @@ msgstr "Up"
 #. Button that updates a mod
 #. Button: update the one app with an update
 #. Button: update the one app with an update
+#. Button: update the one app with an update
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
 #: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Update"
 msgstr "Update"

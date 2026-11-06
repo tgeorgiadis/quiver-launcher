@@ -78,6 +78,7 @@ export function usePlayFlow({ bridge, settings, launch, decline }: { bridge: Bri
         onChoice={(choice) => {
           setFlow(null);
           if (choice === "update") void updateThenLaunch(flow.app);
+          else if (choice === "updateOnly") void latest.current.bridge.update(flow.app.id);
           else if (choice === "play") launch(flow.app.id);
           else if (choice === "skip") {
             // The launcher's own skip: no update shown for it anywhere until a newer one comes.
@@ -131,17 +132,19 @@ function Dialog({ app, children }: { app: TvApp; children: ReactNode }) {
   );
 }
 
-type Choice = "update" | "play" | "skip" | "cancel";
+type Choice = "update" | "updateOnly" | "play" | "skip" | "cancel";
 
 function UpdatePrompt({ app, notes, onChoice }: { app: TvApp; notes: string[]; onChoice: (choice: Choice) => void }) {
   const hints: ButtonHint[] = [
     { action: "accept", label: t`Update & play` },
-    { action: "secondary", label: t`Play without updating` },
-    { action: "details", label: t`Skip this version` },
+    // As X on its tile: the update alone, to play later.
+    { action: "secondary", label: t({ message: "Update", comment: "Button: update the one app with an update" }) },
+    { action: "details", label: t`Play without updating` },
+    { action: "menu", label: t`Skip this version` },
     { action: "back", label: t`Cancel` },
   ];
   const press = (action: InputAction) => {
-    const choice = ({ accept: "update", secondary: "play", details: "skip", back: "cancel" } as Partial<Record<InputAction, Choice>>)[action];
+    const choice = ({ accept: "update", secondary: "updateOnly", details: "play", menu: "skip", back: "cancel" } as Partial<Record<InputAction, Choice>>)[action];
     if (choice) onChoice(choice);
   };
   useInputHandler({ onAction: press, hints: () => hints }, LAYER.dialog);
