@@ -1,8 +1,7 @@
 /**
- * Desktop mode: when a controller is turned on, a note offers TV mode; A (or a
- * click) opens it. It reads upstream's own controller events, which desktop
- * mode already has. Settings → "Offer TV mode when a controller connects"
- * turns it off.
+ * Desktop mode: when a controller is turned on, a note offers TV mode; its Menu button (Start), which the desktop
+ * leaves unbound, or a click opens it. A stays the desktop's. Not Start when the player gave it to something else.
+ * TV mode's Settings → "Offer TV mode when a controller connects" turns it off.
  */
 import { useEffect, useRef, useState } from "react";
 import { Gamepad2, X } from "lucide-react";
@@ -10,12 +9,18 @@ import { listen } from "@tauri-apps/api/event";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { native } from "../native";
+import { useLauncher } from "../store";
+import { DEFAULT_PAD, label, withDefaults } from "../spatial";
+import { usePadLabels } from "../pad-hints";
 
 const SHOWN_FOR = 10_000;
 
 export function ControllerToast({ enabled, onOpen }: { enabled: boolean; onOpen: () => void }) {
   const [shown, setShown] = useState<string | null>(null);
   const known = useRef<number | null>(null);
+  const { settings } = useLauncher();
+  const labels = usePadLabels();
+  const startFree = !Object.values(withDefaults(settings.pad, DEFAULT_PAD)).some((bound) => bound.includes("Start"));
 
   useEffect(() => {
     if (!enabled) return;
@@ -37,20 +42,21 @@ export function ControllerToast({ enabled, onOpen }: { enabled: boolean; onOpen:
     };
   }, [enabled]);
 
-  // A on the pad that was just turned on.
+  // Start on the pad that was just turned on.
   useEffect(() => {
-    if (!shown) return;
+    if (!shown || !startFree) return;
     const pad = listen<{ key: string; down: boolean }>("pad", ({ payload }) => {
-      if (payload.key === "South" && payload.down) {
+      if (payload.key === "Start" && payload.down) {
         setShown(null);
         onOpen();
       }
     });
     return () => void pad.then((stop) => stop());
-  }, [shown, onOpen]);
+  }, [shown, onOpen, startFree]);
 
   if (!enabled || !shown) return null;
   const name = shown;
+  const button = label("pad", "Start", labels ?? { kind: "xbox", south: "A", east: "B", west: "X", north: "Y" });
   return (
     <div className="tv-toast" role="status">
       <Gamepad2 aria-hidden="true" />
@@ -66,9 +72,13 @@ export function ControllerToast({ enabled, onOpen }: { enabled: boolean; onOpen:
           <Trans comment="{name} is a controller's name">{name} connected</Trans>
         </strong>
         <span>
-          <Trans comment="A is the controller button">
-            Press <b className="tv-toast-a">A</b> for TV mode
-          </Trans>
+          {startFree ? (
+            <Trans comment="{button} is the controller's Menu button, as it's labelled (Menu, Options, +)">
+              Press <b className="tv-toast-a">{button}</b> for TV mode
+            </Trans>
+          ) : (
+            <Trans>Open TV mode</Trans>
+          )}
         </span>
       </button>
       <button type="button" className="tv-toast-close" aria-label={t`Dismiss`} onClick={() => setShown(null)}>

@@ -3470,6 +3470,10 @@ msgstr "Quiver Launcher öffnen"
 msgid "Open the release page"
 msgstr "Versionsseite öffnen"
 
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
+msgid "Open TV mode"
+msgstr "TV-Modus öffnen"
+
 #. Controller action that opens the focused item's menu
 #: ../../apps/launcher/src/spatial.ts
 msgid "Options"
@@ -3708,10 +3712,10 @@ msgstr "Vorschauversion"
 msgid "Pre-release"
 msgstr "Vorschauversion"
 
-#. A is the controller button
+#. {button} is the controller's Menu button, as it's labelled (Menu, Options, +)
 #: ../../apps/launcher/src/tv/ControllerToast.tsx
-msgid "Press <0>A</0> for TV mode"
-msgstr "Drück <0>A</0> für den TV-Modus"
+msgid "Press <0>{button}</0> for TV mode"
+msgstr "Drück <0>{button}</0> für den TV-Modus"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a button…"

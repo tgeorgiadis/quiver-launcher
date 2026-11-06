@@ -3470,6 +3470,10 @@ msgstr "Quiver Launcher 열기"
 msgid "Open the release page"
 msgstr "버전 페이지 열기"
 
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
+msgid "Open TV mode"
+msgstr "TV 모드 열기"
+
 #. Controller action that opens the focused item's menu
 #: ../../apps/launcher/src/spatial.ts
 msgid "Options"
@@ -3708,10 +3712,10 @@ msgstr "미리 보기"
 msgid "Pre-release"
 msgstr "사전 출시"
 
-#. A is the controller button
+#. {button} is the controller's Menu button, as it's labelled (Menu, Options, +)
 #: ../../apps/launcher/src/tv/ControllerToast.tsx
-msgid "Press <0>A</0> for TV mode"
-msgstr "<0>A</0> 버튼을 눌러 TV 모드 열기"
+msgid "Press <0>{button}</0> for TV mode"
+msgstr "<0>{button}</0> 버튼을 눌러 TV 모드 열기"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a button…"

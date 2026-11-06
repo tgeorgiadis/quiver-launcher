@@ -1576,13 +1576,16 @@
   color: #a3aab5;
   font-size: 13px;
 }
+/* The controller's Menu button, by its name on it (Menu, Options, +): a cap as wide as the name. */
 .tv-toast-a {
   display: inline-grid;
   place-items: center;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: #5dc21e;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: #f1f5f9;
   color: #0b1018;
   font-size: 11px;
 }
