@@ -481,6 +481,7 @@ const FAILURE_KINDS: [string, RegExp][] = [
   ["no_release", /no releases yet|no approved release|isn't available any more/i],
   ["no_download", /no download for|no Windows installer|no files to download/i],
   ["network", /check your connection|error sending request|timed? ?out|took too long|connection (closed|reset|refused|aborted)|dns error|error decoding response body|failed to fetch|networkerror|HTTP status server error/i],
+  ["no_program", /couldn.t find a program to start/i],
   ["not_found", /os error (2|3)\b|no such file|cannot find the (file|path)/i],
 ];
 

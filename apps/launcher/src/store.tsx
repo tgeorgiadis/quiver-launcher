@@ -798,7 +798,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!telemetryChoice().enabled) return;
       const { library, installs, catalog, settings } = forUsage.current;
       track("library_loaded", librarySummary(library, installs, catalog, settings, telemetryChoice().signedIn));
-      if (appsDueToday(new Date())) appsOnComputer(library, installs, catalog).forEach((app) => track("app_on_computer", app));
+      // Not marked as counted with nothing to count yet: a first start's apps are counted once it has some.
+      const apps = appsOnComputer(library, installs, catalog);
+      if (apps.length && appsDueToday(new Date())) apps.forEach((app) => track("app_on_computer", app));
     }, USAGE_COUNTED_AFTER_MS);
     return () => {
       clearTimeout(counted);

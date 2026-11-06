@@ -14,7 +14,7 @@ export const MOST_APPS_SENT = 40;
 const SENT_KEY = "quiver-usage-apps-sent";
 
 /** How this launcher is set up. At most 15 properties: with what every event carries, that's Google Analytics' 25. */
-export function settingsSummary(settings: Settings, config: Pick<Config, "gameMode">, hasGithubToken: boolean, screen: { width: number; height: number }) {
+export function settingsSummary(settings: Settings, config: Pick<Config, "gameMode">, hasGithubToken: boolean, screen: { width: number; height: number; scale: number } | null) {
   return {
     theme: settings.theme ?? "system",
     language: languageOf(settings),
@@ -23,14 +23,14 @@ export function settingsSummary(settings: Settings, config: Pick<Config, "gameMo
     fullscreen: Boolean(settings.fullscreen),
     background_image: Boolean(settings.libraryBackground),
     background_music: Boolean(settings.music),
-    pad_off: Boolean(settings.padOff),
     preview_updates: Boolean(settings.previewUpdates),
     github_token: hasGithubToken,
     interface_scale: settings.scale ?? 1,
     windows_runner: settings.windowsRunner?.kind ?? "automatic",
     library_layout: settings.library?.layout ?? "default",
     library_sort: settings.librarySort ?? "default",
-    screen: `${screen.width}x${screen.height}`,
+    screen: screen ? `${screen.width}x${screen.height}` : null,
+    display_scale: screen?.scale ?? null,
   };
 }
 
