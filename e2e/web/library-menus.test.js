@@ -20,16 +20,13 @@ test("the new playlist's field lets the d-pad back out, with no playlists to go 
   assert.equal(await app.execute(() => Boolean(document.querySelector('.game-menu'))), true, "the menu stayed");
 });
 
-for (const mode of ["the usual library", "TV mode"]) {
+// TV mode leaves Add to Steam to desktop mode (TV mode's Settings → Switch to desktop mode).
+for (const mode of ["the usual library"]) {
   test(`in ${mode}, what Add to Steam says shows wherever the page is scrolled: a failure takes the focus, a success doesn't`, async () => {
     const s2 = await openApp({ state: installed });
     try {
       const a = s2.app;
       await s2.page.locator("article[data-slug]").first().waitFor();
-      if (mode === "TV mode") {
-        await s2.page.locator(".tv-button").click();
-        await s2.page.locator(".tv-mode article[data-slug]").first().waitFor();
-      }
       await reach.install(a);
       const steamAnswers = (answer) =>
         s2.page.evaluate((answer) => {

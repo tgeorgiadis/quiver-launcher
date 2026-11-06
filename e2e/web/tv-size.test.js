@@ -1,6 +1,8 @@
 /**
- * TV mode's size on the screen: the same at 4K as at 1080p, where a TV with no display scale of its own gives the
- * launcher twice the pixels to be small in. Outside TV mode the interface size is all that zooms the page.
+ * TV mode's size on the screen: it sizes itself by the window's height (src/tv/TvHost.tsx's `--u`, 1 at 720p), so 4K
+ * shows as 1080p does where a TV with no display scale of its own gives the launcher twice the pixels to be small in,
+ * with the interface size on top; the page itself isn't zoomed. Outside TV mode the interface size is all that zooms
+ * the page.
  */
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
@@ -18,6 +20,16 @@ async function measure(page) {
   });
 }
 
+/** TV mode's unit, and its tab strip's height on the screen. */
+async function measureTv(page) {
+  await page.locator(".tv-tab.selected").waitFor();
+  return page.evaluate(() => {
+    const root = document.querySelector(".tv-root");
+    const zoom = Number(getComputedStyle(document.documentElement).zoom);
+    return { zoom, u: parseFloat(root.style.getPropertyValue("--u")), strip: document.querySelector(".tv-tab").getBoundingClientRect().height };
+  });
+}
+
 async function opened(settings, width, height, check) {
   const s = await openApp({ state: { settings }, width, height });
   try {
@@ -27,29 +39,31 @@ async function opened(settings, width, height, check) {
   }
 }
 
-test("TV mode at 4K is twice its size at 1080p, on the screen", async () => {
+test("TV mode at 4K is twice its size at 1080p, on the screen, without zooming the page", async () => {
   let at1080p;
-  await opened({ tvMode: "on" }, 1920, 1080, async (page) => (at1080p = await measure(page)));
+  await opened({ tvMode: "on" }, 1920, 1080, async (page) => (at1080p = await measureTv(page)));
   await opened({ tvMode: "on" }, 3840, 2160, async (page) => {
-    const at4k = await measure(page);
-    assert.ok(Math.abs(at1080p.zoom - 1.15) < 0.001, `zoom at 1080p: ${at1080p.zoom}`);
-    assert.ok(Math.abs(at4k.zoom - 2.3) < 0.001, `zoom at 4K: ${at4k.zoom}`);
-    assert.ok(Math.abs(at4k.bar / at1080p.bar - 2) < 0.05, `the bar: ${at1080p.bar} and ${at4k.bar}`);
+    const at4k = await measureTv(page);
+    assert.equal(at1080p.zoom, 1);
+    assert.equal(at4k.zoom, 1);
+    assert.ok(Math.abs(at1080p.u - 1.5) < 0.001, `--u at 1080p: ${at1080p.u}`);
+    assert.ok(Math.abs(at4k.u - 3) < 0.001, `--u at 4K: ${at4k.u}`);
+    assert.ok(Math.abs(at4k.strip / at1080p.strip - 2) < 0.05, `a tab: ${at1080p.strip} and ${at4k.strip}`);
   });
 });
 
 test("TV mode's interface size goes over the screen's", async () => {
   await opened({ tvMode: "on", scale: 1.5 }, 3840, 2160, async (page) => {
-    const { zoom } = await measure(page);
-    assert.ok(Math.abs(zoom - 3.45) < 0.001, `zoom: ${zoom}`);
+    const { u } = await measureTv(page);
+    assert.ok(Math.abs(u - 4.5) < 0.001, `--u: ${u}`);
   });
 });
 
 test("TV mode's size follows the window", async () => {
-  await opened({ tvMode: "on" }, 1280, 800, async (page) => {
-    assert.ok(Math.abs((await measure(page)).zoom - 1.15) < 0.001);
+  await opened({ tvMode: "on" }, 1280, 720, async (page) => {
+    assert.ok(Math.abs((await measureTv(page)).u - 1) < 0.001);
     await page.setViewportSize({ width: 3840, height: 2160 });
-    await page.waitForFunction(() => Math.abs(Number(getComputedStyle(document.documentElement).zoom) - 2.3) < 0.001);
+    await page.waitForFunction(() => Math.abs(parseFloat(document.querySelector(".tv-root").style.getPropertyValue("--u")) - 3) < 0.001);
   });
 });
 
@@ -61,14 +75,14 @@ test("outside TV mode, a 4K screen is left to the interface size", async () => {
 
 test("the largest interface size leaves the top bar on the screen", async () => {
   for (const language of ["en", "de", "fr"])
-    for (const [tvMode, width, height] of [["on", 1280, 800], ["on", 3840, 2160], ["off", 1280, 800]])
-      await opened({ tvMode, scale: 2, language }, width, height, async (page) => {
+    for (const [width, height] of [[1280, 800], [3840, 2160]])
+      await opened({ tvMode: "off", scale: 2, language }, width, height, async (page) => {
         await measure(page);
         const over = await page.evaluate(() => {
           const bar = document.querySelector(".topbar");
           return bar.scrollWidth - bar.clientWidth;
         });
-        assert.equal(over, 0, `${language}, TV mode ${tvMode} at ${width}x${height}`);
+        assert.equal(over, 0, `${language} at ${width}x${height}`);
       });
 });
 

@@ -39,10 +39,11 @@ const scales = () => {
 function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof typeof LAYER] = LAYER.overlay, active = true) {
   const [index, setIndex] = useState(0);
   const row = rows[Math.min(index, rows.length - 1)];
-  const step = (by: 1 | -1) => {
-    if (row?.kind !== "choice") return;
-    const at = row.options.findIndex((o) => o.value === row.value);
-    row.set(row.options[(Math.max(0, at) + by + row.options.length) % row.options.length].value);
+  /** Moves a choice's value along: the focused row's, or the one clicked. */
+  const step = (by: 1 | -1, which: Row | undefined = row) => {
+    if (which?.kind !== "choice") return;
+    const at = which.options.findIndex((o) => o.value === which.value);
+    which.set(which.options[(Math.max(0, at) + by + which.options.length) % which.options.length].value);
   };
   useInputHandler(
     {
@@ -67,7 +68,7 @@ function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof ty
   return { index, setIndex, step };
 }
 
-function RowList({ rows, index, setIndex, step }: { rows: Row[]; index: number; setIndex: (i: number) => void; step: (by: 1 | -1) => void }) {
+function RowList({ rows, index, setIndex, step }: { rows: Row[]; index: number; setIndex: (i: number) => void; step: (by: 1 | -1, which?: Row) => void }) {
   useEffect(() => {
     document.querySelector(".tv-settings-list .focused")?.scrollIntoView({ block: "nearest" });
   }, [index]);
@@ -77,7 +78,7 @@ function RowList({ rows, index, setIndex, step }: { rows: Row[]; index: number; 
         const focused = i === index;
         const value = row.kind === "choice" ? (row.options.find((o) => o.value === row.value)?.label ?? "") : row.value;
         return (
-          <li key={row.label} className={focused ? "focused" : ""} onMouseMove={() => setIndex(i)} onClick={() => (row.kind === "action" ? row.run() : (setIndex(i), step(1)))}>
+          <li key={row.label} className={focused ? "focused" : ""} onMouseMove={() => setIndex(i)} onClick={() => (row.kind === "action" ? row.run() : (setIndex(i), step(1, row)))}>
             <span className="tv-settings-label">
               {row.label}
               {focused && row.detail && <small>{row.detail}</small>}
