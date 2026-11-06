@@ -60,7 +60,7 @@ test("an app removed in Android's settings while Quiver stayed in view offers Ge
     const error = page.locator(".job-error", { hasText: "isn't installed on this device any more" }).first();
     await error.waitFor();
     await error.getByRole("button", { name: "Dismiss" }).click();
-    await page.locator("main").getByRole("button", { name: "Get", exact: true }).first().waitFor();
+    await page.locator("main").getByRole("button", { name: "Install", exact: true }).first().waitFor();
     assert.equal(await page.locator("main").getByRole("button", { name: "Play", exact: true }).count(), 0, "Play, for an app that's gone");
   } finally {
     await s.close();

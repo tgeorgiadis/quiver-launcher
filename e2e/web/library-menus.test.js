@@ -151,7 +151,7 @@ test("a game's card: Y lists its ports, B and Get there put the focus back on th
     await game.until(() => g.execute(() => !window.__installs.has("entry_test-remake") && !document.querySelector('.port-row[data-slug="test-remake"] .progress')));
     await game.until(() => g.execute(() => document.activeElement?.closest(".port-row")?.getAttribute("data-slug") === "test-remake"));
     assert.ok(await inList(), "the list stays open");
-    assert.match(await reach.focused(g), /Get/, "the focus on its Get");
+    assert.match(await reach.focused(g), /Install/, "the focus on its Install");
     // Got, and done: A on the card starts the port just got, not the one played before, and says so.
     await get();
     await g.execute(() => window.__installs.get("entry_test-remake").resolve({}));

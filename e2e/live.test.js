@@ -119,14 +119,18 @@ test("a real app's player feedback shows as on the website", async () => {
   await until(async () => (await cards()).length > 1, 20000);
 });
 
-test("Get installs verified ports, and Play starts one", async () => {
+test("Add then Install installs verified ports, and Play starts one", async () => {
   const { app, until } = s;
   const results = [];
   for (const slug of (await cards()).slice(0, 8)) {
     // Found again each time: the card is drawn anew as the download goes, and an old one never shows Play.
     const card = () => app.$(`article[data-slug="${slug}"]`);
-    const get = await (await card()).$("button=Get");
-    if (!(await get.isExisting())) continue;
+    const add = await (await card()).$("button=Add");
+    if (!(await add.isExisting())) continue;
+    await add.click();
+    // In the library now: Install takes Add's place.
+    await until(async () => (await (await card()).$("button=Install")).isExisting(), 10000);
+    const get = await (await card()).$("button=Install");
     const started = Date.now();
     await get.click();
     // Wait for Play, an error, or a choice between files.

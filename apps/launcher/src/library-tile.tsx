@@ -215,7 +215,7 @@ const Tile = memo(function Tile({
   const getIt = (
     <button type="button" className="tile-play tile-get" onClick={() => get(entry)}>
       <Download size={24} />
-      <span className="tile-label">{t({ message: "Get", comment: "Button: download and install the app" })}</span>
+      <span className="tile-label">{t({ message: "Install", comment: "Button: download and install the app" })}</span>
     </button>
   );
   const others = (

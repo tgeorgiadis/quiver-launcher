@@ -9,7 +9,7 @@
  * the same ways.
  */
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as KeyEvent, type PointerEvent as PointerEv, type PointerEventHandler, type ReactNode } from "react";
-import { Check, ChevronRight, Download, MoreHorizontal, Play } from "lucide-react";
+import { Check, ChevronRight, Download, MoreHorizontal, Play, Plus } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
@@ -71,7 +71,7 @@ export function BrowseMenu({ entry, onOpen, onReadme, onFeedback }: { entry: Ent
 }
 
 function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry: Entry; onOpen: () => void; close: () => void; onReadme: () => void; onFeedback: () => void }) {
-  const { settings, setSettings, library, addToLibrary } = useLauncher();
+  const { settings, setSettings } = useLauncher();
   const { main, top } = useMainItems(entry, onOpen);
   // Where its code lives comes with its page's details, asked for as the menu opens.
   const { source } = useAppDetail(entry);
@@ -94,7 +94,6 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
     <div className="game-menu" data-arrows="" onKeyDown={keys}>
       {main && <MainItem main={main} onClick={() => (close(), main.act())} />}
       {top.map((i) => item(i.text, i.act))}
-      {!library.some((i) => i.id === entry.id) && item(t`Add to library`, () => addToLibrary(entry))}
       {source === undefined
         ? item(t`View repository`, () => {}, true)
         : source && item(source.provider === "gitlab" ? t`View on GitLab` : t`View on GitHub`, () => void native.openUrl(source.url))}
@@ -200,7 +199,7 @@ function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" |
 }
 
 /** `icon`: the main action's, as the app's page has it. */
-type Item = { text: string; act: () => void; kind?: "danger"; disabled?: boolean; icon?: "play" | "get"; note?: string };
+type Item = { text: string; act: () => void; kind?: "danger"; disabled?: boolean; icon?: "play" | "get" | "add"; note?: string };
 type Sub = { key: "programs" | "add" | "tags" | "manage"; by: "hover" | "click"; focus?: boolean };
 
 /** A program's file name, without the folders it's in. */
@@ -208,7 +207,7 @@ export const fileName = (path: string) => path.split(/[/\\]/).pop() || path;
 
 /** An app's main action, as its page has it, and what goes with it at the top of its menus. */
 function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Item[] } {
-  const { config, installs, jobs, catalog, get, play, cancel, dismiss, declineUpdate } = useLauncher();
+  const { config, library, installs, jobs, catalog, get, play, cancel, dismiss, declineUpdate, addToLibrary } = useLauncher();
   const install = installs[entry.id];
   const job = jobs[entry.id];
   const failed = job && "error" in job;
@@ -223,10 +222,13 @@ function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Ite
       : install
         ? { text: t({ message: "Play", comment: "Menu item that starts an installed app" }), act: () => void play(entry.id), icon: "play" }
         : canGet(entry, config.os)
-          ? // Its verified release was withdrawn: the app's page has its versions.
-            pulledVerified(latest)
-            ? { text: t`Choose a version…`, act: onOpen }
-            : { text: t({ message: "Get", comment: "Menu item that installs an app" }), act: () => void get(entry), icon: "get" }
+          ? // As its button: Add puts it in the library without downloading it, then Install takes its place.
+            !library.some((i) => i.id === entry.id)
+            ? { text: t({ message: "Add", comment: "Menu item that adds an app to the library without installing it" }), act: () => addToLibrary(entry), icon: "add" }
+            : // Its verified release was withdrawn: the app's page has its versions.
+              pulledVerified(latest)
+              ? { text: t`Choose a version…`, act: onOpen }
+              : { text: t({ message: "Install", comment: "Menu item that installs an app" }), act: () => void get(entry), icon: "get" }
           : undefined;
   const top: Item[] = [];
   // Once its files are going in, an install finishes: stopping then could leave the app half there.
@@ -251,6 +253,7 @@ function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () =>
     <button type="button" role="menuitem" data-item className="game-menu-main" disabled={main.disabled} onClick={onClick} onPointerMove={onPointerMove}>
       {main.icon === "play" && <Play size={15} aria-hidden="true" />}
       {main.icon === "get" && <Download size={15} aria-hidden="true" />}
+      {main.icon === "add" && <Plus size={15} aria-hidden="true" />}
       {main.text}
     </button>
   );
@@ -342,7 +345,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const onNewest = !install || Boolean(newest && bare(install.version) === bare(newest));
   if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && install?.installer !== "msi" && !busy)
     manage.push({
-      text: install?.wine ? t`Switch to the Linux version` : install ? t`Switch to the Windows version (Wine)` : t`Get the Windows version (Wine)`,
+      text: install?.wine ? t`Switch to the Linux version` : install ? t`Switch to the Windows version (Wine)` : t`Install the Windows version (Wine)`,
       act: () => void get(latest, undefined, { platform: install?.wine ? "linux" : "windows" }),
     });
   manage.push({

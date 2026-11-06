@@ -10,7 +10,7 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | playlist | Playlist | |
 | Browse | Entdecken | the catalog page |
 | catalog | Katalog | |
-| Get | Holen | the button that installs an app |
+| Add / Install | Hinzufügen / Installieren | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Spielen / Trotzdem spielen | |
 | install / uninstall | installieren / deinstallieren | |
 | download | Download / herunterladen | Downloads page: Downloads |

@@ -579,7 +579,11 @@ msgid "Action"
 msgstr "Действие"
 
 #. Button that adds an app installed here to the library
+#. Button that adds an app to the library without installing it
 #. Button: add the app to the library
+#. Menu item that adds an app to the library without installing it
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Add"
@@ -647,11 +651,6 @@ msgstr "Добавить файлы в папку"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Add files to folder…"
 msgstr "Добавить файлы в папку…"
-
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Add to library"
-msgstr "Добавить в библиотеку"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
@@ -1805,35 +1804,10 @@ msgstr "Игры"
 msgid "General"
 msgstr "Общие"
 
-#. Button that installs an app
-#. Button that installs an app
-#. Button: download and install the app
-#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
-#. Menu item that installs an app
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
-#: ../../apps/launcher/src/detail.tsx
-#: ../../apps/launcher/src/library-tile.tsx
-#: ../../apps/launcher/src/spatial.ts
-msgid "Get"
-msgstr "Получить"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {app}"
-msgstr "Получить {app}"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {newestLabel}"
-msgstr "Получить {newestLabel}"
-
 #. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
 msgstr "Получить Quiver Launcher"
-
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Get the Windows version (Wine)"
-msgstr "Получить версию для Windows (Wine)"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2040,12 +2014,25 @@ msgid "Include preview updates"
 msgstr "Получать предварительные версии"
 
 #. Button that installs a mod
+#. Button that installs an app
+#. Button that installs an app
 #. Button that installs this version
 #. Button that installs this version
+#. Button: download and install the app
+#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
+#. Menu item that installs an app
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/spatial.ts
 msgid "Install"
 msgstr "Установить"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {app}"
+msgstr "Установить {app}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -2111,6 +2098,10 @@ msgstr "Установить проверенную {installedVersion}"
 #: ../../apps/launcher/src/App.tsx
 msgid "Install the verified {verifiedVersion}"
 msgstr "Установить проверенную {verifiedVersion}"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install the Windows version (Wine)"
+msgstr "Установить версию для Windows (Wine)"
 
 #. A mod that's installed
 #. Filter by whether an app is installed

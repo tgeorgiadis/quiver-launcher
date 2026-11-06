@@ -810,7 +810,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     };
   }, []);
   // On Android a player can remove an app in the system's settings, which Quiver isn't told about. Checked when Quiver
-  // comes back into view, so its card offers Get rather than a Play that can only fail.
+  // comes back into view, so its card offers Install rather than a Play that can only fail.
   const forAndroid = useRef({ installs, jobs });
   forAndroid.current = { installs, jobs };
   useEffect(() => {
@@ -1598,7 +1598,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           const kinds = e === NO_PROGRAM ? await native.fileKinds(install.folder, install.dir).catch(() => null) : null;
           const report = () => captureFailure("launch", e, { ...ref, wine: Boolean(install.wine), ...(kinds ? { kinds: kinds.join(",") } : {}) });
           if (config.os !== "android") return report();
-          // Removed in Android's settings while Quiver stayed in view: its card offers Get again, and there's nothing to report.
+          // Removed in Android's settings while Quiver stayed in view: its card offers Install again, and there's nothing to report.
           void native.androidAppGone(install.folder, install.dir).then((gone) => (gone ? setInstalls(({ [id]: _, ...rest }) => rest) : report()), report);
         },
       );

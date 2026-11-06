@@ -11,7 +11,7 @@ and headings, as in English.
 | playlist | playlist | the library's own lists |
 | Browse | Explorar | the catalog page |
 | catalog | catálogo | |
-| Get | Obter | the button that installs an app |
+| Add / Install | Adicionar / Instalar | the buttons that put an app in the library, then install it |
 | Play | Jogar | |
 | Play anyway | Jogar mesmo assim | |
 | install / uninstall | instalar / desinstalar | |
