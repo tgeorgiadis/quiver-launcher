@@ -37,8 +37,8 @@ msgstr "{0, plural, one {Показано # приложение для друг
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, one {Вернуть # приложение} few {Вернуть все # приложения} many {Вернуть все # приложений} other {Вернуть все # приложения}}"
 
-#. placeholder {0}: index + 1
-#. placeholder {1}: queue.length
+#. placeholder {0}: placedCount + 1
+#. placeholder {1}: placedCount + queue.length
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{0} of {1}"
 msgstr "{0} из {1}"
@@ -4164,6 +4164,10 @@ msgstr "Запускать вместе с Windows в системном тре�
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
 msgstr "Запуск"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Starting {name}…"
+msgstr "Запуск {name}…"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."

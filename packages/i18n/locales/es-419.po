@@ -37,8 +37,8 @@ msgstr "{0, plural, one {Se muestra # app para otras plataformas.} other {Se mue
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, one {Volver a mostrar # app} other {Volver a mostrar las # apps}}"
 
-#. placeholder {0}: index + 1
-#. placeholder {1}: queue.length
+#. placeholder {0}: placedCount + 1
+#. placeholder {1}: placedCount + queue.length
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{0} of {1}"
 msgstr "{0} de {1}"
@@ -4164,6 +4164,10 @@ msgstr "Iniciar con Windows, en la bandeja del sistema"
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
 msgstr "Iniciando"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Starting {name}…"
+msgstr "Iniciando {name}…"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."

@@ -37,8 +37,8 @@ msgstr "{0, plural, other {다른 플랫폼용 앱 #개를 보여 주고 있어�
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, other {앱 #개 모두 숨김 해제}}"
 
-#. placeholder {0}: index + 1
-#. placeholder {1}: queue.length
+#. placeholder {0}: placedCount + 1
+#. placeholder {1}: placedCount + queue.length
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{0} of {1}"
 msgstr "{1}개 중 {0}"
@@ -4164,6 +4164,10 @@ msgstr "Windows 시작 시 시스템 트레이에서 실행"
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
 msgstr "시작하는 중"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Starting {name}…"
+msgstr "{name} 시작 중…"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts {path} on this computer."

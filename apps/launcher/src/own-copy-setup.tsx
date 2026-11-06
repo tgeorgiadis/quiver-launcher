@@ -11,7 +11,7 @@ import type { Entry, SetupFile } from "@quiverlauncher/api";
 import { native, type CheckedCopy, type CopyProgress } from "./native";
 import { useLauncher, type Install, type OwnCopy } from "./store";
 import { Dialog } from "./library";
-import { delivered, rankCopies, setupFiles, sizeText } from "./own-copy";
+import { copiesNeeded, delivered, rankCopies, setupFiles, sizeText } from "./own-copy";
 
 const fileName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 const folderOf = (path: string) => path.slice(0, Math.max(0, path.length - fileName(path).length)).replace(/[\\/]+$/, "");
@@ -88,19 +88,34 @@ export function OwnCopyPrompt() {
   const entry = asking ? catalog[asking.id] : undefined;
   const install = asking ? installs[asking.id] : undefined;
   const files = setupFiles(entry, config.os);
-  // The one asked for, or each the game still needs in turn.
+  // The one asked for, or each the game still needs in turn: the first left, as each set up drops out.
   const queue = asking?.fileId ? files.filter((f) => f.id === asking.fileId) : files.filter((f) => !install?.copies?.[f.id] && f.required !== false && delivered(f));
-  const [index, setIndex] = useState(0);
-  const file = queue[index] ?? queue[0];
+  const [placedCount, setPlacedCount] = useState(0);
+  const [done, setDone] = useState<OwnCopy | null>(null);
+  const file = done ? files.find((f) => install?.copies?.[f.id]?.at === done.at) ?? queue[0] : queue[0];
   const [phase, setPhase] = useState<Phase>({ kind: "looking" });
   const [progress, setProgress] = useState<CopyProgress | null>(null);
   // Files whose names don't look like this game stay folded away till asked for.
   const [showOthers, setShowOthers] = useState(false);
+  // Play asked for it: the game starts once its last copy is in place.
+  const [launching, setLaunching] = useState(false);
   const open = Boolean(asking && entry && install && file);
   const asked = useRef(0);
 
-  useEffect(() => setIndex(0), [asking?.id, asking?.fileId]);
+  useEffect(() => {
+    setPlacedCount(0);
+    setDone(null);
+    setLaunching(false);
+  }, [asking?.id, asking?.fileId]);
   useEffect(() => setShowOthers(false), [asking?.id, file?.id]);
+  // Started from here once the store has the copy, so Play sees it and passes it to the game.
+  useEffect(() => {
+    if (!launching || !asking || !entry || !install) return;
+    if (copiesNeeded(entry, install, config.os).length) return;
+    setLaunching(false);
+    setUpCopy(null);
+    void play(asking.id);
+  }, [launching, install?.copies]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
     const unlisten = native.onCopyProgress(setProgress);
@@ -108,7 +123,7 @@ export function OwnCopyPrompt() {
   }, [open]);
   // Looks for copies as each one is asked for.
   useEffect(() => {
-    if (!open || !file) return;
+    if (!open || !file || done) return;
     const turn = ++asked.current;
     setPhase({ kind: "looking" });
     native.findCopies(file).then(
@@ -141,9 +156,12 @@ export function OwnCopyPrompt() {
       const copy: OwnCopy = { path, ...(placed ? { placed } : {}), ...(checked.dump ? { dump: checked.dump } : {}), ...(checked.verified ? { verified: true } : {}), at: Date.now() };
       setCopy(entry.id, file.id, copy);
       if (turn !== asked.current) return;
-      // The next one the game needs, if there is one.
-      if (index + 1 < queue.length) return setIndex(index + 1);
+      setPlacedCount((n) => n + 1);
+      // The next one the game needs, if there is one: it's first in the queue once this one drops out.
+      if (!asking.fileId && queue.length > 1) return;
+      setDone(copy);
       setPhase({ kind: "done", copy });
+      if (asking.play) setLaunching(true);
     } catch (e) {
       if (turn === asked.current) setPhase({ kind: "problem", path, checked, text: String(e) });
     }
@@ -177,12 +195,18 @@ export function OwnCopyPrompt() {
               )}
             </p>
             {!delivered(file) && <p className="muted">{t`When ${name} asks for it, pick this file: ${fileName(phase.copy.path)}`}</p>}
-            <div className="row">
-              <button className="primary" autoFocus onClick={() => (close(), void play(entry.id))}>
-                <Play size={16} aria-hidden="true" /> {t({ message: "Play", comment: "Button that starts an app" })}
-              </button>
-              <button onClick={close}>{t`Close`}</button>
-            </div>
+            {launching ? (
+              <p className="muted" role="status">
+                {t`Starting ${name}…`}
+              </p>
+            ) : (
+              <div className="row">
+                <button className="primary" autoFocus onClick={() => (close(), void play(entry.id))}>
+                  <Play size={16} aria-hidden="true" /> {t({ message: "Play", comment: "Button that starts an app" })}
+                </button>
+                <button onClick={close}>{t`Close`}</button>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -259,7 +283,7 @@ export function OwnCopyPrompt() {
                 {t`Cancel`}
               </button>
             </div>
-            {queue.length > 1 && <p className="muted small">{t`${index + 1} of ${queue.length}`}</p>}
+            {!asking.fileId && placedCount + queue.length > 1 && <p className="muted small">{t`${placedCount + 1} of ${placedCount + queue.length}`}</p>}
           </>
         )}
       </div>
