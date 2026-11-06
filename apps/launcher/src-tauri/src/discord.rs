@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// The Quiver Launcher application in Discord's Developer Portal: its name is what Discord shows the player playing.
 /// `QUIVER_DISCORD_CLIENT_ID` stands in for it, for trying another application.
-const CLIENT_ID: &str = "";
+const CLIENT_ID: &str = "1555927002362675301";
 /// Where the button goes: the website's download page.
 const DOWNLOAD: &str = "https://quiverlauncher.com/download/";
 const LOGO: &str = "https://quiverlauncher.com/icon-512.png";
