@@ -20,6 +20,7 @@ import { useSyncExternalStore } from "react";
 import type { ErrorEvent } from "@sentry/browser";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
+import { failedCommand } from "./command-failures";
 
 /** The website, which keeps the secret Google Analytics asks for. */
 export const DEFAULT_HOST = "https://quiverlauncher.com";
@@ -180,7 +181,7 @@ function startErrors(ctx: TelemetryContext) {
         sendClientReports: false,
         integrations: (defaults) => defaults.filter(({ name }) => !LEFT_OUT.has(name)),
         // Turning it off after it loaded drops everything, and browser noise goes too; what's left is scrubbed.
-        beforeSend: (event) => (!allowed() || isNoise(event) ? null : scrubEvent(event)),
+        beforeSend: (event, hint) => (!allowed() || isNoise(event) ? null : scrubEvent(withCommand(event, hint?.originalException))),
       });
       sentryRunning = true;
       return sentry;
@@ -368,6 +369,17 @@ const NOISE = /^ResizeObserver loop (completed with undelivered notifications|li
 function isNoise(event: ErrorEvent) {
   const list = event.exception?.values;
   return Array.isArray(list) && list.length > 0 && list.every((e) => typeof e?.value === "string" && NOISE.test(e.value));
+}
+
+/**
+ * An error from the Rust side that nothing caught says which command it came from, and is grouped by that and the
+ * system's error number: its text is in the player's language, a new issue for each.
+ */
+function withCommand(event: ErrorEvent, error: unknown): ErrorEvent {
+  const command = failedCommand(error);
+  if (!command) return event;
+  const number = /os error (\d+)/i.exec(String(error))?.[0];
+  return { ...event, tags: { ...event.tags, command }, fingerprint: ["uncaught", command, number ?? reasonOf(error)] };
 }
 
 function report(error: unknown, scope: ErrorScope) {

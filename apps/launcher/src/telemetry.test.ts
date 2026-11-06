@@ -549,6 +549,36 @@ test("the browser's harmless ResizeObserver warning isn't sent; other errors are
   expect(error("ResizeObserver loop limit exceeded", "Failed to fetch")).not.toBeNull();
 });
 
+test("an error from the Rust side that nothing caught says which command it came from, grouped whatever language it's in", async () => {
+  await started();
+  const { noteFailure } = await import("./command-failures");
+  noteFailure("read_state", "No such file or directory (os error 2)");
+  noteFailure("read_state", "Aucun fichier ou dossier de ce nom (os error 2)");
+  noteFailure("pick_program", "The picker wouldn't open.");
+  const sent = (error: unknown) => sentry.init.mock.calls[0][0].beforeSend({ tags: { failure: "launch" } }, { originalException: error });
+  const english = sent("No such file or directory (os error 2)");
+  expect(english.tags).toEqual({ failure: "launch", command: "read_state" });
+  expect(english.fingerprint).toEqual(["uncaught", "read_state", "os error 2"]);
+  expect(sent("Aucun fichier ou dossier de ce nom (os error 2)").fingerprint).toEqual(english.fingerprint);
+  expect(sent("The picker wouldn't open.").fingerprint).toEqual(["uncaught", "pick_program", "The picker wouldn't open."]);
+  // Anything else goes as it was.
+  expect(sent(new Error("boom")).fingerprint).toBeUndefined();
+  expect(sent("never failed here").tags).toEqual({ failure: "launch" });
+});
+
+test("only the most recent commands' failures are kept, and a repeat counts as recent", async () => {
+  const { failedCommand, noteFailure } = await import("./command-failures");
+  noteFailure("first", "first failed");
+  noteFailure("second", "second failed");
+  for (let i = 0; i < 18; i++) noteFailure(`other${i}`, `other ${i} failed`);
+  noteFailure("first", "first failed");
+  noteFailure("last", "last failed");
+  expect(failedCommand("first failed")).toBe("first");
+  expect(failedCommand("second failed")).toBeUndefined();
+  noteFailure("not text", new Error("an object"));
+  expect(failedCommand(new Error("an object"))).toBeUndefined();
+});
+
 test("a problem reaches usage data in English, whatever language it showed in", async () => {
   const telemetry = await started();
   const { i18n } = await import("@quiverlauncher/i18n");
