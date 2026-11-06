@@ -322,12 +322,20 @@ msgid "{name} menu"
 msgstr "Menú de {name}"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "{name} plays your own copy of the game. Choose its file, and Quiver checks it and puts it where {name} reads it."
-msgstr "{name} usa tu propia copia del juego. Elige su archivo, y Quiver lo revisa y lo pone donde {name} lo lee."
+msgid "{name} needs your own copy of the game to run. Choose the disc image, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name} necesita tu propia copia del juego para funcionar. Elige la imagen de disco, y Quiver la revisa y la pone donde {name} la necesita."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "{name} plays your own copy of the game. Choose the folder with the game's files in it."
-msgstr "{name} usa tu propia copia del juego. Elige la carpeta con los archivos del juego."
+msgid "{name} needs your own copy of the game to run. Choose the file, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name} necesita tu propia copia del juego para funcionar. Elige el archivo, y Quiver lo revisa y lo pone donde {name} lo necesita."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run. Choose the folder with the game's files in it, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name} necesita tu propia copia del juego para funcionar. Elige la carpeta con los archivos del juego, y Quiver la revisa y la pone donde {name} la necesita."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name} necesita tu propia copia del juego para funcionar. Elige la ROM, y Quiver la revisa y la pone donde {name} la necesita."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"

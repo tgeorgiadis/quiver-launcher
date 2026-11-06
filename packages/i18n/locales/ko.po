@@ -322,12 +322,20 @@ msgid "{name} menu"
 msgstr "{name} 메뉴"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "{name} plays your own copy of the game. Choose its file, and Quiver checks it and puts it where {name} reads it."
-msgstr "{name}은(는) 직접 가진 게임 사본으로 실행돼요. 파일을 고르면 Quiver가 확인하고 {name}이(가) 읽는 위치에 놓아요."
+msgid "{name} needs your own copy of the game to run. Choose the disc image, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해요. 디스크 이미지를 고르면 Quiver가 확인하고 {name}에 필요한 위치에 놓아요."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "{name} plays your own copy of the game. Choose the folder with the game's files in it."
-msgstr "{name}은(는) 직접 가진 게임 사본으로 실행돼요. 게임 파일이 든 폴더를 고르세요."
+msgid "{name} needs your own copy of the game to run. Choose the file, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해요. 파일을 고르면 Quiver가 확인하고 {name}에 필요한 위치에 놓아요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run. Choose the folder with the game's files in it, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해요. 게임 파일이 든 폴더를 고르면 Quiver가 확인하고 {name}에 필요한 위치에 놓아요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where {name} needs it."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해요. ROM을 고르면 Quiver가 확인하고 {name}에 필요한 위치에 놓아요."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"

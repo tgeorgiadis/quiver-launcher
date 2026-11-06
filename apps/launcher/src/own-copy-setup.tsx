@@ -74,6 +74,14 @@ function copyState(file: SetupFile, copy: OwnCopy | undefined, missing: boolean)
   return file.required === false ? t`Optional` : t`Needed to play`;
 }
 
+/** What the dialog asks for, in the words for what it is: a ROM, a disc image, a folder or a file. */
+function intro(file: SetupFile, name: string) {
+  if (file.kind === "folder") return t`${name} needs your own copy of the game to run. Choose the folder with the game's files in it, and Quiver checks it and puts it where ${name} needs it.`;
+  if (/\brom\b/i.test(file.label)) return t`${name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where ${name} needs it.`;
+  if (/\b(disc|disk|iso|cd|dvd)\b/i.test(file.label)) return t`${name} needs your own copy of the game to run. Choose the disc image, and Quiver checks it and puts it where ${name} needs it.`;
+  return t`${name} needs your own copy of the game to run. Choose the file, and Quiver checks it and puts it where ${name} needs it.`;
+}
+
 type Phase =
   | { kind: "looking" }
   | { kind: "choose"; found: { path: string; size: number }[] }
@@ -216,7 +224,7 @@ export function OwnCopyPrompt() {
             <h2>
               <Disc3 size={18} aria-hidden="true" /> {t`Your copy: ${file.label}`}
             </h2>
-            <p>{file.prompt ?? (folder ? t`${name} plays your own copy of the game. Choose the folder with the game's files in it.` : t`${name} plays your own copy of the game. Choose its file, and Quiver checks it and puts it where ${name} reads it.`)}</p>
+            <p>{file.prompt ?? intro(file, name)}</p>
             {file.accepted.length > 0 && (
               <p className="muted small">
                 <ShieldCheck size={14} aria-hidden="true" />{" "}
