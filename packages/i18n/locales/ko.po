@@ -32,6 +32,12 @@ msgstr "{0, plural, other {다른 플랫폼용 앱 #개를 보여 주고 있어�
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, other {앱 #개 모두 숨김 해제}}"
 
+#. placeholder {0}: index + 1
+#. placeholder {1}: queue.length
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{0} of {1}"
+msgstr "{1}개 중 {0}"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{active, plural, one {# downloading, {percent}%} other {# downloading, {percent}%}}"
 msgstr "{active, plural, other {#개 다운로드 중, {percent}%}}"
@@ -309,6 +315,14 @@ msgstr "{name} 공유됨"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "{name} menu"
 msgstr "{name} 메뉴"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} plays your own copy of the game. Choose its file, and Quiver checks it and puts it where {name} reads it."
+msgstr "{name}은(는) 직접 가진 게임 사본으로 실행돼요. 파일을 고르면 Quiver가 확인하고 {name}이(가) 읽는 위치에 놓아요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} plays your own copy of the game. Choose the folder with the game's files in it."
+msgstr "{name}은(는) 직접 가진 게임 사본으로 실행돼요. 게임 파일이 든 폴더를 고르세요."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
@@ -1093,6 +1107,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
@@ -1140,6 +1155,11 @@ msgctxt "README callout"
 msgid "Caution"
 msgstr "주의"
 
+#. Button: choose another copy of the game
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Change"
+msgstr "변경"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Change game"
 msgstr "게임 변경"
@@ -1173,10 +1193,20 @@ msgstr "Quiver가 이 버전을 검증한 뒤 GitHub에서 바뀌었어요. {whe
 msgid "Check for updates"
 msgstr "업데이트 확인"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Checking your copy…"
+msgstr "사본 확인 중…"
+
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
 msgstr "확인 중…"
+
+#. placeholder {0}: sizeText(progress.done)
+#. placeholder {1}: sizeText(progress.total)
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Checking… {0} of {1}"
+msgstr "확인 중… {1} 중 {0}"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -1195,6 +1225,7 @@ msgid "Choose a file for {label}"
 msgstr "{label} 파일 선택"
 
 #: ../../apps/launcher/src/custom-art.tsx
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a file…"
 msgstr "파일 선택…"
 
@@ -1203,6 +1234,7 @@ msgid "Choose a folder to look in"
 msgstr "찾아볼 폴더 선택"
 
 #: ../../apps/launcher/src/old-library.tsx
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a folder…"
 msgstr "폴더 선택…"
 
@@ -1349,6 +1381,7 @@ msgstr "검색어 지우기"
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "닫기"
@@ -2216,6 +2249,10 @@ msgstr "출시 당시 Quiver가 확인한 파일을 설치하고, 그 뒤로 바
 msgid "It isn't linked to your Quiver account."
 msgstr "Quiver 계정과 연결되지 않습니다."
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "It isn't where the game reads it any more. Set it up again."
+msgstr "게임이 읽는 위치에 더 이상 없어요. 다시 설정하세요."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "실행됐지만 문제가 있었어요"
@@ -2223,6 +2260,11 @@ msgstr "실행됐지만 문제가 있었어요"
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "현재 위치에서 실행되며, 라이브러리에서 제거해도 그대로 남아 있어요."
+
+#. placeholder {0}: file.accepted.map((d) => d.label).filter(Boolean).join(", ")
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "It takes: {0}"
+msgstr "지원: {0}"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It worked well"
@@ -2470,6 +2512,10 @@ msgstr "프로그램 찾는 중…"
 msgid "Looking for Quiver Launcher 3…"
 msgstr "Quiver Launcher 3을 찾는 중…"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Looking in Downloads, your ROM folders and drives…"
+msgstr "다운로드, ROM 폴더와 드라이브를 찾는 중…"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Looking it up took too long. Check your connection and try again."
 msgstr "찾는 데 너무 오래 걸렸어요. 연결을 확인하고 다시 시도해 주세요."
@@ -2679,6 +2725,10 @@ msgstr "오른쪽으로 이동"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Navigate up"
 msgstr "위로 이동"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Needed to play"
+msgstr "플레이에 필요"
 
 #. Last played: never
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3007,6 +3057,10 @@ msgstr "Quiver Launcher 열기"
 msgid "Open the release page"
 msgstr "버전 페이지 열기"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Optional"
+msgstr "선택 사항"
+
 #. Controller action that opens the focused item's menu
 #: ../../apps/launcher/src/spatial.ts
 msgid "Options"
@@ -3123,6 +3177,7 @@ msgstr "플랫폼"
 #. Button that starts an app
 #. Button that starts an app
 #. Button that starts an app
+#. Button that starts an app
 #. Button: start the app
 #. Button: start the app
 #. Button: start the app
@@ -3134,6 +3189,7 @@ msgstr "플랫폼"
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Play"
 msgstr "플레이"
@@ -3160,6 +3216,10 @@ msgstr "플레이 시간"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Play with"
 msgstr "플레이할 프로그램"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Play without it"
+msgstr "없이 플레이"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Played it? How did it run?"
@@ -3265,6 +3325,10 @@ msgstr "프로젝트 세부 정보"
 msgid "Project type"
 msgstr "프로젝트 유형"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Putting it in place…"
+msgstr "제자리에 놓는 중…"
+
 #. Controller action that presses the main button of the focused card or app's page, such as Get or Play
 #: ../../apps/launcher/src/spatial.ts
 msgid "Quick action"
@@ -3311,6 +3375,14 @@ msgstr "Quiver에서 이 파일을 재생할 수 없습니다. MP3 또는 OGG �
 msgid "Quiver checked {release}'s other files, not {name}. It downloads as the developer published it."
 msgstr "Quiver가 {release}의 다른 파일은 확인했지만 {name}은(는) 확인하지 않았어요. 개발자가 게시한 그대로 다운로드해요."
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Quiver checks it's a copy the game takes."
+msgstr "Quiver가 게임이 지원하는 사본인지 확인해요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Quiver checks your copy and puts it where the game reads it. It never downloads game files."
+msgstr "Quiver가 사본을 확인하고 게임이 읽는 위치에 놓아요. 게임 파일은 절대 다운로드하지 않아요."
+
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
 msgstr "Quiver에서 이 음악 파일을 열 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
@@ -3322,6 +3394,10 @@ msgstr "Quiver가 라이브러리를 열지 못했어요"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
 msgstr "Quiver에서 이 이미지를 표시할 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Quiver didn't find one in the usual places."
+msgstr "Quiver가 평소 위치에서 찾지 못했어요."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver hasn't checked this app."
@@ -3416,6 +3492,22 @@ msgstr "더 읽기"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Read the README"
 msgstr "README 읽기"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Ready"
+msgstr "준비됨"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Ready to play"
+msgstr "플레이 준비 완료"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Ready: a good copy"
+msgstr "준비됨: 정상 사본"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Ready: a good copy ({dump})"
+msgstr "준비됨: 정상 사본 ({dump})"
 
 #. Library sidebar heading: apps played or added in the last two weeks
 #: ../../apps/launcher/src/sidebar.ts
@@ -3742,6 +3834,14 @@ msgstr "사용 데이터 보내기"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"
 msgstr "Quiver Launcher 설정"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Set up your copy"
+msgstr "사본 설정"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Set up your copy for {name}"
+msgstr "{name} 사본 설정"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4186,6 +4286,10 @@ msgstr "그 폴더에는 Quiver Launcher 3이 없어요. 프로그램이 들어 
 msgid "That folder doesn't have Quiver Launcher 3 or any of these apps in it."
 msgstr "그 폴더에는 Quiver Launcher 3도, 이 앱들도 없어요."
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "That isn't a copy this game takes."
+msgstr "이 게임이 지원하는 사본이 아니에요."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "That page hit a problem as it closed: {why}"
 msgstr "페이지를 닫는 중에 문제가 생겼어요: {why}"
@@ -4254,6 +4358,10 @@ msgstr "처음 시작할 때의 질문을 차례로 다시 해요: 언어, Quive
 #: ../../apps/launcher/src/old-library.tsx
 msgid "The folder with Quiver Launcher 3's program in it."
 msgstr "Quiver Launcher 3 프로그램이 들어 있는 폴더예요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "The game asks for it when it starts. Quiver can check yours first."
+msgstr "게임이 시작할 때 요청해요. Quiver가 먼저 확인해 줄 수 있어요."
 
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
@@ -4793,6 +4901,11 @@ msgstr "새로운 기능"
 msgid "What's new in {name}"
 msgstr "{name}의 새로운 기능"
 
+#. placeholder {0}: fileName(phase.copy.path)
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "When {name} asks for it, pick this file: {0}"
+msgstr "{name}이(가) 요청하면 이 파일을 고르세요: {0}"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
 msgstr "앱 설치 위치"
@@ -4885,6 +4998,28 @@ msgstr "내 앱"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Your apps are in your library."
 msgstr "앱이 라이브러리에 들어왔어요."
+
+#. placeholder {0}: phase.copy.dump
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy is a good one ({0}), and it's where {name} reads it."
+msgstr "정상 사본({0})이고 {name}이(가) 읽는 위치에 있어요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy is a good one, and it's where {name} reads it."
+msgstr "정상 사본이고 {name}이(가) 읽는 위치에 있어요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy is where {name} reads it."
+msgstr "사본이 {name}이(가) 읽는 위치에 있어요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy of the game"
+msgstr "내 게임 사본"
+
+#. placeholder {0}: file.label
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy: {0}"
+msgstr "내 사본: {0}"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"

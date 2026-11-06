@@ -14,6 +14,39 @@ export type InstallSettings = {
   preferredExecutables?: Partial<Record<"windows" | "linux" | "macos", string[]>>;
   /** Where its mods go, and the Thunderstore communities and GameBanana games they come from. */
   mods?: ModSettings;
+  /** What the player brings of their own, such as their copy of the game, and how the app gets it. */
+  setupFiles?: SetupFile[];
+};
+
+/** A dump an app takes of the player's copy, as No-Intro, Redump or the app's own list gives it. */
+export type SetupDump = { algo: "sha1" | "sha256"; value: string; label?: string };
+/**
+ * Something the player provides for an app: their own copy of its game (a ROM, a disc image, or a folder of the
+ * game's files). The launcher checks it and gets it to the app: puts it at `destination` (under `root`), passes its
+ * path after `flag`, or puts it in the environment variable `env`.
+ */
+export type SetupFile = {
+  id: string;
+  /** What to provide: "Super Mario 64 ROM". */
+  label: string;
+  /** Said when asking for it. */
+  prompt?: string;
+  /** Unset means it's needed to play. */
+  required?: boolean;
+  kind?: "file" | "folder";
+  /** Relative, with / between folders. */
+  destination?: string;
+  /** What `destination` is in: the app's folder (unset), or the system's folders for apps' data, settings and local data. */
+  root?: "app" | "data" | "config" | "localData";
+  /** "--iso"; ending in "=" joins it to the path. */
+  flag?: string;
+  env?: string;
+  /** For a folder: names it holds, to tell it's the right one. */
+  contains?: string[];
+  /** Without a dot. */
+  extensions?: string[];
+  /** Any one of them is a copy it takes. Empty: no dump is published, so any copy of the right kind is taken. */
+  accepted: SetupDump[];
 };
 
 /** A site to get mods from: "thunderstore" or "gamebanana" (the site keeps any it was given; the launcher skips ones it has no provider for). */

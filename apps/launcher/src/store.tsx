@@ -25,6 +25,7 @@ import { artFiles, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
+import { copiesNeeded, launchCopies } from "./own-copy";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
@@ -104,6 +105,20 @@ export type Install = {
   pick?: string;
   /** The empty files its folder has, once the player or Settings chose them (Add files to folder); unset, the catalog's. Kept through updates. */
   files?: string[];
+  /** The player's own copies of its game, by the catalog's setup file id (own-copy.ts). Kept through updates. */
+  copies?: Record<string, OwnCopy>;
+};
+/** The player's copy of an app's game, checked and put where the app reads it. */
+export type OwnCopy = {
+  /** Where the player keeps it. */
+  path: string;
+  /** Where Quiver put it for the app, when the catalog says where. */
+  placed?: string;
+  /** The dump it matched ("US 1.0"), when it matched one. */
+  dump?: string;
+  /** It matched a dump the catalog lists, not only its kind of file. */
+  verified?: boolean;
+  at: number;
 };
 /** A repository the catalog doesn't list, before it's added: its latest release and the files for this computer. */
 export type RepositoryPreview = { app: CustomApp; latest?: Release; files: Asset[] };
@@ -165,6 +180,9 @@ type Launcher = {
   /** The app whose Play asks which of the player's programs to start; null closes the prompt. */
   choosingProgram: string | null;
   chooseProgram: (id: string | null) => void;
+  /** The app whose page asks for the player's own copy of its game (own-copy-setup.tsx): `play` once it's set up, from Play. */
+  settingUpCopy: { id: string; fileId?: string; play?: boolean } | null;
+  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
   /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
@@ -190,7 +208,8 @@ type Launcher = {
    */
   get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os }) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
-  play: (id: string, executable?: string) => Promise<void>;
+  /** Starts an installed app. Without the player's copy of its game that it needs, asks for it first, unless `withoutCopy`. */
+  play: (id: string, executable?: string, withoutCopy?: boolean) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
   reinstall: (id: string) => Promise<void>;
   /** Stops a download; whatever was installed before stays as it was. */
@@ -231,6 +250,8 @@ type Launcher = {
   setLaunch: (id: string, launch: LaunchOptions) => void;
   /** The empty files the player chose for an app's folder, which updates keep to. */
   setFiles: (id: string, files: string[]) => void;
+  /** Records (or, with undefined, forgets) the player's copy for one of an app's setup files. */
+  setCopy: (id: string, fileId: string, copy: OwnCopy | undefined) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
@@ -738,6 +759,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
+  const [settingUpCopy, setUpCopy] = useState<Launcher["settingUpCopy"]>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
   const [notice, showNotice] = useState<Launcher["notice"]>(null);
@@ -1433,6 +1455,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { ...i, [id]: Object.keys(set).length ? { ...install, launch: set } : install };
       }),
     setFiles: (id, files) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], files } } : i)),
+    setCopy: (id, fileId, copy) =>
+      setInstalls((i) => {
+        if (!i[id]) return i;
+        const { [fileId]: _, ...rest } = i[id].copies ?? {};
+        const copies = copy ? { ...rest, [fileId]: copy } : rest;
+        const { copies: __, ...install } = i[id];
+        return { ...i, [id]: Object.keys(copies).length ? { ...install, copies } : install };
+      }),
     lookUpRepository(input) {
       // A lookup that never answers ends with a message, and the button tries again.
       let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1546,6 +1576,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     confirmUninstall,
     choosingProgram,
     chooseProgram,
+    settingUpCopy,
+    setUpCopy,
     cache: (entries) => setCatalog((c) => ({ ...c, ...Object.fromEntries(entries.map((e) => [e.id, { ...c[e.id], ...e }])) })),
     remember: (entries) => {
       const known = new Set(library.map((i) => i.id));
@@ -1567,14 +1599,16 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       add(entry);
       await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform });
     },
-    async play(id, executable) {
+    async play(id, executable, withoutCopy) {
       const install = installs[id];
       if (!install) return;
+      // The game needs the player's own copy, which Quiver gets to it: asked for first.
+      if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) return setUpCopy({ id, play: true });
       // The programs the player picked for Play: one starts; more, and they choose.
       const programs = install.launch?.programs ?? [];
       if (!executable && programs.length > 1) return chooseProgram(id);
       const chosen = executable ?? programs[0];
-      const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner };
+      const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner, copies: launchCopies(catalog[id], install) };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
       if (install.installer === "msi" && !program) {

@@ -42,6 +42,7 @@ import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
+import { OwnCopyPanel, OwnCopyPrompt } from "./own-copy-setup";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
@@ -335,6 +336,7 @@ export function App() {
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
+      <OwnCopyPrompt />
       <Notice />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
       <FilePicker />
@@ -1382,6 +1384,7 @@ function AppPage({
               )}
             </div>
             {/* When it was added to the library is the sidebar's to say; here, what playing it has come to. */}
+            {install && foldersOn(config.os) && <OwnCopyPanel entry={entry} install={install} />}
             {!onClose && <PlayStats install={install} item={item} added={false} />}
             {problem && (
               <p className="job-error" role="status">
