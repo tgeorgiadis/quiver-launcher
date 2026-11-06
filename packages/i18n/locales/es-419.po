@@ -1826,7 +1826,7 @@ msgstr "Obtener {app}"
 msgid "Get {newestLabel}"
 msgstr "Obtener {newestLabel}"
 
-#. Button on the player's Discord profile that opens Quiver Launcher's website, for their friends. Discord cuts it at 32 characters
+#. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
 msgstr "Obtener Quiver Launcher"

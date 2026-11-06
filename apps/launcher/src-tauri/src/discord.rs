@@ -12,7 +12,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 /// The Quiver Launcher application in Discord's Developer Portal: its name is what Discord shows the player playing.
 /// `QUIVER_DISCORD_CLIENT_ID` stands in for it, for trying another application.
 const CLIENT_ID: &str = "";
-const SITE: &str = "https://quiverlauncher.com";
+/// Where the button goes: the website's download page.
+const DOWNLOAD: &str = "https://quiverlauncher.com/download/";
 const LOGO: &str = "https://quiverlauncher.com/icon-512.png";
 /// How often a connection is checked, and a Discord that wasn't running looked for again.
 const CHECK: Duration = Duration::from_secs(15);
@@ -49,7 +50,7 @@ impl State {
         if !self.enabled {
             return None;
         }
-        let buttons = json!([{ "label": clip(&self.texts.button, 32), "url": SITE }]);
+        let buttons = json!([{ "label": clip(&self.texts.button, 32), "url": DOWNLOAD }]);
         Some(match self.playing.last() {
             Some((_, game, started)) => {
                 let name = clip(&game.name, 128);
@@ -306,7 +307,7 @@ mod tests {
         assert_eq!(activity["state"], "Browsing games");
         assert_eq!(activity["timestamps"]["start"], 100);
         assert_eq!(activity["assets"]["large_image"], LOGO);
-        assert_eq!(activity["buttons"], json!([{ "label": "Get Quiver Launcher", "url": SITE }]));
+        assert_eq!(activity["buttons"], json!([{ "label": "Get Quiver Launcher", "url": DOWNLOAD }]));
     }
 
     #[test]

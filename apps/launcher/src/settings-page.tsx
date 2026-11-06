@@ -186,7 +186,7 @@ export function useDiscordPresence() {
   const idle = t({ message: "Browsing games", comment: "On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running" });
   const button = t({
     message: "Get Quiver Launcher",
-    comment: "Button on the player's Discord profile that opens Quiver Launcher's website, for their friends. Discord cuts it at 32 characters",
+    comment: "Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters",
   });
   const enabled = !settings.discordPresenceOff && onComputer(config.os);
   useEffect(() => void native.setDiscordPresence(enabled, { idle, button }).catch(() => {}), [enabled, idle, button]);
