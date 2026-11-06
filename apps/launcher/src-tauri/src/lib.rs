@@ -775,6 +775,12 @@ fn list_programs(data: State<'_, Data>, folder: String, dir: Option<String>) -> 
         .collect())
 }
 
+/// The kinds of file in an installed app's folder, for an error report (`install::file_kinds`).
+#[tauri::command]
+fn file_kinds(data: State<'_, Data>, folder: String, dir: Option<String>) -> Result<Vec<String>, String> {
+    Ok(install::file_kinds(&app_dir(&data, &folder, dir)?))
+}
+
 /// Asks which program starts an installed app, starting in its folder; the
 /// answer is relative to that folder so it survives the folder moving. An app
 /// the player added from elsewhere (`program`) can start anything.
@@ -1424,6 +1430,7 @@ pub fn run() {
             pick_executable,
             list_programs,
             android_app_gone,
+            file_kinds,
             list_protons,
             automatic_runner,
             pick_proton,

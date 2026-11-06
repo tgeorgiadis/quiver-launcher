@@ -3,10 +3,39 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { app, appPage, back, everything, open, page, s, section, useSharedApp } from "./controller.js";
+import { openApp } from "./app.js";
+import { app, appPage, back, everything, installed, open, page, s, section, useSharedApp } from "./controller.js";
 import * as reach from "../reach.js";
 
 useSharedApp();
+
+test("Play finding no program in an app's folder lets the player choose it, and starts it", async () => {
+  const own = await openApp({ state: installed });
+  try {
+    await own.page.evaluate(() => {
+      const { invoke } = window.__TAURI_INTERNALS__;
+      let failed = false;
+      window.__TAURI_INTERNALS__.invoke = (cmd, args) => {
+        if (cmd === "launch" && !failed) {
+          failed = true;
+          return Promise.reject("Couldn't find a program to start in this app's folder.");
+        }
+        if (cmd === "file_kinds") return Promise.resolve(["bat", "pak"]);
+        if (cmd === "pick_executable") return Promise.resolve("bin/start.bat");
+        return invoke(cmd, args);
+      };
+    });
+    await own.page.locator('article[data-slug="test-port"] .card-open').first().click();
+    await own.page.getByRole("button", { name: "Play", exact: true }).first().click();
+    const choose = own.page.locator(".job-error").getByRole("button", { name: "Choose its program…" });
+    await choose.click();
+    const started = () => own.app.execute(() => window.__calls.some((c) => c.cmd === "launch" && c.args.launch?.executable === "bin/start.bat"));
+    await own.until(started);
+    assert.equal(await own.page.locator(".job-error").count(), 0, "the error is gone");
+  } finally {
+    await own.close();
+  }
+});
 
 test("an app's page and its dialogs", async () => {
   assert.equal(await appPage(), "page: Test Port");

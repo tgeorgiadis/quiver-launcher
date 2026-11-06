@@ -20,6 +20,7 @@ import { useSyncExternalStore } from "react";
 import type { ErrorEvent } from "@sentry/browser";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
+import { failedCommand } from "./command-failures";
 
 /** The website, which keeps the secret Google Analytics asks for. */
 export const DEFAULT_HOST = "https://quiverlauncher.com";
@@ -180,7 +181,7 @@ function startErrors(ctx: TelemetryContext) {
         sendClientReports: false,
         integrations: (defaults) => defaults.filter(({ name }) => !LEFT_OUT.has(name)),
         // Turning it off after it loaded drops everything, and browser noise goes too; what's left is scrubbed.
-        beforeSend: (event) => (!allowed() || isNoise(event) ? null : scrubEvent(event)),
+        beforeSend: (event, hint) => (!allowed() || isNoise(event) ? null : scrubEvent(withCommand(event, hint?.originalException))),
       });
       sentryRunning = true;
       return sentry;
@@ -370,6 +371,17 @@ function isNoise(event: ErrorEvent) {
   return Array.isArray(list) && list.length > 0 && list.every((e) => typeof e?.value === "string" && NOISE.test(e.value));
 }
 
+/**
+ * An error from the Rust side that nothing caught says which command it came from, and is grouped by that and the
+ * system's error number: its text is in the player's language, a new issue for each.
+ */
+function withCommand(event: ErrorEvent, error: unknown): ErrorEvent {
+  const command = failedCommand(error);
+  if (!command) return event;
+  const number = /os error (\d+)/i.exec(String(error))?.[0];
+  return { ...event, tags: { ...event.tags, command }, fingerprint: ["uncaught", command, number ?? reasonOf(error)] };
+}
+
 function report(error: unknown, scope: ErrorScope) {
   if (!telemetryAvailable() || off()) return;
   if (!allowed()) {
@@ -422,7 +434,21 @@ const expected = (error: unknown) => error === "cancelled" || error instanceof P
 export function captureFailure(step: string, error: unknown, properties?: Properties) {
   if (expected(error)) return;
   if (error instanceof Error) return report(error, { tags: { failure: step }, extra: properties });
-  report(new Error(messageOf(error)), { tags: { failure: step }, extra: properties, fingerprint: ["failure", step, reasonOf(error)] });
+  report(new Error(messageOf(error)), { tags: { failure: step }, extra: properties, fingerprint: ["failure", step, groupOf(error)] });
+}
+
+/**
+ * What says two failures are the same one: not the operating system's sentence, which comes in the player's language,
+ * but its error number; and not the versions in the message.
+ */
+function groupOf(error: unknown) {
+  const said = scrub(messageOf(error));
+  const os = said.match(/\(os error (\d+)\)/);
+  if (os) return `os error ${os[1]}`;
+  return said
+    .replace(/\bv?\d+(\.\d+)+\S*/g, "<version>")
+    .replace(/\b(version code|current) \d+/g, "$1 <version>")
+    .slice(0, 120);
 }
 
 /**
