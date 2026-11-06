@@ -11,7 +11,7 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | playlist | плейлист | |
 | Browse | Обзор | the catalog page |
 | catalog | каталог | |
-| Get | Получить | the button that installs an app |
+| Add / Install | Добавить / Установить | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Играть / Всё равно играть | |
 | install / uninstall | установить / удалить | |
 | download | загрузка / скачать | Downloads page: Загрузки |

@@ -579,7 +579,11 @@ msgid "Action"
 msgstr "Acción"
 
 #. Button that adds an app installed here to the library
+#. Button that adds an app to the library without installing it
 #. Button: add the app to the library
+#. Menu item that adds an app to the library without installing it
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Add"
@@ -647,11 +651,6 @@ msgstr "Agregar archivos a la carpeta"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Add files to folder…"
 msgstr "Agregar archivos a la carpeta…"
-
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Add to library"
-msgstr "Agregar a la biblioteca"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
@@ -1784,31 +1783,6 @@ msgstr "Juegos"
 msgid "General"
 msgstr "General"
 
-#. Button that installs an app
-#. Button that installs an app
-#. Button: download and install the app
-#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
-#. Menu item that installs an app
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
-#: ../../apps/launcher/src/detail.tsx
-#: ../../apps/launcher/src/library-tile.tsx
-#: ../../apps/launcher/src/spatial.ts
-msgid "Get"
-msgstr "Obtener"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {app}"
-msgstr "Obtener {app}"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {newestLabel}"
-msgstr "Obtener {newestLabel}"
-
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Get the Windows version (Wine)"
-msgstr "Obtener la versión de Windows (Wine)"
-
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
 msgstr "GitHub no aceptó ese token, así que no se guardó. Revisa que lo hayas copiado completo."
@@ -2014,12 +1988,25 @@ msgid "Include preview updates"
 msgstr "Incluir actualizaciones preliminares"
 
 #. Button that installs a mod
+#. Button that installs an app
+#. Button that installs an app
 #. Button that installs this version
 #. Button that installs this version
+#. Button: download and install the app
+#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
+#. Menu item that installs an app
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/spatial.ts
 msgid "Install"
 msgstr "Instalar"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {app}"
+msgstr "Instalar {app}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -2085,6 +2072,10 @@ msgstr "Instalar la versión verificada {installedVersion}"
 #: ../../apps/launcher/src/App.tsx
 msgid "Install the verified {verifiedVersion}"
 msgstr "Instalar la versión verificada {verifiedVersion}"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install the Windows version (Wine)"
+msgstr "Instalar la versión de Windows (Wine)"
 
 #. A mod that's installed
 #. Filter by whether an app is installed

@@ -1264,10 +1264,10 @@ export function Versions({
   const buildName = (os: Os) => (os === "windows" ? t`Windows (Wine)` : (OS_NAMES[os] ?? os));
   const build = platform && buildName(platform);
   const missing = build && t`No ${build} build`;
-  const newestLabel = versionLabel(newestRelease?.version);
+  const version = versionLabel(newestRelease?.version);
   const head = getting && (
     <div className="get-choices">
-      <PanelFormHead title={t`Get ${app}`} onClose={onClose!} />
+      <PanelFormHead title={t`Install ${app}`} onClose={onClose!} />
       {builds.length > 0 && (
         <div className="segmented" role="group" aria-label={t({ message: "Build", comment: "Which platform's build of an app to install, as Linux or Windows through Wine" })}>
           {builds.map((os) => (
@@ -1288,7 +1288,7 @@ export function Versions({
             void get(entry, undefined, platform ? { platform } : undefined);
           }}
         >
-          <Download size={15} aria-hidden="true" /> {newestRelease ? t`Get ${newestLabel}` : t({ message: "Get", comment: "Button that installs an app" })}
+          <Download size={15} aria-hidden="true" /> {newestRelease ? t`Install ${version}` : t({ message: "Install", comment: "Button that installs an app" })}
         </button>
       )}
     </div>
@@ -1296,7 +1296,7 @@ export function Versions({
   // As a dialog: the list, or how it's loading, in one.
   const shown = (body: ReactNode) =>
     onClose ? (
-      <Dialog label={getting ? t`Get ${app}` : t`Versions`} className="versions-window" onClose={onClose}>
+      <Dialog label={getting ? t`Install ${app}` : t`Versions`} className="versions-window" onClose={onClose}>
         <div className="detail-body versions-dialog">
           {head}
           {body}

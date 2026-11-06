@@ -37,22 +37,27 @@ test("the catalog, its filters, and Sign in, which B closes", async () => {
   assert.match(look.art, /0px 0px 0px 1px/);
 });
 
-test("A opens a catalog card, Y opens its menu with Get first, and X gets the app", async () => {
+test("A opens a catalog card, Y opens its menu with Add first, X adds the app and X again installs it", async () => {
   await open("button", { text: "Browse" });
-  // Down from a card skips its Get, which X on the card presses.
+  // Down from a card skips its Add, which X on the card presses.
   await app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-open').focus());
   await reach.press(app, "DPadDown");
-  assert.doesNotMatch(await reach.focused(app), /"Get"/);
+  assert.doesNotMatch(await reach.focused(app), /"Add"/);
   assert.equal(await open('article[data-slug="tampered-port"] .card-open'), "page: Tampered Port");
   assert.equal(await back(), "main");
   await reach.pressOn(app, 'article[data-slug="tampered-port"] .card-open', "North");
   await s.until(() => app.execute(() => Boolean(document.querySelector('[role="menu"] .game-menu-main'))));
   const items = await app.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].map((b) => b.innerText.trim()));
-  assert.equal(items[0], "Get");
+  assert.equal(items[0], "Add");
   assert.ok(items.includes("Hide from Browse"), items.join());
-  assert.equal(await app.execute(() => document.activeElement.innerText.trim()), "Get", "the focus is on Get");
+  assert.equal(await app.execute(() => document.activeElement.innerText.trim()), "Add", "the focus is on Add");
   await reach.press(app, "East");
   await s.until(() => app.execute(() => !document.querySelector('[role="menu"]')));
+  // X on the card adds it to the library, downloading nothing: Install takes Add's place.
+  await reach.pressOn(app, 'article[data-slug="tampered-port"] .card-open', "West");
+  const label = () => app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-action .primary')?.innerText.trim());
+  await s.until(async () => (await label()) === "Install");
+  assert.equal(await app.execute(() => window.__calls.some((c) => c.cmd === "install")), false);
   // It has two downloads for this computer: X asks which.
   const file = (filename) => ({ id: filename, url: `https://example.com/${filename}`, filename, os: "linux", architecture: "x64", format: "zip", checksum: `sha256:${"a".repeat(64)}` });
   s.api.setReleases("tampered-port", [{ id: "two-files", version: "1.0.0", releasedAt: Date.UTC(2026, 0, 1), prerelease: false, assets: [file("port-linux-a.zip"), file("port-linux-b.zip")] }]);
@@ -138,7 +143,7 @@ test("moving by a controller, nothing on a card eases, and a shelf glides along 
   assert.equal(steps.snap, "none", "and doesn't snap under it");
 });
 
-test("in Steam's desktop layout, where X isn't Quiver's, a catalog card offers its menu and doesn't mark Get with X", async () => {
+test("in Steam's desktop layout, where X isn't Quiver's, a catalog card offers its menu and doesn't mark Add with X", async () => {
   await s.emit("pads", ["Steam Deck"]);
   await s.emit("pad-labels", { kind: "steam", south: "A", east: "B", west: "X", north: "Y", desktop: true });
   await page.evaluate(() => new Promise((r) => setTimeout(r)));

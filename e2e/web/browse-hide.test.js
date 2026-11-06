@@ -62,10 +62,10 @@ test("a card's menu hides an app, Only hidden apps shows it, and Show in Browse 
   assert.equal(await empty().count(), 0);
 });
 
-test("a right-click puts the focus on the menu's main action, Get", async () => {
+test("a right-click puts the focus on the menu's main action, Add", async () => {
   await card("tampered-port").first().click({ button: "right" });
   await item("Read the README").waitFor();
-  assert.equal(await page.evaluate(() => document.activeElement.innerText.trim()), "Get");
+  assert.equal(await page.evaluate(() => document.activeElement.innerText.trim()), "Add");
 });
 
 test("Only hidden apps says so when none is in the search", async () => {
@@ -99,23 +99,30 @@ test("Only hidden apps doesn't offer to hide the library's apps, which it shows 
   assert.equal(await page.locator(".owned-note", { hasText: "Apps in your library are shown here too." }).count(), 0);
 });
 
-test("the menu and the app's page add it to the library without downloading it", async () => {
+test("Add, on the card, its menu and the app's page, puts it in the library without downloading it, and Install takes its place", async () => {
+  // The card's button and its menu's first item: Add, with no Add to library beside it.
+  await card("tampered-port").locator(".card-action").getByRole("button", { name: "Add", exact: true }).first().waitFor();
   await card("tampered-port").first().click({ button: "right" });
   const items = await menu().getByRole("menuitem").allInnerTexts();
-  assert.deepEqual(items.slice(0, 2), ["Get", "Add to library"]);
-  await item("Add to library").click();
+  assert.equal(items[0], "Add");
+  assert.ok(!items.includes("Add to library"), items.join());
+  await item("Add").click();
   await page.getByText("Tampered Port is in your library.").waitFor();
-  // Its card stays for now, as Get's does, and isn't offered again.
+  // Its card stays for now, as Install's does, with Install in Add's place.
+  await card("tampered-port").locator(".card-action").getByRole("button", { name: "Install", exact: true }).first().waitFor();
   await card("tampered-port").first().click({ button: "right" });
   await item("Read the README").waitFor();
-  assert.equal(await item("Add to library").count(), 0);
+  assert.equal((await menu().getByRole("menuitem").allInnerTexts())[0], "Install");
+  assert.equal(await item("Add").count(), 0);
   await page.keyboard.press("Escape");
 
   await card("test-remake").locator(".card-open").first().click();
-  const add = page.locator(".page-layer:not([hidden]) .app-actions").getByRole("button", { name: "Add to library" });
+  const actions = page.locator(".page-layer:not([hidden]) .app-actions");
+  assert.equal(await actions.getByRole("button", { name: "Add to library" }).count(), 0);
+  const add = actions.getByRole("button", { name: "Add", exact: true });
   await add.click();
   await add.waitFor({ state: "detached" });
-  await page.locator(".page-layer:not([hidden]) .app-actions").getByRole("button", { name: "Get", exact: true }).waitFor();
+  await actions.getByRole("button", { name: "Install", exact: true }).waitFor();
 
   // In the library, ready to get from there, with nothing downloaded.
   await page.locator(".topbar button", { hasText: "Library" }).first().click();

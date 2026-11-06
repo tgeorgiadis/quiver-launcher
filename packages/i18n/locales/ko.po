@@ -579,7 +579,11 @@ msgid "Action"
 msgstr "동작"
 
 #. Button that adds an app installed here to the library
+#. Button that adds an app to the library without installing it
 #. Button: add the app to the library
+#. Menu item that adds an app to the library without installing it
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/own.tsx
 msgid "Add"
@@ -647,11 +651,6 @@ msgstr "폴더에 파일 추가"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Add files to folder…"
 msgstr "폴더에 파일 추가…"
-
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Add to library"
-msgstr "라이브러리에 추가"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
@@ -1784,31 +1783,6 @@ msgstr "게임"
 msgid "General"
 msgstr "일반"
 
-#. Button that installs an app
-#. Button that installs an app
-#. Button: download and install the app
-#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
-#. Menu item that installs an app
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/card-menu.tsx
-#: ../../apps/launcher/src/detail.tsx
-#: ../../apps/launcher/src/library-tile.tsx
-#: ../../apps/launcher/src/spatial.ts
-msgid "Get"
-msgstr "받기"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {app}"
-msgstr "{app} 받기"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Get {newestLabel}"
-msgstr "{newestLabel} 받기"
-
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "Get the Windows version (Wine)"
-msgstr "Windows 버전 받기 (Wine)"
-
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
 msgstr "GitHub에서 토큰을 받아들이지 않아 저장하지 않았어요. 전부 복사했는지 확인하세요."
@@ -2014,12 +1988,25 @@ msgid "Include preview updates"
 msgstr "미리 보기 업데이트 포함"
 
 #. Button that installs a mod
+#. Button that installs an app
+#. Button that installs an app
 #. Button that installs this version
 #. Button that installs this version
+#. Button: download and install the app
+#. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
+#. Menu item that installs an app
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/spatial.ts
 msgid "Install"
 msgstr "설치"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {app}"
+msgstr "{app} 설치"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -2085,6 +2072,10 @@ msgstr "검증된 {installedVersion} 설치"
 #: ../../apps/launcher/src/App.tsx
 msgid "Install the verified {verifiedVersion}"
 msgstr "검증된 {verifiedVersion} 설치"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install the Windows version (Wine)"
+msgstr "Windows 버전 설치 (Wine)"
 
 #. A mod that's installed
 #. Filter by whether an app is installed

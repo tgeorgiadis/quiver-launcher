@@ -695,7 +695,7 @@ export function buttonsNow(): [Action, string][] {
     else if (focused.closest("article")?.querySelector(".card-open")) now.push(["options", t({ message: "Details", comment: "Controller hint: what Options does on an app card, opening its page" })]);
     // Not what Confirm says already, on a library card.
     const get = quickButton(focused);
-    if (get && get !== play) now.push(["quick", get.innerText.trim() || t({ message: "Get", comment: "Controller hint: what Quick action does on a catalog card or an app's page, installing the app" })]);
+    if (get && get !== play) now.push(["quick", get.innerText.trim() || t({ message: "Install", comment: "Controller hint: what Quick action does on a catalog card or an app's page, installing the app" })]);
   }
   if (backGoes()) now.push(["back",t({ message: "Back", comment: "Controller hint: what Back does, closing or going back" })]);
   // Tabs showing (an app's page's, TV mode's, the top bar's): LB and RB change them, said here as by the tabs themselves.

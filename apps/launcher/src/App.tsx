@@ -879,9 +879,9 @@ function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?:
   );
 }
 
-/** The one button a card needs: Get, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
+/** The one button a card needs: Add, Install, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
 function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
-  const { config, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall } = useLauncher();
+  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, addToLibrary } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
@@ -1036,15 +1036,22 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
         <Trans>No approved release yet</Trans>
       </p>
     );
+  // Not in the library yet: Add puts it there without downloading it, and Install takes its place.
+  if (!library.some((i) => i.id === entry.id))
+    return (
+      <button className="primary wide" key="add" onClick={() => addToLibrary(entry)}>
+        <Plus size={15} aria-hidden="true" /> <Trans comment="Button that adds an app to the library without installing it">Add</Trans>
+      </button>
+    );
   if (noWayOff) return <div className="row">{choose}</div>;
   const name = entry.projectName;
   const builds = config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows");
   const getIt = (
     <button className="primary wide" onClick={() => get(entry)}>
-      <Download size={15} /> <Trans comment="Button that installs an app">Get</Trans>
+      <Download size={15} /> <Trans comment="Button that installs an app">Install</Trans>
     </button>
   );
-  // A phone has one build to get, and an app's versions are on its page: Get alone.
+  // A phone has one build to get, and an app's versions are on its page: Install alone.
   if (config.os === "android") return getIt;
   // Its own key: as a download's row it was, React would keep Cancel's button as the arrow, the focus still on it.
   return (
@@ -1096,7 +1103,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, addToLibrary, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1334,12 +1341,6 @@ function AppPage({
             )}
             <div className="app-actions" data-autofocus={tv || undefined}>
               <Action entry={entry} apart />
-              {/* In the library without downloading it; or, installed here already, a way in. */}
-              {!item && (
-                <button onClick={() => addToLibrary(entry)}>
-                  <Plus size={17} /> <Trans>Add to library</Trans>
-                </button>
-              )}
               {/* Already on this computer: an app needn't be in the library, or downloaded, for this. */}
               {!install && locatable(entry.id, install, job) && foldersOn(config.os) && (
                 <button onClick={() => void locateInstall(entry)}>
