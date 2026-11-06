@@ -348,6 +348,21 @@ async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>
 /// Waits for a started program to close; whether that could be told.
 #[cfg(not(target_os = "android"))]
 type Waiting = Box<dyn FnOnce() -> bool + Send>;
+/// Whether Android no longer has an app Quiver installed from an APK: the player removed it in the system's settings.
+/// False for an app that wasn't installed that way, and everywhere else. Not on the window's thread, as `launch` isn't.
+#[tauri::command]
+async fn android_app_gone(data: State<'_, Data>, folder: String, dir: Option<String>) -> Result<bool, String> {
+    #[cfg(target_os = "android")]
+    {
+        let Some(package) = android::package(&app_dir(&data, &folder, dir)?) else { return Ok(false) };
+        android::is_installed(&package).map(|installed| !installed)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (data, folder, dir);
+        Ok(false)
+    }
+}
 
 #[cfg(not(target_os = "android"))]
 #[allow(clippy::too_many_arguments)]
@@ -1430,6 +1445,7 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            android_app_gone,
             file_kinds,
             list_protons,
             automatic_runner,
