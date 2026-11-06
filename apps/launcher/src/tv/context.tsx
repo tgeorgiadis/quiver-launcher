@@ -5,11 +5,17 @@ import type { TvSidecar, SidecarStore } from "./data/sidecar";
 import type { ConsoleCatalog } from "./consoles/consoles";
 import type { ControllerFamily, InputAction } from "./input/actions";
 import { LAYER, type InputHandler, type InputRouter, type Layer } from "./input/router";
+import type { Bindings } from "../spatial";
+import type { PadLabels } from "../native";
 
 /** Whose button names the hints show: the last thing pressed. */
 export type InputFamily = ControllerFamily | "keyboard";
 
 export type Tv = {
+  /** The player's keys and controller buttons (Settings → Controls), with the defaults. */
+  bindings: { keys: Bindings; pad: Bindings };
+  /** What the controller used last calls its buttons. */
+  labels: PadLabels | null;
   sidecar: SidecarStore;
   /** The sidecar now; a new object after every change. */
   data: TvSidecar;

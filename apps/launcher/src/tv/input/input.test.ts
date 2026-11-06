@@ -1,31 +1,55 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { keyAction, padAction, type InputAction } from "./actions";
+import { DEFAULT_KEYS, DEFAULT_PAD, assign, swapConfirmBack } from "../../spatial";
+import { controlFor, keyAction, padAction, type InputAction } from "./actions";
 import { InputGate } from "./gate";
 import { RepeatFilter, type InputEvent } from "./repeat";
 import { InputRouter, LAYER, type InputHandler } from "./router";
 
-const key = (k: string, mods: Partial<KeyboardEvent> = {}) => keyAction({ key: k, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...mods });
+const key = (k: string, mods: Partial<KeyboardEvent> = {}, keys = DEFAULT_KEYS) =>
+  keyAction({ key: k, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...mods } as KeyboardEvent, keys);
+const pad = (k: string, bindings = DEFAULT_PAD) => padAction(k, bindings);
 
 describe("maps", () => {
-  it("maps the keyboard as the spec does", () => {
+  it("maps the keyboard through the launcher's keys, with TV mode's own on top", () => {
     expect(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Escape", "Backspace"].map((k) => key(k))).toEqual([
       "up", "down", "left", "right", "accept", "back", "back",
     ]);
-    expect(["x", "Y", "q", "E", "PageUp", "PageDown", "/", "F10"].map((k) => key(k))).toEqual([
-      "secondary", "details", "tabPrev", "tabNext", "pagePrev", "pageNext", "search", "menu",
+    expect(["g", "o", "x", "Y", "q", "E", "PageUp", "PageDown", "/", "F10"].map((k) => key(k))).toEqual([
+      "secondary", "details", "secondary", "details", "tabPrev", "tabNext", "pagePrev", "pageNext", "search", "menu",
     ]);
+    expect(key("PageUp", { ctrlKey: true })).toBe("tabPrev");
+    expect(key("ArrowDown", { ctrlKey: true })).toBe("pageNext");
     expect(key("Tab")).toBe("tabNext");
     expect(key("Tab", { shiftKey: true })).toBe("tabPrev");
     expect(key("x", { ctrlKey: true })).toBeNull();
     expect(key("z")).toBeNull();
   });
 
-  it("maps controllers by position, bumpers to tabs, triggers to pages, and never the Guide button", () => {
-    expect(["South", "East", "West", "North"].map(padAction)).toEqual(["accept", "back", "secondary", "details"]);
-    expect(["LeftTrigger", "RightTrigger", "LeftTrigger2", "RightTrigger2"].map(padAction)).toEqual(["tabPrev", "tabNext", "pagePrev", "pageNext"]);
-    expect(["Select", "Start", "DPadUp", "LeftStickRight"].map(padAction)).toEqual(["search", "menu", "up", "right"]);
-    expect(padAction("Mode")).toBeNull();
-    expect(padAction("RightStickUp")).toBeNull();
+  it("maps controllers through the player's bindings: bumpers to tabs, triggers along, never the Guide button", () => {
+    expect(["South", "East", "West", "North"].map((k) => pad(k))).toEqual(["accept", "back", "secondary", "details"]);
+    expect(["LeftTrigger", "RightTrigger", "LeftTrigger2", "RightTrigger2"].map((k) => pad(k))).toEqual(["tabPrev", "tabNext", "pagePrev", "pageNext"]);
+    expect(["Select", "Start", "DPadUp", "LeftStickRight"].map((k) => pad(k))).toEqual(["search", "menu", "up", "right"]);
+    expect(pad("Mode")).toBeNull();
+    expect(pad("RightStickUp")).toBeNull();
+    expect(pad("RightThumb")).toBeNull();
+  });
+
+  it("follows rebinding: swapped A and B, and a button taken for something TV mode doesn't do", () => {
+    const swapped = swapConfirmBack(DEFAULT_PAD);
+    expect([pad("South", swapped), pad("East", swapped)]).toEqual(["back", "accept"]);
+    expect(controlFor("accept", swapped, "pad")).toBe("East");
+    const viewForward = assign(DEFAULT_PAD, "forward", "Select");
+    expect(pad("Select", viewForward)).toBeNull();
+    expect(controlFor("search", viewForward, "pad")).toBeUndefined();
+    const startQuick = assign(DEFAULT_PAD, "quick", "Start");
+    expect(pad("Start", startQuick)).toBe("secondary");
+    expect(pad("West", startQuick)).toBeNull();
+  });
+
+  it("shows a keyboard's shortest key for each action", () => {
+    expect(["accept", "secondary", "details", "tabPrev", "pageNext", "search"].map((a) => controlFor(a as InputAction, DEFAULT_KEYS, "keys"))).toEqual([
+      "Enter", "G", "O", "Q", "PageDown", "/",
+    ]);
   });
 });
 

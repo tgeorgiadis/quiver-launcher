@@ -653,6 +653,27 @@
   height: 100%;
   filter: drop-shadow(0 1px 2px #0008);
 }
+/* A control there's no picture of: its name on a cap, as wide as the name needs. */
+.tv-glyph-text {
+  width: auto;
+  min-width: calc(var(--u) * var(--size, 26));
+}
+.tv-glyph-text > span {
+  box-sizing: border-box;
+  min-width: 100%;
+  height: 100%;
+  padding: 0 calc(var(--u) * 6);
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--u) * var(--size, 26) / 2);
+  background: var(--tv-fg);
+  color: #0f172a;
+  font-weight: 700;
+  font-size: calc(var(--u) * var(--size, 26) * 0.5);
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px #0008;
+}
 /* Hold to confirm: a ring fills around the glyph. */
 .tv-glyph.holding::after {
   content: "";

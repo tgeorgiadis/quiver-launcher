@@ -29,7 +29,8 @@ const input = (over: Partial<BridgeInput> = {}): BridgeInput => ({ library: [], 
 
 describe("toTvApp", () => {
   it("derives each state from installs, jobs and the queue", () => {
-    const e = entry("a");
+    // The release for this computer, looked up (upstream says no update until it is).
+    const e = entry("a", { forHere: { of: "2.0.0:own:files", release: { version: "v2.0.0", releasedAt: 200 } } });
     const state = (over: Partial<BridgeInput>) => toTvApp(e, input(over)).state;
     expect(state({})).toBe("notInstalled");
     expect(state({ queued: new Set(["a"]) })).toBe("queued");

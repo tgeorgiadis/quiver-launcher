@@ -7,7 +7,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { native } from "../native";
 import { useLauncher } from "../store";
-import { suspendSpatialNavigation } from "../spatial";
+import { DEFAULT_KEYS, DEFAULT_PAD, suspendSpatialNavigation, withDefaults } from "../spatial";
 import { usePadLabels, usePads } from "../pad-hints";
 import { tvNative } from "./tvNative";
 import { SidecarStore } from "./data/sidecar";
@@ -75,8 +75,9 @@ function useWindowHeight() {
   return height;
 }
 
-/** Whose button pictures a controller gets: a PlayStation's, else the Xbox ones, which most controllers copy. */
-const familyOf = (kind: string | undefined): InputFamily => (kind === "playstation" ? "playstation" : "xbox");
+/** Whose button pictures a controller gets: its own kind's, else the Xbox ones, which most controllers copy. */
+const familyOf = (kind: string | undefined): InputFamily =>
+  kind === "playstation" || kind === "nintendo" || kind === "steam" ? kind : "xbox";
 
 function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolean; exit: () => void }) {
   const launcher = useLauncher();
@@ -87,9 +88,14 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
   const bridge = useMemo(() => ({ ...store, apps }), [store, apps]);
   const pads = usePads();
   const labels = usePadLabels();
-  const [family, setFamily] = useState<InputFamily>("keyboard");
-  const padFamily = useRef<InputFamily>("xbox");
-  padFamily.current = familyOf(labels?.kind);
+  /** Whether a controller was pressed last, not a key: its kind (labels) can be told after the press. */
+  const [padLast, setPadLast] = useState(false);
+  const family: InputFamily = padLast ? familyOf(labels?.kind) : "keyboard";
+  // The player's bindings, read when pressed: rebinding on the desktop applies here at once.
+  const { keys: savedKeys, pad: savedPad } = launcher.settings;
+  const bindings = useMemo(() => ({ keys: withDefaults(savedKeys, DEFAULT_KEYS), pad: withDefaults(savedPad, DEFAULT_PAD) }), [savedKeys, savedPad]);
+  const bound = useRef(bindings);
+  bound.current = bindings;
   /** QUIVER_TV_DEBUG=1: the last controller events, and whether input is getting through. */
   const [events, setEvents] = useState<string[]>([]);
   /** The cursor shows while the mouse moves, and hides again at the first key or button. */
@@ -142,19 +148,19 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
         if (text !== null) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          setFamily("keyboard");
+          setPadLast(false);
           typing(text);
           return;
         }
       }
-      const action = down ? keyAction(e) : keysDown.get(e.code);
+      const action = down ? keyAction(e, bound.current.keys) : keysDown.get(e.code);
       if (!action) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       if (down) {
         if (e.repeat) return;
         keysDown.set(e.code, action);
-        setFamily("keyboard");
+        setPadLast(false);
         setPointer(false);
       } else keysDown.delete(e.code);
       gate.input(`key:${e.code}`, action, down);
@@ -173,10 +179,10 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
         const line = `${time} ${payload.key} ${payload.down ? "down" : "up"} · ${gate.isOpen ? "open" : "dropped (window not in front)"}`;
         setEvents((e) => [line, ...e].slice(0, 8));
       }
-      const action = padAction(payload.key);
+      const action = padAction(payload.key, bound.current.pad);
       if (!action) return;
       if (payload.down && gate.isOpen) {
-        setFamily(padFamily.current);
+        setPadLast(true);
         setPointer(false);
       }
       gate.input(`pad:${payload.key}`, action, payload.down);
@@ -225,6 +231,8 @@ function TvMode({ sidecar, debug, exit }: { sidecar: SidecarStore; debug: boolea
   const flow = usePlayFlow({ bridge, sidecar, data, launch });
 
   const value: Tv = {
+    bindings,
+    labels,
     sidecar,
     data,
     router,

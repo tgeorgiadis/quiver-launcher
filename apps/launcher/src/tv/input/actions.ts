@@ -1,105 +1,100 @@
 /**
- * What a press means in Big Picture (spec §5.1), from the keyboard or a
- * controller. Big Picture's map is fixed; upstream's rebindable map is for
- * desktop mode.
+ * What a press means in TV mode, from the keyboard or a controller. Presses go through the player's bindings
+ * (Settings → Controls, spatial.ts) as in the rest of the launcher: Confirm, Back, Quick action, Options, the tabs and
+ * the letters keep their buttons here, and the letters' (LT and RT by default) step between the library, Discover and
+ * Downloads. TV mode's own controls (Search, Menu, Tab) come on top, where the player hasn't bound them to anything.
  */
+import { combo, type Action, type Bindings } from "../../spatial";
 
 export type InputAction =
   | "up"
   | "down"
   | "left"
   | "right"
-  /** A / Cross (south) */
+  /** Confirm: A / Cross (south) */
   | "accept"
-  /** B / Circle (east) */
+  /** Back: B / Circle (east) */
   | "back"
-  /** X / Square (west) */
+  /** Quick action: X / Square (west) */
   | "secondary"
-  /** Y / Triangle (north) */
+  /** Options: Y / Triangle (north) */
   | "details"
-  /** LB / L1 */
+  /** Previous tab: LB / L1 */
   | "tabPrev"
-  /** RB / R1 */
+  /** Next tab: RB / R1 */
   | "tabNext"
-  /** LT / L2 */
+  /** Previous letter: LT / L2 */
   | "pagePrev"
-  /** RT / R2 */
+  /** Next letter: RT / R2 */
   | "pageNext"
   /** View / Create */
   | "search"
   /** Menu / Options */
   | "menu";
 
-export type ControllerFamily = "xbox" | "playstation" | "generic";
+export type ControllerFamily = "xbox" | "playstation" | "nintendo" | "steam";
 
 export const DIRECTIONS: ReadonlySet<InputAction> = new Set(["up", "down", "left", "right"]);
 export const isDirection = (a: InputAction) => DIRECTIONS.has(a);
 
-/** Keyboard (spec §5.1 and rule 8): every screen works without a controller. */
-export function keyAction(e: Pick<KeyboardEvent, "key" | "shiftKey" | "ctrlKey" | "altKey" | "metaKey">): InputAction | null {
-  if (e.ctrlKey || e.altKey || e.metaKey) return null;
-  switch (e.key) {
-    case "ArrowUp":
-      return "up";
-    case "ArrowDown":
-      return "down";
-    case "ArrowLeft":
-      return "left";
-    case "ArrowRight":
-      return "right";
-    case "Enter":
-      return "accept";
-    case "Escape":
-    case "Backspace":
-      return "back";
-    case "Tab":
-      return e.shiftKey ? "tabPrev" : "tabNext";
-    case "PageUp":
-      return "pagePrev";
-    case "PageDown":
-      return "pageNext";
-    case "/":
-      return "search";
-    case "F10":
-      return "menu";
-  }
-  switch (e.key.toLowerCase()) {
-    case "x":
-      return "secondary";
-    case "y":
-      return "details";
-    case "q":
-      return "tabPrev";
-    case "e":
-      return "tabNext";
-  }
-  return null;
-}
+/** The launcher's actions TV mode answers to, and what each is here. Forward, Back to top and Scroll aren't. */
+export const FROM_BINDINGS: Partial<Record<Action, InputAction>> = {
+  confirm: "accept",
+  back: "back",
+  quick: "secondary",
+  options: "details",
+  prevTab: "tabPrev",
+  nextTab: "tabNext",
+  prevLetter: "pagePrev",
+  nextLetter: "pageNext",
+  up: "up",
+  down: "down",
+  left: "left",
+  right: "right",
+};
+const ACTION_OF = Object.fromEntries(Object.entries(FROM_BINDINGS).map(([a, tv]) => [tv, a])) as Partial<Record<InputAction, Action>>;
 
-/**
- * Controller controls as the Rust side names them (gilrs). gilrs calls the
- * bumpers LeftTrigger/RightTrigger and the triggers LeftTrigger2/RightTrigger2.
- * Mode (Guide / PS) is never mapped: Game Bar and Steam use it.
- */
-const PAD: Record<string, InputAction> = {
-  South: "accept",
-  East: "back",
-  West: "secondary",
-  North: "details",
-  LeftTrigger: "tabPrev",
-  RightTrigger: "tabNext",
-  LeftTrigger2: "pagePrev",
-  RightTrigger2: "pageNext",
-  Select: "search",
-  Start: "menu",
-  DPadUp: "up",
-  DPadDown: "down",
-  DPadLeft: "left",
-  DPadRight: "right",
-  LeftStickUp: "up",
-  LeftStickDown: "down",
-  LeftStickLeft: "left",
-  LeftStickRight: "right",
+/** TV mode's own controls on a controller: View for Search, Menu for the menu. Mode (Guide / PS) never: Game Bar and Steam use it. */
+const PAD_EXTRAS: Record<string, InputAction> = { Select: "search", Start: "menu" };
+/** And on a keyboard: every screen works without a controller. */
+const KEY_EXTRAS: Record<string, InputAction> = {
+  Q: "tabPrev",
+  E: "tabNext",
+  Tab: "tabNext",
+  "Shift+Tab": "tabPrev",
+  Backspace: "back",
+  PageUp: "pagePrev",
+  PageDown: "pageNext",
+  "/": "search",
+  F10: "menu",
+  X: "secondary",
+  Y: "details",
 };
 
-export const padAction = (key: string): InputAction | null => PAD[key] ?? null;
+/** A binding's TV action; one TV mode doesn't do has its own control's, where only scrolling or nothing binds it. */
+function bound(bindings: Bindings, binding: string, extras: Record<string, InputAction>): InputAction | null {
+  const actions = (Object.keys(bindings) as Action[]).filter((a) => bindings[a].includes(binding));
+  for (const a of actions) if (FROM_BINDINGS[a]) return FROM_BINDINGS[a];
+  // Page Up scrolls on the desktop: here it steps along, as it always has.
+  const scrolls = actions.every((a) => a === "scrollUp" || a === "scrollDown");
+  return scrolls ? (extras[binding] ?? null) : null;
+}
+
+export const keyAction = (e: KeyboardEvent, keys: Bindings): InputAction | null => bound(keys, combo(e), KEY_EXTRAS);
+
+/** Controller controls as the Rust side names them (gamepad.rs, gilrs's names): bumpers LeftTrigger, triggers LeftTrigger2. */
+export const padAction = (key: string, pad: Bindings): InputAction | null => bound(pad, key, PAD_EXTRAS);
+
+/**
+ * The control a hint shows for an action: what the player bound it to, else TV mode's own. On a keyboard, a key
+ * without Ctrl or Alt first, TV mode's own before a combination, being shorter to read.
+ */
+export function controlFor(action: InputAction, bindings: Bindings, kind: "keys" | "pad"): string | undefined {
+  const extras = kind === "keys" ? KEY_EXTRAS : PAD_EXTRAS;
+  const own = Object.keys(extras).filter((b) => extras[b] === action && bound(bindings, b, extras) === action);
+  const a = ACTION_OF[action];
+  const mine = a ? bindings[a] : [];
+  if (kind === "pad") return mine[0] ?? own[0];
+  const plain = mine.filter((b) => !/^(Ctrl|Alt|Meta)\+/.test(b));
+  return plain[0] ?? own.find((b) => !b.includes("+")) ?? mine[0] ?? own[0];
+}
