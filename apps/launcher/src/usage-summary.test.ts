@@ -23,7 +23,7 @@ test("how the launcher is set up says what was chosen, never the files chosen", 
     libraryBackground: "/home/ada/art.png",
     windowsRunner: { kind: "proton", path: "/home/ada/proton" },
   };
-  const summary = settingsSummary(settings, { gameMode: false }, true, { width: 1920, height: 1080 });
+  const summary = settingsSummary(settings, { gameMode: false }, true, { width: 2560, height: 1440, scale: 1.25 });
   expect(summary).toMatchObject({
     theme: "dark",
     language: "pt-BR",
@@ -32,7 +32,8 @@ test("how the launcher is set up says what was chosen, never the files chosen", 
     background_image: true,
     windows_runner: "proton",
     github_token: true,
-    screen: "1920x1080",
+    screen: "2560x1440",
+    display_scale: 1.25,
   });
   expect(JSON.stringify(summary)).not.toMatch(/ada|song|art\.png|\/home/);
   expect(Object.keys(summary).length + CARRIED).toBeLessThanOrEqual(25);
@@ -65,4 +66,8 @@ test("apps are counted once a day", () => {
   expect(appsDueToday(new Date("2026-11-06T10:00:00Z"))).toBe(true);
   expect(appsDueToday(new Date("2026-11-06T22:00:00Z"))).toBe(false);
   expect(appsDueToday(new Date("2026-11-07T00:01:00Z"))).toBe(true);
+});
+
+test("a screen that can't be read is left out", () => {
+  expect(settingsSummary({}, {}, false, null)).toMatchObject({ screen: null, display_scale: null });
 });
