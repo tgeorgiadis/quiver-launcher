@@ -835,6 +835,10 @@ msgid "Any project type"
 msgstr "Beliebiger Projekttyp"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "Beliebige Quelle"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "Beliebiges Tag"
 
@@ -859,6 +863,10 @@ msgstr "App-Bereiche"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Apps"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "Von diesem Computer hinzugefügte Apps, die Quiver nicht herunterlädt oder aktualisiert"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -891,6 +899,10 @@ msgstr "Hier installierte Apps werden immer angezeigt."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Apps, die auf diesem Computer installiert sind, bleiben in deiner Bibliothek. Eine beschädigte Datei wird neben der neuen aufbewahrt, es wird also nichts gelöscht."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Apps, die Quiver herunterlädt und aktualisiert, aus dem Katalog oder einem Repository"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -1037,6 +1049,11 @@ msgstr "Karten in Entdecken"
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Katalog entdecken"
+
+#. On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browsing games"
+msgstr "Stöbert in Spielen"
 
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
@@ -1261,6 +1278,10 @@ msgstr "Wähle „Token auf GitHub erstellen“ und melde dich bei GitHub an."
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Wähle „Generate token“, kopiere den Token, füge ihn oben ein und wähle „Token speichern“."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "Programm auswählen…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1782,6 +1803,11 @@ msgstr "Spiele"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
 msgstr "Allgemein"
+
+#. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Get Quiver Launcher"
+msgstr "Quiver Launcher holen"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2474,6 +2500,19 @@ msgstr "Erstellt in deinem App-Ordner einen Ordner, in den du die App legst."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "Verwalten"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "Verwaltet von"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Von Quiver verwaltet"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "Manuell verwaltet"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"
@@ -3845,6 +3884,10 @@ msgstr "Ältere Versionen anzeigen"
 msgid "Show on cards"
 msgstr "Auf Karten anzeigen"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Show on Discord what I'm playing, or that I'm in Quiver Launcher"
+msgstr "Auf Discord zeigen, was ich spiele oder dass ich in Quiver Launcher bin"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
 msgstr "Passwort anzeigen"
@@ -4261,6 +4304,7 @@ msgid "This app gets that app's page, artwork and reviews. Its files stay yours:
 msgstr "Diese App bekommt die Seite, das Artwork und die Bewertungen der anderen App. Ihre Dateien bleiben deine: Quiver aktualisiert, verschiebt und löscht sie nicht, neue Versionen holst du dir also selbst."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This app has no approved release yet."
 msgstr "Diese App hat noch keine freigegebene Version."
 

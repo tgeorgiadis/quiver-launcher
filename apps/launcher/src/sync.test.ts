@@ -82,6 +82,27 @@ test("a playlist's words and icon stay on this device when the account's copy of
   expect(playlist).toMatchObject({ name: "Zelda games", search: "zelda", icon: "entry_a" });
 });
 
+test("a playlist's Managed by holds the apps this computer says the player, or Quiver, looks after", () => {
+  const app = { id: "a", tags: [], consoles: [], installed: false };
+  const manual = { ...app, manual: true };
+  expect(inCollection({ tags: [], consoles: [], managed: "manual" }, manual)).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], managed: "manual" }, app)).toBe(false);
+  expect(inCollection({ tags: [], consoles: [], managed: "quiver" }, app)).toBe(true);
+  expect(inCollection({ tags: [], consoles: [], managed: "quiver" }, manual)).toBe(false);
+  // With another filter, an app has to match both.
+  expect(inCollection({ tags: ["fav"], consoles: [], managed: "manual" }, manual)).toBe(false);
+  // Hand-picked apps stay on it whoever manages them.
+  expect(inCollection({ tags: [], consoles: [], managed: "manual", apps: ["a"] }, app)).toBe(true);
+});
+
+test("a playlist's Managed by syncs like its other filters: the account's, unless changed here", () => {
+  const local = [{ key: "m", name: "Mine", tags: [], consoles: [], managed: "manual" as const, order: 0, account: "me" }];
+  const server = (managed?: "quiver" | "manual") => [{ key: "m", name: "Mine", tags: [], consoles: [], managed, order: 0, removed: false, updatedAt: 2 }];
+  expect(applyServerCollections(local, server("quiver"), "me")[0].managed).toBe("quiver");
+  expect(applyServerCollections(local, server(), "me")[0].managed).toBeUndefined();
+  expect(applyServerCollections([{ ...local[0], pending: true }], server("quiver"), "me")[0].managed).toBe("manual");
+});
+
 test("a playlist's platforms sync like its other filters: the account's, unless changed here", () => {
   const local = [{ key: "p", name: "Phone", tags: [], consoles: [], platforms: ["android" as const], order: 0, account: "me" }];
   const server = (platforms?: ("android" | "linux")[]) => [{ key: "p", name: "Phone", tags: [], consoles: [], platforms, order: 0, removed: false, updatedAt: 2 }];

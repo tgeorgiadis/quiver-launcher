@@ -138,15 +138,19 @@ export function artFor(entry: Pick<Entry, "libraryArt" | "artwork">, image: Excl
   return list.filter((a, i) => list.findIndex((b) => b.src === a.src) === i);
 }
 
-/** What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). */
-export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
+/**
+ * What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). `managed`: Quiver's, which it
+ * downloads and updates (from the catalog or a repository), or the player's, added from this computer, as 3.x's manually
+ * managed apps were.
+ */
+export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no"; managed?: "quiver" | "manual" };
 
 /**
  * The library's filters as they were saved, each only when it's one the library has. `tab` is the saved tab: Installed
  * and Not installed were tabs as well as a filter, and a library left on one opens with the filter on instead.
  */
 export function keptFilters(saved: Record<string, string> = {}, tab?: string): LibraryFilters {
-  const { console, projectType, ai, tag } = saved;
+  const { console, projectType, ai, tag, managed } = saved;
   const installed = tab === "installed" ? "yes" : tab === "not-installed" ? "no" : saved.installed;
   return Object.fromEntries(
     Object.entries({
@@ -155,6 +159,7 @@ export function keptFilters(saved: Record<string, string> = {}, tab?: string): L
       tag,
       ai: ai === "no-generated" || ai === "no-ai" ? ai : undefined,
       installed: installed === "yes" || installed === "no" ? installed : undefined,
+      managed: managed === "quiver" || managed === "manual" ? managed : undefined,
     }).filter(([, value]) => typeof value === "string" && value),
   );
 }

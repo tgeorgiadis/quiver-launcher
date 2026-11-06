@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, noProgram, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -35,7 +35,7 @@ import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
 import { useTopBarFit } from "./top-bar-fit";
 import { WindowControls, moveWindow, useWindowButtons } from "./window-bar";
-import { SettingsPage, useTray } from "./settings-page";
+import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { FilePicker } from "./file-picker";
@@ -60,6 +60,7 @@ export function App() {
   useTelemetrySetup();
   useUpdateCheck();
   useTray();
+  useDiscordPresence();
   const { library, client, settings, setSettings, config } = useLauncher();
   // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);
@@ -881,7 +882,7 @@ function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?:
 
 /** The one button a card needs: Add, Install, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
 function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
-  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, addToLibrary } = useLauncher();
+  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
@@ -914,6 +915,25 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
           {install && locatable(entry.id, install, job) && foldersOn(config.os) && (
             <button className="primary" onClick={() => void locateInstall(entry)}>
               <Trans>Locate existing install…</Trans>
+            </button>
+          )}
+          {/* Nothing in its folder looks like its program: the player can say which it is. */}
+          {install && noProgram(job) && (
+            <button
+              className="primary"
+              onClick={() =>
+                void native.pickExecutable(install.folder, install.dir).then(
+                  (executable) => {
+                    if (!executable) return;
+                    setLaunch(entry.id, { ...install.launch, executable });
+                    dismiss(entry.id);
+                    void play(entry.id, executable);
+                  },
+                  (e) => setNotice(String(e), { stays: true }),
+                )
+              }
+            >
+              <Trans>Choose its program…</Trans>
             </button>
           )}
           {/* A local app has nothing to download: Try again plays it again. */}

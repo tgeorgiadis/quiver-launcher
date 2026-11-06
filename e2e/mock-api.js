@@ -733,6 +733,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     setAnalytics: account.setAnalytics,
     /** Saves an account's catalog filters, as "Save as my default" on the website does; undefined clears them. */
     setCatalogDefaults: account.setCatalogDefaults,
+    /** The playlists an account has saved, as libraryCollections keeps them. */
+    collections: account.collections,
     reviews: account.reviews,
     /** Shared lists by slug. */
     lists: account.lists,
@@ -871,12 +873,12 @@ function mockAccount(entries) {
     // As libraryCollections.save: whole collections, the latest save wins.
     if (path === "/collections/save") {
       // As libraryCollections.save: only the fields it knows (anything else fails the whole call); new fields merge, null clears.
-      const known = ["key", "name", "tags", "consoles", "installed", "order", "removed", "apps", "projectTypes", "ai", "platforms", "follows"];
+      const known = ["key", "name", "tags", "consoles", "installed", "order", "removed", "apps", "projectTypes", "ai", "managed", "platforms", "follows"];
       if (body.collections.some((c) => Object.keys(c).some((k) => !known.includes(k)))) return send(res, { error: "ArgumentValidationError" }, 400);
       for (const c of body.collections) {
         const before = user.collections.get(c.key) ?? {};
         const merged = { ...c };
-        for (const k of ["apps", "projectTypes", "ai", "platforms", "follows"]) {
+        for (const k of ["apps", "projectTypes", "ai", "managed", "platforms", "follows"]) {
           if (c[k] === undefined && before[k] !== undefined) merged[k] = before[k];
           if (c[k] === null) delete merged[k];
         }
@@ -961,5 +963,6 @@ function mockAccount(entries) {
     const user = users.get(name);
     if (user) user.catalogDefaults = defaults;
   };
-  return { handle, reviews, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults };
+  const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
+  return { handle, reviews, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
 }

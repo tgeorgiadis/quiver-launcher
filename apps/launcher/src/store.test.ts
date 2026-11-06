@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -20,6 +20,12 @@ describe("locating an install", () => {
     expect(locatable("port", found, { error: "The download failed." })).toBe(false);
     expect(folderGone(gone)).toBe(true);
     expect(locatable("port", found, gone)).toBe(true);
+  });
+
+  it("knows when no program was found, which lets the player choose one", () => {
+    expect(noProgram({ error: "Couldn't find a program to start in this app's folder." })).toBe(true);
+    expect(noProgram(gone)).toBe(false);
+    expect(noProgram(undefined)).toBe(false);
   });
 
   it("isn't offered during a download, or for the player's own files", () => {
@@ -322,5 +328,16 @@ describe("an update for this computer", () => {
     const pinned = { ...install, updates: "pinned" as const };
     expect(hasUpdate(found(windows), pinned)).toBe(false);
     expect(updateFor(found(windows), pinned)).toEqual(windows);
+  });
+});
+
+describe("naming an app being played in usage data", () => {
+  it("gives a catalog app's version", () => {
+    expect(playedRef(appRef("port", "test-port"), "v1.2.0")).toEqual({ slug: "test-port", source: "catalog", version: "v1.2.0" });
+  });
+
+  it("keeps an app the player added to its kind", () => {
+    expect(playedRef(appRef("github:someone/private-port", "private-port"), "my-tag")).toEqual({ slug: null, source: "custom", version: null });
+    expect(playedRef(appRef("local:abc", "my-game"), "1")).toEqual({ slug: null, source: "local", version: null });
   });
 });

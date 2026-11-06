@@ -351,6 +351,8 @@ export type ClientOptions = {
   fetch?: typeof globalThis.fetch;
   /** Called once, when the default address can't be reached and FALLBACK_API answered instead. */
   onFallback?: (error: unknown) => void;
+  /** Called once, the first time neither the default address nor FALLBACK_API answered. */
+  onUnreachable?: (error: unknown) => void;
   /** How long a call waits for an answer before giving up on it; 20 seconds unless a test says otherwise. */
   timeoutMs?: number;
 };
@@ -405,6 +407,7 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     }
   }
   let origin = base;
+  let unreachable = false;
   /**
    * When api.quiverlauncher.com gives no answer at all (no connection, a failed
    * TLS handshake, no answer in time, or the 499 its proxy sometimes sends) or
@@ -432,6 +435,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
         if (origin !== FALLBACK_API) options.onFallback?.(problem);
         origin = FALLBACK_API;
         return other;
+      }
+      if (!unreachable) {
+        unreachable = true;
+        options.onUnreachable?.(problem);
       }
     }
     // The player's real problem is the first one.

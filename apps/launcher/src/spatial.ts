@@ -1309,6 +1309,8 @@ export function startSpatialNavigation() {
   window.addEventListener(
     "keydown",
     (e) => {
+      // Some keydowns name no key, as autofill's can: nothing was pressed.
+      if (!e.key) return;
       if (capture?.kind === "pad" && e.key === "Escape") {
         e.stopImmediatePropagation();
         return finish(null);

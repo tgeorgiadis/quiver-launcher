@@ -835,6 +835,10 @@ msgid "Any project type"
 msgstr "모든 프로젝트 유형"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "모든 출처"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "모든 태그"
 
@@ -859,6 +863,10 @@ msgstr "앱 섹션"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "앱"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "이 컴퓨터에서 추가한 앱으로, Quiver가 다운로드하거나 업데이트하지 않습니다"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -891,6 +899,10 @@ msgstr "여기에 설치된 앱은 항상 표시돼요."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "이 컴퓨터에 설치된 앱은 라이브러리에 그대로 남아요. 손상된 파일은 새 파일 옆에 보관되므로 삭제되는 것은 없어요."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Quiver가 카탈로그나 저장소에서 다운로드하고 업데이트하는 앱"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -1037,6 +1049,11 @@ msgstr "둘러보기 카드"
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "카탈로그 둘러보기"
+
+#. On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browsing games"
+msgstr "게임 둘러보는 중"
 
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
@@ -1261,6 +1278,10 @@ msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인�
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "프로그램 선택…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1782,6 +1803,11 @@ msgstr "게임"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
 msgstr "일반"
+
+#. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Get Quiver Launcher"
+msgstr "Quiver Launcher 받기"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2474,6 +2500,19 @@ msgstr "앱 폴더 안에 앱을 넣을 폴더를 만들어요."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "관리"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "관리 주체"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Quiver가 관리"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "직접 관리"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"
@@ -3845,6 +3884,10 @@ msgstr "이전 버전 보기"
 msgid "Show on cards"
 msgstr "카드에 표시"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Show on Discord what I'm playing, or that I'm in Quiver Launcher"
+msgstr "Discord에 내가 플레이 중인 게임이나 Quiver Launcher 사용 중임을 표시"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
 msgstr "비밀번호 표시"
@@ -4261,6 +4304,7 @@ msgid "This app gets that app's page, artwork and reviews. Its files stay yours:
 msgstr "이 앱은 해당 앱의 페이지, 아트워크, 리뷰를 사용합니다. 파일은 그대로 내 것입니다. Quiver가 업데이트하거나 옮기거나 삭제하지 않으므로 새 버전은 직접 받아야 합니다."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This app has no approved release yet."
 msgstr "이 앱은 아직 승인된 버전이 없어요."
 

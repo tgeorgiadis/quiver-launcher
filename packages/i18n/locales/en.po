@@ -835,6 +835,10 @@ msgid "Any project type"
 msgstr "Any project type"
 
 #: ../../apps/launcher/src/library.tsx
+msgid "Any source"
+msgstr "Any source"
+
+#: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "Any tag"
 
@@ -859,6 +863,10 @@ msgstr "App sections"
 #: ../../apps/launcher/src/App.tsx
 msgid "Apps"
 msgstr "Apps"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps added from this computer, which Quiver doesn't download or update"
+msgstr "Apps added from this computer, which Quiver doesn't download or update"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps are installed in {dir}"
@@ -891,6 +899,10 @@ msgstr "Apps installed here always show."
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
 msgstr "Apps installed on this computer stay in your library. A damaged file is kept beside the new one, so nothing is deleted."
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Apps Quiver downloads and updates, from the catalog or a repository"
+msgstr "Apps Quiver downloads and updates, from the catalog or a repository"
 
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
@@ -1037,6 +1049,11 @@ msgstr "Browse cards"
 #: ../../apps/launcher/src/library.tsx
 msgid "Browse the catalog"
 msgstr "Browse the catalog"
+
+#. On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browsing games"
+msgstr "Browsing games"
 
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
@@ -1261,6 +1278,10 @@ msgstr "Choose Create a token on GitHub, and sign in to GitHub."
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Choose Generate token, copy it, paste it above and choose Save token."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "Choose its program…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1782,6 +1803,11 @@ msgstr "Games"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
 msgstr "General"
+
+#. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Get Quiver Launcher"
+msgstr "Get Quiver Launcher"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2474,6 +2500,19 @@ msgstr "Makes a folder in your apps folder to put the app in."
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "Manage"
+
+#. Filter by whether Quiver downloads and updates an app, or the player looks after it
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by"
+msgstr "Managed by"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Managed by Quiver"
+msgstr "Managed by Quiver"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "Manually managed"
+msgstr "Manually managed"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Matching games"
@@ -3845,6 +3884,10 @@ msgstr "Show older releases"
 msgid "Show on cards"
 msgstr "Show on cards"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Show on Discord what I'm playing, or that I'm in Quiver Launcher"
+msgstr "Show on Discord what I'm playing, or that I'm in Quiver Launcher"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
 msgstr "Show password"
@@ -4261,6 +4304,7 @@ msgid "This app gets that app's page, artwork and reviews. Its files stay yours:
 msgstr "This app gets that app's page, artwork and reviews. Its files stay yours: Quiver won't update, move or delete them, so you'd get new versions yourself."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This app has no approved release yet."
 msgstr "This app has no approved release yet."
 

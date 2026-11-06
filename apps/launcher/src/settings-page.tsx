@@ -180,6 +180,20 @@ export function useTray() {
   }, [config.os, settings.closeToTray, open, quit]);
 }
 
+/** Discord's Rich Presence as the setting has it, in the player's language (discord.rs; computers only). */
+export function useDiscordPresence() {
+  const { settings, config } = useLauncher();
+  const idle = t({ message: "Browsing games", comment: "On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running" });
+  const button = t({
+    message: "Get Quiver Launcher",
+    comment: "Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters",
+  });
+  const enabled = !settings.discordPresenceOff && onComputer(config.os);
+  useEffect(() => void native.setDiscordPresence(enabled, { idle, button }).catch(() => {}), [enabled, idle, button]);
+}
+
+const onComputer = (os: string) => os === "windows" || os === "linux" || os === "macos";
+
 /** The window, the interface size and theme, the language, usage data, and the first start's setup again. */
 function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
   const { settings, setSettings, config } = useLauncher();
@@ -260,6 +274,12 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       </label>
       <LanguageSetting />
       {config.os !== "android" && config.os !== "ios" && <MusicSetting />}
+      {onComputer(config.os) && (
+        <label className="toggle">
+          <input type="checkbox" checked={!settings.discordPresenceOff} onChange={(e) => setSettings({ ...settings, discordPresenceOff: e.target.checked ? undefined : true })} />
+          <Trans>Show on Discord what I'm playing, or that I'm in Quiver Launcher</Trans>
+        </label>
+      )}
       <TelemetrySetting />
       <div className="settings-section">
         <button onClick={onRunSetup}>

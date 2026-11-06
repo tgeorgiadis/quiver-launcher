@@ -1,8 +1,16 @@
 /** The Rust side of the launcher (src-tauri/src/lib.rs). */
-import { invoke } from "@tauri-apps/api/core";
+import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import type { ModSettings, ModSource, Os } from "@quiverlauncher/api";
+import { noteFailure } from "./command-failures";
+
+/** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
+const invoke = <T>(...[command, args, options]: Parameters<typeof tauriInvoke>) =>
+  tauriInvoke<T>(command, args, options).catch((e) => {
+    noteFailure(command, e);
+    throw e;
+  });
 
 type StateFile = "library" | "installs" | "catalog" | "settings" | "collections";
 /** An app in a Quiver Launcher 3 library, with its installed copy if any. */
@@ -60,6 +68,12 @@ export type Config = {
   steamKeyboard?: boolean;
   /** Steam is running Quiver, so Quiver can't add games to it now (lib.rs). Missing from an older build. */
   steamRunsUs?: boolean;
+  /** The system's version, for usage data (device.rs). Missing from an older build. */
+  osVersion?: string | null;
+  /** A Steam Deck, for usage data. Missing from an older build. */
+  steamDeck?: boolean;
+  /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
+  package?: string;
 };
 export type Progress = {
   id: string;
@@ -97,6 +111,9 @@ export type Installed = {
   /** Windows wants a restart to finish. */
   restart: boolean;
 };
+
+/** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
+export type DiscordGame = { name: string; image?: string };
 
 /** How the player wants an app started, when the launcher's own choice isn't right. */
 export type LaunchOptions = {
@@ -180,9 +197,11 @@ export const native = {
   startEmptyLibrary: () => invoke<void>("start_empty_library"),
   /** Fails with "cancelled" when the player stops it, "missing" when its file is gone (a 404), or "mismatch" when the download isn't the file its checksum names. */
   install: (request: InstallRequest) => invoke<Installed>("install", { request }),
-  /** Starts an app; `id` names it in `onAppClosed` once it closes. */
-  launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions) =>
-    invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch }),
+  /** Starts an app; `id` names it in `onAppClosed` once it closes. `presence` is what Discord shows the player playing while it runs. */
+  launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions, presence?: DiscordGame) =>
+    invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),
+  /** Discord's Rich Presence on or off (discord.rs), with its words in the player's language. */
+  setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long. */
   onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
@@ -208,6 +227,10 @@ export const native = {
   minimize: () => getCurrentWindow().minimize(),
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),
   closeWindow: () => getCurrentWindow().close(),
+  /** The screen the window is on, in its own pixels, and the system's scale for it; null when it can't say. WebView2's `window.screen` is the window's size instead. */
+  screen: () =>
+    currentMonitor()
+      .then((m) => (m ? { width: m.size.width, height: m.size.height, scale: m.scaleFactor } : null)),
   startDragging: () => getCurrentWindow().startDragging(),
   /** Whether the window fills the screen: maximized, or full screen. */
   windowState: async () => {
@@ -285,6 +308,10 @@ export const native = {
   pickExecutable: (folder: string, dir?: string, program?: string) => invoke<string | null>("pick_executable", { folder, dir, program }),
   /** The programs in an installed app's folder, relative to it. */
   listPrograms: (folder: string, dir?: string) => invoke<string[]>("list_programs", { folder, dir }),
+  /** Whether Android no longer has an app Quiver installed from an APK; always false elsewhere. */
+  androidAppGone: (folder: string, dir?: string) => invoke<boolean>("android_app_gone", { folder, dir }),
+  /** The kinds of file in an installed app's folder (extensions, not names), for an error report. */
+  fileKinds: (folder: string, dir?: string) => invoke<string[]>("file_kinds", { folder, dir }),
   listProtons: () => invoke<Proton[]>("list_protons"),
   /** What Automatic runs Windows programs with on Linux, by name (a Proton, else Wine); null with neither. */
   automaticRunner: () => invoke<string | null>("automatic_runner"),

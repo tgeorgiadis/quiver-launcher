@@ -20,6 +20,7 @@ import { useSyncExternalStore } from "react";
 import type { ErrorEvent } from "@sentry/browser";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
+import { failedCommand } from "./command-failures";
 
 /** The website, which keeps the secret Google Analytics asks for. */
 export const DEFAULT_HOST = "https://quiverlauncher.com";
@@ -30,6 +31,12 @@ export type TelemetryContext = {
   version: string;
   os: string;
   arch: string;
+  osVersion?: string | null;
+  steamDeck?: boolean;
+  /** How this copy was installed: installer, portable, flatpak… */
+  package?: string;
+  /** Steam's Game Mode, or another Gamescope session. */
+  gameMode?: boolean;
   /** Folders and the OS user name, taken out of anything sent. */
   home?: string | null;
   user?: string | null;
@@ -147,6 +154,10 @@ function send(name: string, properties: Properties | undefined, ctx: TelemetryCo
     launcher_version: ctx.version,
     os: ctx.os,
     arch: ctx.arch,
+    os_version: ctx.osVersion ?? null,
+    steam_deck: Boolean(ctx.steamDeck),
+    package: ctx.package ?? null,
+    game_mode: Boolean(ctx.gameMode),
     ...properties,
     session_id: sessionId,
     // Google Analytics only counts someone as active with some time spent.
@@ -170,7 +181,7 @@ function startErrors(ctx: TelemetryContext) {
         sendClientReports: false,
         integrations: (defaults) => defaults.filter(({ name }) => !LEFT_OUT.has(name)),
         // Turning it off after it loaded drops everything, and browser noise goes too; what's left is scrubbed.
-        beforeSend: (event) => (!allowed() || isNoise(event) ? null : scrubEvent(event)),
+        beforeSend: (event, hint) => (!allowed() || isNoise(event) ? null : scrubEvent(withCommand(event, hint?.originalException))),
       });
       sentryRunning = true;
       return sentry;
@@ -360,6 +371,17 @@ function isNoise(event: ErrorEvent) {
   return Array.isArray(list) && list.length > 0 && list.every((e) => typeof e?.value === "string" && NOISE.test(e.value));
 }
 
+/**
+ * An error from the Rust side that nothing caught says which command it came from, and is grouped by that and the
+ * system's error number: its text is in the player's language, a new issue for each.
+ */
+function withCommand(event: ErrorEvent, error: unknown): ErrorEvent {
+  const command = failedCommand(error);
+  if (!command) return event;
+  const number = /os error (\d+)/i.exec(String(error))?.[0];
+  return { ...event, tags: { ...event.tags, command }, fingerprint: ["uncaught", command, number ?? reasonOf(error)] };
+}
+
 function report(error: unknown, scope: ErrorScope) {
   if (!telemetryAvailable() || off()) return;
   if (!allowed()) {
@@ -412,7 +434,21 @@ const expected = (error: unknown) => error === "cancelled" || error instanceof P
 export function captureFailure(step: string, error: unknown, properties?: Properties) {
   if (expected(error)) return;
   if (error instanceof Error) return report(error, { tags: { failure: step }, extra: properties });
-  report(new Error(messageOf(error)), { tags: { failure: step }, extra: properties, fingerprint: ["failure", step, reasonOf(error)] });
+  report(new Error(messageOf(error)), { tags: { failure: step }, extra: properties, fingerprint: ["failure", step, groupOf(error)] });
+}
+
+/**
+ * What says two failures are the same one: not the operating system's sentence, which comes in the player's language,
+ * but its error number; and not the versions in the message.
+ */
+function groupOf(error: unknown) {
+  const said = scrub(messageOf(error));
+  const os = said.match(/\(os error (\d+)\)/);
+  if (os) return `os error ${os[1]}`;
+  return said
+    .replace(/\bv?\d+(\.\d+)+\S*/g, "<version>")
+    .replace(/\b(version code|current) \d+/g, "$1 <version>")
+    .slice(0, 120);
 }
 
 /**
@@ -432,6 +468,27 @@ const messageOf = (error: unknown) => (error instanceof Problem ? error.english 
 /** A short, safe reason for a failure: the error's message without paths or names, at most 120 characters. */
 export function reasonOf(error: unknown) {
   return scrub(messageOf(error)).slice(0, 120);
+}
+
+/** What kind of failure it was, in a word: the reason's wording changes, and each app's says something different. */
+const FAILURE_KINDS: [string, RegExp][] = [
+  ["checksum_mismatch", /^mismatch$|doesn't match the file|checksum|sha-?256/i],
+  ["missing", /^missing$|was removed from|HTTP status client error \(404|\b404\b/i],
+  ["rate_limited", /HTTP status client error \(429|rate.?limit|too many requests|\b429\b/i],
+  ["disk_full", /no space left|not enough space|os error (28|112)\b/i],
+  ["permission", /permission denied|access is denied|os error (5|13)\b/i],
+  ["in_use", /being used by another process|os error (32|16|26)\b|resource busy|text file busy/i],
+  ["no_release", /no releases yet|no approved release|isn't available any more/i],
+  ["no_download", /no download for|no Windows installer|no files to download/i],
+  ["network", /check your connection|error sending request|timed? ?out|took too long|connection (closed|reset|refused|aborted)|dns error|error decoding response body|failed to fetch|networkerror|HTTP status server error/i],
+  ["no_program", /couldn.t find a program to start/i],
+  ["not_found", /os error (2|3)\b|no such file|cannot find the (file|path)/i],
+];
+
+/** Which kind of failure this is, for counting them; "other" when it's none of the known ones. */
+export function failureKind(error: unknown) {
+  const message = messageOf(error);
+  return FAILURE_KINDS.find(([, pattern]) => pattern.test(message))?.[0] ?? "other";
 }
 
 const PATH = "<path>";

@@ -6,12 +6,33 @@ change your mind on first start, in Settings ("Send usage data"), or through you
 your account's setting while you're signed in, but what it sends isn't linked to your account: only to a random
 identifier for this computer, which is replaced if you turn usage data off.
 
-The launcher sends named events only (`apps/launcher/src/telemetry.ts`): the launcher starting and first-run setup
-finishing, screens opened (each once per launch), catalog apps installed, updated, launched and uninstalled (by slug;
-apps players add only by kind), failed installs and launches and why, apps added, an app's folder renamed and the apps
-folder moved, playlists made, shared and followed, searches that found nothing (their length, not their words), an
-app's menu opened and its videos played, announcements dismissed and their links opened, the catalog falling back to
-its backup, and sign-in and sign-out. Every event carries the launcher's version, OS and architecture.
+The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
+
+- **Starting up:** the launcher starting, first-run setup finishing, usage data being allowed (and where), and each kind
+  of controller connected (Xbox, PlayStation and so on, not its name).
+- **How it's set up** (`settings_loaded`, each launch): theme, language, TV mode, interface scale, the screen's resolution and scale, the
+  library's layout and sort, the kind of Windows runner, and whether close to tray, full screen, a background picture or
+  music, preview updates or a GitHub token are in use. Only that they are: never the files or the
+  token.
+- **What's in the library:** counts of its apps by kind, installed, with updates waiting, updating by themselves,
+  pinned and hidden (`library_loaded`, each launch), and once a day each catalog app installed, with its version, how
+  it updates and whether an update is waiting (`app_on_computer`, at most 40).
+- **Apps:** catalog apps installed, updated, launched, closed (with the seconds played), uninstalled, added and removed,
+  by slug, and when launched or closed, the version. Apps players add are named only by kind. Installs cancelled and
+  at what stage; failed installs and launches, why, and what kind of failure; an app's folder renamed and the apps
+  folder moved; an app's menu opened and its videos played.
+- **Mods:** the mods screen opened, and mods installed, updated, uninstalled or failing to install: the catalog app's
+  slug, the mod's id at its source, and the source.
+- **Everything else:** screens opened (each once per launch), playlists made, shared and followed, searches that found
+  nothing (their length, not their words), announcements dismissed and their links opened, the catalog falling back to
+  its backup or not answering at all, the launcher's own updates starting and failing, and sign-in and sign-out.
+
+Every event carries the launcher's version, how this copy was installed (installer, portable, Flatpak and so on), the
+OS, its version (on Linux, with the distribution's name) and architecture, and whether it's a Steam Deck or in Steam's
+Game Mode.
+
+Google Analytics allows 25 properties on an event, and one over that loses those that count it as activity. Every event
+carries 10, so one may add at most 15 (`usage-summary.test.ts` checks the largest).
 
 Error reports cover crashes in the window, and failures installing, launching, uninstalling or reinstalling an app or
 updating the launcher, with the app's slug and what was being done. Failures that aren't the launcher's to fix aren't
@@ -27,7 +48,8 @@ settings in the Sentry project (Security & Privacy), not in this code: its Advan
 `user.geo.city` and `user.geo.subdivision`, which Sentry works out from your IP address even when it doesn't store it.
 
 Nothing is captured automatically (no clicks, text, page views or replays), and paths, home and apps folders,
-and the computer's user name are removed from data sent.
+and the computer's user name are removed from data sent. When Play can't find an app's program, its error report
+lists the kinds of file in the app's folder (`dll`, `pak`), never their names.
 
 | Variable            | When       | What                                                                                |
 | ------------------- | ---------- | ----------------------------------------------------------------------------------- |

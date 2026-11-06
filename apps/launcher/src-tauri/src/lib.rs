@@ -3,6 +3,10 @@ mod android;
 mod apps_folder;
 mod browser;
 mod custom_art;
+mod device;
+mod discord;
+#[cfg(windows)]
+mod elevate;
 mod flatpak;
 mod gamepad;
 mod host;
@@ -74,6 +78,12 @@ struct Config {
     steam_keyboard: bool,
     /// Steam is running Quiver, so Add to Steam can't work now (add_to_steam): the UI greys it out.
     steam_runs_us: bool,
+    /// The system's version, sent with usage data (device.rs).
+    os_version: Option<String>,
+    /// A Steam Deck, sent with usage data.
+    steam_deck: bool,
+    /// How this copy was installed, sent with usage data (update.rs).
+    package: &'static str,
 }
 
 /// Steam is running Quiver as one of its games, so it would overwrite a new shortcut as it closes.
@@ -114,6 +124,9 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         game_mode: keyboard::game_mode(|name| std::env::var(name).ok()),
         steam_keyboard: cfg!(target_os = "linux") && keyboard::offered(|name| std::env::var(name).ok()),
         steam_runs_us: steam_runs_us(),
+        os_version: device::os_version(),
+        steam_deck: device::steam_deck(|name| std::env::var(name).ok(), device::board_vendor()),
+        package: update::package(),
     }
 }
 
@@ -319,10 +332,21 @@ struct Played {
 /// Not on the window's thread: on Android, starting an app goes through the system, which answers on that thread.
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
-async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool, program: Option<String>, launch: Option<launch::LaunchOptions>) -> Result<(), String> {
+async fn launch(
+    app: tauri::AppHandle,
+    data: State<'_, Data>,
+    id: Option<String>,
+    folder: String,
+    dir: Option<String>,
+    preferred: Vec<String>,
+    wine: bool,
+    program: Option<String>,
+    launch: Option<launch::LaunchOptions>,
+    presence: Option<discord::Game>,
+) -> Result<(), String> {
     #[cfg(target_os = "android")]
     {
-        let _ = (preferred, wine, program, launch);
+        let _ = (preferred, wine, program, launch, presence);
         let package = android::package(&app_dir(&data, &folder, dir)?).ok_or("This app has no Android version installed. Get its Android download to play it here.")?;
         android::launch(&package)?;
         // Its play time: until the player comes back to Quiver.
@@ -330,18 +354,48 @@ async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>
         Ok(())
     }
     #[cfg(not(target_os = "android"))]
-    start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default())
+    start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default(), presence)
+}
+
+/// Waits for a started program to close; whether that could be told.
+#[cfg(not(target_os = "android"))]
+type Waiting = Box<dyn FnOnce() -> bool + Send>;
+/// Whether Android no longer has an app Quiver installed from an APK: the player removed it in the system's settings.
+/// False for an app that wasn't installed that way, and everywhere else. Not on the window's thread, as `launch` isn't.
+#[tauri::command]
+async fn android_app_gone(data: State<'_, Data>, folder: String, dir: Option<String>) -> Result<bool, String> {
+    #[cfg(target_os = "android")]
+    {
+        let Some(package) = android::package(&app_dir(&data, &folder, dir)?) else { return Ok(false) };
+        android::is_installed(&package).map(|installed| !installed)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (data, folder, dir);
+        Ok(false)
+    }
 }
 
 #[cfg(not(target_os = "android"))]
 #[allow(clippy::too_many_arguments)]
-fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>, launch: &launch::LaunchOptions) -> Result<(), String> {
+fn start(
+    app: tauri::AppHandle,
+    data: &Data,
+    id: Option<String>,
+    folder: &str,
+    dir: Option<String>,
+    preferred: &[String],
+    wine: bool,
+    program: Option<String>,
+    launch: &launch::LaunchOptions,
+    presence: Option<discord::Game>,
+) -> Result<(), String> {
     let target = target(data, folder, dir, preferred, wine, program, launch)?;
     let (program, args, env) = target.command();
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
-    sandbox::check(&program)
+    let spawned: std::io::Result<Waiting> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::host(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
@@ -350,20 +404,36 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
                 .stderr(std::process::Stdio::null())
                 .spawn()
         })
-        .map(|mut child| {
+        .map(|mut child| Box::new(move || child.wait().is_ok()) as Waiting);
+    // One that needs administrator rights: Windows asks the player, as a double click would.
+    #[cfg(windows)]
+    let spawned = spawned.or_else(|e| match e.raw_os_error() {
+        Some(elevate::REQUIRED) => elevate::start(&program, &args, &target.dir).map(|process| Box::new(move || process.is_some_and(|p| p.wait())) as Waiting),
+        _ => Err(e),
+    });
+    spawned
+        .map(|wait| {
             // Its play time: from now until it closes. A program that hands off to another and returns at once counts only its own time.
             let Some(id) = id else { return };
             let started = std::time::Instant::now();
             app.state::<Running>().started(&id);
+            // On the player's Discord profile while it runs (discord.rs).
+            let shown = presence.map(|game| app.state::<discord::Presence>().started(&id, game)).is_some();
             std::thread::spawn(move || {
-                let closed = child.wait().is_ok();
+                let closed = wait();
                 app.state::<Running>().closed(&id);
+                if shown {
+                    app.state::<discord::Presence>().closed(&id);
+                }
                 if closed {
                     let _ = app.emit("app-closed", Played { id, seconds: started.elapsed().as_secs() });
                 }
             });
         })
         .map_err(|e| match e.kind() {
+            // No, at Windows' prompt for administrator rights.
+            #[cfg(windows)]
+            _ if e.raw_os_error() == Some(elevate::DECLINED) => "cancelled".into(),
             // Automatic found no Proton either; or the player chose Wine.
             std::io::ErrorKind::NotFound if wine && target.steam_proton => "This is a Windows app. Install Steam (it brings Proton) or Wine to play it on Linux.".into(),
             std::io::ErrorKind::NotFound if wine => "Wine isn't installed. Install it, or choose a Proton under Run with, in Settings or the app's launch options.".into(),
@@ -749,6 +819,12 @@ fn list_programs(data: State<'_, Data>, folder: String, dir: Option<String>) -> 
         .collect())
 }
 
+/// The kinds of file in an installed app's folder, for an error report (`install::file_kinds`).
+#[tauri::command]
+fn file_kinds(data: State<'_, Data>, folder: String, dir: Option<String>) -> Result<Vec<String>, String> {
+    Ok(install::file_kinds(&app_dir(&data, &folder, dir)?))
+}
+
 /// Asks which program starts an installed app, starting in its folder; the
 /// answer is relative to that folder so it survives the folder moving. An app
 /// the player added from elsewhere (`program`) can start anything.
@@ -859,6 +935,12 @@ async fn to_background() -> Result<(), String> {
     return android::to_background();
     #[cfg(not(target_os = "android"))]
     Ok(())
+}
+
+/// Discord's Rich Presence on or off (discord.rs), and its words in the player's language.
+#[tauri::command]
+fn set_discord_presence(presence: State<discord::Presence>, enabled: bool, texts: discord::Texts) {
+    presence.set(enabled, texts);
 }
 
 /// Close to tray on or off (tray.rs), and its menu's words in the player's language. Windows only: elsewhere, nothing.
@@ -973,9 +1055,9 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
                 flatpak::uninstall(&id);
             }
             #[cfg(not(target_os = "android"))]
-            trash::delete(&dir).or_else(|_| std::fs::remove_dir_all(&dir)).map_err(|e| e.to_string())?;
+            install::remove_install(&dir, |d| trash::delete(d).or_else(|_| std::fs::remove_dir_all(d))).map_err(|e| e.to_string())?;
             #[cfg(target_os = "android")]
-            std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+            install::remove_install(&dir, |d| std::fs::remove_dir_all(d)).map_err(|e| e.to_string())?;
         }
         Ok(())
     })
@@ -1327,6 +1409,7 @@ pub fn run() {
             app.manage(gamepad::Pads::default());
             app.manage(Installing::default());
             app.manage(Running::default());
+            app.manage(discord::Presence::new());
             #[cfg(target_os = "android")]
             app.manage(Playing::default());
             app.manage(picker::Picks::default());
@@ -1373,6 +1456,7 @@ pub fn run() {
             open_url,
             to_background,
             set_tray,
+            set_discord_presence,
             start_with_windows,
             set_start_with_windows,
             check_update,
@@ -1397,6 +1481,8 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            android_app_gone,
+            file_kinds,
             list_protons,
             automatic_runner,
             pick_proton,
