@@ -1051,6 +1051,11 @@ msgstr "Tarjetas de Explorar"
 msgid "Browse the catalog"
 msgstr "Explorar el catálogo"
 
+#. On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browsing games"
+msgstr "Explorando juegos"
+
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
 msgid "Build"
@@ -1820,6 +1825,11 @@ msgstr "Obtener {app}"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Get {newestLabel}"
 msgstr "Obtener {newestLabel}"
+
+#. Button on the player's Discord profile that opens Quiver Launcher's website, for their friends. Discord cuts it at 32 characters
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Get Quiver Launcher"
+msgstr "Obtener Quiver Launcher"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Get the Windows version (Wine)"
@@ -3882,6 +3892,10 @@ msgstr "Mostrar versiones anteriores"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show on cards"
 msgstr "Mostrar en las tarjetas"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Show on Discord what I'm playing, or that I'm in Quiver Launcher"
+msgstr "Mostrar en Discord a qué estoy jugando, o que estoy en Quiver Launcher"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"
