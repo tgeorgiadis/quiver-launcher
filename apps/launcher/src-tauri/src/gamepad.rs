@@ -12,6 +12,9 @@
 //! Only while Quiver's window is in front: behind it (a game started from
 //! Quiver, say) the controllers are let go, so the game has them to itself.
 //! On Windows SDL holds some (DirectInput ones, wheels among them) exclusively.
+//! Except while a game Quiver started runs, for TV mode's Start + Select, which
+//! closes it, and on Linux its pointer from the controller (tv/session.rs): then
+//! they're read in the background, sending nothing, and without DirectInput.
 use std::sync::Mutex;
 
 /// Names of the connected controllers, and the labels of the one used last.
@@ -72,7 +75,7 @@ mod sdl {
     use std::collections::{BTreeMap, HashMap, HashSet};
     use std::ffi::CStr;
     use std::sync::atomic::{AtomicBool, Ordering};
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
     use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 
     #[derive(serde::Serialize, Clone)]
@@ -99,8 +102,9 @@ mod sdl {
             });
         }
         std::thread::spawn(move || loop {
-            if FOCUSED.load(Ordering::Relaxed) {
-                if !read(&app) {
+            let behind = !FOCUSED.load(Ordering::Relaxed);
+            if !behind || crate::tv::session::watching() {
+                if !read(&app, behind) {
                     return;
                 }
             } else {
@@ -109,9 +113,19 @@ mod sdl {
         });
     }
 
-    /// Reads controllers while Quiver is in front; false if SDL can't start.
+    /// Whether to go on reading: in front, or `behind` while a game wants watching.
+    fn reading(behind: bool) -> bool {
+        let focused = FOCUSED.load(Ordering::Relaxed);
+        if behind {
+            !focused && crate::tv::session::watching()
+        } else {
+            focused
+        }
+    }
+
+    /// Reads controllers while Quiver is in front, or `behind` it during a game; false if SDL can't start.
     /// SDL and every call to it stay on this one thread.
-    fn read(app: &AppHandle) -> bool {
+    fn read(app: &AppHandle, behind: bool) -> bool {
         // Steam running turns a Steam Deck's controls (and a Steam Controller's) into its desktop layout's keys and
         // mouse for a program it didn't start: the d-pad the arrow keys, A Enter, B Escape. Read here as well, each
         // press came twice, and with Steam's keyboard or overlay up, a press there moved Quiver too. So they're left
@@ -130,18 +144,30 @@ mod sdl {
                 SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAMDECK, c"0".as_ptr());
                 SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAM, c"0".as_ptr());
             }
+            // Behind a game: SDL hears controllers though Quiver isn't in front, and leaves DirectInput's alone, which it
+            // would hold for itself (Xbox, PlayStation and Switch pads come through its other ways).
+            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, if behind { c"1".as_ptr() } else { c"0".as_ptr() });
+            #[cfg(windows)]
+            SDL_SetHint(SDL_HINT_JOYSTICK_DIRECTINPUT, if behind { c"0".as_ptr() } else { c"1".as_ptr() });
             if !SDL_Init(SDL_INIT_GAMEPAD) {
                 return false;
             }
         }
         let mut open = BTreeMap::<SDL_JoystickID, *mut SDL_Gamepad>::new();
         let mut held = Held::default();
+        let mut in_game = InGame::default();
+        // Behind a game, nothing goes to the page: the game has the controllers.
         let send = |key: &'static str, down: bool| {
-            let _ = app.emit("pad", Pad { key, down });
+            if !behind {
+                let _ = app.emit("pad", Pad { key, down });
+            }
         };
         // The controller used last, whose labels the UI shows: the first connected until another's button is pressed.
         let mut active = None::<SDL_JoystickID>;
         let update = |open: &BTreeMap<SDL_JoystickID, *mut SDL_Gamepad>, active: &mut Option<SDL_JoystickID>| {
+            if behind {
+                return;
+            }
             if !active.is_some_and(|id| open.contains_key(&id)) {
                 *active = open.keys().next().copied();
             }
@@ -173,7 +199,7 @@ mod sdl {
             }
         }
         update(&open, &mut active);
-        while FOCUSED.load(Ordering::Relaxed) {
+        while reading(behind) {
             let mut event = SDL_Event::default();
             // SAFETY: SDL fills in the event; its type says which of the union's fields it is.
             while unsafe { SDL_PollEvent(&mut event) } {
@@ -207,6 +233,7 @@ mod sdl {
                     }
                     SDL_EVENT_GAMEPAD_AXIS_MOTION => {
                         let event = unsafe { event.gaxis };
+                        in_game.axis(event.which.0, SDL_GamepadAxis(event.axis.into()), event.value);
                         for (key, down) in axis(SDL_GamepadAxis(event.axis.into()), event.value) {
                             if held.set(event.which.0, key, down) {
                                 send(key, down);
@@ -216,6 +243,7 @@ mod sdl {
                     _ => {}
                 }
             }
+            in_game.tick(app, &held);
             // Often enough to feel instant; with none connected, often enough to see one arrive.
             std::thread::sleep(Duration::from_millis(if open.is_empty() { 250 } else { 10 }));
         }
@@ -231,6 +259,108 @@ mod sdl {
             SDL_Quit();
         }
         true
+    }
+
+    /// How long Start + Select are held to close the game.
+    const CLOSE_HOLD: Duration = Duration::from_secs(1);
+
+    /// While a game the launcher started runs (tv/session.rs): Start + Select held together on one controller for a
+    /// second closes it, for games with no way to quit; and on Linux, holding Select makes the right stick a mouse
+    /// pointer (RT clicks, LT right-clicks, the left stick scrolls), for launchers that only take a mouse.
+    #[derive(Default)]
+    struct InGame {
+        /// Since when Start + Select have been held, and whether that hold has acted already.
+        combo: Option<(Instant, bool)>,
+        #[cfg(target_os = "linux")]
+        pointer: Pointer,
+    }
+
+    impl InGame {
+        #[cfg_attr(not(target_os = "linux"), allow(unused_variables))]
+        fn axis(&mut self, pad: u32, axis: SDL_GamepadAxis, value: i16) {
+            #[cfg(target_os = "linux")]
+            self.pointer.axis(pad, axis, value);
+        }
+
+        fn tick(&mut self, app: &AppHandle, held: &Held) {
+            // What it did, in quiver.log: Game Mode can't be watched any other way.
+            let path = app.state::<crate::Data>().0.join("quiver.log");
+            let log = |line: &str| crate::append_log(&path, line);
+            #[cfg(target_os = "linux")]
+            self.pointer.tick(held, log);
+            if !held.combo() {
+                self.combo = None;
+            } else if let Some((since, done)) = self.combo.as_mut() {
+                if !*done && since.elapsed() >= CLOSE_HOLD {
+                    *done = true;
+                    log(if !crate::tv::session::CLOSE_COMBO.load(Ordering::Relaxed) {
+                        "Start + Select held: closing a game with it is off in Settings"
+                    } else if crate::tv::session::close_game(&path) {
+                        "Start + Select held: closing the game"
+                    } else {
+                        "Start + Select held: no game started from Quiver is running"
+                    });
+                }
+            } else {
+                self.combo = Some((Instant::now(), false));
+            }
+        }
+    }
+
+    /// The mouse pointer from a controller (Linux, tv/pointer.rs).
+    #[cfg(target_os = "linux")]
+    #[derive(Default)]
+    struct Pointer {
+        /// Each controller's right stick and left stick's y, -1 to 1.
+        sticks: HashMap<u32, (f32, f32, f32)>,
+        mouse: Option<crate::tv::pointer::VirtualMouse>,
+        /// Making the mouse failed once (no access to /dev/uinput): not tried again.
+        failed: bool,
+        /// The left and right buttons, held.
+        clicks: (bool, bool),
+        last: Option<Instant>,
+    }
+
+    #[cfg(target_os = "linux")]
+    impl Pointer {
+        fn axis(&mut self, pad: u32, axis: SDL_GamepadAxis, value: i16) {
+            let value = value as f32 / i16::MAX as f32;
+            let stick = self.sticks.entry(pad).or_default();
+            match axis {
+                SDL_GAMEPAD_AXIS_RIGHTX => stick.0 = value,
+                SDL_GAMEPAD_AXIS_RIGHTY => stick.1 = value,
+                SDL_GAMEPAD_AXIS_LEFTY => stick.2 = value,
+                _ => {}
+            }
+        }
+
+        fn tick(&mut self, held: &Held, log: impl Fn(&str)) {
+            use crate::tv::pointer::{BTN_LEFT, BTN_RIGHT};
+            let seconds = self.last.replace(Instant::now()).map_or(0.0, |t| t.elapsed().as_secs_f32().min(0.05));
+            let on = crate::tv::session::POINTER.load(Ordering::Relaxed) && crate::tv::session::playing();
+            let pad = held.holding("Select").filter(|_| on);
+            if pad.is_some() && self.mouse.is_none() && !self.failed {
+                match crate::tv::pointer::VirtualMouse::new() {
+                    Ok(mouse) => self.mouse = Some(mouse),
+                    Err(e) => {
+                        self.failed = true;
+                        log(&format!("The pointer from the controller is unavailable: {e}"));
+                    }
+                }
+            }
+            let Some(mouse) = self.mouse.as_mut() else { return };
+            let wanted = pad.map_or((false, false), |p| (held.has(p, "RightTrigger2"), held.has(p, "LeftTrigger2")));
+            if wanted.0 != self.clicks.0 {
+                mouse.button(BTN_LEFT, wanted.0);
+            }
+            if wanted.1 != self.clicks.1 {
+                mouse.button(BTN_RIGHT, wanted.1);
+            }
+            self.clicks = wanted;
+            if let Some(&(x, y, scroll)) = pad.and_then(|p| self.sticks.get(&p)) {
+                mouse.steer((x, y), scroll, seconds);
+            }
+        }
     }
 
     /// Opens a controller to hear from it, unless it's open already.
@@ -377,6 +507,22 @@ mod sdl {
         fn all(&mut self) -> HashSet<&'static str> {
             self.0.drain().flat_map(|(_, keys)| keys).collect()
         }
+
+        /// Start and Select held together on one controller.
+        fn combo(&self) -> bool {
+            self.0.values().any(|keys| keys.contains("Start") && keys.contains("Select"))
+        }
+
+        /// The controller holding `key`, if one is.
+        #[cfg(target_os = "linux")]
+        fn holding(&self, key: &str) -> Option<u32> {
+            self.0.iter().find(|(_, keys)| keys.contains(key)).map(|(&pad, _)| pad)
+        }
+
+        #[cfg(target_os = "linux")]
+        fn has(&self, pad: u32, key: &str) -> bool {
+            self.0.get(&pad).is_some_and(|keys| keys.contains(key))
+        }
     }
 
     #[cfg(test)]
@@ -404,6 +550,16 @@ mod sdl {
             assert!(!held.set(1, "South", false));
             assert!(held.set(2, "South", false));
             assert!(!held.set(1, "DPadUp", false), "never down");
+        }
+
+        #[test]
+        fn start_and_select_close_a_game_only_held_on_one_controller() {
+            let mut held = Held::default();
+            held.set(1, "Start", true);
+            held.set(2, "Select", true);
+            assert!(!held.combo());
+            held.set(1, "Select", true);
+            assert!(held.combo());
         }
 
         #[test]

@@ -40,6 +40,11 @@
   color-scheme: dark;
   cursor: default;
 }
+/* The launcher's file browser (file-picker.tsx), over TV mode as over the desktop. */
+.tv-picker-layer {
+  position: relative;
+  z-index: 1001;
+}
 
 .tv-root > :not(.tv-backdrop, .tv-overlay, .tv-dialog-backdrop, .tv-debug, .tv-notices) {
   position: relative;

@@ -8,6 +8,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useLauncher } from "../store";
 import { DEFAULT_KEYS, DEFAULT_PAD, suspendSpatialNavigation, withDefaults } from "../spatial";
 import { usePadLabels, usePads } from "../pad-hints";
+import { FilePicker } from "../file-picker";
 import { tvNative } from "./tvNative";
 import { useTvMode, useTvSettings } from "./mode";
 import { TvContext, type Tv, type InputFamily } from "./context";
@@ -29,7 +30,11 @@ import "./tv.css";
 export function TvHost({ children }: { children: ReactNode }) {
   const tv = useTvMode();
   const { settings } = useTvSettings();
+  const { settings: launcherSettings } = useLauncher();
   const [debug, setDebug] = useState(false);
+  /** The launcher's file browser is open (Steam's Game Mode): over TV mode, which lets it have the controls. */
+  const [picking, setPicking] = useState(false);
+  const height = useWindowHeight();
   // Games that fail right after starting, in both modes.
   useFailures();
   const turnOn = useCallback(() => tv.set(true), [tv]);
@@ -47,9 +52,13 @@ export function TvHost({ children }: { children: ReactNode }) {
       <div className="tv-desktop" inert={tv.open}>
         {children}
       </div>
-      {tv.open && <TvMode debug={debug} exit={() => tv.set(false)} />}
+      {tv.open && <TvMode debug={debug} picking={picking} exit={() => tv.set(false)} />}
       {!tv.open && <ControllerToast enabled={settings.offerOnController} onOpen={turnOn} />}
       {!tv.open && <RomDialogDesktop />}
+      {/* Over every dialog that asks for a file or a folder in Steam's Game Mode, TV mode's too: as large there as the desktop's would be. */}
+      <div className="tv-picker-layer" style={tv.open ? { zoom: Math.max(1, (height / 1080) * 1.15) * (launcherSettings.scale ?? 1) } : undefined}>
+        <FilePicker onAsking={setPicking} />
+      </div>
     </>
   );
 }
@@ -68,7 +77,7 @@ function useWindowHeight() {
 const familyOf = (kind: string | undefined): InputFamily =>
   kind === "playstation" || kind === "nintendo" || kind === "steam" ? kind : "xbox";
 
-function TvMode({ debug, exit }: { debug: boolean; exit: () => void }) {
+function TvMode({ debug, picking, exit }: { debug: boolean; picking: boolean; exit: () => void }) {
   const launcher = useLauncher();
   const bridge = useBridge();
   const { settings, set: setSettings } = useTvSettings();
@@ -89,6 +98,10 @@ function TvMode({ debug, exit }: { debug: boolean; exit: () => void }) {
   /** A game TV mode started is running: input is closed and animations rest. */
   const [inGame, setInGame] = useState(false);
   const height = useWindowHeight();
+  // While the file browser is open, the keys and controllers are its (spatial.ts), not TV mode's.
+  const browsing = useRef(picking);
+  browsing.current = picking;
+  useEffect(() => suspendSpatialNavigation(!picking), [picking]);
   const scale = Math.max(0.6, (height / 720) * (launcher.settings.scale ?? 1));
 
   const router = useMemo(() => new InputRouter(), []);
@@ -118,6 +131,7 @@ function TvMode({ debug, exit }: { debug: boolean; exit: () => void }) {
     // A key's action is fixed when it goes down: Shift let go before Tab mustn't turn its release into another action.
     const keysDown = new Map<string, InputAction>();
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
+      if (browsing.current) return;
       // The on-screen keyboard takes typing from a physical one too.
       const typing = router.top?.onText;
       if (typing && down && gate.isOpen && !e.ctrlKey && !e.altKey && !e.metaKey) {
@@ -157,7 +171,7 @@ function TvMode({ debug, exit }: { debug: boolean; exit: () => void }) {
         setEvents((e) => [line, ...e].slice(0, 8));
       }
       const action = padAction(payload.key, bound.current.pad);
-      if (!action) return;
+      if (!action || browsing.current) return;
       if (payload.down && gate.isOpen) {
         setPadLast(true);
         setPointer(false);
@@ -178,12 +192,16 @@ function TvMode({ debug, exit }: { debug: boolean; exit: () => void }) {
     };
     void win.isFocused().then(setActive, () => setActive(true));
     const focus = win.onFocusChanged(({ payload }) => setActive(payload));
-    // Game sessions (src-tauri/src/tv/session.rs): closed while one runs, and back in front when it ends.
-    const started = listen("tv-game-started", () => {
+    // Games the launcher started (src-tauri/src/tv/session.rs): closed while one runs, and back in front when the last ends.
+    let playing = 0;
+    const started = listen("app-started", () => {
+      playing++;
       gate.gameInForeground = true;
       setInGame(true);
     });
-    const exited = listen("tv-game-exited", () => {
+    const exited = listen("app-closed", () => {
+      playing = Math.max(0, playing - 1);
+      if (playing) return;
       gate.gameInForeground = false;
       setInGame(false);
       void tvNative.focus().catch(() => {});

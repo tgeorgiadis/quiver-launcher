@@ -368,27 +368,31 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
+    // Its output, in a log of its own (game-logs/), so a game that fails can say why.
+    let log = tv::session::GameLog::new(&data.0, folder);
     sandbox::check(&program)
         .and_then(|_| {
             sandbox::host(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
                 .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
+                .stdout(log.stdio())
+                .stderr(log.stdio())
                 .spawn()
         })
-        .map(|mut child| {
-            // Its play time: from now until it closes. A program that hands off to another and returns at once counts only its own time.
-            let Some(id) = id else { return };
-            let started = std::time::Instant::now();
-            app.state::<Running>().started(&id);
-            std::thread::spawn(move || {
-                let closed = child.wait().is_ok();
-                app.state::<Running>().closed(&id);
-                if closed {
-                    let _ = app.emit("app-closed", Played { id, seconds: started.elapsed().as_secs() });
+        .map(|child| {
+            // Its play time: from now until it closes, or until a program it handed off to does (tv/session.rs).
+            if let Some(id) = &id {
+                app.state::<Running>().started(id);
+            }
+            let ended = {
+                let (app, id) = (app.clone(), id.clone());
+                move |seconds| {
+                    let Some(id) = id else { return };
+                    app.state::<Running>().closed(&id);
+                    let _ = app.emit("app-closed", Played { id, seconds });
                 }
-            });
+            };
+            tv::session::track(&app, child, target.dir.clone(), id, folder.to_string(), log, ended);
         })
         .map_err(|e| match e.kind() {
             // Automatic found no Proton either; or the player chose Wine.

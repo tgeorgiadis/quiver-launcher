@@ -13,14 +13,16 @@ import { Trans } from "@lingui/react/macro";
 import { native, type Listing, type PickAsk } from "./native";
 import { closesOutside } from "./overlay";
 
-/** Answers the pickers' questions one at a time, in the order they came. */
-export function FilePicker() {
+/** Answers the pickers' questions one at a time, in the order they came; `onAsking` hears whether one is open. */
+export function FilePicker({ onAsking }: { onAsking?: (asking: boolean) => void }) {
   const [asks, setAsks] = useState<PickAsk[]>([]);
   useEffect(() => {
     const off = native.onPick((ask) => setAsks((q) => [...q, ask]));
     return () => void off.then((stop) => stop());
   }, []);
   const ask = asks[0];
+  const asking = Boolean(ask);
+  useEffect(() => onAsking?.(asking), [asking, onAsking]);
   if (!ask) return null;
   const done = (path: string | null) => {
     void native.picked(ask.id, path);

@@ -2,12 +2,11 @@
 //! original game (a ROM), which no release includes. Most ports ask for it
 //! with a file picker; some only say so in their output and quit. GoldenEye
 //! 007's PC port: "no ROM found (tried ge007.ntsc-final.z64|baserom.u.z64 in
-//! data/ and exe dir)". The output names the file it wants and where, so Big
-//! Picture can say it plainly and put the player's copy there (session.rs, the
-//! page's programs/RomDialog.tsx).
+//! data/ and exe dir)". The output names the file it wants and where, so the
+//! launcher can say it plainly and put the player's copy there (session.rs, the
+//! page's tv/programs/RomDialog.tsx).
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use tauri_plugin_dialog::DialogExt;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct RomNeed {
@@ -109,25 +108,20 @@ fn readme(dir: &Path) -> Option<PathBuf> {
     found.into_iter().next()
 }
 
-/// The player picks their copy; it's copied to where the game looks, under the name it wants.
-/// False when they cancelled.
+/// The player picks their copy (picker.rs: the system's dialog, or the page's own in Game Mode); it's copied to where
+/// the game looks, under the name it wants. False when they cancelled.
 #[tauri::command]
 pub async fn tv_place_rom(app: tauri::AppHandle, window: tauri::WebviewWindow, dir: String, into: String, file: String) -> Result<bool, String> {
     if !simple_name(&file) || !(into.is_empty() || simple_name(&into)) {
-        return Err("That isn't a file name Big Quiver can use.".into());
+        return Err("That isn't a file name Quiver can use.".into());
     }
     let dir = PathBuf::from(dir);
     if !dir.is_dir() {
         return Err("The game's folder isn't there any more.".into());
     }
-    let ext = file.rsplit_once('.').map(|(_, e)| e.to_owned()).unwrap_or_default();
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    let dialog = app.dialog().file().set_parent(&window).set_title(format!("Choose your copy of the game ({file})"));
-    let dialog = if ext.is_empty() { dialog } else { dialog.add_filter(format!(".{ext} files"), &[ext.as_str()]) }.add_filter("All files", &["*"]);
-    dialog.pick_file(move |path| {
-        let _ = tx.send(path);
-    });
-    let Some(picked) = rx.await.ok().flatten().and_then(|p| p.into_path().ok()) else { return Ok(false) };
+    // Any file: a copy is often named otherwise (a .n64 for a .z64), and it goes under the name the game wants.
+    let title = format!("Choose your copy of the game ({file})");
+    let Some(picked) = crate::picker::choose(&app, &window, crate::picker::Want::File, &title, None, None).await else { return Ok(false) };
     let folder = if into.is_empty() { dir } else { dir.join(&into) };
     std::fs::create_dir_all(&folder).map_err(|e| format!("Couldn't make the folder {}: {e}", folder.display()))?;
     let target = folder.join(&file);

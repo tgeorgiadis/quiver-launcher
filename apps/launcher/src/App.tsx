@@ -38,7 +38,6 @@ import { WindowControls, moveWindow, useWindowButtons } from "./window-bar";
 import { SettingsPage, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
-import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
@@ -322,8 +321,6 @@ export function App() {
       <ChangeVersion />
       <ProgramPrompt />
       <Notice />
-      {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
-      <FilePicker />
     </div>
   );
 }

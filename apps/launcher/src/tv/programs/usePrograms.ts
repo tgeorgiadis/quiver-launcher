@@ -9,6 +9,8 @@ import { useLauncher } from "../../store";
 import { romNeed } from "./RomDialog";
 
 type Failure = {
+  /** The app's id, when the launcher started it for one. */
+  id: string | null;
   folder: string;
   message: string;
   early: boolean;
@@ -22,9 +24,9 @@ export function useFailures() {
   latest.current = launcher;
 
   useEffect(() => {
-    const stop = listen<Failure>("tv-game-failed", ({ payload }) => {
+    const stop = listen<Failure>("app-failed", ({ payload }) => {
       const { installs, fail, catalog, library } = latest.current;
-      const id = Object.keys(installs).find((key) => installs[key].folder === payload.folder);
+      const id = payload.id ?? Object.keys(installs).find((key) => installs[key].folder === payload.folder);
       if (!id) return;
       if (payload.rom) {
         // Before fail(): Notices leaves out the game the dialog is about.

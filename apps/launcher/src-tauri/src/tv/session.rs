@@ -1,5 +1,5 @@
-//! Game sessions (spec §11): when a launched game ends, so Big Picture can come
-//! back in front and listen again.
+//! Game sessions: every app the launcher starts (lib.rs `start`), until it ends,
+//! for its play time and so TV mode can come back in front and listen again.
 //!
 //! The game's own process is waited on. A launcher stub (one that starts the
 //! real game and exits within a few seconds) hands over to processes running
@@ -8,11 +8,11 @@
 //! (Bloodborne's launch_gui.bat starts python.exe there).
 //!
 //! A game that closes with an error before it really started, or crashes, is
-//! reported ("tv-game-failed") with the last telling line of its output, which
+//! reported ("app-failed") with the last telling line of its output, which
 //! goes to a log in the data folder instead of nowhere.
 //!
-//! A game with no way to quit can be closed from the controller (pads.rs: hold
-//! Start + Select): it and everything it started are asked to quit, then forced.
+//! A game with no way to quit can be closed from the controller (gamepad.rs:
+//! hold Start + Select): it and everything it started are asked to quit, then forced.
 use serde::Serialize;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -33,7 +33,7 @@ const POLL: Duration = Duration::from_secs(2);
 
 /// The game being played: its session, process, folder and start (Unix seconds).
 static PLAYING: Mutex<Option<(u64, u32, PathBuf, u64)>> = Mutex::new(None);
-/// Big Picture's setting "Close a game with Start + Select".
+/// TV mode's setting "Close a game with Start + Select".
 pub static CLOSE_COMBO: AtomicBool = AtomicBool::new(true);
 /// How long a game has to quit when asked, before it's forced.
 const GRACE: Duration = Duration::from_secs(3);
@@ -61,6 +61,8 @@ impl GameLog {
 
 #[derive(Clone, Serialize)]
 struct Failure {
+    /// The app's id, when the launcher started it for one.
+    id: Option<String>,
     /// The install's folder name, as the page knows it.
     folder: String,
     message: String,
@@ -70,13 +72,15 @@ struct Failure {
     rom: Option<super::romneed::RomNeed>,
 }
 
-/// Called with each game the launcher starts.
-pub fn track(app: &AppHandle, mut child: Child, dir: PathBuf, folder: String, log: GameLog) {
+/// Called with each game the launcher starts; `ended` is told how long it ran, a launcher's hand-over included.
+pub fn track(app: &AppHandle, mut child: Child, dir: PathBuf, id: Option<String>, folder: String, log: GameLog, ended: impl FnOnce(u64) + Send + 'static) {
     let session = LATEST.fetch_add(1, Ordering::SeqCst) + 1;
     // A second early, as process start times are in whole seconds.
     let since = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()).saturating_sub(1);
     *PLAYING.lock().unwrap() = Some((session, child.id(), dir.clone(), since));
-    let _ = app.emit("tv-game-started", session);
+    if let Some(id) = &id {
+        let _ = app.emit("app-started", id);
+    }
     let app = app.clone();
     std::thread::Builder::new()
         .name("tv-session".into())
@@ -99,11 +103,13 @@ pub fn track(app: &AppHandle, mut child: Child, dir: PathBuf, folder: String, lo
                     Some(need) => super::romneed::message(need, log.path.as_deref()),
                     None => message(&problem, log.path.as_deref()),
                 };
-                let _ = app.emit("tv-game-failed", Failure { folder, message, early, rom });
+                    let _ = app.emit("app-failed", Failure { id, folder, message, early, rom });
             }
             if LATEST.load(Ordering::SeqCst) == session {
                 PLAYING.lock().unwrap().take_if(|(s, _, _, _)| *s == session);
-                let _ = app.emit("tv-game-exited", session);
+            }
+            if status.is_some() {
+                ended(started.elapsed().as_secs());
             }
         })
         .ok();
@@ -207,7 +213,7 @@ fn plain(line: &str) -> String {
     out.trim().to_string()
 }
 
-/// Big Picture's setting "Mouse pointer with Select" (pointer.rs, Linux).
+/// TV mode's setting "Mouse pointer with Select" (pointer.rs, Linux).
 pub static POINTER: AtomicBool = AtomicBool::new(true);
 
 #[tauri::command]
@@ -215,13 +221,17 @@ pub fn tv_pointer(on: bool) {
     POINTER.store(on, Ordering::Relaxed);
 }
 
-/// Whether a game started from Big Picture is running (the Linux pointer asks).
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+/// Whether a game the launcher started is running.
 pub fn playing() -> bool {
     PLAYING.lock().unwrap().is_some()
 }
 
-/// Big Picture's setting: whether holding Start + Select closes the game being played.
+/// Whether the controllers are worth reading while a game is in front: for Start + Select, or the pointer.
+pub fn watching() -> bool {
+    playing() && (CLOSE_COMBO.load(Ordering::Relaxed) || (cfg!(target_os = "linux") && POINTER.load(Ordering::Relaxed)))
+}
+
+/// TV mode's setting: whether holding Start + Select closes the game being played.
 #[tauri::command]
 pub fn tv_close_combo(on: bool) {
     CLOSE_COMBO.store(on, Ordering::Relaxed);
@@ -321,13 +331,6 @@ fn same(a: &Path, b: &Path) -> bool {
     norm(a) == norm(b)
 }
 
-/// Whether any process is running a program from inside `dir`. Processes whose
-/// path can't be read (access denied) don't count.
-pub(crate) fn running_from(system: &mut System, dir: &Path) -> bool {
-    system.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing().with_exe(UpdateKind::OnlyIfNotSet));
-    system.processes().values().any(|p| p.exe().is_some_and(|exe| inside(exe, dir)))
-}
-
 /// `exe` is in `dir` or below it. Windows paths compare without regard to case.
 fn inside(exe: &Path, dir: &Path) -> bool {
     if cfg!(windows) {
@@ -357,14 +360,6 @@ mod tests {
         let (dir, slash) = if cfg!(windows) { (Path::new(r"C:\Apps\Game"), Path::new(r"c:\apps\game\")) } else { (Path::new("/apps/Game"), Path::new("/apps/Game/")) };
         assert!(same(dir, slash));
         assert!(!same(dir, Path::new(if cfg!(windows) { r"C:\Apps\GameTwo" } else { "/apps/GameTwo" })));
-    }
-
-    #[test]
-    fn this_test_runs_from_its_own_folder() {
-        let exe = std::env::current_exe().unwrap();
-        let mut system = System::new();
-        assert!(running_from(&mut system, exe.parent().unwrap()));
-        assert!(!running_from(&mut system, Path::new(if cfg!(windows) { r"C:\no\such\folder" } else { "/no/such/folder" })));
     }
 
     #[cfg(windows)]

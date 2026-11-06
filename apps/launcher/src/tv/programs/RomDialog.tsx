@@ -3,9 +3,9 @@
  * its ROM isn't there, and said so in its output (src-tauri/src/tv/
  * romneed.rs). Most ports ask for the ROM themselves; some, like GoldenEye
  * 007's, only quit. When the output names the file and folder, the player
- * picks their copy and Big Quiver puts it there under that name, then plays.
- * In Big Picture with the controller (the file picker itself needs a mouse or
- * keyboard); in desktop mode as an ordinary dialog.
+ * picks their copy and Quiver puts it there under that name, then plays.
+ * In TV mode with the controller (and the file picker too in Steam's Game
+ * Mode, file-picker.tsx); in desktop mode as an ordinary dialog.
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Disc3 } from "lucide-react";
