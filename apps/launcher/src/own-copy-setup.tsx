@@ -5,13 +5,13 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { CircleCheck, Disc3, FolderOpen, Play, ShieldCheck, TriangleAlert } from "lucide-react";
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry, SetupFile } from "@quiverlauncher/api";
 import { native, type CheckedCopy, type CopyProgress } from "./native";
 import { useLauncher, type Install, type OwnCopy } from "./store";
 import { Dialog } from "./library";
-import { delivered, setupFiles, sizeText } from "./own-copy";
+import { delivered, rankCopies, setupFiles, sizeText } from "./own-copy";
 
 const fileName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 const folderOf = (path: string) => path.slice(0, Math.max(0, path.length - fileName(path).length)).replace(/[\\/]+$/, "");
@@ -94,10 +94,13 @@ export function OwnCopyPrompt() {
   const file = queue[index] ?? queue[0];
   const [phase, setPhase] = useState<Phase>({ kind: "looking" });
   const [progress, setProgress] = useState<CopyProgress | null>(null);
+  // Files whose names don't look like this game stay folded away till asked for.
+  const [showOthers, setShowOthers] = useState(false);
   const open = Boolean(asking && entry && install && file);
   const asked = useRef(0);
 
   useEffect(() => setIndex(0), [asking?.id, asking?.fileId]);
+  useEffect(() => setShowOthers(false), [asking?.id, file?.id]);
   useEffect(() => {
     if (!open) return;
     const unlisten = native.onCopyProgress(setProgress);
@@ -194,24 +197,36 @@ export function OwnCopyPrompt() {
               </p>
             )}
             {phase.kind === "looking" && <p className="muted">{t`Looking in Downloads, your ROM folders and drives…`}</p>}
-            {phase.kind === "choose" && (
-              <>
-                {phase.found.length > 0 && (
-                  <div className="choices">
-                    {phase.found.map((f, i) => (
-                      <button key={f.path} autoFocus={i === 0} onClick={() => void use(f.path)}>
-                        <strong>{fileName(f.path)}</strong>
-                        <span className="muted">
-                          {folderOf(f.path)}
-                          {f.size ? ` · ${sizeText(f.size)}` : ""}
-                        </span>
+            {phase.kind === "choose" &&
+              (() => {
+                const { likely, others } = rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name, file.label]);
+                const shown = showOthers ? [...likely, ...others] : likely;
+                const game = entry.games[0]?.title ?? entry.name;
+                return (
+                  <>
+                    {shown.length > 0 && (
+                      <div className="choices own-copy-choices">
+                        {shown.map((f, i) => (
+                          <button key={f.path} autoFocus={i === 0 && likely.length > 0} onClick={() => void use(f.path)}>
+                            <strong>{fileName(f.path)}</strong>
+                            <span className="muted">
+                              {folderOf(f.path)}
+                              {f.size ? ` · ${sizeText(f.size)}` : ""}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {!phase.found.length && <p className="muted">{t`Quiver didn't find one in the usual places.`}</p>}
+                    {phase.found.length > 0 && !likely.length && <p className="muted">{t`None of the files Quiver found look like ${game}.`}</p>}
+                    {others.length > 0 && (
+                      <button className="link-button own-copy-others" onClick={() => setShowOthers(!showOthers)}>
+                        {showOthers ? t`Hide the other files` : plural(others.length, { one: "Show # other file", other: "Show # other files" })}
                       </button>
-                    ))}
-                  </div>
-                )}
-                {!phase.found.length && <p className="muted">{t`Quiver didn't find one in the usual places.`}</p>}
-              </>
-            )}
+                    )}
+                  </>
+                );
+              })()}
             {busy && (
               <div className="progress" role="status">
                 <div className="bar" style={{ width: `${pct ?? 0}%` }} />

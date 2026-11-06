@@ -22,6 +22,11 @@ msgstr "{0, plural, one {# app per altre piattaforme non è mostrata.} other {# 
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
 msgstr "{0, plural, one {Piattaforme: # app nascosta} other {Piattaforme: # app nascoste}}"
 
+#. placeholder {0}: others.length
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{0, plural, one {Show # other file} other {Show # other files}}"
+msgstr "{0, plural, one {Mostra # altro file} other {Mostra altri # file}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Showing # app for other platforms.} other {Showing # apps for other platforms.}}"
@@ -1957,6 +1962,10 @@ msgstr "Nascondi le app generate per lo più con IA"
 msgid "Hide password"
 msgstr "Nascondi password"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Hide the other files"
+msgstr "Nascondi gli altri file"
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Hide the steps"
 msgstr "Nascondi i passaggi"
@@ -2886,6 +2895,10 @@ msgstr "Nessuno"
 #: ../../apps/launcher/src/App.tsx
 msgid "None of {name} {version}'s files are marked for your computer. If you know which one runs on it, pick it."
 msgstr "Nessuno dei file di {name} {version} è indicato per il tuo computer. Se sai quale funziona, sceglilo."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "None of the files Quiver found look like {game}."
+msgstr "Nessuno dei file trovati da Quiver sembra {game}."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "None of this release's files are for this computer."
