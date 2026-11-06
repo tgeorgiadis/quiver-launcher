@@ -81,6 +81,11 @@ pub fn track(app: &AppHandle, mut child: Child, dir: PathBuf, id: Option<String>
     if let Some(id) = &id {
         let _ = app.emit("app-started", id);
     }
+    #[cfg(windows)]
+    {
+        let (root, dir) = (child.id(), dir.clone());
+        let _ = std::thread::Builder::new().name("game-to-front".into()).spawn(move || super::front::bring_forward(root, dir, since));
+    }
     let app = app.clone();
     std::thread::Builder::new()
         .name("tv-session".into())
@@ -279,7 +284,7 @@ fn close_tree(root: Pid, dir: &Path, since: u64, grace: Duration) -> String {
 }
 
 /// The game's process, everything it started, and anything of the game's (`of_game`).
-fn game_processes(system: &mut System, root: Pid, dir: &Path, since: u64) -> Vec<Pid> {
+pub(super) fn game_processes(system: &mut System, root: Pid, dir: &Path, since: u64) -> Vec<Pid> {
     refresh_for_game(system);
     let me = Pid::from_u32(std::process::id());
     let mut found = vec![root];

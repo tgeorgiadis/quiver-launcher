@@ -1,6 +1,8 @@
 //! TV mode: a fullscreen, controller-first mode (the page's src/tv). Its own
 //! commands live here; lib.rs registers them. Its settings are the launcher's.
 pub mod art;
+#[cfg(windows)]
+mod front;
 #[cfg(target_os = "linux")]
 pub mod pointer;
 pub mod programs;
