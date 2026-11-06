@@ -991,6 +991,8 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 /* However many copies turn up, the list scrolls and the buttons under it stay in sight. */
 .own-copy-choices { max-height: min(42vh, 340px); overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
 .own-copy-others { display: block; margin: 0 0 10px; font-size: 13px; }
+/* Its buttons' labels on one line each: they wrap as whole buttons onto a second row instead. */
+.own-copy-prompt .row > button { flex: 1 1 auto; white-space: nowrap; }
 .own-copy-prompt .choices button { flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px 14px; text-align: left; }
 .own-copy-prompt .choices button .muted { font-size: 12px; overflow-wrap: anywhere; }
 .own-copy-prompt .progress { margin: 10px 0; }

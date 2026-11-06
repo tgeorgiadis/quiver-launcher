@@ -171,6 +171,9 @@ export function OwnCopyPrompt() {
     if (path) void use(path);
   };
   const busy = phase.kind === "checking" || phase.kind === "placing";
+  const ranked = phase.kind === "choose" ? rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name, file.label]) : null;
+  // Choosing a file is the way on when nothing found looks like the game, or what was chosen wasn't it.
+  const chooseNext = phase.kind === "problem" || (ranked !== null && !ranked.likely.length);
   const pct = progress && progress.total > 0 ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : null;
 
   return (
@@ -223,7 +226,7 @@ export function OwnCopyPrompt() {
             {phase.kind === "looking" && <p className="muted">{t`Looking in Downloads, your ROM folders and drives…`}</p>}
             {phase.kind === "choose" &&
               (() => {
-                const { likely, others } = rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name, file.label]);
+                const { likely, others } = ranked ?? { likely: [], others: [] };
                 const shown = showOthers ? [...likely, ...others] : likely;
                 const game = entry.games[0]?.title ?? entry.name;
                 return (
@@ -273,7 +276,7 @@ export function OwnCopyPrompt() {
               </div>
             )}
             <div className="row">
-              <button className={phase.kind === "problem" || (phase.kind === "choose" && !phase.found.length) ? "primary" : undefined} autoFocus={phase.kind === "problem" || (phase.kind === "choose" && !phase.found.length)} disabled={busy} onClick={() => void choose()}>
+              <button className={chooseNext ? "primary" : undefined} autoFocus={chooseNext} disabled={busy} onClick={() => void choose()}>
                 <FolderOpen size={16} aria-hidden="true" /> {folder ? t`Choose a folder…` : t`Choose a file…`}
               </button>
               {asking.play && !busy && (
