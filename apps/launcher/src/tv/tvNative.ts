@@ -1,0 +1,29 @@
+/** TV mode's own Rust commands (src-tauri/src/tv). The launcher's are in ../native.ts. */
+import { invoke } from "@tauri-apps/api/core";
+
+export const tvNative = {
+  /** tv.json from the data folder; null when there's none yet or it's unreadable. */
+  readSidecar: () => invoke<unknown>("tv_read_sidecar"),
+  /** Replaces tv.json atomically. */
+  writeSidecar: (value: unknown) => invoke<void>("tv_write_sidecar", { value }),
+  /** Whether the launcher was started with --tv-mode, and QUIVER_TV_DEBUG (an input overlay for testing controllers). */
+  launchArgs: () => invoke<{ tvMode: boolean; debug: boolean }>("tv_launch_args"),
+  /** Brings the window in front with the keyboard; resolves to whether it's focused now. */
+  focus: () => invoke<boolean>("tv_focus"),
+  /** A smaller copy (PNG) of a web picture far bigger than it's shown (art/fitted.ts). */
+  fitArt: (url: string) => invoke<ArrayBuffer>("tv_fit_art", { url }),
+  /** Whether holding Start + Select closes the game being played. */
+  closeCombo: (on: boolean) => invoke<void>("tv_close_combo", { on }),
+  /** Linux: whether holding Select makes the right stick a mouse pointer while a game runs. */
+  pointer: (on: boolean) => invoke<void>("tv_pointer", { on }),
+  /** Fullscreen on this monitor (or stay where it is); resolves to the monitor used. */
+  useMonitor: (name: string | null) => invoke<string | null>("tv_use_monitor", { name }),
+  monitors: () => invoke<string[]>("tv_monitors"),
+  /** Asks for the player's ROM and copies it to `dir`/`into`/`file`; false when they cancelled (programs/RomDialog.tsx). */
+  placeRom: (dir: string, into: string, file: string) => invoke<boolean>("tv_place_rom", { dir, into, file }),
+  /** Opens a game's README. */
+  openReadme: (path: string) => invoke<void>("tv_open_readme", { path }),
+  /** The programs in a game's folder (relative paths), and the file name of the first one matching `hints` (programs/programs.ts). `unsure`: Windows, where the launcher's own pick would be a guess. */
+  programs: (folder: string, dir: string | undefined, hints: string[]) =>
+    invoke<{ matched: string | null; choices: string[]; flatpak: string | null; unsure?: boolean }>("tv_programs", { folder, dir, hints }),
+};

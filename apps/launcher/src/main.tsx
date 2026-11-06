@@ -19,6 +19,7 @@ import { ErrorBoundary, errorText } from "./boundary";
 import { showTheme, systemTheme } from "./theme";
 import { startFpsProbe } from "./fps-probe";
 import { invoke } from "@tauri-apps/api/core";
+import { TvHost } from "./tv/TvHost";
 
 // Until settings load, the window's own theme (set from them at start, or the system's).
 showTheme(systemTheme());
@@ -73,10 +74,10 @@ if (!import.meta.env.DEV)
 function Localized() {
   useLingui();
   return (
-    <>
+    <TvHost>
       <App />
       <PadHints />
-    </>
+    </TvHost>
   );
 }
 

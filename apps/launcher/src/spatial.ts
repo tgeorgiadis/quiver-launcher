@@ -148,6 +148,12 @@ export function setBindings(next: { keys?: Bindings; pad?: Bindings; padOff?: bo
   padOn = !next.padOff;
 }
 
+/** TV mode (tv/TvHost.tsx) takes the keys, the mouse's side buttons and the controllers while it shows. */
+let suspended = false;
+export function suspendSpatialNavigation(on: boolean) {
+  suspended = on;
+}
+
 let capture: { kind: "keys" | "pad"; resolve: (binding: string | null) => void } | null = null;
 /** Resolves to the next key or controller press, or null when it's cancelled (Escape). */
 export function captureNext(kind: "keys" | "pad") {
@@ -1310,7 +1316,7 @@ export function startSpatialNavigation() {
     "keydown",
     (e) => {
       // Some keydowns name no key, as autofill's can: nothing was pressed.
-      if (!e.key) return;
+      if (!e.key || suspended) return;
       if (capture?.kind === "pad" && e.key === "Escape") {
         e.stopImmediatePropagation();
         return finish(null);
@@ -1363,7 +1369,7 @@ export function startSpatialNavigation() {
         const button = MOUSE_BUTTONS[e.button];
         if (!button) return;
         e.preventDefault();
-        if (type === "mousedown") return;
+        if (type === "mousedown" || suspended) return;
         if (capture?.kind === "keys") return finish(button);
         const action = ACTIONS.find((a) => keys[a].includes(button));
         if (action) act(action);
@@ -1408,7 +1414,7 @@ export function startSpatialNavigation() {
     const scroll = action === "scrollUp" ? -1 : action === "scrollDown" ? 1 : 0;
     if (!down) return void (scroll && glide(0));
     if (capture?.kind === "pad") return finish(key);
-    if (!padOn || !document.hasFocus()) return; // A game is running in front.
+    if (!padOn || suspended || !document.hasFocus()) return; // A game is running in front, or TV mode has it.
     if (!action) return;
     if (scroll) return glide(scroll);
     act(action);

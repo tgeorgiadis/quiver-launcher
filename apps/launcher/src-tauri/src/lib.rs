@@ -21,6 +21,7 @@ mod snapshots;
 mod steam;
 #[cfg(windows)]
 mod tray;
+mod tv;
 mod update;
 mod v3;
 mod window_state;
@@ -1371,6 +1372,18 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            tv::tv_read_sidecar,
+            tv::tv_write_sidecar,
+            tv::tv_launch_args,
+            tv::tv_focus,
+            tv::tv_use_monitor,
+            tv::tv_monitors,
+            tv::art::tv_fit_art,
+            tv::programs::tv_programs,
+            tv::romneed::tv_place_rom,
+            tv::romneed::tv_open_readme,
+            tv::session::tv_close_combo,
+            tv::session::tv_pointer,
             config,
             cancel_install,
             read_state,

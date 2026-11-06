@@ -252,6 +252,8 @@ type Launcher = {
   notice: { text: string; stays?: boolean } | null;
   setNotice: (text: string | null, options?: { stays?: boolean }) => void;
   dismiss: (id: string) => void;
+  /** Shows an error on the app, as a launch or download that failed does: a game that closed right after starting (tv/). */
+  fail: (id: string, error: string) => void;
   /** The folders of installed apps that live in the apps folder, which moving it takes along. */
   appFolders: () => string[];
   /** The app whose folder the player is renaming; null closes the prompt. */
@@ -1726,6 +1728,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
+    fail: (id, error) => fail(id, error),
     appFolders,
     renaming,
     askRename,
