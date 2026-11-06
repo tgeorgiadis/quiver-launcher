@@ -37,7 +37,9 @@ pub async fn tv_focus(window: tauri::WebviewWindow) -> bool {
     let _ = window.show();
     // tao tries SetForegroundWindow, then again after a simulated Alt press.
     let _ = window.set_focus();
-    if window.is_focused().unwrap_or(false) {
+    // Only Windows needs (and can check) more. On Linux the window can't say whether it's in front: on CEF it hands
+    // the X focus to Chromium's own window at once (gamepad.rs), so minimizing and restoring would follow every game.
+    if cfg!(not(windows)) || window.is_focused().unwrap_or(false) {
         return true;
     }
     // Last resort: minimizing and restoring brings a window in front.

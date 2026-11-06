@@ -40,6 +40,7 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
   const [padLast, setPadLast] = useState(false);
   const family: InputFamily = padLast ? familyOf(labels?.kind) : "keyboard";
   // The player's bindings, read when pressed: rebinding on the desktop applies here at once.
+  const linux = launcher.config.os === "linux";
   const { keys: savedKeys, pad: savedPad } = launcher.settings;
   const bindings = useMemo(() => ({ keys: withDefaults(savedKeys, DEFAULT_KEYS), pad: withDefaults(savedPad, DEFAULT_PAD) }), [savedKeys, savedPad]);
   const bound = useRef(bindings);
@@ -133,6 +134,8 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
     });
 
     // The native window's focus, not the page's: a webview not clicked yet can say it isn't focused while its window is in front.
+    // Except on Linux: on CEF the window hands the X focus to Chromium's own window as soon as it gets it, so it never
+    // says it's in front; the page's focus says instead, as it does for the controllers (gamepad.rs).
     const win = getCurrentWindow();
     const setActive = (active: boolean) => {
       // Back in front during a game (alt-tab, or a launcher that never quits): the player is here, listen again.
@@ -143,8 +146,14 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
       gate.windowActive = active;
       if (debug) setEvents((e) => [`${new Date().toLocaleTimeString(undefined, { hour12: false })} window ${active ? "in front" : "behind"}`, ...e].slice(0, 8));
     };
-    void win.isFocused().then(setActive, () => setActive(true));
-    const focus = win.onFocusChanged(({ payload }) => setActive(payload));
+    const pageFocus = () => setActive(true);
+    const pageBlur = () => setActive(false);
+    if (linux) {
+      setActive(document.hasFocus());
+      window.addEventListener("focus", pageFocus);
+      window.addEventListener("blur", pageBlur);
+    } else void win.isFocused().then(setActive, () => setActive(true));
+    const focus = linux ? Promise.resolve(() => {}) : win.onFocusChanged(({ payload }) => setActive(payload));
     // Games the launcher started (src-tauri/src/tv/session.rs): closed while one runs, and back in front when the last ends.
     let playing = 0;
     const started = listen("app-started", () => {
@@ -166,10 +175,12 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
       window.removeEventListener("keydown", keyDown, true);
       window.removeEventListener("keyup", keyUp, true);
       window.removeEventListener("mousemove", onPointer);
+      window.removeEventListener("focus", pageFocus);
+      window.removeEventListener("blur", pageBlur);
       void focus.then((stop) => stop(), () => {});
       void pad.then((stop) => stop());
     };
-  }, [gate, router, debug]);
+  }, [gate, router, debug, linux]);
 
   /** Starts the game, no more questions. */
   const launch = (id: string) => void bridge.play(id);
