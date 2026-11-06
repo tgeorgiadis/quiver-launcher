@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, bringsAlong, catalogMatch, declinedUpdate, discordImage, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -339,5 +339,18 @@ describe("naming an app being played in usage data", () => {
   it("keeps an app the player added to its kind", () => {
     expect(playedRef(appRef("github:someone/private-port", "private-port"), "my-tag")).toEqual({ slug: null, source: "custom", version: null });
     expect(playedRef(appRef("local:abc", "my-game"), "1")).toEqual({ slug: null, source: "local", version: null });
+  });
+});
+
+describe("the picture Discord shows for an app", () => {
+  const grid = "https://cdn2.steamgriddb.com/grid/f5e97c0193978d636807084bf658fc1c.png";
+  it("is its icon when Discord can show it", () => {
+    expect(discordImage({ artwork: "https://cdn2.steamgriddb.com/icon/a.png", libraryArt: { capsule: grid } })).toBe("https://cdn2.steamgriddb.com/icon/a.png");
+  });
+  it("is its box art in place of an icon file, which Discord shows as a question mark", () => {
+    expect(discordImage({ artwork: "https://cdn2.steamgriddb.com/icon/7989edad14ebcd3adfacc7344dc6b739.ico", libraryArt: { capsule: grid } })).toBe(grid);
+  });
+  it("is none for a picture Discord can't fetch", () => {
+    expect(discordImage({ artwork: "http://example.com/a.png" })).toBeUndefined();
   });
 });

@@ -188,8 +188,9 @@ export function useDiscordPresence() {
     message: "Get Quiver Launcher",
     comment: "Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters",
   });
+  const via = t({ message: "via Quiver Launcher", comment: "On the player's Discord profile, under the name of the game they started from Quiver Launcher" });
   const enabled = !settings.discordPresenceOff && onComputer(config.os);
-  useEffect(() => void native.setDiscordPresence(enabled, { idle, button }).catch(() => {}), [enabled, idle, button]);
+  useEffect(() => void native.setDiscordPresence(enabled, { idle, button, via }).catch(() => {}), [enabled, idle, button, via]);
 }
 
 const onComputer = (os: string) => os === "windows" || os === "linux" || os === "macos";

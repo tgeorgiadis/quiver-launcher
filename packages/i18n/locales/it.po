@@ -4711,6 +4711,11 @@ msgstr "Versioni"
 msgid "Very wide, about 1920×620. Behind the app's page and Continue playing."
 msgstr "Molto larga, circa 1920×620. Dietro la pagina dell'app e Continua a giocare."
 
+#. On the player's Discord profile, under the name of the game they started from Quiver Launcher
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "via Quiver Launcher"
+msgstr "tramite Quiver Launcher"
+
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "View {version} on {host}"

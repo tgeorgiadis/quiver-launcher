@@ -12,7 +12,7 @@ test("Discord shows the game played by its name, and Settings turns it off", asy
   const own = await openApp({ state: installed });
   try {
     await own.until(async () => (await calls(own.page, "set_discord_presence")).length > 0);
-    assert.deepEqual((await calls(own.page, "set_discord_presence")).at(-1), { enabled: true, texts: { idle: "Browsing games", button: "Get Quiver Launcher" } });
+    assert.deepEqual((await calls(own.page, "set_discord_presence")).at(-1), { enabled: true, texts: { idle: "Browsing games", button: "Get Quiver Launcher", via: "via Quiver Launcher" } });
 
     await own.page.locator('article[data-slug="test-port"] .card-open').first().click();
     await own.page.getByRole("button", { name: "Play", exact: true }).first().click();

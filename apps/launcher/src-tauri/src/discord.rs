@@ -34,6 +34,8 @@ pub struct Texts {
     pub idle: String,
     /// The button that opens Quiver's website.
     pub button: String,
+    /// Under a game's name: "via Quiver Launcher".
+    pub via: String,
 }
 
 #[derive(Default)]
@@ -62,7 +64,10 @@ impl State {
                 }
                 json!({
                     "type": 0,
+                    // The game as the activity's title, with "via Quiver Launcher" under it.
+                    "name": name,
                     "details": name,
+                    "state": clip(&self.texts.via, 128),
                     // Discord's status lines read "Playing <the game>", not "Playing Quiver Launcher".
                     "status_display_type": 2,
                     "timestamps": { "start": started },
@@ -298,7 +303,7 @@ mod tests {
     use super::*;
 
     fn state() -> State {
-        State { enabled: true, texts: Texts { idle: "Browsing games".into(), button: "Get Quiver Launcher".into() }, playing: vec![] }
+        State { enabled: true, texts: Texts { idle: "Browsing games".into(), button: "Get Quiver Launcher".into(), via: "via Quiver Launcher".into() }, playing: vec![] }
     }
 
     #[test]
@@ -318,6 +323,8 @@ mod tests {
         let activity = state.activity(100).unwrap();
         assert_eq!(activity["details"], "Some Game");
         assert_eq!(activity["status_display_type"], 2);
+        assert_eq!(activity["name"], "Some Game");
+        assert_eq!(activity["state"], "via Quiver Launcher");
         assert_eq!(activity["timestamps"]["start"], 200);
         assert_eq!(activity["assets"]["large_image"], "https://example.com/icon.png");
         assert_eq!(activity["assets"]["small_image"], LOGO);

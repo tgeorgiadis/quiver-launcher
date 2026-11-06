@@ -201,7 +201,7 @@ export const native = {
   launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions, presence?: DiscordGame) =>
     invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),
   /** Discord's Rich Presence on or off (discord.rs), with its words in the player's language. */
-  setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
+  setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string; via: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long. */
   onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */

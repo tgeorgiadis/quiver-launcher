@@ -539,6 +539,15 @@ async function inTurns<T, R>(items: T[], at: number, work: (item: T) => Promise<
 }
 
 /** Whether TV mode, the library and Browse's larger look, is on: turned on, or left to itself in Steam's Game Mode. */
+/**
+ * The picture Discord shows for an app while it runs: its square icon, else its box art, else its wide art. Only a
+ * picture Discord can show: it fetches the address itself and shows a question mark for an icon file (.ico).
+ */
+export function discordImage(entry: Pick<Entry, "artwork" | "libraryArt">): string | undefined {
+  const shown = (url?: string | null) => Boolean(url && /^https:\/\/[^?#]+\.(png|jpe?g|webp|gif)([?#]|$)/i.test(url));
+  return [entry.artwork, entry.libraryArt?.capsule, entry.libraryArt?.header].find(shown) ?? undefined;
+}
+
 export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config, "gameMode">) =>
   settings.tvMode === "on" || (settings.tvMode !== "off" && Boolean(config.gameMode));
 
@@ -1584,9 +1593,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
       const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
-      // On the player's Discord profile while it runs: its square icon, else its box art.
+      // On the player's Discord profile while it runs.
       const entry = catalog[id];
-      const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
+      const presence = entry?.projectName ? { name: entry.projectName, image: discordImage(entry) } : undefined;
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
         () => (musicForGame(), track("app_launched", played)),
         async (e) => {
