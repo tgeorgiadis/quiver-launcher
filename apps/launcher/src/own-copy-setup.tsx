@@ -11,7 +11,7 @@ import type { Entry, SetupFile } from "@quiverlauncher/api";
 import { native, type CheckedCopy, type CopyProgress } from "./native";
 import { useLauncher, type Install, type OwnCopy } from "./store";
 import { Dialog } from "./library";
-import { copiesNeeded, delivered, rankCopies, setupFiles, sizeText } from "./own-copy";
+import { copiesNeeded, copyFoldersFor, delivered, rankCopies, setupFiles, sizeText } from "./own-copy";
 
 const fileName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 const folderOf = (path: string) => path.slice(0, Math.max(0, path.length - fileName(path).length)).replace(/[\\/]+$/, "");
@@ -84,7 +84,7 @@ function intro(file: SetupFile, name: string) {
 
 type Phase =
   | { kind: "looking" }
-  | { kind: "choose"; found: { path: string; size: number }[] }
+  | { kind: "choose"; found: { path: string; size: number; mine?: boolean }[] }
   | { kind: "checking"; path: string }
   | { kind: "placing"; path: string }
   | { kind: "problem"; path: string; checked: CheckedCopy | null; text: string }
@@ -92,7 +92,7 @@ type Phase =
 
 /** The dialog Play and the panel open: one copy at a time, then Ready to play. */
 export function OwnCopyPrompt() {
-  const { settingUpCopy: asking, setUpCopy, catalog, installs, config, setCopy, play } = useLauncher();
+  const { settingUpCopy: asking, setUpCopy, catalog, installs, config, settings, setCopy, play } = useLauncher();
   const entry = asking ? catalog[asking.id] : undefined;
   const install = asking ? installs[asking.id] : undefined;
   const files = setupFiles(entry, config.os);
@@ -134,7 +134,7 @@ export function OwnCopyPrompt() {
     if (!open || !file || done) return;
     const turn = ++asked.current;
     setPhase({ kind: "looking" });
-    native.findCopies(file).then(
+    native.findCopies(file, copyFoldersFor(settings.copyFolders, entry?.consoles)).then(
       (found) => turn === asked.current && setPhase({ kind: "choose", found }),
       () => turn === asked.current && setPhase({ kind: "choose", found: [] }),
     );

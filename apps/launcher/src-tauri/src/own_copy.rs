@@ -539,6 +539,9 @@ pub fn present(file: &SetupFile, copy: &Path, app: &Path, wine: bool) -> bool {
 pub struct Found {
     pub path: String,
     pub size: u64,
+    /// Found in a folder the player keeps this console's copies in (their settings).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub mine: bool,
 }
 
 /// The usual places players keep copies of their games, on this computer.
@@ -580,15 +583,27 @@ const DEPTH: usize = 4;
 /// How many files and folders are looked at in all, so a huge drive can't keep it looking.
 const BUDGET: usize = 50_000;
 const MOST: usize = 20;
+/// In the player's own folders for a console: deeper, longer and more, as everything there is likely a copy.
+const OWN_DEPTH: usize = 6;
+const OWN_BUDGET: usize = 100_000;
+const OWN_MOST: usize = 200;
 /// Folders that hold no game copies, only a lot of other files.
 const PASS_OVER: [&str; 14] = [
     "node_modules", "steamapps", "windows", "program files", "program files (x86)", "programdata", "$recycle.bin",
     "system volume information", "appdata", "compatdata", "pfx", "library", "proc", "quiver launcher",
 ];
 
-/// Copies in `places` that could be the one wanted, by name, without reading them. `skip`: folders not to look in
-/// (Quiver's apps folder, where copies already put in place are).
-pub fn find(file: &SetupFile, places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found> {
+/// How far one search goes: how deep, and how many it finds.
+#[derive(Clone, Copy)]
+struct Reach {
+    deepest: usize,
+    most: usize,
+}
+
+/// Copies that could be the one wanted, by name, without reading them: first in `own`, the folders the player keeps
+/// this game's console's copies in, then in the usual `places`. `skip`: folders not to look in (Quiver's apps folder,
+/// where copies already put in place are).
+pub fn find(file: &SetupFile, own: &[PathBuf], places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found> {
     let wanted = file.wanted();
     if !file.folder() && wanted.is_empty() {
         return vec![];
@@ -597,11 +612,20 @@ pub fn find(file: &SetupFile, places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found
         return vec![];
     }
     let mut found = Vec::new();
-    let mut budget = BUDGET;
     let mut seen = HashSet::new();
+    let mut budget = OWN_BUDGET;
+    let reach = Reach { deepest: OWN_DEPTH, most: OWN_MOST };
+    for place in own {
+        look(file, &wanted, place, 0, reach, &mut budget, &mut seen, skip, &mut found);
+    }
+    for f in &mut found {
+        f.mine = true;
+    }
+    let mut budget = BUDGET;
+    let reach = Reach { deepest: DEPTH, most: found.len() + MOST };
     for place in places {
-        look(file, &wanted, place, 0, &mut budget, &mut seen, skip, &mut found);
-        if found.len() >= MOST || budget == 0 {
+        look(file, &wanted, place, 0, reach, &mut budget, &mut seen, skip, &mut found);
+        if found.len() >= reach.most || budget == 0 {
             break;
         }
     }
@@ -609,8 +633,8 @@ pub fn find(file: &SetupFile, places: &[PathBuf], skip: &[PathBuf]) -> Vec<Found
 }
 
 #[allow(clippy::too_many_arguments)]
-fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, budget: &mut usize, seen: &mut HashSet<PathBuf>, skip: &[PathBuf], found: &mut Vec<Found>) {
-    if *budget == 0 || found.len() >= MOST || skip.iter().any(|s| dir.starts_with(s)) {
+fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, reach: Reach, budget: &mut usize, seen: &mut HashSet<PathBuf>, skip: &[PathBuf], found: &mut Vec<Found>) {
+    if *budget == 0 || found.len() >= reach.most || skip.iter().any(|s| dir.starts_with(s)) {
         return;
     }
     let Ok(real) = dir.canonicalize() else { return };
@@ -623,13 +647,13 @@ fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, budget: &
         let names: HashSet<String> = entries.iter().map(|e| e.file_name().to_string_lossy().to_lowercase()).collect();
         let first = |p: &str| p.split('/').next().unwrap_or("").to_lowercase();
         if file.contains.iter().all(|c| names.contains(&first(c))) && file.contains.iter().all(|c| holds(dir, c)) {
-            found.push(Found { path: dir.to_string_lossy().into_owned(), size: 0 });
+            found.push(Found { path: dir.to_string_lossy().into_owned(), size: 0, mine: false });
             return;
         }
     }
     let mut folders = Vec::new();
     for entry in entries {
-        if *budget == 0 || found.len() >= MOST {
+        if *budget == 0 || found.len() >= reach.most {
             return;
         }
         *budget -= 1;
@@ -648,14 +672,14 @@ fn look(file: &SetupFile, wanted: &[String], dir: &Path, depth: usize, budget: &
             if wanted.contains(&ext) {
                 let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
                 if size > 0 {
-                    found.push(Found { path: path.to_string_lossy().into_owned(), size });
+                    found.push(Found { path: path.to_string_lossy().into_owned(), size, mine: false });
                 }
             }
         }
     }
-    if depth + 1 < DEPTH {
+    if depth + 1 < reach.deepest {
         for folder in folders {
-            look(file, wanted, &folder, depth + 1, budget, seen, skip, found);
+            look(file, wanted, &folder, depth + 1, reach, budget, seen, skip, found);
         }
     }
 }
@@ -808,6 +832,25 @@ mod tests {
     }
 
     #[test]
+    fn looks_in_the_players_own_folders_first_and_deeper() {
+        let dir = temp("own");
+        let own = dir.join("Collection");
+        let deep = own.join("Nintendo/N64/USA/Shooters/Rare");
+        fs::create_dir_all(&deep).unwrap();
+        fs::create_dir_all(dir.join("Downloads")).unwrap();
+        fs::write(deep.join("GoldenEye 007 (USA).z64"), rom()).unwrap();
+        fs::write(dir.join("Downloads/Banjo.z64"), rom()).unwrap();
+        // The usual places include the player's folder too: what's in it is listed once, as theirs.
+        let found = find(&rom_file("x"), std::slice::from_ref(&own), &[dir.join("Downloads"), dir.clone()], &[]);
+        assert_eq!(found.len(), 2, "{found:?}");
+        assert!(found[0].path.ends_with("GoldenEye 007 (USA).z64") && found[0].mine);
+        assert!(found[1].path.ends_with("Banjo.z64") && !found[1].mine);
+        // Five folders down is past where the usual places are looked in.
+        assert!(find(&rom_file("x"), &[], &[own], &[]).is_empty());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn finds_copies_by_kind_where_players_keep_them() {
         let dir = temp("find");
         fs::create_dir_all(dir.join("Emulation/roms/n64")).unwrap();
@@ -817,13 +860,13 @@ mod tests {
         fs::write(dir.join(".hidden/x.z64"), rom()).unwrap();
         fs::write(dir.join("apps/game/baserom.z64"), rom()).unwrap();
         fs::write(dir.join("notes.txt"), b"x").unwrap();
-        let found = find(&rom_file("x"), std::slice::from_ref(&dir), &[dir.join("apps")]);
+        let found = find(&rom_file("x"), &[], std::slice::from_ref(&dir), &[dir.join("apps")]);
         assert_eq!(found.len(), 1);
         assert!(found[0].path.ends_with("Zelda (USA).Z64"));
         fs::create_dir_all(dir.join("ps3/BLUS30443/PS3_GAME")).unwrap();
         fs::write(dir.join("ps3/BLUS30443/PS3_GAME/PARAM.SFO"), b"x").unwrap();
         let folder = SetupFile { kind: Some("folder".into()), contains: vec!["PS3_GAME/PARAM.SFO".into()], ..Default::default() };
-        let found = find(&folder, std::slice::from_ref(&dir), &[]);
+        let found = find(&folder, &[], std::slice::from_ref(&dir), &[]);
         assert_eq!(found.len(), 1);
         assert!(found[0].path.ends_with("BLUS30443"));
     }

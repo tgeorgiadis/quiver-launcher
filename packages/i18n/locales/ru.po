@@ -628,6 +628,10 @@ msgstr "Добавить консоль"
 msgid "Add a console…"
 msgstr "Добавить консоль…"
 
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Add a folder for {console}"
+msgstr "Добавить папку для {console}"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add a playlist"
 msgstr "Добавить плейлист"
@@ -678,6 +682,14 @@ msgstr "Добавить файлы в папку"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Add files to folder…"
 msgstr "Добавить файлы в папку…"
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Add folder…"
+msgstr "Добавить папку…"
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Add folders for a console"
+msgstr "Добавить папки для консоли"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
@@ -1225,6 +1237,10 @@ msgstr "Проверка… {0} из {1}"
 msgid "Choose a backup…"
 msgstr "Выбрать резервную копию…"
 
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Choose a console…"
+msgstr "Выберите консоль…"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Choose a download"
 msgstr "Выберите файл для загрузки"
@@ -1245,6 +1261,10 @@ msgstr "Выбрать файл…"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
 msgstr "Выберите папку для поиска"
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Choose a folder you keep game copies in"
+msgstr "Выберите папку, где вы храните копии игр"
 
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -1371,6 +1391,10 @@ msgstr "Выберите срок действия."
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
 msgstr "Выберите, куда устанавливать приложения"
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Choose where you keep your {console} games"
+msgstr "Выберите, где вы храните игры для {console}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
@@ -1728,6 +1752,10 @@ msgstr "Укажите репозиторий GitHub или GitLab: владел
 msgid "Enter a name for its folder."
 msgstr "Введите имя папки."
 
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Every console"
+msgstr "Все консоли"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Everything is up to date."
 msgstr "Всё обновлено."
@@ -1799,6 +1827,10 @@ msgstr "есть срабатывания"
 msgid "Folder name"
 msgstr "Имя папки"
 
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "For a folder with games for many consoles in it."
+msgstr "Для папки с играми для разных консолей."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
 msgstr "Для приложения, которого нет в каталоге. Оно будет только у вас; чтобы добавить его для всех, предложите его на quiverlauncher.com."
@@ -1832,6 +1864,11 @@ msgstr "Полноэкранный режим"
 #: ../../apps/launcher/src/view.ts
 msgid "Game"
 msgstr "Игра"
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Game copies"
+msgstr "Копии игр"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Game not found"
@@ -3582,6 +3619,7 @@ msgstr "Перезагрузить"
 #. Button: no background music, or no background picture
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/own-copy-settings.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "Убрать"
@@ -4217,6 +4255,10 @@ msgstr "Шаг {n} из {total}"
 #: ../../apps/launcher/src/detail.tsx
 msgid "still scanning its files."
 msgstr "его файлы ещё проверяются."
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Stop looking in {folder} for {console}"
+msgstr "Больше не искать в {folder} для {console}"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Stop sharing"
@@ -4930,6 +4972,10 @@ msgstr "Что нового в {name}"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "When {name} asks for it, pick this file: {0}"
 msgstr "Когда {name} попросит, выберите этот файл: {0}"
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks in these folders first, then in Downloads and your drives."
+msgstr "Когда приложению нужна ваша копия игры, например ROM или образ диска, Quiver сначала ищет в этих папках, а затем в «Загрузках» и на дисках."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"

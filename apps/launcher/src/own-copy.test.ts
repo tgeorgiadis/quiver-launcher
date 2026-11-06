@@ -1,6 +1,23 @@
 import { describe, expect, it } from "vitest";
 import type { SetupFile } from "@quiverlauncher/api";
-import { copiesNeeded, delivered, launchCopies, nameWords, rankCopies, setupFiles, sizeText } from "./own-copy";
+import { copiesNeeded, copyFoldersFor, delivered, EVERY_CONSOLE, launchCopies, nameWords, rankCopies, setupFiles, sizeText, withCopyFolder } from "./own-copy";
+
+describe("copy folders", () => {
+  const folders = { n64: ["D:/roms/n64", "E:/n64"], ps1: ["D:/roms/ps1"], [EVERY_CONSOLE]: ["D:/roms", "E:/n64"] };
+
+  it("looks in the game's consoles' folders, then every console's, each once", () => {
+    expect(copyFoldersFor(folders, ["n64"])).toEqual(["D:/roms/n64", "E:/n64", "D:/roms"]);
+    expect(copyFoldersFor(folders, ["snes"])).toEqual(["D:/roms", "E:/n64"]);
+    expect(copyFoldersFor(undefined, ["n64"])).toEqual([]);
+  });
+
+  it("adds a folder once, and drops a console with none left", () => {
+    expect(withCopyFolder(folders, "n64", "E:/n64", true).n64).toEqual(["D:/roms/n64", "E:/n64"]);
+    expect(withCopyFolder(undefined, "gc", "F:/gc", true)).toEqual({ gc: ["F:/gc"] });
+    expect("ps1" in withCopyFolder(folders, "ps1", "D:/roms/ps1", false)).toBe(false);
+    expect(folders.ps1).toEqual(["D:/roms/ps1"]);
+  });
+});
 
 describe("rankCopies", () => {
   const base = (path: string) => path.split("\\").pop();

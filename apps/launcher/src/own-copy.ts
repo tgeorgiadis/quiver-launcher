@@ -36,6 +36,28 @@ export function launchCopies(entry: Pick<Entry, "launcher"> | undefined, install
   return out;
 }
 
+/** The key in the player's copy folders for folders that hold copies for every console. */
+export const EVERY_CONSOLE = "*";
+
+/**
+ * The folders the player keeps this game's copies in, to look in first: those for its consoles, then those for every
+ * console, each once.
+ */
+export function copyFoldersFor(folders: Record<string, string[]> | undefined, consoles: string[] | undefined): string[] {
+  const keys = [...(consoles ?? []), EVERY_CONSOLE];
+  return [...new Set(keys.flatMap((k) => folders?.[k] ?? []))];
+}
+
+/** The player's copy folders with `folder` added to a console's (or every console's), or taken away from it. */
+export function withCopyFolder(folders: Record<string, string[]> | undefined, console: string, folder: string, add: boolean): Record<string, string[]> {
+  const out = { ...folders };
+  const list = (out[console] ?? []).filter((f) => f !== folder);
+  if (add) list.push(folder);
+  if (list.length) out[console] = list;
+  else delete out[console];
+  return out;
+}
+
 /** Words in a game's or file's name that say nothing about which game it is. */
 const NOISE = new Set(["the", "of", "a", "an", "and", "rom", "iso", "disc", "disk", "image", "file", "files", "game", "copy", "usa", "us", "eu", "europe", "japan", "jp", "ntsc", "pal", "rev", "version", "v1", "en", "fr", "de"]);
 

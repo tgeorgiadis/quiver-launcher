@@ -5,7 +5,7 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronRight, Disc3, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
@@ -26,13 +26,16 @@ import { GithubTokenSetting } from "./github-token";
 import { TelemetrySetting } from "./telemetry-ui";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
+import { GameCopySettings } from "./own-copy-settings";
+import { foldersOn } from "./detail";
 
-type Section = "general" | "library" | "apps" | "controllers" | "updates" | "advanced";
+type Section = "general" | "library" | "apps" | "copies" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
 const SECTIONS: [Section, MessageDescriptor, ReactNode][] = [
   ["general", msg`General`, <Monitor size={17} />],
   ["library", msg`Library`, <Library size={17} />],
   ["apps", msg`Apps folder`, <FolderOpen size={17} />],
+  ["copies", msg`Game copies`, <Disc3 size={17} />],
   ["controllers", msg`Controllers`, <Gamepad2 size={17} />],
   ["updates", msg`Updates`, <RefreshCw size={17} />],
   ["advanced", msg`Advanced`, <Wrench size={17} />],
@@ -57,10 +60,13 @@ function useSideBySide() {
 /** `onRunSetup` opens the first start's setup (setup.tsx) again, from General. */
 export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBack: () => void; onRunSetup: () => void }) {
   const sideBySide = useSideBySide();
+  const { config } = useLauncher();
+  // Game copies are for computers: a phone keeps an app's files to itself.
+  const sections = SECTIONS.filter(([key]) => key !== "copies" || foldersOn(config.os));
   // Side by side, General shows until another is picked; narrow, the list does.
   const [picked, setPicked] = useState<Section | null>(null);
   const section = picked ?? (sideBySide ? "general" : null);
-  const label = SECTIONS.find(([key]) => key === section)?.[1];
+  const label = sections.find(([key]) => key === section)?.[1];
   const name = label && i18n._(label);
   const backLink = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLElement>(null);
@@ -99,7 +105,7 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
       <div className="settings-columns">
         {(sideBySide || !section) && (
           <nav ref={list} className="settings-nav" aria-label={t`Settings sections`}>
-            {SECTIONS.map(([key, label, icon]) => (
+            {sections.map(([key, label, icon]) => (
               <button key={key} data-section={key} aria-current={key === section ? "page" : undefined} onClick={() => setPicked(key)}>
                 {icon}
                 <span>{i18n._(label)}</span>
@@ -121,6 +127,8 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
                 <PortableDefaultSetting />
                 <WindowsRunnerSetting />
               </>
+            ) : section === "copies" ? (
+              <GameCopySettings />
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (
