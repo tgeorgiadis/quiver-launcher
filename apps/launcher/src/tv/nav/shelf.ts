@@ -1,5 +1,5 @@
 /**
- * Focus on Home's shelves (spec §8.2): a row and a column, and the column each
+ * Focus on Home's shelves: a row and a column, and the column each
  * row was last left at, so going up and down comes back to the same tile.
  * Nothing wraps; Left at the start of a row is an edge. Pure.
  */

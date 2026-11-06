@@ -55,7 +55,7 @@ describe("resolveConsole", () => {
 });
 
 describe("ConsoleCatalog", () => {
-  it("orders by maker as the spec does (Nintendo, Sega, Sony, Microsoft), then by year", () => {
+  it("orders by maker (Nintendo, Sega, Sony, Microsoft), then by year", () => {
     const ids = ["x360", "gen", "ps1", "gba", "n64", "pc", "nes", "og xbox", "dreamcast"];
     const sorted = ids.map((id) => catalog.get(id)).sort(catalog.compare).map((c) => c.id);
     expect(sorted).toEqual(["nes", "n64", "gba", "gen", "dreamcast", "ps1", "og xbox", "x360", "pc"]);

@@ -37,6 +37,7 @@ msgid "{active, plural, one {# downloading, {percent}%} other {# downloading, {p
 msgstr "{active, plural, one {# descargando, {percent}%} other {# descargando, {percent}%}}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "{active, plural, one {# downloading} other {# downloading}}"
 msgstr "{active, plural, one {# descargando} other {# descargando}}"
 
@@ -94,9 +95,21 @@ msgstr "{count, plural, one {# app, aún sin instalar. Si ya la instalaste en ot
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# ya instalada.} other {# ya instaladas.}}"
 
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "{count, plural, one {# game has an update} other {# games have updates}}"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "{count, plural, one {# game} other {# games}}"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Agregar # app} other {Agregar # apps}}"
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "{count, plural, one {It's on this computer with # game. Installed games stay where they are, so nothing downloads again.} other {It's on this computer with # games. Installed games stay where they are, so nothing downloads again.}}"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {Move # installed app to {asking}? Its saves and settings go with it. Desktop and Steam shortcuts you made point at the old folder, so make them again after.} other {Move # installed apps to {asking}? Their saves and settings go with them. Desktop and Steam shortcuts you made point at the old folder, so make them again after.}}"
@@ -273,6 +286,7 @@ msgid "{name} (this computer)"
 msgstr "{name} (esta computadora)"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
 msgid "{name} {version} has more than one file for your computer."
 msgstr "{name} {version} tiene más de un archivo para tu computadora."
 
@@ -287,6 +301,23 @@ msgstr "Arte de la caja de {name}"
 #: ../../apps/launcher/src/App.tsx
 msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since."
 msgstr "{name} cambió después de que Quiver verificara {release}, y Quiver aún no ha verificado el archivo nuevo. Instala el archivo que Quiver vio y lo rechaza si cambió desde entonces."
+
+#. {name} is a controller's name
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
+msgid "{name} connected"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} crashed"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} didn't install"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} didn't start"
+msgstr ""
 
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
@@ -309,6 +340,10 @@ msgstr "{name} está compartida"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "{name} menu"
 msgstr "Menú de {name}"
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "{name} needs your own copy of the game"
+msgstr ""
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
@@ -341,6 +376,11 @@ msgstr "Ya salió {newest}. Tienes {yours}."
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
 msgstr "Ya salió {out}. Tienes {have}."
+
+#. How much of an update has downloaded
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "{percent}%"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "{picked, plural, one {# app picked for it.} other {# apps picked for it.}}"
@@ -565,6 +605,11 @@ msgstr "Hay comillas sin cerrar."
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "Un PNG transparente. Para su acceso directo de Steam."
 
+#. TV mode's order of tabs or games: by name
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "A–Z"
+msgstr ""
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
 msgstr "Acerca de este proyecto"
@@ -694,6 +739,10 @@ msgstr "Agregando apps"
 msgid "Advanced"
 msgstr "Avanzado"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "After getting a game"
+msgstr ""
+
 #. Browse card detail: AI-assisted or Mostly AI
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "AI label"
@@ -710,6 +759,8 @@ msgstr "Uso de IA"
 msgid "AI-assisted"
 msgstr "Asistido por IA"
 
+#. Discover's filter: games in the library or not
+#. Library tab: every app in the library
 #. Library tab: every app in the library
 #. Shows mods from every site
 #. Shows videos of every kind
@@ -717,6 +768,8 @@ msgstr "Asistido por IA"
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All"
 msgstr "Todo"
 
@@ -736,6 +789,7 @@ msgid "All apps"
 msgstr "Todas las apps"
 
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All consoles"
 msgstr "Todas las consolas"
 
@@ -760,6 +814,11 @@ msgstr "Todas las playlists"
 #: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "Todos los tipos de proyecto"
+
+#. TV mode setting: the order of the games on the All tab
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "All tab order"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
@@ -816,6 +875,10 @@ msgstr "Avisos: {waiting, plural, one {# nuevo} other {# nuevos}}"
 msgid "Another app in your library uses a folder named {folder}. Choose another name."
 msgstr "Otra app de tu biblioteca ya usa una carpeta llamada {folder}. Elige otro nombre."
 
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Another download is ahead of it"
+msgstr ""
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Another Proton…"
 msgstr "Otro Proton…"
@@ -861,9 +924,16 @@ msgstr "Página de la app"
 msgid "App sections"
 msgstr "Secciones de la app"
 
+#. TV mode's tab for apps, tools and emulators, short for Apps & Tools on a crowded tab strip
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/consoles/consoles.ts
 msgid "Apps"
 msgstr "Apps"
+
+#. TV mode's tab for apps, tools and emulators, which aren't games for a console
+#: ../../apps/launcher/src/tv/consoles/consoles.ts
+msgid "Apps & Tools"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps added from this computer, which Quiver doesn't download or update"
@@ -927,6 +997,11 @@ msgstr "Arte y consolas del juego"
 msgid "As in Settings: {name}"
 msgstr "Como en Configuración: {name}"
 
+#. TV mode setting, Updates when playing: ask whether to update a game before it starts
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Ask"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {updateVersion} back. It installs the next new release."
 msgstr "La actualización automática no volverá a poner {updateVersion}. Instala la siguiente versión nueva."
@@ -934,6 +1009,11 @@ msgstr "La actualización automática no volverá a poner {updateVersion}. Insta
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic"
 msgstr "Automático"
+
+#. A game's console in TV mode: the catalog's, named in brackets
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Automatic ({automatic})"
+msgstr ""
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic (no Proton or Wine found)"
@@ -948,16 +1028,26 @@ msgid "Automatic: {name}"
 msgstr "Automático: {name}"
 
 #. Controller hint: what Back does, closing or going back
+#. Controller hint: what Back does, closing or going back
+#. Controller hint: what Back does, closing or going back
+#. Controller hint: what Back does, closing or going back
 #. The setup's previous step
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/setup.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Back"
 msgstr "Atrás"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Back to results for “{searched}”"
 msgstr "Volver a los resultados de “{searched}”"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Back to Steam"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/spatial.ts
@@ -1029,10 +1119,22 @@ msgstr "Arte de la caja"
 msgid "Box art address"
 msgstr "Dirección del arte de la caja"
 
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Bring over your Quiver Launcher 3 library?"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Bring them over"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/setup.tsx
 msgid "Bring your apps over from Quiver Launcher 3?"
 msgstr "¿Traes tus apps de Quiver Launcher 3?"
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Bringing your games over…"
+msgstr ""
 
 #. Tab listing mods to install
 #. The tab with the catalog of apps
@@ -1092,6 +1194,11 @@ msgstr "No se puede agregar: Quiver Launcher 3 no sabe de dónde viene"
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -1121,6 +1228,11 @@ msgstr "Tamaño de las tarjetas"
 msgid "Card style"
 msgstr "Estilo de tarjeta"
 
+#. On-screen keyboard: after the shoulder buttons' pictures, which move the caret (the text cursor)
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+msgid "caret"
+msgstr ""
+
 #. What the featured apps across the top of Browse are, for screen readers
 #: ../ui/src/discover.tsx
 msgid "carousel"
@@ -1136,6 +1248,11 @@ msgctxt "README callout"
 msgid "Caution"
 msgstr "Precaución"
 
+#. Controller hint in TV mode's settings: changes the focused setting's value
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Change"
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Change game"
 msgstr "Cambiar juego"
@@ -1144,7 +1261,12 @@ msgstr "Cambiar juego"
 msgid "Change name or artwork"
 msgstr "Cambiar nombre o arte"
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Change program"
+msgstr ""
+
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Change version"
 msgstr "Cambiar versión"
 
@@ -1179,6 +1301,7 @@ msgid "Choose a backup…"
 msgstr "Elegir una copia de seguridad…"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
 msgid "Choose a download"
 msgstr "Elegir una descarga"
 
@@ -1221,6 +1344,10 @@ msgstr "Elegir una imagen…"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose a platform"
 msgstr "Elegir una plataforma"
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Choose a program"
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose a program (.exe) that starts the app."
@@ -1295,6 +1422,10 @@ msgstr "Elegir mi carpeta de Quiver Launcher 3…"
 msgid "Choose program…"
 msgstr "Elegir programa…"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Choose the file…"
+msgstr ""
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "Elige la carpeta donde está instalada {name}"
@@ -1323,6 +1454,10 @@ msgstr "Elige cuándo vence."
 msgid "Choose where to install apps"
 msgstr "Elegir dónde instalar las apps"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Choose your copy, and Quiver puts it there under that name, then starts the game."
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Elige tu carpeta de Quiver Launcher 3"
@@ -1339,12 +1474,19 @@ msgstr "Limpiar todo"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
 msgid "Clear search"
 msgstr "Limpiar búsqueda"
 
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+msgid "Clear the search"
+msgstr ""
+
+#. Closes a dialog
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "Cerrar"
@@ -1354,9 +1496,17 @@ msgstr "Cerrar"
 msgid "Close {title}"
 msgstr "Cerrar {title}"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Close a game with Start + Select"
+msgstr ""
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "Cerrar filtros"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Close Quiver"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
@@ -1383,10 +1533,20 @@ msgstr "Ports y recreaciones de la comunidad"
 msgid "Confirm / Select"
 msgstr "Confirmar / Seleccionar"
 
+#. Button on a game's page in TV mode: picks the console tab it's in
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Console"
 msgstr "Consola"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Console for {name}"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Console tab order"
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Consoles"
@@ -1404,8 +1564,10 @@ msgstr "Continuar con {service}"
 msgid "Continue without restoring"
 msgstr "Continuar sin restaurar"
 
+#. A controller that gives no name of its own, as in “Controller connected”
 #. Heading of the bindings table's column of controller buttons
 #: ../../apps/launcher/src/controls.tsx
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
 msgid "Controller"
 msgstr "Control"
 
@@ -1417,6 +1579,15 @@ msgstr "Controles"
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
 msgstr "Copiar enlace"
+
+#. The player's copy of a game (a ROM) is being copied into the game's folder
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Copying…"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Couldn't bring over: {names}. Find them in Discover."
+msgstr ""
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
@@ -1436,6 +1607,10 @@ msgstr "No se pudo conectar con quiverlauncher.com para mostrar esta playlist. R
 #: ../../apps/launcher/src/store.tsx
 msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "No se pudo conectar con quiverlauncher.com. Revisa tu conexión e intenta de nuevo."
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Couldn't reach the catalog"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Couldn't save the token. Try again."
@@ -1502,7 +1677,9 @@ msgid "Dark"
 msgstr "Oscuro"
 
 #. Deletes a playlist
+#. On-screen keyboard's controller hint: deletes the letter before the caret
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Osk.tsx
 msgid "Delete"
 msgstr "Eliminar"
 
@@ -1520,7 +1697,9 @@ msgid "Desktop shortcut"
 msgstr "Acceso directo en el escritorio"
 
 #. Controller hint: what Options does on an app card, opening its page
+#. Controller hint: what Options does on an app card, opening its page
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Details"
 msgstr "Detalles"
 
@@ -1540,6 +1719,16 @@ msgstr "El desarrollador no estaba seguro"
 msgid "Didn't finish"
 msgstr "No terminó"
 
+#. A game's launch failed
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "Didn't start"
+msgstr ""
+
+#. TV mode's tab for finding games in the catalog to get
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+msgid "Discover"
+msgstr ""
+
 #. Hide an announcement
 #. Hide an announcement
 #. Hide an announcement
@@ -1547,6 +1736,7 @@ msgstr "No terminó"
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
 msgid "Dismiss"
 msgstr "Descartar"
 
@@ -1564,9 +1754,21 @@ msgstr "No funciona"
 msgid "Don't allow"
 msgstr "No permitir"
 
+#. Controller hint while a game updates before it starts: it won't start once updated; the update carries on
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Don't start it"
+msgstr ""
+
+#. TV mode setting, Updates when playing: play the version installed
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Don't update"
+msgstr ""
+
 #. Closes a dialog
+#. On-screen keyboard: the key, and the controller hint, that finishes typing
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Osk.tsx
 msgid "Done"
 msgstr "Listo"
 
@@ -1578,10 +1780,21 @@ msgstr "Listo. Tus apps están en tu biblioteca, salvo estas, porque Quiver Laun
 msgid "Downgrade to {version}"
 msgstr "Volver a {version}"
 
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "Download failed"
+msgstr ""
+
+#. Controller hint: picks the focused file of a release to download
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
+msgid "Download this"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Downloading"
 msgstr "Descargando"
 
@@ -1604,16 +1817,22 @@ msgstr "Descargando {count, plural, one {# app} other {# apps}}."
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
 msgid "Downloading {percent}%"
 msgstr "Descargando {percent}%"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
 msgid "Downloading…"
 msgstr "Descargando…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Downloads"
 msgstr "Descargas"
 
@@ -1678,6 +1897,14 @@ msgstr "Ingresa un repositorio de GitHub o GitLab: propietario/nombre, o su dire
 msgid "Enter a name for its folder."
 msgstr "Escribe un nombre para su carpeta."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Everything bigger or smaller, on top of fitting the screen: the launcher's interface size"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Everything in your library is installed"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Everything is up to date."
 msgstr "Todo está actualizado."
@@ -1699,6 +1926,11 @@ msgstr "Expandir todas las secciones"
 msgid "Extra wide"
 msgstr "Muy ancha"
 
+#. A download that didn't finish, when there's no message saying why
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Failed"
+msgstr ""
+
 #. The apps shown one at a time across the top of Browse and the website's home
 #: ../ui/src/discover.tsx
 msgid "Featured"
@@ -1711,6 +1943,7 @@ msgstr "Nombre del archivo, como config.ini"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filters"
 msgstr "Filtros"
 
@@ -1722,6 +1955,11 @@ msgstr "Filtros activos"
 #: ../../apps/launcher/src/library.tsx
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "Encuentra un port en el catálogo y presiona Obtener. Se agrega aquí y se descarga de inmediato."
+
+#: ../../apps/launcher/src/tv/views/GridTab.tsx
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Find something to play in Discover."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
@@ -1792,14 +2030,29 @@ msgstr "Juego no encontrado"
 msgid "Gameplay"
 msgstr "Gameplay"
 
+#. Controller hint on Discover's filters: back down to the games
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Games"
 msgstr "Juegos"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Games the catalog doesn't place on a console are under Other. Pick their console here."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Games you add but haven't installed show here."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Games you get in Discover, and updates, download here."
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
 msgstr "General"
 
+#. Button that installs an app
 #. Button that installs an app
 #. Button that installs an app
 #. Button: download and install the app
@@ -1810,6 +2063,7 @@ msgstr "General"
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Get"
 msgstr "Obtener"
 
@@ -1833,9 +2087,18 @@ msgstr "GitHub no aceptó ese token, así que no se guardó. Revisa que lo hayas
 msgid "GitHub token"
 msgstr "Token de GitHub"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Give games under Other their console"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "Volver"
+
+#. TV mode setting, After getting a game: go to the game in the library
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Go to it"
+msgstr ""
 
 #. Library layout
 #: ../../apps/launcher/src/view.ts
@@ -1954,6 +2217,29 @@ msgstr "Ocultarlas"
 msgid "Hide your feedback for {name}"
 msgstr "Ocultar tu opinión sobre {name}"
 
+#. After a controller hint, such as Cancel: the button must be held down to do it
+#: ../../apps/launcher/src/tv/views/HintBar.tsx
+msgid "hold"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Hold both for a second while a game runs, for games with no way to quit"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Hold to uninstall. Its files go to the Recycle Bin."
+msgstr ""
+
+#. TV mode's first tab: recently played games, updates and recently installed
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+msgid "Home"
+msgstr ""
+
+#. TV mode setting: whether the Home tab shows
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Home tab"
+msgstr ""
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "How did it go?"
 msgstr "¿Cómo te fue?"
@@ -2006,9 +2292,11 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "Importante"
 
+#. Discover's filter: games in the library but not installed
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "In library"
 msgstr "En la biblioteca"
 
@@ -2021,6 +2309,14 @@ msgstr "En el modo de juego de Steam"
 msgid "In this folder"
 msgstr "En esta carpeta"
 
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "In your library · not installed"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
+msgid "In your library, not installed"
+msgstr ""
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Include NSFW"
 msgstr "Incluir NSFW"
@@ -2032,8 +2328,10 @@ msgstr "Incluir actualizaciones preliminares"
 #. Button that installs a mod
 #. Button that installs this version
 #. Button that installs this version
+#. Controller hint: installs a game that's in the library but not installed
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Install"
 msgstr "Instalar"
 
@@ -2102,18 +2400,27 @@ msgstr "Instalar la versión verificada {installedVersion}"
 msgid "Install the verified {verifiedVersion}"
 msgstr "Instalar la versión verificada {verifiedVersion}"
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Install this version"
+msgstr ""
+
 #. A mod that's installed
 #. Filter by whether an app is installed
+#. On a game's tile in Discover: the game just got has finished installing
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Installed"
 msgstr "Instalado"
 
 #. The version installed, then a version
+#. The version installed, then a version
+#. This release is the one on this computer
 #. This release is the one on this computer
 #. This version is the one on this computer
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgctxt "release"
 msgid "Installed"
 msgstr "Instalada"
@@ -2131,6 +2438,11 @@ msgstr "{installedLabel} instalada"
 #: ../../apps/launcher/src/App.tsx
 msgid "Installed {installedVersion}"
 msgstr "{installedVersion} instalada"
+
+#. A finished download: the version now installed, as in Installed v1.2
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Installed {version}"
+msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Installed {version} · {when}"
@@ -2170,10 +2482,19 @@ msgstr "Instalados, fuera de tu biblioteca"
 msgid "Installed, not played yet"
 msgstr "Instalados, aún sin jugar"
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Installed: {installed}"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Installed: nothing yet"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
 msgid "Installing"
 msgstr "Instalando"
 
@@ -2192,6 +2513,7 @@ msgstr "Instalando: termina su ventana de instalación"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
 msgid "Installing…"
 msgstr "Instalando…"
 
@@ -2202,6 +2524,21 @@ msgstr "Se instala desde las versiones del repositorio y se actualiza como las d
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Interface size"
 msgstr "Tamaño de la interfaz"
+
+#. A ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it can't find the original game (a ROM), which no download includes: you need a copy you own."
+msgstr ""
+
+#. {folder} is a folder inside the game's, such as roms or data; a ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it looks for <0>{file}</0> in its {folder} folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
+msgstr ""
+
+#. A ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it looks for <0>{file}</0> in its folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
@@ -2218,6 +2555,14 @@ msgstr "No se vinculan con tu cuenta de Quiver."
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "Funcionó, pero tuve problemas"
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "It started {program}. The next Play asks which program starts it."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "It starts as soon as the update is installed."
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
@@ -2247,9 +2592,25 @@ msgstr "Sus archivos van a la papelera. {name} se queda en tu biblioteca, así q
 msgid "Its files have each been out for 48 hours, a maintainer checked any that VirusTotal flagged, and Quiver Launcher checks every download against the file Quiver verified."
 msgstr "Cada uno de sus archivos lleva 48 horas publicado, un mantenedor revisó los que VirusTotal marcó, y Quiver Launcher compara cada descarga con el archivo que Quiver verificó."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick: change it in Launch options."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Its instructions say where to put it."
+msgstr ""
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest verified version was withdrawn: choose a version"
 msgstr "Su versión verificada más reciente fue retirada: elige una versión"
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Its page says where to put it."
+msgstr ""
 
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
@@ -2308,6 +2669,7 @@ msgid "Large name"
 msgstr "Nombre grande"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Last played"
 msgstr "Jugado por última vez"
 
@@ -2317,6 +2679,12 @@ msgstr "Jugado por última vez"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Last updated"
 msgstr "Última actualización"
+
+#. The newest version, then a version
+#. This release is the newest
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Latest"
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../ui/src/index.tsx
@@ -2352,11 +2720,6 @@ msgstr "Diseño"
 msgid "Leave every scope unticked: public releases need none."
 msgstr "Deja todos los scopes sin marcar: las versiones públicas no necesitan ninguno."
 
-#. Button: back from TV mode to the usual launcher
-#: ../../apps/launcher/src/App.tsx
-msgid "Leave TV mode"
-msgstr "Salir del modo TV"
-
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Let Quiver choose"
@@ -2372,6 +2735,8 @@ msgstr "Letras"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Library"
 msgstr "Biblioteca"
 
@@ -2391,6 +2756,16 @@ msgstr "Problema con la biblioteca"
 #: ../../apps/launcher/src/store.tsx
 msgid "Library synced: {fromDevice, plural, one {# app} other {# apps}} from this computer, {fromAccount} from your account."
 msgstr "Biblioteca sincronizada: {fromDevice, plural, one {# app} other {# apps}} de esta computadora, {fromAccount} de tu cuenta."
+
+#. TV mode's button that steps back between the library, Discover and Downloads
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
+msgid "Library, Discover, Downloads: back"
+msgstr ""
+
+#. TV mode's button that steps on between the library, Discover and Downloads
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
+msgid "Library, Discover, Downloads: forward"
+msgstr ""
 
 #. Theme
 #: ../../apps/launcher/src/settings-page.tsx
@@ -2434,6 +2809,14 @@ msgstr "Cargando notas de jugadores"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Loading releases"
 msgstr "Cargando versiones"
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Loading releases…"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Loading the catalog…"
+msgstr ""
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Loading the game"
@@ -2490,6 +2873,11 @@ msgstr "Hacer una copia"
 msgid "Make the folder"
 msgstr "Crear la carpeta"
 
+#. TV mode's order of console tabs: by maker, then by when each came out
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Maker, then year"
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Makes a folder in your apps folder to put the app in."
 msgstr "Crea una carpeta dentro de tu carpeta de apps para poner la app."
@@ -2517,6 +2905,10 @@ msgstr "Administrado manualmente"
 msgid "Matching games"
 msgstr "Juegos coincidentes"
 
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Matching them with the catalog."
+msgstr ""
+
 #. Window button
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Maximize"
@@ -2534,7 +2926,9 @@ msgid "Medium"
 msgstr "Mediano"
 
 #. Controller hint: what Options does, opening a menu
+#. TV mode's controller hint: what Start does, opening its menu (Settings)
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/HintBar.tsx
 msgid "Menu"
 msgstr "Menú"
 
@@ -2578,6 +2972,11 @@ msgstr "Más…"
 msgid "Most downloaded"
 msgstr "Más descargados"
 
+#. TV mode's order of console tabs
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Most games first"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "Más relevantes"
@@ -2590,6 +2989,10 @@ msgstr "Mayormente IA"
 #: ../ui/src/index.tsx
 msgid "Mostly AI-generated"
 msgstr "Generado mayormente por IA"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Mouse pointer with Select"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Mouse wheel speed"
@@ -2746,7 +3149,9 @@ msgid "Next letter or page"
 msgstr "Letra o página siguiente"
 
 #. Controller action: the tab after the open one, as on an app's page
+#. Controller action: the tab after the open one, as on an app's page
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Next tab"
 msgstr "Pestaña siguiente"
 
@@ -2779,6 +3184,15 @@ msgstr "Aún no hay apps en esta playlist. Agrega algunas desde el menú de cada
 msgid "No apps play this game yet."
 msgstr "Aún no hay apps para jugar este juego."
 
+#. A game's console in TV mode: none, so it's under Apps & Tools or Other
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "No console"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
+msgid "No controller connected"
+msgstr ""
+
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "No se detectaron controles. Conecta uno y aparecerá aquí."
@@ -2786,6 +3200,10 @@ msgstr "No se detectaron controles. Conecta uno y aparecerá aquí."
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "No folders in here."
 msgstr "Aquí no hay carpetas."
+
+#: ../../apps/launcher/src/tv/views/GridTab.tsx
+msgid "No games here yet"
+msgstr ""
 
 #: ../../apps/launcher/src/group.ts
 msgid "No groups"
@@ -2818,6 +3236,10 @@ msgstr "No se encontraron versiones"
 #: ../../apps/launcher/src/detail.tsx
 msgid "No releases found."
 msgstr "No se encontraron versiones."
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "No zooming, sliding or sweeping"
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
@@ -2862,7 +3284,14 @@ msgstr "Aún sin revisar"
 msgid "Not confirmed yet"
 msgstr "Aún sin confirmar"
 
+#. Discover's filter: games not in the library yet
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Not in library"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Not in your library"
 msgstr "No está en tu biblioteca"
 
@@ -2913,9 +3342,21 @@ msgctxt "README callout"
 msgid "Note"
 msgstr "Nota"
 
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Nothing downloading"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Nothing here: every game has a console"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing here."
 msgstr "No hay nada aquí."
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Nothing in the catalog matches “{search}”"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing in this playlist."
@@ -2925,6 +3366,10 @@ msgstr "No hay nada en esta playlist."
 msgid "Nothing is downloading."
 msgstr "No hay nada descargándose."
 
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+msgid "Nothing matches “{search}”"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Nothing matches that search and those filters."
 msgstr "Nada coincide con esa búsqueda y esos filtros."
@@ -2933,13 +3378,19 @@ msgstr "Nada coincide con esa búsqueda y esos filtros."
 msgid "Nothing to choose in this folder."
 msgstr "En esta carpeta no hay nada que elegir."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Nothing to find here"
+msgstr ""
+
 #. Name, for a screen reader, of the dialog saying something failed or must be read
 #: ../../apps/launcher/src/App.tsx
 msgid "Notice"
 msgstr "Aviso"
 
+#. A TV mode setting's value: turned off
 #. TV mode setting
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Off"
 msgstr "Desactivado"
 
@@ -2948,12 +3399,21 @@ msgstr "Desactivado"
 msgid "Offer them"
 msgstr "Ofrecerlas"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Offer TV mode when a controller connects"
+msgstr ""
+
 #. Accept the usage data notice
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "OK"
 msgstr "OK"
+
+#. A TV mode setting's value: turned on
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "On"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "On this computer"
@@ -2973,14 +3433,18 @@ msgstr "Solo apps ocultas"
 msgid "Opacity"
 msgstr "Opacidad"
 
+#. Controller hint in TV mode's settings: opens or does the focused item
 #. Controller hint: what Confirm does on an app card
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Open"
 msgstr "Abrir"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Open folder"
 msgstr "Abrir carpeta"
 
@@ -3018,8 +3482,10 @@ msgstr "o"
 
 #. A kind of video
 #. Library section for apps with no console, maker, game or developer
+#. Library section for apps with no console, maker, game or developer
 #: ../../apps/launcher/src/group.ts
 #: ../../apps/launcher/src/media.tsx
+#: ../../apps/launcher/src/tv/consoles/consoles.ts
 msgid "Other"
 msgstr "Otros"
 
@@ -3046,6 +3512,10 @@ msgstr "Otras formas de agregar"
 #: ../../apps/launcher/src/game.tsx
 msgid "Other ways to play"
 msgstr "Otras formas de jugar"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Outside TV mode, a note offers it when you turn a controller on"
+msgstr ""
 
 #. Tab of an app's page
 #: ../../apps/launcher/src/App.tsx
@@ -3122,6 +3592,7 @@ msgstr "Plataformas"
 #. Button that starts an app
 #. Button that starts an app
 #. Button that starts an app
+#. Button that starts an app
 #. Button: start the app
 #. Button: start the app
 #. Button: start the app
@@ -3134,8 +3605,14 @@ msgstr "Plataformas"
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Play"
 msgstr "Jugar"
+
+#. Button: plays the version already installed, as in Play v1.2
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Play {installed}"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -3153,12 +3630,22 @@ msgid "Play anyway"
 msgstr "Jugar de todos modos"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Play time"
 msgstr "Tiempo de juego"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Play with"
 msgstr "Jugar con"
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Play without updating"
+msgstr ""
+
+#. When a game was played last; {when} is such as today, 3 days ago or last month
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "Played {when}"
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Played it? How did it run?"
@@ -3210,11 +3697,21 @@ msgstr "Port"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "Vertical, de unos 600×900. Las tarjetas de la biblioteca y el modo TV."
 
+#. After a release's date: its developer marked it as not yet stable
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "pre-release"
+msgstr ""
+
 #. A release its developer marked as not yet stable
 #. A release its developer marked as not yet stable
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
 msgstr "Versión preliminar"
+
+#. A is the controller button
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
+msgid "Press <0>A</0> for TV mode"
+msgstr ""
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a button…"
@@ -3243,7 +3740,9 @@ msgid "Previous letter or page"
 msgstr "Letra o página anterior"
 
 #. Controller action: the tab before the open one, as on an app's page
+#. Controller action: the tab before the open one, as on an app's page
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Previous tab"
 msgstr "Pestaña anterior"
 
@@ -3371,6 +3870,10 @@ msgstr "Quiver Launcher solo actualiza a versiones verificadas. Instala una sin 
 msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
 msgstr "Quiver Launcher envía datos de uso para ayudar a mejorarlo. No se vinculan con tu cuenta de Quiver. Puedes desactivarlo en Configuración."
 
+#: ../../apps/launcher/src/tv/TvHost.tsx
+msgid "Quiver Launcher, TV mode"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver Launcher: go to your library"
 msgstr "Quiver Launcher: ir a tu biblioteca"
@@ -3378,6 +3881,10 @@ msgstr "Quiver Launcher: ir a tu biblioteca"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver crea una carpeta para ella en {dir} y la abre. Pon ahí los archivos de la app; Jugar inicia el primer programa que haya en ella."
+
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
+msgid "Quiver remembers the one you pick."
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
@@ -3411,7 +3918,10 @@ msgstr "El catálogo de Quiver ahora incluye esta app y revisa sus versiones. Al
 msgid "Read more"
 msgstr "Leer más"
 
-#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Read the instructions"
+msgstr ""
+
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Read the README"
 msgstr "Leer el README"
@@ -3430,7 +3940,14 @@ msgstr "Agregados recientemente"
 msgid "Recently finished"
 msgstr "Terminadas recientemente"
 
+#. A shelf on TV mode's Home: the games installed last
+#: ../../apps/launcher/src/tv/views/homeShelves.ts
+msgid "Recently installed"
+msgstr ""
+
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/homeShelves.ts
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Recently played"
 msgstr "Jugados recientemente"
 
@@ -3446,6 +3963,10 @@ msgstr "Jugados recientemente primero (presiona para ordenar de la A a la Z)"
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently updated"
 msgstr "Actualizados recientemente"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Reduce motion"
+msgstr ""
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
@@ -3566,6 +4087,11 @@ msgstr "Restaurar desde una copia de seguridad"
 msgid "Results for “{typed}”"
 msgstr "Resultados para “{typed}”"
 
+#. Controller hint: tries a failed download again
+#: ../../apps/launcher/src/tv/views/tileActions.ts
+msgid "Retry"
+msgstr ""
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Return to catalog"
 msgstr "Volver al catálogo"
@@ -3635,6 +4161,11 @@ msgstr "Cuenta cómo te funcionó {name}"
 msgid "Say how it ran for you"
 msgstr "Cuenta cómo te funcionó"
 
+#. TV mode setting: the monitor it fills
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Screen"
+msgstr ""
+
 #. Controller hint: what the scroll stick does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Scroll"
@@ -3657,9 +4188,18 @@ msgid "Scroll up"
 msgstr "Desplazar hacia arriba"
 
 #. Placeholder of the library's search field
+#. TV mode's controller hint: what Select (View) does, opening the search
+#. Title of TV mode's on-screen keyboard, typing a search
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/HintBar.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
 msgid "Search"
 msgstr "Buscar"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+msgid "Search again, or B to clear the search."
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Search for a game"
@@ -3744,6 +4284,7 @@ msgstr "Configurar Quiver Launcher"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Settings"
 msgstr "Configuración"
 
@@ -3908,6 +4449,11 @@ msgstr "Ver la biblioteca con barra lateral"
 msgid "Show them"
 msgstr "Mostrarlas"
 
+#. Controller hint on Discover's filters: shows the games the focused filter picks
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Show these"
+msgstr ""
+
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "Mostrar videos"
@@ -3968,6 +4514,15 @@ msgstr "Sesión iniciada como <0>{name}</0>"
 msgid "Signed out. Apps installed on this computer stay in your library; sign in to see the rest."
 msgstr "Sesión cerrada. Las apps instaladas en esta computadora se quedan en tu biblioteca; inicia sesión para ver el resto."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Signing in and accounts are there too"
+msgstr ""
+
+#. TV mode setting: the launcher's interface size
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Size"
+msgstr ""
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Skip setup"
 msgstr "Omitir la configuración inicial"
@@ -3976,6 +4531,10 @@ msgstr "Omitir la configuración inicial"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Skip this update"
 msgstr "Omitir esta actualización"
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Skip this version"
+msgstr ""
 
 #. Library card size
 #: ../../apps/launcher/src/view.ts
@@ -4017,6 +4576,11 @@ msgstr "Ordenar mods"
 msgid "Source"
 msgstr "Código fuente"
 
+#. On-screen keyboard: the space bar, and the controller hint that types a space
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+msgid "Space"
+msgstr ""
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Square. The app's page, the Icon view and its shortcuts."
 msgstr "Cuadrada. La página de la app, la vista de íconos y sus accesos directos."
@@ -4026,6 +4590,11 @@ msgstr "Cuadrada. La página de la app, la vista de íconos y sus accesos direct
 #: ../../apps/launcher/src/library.tsx
 msgid "Standalone game"
 msgstr "Juego independiente"
+
+#. Controller hint: starts the app with the focused program
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Start this"
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Start using Quiver"
@@ -4066,6 +4635,15 @@ msgstr "Inicia el programa que Quiver encuentra en su carpeta."
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "Inicia el programa que pusiste en su carpeta, {folder}."
+
+#. TV mode setting, After getting a game
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Stay in Discover"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Stay in Discover to get more, or go to the game in your library"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Stay signed in"
@@ -4113,6 +4691,10 @@ msgstr "Intercambiar {south} y {east}: Confirmar con {east}, Atrás con {south}"
 msgid "Switch to {name}"
 msgstr "Cambiar a {name}"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Switch to desktop mode"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Switch to the catalog's"
 msgstr "Cambiar al del catálogo"
@@ -4126,7 +4708,9 @@ msgid "Switch to the Windows version (Wine)"
 msgstr "Cambiar a la versión de Windows (Wine)"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
+#. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Tabs"
 msgstr "Pestañas"
 
@@ -4210,6 +4794,10 @@ msgstr "Ese nombre de usuario ya está en uso."
 msgid "the {date} version"
 msgstr "la versión del {date}"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "The file picker opens on the desktop: use the mouse or keyboard there."
+msgstr ""
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "El archivo de tu biblioteca está dañado."
@@ -4246,6 +4834,10 @@ msgstr "No se encuentra el archivo de tu configuración."
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
 msgstr "Las preguntas del primer inicio, una por una: el idioma, agregar apps de Quiver Launcher 3, dónde se instalan las apps, los datos de uso e iniciar sesión."
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "The folder opened on the desktop."
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "The folder with Quiver Launcher 3's program in it."
 msgstr "La carpeta donde está el programa de Quiver Launcher 3."
@@ -4261,6 +4853,10 @@ msgstr "El programa en sí"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Los programas que ofrece Jugar están en Jugar con, en el menú de la app."
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "The programs you picked under Play with in its menu."
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
@@ -4318,6 +4914,11 @@ msgstr "La carpeta de esta app no se puede renombrar."
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "Esta descarga no coincide con el archivo que Quiver revisó, así que no se instaló."
+
+#. A game with no name known, as in “This game needs your own copy of the game”
+#: ../../apps/launcher/src/tv/programs/usePrograms.ts
+msgid "This game"
+msgstr ""
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "This mod has no files to download."
@@ -4417,6 +5018,10 @@ msgstr "Tráiler"
 msgid "Try again"
 msgstr "Intentar de nuevo"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Try another console, or All."
+msgstr ""
+
 #. Turn usage data off
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Turn off"
@@ -4433,9 +5038,19 @@ msgid "TV mode: for a controller, the couch and a Steam Deck"
 msgstr "Modo TV: para un control, el sofá y una Steam Deck"
 
 #. Controller hint: what Confirm does on a text field
+#. Controller hint: what Confirm does on a text field
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/Osk.tsx
 msgid "Type"
 msgstr "Escribir"
+
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+msgid "Type a game's name"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Unassigned games"
+msgstr ""
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
@@ -4444,6 +5059,7 @@ msgstr "Menos de un minuto"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Uninstall"
 msgstr "Desinstalar"
 
@@ -4503,8 +5119,10 @@ msgstr "Subir"
 
 #. Button that updates a mod
 #. Button: update the one app with an update
+#. Button: update the one app with an update
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Update"
 msgstr "Actualizar"
 
@@ -4514,8 +5132,14 @@ msgctxt "button"
 msgid "Update"
 msgstr "Actualizar"
 
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Update & play"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+#: ../../apps/launcher/src/tv/views/Home.tsx
 msgid "Update all"
 msgstr "Actualizar todo"
 
@@ -4531,8 +5155,23 @@ msgstr "Actualizar y reiniciar"
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Update available"
 msgstr "Actualización disponible"
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Update every game with one press, then play the newest versions."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Update failed"
+msgstr ""
+
+#. TV mode setting, Updates when playing: update a game, then start it
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Update first"
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Update notes"
@@ -4552,6 +5191,7 @@ msgid "Update to {newer}"
 msgstr "Actualizar a {newer}"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Update to {next}"
 msgstr "Actualizar a {next}"
 
@@ -4601,7 +5241,9 @@ msgstr "Actualizaciones"
 msgid "Updates ({updateCount})"
 msgstr "Actualizaciones ({updateCount})"
 
+#. A shelf on TV mode's Home: games with an update
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/tv/views/homeShelves.ts
 msgid "Updates available"
 msgstr "Actualizaciones disponibles"
 
@@ -4614,9 +5256,21 @@ msgstr "Actualizaciones primero"
 msgid "Updates keep installing into it. Desktop and Steam shortcuts you made before point at the old name, so make them again."
 msgstr "Las actualizaciones se seguirán instalando ahí. Los accesos directos del escritorio y de Steam que creaste antes apuntan al nombre anterior, así que vuelve a crearlos."
 
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Updates waiting"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Updates when playing"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Updating Quiver Launcher"
 msgstr "Actualizando Quiver Launcher"
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Updating to {version}…"
+msgstr ""
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Updating to {version}… {done}% Quiver Launcher restarts when it's done."
@@ -4739,6 +5393,22 @@ msgstr "Espera a que terminen las descargas primero"
 msgid "Wait for its download to finish, then rename its folder."
 msgstr "Espera a que termine la descarga y luego renombra su carpeta."
 
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Waiting for the download ahead"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
+msgid "Waiting to download"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Waiting to download…"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Waiting to update…"
+msgstr ""
+
 #. Heading of a README's warning callout, as on GitHub
 #: ../ui/src/index.tsx
 msgctxt "README callout"
@@ -4788,17 +5458,47 @@ msgstr "Novedades"
 msgid "What's new in {name}"
 msgstr "Novedades de {name}"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "When a game has an update: ask, play the installed version, or update first"
+msgstr ""
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
 msgstr "Dónde se instalan las apps"
+
+#. TV mode setting, Screen: the monitor Quiver's window is on
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Where Quiver is"
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"
 msgstr "¿Qué app?"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
 msgid "Which download?"
 msgstr "¿Qué descarga?"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Which monitor TV mode fills"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Which program starts {name}?"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Which program starts it?"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Which tab it's in. Automatic follows the catalog."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "While a game runs, hold Select: right stick moves the pointer, RT clicks, LT right-clicks, left stick scrolls"
+msgstr ""
 
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
@@ -4898,6 +5598,7 @@ msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "Tu opinión aún no se compartió. Lo que escribiste sigue aquí."
 
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Home.tsx
 msgid "Your library is empty"
 msgstr "Tu biblioteca está vacía"
 

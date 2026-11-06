@@ -1,5 +1,5 @@
 /**
- * Turns presses and releases into actions (spec §5.4). Directions repeat while
+ * Turns presses and releases into actions. Directions repeat while
  * held: after 380 ms, then every 90 ms, every 45 ms once held 1.5 s. Nothing
  * else repeats. A source is one physical control ("pad0:DPadUp", "key:ArrowUp");
  * two sources holding the same action press it once.

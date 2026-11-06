@@ -1,9 +1,11 @@
 /**
- * The on-screen keyboard (spec §8.3): QWERTY, digits and - _ . : / @. A types the
+ * The on-screen keyboard: QWERTY, digits and - _ . : / @. A types the
  * focused key, X deletes, Y is a space, LB / RB move the caret, Menu is done, B
  * cancels. A physical keyboard types into it too. Used for search.
  */
 import { useState } from "react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useInputHandler } from "../context";
 import type { InputAction } from "../input/actions";
 import { LAYER } from "../input/router";
@@ -11,7 +13,11 @@ import { Glyph } from "./Glyph";
 
 type Key = { label: string; type?: string; action?: "space" | "delete" | "done"; wide?: number };
 
+const space = () => t({ message: "Space", comment: "On-screen keyboard: the space bar, and the controller hint that types a space" });
+const done = () => t({ message: "Done", comment: "On-screen keyboard: the key, and the controller hint, that finishes typing" });
+
 const letters = (row: string): Key[] => [...row].map((c) => ({ label: c, type: c }));
+/** The keys; the words on them are read when shown, in the language shown then. */
 export const LAYOUT: Key[][] = [
   letters("1234567890"),
   letters("qwertyuiop"),
@@ -20,9 +26,9 @@ export const LAYOUT: Key[][] = [
   [
     { label: ":", type: ":" },
     { label: "/", type: "/" },
-    { label: "Space", action: "space", wide: 4 },
+    { get label() { return space(); }, action: "space", wide: 4 },
     { label: "⌫", action: "delete", wide: 2 },
-    { label: "Done", action: "done", wide: 2 },
+    { get label() { return done(); }, action: "done", wide: 2 },
   ],
 ];
 
@@ -89,11 +95,11 @@ export function Osk({ title, value: initial, onChange, onDone, onCancel }: Props
         else type(text);
       },
       hints: () => [
-        { action: "accept", label: "Type" },
-        { action: "secondary", label: "Delete" },
-        { action: "details", label: "Space" },
-        { action: "menu", label: "Done" },
-        { action: "back", label: "Cancel" },
+        { action: "accept", label: t({ message: "Type", comment: "Controller hint: what Confirm does on a text field" }) },
+        { action: "secondary", label: t({ message: "Delete", comment: "On-screen keyboard's controller hint: deletes the letter before the caret" }) },
+        { action: "details", label: space() },
+        { action: "menu", label: done() },
+        { action: "back", label: t`Cancel` },
       ],
     },
     LAYER.keyboard,
@@ -108,11 +114,16 @@ export function Osk({ title, value: initial, onChange, onDone, onCancel }: Props
             <span>{value.slice(0, caret)}</span>
             <i className="tv-osk-caret" />
             <span>{value.slice(caret)}</span>
-            {!value && <span className="tv-osk-placeholder">Type a game's name</span>}
+            {!value && (
+              <span className="tv-osk-placeholder">
+                <Trans>Type a game's name</Trans>
+              </span>
+            )}
           </div>
           <span className="tv-osk-caret-hint">
             <Glyph action="tabPrev" size={20} />
-            <Glyph action="tabNext" size={20} /> caret
+            <Glyph action="tabNext" size={20} />{" "}
+            {t({ message: "caret", comment: "On-screen keyboard: after the shoulder buttons' pictures, which move the caret (the text cursor)" })}
           </span>
         </header>
         <div className="tv-osk-keys">

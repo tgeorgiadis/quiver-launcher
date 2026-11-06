@@ -1,9 +1,10 @@
 /**
  * The footer: Menu on the left, always, and Search beside it while a tab is
  * in front (nothing open over it); on the right what the buttons do now,
- * which is always the top handler's hints (spec §5.6).
+ * which is always the top handler's hints.
  */
 import { useSyncExternalStore, type PointerEvent } from "react";
+import { t } from "@lingui/core/macro";
 import { useTv } from "../context";
 import { Glyph } from "./Glyph";
 import type { InputAction } from "../input/actions";
@@ -32,12 +33,12 @@ export function HintBar() {
     <footer className="tv-hints">
       <span className="tv-hint tv-hint-menu" role="button" {...press("menu")}>
         <Glyph action="menu" />
-        Menu
+        {t({ message: "Menu", comment: "TV mode's controller hint: what Start does, opening its menu (Settings)" })}
       </span>
       {router.topLayer === LAYER.view && (
         <span className="tv-hint tv-hint-menu" role="button" {...press("search")}>
           <Glyph action="search" />
-          Search
+          {t({ message: "Search", comment: "TV mode's controller hint: what Select (View) does, opening the search" })}
         </span>
       )}
       <span className="tv-hints-right">
@@ -45,7 +46,7 @@ export function HintBar() {
           <span key={hint.action} className="tv-hint" role="button" {...press(hint.action)}>
             <Glyph action={hint.action} />
             {hint.label}
-            {hint.hold && <span className="tv-hold-note">hold</span>}
+            {hint.hold && <span className="tv-hold-note">{t({ message: "hold", comment: "After a controller hint, such as Cancel: the button must be held down to do it" })}</span>}
           </span>
         ))}
       </span>

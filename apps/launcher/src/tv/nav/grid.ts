@@ -1,5 +1,5 @@
 /**
- * Focus in a grid of tiles (spec §8.2). Pure: the view owns the index and scrolling.
+ * Focus in a grid of tiles. Pure: the view owns the index and scrolling.
  * Left and Right go in reading order (changed 2026-10-10 at the player's request):
  * Left on a row's first tile goes to the last tile of the row above, Right on a
  * row's last tile to the first of the next, and they go round: Right on the very

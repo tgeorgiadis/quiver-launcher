@@ -6,6 +6,8 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Gamepad2 } from "lucide-react";
+import { plural, t } from "@lingui/core/macro";
+import { i18n } from "@quiverlauncher/i18n";
 import { useTv } from "../context";
 import type { Tab } from "../consoles/tabs";
 import { Glyph } from "./Glyph";
@@ -25,7 +27,7 @@ function useClock() {
     const timer = setInterval(() => setNow(new Date()), 15_000);
     return () => clearInterval(timer);
   }, []);
-  return now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return now.toLocaleTimeString(i18n.locale, { hour: "numeric", minute: "2-digit" });
 }
 
 /** A ring filling with the active download, and how many are going. */
@@ -33,10 +35,10 @@ function DownloadStatus() {
   const { bridge } = useTv();
   const busy = bridge.apps.filter((a) => a.state === "downloading" || a.state === "updating" || a.state === "queued");
   if (!busy.length) return null;
-  const active = busy.find((a) => a.progress !== null);
-  const p = active?.progress ?? 0;
+  const p = busy.find((a) => a.progress !== null)?.progress ?? 0;
+  const active = busy.length;
   return (
-    <span className="tv-status-downloads" title={`${busy.length} downloading`}>
+    <span className="tv-status-downloads" title={plural(active, { one: "# downloading", other: "# downloading" })}>
       <svg viewBox="0 0 36 36" aria-hidden="true">
         <circle cx="18" cy="18" r="15" className="track" />
         <circle cx="18" cy="18" r="15" className="fill" style={{ strokeDashoffset: 94.25 * (1 - p) }} />
@@ -73,9 +75,14 @@ export function TabStrip({ tabs, selected, onSelect }: { tabs: Tab[]; selected: 
   }, [selected, compact, key, tabs.length]);
 
   return (
-    <nav className="tv-topbar" aria-label="Library" ref={nav}>
+    <nav className="tv-topbar" aria-label={t`Library`} ref={nav}>
       <img className="tv-mark" src="/quiver-icon-96.png" alt="Quiver" />
-      <button type="button" className="tv-glyph-button" aria-label="Previous tab" onClick={() => tap("tabPrev")}>
+      <button
+        type="button"
+        className="tv-glyph-button"
+        aria-label={t({ message: "Previous tab", comment: "Controller action: the tab before the open one, as on an app's page" })}
+        onClick={() => tap("tabPrev")}
+      >
         <Glyph action="tabPrev" />
       </button>
       <div className="tv-tabs" ref={scroller} role="tablist">
@@ -85,23 +92,32 @@ export function TabStrip({ tabs, selected, onSelect }: { tabs: Tab[]; selected: 
       </div>
       <div className="tv-tabs-end" role="tablist">
         {/* LT / RT go straight between the library tab, Discover and Downloads. */}
-        <button type="button" className="tv-glyph-button small" aria-label="Library, Discover, Downloads: back" onClick={() => tap("pagePrev")}>
+        <button type="button" className="tv-glyph-button small" aria-label={t({ message: "Library, Discover, Downloads: back", comment: "TV mode's button that steps back between the library, Discover and Downloads" })}
+          onClick={() => tap("pagePrev")}
+        >
           <Glyph action="pagePrev" size={22} />
         </button>
         {end.map((tab) => (
           <TabLabel key={tab.id} tab={tab} selected={tab.id === selected} compact={compact} onSelect={onSelect} />
         ))}
-        <button type="button" className="tv-glyph-button small" aria-label="Library, Discover, Downloads: forward" onClick={() => tap("pageNext")}>
+        <button type="button" className="tv-glyph-button small" aria-label={t({ message: "Library, Discover, Downloads: forward", comment: "TV mode's button that steps on between the library, Discover and Downloads" })}
+          onClick={() => tap("pageNext")}
+        >
           <Glyph action="pageNext" size={22} />
         </button>
       </div>
-      <button type="button" className="tv-glyph-button" aria-label="Next tab" onClick={() => tap("tabNext")}>
+      <button
+        type="button"
+        className="tv-glyph-button"
+        aria-label={t({ message: "Next tab", comment: "Controller action: the tab after the open one, as on an app's page" })}
+        onClick={() => tap("tabNext")}
+      >
         <Glyph action="tabNext" />
       </button>
       {bar && <span className="tv-tab-bar" style={{ left: bar.left, width: bar.width }} />}
       <div className="tv-status">
         <DownloadStatus />
-        <span className={`tv-status-pads${pads.length ? " on" : ""}`} title={pads.join(", ") || "No controller connected"}>
+        <span className={`tv-status-pads${pads.length ? " on" : ""}`} title={pads.join(", ") || t`No controller connected`}>
           <Gamepad2 aria-hidden="true" />
           {pads.length > 1 ? pads.length : null}
         </span>

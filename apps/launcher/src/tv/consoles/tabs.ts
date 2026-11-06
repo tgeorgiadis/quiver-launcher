@@ -1,8 +1,9 @@
 /**
- * The tab strip (spec §7.3): Home, All, one tab per console with at least one
- * installed game, then Discover and Downloads. A console with nothing
- * installed has no tab.
+ * The tab strip: Home, All, one tab per console with at least one installed
+ * game, then Discover and Downloads. A console with nothing installed has no
+ * tab.
  */
+import { t } from "@lingui/core/macro";
 import type { TvSettings } from "../settings";
 import type { ConsoleCatalog, ConsoleInfo } from "./consoles";
 
@@ -20,10 +21,14 @@ export type Tab = {
   count?: number;
 };
 
-export const HOME: Tab = { id: "home", kind: "home", label: "Home", short: "Home" };
-export const ALL: Tab = { id: "all", kind: "all", label: "All", short: "All" };
-export const DISCOVER: Tab = { id: "discover", kind: "discover", label: "Discover", short: "Discover" };
-export const downloadsTab = (active: number): Tab => ({ id: "downloads", kind: "downloads", label: "Downloads", short: "Downloads", count: active });
+// The tabs' names are read when shown, in the language shown then, not when the module loads (before one is picked).
+const home = () => t({ message: "Home", comment: "TV mode's first tab: recently played games, updates and recently installed" });
+const all = () => t({ message: "All", comment: "Library tab: every app in the library" });
+const discover = () => t({ message: "Discover", comment: "TV mode's tab for finding games in the catalog to get" });
+export const HOME: Tab = { id: "home", kind: "home", get label() { return home(); }, get short() { return home(); } };
+export const ALL: Tab = { id: "all", kind: "all", get label() { return all(); }, get short() { return all(); } };
+export const DISCOVER: Tab = { id: "discover", kind: "discover", get label() { return discover(); }, get short() { return discover(); } };
+export const downloadsTab = (active: number): Tab => ({ id: "downloads", kind: "downloads", label: t`Downloads`, short: t`Downloads`, count: active });
 export const consoleTabId = (consoleId: string) => `console:${consoleId}`;
 
 /** `installed` is each installed app's console id (from resolveConsole). */

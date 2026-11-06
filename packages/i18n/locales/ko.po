@@ -37,6 +37,7 @@ msgid "{active, plural, one {# downloading, {percent}%} other {# downloading, {p
 msgstr "{active, plural, other {#개 다운로드 중, {percent}%}}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "{active, plural, one {# downloading} other {# downloading}}"
 msgstr "{active, plural, other {#개 다운로드 중}}"
 
@@ -94,9 +95,21 @@ msgstr "{count, plural, other {앱 #개, 아직 설치된 앱이 없어요. 다�
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개는 이미 설치되어 있어요.}}"
 
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "{count, plural, one {# game has an update} other {# games have updates}}"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "{count, plural, one {# game} other {# games}}"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, other {앱 #개 추가}}"
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "{count, plural, one {It's on this computer with # game. Installed games stay where they are, so nothing downloads again.} other {It's on this computer with # games. Installed games stay where they are, so nothing downloads again.}}"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {Move # installed app to {asking}? Its saves and settings go with it. Desktop and Steam shortcuts you made point at the old folder, so make them again after.} other {Move # installed apps to {asking}? Their saves and settings go with them. Desktop and Steam shortcuts you made point at the old folder, so make them again after.}}"
@@ -273,6 +286,7 @@ msgid "{name} (this computer)"
 msgstr "{name} (이 컴퓨터)"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
 msgid "{name} {version} has more than one file for your computer."
 msgstr "{name} {version}에는 이 컴퓨터용 파일이 여러 개 있어요."
 
@@ -287,6 +301,23 @@ msgstr "{name} 박스 아트"
 #: ../../apps/launcher/src/App.tsx
 msgid "{name} changed after Quiver verified {release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since."
 msgstr "Quiver가 {release}을(를) 검증한 뒤 {name}이(가) 바뀌었고, 새 파일은 아직 검증하지 않았어요. Quiver가 확인한 파일만 설치하고, 그 이후 바뀌었다면 거부해요."
+
+#. {name} is a controller's name
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
+msgid "{name} connected"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} crashed"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} didn't install"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Notices.tsx
+msgid "{name} didn't start"
+msgstr ""
 
 #: ../../apps/launcher/src/library-view.tsx
 msgid "{name} icon"
@@ -309,6 +340,10 @@ msgstr "{name} 공유됨"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "{name} menu"
 msgstr "{name} 메뉴"
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "{name} needs your own copy of the game"
+msgstr ""
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
@@ -341,6 +376,11 @@ msgstr "{newest}이(가) 나왔어요. 지금 버전: {yours}."
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "{out} is out. You have {have}."
 msgstr "{out}이(가) 나왔어요. 지금 버전: {have}."
+
+#. How much of an update has downloaded
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "{percent}%"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "{picked, plural, one {# app picked for it.} other {# apps picked for it.}}"
@@ -565,6 +605,11 @@ msgstr "따옴표가 닫히지 않았어요."
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "투명 PNG. Steam 바로 가기에 쓰입니다."
 
+#. TV mode's order of tabs or games: by name
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "A–Z"
+msgstr ""
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
 msgstr "이 프로젝트 정보"
@@ -694,6 +739,10 @@ msgstr "앱 추가 중"
 msgid "Advanced"
 msgstr "고급"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "After getting a game"
+msgstr ""
+
 #. Browse card detail: AI-assisted or Mostly AI
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "AI label"
@@ -710,6 +759,8 @@ msgstr "AI 사용"
 msgid "AI-assisted"
 msgstr "AI 보조"
 
+#. Discover's filter: games in the library or not
+#. Library tab: every app in the library
 #. Library tab: every app in the library
 #. Shows mods from every site
 #. Shows videos of every kind
@@ -717,6 +768,8 @@ msgstr "AI 보조"
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/media.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All"
 msgstr "전체"
 
@@ -736,6 +789,7 @@ msgid "All apps"
 msgstr "모든 앱"
 
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All consoles"
 msgstr "모든 콘솔"
 
@@ -760,6 +814,11 @@ msgstr "모든 재생 목록"
 #: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "모든 프로젝트 유형"
+
+#. TV mode setting: the order of the games on the All tab
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "All tab order"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
@@ -816,6 +875,10 @@ msgstr "공지: {waiting, plural, other {새 항목 #개}}"
 msgid "Another app in your library uses a folder named {folder}. Choose another name."
 msgstr "라이브러리의 다른 앱이 이미 {folder} 폴더를 쓰고 있어요. 다른 이름을 골라 주세요."
 
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Another download is ahead of it"
+msgstr ""
+
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Another Proton…"
 msgstr "다른 Proton…"
@@ -861,9 +924,16 @@ msgstr "앱 페이지"
 msgid "App sections"
 msgstr "앱 섹션"
 
+#. TV mode's tab for apps, tools and emulators, short for Apps & Tools on a crowded tab strip
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/consoles/consoles.ts
 msgid "Apps"
 msgstr "앱"
+
+#. TV mode's tab for apps, tools and emulators, which aren't games for a console
+#: ../../apps/launcher/src/tv/consoles/consoles.ts
+msgid "Apps & Tools"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps added from this computer, which Quiver doesn't download or update"
@@ -927,6 +997,11 @@ msgstr "게임의 아트워크와 콘솔"
 msgid "As in Settings: {name}"
 msgstr "설정과 같이: {name}"
 
+#. TV mode setting, Updates when playing: ask whether to update a game before it starts
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Ask"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {updateVersion} back. It installs the next new release."
 msgstr "자동 업데이트는 {updateVersion}을(를) 다시 설치하지 않아요. 다음 새 버전을 설치해요."
@@ -934,6 +1009,11 @@ msgstr "자동 업데이트는 {updateVersion}을(를) 다시 설치하지 않�
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic"
 msgstr "자동"
+
+#. A game's console in TV mode: the catalog's, named in brackets
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Automatic ({automatic})"
+msgstr ""
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Automatic (no Proton or Wine found)"
@@ -948,16 +1028,26 @@ msgid "Automatic: {name}"
 msgstr "자동: {name}"
 
 #. Controller hint: what Back does, closing or going back
+#. Controller hint: what Back does, closing or going back
+#. Controller hint: what Back does, closing or going back
+#. Controller hint: what Back does, closing or going back
 #. The setup's previous step
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/setup.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Back"
 msgstr "뒤로"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Back to results for “{searched}”"
 msgstr "“{searched}” 검색 결과로 돌아가기"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Back to Steam"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/spatial.ts
@@ -1029,10 +1119,22 @@ msgstr "박스 아트"
 msgid "Box art address"
 msgstr "박스 아트 주소"
 
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Bring over your Quiver Launcher 3 library?"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Bring them over"
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/setup.tsx
 msgid "Bring your apps over from Quiver Launcher 3?"
 msgstr "Quiver Launcher 3의 앱을 가져올까요?"
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Bringing your games over…"
+msgstr ""
 
 #. Tab listing mods to install
 #. The tab with the catalog of apps
@@ -1092,6 +1194,11 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Cancel"
 msgstr "취소"
 
@@ -1121,6 +1228,11 @@ msgstr "카드 크기"
 msgid "Card style"
 msgstr "카드 스타일"
 
+#. On-screen keyboard: after the shoulder buttons' pictures, which move the caret (the text cursor)
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+msgid "caret"
+msgstr ""
+
 #. What the featured apps across the top of Browse are, for screen readers
 #: ../ui/src/discover.tsx
 msgid "carousel"
@@ -1136,6 +1248,11 @@ msgctxt "README callout"
 msgid "Caution"
 msgstr "주의"
 
+#. Controller hint in TV mode's settings: changes the focused setting's value
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Change"
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Change game"
 msgstr "게임 변경"
@@ -1144,7 +1261,12 @@ msgstr "게임 변경"
 msgid "Change name or artwork"
 msgstr "이름 또는 아트워크 변경"
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Change program"
+msgstr ""
+
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Change version"
 msgstr "버전 변경"
 
@@ -1179,6 +1301,7 @@ msgid "Choose a backup…"
 msgstr "백업 선택…"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
 msgid "Choose a download"
 msgstr "다운로드 선택"
 
@@ -1221,6 +1344,10 @@ msgstr "이미지 선택…"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Choose a platform"
 msgstr "플랫폼 선택"
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Choose a program"
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose a program (.exe) that starts the app."
@@ -1295,6 +1422,10 @@ msgstr "내 Quiver Launcher 3 폴더 선택…"
 msgid "Choose program…"
 msgstr "프로그램 선택…"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Choose the file…"
+msgstr ""
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "{name}이(가) 설치된 폴더 선택"
@@ -1323,6 +1454,10 @@ msgstr "만료 시점을 선택하세요."
 msgid "Choose where to install apps"
 msgstr "앱 설치 위치 선택"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Choose your copy, and Quiver puts it there under that name, then starts the game."
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Quiver Launcher 3 폴더 선택"
@@ -1339,12 +1474,19 @@ msgstr "모두 지우기"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
 msgid "Clear search"
 msgstr "검색어 지우기"
 
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+msgid "Clear the search"
+msgstr ""
+
+#. Closes a dialog
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "닫기"
@@ -1354,9 +1496,17 @@ msgstr "닫기"
 msgid "Close {title}"
 msgstr "{title} 닫기"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Close a game with Start + Select"
+msgstr ""
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "필터 닫기"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Close Quiver"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
@@ -1383,10 +1533,20 @@ msgstr "커뮤니티 포트 및 재구현"
 msgid "Confirm / Select"
 msgstr "확인 / 선택"
 
+#. Button on a game's page in TV mode: picks the console tab it's in
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Console"
 msgstr "콘솔"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Console for {name}"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Console tab order"
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Consoles"
@@ -1404,8 +1564,10 @@ msgstr "{service}(으)로 계속하기"
 msgid "Continue without restoring"
 msgstr "복원하지 않고 계속"
 
+#. A controller that gives no name of its own, as in “Controller connected”
 #. Heading of the bindings table's column of controller buttons
 #: ../../apps/launcher/src/controls.tsx
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
 msgid "Controller"
 msgstr "컨트롤러"
 
@@ -1417,6 +1579,15 @@ msgstr "컨트롤러"
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
 msgstr "링크 복사"
+
+#. The player's copy of a game (a ROM) is being copied into the game's folder
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Copying…"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Couldn't bring over: {names}. Find them in Discover."
+msgstr ""
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
@@ -1436,6 +1607,10 @@ msgstr "quiverlauncher.com에 연결할 수 없어 이 재생 목록을 표시�
 #: ../../apps/launcher/src/store.tsx
 msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "quiverlauncher.com에 연결할 수 없어요. 연결 상태를 확인하고 다시 시도하세요."
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Couldn't reach the catalog"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Couldn't save the token. Try again."
@@ -1502,7 +1677,9 @@ msgid "Dark"
 msgstr "어둡게"
 
 #. Deletes a playlist
+#. On-screen keyboard's controller hint: deletes the letter before the caret
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Osk.tsx
 msgid "Delete"
 msgstr "삭제"
 
@@ -1520,7 +1697,9 @@ msgid "Desktop shortcut"
 msgstr "바탕 화면 바로 가기"
 
 #. Controller hint: what Options does on an app card, opening its page
+#. Controller hint: what Options does on an app card, opening its page
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Details"
 msgstr "세부 정보"
 
@@ -1540,6 +1719,16 @@ msgstr "개발자도 확실하지 않음"
 msgid "Didn't finish"
 msgstr "완료되지 않음"
 
+#. A game's launch failed
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "Didn't start"
+msgstr ""
+
+#. TV mode's tab for finding games in the catalog to get
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+msgid "Discover"
+msgstr ""
+
 #. Hide an announcement
 #. Hide an announcement
 #. Hide an announcement
@@ -1547,6 +1736,7 @@ msgstr "완료되지 않음"
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
 msgid "Dismiss"
 msgstr "닫기"
 
@@ -1564,9 +1754,21 @@ msgstr "실행 안 됨"
 msgid "Don't allow"
 msgstr "허용 안 함"
 
+#. Controller hint while a game updates before it starts: it won't start once updated; the update carries on
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Don't start it"
+msgstr ""
+
+#. TV mode setting, Updates when playing: play the version installed
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Don't update"
+msgstr ""
+
 #. Closes a dialog
+#. On-screen keyboard: the key, and the controller hint, that finishes typing
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Osk.tsx
 msgid "Done"
 msgstr "완료"
 
@@ -1578,10 +1780,21 @@ msgstr "완료했어요. 앱이 라이브러리에 들어왔어요. 다만 다�
 msgid "Downgrade to {version}"
 msgstr "{version}(으)로 다운그레이드"
 
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "Download failed"
+msgstr ""
+
+#. Controller hint: picks the focused file of a release to download
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
+msgid "Download this"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Downloading"
 msgstr "다운로드 중"
 
@@ -1604,16 +1817,22 @@ msgstr "{count, plural, other {앱 #개}} 다운로드 중."
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
 msgid "Downloading {percent}%"
 msgstr "다운로드 중 {percent}%"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
 msgid "Downloading…"
 msgstr "다운로드 중…"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Downloads"
 msgstr "다운로드"
 
@@ -1678,6 +1897,14 @@ msgstr "GitHub 또는 GitLab 저장소를 입력하세요: owner/name 형식이�
 msgid "Enter a name for its folder."
 msgstr "폴더 이름을 입력해 주세요."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Everything bigger or smaller, on top of fitting the screen: the launcher's interface size"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Everything in your library is installed"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Everything is up to date."
 msgstr "모두 최신 상태예요."
@@ -1699,6 +1926,11 @@ msgstr "모든 섹션 펼치기"
 msgid "Extra wide"
 msgstr "아주 넓게"
 
+#. A download that didn't finish, when there's no message saying why
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Failed"
+msgstr ""
+
 #. The apps shown one at a time across the top of Browse and the website's home
 #: ../ui/src/discover.tsx
 msgid "Featured"
@@ -1711,6 +1943,7 @@ msgstr "파일 이름(예: config.ini)"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filters"
 msgstr "필터"
 
@@ -1722,6 +1955,11 @@ msgstr "필터 사용 중"
 #: ../../apps/launcher/src/library.tsx
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "카탈로그에서 포트를 찾아 받기를 누르세요. 여기에 추가되고 바로 다운로드돼요."
+
+#: ../../apps/launcher/src/tv/views/GridTab.tsx
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Find something to play in Discover."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
@@ -1792,14 +2030,29 @@ msgstr "게임을 찾을 수 없음"
 msgid "Gameplay"
 msgstr "게임플레이"
 
+#. Controller hint on Discover's filters: back down to the games
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Games"
 msgstr "게임"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Games the catalog doesn't place on a console are under Other. Pick their console here."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Games you add but haven't installed show here."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Games you get in Discover, and updates, download here."
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
 msgstr "일반"
 
+#. Button that installs an app
 #. Button that installs an app
 #. Button that installs an app
 #. Button: download and install the app
@@ -1810,6 +2063,7 @@ msgstr "일반"
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Get"
 msgstr "받기"
 
@@ -1833,9 +2087,18 @@ msgstr "GitHub에서 토큰을 받아들이지 않아 저장하지 않았어요.
 msgid "GitHub token"
 msgstr "GitHub 토큰"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Give games under Other their console"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "뒤로 가기"
+
+#. TV mode setting, After getting a game: go to the game in the library
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Go to it"
+msgstr ""
 
 #. Library layout
 #: ../../apps/launcher/src/view.ts
@@ -1954,6 +2217,29 @@ msgstr "숨기기"
 msgid "Hide your feedback for {name}"
 msgstr "{name} 피드백 숨기기"
 
+#. After a controller hint, such as Cancel: the button must be held down to do it
+#: ../../apps/launcher/src/tv/views/HintBar.tsx
+msgid "hold"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Hold both for a second while a game runs, for games with no way to quit"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Hold to uninstall. Its files go to the Recycle Bin."
+msgstr ""
+
+#. TV mode's first tab: recently played games, updates and recently installed
+#: ../../apps/launcher/src/tv/consoles/tabs.ts
+msgid "Home"
+msgstr ""
+
+#. TV mode setting: whether the Home tab shows
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Home tab"
+msgstr ""
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "How did it go?"
 msgstr "어땠나요?"
@@ -2006,9 +2292,11 @@ msgctxt "README callout"
 msgid "Important"
 msgstr "중요"
 
+#. Discover's filter: games in the library but not installed
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "In library"
 msgstr "라이브러리에 있음"
 
@@ -2021,6 +2309,14 @@ msgstr "Steam 게임 모드에서"
 msgid "In this folder"
 msgstr "이 폴더 안"
 
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "In your library · not installed"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
+msgid "In your library, not installed"
+msgstr ""
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "Include NSFW"
 msgstr "NSFW 포함"
@@ -2032,8 +2328,10 @@ msgstr "미리 보기 업데이트 포함"
 #. Button that installs a mod
 #. Button that installs this version
 #. Button that installs this version
+#. Controller hint: installs a game that's in the library but not installed
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Install"
 msgstr "설치"
 
@@ -2102,18 +2400,27 @@ msgstr "검증된 {installedVersion} 설치"
 msgid "Install the verified {verifiedVersion}"
 msgstr "검증된 {verifiedVersion} 설치"
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Install this version"
+msgstr ""
+
 #. A mod that's installed
 #. Filter by whether an app is installed
+#. On a game's tile in Discover: the game just got has finished installing
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Installed"
 msgstr "설치됨"
 
 #. The version installed, then a version
+#. The version installed, then a version
+#. This release is the one on this computer
 #. This release is the one on this computer
 #. This version is the one on this computer
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgctxt "release"
 msgid "Installed"
 msgstr "설치됨"
@@ -2131,6 +2438,11 @@ msgstr "{installedLabel} 설치됨"
 #: ../../apps/launcher/src/App.tsx
 msgid "Installed {installedVersion}"
 msgstr "{installedVersion} 설치됨"
+
+#. A finished download: the version now installed, as in Installed v1.2
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Installed {version}"
+msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Installed {version} · {when}"
@@ -2170,10 +2482,19 @@ msgstr "설치됨, 라이브러리에 없음"
 msgid "Installed, not played yet"
 msgstr "설치됨, 아직 플레이 안 함"
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Installed: {installed}"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Installed: nothing yet"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
 msgid "Installing"
 msgstr "설치 중"
 
@@ -2192,6 +2513,7 @@ msgstr "설치 중: 설치 창을 마무리하세요"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
 msgid "Installing…"
 msgstr "설치 중…"
 
@@ -2202,6 +2524,21 @@ msgstr "저장소에 게시된 버전으로 설치하고, 다른 앱처럼 업�
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Interface size"
 msgstr "인터페이스 크기"
+
+#. A ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it can't find the original game (a ROM), which no download includes: you need a copy you own."
+msgstr ""
+
+#. {folder} is a folder inside the game's, such as roms or data; a ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it looks for <0>{file}</0> in its {folder} folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
+msgstr ""
+
+#. A ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it looks for <0>{file}</0> in its folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
@@ -2218,6 +2555,14 @@ msgstr "Quiver 계정과 연결되지 않습니다."
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "실행됐지만 문제가 있었어요"
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "It started {program}. The next Play asks which program starts it."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "It starts as soon as the update is installed."
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
@@ -2247,9 +2592,25 @@ msgstr "파일은 휴지통으로 이동해요. {name}은(는) 라이브러리�
 msgid "Its files have each been out for 48 hours, a maintainer checked any that VirusTotal flagged, and Quiver Launcher checks every download against the file Quiver verified."
 msgstr "모든 파일이 공개된 지 48시간이 지났고, VirusTotal이 탐지한 파일은 관리자가 확인했으며, Quiver Launcher는 모든 다운로드를 Quiver가 검증한 파일과 대조해요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick: change it in Launch options."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Its instructions say where to put it."
+msgstr ""
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest verified version was withdrawn: choose a version"
 msgstr "검증된 최신 버전이 철회됐어요: 버전을 선택하세요"
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Its page says where to put it."
+msgstr ""
 
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
@@ -2308,6 +2669,7 @@ msgid "Large name"
 msgstr "큰 이름"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Last played"
 msgstr "마지막 플레이"
 
@@ -2317,6 +2679,12 @@ msgstr "마지막 플레이"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Last updated"
 msgstr "최근 업데이트순"
+
+#. The newest version, then a version
+#. This release is the newest
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Latest"
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../ui/src/index.tsx
@@ -2352,11 +2720,6 @@ msgstr "레이아웃"
 msgid "Leave every scope unticked: public releases need none."
 msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요."
 
-#. Button: back from TV mode to the usual launcher
-#: ../../apps/launcher/src/App.tsx
-msgid "Leave TV mode"
-msgstr "TV 모드 나가기"
-
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Let Quiver choose"
@@ -2372,6 +2735,8 @@ msgstr "글자"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Library"
 msgstr "라이브러리"
 
@@ -2391,6 +2756,16 @@ msgstr "라이브러리 문제"
 #: ../../apps/launcher/src/store.tsx
 msgid "Library synced: {fromDevice, plural, one {# app} other {# apps}} from this computer, {fromAccount} from your account."
 msgstr "라이브러리 동기화됨: 이 컴퓨터에서 {fromDevice, plural, other {앱 #개}}, 계정에서 {fromAccount}개를 가져왔어요."
+
+#. TV mode's button that steps back between the library, Discover and Downloads
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
+msgid "Library, Discover, Downloads: back"
+msgstr ""
+
+#. TV mode's button that steps on between the library, Discover and Downloads
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
+msgid "Library, Discover, Downloads: forward"
+msgstr ""
 
 #. Theme
 #: ../../apps/launcher/src/settings-page.tsx
@@ -2434,6 +2809,14 @@ msgstr "플레이어 메모 불러오는 중"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Loading releases"
 msgstr "버전 불러오는 중"
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Loading releases…"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Loading the catalog…"
+msgstr ""
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Loading the game"
@@ -2490,6 +2873,11 @@ msgstr "사본 만들기"
 msgid "Make the folder"
 msgstr "폴더 만들기"
 
+#. TV mode's order of console tabs: by maker, then by when each came out
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Maker, then year"
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Makes a folder in your apps folder to put the app in."
 msgstr "앱 폴더 안에 앱을 넣을 폴더를 만들어요."
@@ -2517,6 +2905,10 @@ msgstr "직접 관리"
 msgid "Matching games"
 msgstr "일치하는 게임"
 
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Matching them with the catalog."
+msgstr ""
+
 #. Window button
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Maximize"
@@ -2534,7 +2926,9 @@ msgid "Medium"
 msgstr "보통"
 
 #. Controller hint: what Options does, opening a menu
+#. TV mode's controller hint: what Start does, opening its menu (Settings)
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/HintBar.tsx
 msgid "Menu"
 msgstr "메뉴"
 
@@ -2578,6 +2972,11 @@ msgstr "더 보기…"
 msgid "Most downloaded"
 msgstr "다운로드 많은 순"
 
+#. TV mode's order of console tabs
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Most games first"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "관련성 높은 순"
@@ -2590,6 +2989,10 @@ msgstr "대부분 AI"
 #: ../ui/src/index.tsx
 msgid "Mostly AI-generated"
 msgstr "대부분 AI 생성"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Mouse pointer with Select"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Mouse wheel speed"
@@ -2746,7 +3149,9 @@ msgid "Next letter or page"
 msgstr "다음 글자 또는 페이지"
 
 #. Controller action: the tab after the open one, as on an app's page
+#. Controller action: the tab after the open one, as on an app's page
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Next tab"
 msgstr "다음 탭"
 
@@ -2779,6 +3184,15 @@ msgstr "이 재생 목록에 아직 앱이 없어요. 각 앱의 메뉴에서 �
 msgid "No apps play this game yet."
 msgstr "아직 이 게임을 플레이할 수 있는 앱이 없어요."
 
+#. A game's console in TV mode: none, so it's under Apps & Tools or Other
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "No console"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
+msgid "No controller connected"
+msgstr ""
+
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "감지된 컨트롤러가 없어요. 컨트롤러를 연결하면 여기에 표시돼요."
@@ -2786,6 +3200,10 @@ msgstr "감지된 컨트롤러가 없어요. 컨트롤러를 연결하면 여기
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "No folders in here."
 msgstr "여기에는 폴더가 없어요."
+
+#: ../../apps/launcher/src/tv/views/GridTab.tsx
+msgid "No games here yet"
+msgstr ""
 
 #: ../../apps/launcher/src/group.ts
 msgid "No groups"
@@ -2818,6 +3236,10 @@ msgstr "버전을 찾지 못함"
 #: ../../apps/launcher/src/detail.tsx
 msgid "No releases found."
 msgstr "버전을 찾지 못했어요."
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "No zooming, sliding or sweeping"
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
@@ -2862,7 +3284,14 @@ msgstr "아직 확인 안 됨"
 msgid "Not confirmed yet"
 msgstr "아직 확인 안 됨"
 
+#. Discover's filter: games not in the library yet
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Not in library"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Not in your library"
 msgstr "라이브러리에 없음"
 
@@ -2913,9 +3342,21 @@ msgctxt "README callout"
 msgid "Note"
 msgstr "참고"
 
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Nothing downloading"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Nothing here: every game has a console"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing here."
 msgstr "여기에는 아무것도 없어요."
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Nothing in the catalog matches “{search}”"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing in this playlist."
@@ -2925,6 +3366,10 @@ msgstr "이 재생 목록이 비어 있어요."
 msgid "Nothing is downloading."
 msgstr "다운로드 중인 항목이 없어요."
 
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+msgid "Nothing matches “{search}”"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Nothing matches that search and those filters."
 msgstr "검색어 및 필터와 일치하는 항목이 없어요."
@@ -2933,13 +3378,19 @@ msgstr "검색어 및 필터와 일치하는 항목이 없어요."
 msgid "Nothing to choose in this folder."
 msgstr "이 폴더에는 선택할 항목이 없어요."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Nothing to find here"
+msgstr ""
+
 #. Name, for a screen reader, of the dialog saying something failed or must be read
 #: ../../apps/launcher/src/App.tsx
 msgid "Notice"
 msgstr "알림"
 
+#. A TV mode setting's value: turned off
 #. TV mode setting
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Off"
 msgstr "끄기"
 
@@ -2948,12 +3399,21 @@ msgstr "끄기"
 msgid "Offer them"
 msgstr "알려 주기"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Offer TV mode when a controller connects"
+msgstr ""
+
 #. Accept the usage data notice
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "OK"
 msgstr "확인"
+
+#. A TV mode setting's value: turned on
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "On"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "On this computer"
@@ -2973,14 +3433,18 @@ msgstr "숨긴 앱만 보기"
 msgid "Opacity"
 msgstr "불투명도"
 
+#. Controller hint in TV mode's settings: opens or does the focused item
 #. Controller hint: what Confirm does on an app card
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Open"
 msgstr "열기"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Open folder"
 msgstr "폴더 열기"
 
@@ -3018,8 +3482,10 @@ msgstr "또는"
 
 #. A kind of video
 #. Library section for apps with no console, maker, game or developer
+#. Library section for apps with no console, maker, game or developer
 #: ../../apps/launcher/src/group.ts
 #: ../../apps/launcher/src/media.tsx
+#: ../../apps/launcher/src/tv/consoles/consoles.ts
 msgid "Other"
 msgstr "기타"
 
@@ -3046,6 +3512,10 @@ msgstr "다른 추가 방법"
 #: ../../apps/launcher/src/game.tsx
 msgid "Other ways to play"
 msgstr "다른 플레이 방법"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Outside TV mode, a note offers it when you turn a controller on"
+msgstr ""
 
 #. Tab of an app's page
 #: ../../apps/launcher/src/App.tsx
@@ -3122,6 +3592,7 @@ msgstr "플랫폼"
 #. Button that starts an app
 #. Button that starts an app
 #. Button that starts an app
+#. Button that starts an app
 #. Button: start the app
 #. Button: start the app
 #. Button: start the app
@@ -3134,8 +3605,14 @@ msgstr "플랫폼"
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Play"
 msgstr "플레이"
+
+#. Button: plays the version already installed, as in Play v1.2
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Play {installed}"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -3153,12 +3630,22 @@ msgid "Play anyway"
 msgstr "그래도 플레이"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Play time"
 msgstr "플레이 시간"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Play with"
 msgstr "플레이할 프로그램"
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Play without updating"
+msgstr ""
+
+#. When a game was played last; {when} is such as today, 3 days ago or last month
+#: ../../apps/launcher/src/tv/views/GameHeader.tsx
+msgid "Played {when}"
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Played it? How did it run?"
@@ -3210,11 +3697,21 @@ msgstr "포트"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "세로형, 약 600×900. 라이브러리 카드와 TV 모드에 쓰입니다."
 
+#. After a release's date: its developer marked it as not yet stable
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "pre-release"
+msgstr ""
+
 #. A release its developer marked as not yet stable
 #. A release its developer marked as not yet stable
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
 msgstr "사전 출시"
+
+#. A is the controller button
+#: ../../apps/launcher/src/tv/ControllerToast.tsx
+msgid "Press <0>A</0> for TV mode"
+msgstr ""
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Press a button…"
@@ -3243,7 +3740,9 @@ msgid "Previous letter or page"
 msgstr "이전 글자 또는 페이지"
 
 #. Controller action: the tab before the open one, as on an app's page
+#. Controller action: the tab before the open one, as on an app's page
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "Previous tab"
 msgstr "이전 탭"
 
@@ -3371,6 +3870,10 @@ msgstr "Quiver Launcher는 검증된 버전으로만 업데이트해요. 미검�
 msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
 msgstr "Quiver Launcher는 개선을 위해 사용 데이터를 보냅니다. 이 데이터는 Quiver 계정과 연결되지 않습니다. 설정에서 끌 수 있습니다."
 
+#: ../../apps/launcher/src/tv/TvHost.tsx
+msgid "Quiver Launcher, TV mode"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver Launcher: go to your library"
 msgstr "Quiver Launcher: 라이브러리로 이동"
@@ -3378,6 +3881,10 @@ msgstr "Quiver Launcher: 라이브러리로 이동"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver가 {dir}에 폴더를 만들고 열어요. 그곳에 앱 파일을 넣으세요. 플레이를 누르면 그 안의 첫 번째 프로그램이 실행돼요."
+
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
+msgid "Quiver remembers the one you pick."
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver waits until each file has been out for 48 hours, so a hacked or malicious update can be caught before it reaches you."
@@ -3411,7 +3918,10 @@ msgstr "이제 Quiver 카탈로그에 이 앱이 등록되어 있고, 버전도 
 msgid "Read more"
 msgstr "더 읽기"
 
-#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Read the instructions"
+msgstr ""
+
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Read the README"
 msgstr "README 읽기"
@@ -3430,7 +3940,14 @@ msgstr "최근 추가"
 msgid "Recently finished"
 msgstr "최근 완료"
 
+#. A shelf on TV mode's Home: the games installed last
+#: ../../apps/launcher/src/tv/views/homeShelves.ts
+msgid "Recently installed"
+msgstr ""
+
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/homeShelves.ts
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Recently played"
 msgstr "최근 플레이"
 
@@ -3446,6 +3963,10 @@ msgstr "최근 플레이 순(누르면 가나다순)"
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently updated"
 msgstr "최근 업데이트"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Reduce motion"
+msgstr ""
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Refresh"
@@ -3566,6 +4087,11 @@ msgstr "백업에서 복원"
 msgid "Results for “{typed}”"
 msgstr "“{typed}” 검색 결과"
 
+#. Controller hint: tries a failed download again
+#: ../../apps/launcher/src/tv/views/tileActions.ts
+msgid "Retry"
+msgstr ""
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Return to catalog"
 msgstr "카탈로그로 돌아가기"
@@ -3635,6 +4161,11 @@ msgstr "{name} 실행 후기 남기기"
 msgid "Say how it ran for you"
 msgstr "실행 후기 남기기"
 
+#. TV mode setting: the monitor it fills
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Screen"
+msgstr ""
+
 #. Controller hint: what the scroll stick does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Scroll"
@@ -3657,9 +4188,18 @@ msgid "Scroll up"
 msgstr "위로 스크롤"
 
 #. Placeholder of the library's search field
+#. TV mode's controller hint: what Select (View) does, opening the search
+#. Title of TV mode's on-screen keyboard, typing a search
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/HintBar.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
 msgid "Search"
 msgstr "검색"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+#: ../../apps/launcher/src/tv/views/Shell.tsx
+msgid "Search again, or B to clear the search."
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Search for a game"
@@ -3744,6 +4284,7 @@ msgstr "Quiver Launcher 설정"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Settings"
 msgstr "설정"
 
@@ -3908,6 +4449,11 @@ msgstr "라이브러리를 사이드바와 함께 보기"
 msgid "Show them"
 msgstr "보기"
 
+#. Controller hint on Discover's filters: shows the games the focused filter picks
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Show these"
+msgstr ""
+
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "동영상 보기"
@@ -3968,6 +4514,15 @@ msgstr "<0>{name}</0>(으)로 로그인됨"
 msgid "Signed out. Apps installed on this computer stay in your library; sign in to see the rest."
 msgstr "로그아웃했어요. 이 컴퓨터에 설치된 앱은 라이브러리에 남아 있어요. 나머지를 보려면 로그인하세요."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Signing in and accounts are there too"
+msgstr ""
+
+#. TV mode setting: the launcher's interface size
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Size"
+msgstr ""
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Skip setup"
 msgstr "설정 건너뛰기"
@@ -3976,6 +4531,10 @@ msgstr "설정 건너뛰기"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Skip this update"
 msgstr "이 업데이트 건너뛰기"
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Skip this version"
+msgstr ""
 
 #. Library card size
 #: ../../apps/launcher/src/view.ts
@@ -4017,6 +4576,11 @@ msgstr "모드 정렬"
 msgid "Source"
 msgstr "소스"
 
+#. On-screen keyboard: the space bar, and the controller hint that types a space
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+msgid "Space"
+msgstr ""
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Square. The app's page, the Icon view and its shortcuts."
 msgstr "정사각형. 앱 페이지, 아이콘 보기, 바로 가기에 쓰입니다."
@@ -4026,6 +4590,11 @@ msgstr "정사각형. 앱 페이지, 아이콘 보기, 바로 가기에 쓰입�
 #: ../../apps/launcher/src/library.tsx
 msgid "Standalone game"
 msgstr "독립형 게임"
+
+#. Controller hint: starts the app with the focused program
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Start this"
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Start using Quiver"
@@ -4066,6 +4635,15 @@ msgstr "Quiver가 폴더에서 찾은 프로그램을 실행해요."
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
 msgstr "폴더({folder})에 넣은 프로그램을 실행해요."
+
+#. TV mode setting, After getting a game
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Stay in Discover"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Stay in Discover to get more, or go to the game in your library"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Stay signed in"
@@ -4113,6 +4691,10 @@ msgstr "{south}와(과) {east} 바꾸기: {east}로 확인, {south}로 뒤로"
 msgid "Switch to {name}"
 msgstr "{name}(으)로 전환"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Switch to desktop mode"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Switch to the catalog's"
 msgstr "카탈로그 버전으로 전환"
@@ -4126,7 +4708,9 @@ msgid "Switch to the Windows version (Wine)"
 msgstr "Windows 버전으로 전환 (Wine)"
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
+#. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Tabs"
 msgstr "탭"
 
@@ -4210,6 +4794,10 @@ msgstr "이미 사용 중인 사용자 이름이에요."
 msgid "the {date} version"
 msgstr "{date} 버전"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "The file picker opens on the desktop: use the mouse or keyboard there."
+msgstr ""
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "라이브러리 파일이 손상됐어요."
@@ -4246,6 +4834,10 @@ msgstr "설정 파일이 없어요."
 msgid "The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in."
 msgstr "처음 시작할 때의 질문을 차례로 다시 해요: 언어, Quiver Launcher 3에서 앱 추가, 앱 설치 위치, 사용 데이터, 로그인."
 
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "The folder opened on the desktop."
+msgstr ""
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "The folder with Quiver Launcher 3's program in it."
 msgstr "Quiver Launcher 3 프로그램이 들어 있는 폴더예요."
@@ -4261,6 +4853,10 @@ msgstr "프로그램 자체"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "플레이에서 제공하는 프로그램은 앱 메뉴의 플레이할 프로그램에 있어요."
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "The programs you picked under Play with in its menu."
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
@@ -4318,6 +4914,11 @@ msgstr "이 앱의 폴더는 이름을 바꿀 수 없어요."
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "이 다운로드가 Quiver가 확인한 파일과 일치하지 않아 설치하지 않았어요."
+
+#. A game with no name known, as in “This game needs your own copy of the game”
+#: ../../apps/launcher/src/tv/programs/usePrograms.ts
+msgid "This game"
+msgstr ""
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "This mod has no files to download."
@@ -4417,6 +5018,10 @@ msgstr "트레일러"
 msgid "Try again"
 msgstr "다시 시도"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Try another console, or All."
+msgstr ""
+
 #. Turn usage data off
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Turn off"
@@ -4433,9 +5038,19 @@ msgid "TV mode: for a controller, the couch and a Steam Deck"
 msgstr "TV 모드: 컨트롤러, 소파, Steam Deck을 위한 화면"
 
 #. Controller hint: what Confirm does on a text field
+#. Controller hint: what Confirm does on a text field
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tv/views/Osk.tsx
 msgid "Type"
 msgstr "입력"
+
+#: ../../apps/launcher/src/tv/views/Osk.tsx
+msgid "Type a game's name"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Unassigned games"
+msgstr ""
 
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Under a minute"
@@ -4444,6 +5059,7 @@ msgstr "1분 미만"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Uninstall"
 msgstr "제거"
 
@@ -4503,8 +5119,10 @@ msgstr "위로"
 
 #. Button that updates a mod
 #. Button: update the one app with an update
+#. Button: update the one app with an update
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/tileActions.ts
 msgid "Update"
 msgstr "업데이트"
 
@@ -4514,8 +5132,14 @@ msgctxt "button"
 msgid "Update"
 msgstr "업데이트"
 
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Update & play"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+#: ../../apps/launcher/src/tv/views/Home.tsx
 msgid "Update all"
 msgstr "모두 업데이트"
 
@@ -4531,8 +5155,23 @@ msgstr "업데이트 후 다시 시작"
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
 msgid "Update available"
 msgstr "업데이트 가능"
+
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Update every game with one press, then play the newest versions."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Update failed"
+msgstr ""
+
+#. TV mode setting, Updates when playing: update a game, then start it
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Update first"
+msgstr ""
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Update notes"
@@ -4552,6 +5191,7 @@ msgid "Update to {newer}"
 msgstr "{newer}(으)로 업데이트"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Update to {next}"
 msgstr "{next}(으)로 업데이트"
 
@@ -4601,7 +5241,9 @@ msgstr "업데이트"
 msgid "Updates ({updateCount})"
 msgstr "업데이트({updateCount})"
 
+#. A shelf on TV mode's Home: games with an update
 #: ../../apps/launcher/src/downloads-page.tsx
+#: ../../apps/launcher/src/tv/views/homeShelves.ts
 msgid "Updates available"
 msgstr "업데이트 가능"
 
@@ -4614,9 +5256,21 @@ msgstr "업데이트 먼저"
 msgid "Updates keep installing into it. Desktop and Steam shortcuts you made before point at the old name, so make them again."
 msgstr "업데이트는 계속 이 폴더에 설치돼요. 전에 만든 바탕 화면 및 Steam 바로 가기는 예전 이름을 가리키므로 다시 만들어 주세요."
 
+#: ../../apps/launcher/src/tv/views/Home.tsx
+msgid "Updates waiting"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Updates when playing"
+msgstr ""
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Updating Quiver Launcher"
 msgstr "Quiver Launcher 업데이트 중"
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Updating to {version}…"
+msgstr ""
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Updating to {version}… {done}% Quiver Launcher restarts when it's done."
@@ -4739,6 +5393,22 @@ msgstr "먼저 다운로드가 끝날 때까지 기다리세요"
 msgid "Wait for its download to finish, then rename its folder."
 msgstr "다운로드가 끝난 뒤에 폴더 이름을 바꿔 주세요."
 
+#: ../../apps/launcher/src/tv/views/Downloads.tsx
+msgid "Waiting for the download ahead"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/GameTile.tsx
+msgid "Waiting to download"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Details.tsx
+msgid "Waiting to download…"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/updates/PlayFlow.tsx
+msgid "Waiting to update…"
+msgstr ""
+
 #. Heading of a README's warning callout, as on GitHub
 #: ../ui/src/index.tsx
 msgctxt "README callout"
@@ -4788,17 +5458,47 @@ msgstr "새로운 기능"
 msgid "What's new in {name}"
 msgstr "{name}의 새로운 기능"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "When a game has an update: ask, play the installed version, or update first"
+msgstr ""
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
 msgstr "앱 설치 위치"
+
+#. TV mode setting, Screen: the monitor Quiver's window is on
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Where Quiver is"
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"
 msgstr "어떤 앱인가요?"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/updates/AssetPicker.tsx
 msgid "Which download?"
 msgstr "어떤 다운로드인가요?"
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Which monitor TV mode fills"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Which program starts {name}?"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/programs/ProgramPrompt.tsx
+msgid "Which program starts it?"
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Which tab it's in. Automatic follows the catalog."
+msgstr ""
+
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "While a game runs, hold Select: right stick moves the pointer, RT clicks, LT right-clicks, left stick scrolls"
+msgstr ""
 
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
@@ -4898,6 +5598,7 @@ msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "피드백이 아직 공유되지 않았어요. 작성한 내용은 그대로 남아 있어요."
 
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Home.tsx
 msgid "Your library is empty"
 msgstr "라이브러리가 비어 있어요"
 

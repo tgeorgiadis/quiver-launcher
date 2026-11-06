@@ -1,4 +1,4 @@
-/** Home, Discover and Downloads until their steps (S6, S8): the tab keys still work. */
+/** Home, Discover and Downloads before they had views of their own: the tab keys still work. Nothing uses it now. */
 import { useInputHandler } from "../context";
 import type { Tab } from "../consoles/tabs";
 import type { InputAction } from "../input/actions";

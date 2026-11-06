@@ -1,4 +1,4 @@
-/** The bridge over the live store, for Big Picture's views. */
+/** The bridge over the live store, for TV mode's views. */
 import { useMemo, useRef, useSyncExternalStore } from "react";
 import type { AppQuery, Entry, Release } from "@quiverlauncher/api";
 import { useLauncher } from "../store";
@@ -29,7 +29,7 @@ export function useBridge() {
     /** The release file the player must pick, when several fit. */
     choice: launcher.choice,
     activeInstall: queue.active,
-    /** An app from the catalog (Discover) as Big Picture shows it. */
+    /** An app from the catalog (Discover) as TV mode shows it. */
     view: (entry: Entry) => toTvApp(entry, input, library.find((i) => i.id === entry.id && !i.removed)),
     play: (id: string) => launcher.play(id),
     /** Adds the app to the library and installs it (or the given release). */

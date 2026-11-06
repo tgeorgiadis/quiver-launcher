@@ -1,9 +1,10 @@
 /**
- * Consoles for Big Picture's tabs (spec §7). The catalog's facets name them
- * and give each its maker; this adds a short label for a crowded tab strip
- * and the release year, which orders a maker's consoles. Ids are the
- * catalog's own ("gcn", "gen", "og xbox"…).
+ * Consoles for TV mode's tabs. The catalog's facets name them and give each
+ * its maker; this adds a short label for a crowded tab strip and the release
+ * year, which orders a maker's consoles. Ids are the catalog's own ("gcn",
+ * "gen", "og xbox"…).
  */
+import { t } from "@lingui/core/macro";
 import type { Console } from "@quiverlauncher/api";
 
 export const APPS = "apps";
@@ -53,12 +54,20 @@ const META: Record<string, { short: string; year: number }> = {
   mobile: { short: "Mobile", year: 2007 },
 };
 
-/** The spec's maker order (§7.1): Nintendo, Sega, Sony, Microsoft, then everything else. */
+/** The makers' order: Nintendo, Sega, Sony, Microsoft, then everything else. */
 const BRAND_ORDER = ["nintendo", "sega", "playstation", "xbox"];
 
+// Their names are read when shown, in the language shown then, not when the module loads (before one is picked).
+const other = () => t({ message: "Other", comment: "Library section for apps with no console, maker, game or developer" });
 const SPECIAL: ConsoleInfo[] = [
-  { id: APPS, name: "Apps & Tools", short: "Apps", brand: "", special: true },
-  { id: OTHER, name: "Other", short: "Other", brand: "", special: true },
+  {
+    id: APPS,
+    get name() { return t({ message: "Apps & Tools", comment: "TV mode's tab for apps, tools and emulators, which aren't games for a console" }); },
+    get short() { return t({ message: "Apps", comment: "TV mode's tab for apps, tools and emulators, short for Apps & Tools on a crowded tab strip" }); },
+    brand: "",
+    special: true,
+  },
+  { id: OTHER, get name() { return other(); }, get short() { return other(); }, brand: "", special: true },
 ];
 
 export class ConsoleCatalog {

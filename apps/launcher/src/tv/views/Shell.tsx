@@ -1,8 +1,9 @@
 /**
- * Big Picture's frame (spec §8): the tab strip, the focused game's backdrop
+ * TV mode's frame: the tab strip, the focused game's backdrop
  * and header, the tab's view, the hint bar, and overlays above them.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { t } from "@lingui/core/macro";
 import { useTv } from "../context";
 import { inLibraryView, type TvApp } from "../bridge";
 import { resolveConsole } from "../consoles/resolve";
@@ -60,7 +61,7 @@ export function Shell() {
   /** Which way the last tab change went, for the page's slide. */
   const [direction, setDirection] = useState<1 | -1>(1);
   const [overlay, setOverlay] = useState<Overlay>(null);
-  /** Search (spec §8.3): results filter live in the tab; Discover searches the catalog. */
+  /** Search: results filter live in the tab; Discover searches the catalog. */
   const [search, setSearch] = useState("");
   const [typing, setTyping] = useState(false);
   const searchBefore = useRef("");
@@ -82,7 +83,7 @@ export function Shell() {
   const cycle = (by: 1 | -1) => go(cycleTab(tabs, tab.id, library.current, by));
 
   /**
-   * After Get in Discover, with "Go to library": the game's console tab with it focused. The tab may only
+   * After Get in Discover, with "Go to it": the game's console tab with it focused. The tab may only
    * appear once the store has it, a moment later; until then All has it focused.
    */
   const pending = useRef<{ tabId: string; until: number } | null>(null);
@@ -120,9 +121,9 @@ export function Shell() {
   };
   const first = tabs[0];
   /** B on Discover and Downloads: back to the library tab they were reached from. */
-  const backToLibrary = { label: "Library", go: () => go(keepTab(tabs, library.current).id) };
+  const backToLibrary = { label: t`Library`, go: () => go(keepTab(tabs, library.current).id) };
   const toFirst = search
-    ? { label: "Clear search", go: () => setSearch("") }
+    ? { label: t`Clear search`, go: () => setSearch("") }
     : tab.id === first.id
       ? undefined
       : { label: first.label, go: () => setSelectedId(first.id) };
@@ -170,7 +171,7 @@ export function Shell() {
                 back={toFirst}
                 onDetails={openDetails}
                 onDownloads={toDownloads}
-                empty={search ? { title: `Nothing matches “${search}”`, text: "Search again, or B to clear the search." } : undefined}
+                empty={search ? { title: t`Nothing matches “${search}”`, text: t`Search again, or B to clear the search.` } : undefined}
               />
             </div>
           ) : tab.kind === "discover" ? (
@@ -193,14 +194,14 @@ export function Shell() {
         </div>
       </main>
       {search && (grid || tab.kind === "discover") && (
-        <button type="button" className="tv-search-chip" onClick={() => setSearch("")} aria-label="Clear the search">
+        <button type="button" className="tv-search-chip" onClick={() => setSearch("")} aria-label={t`Clear the search`}>
           <Search aria-hidden="true" />“{search}”<span>✕</span>
         </button>
       )}
       <HintBar />
       {typing && (
         <Osk
-          title="Search"
+          title={t({ message: "Search", comment: "Title of TV mode's on-screen keyboard, typing a search" })}
           value={search}
           onChange={setSearch}
           onDone={(value) => {

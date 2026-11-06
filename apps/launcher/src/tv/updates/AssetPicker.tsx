@@ -4,11 +4,14 @@
  */
 import { useEffect, useState } from "react";
 import { FileArchive } from "lucide-react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useTv, useInputHandler } from "../context";
 import { LAYER } from "../input/router";
 import { versionLabel } from "../../versions";
+import { sizeLabel } from "../../downloads";
 
-const size = (bytes?: number) => (bytes ? `${(bytes / 1_048_576).toFixed(bytes < 10_485_760 ? 1 : 0)} MB` : "");
+const size = (bytes?: number) => (bytes ? sizeLabel(bytes) : "");
 
 export function AssetPicker() {
   const { bridge } = useTv();
@@ -28,8 +31,8 @@ export function AssetPicker() {
         else if (action === "back") choice.resolve(null);
       },
       hints: () => [
-        { action: "accept", label: "Download this" },
-        { action: "back", label: "Cancel" },
+        { action: "accept", label: t({ message: "Download this", comment: "Controller hint: picks the focused file of a release to download" }) },
+        { action: "back", label: t`Cancel` },
       ],
     },
     LAYER.dialog,
@@ -37,13 +40,17 @@ export function AssetPicker() {
   );
 
   if (!choice) return null;
+  const name = choice.entry.projectName;
+  const version = versionLabel(choice.version);
   return (
-    <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Choose a download">
+    <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label={t`Choose a download`}>
       <section className="tv-dialog">
         <div className="tv-dialog-body">
-          <h2>Which download?</h2>
+          <h2>
+            <Trans>Which download?</Trans>
+          </h2>
           <p className="tv-dialog-lead">
-            {choice.entry.projectName} {versionLabel(choice.version)} has more than one file for your computer. Quiver remembers the one you pick.
+            {t`${name} ${version} has more than one file for your computer.`} <Trans>Quiver remembers the one you pick.</Trans>
           </p>
           <ul className="tv-asset-list">
             {choice.assets.map((a, i) => (

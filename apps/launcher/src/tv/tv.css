@@ -1,5 +1,5 @@
 /*
- * Big Picture: a dark, clean couch UI in the spirit of the Steam Deck's (spec §8).
+ * TV mode: a dark, clean couch UI in the spirit of the Steam Deck's.
  * Sizes are in --u, 1px at 720p times the player's UI scale, so everything
  * grows with the screen. Always dark, whatever desktop mode's theme is.
  */
@@ -1455,7 +1455,7 @@
   pointer-events: none;
 }
 
-/* While a game runs, nothing moves (spec §11). */
+/* While a game runs, nothing moves. */
 .tv-in-game *,
 .tv-in-game *::before,
 .tv-in-game *::after {
@@ -1534,7 +1534,7 @@
   }
 }
 
-/* Desktop mode: a controller was turned on (spec §11). Outside .tv-root, so its own colours. */
+/* Desktop mode: a controller was turned on. Outside .tv-root, so its own colours. */
 .tv-toast {
   position: fixed;
   right: 24px;
@@ -1621,7 +1621,7 @@
   height: 1em;
   vertical-align: -0.15em;
 }
-/* In desktop mode the dialog sits outside Big Picture's root: the same look, at desktop size. */
+/* In desktop mode the dialog sits outside TV mode's root: the same look, at desktop size. */
 .tv-share-desktop {
   --u: 1.1px;
   --tv-accent: #38bdf8;

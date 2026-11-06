@@ -9,6 +9,8 @@
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Disc3 } from "lucide-react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useLauncher } from "../../store";
 import { native } from "../../native";
 import { tvNative } from "../tvNative";
@@ -71,37 +73,61 @@ function useRom(play: (id: string) => void) {
     );
   };
   const buttons: Button[] = [
-    ...(need.file ? [{ action: "accept" as const, label: busy ? "Copying…" : "Choose the file…", run: choose }] : []),
-    { action: need.file ? "secondary" : "accept", label: "Open folder", run: () => void native.openFolder(need.id).catch((e) => setError(String(e))) },
-    ...(need.readme ? [{ action: "details" as const, label: "Read the instructions", run: () => void tvNative.openReadme(need.readme!).catch((e) => setError(String(e))) }] : []),
-    { action: "back", label: "Close", run: close },
+    ...(need.file
+      ? [{ action: "accept" as const, label: busy ? t({ message: "Copying…", comment: "The player's copy of a game (a ROM) is being copied into the game's folder" }) : t`Choose the file…`, run: choose }]
+      : []),
+    { action: need.file ? "secondary" : "accept", label: t`Open folder`, run: () => void native.openFolder(need.id).catch((e) => setError(String(e))) },
+    ...(need.readme
+      ? [{ action: "details" as const, label: t`Read the instructions`, run: () => void tvNative.openReadme(need.readme!).catch((e) => setError(String(e))) }]
+      : []),
+    { action: "back", label: t({ message: "Close", comment: "Closes a dialog" }), run: close },
   ];
   return { need, buttons, error, busy };
 }
 
 function Frame({ rom, glyphs }: { rom: NonNullable<ReturnType<typeof useRom>>; glyphs: boolean }) {
   const { need, buttons, error } = rom;
-  const where = need.into ? `its ${need.into} folder` : "its folder";
+  const name = need.title;
+  const file = need.file;
+  const folder = need.into;
+  const heading = t`${name} needs your own copy of the game`;
   return (
-    <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label={`${need.title} needs your own copy of the game`}>
+    <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label={heading}>
       <section className="tv-dialog tv-share">
         <div className="tv-dialog-body">
           <h2>
-            <Disc3 aria-hidden="true" /> {need.title} needs your own copy of the game
+            <Disc3 aria-hidden="true" /> {heading}
           </h2>
-          {need.file ? (
+          {file ? (
             <>
               <p className="tv-dialog-lead">
-                It closed right away because it looks for <b className="tv-share-path">{need.file}</b> in {where}, and it isn't there. That's the original game (a
-                ROM), which no download includes: you need a copy you own.
+                {folder ? (
+                  <Trans comment="{folder} is a folder inside the game's, such as roms or data; a ROM is a copy of a console game's cartridge or disc">
+                    It closed right away because it looks for <b className="tv-share-path">{file}</b> in its {folder} folder, and it isn't there. That's the
+                    original game (a ROM), which no download includes: you need a copy you own.
+                  </Trans>
+                ) : (
+                  <Trans comment="A ROM is a copy of a console game's cartridge or disc">
+                    It closed right away because it looks for <b className="tv-share-path">{file}</b> in its folder, and it isn't there. That's the original
+                    game (a ROM), which no download includes: you need a copy you own.
+                  </Trans>
+                )}
               </p>
-              <p className="tv-dialog-lead">Choose your copy, and Big Quiver puts it there under that name, then starts the game.</p>
-              {glyphs && <p className="tv-dialog-lead small">The file picker opens on the desktop: use the mouse or keyboard there.</p>}
+              <p className="tv-dialog-lead">
+                <Trans>Choose your copy, and Quiver puts it there under that name, then starts the game.</Trans>
+              </p>
+              {glyphs && (
+                <p className="tv-dialog-lead small">
+                  <Trans>The file picker opens on the desktop: use the mouse or keyboard there.</Trans>
+                </p>
+              )}
             </>
           ) : (
             <p className="tv-dialog-lead">
-              It closed right away because it can't find the original game (a ROM), which no download includes: you need a copy you own.{" "}
-              {need.readme ? "Its instructions say where to put it." : "Its page says where to put it."}
+              <Trans comment="A ROM is a copy of a console game's cartridge or disc">
+                It closed right away because it can't find the original game (a ROM), which no download includes: you need a copy you own.
+              </Trans>{" "}
+              {need.readme ? t`Its instructions say where to put it.` : t`Its page says where to put it.`}
             </p>
           )}
           {error && <p className="tv-error">{error}</p>}
@@ -119,7 +145,7 @@ function Frame({ rom, glyphs }: { rom: NonNullable<ReturnType<typeof useRom>>; g
   );
 }
 
-/** In Big Picture: on top, with the controller. Choosing plays through Big Picture's own Play. */
+/** In TV mode: on top, with the controller. Choosing plays through TV mode's own Play. */
 export function RomDialogTv({ play }: { play: (id: string) => void }) {
   const rom = useRom(play);
   useInputHandler(

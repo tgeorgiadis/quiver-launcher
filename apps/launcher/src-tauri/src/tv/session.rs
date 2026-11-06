@@ -27,7 +27,7 @@ use tauri::{AppHandle, Emitter};
 /// A newer game supersedes an older one's tracking.
 static LATEST: AtomicU64 = AtomicU64::new(0);
 
-/// A process that exits sooner than this was a launcher stub (spec §11).
+/// A process that exits sooner than this was a launcher stub.
 const STUB_TIME: Duration = Duration::from_secs(10);
 const POLL: Duration = Duration::from_secs(2);
 

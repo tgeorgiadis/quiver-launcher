@@ -5,6 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { Play } from "lucide-react";
+import { t } from "@lingui/core/macro";
 import { useLauncher } from "../../store";
 import { useInputHandler } from "../context";
 import { LAYER } from "../input/router";
@@ -31,8 +32,8 @@ export function ProgramPrompt() {
         else if (action === "back") chooseProgram(null);
       },
       hints: () => [
-        { action: "accept", label: "Start this" },
-        { action: "back", label: "Cancel" },
+        { action: "accept", label: t({ message: "Start this", comment: "Controller hint: starts the app with the focused program" }) },
+        { action: "back", label: t`Cancel` },
       ],
     },
     LAYER.dialog,
@@ -40,16 +41,16 @@ export function ProgramPrompt() {
   );
 
   if (!choice || !programs.length) return null;
-  const name = catalog[choice.id]?.projectName ?? "it";
+  const name = catalog[choice.id]?.projectName;
   return (
-    <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Choose a program">
+    <div className="tv-dialog-backdrop" role="dialog" aria-modal="true" aria-label={t`Choose a program`}>
       <section className="tv-dialog">
         <div className="tv-dialog-body">
-          <h2>Which program starts {name}?</h2>
+          <h2>{name ? t`Which program starts ${name}?` : t`Which program starts it?`}</h2>
           <p className="tv-dialog-lead">
             {choice.remember
-              ? "Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick."
-              : "The programs you picked under Play with in its menu."}
+              ? t`Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick.`
+              : t`The programs you picked under Play with in its menu.`}
           </p>
           <ul className="tv-asset-list">
             {programs.map((path, i) => (

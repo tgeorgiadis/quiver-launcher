@@ -1,5 +1,5 @@
 /**
- * Play, through the update policy (spec §9): straight in, or the update prompt
+ * Play, through the update policy: straight in, or the update prompt
  * (Update & play, Play without updating, Skip this version, Cancel), or updating
  * first with its progress (B stops the game starting; the download carries on,
  * as upstream can't stop one), and if the update fails, playing the version
@@ -7,6 +7,8 @@
  */
 import { useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, ArrowUpCircle } from "lucide-react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useTv, useInputHandler } from "../context";
 import type { TvApp } from "../bridge";
 import type { Bridge } from "../useBridge";
@@ -133,10 +135,10 @@ type Choice = "update" | "play" | "skip" | "cancel";
 
 function UpdatePrompt({ app, notes, onChoice }: { app: TvApp; notes: string[]; onChoice: (choice: Choice) => void }) {
   const hints: ButtonHint[] = [
-    { action: "accept", label: "Update & play" },
-    { action: "secondary", label: "Play without updating" },
-    { action: "details", label: "Skip this version" },
-    { action: "back", label: "Cancel" },
+    { action: "accept", label: t`Update & play` },
+    { action: "secondary", label: t`Play without updating` },
+    { action: "details", label: t`Skip this version` },
+    { action: "back", label: t`Cancel` },
   ];
   const press = (action: InputAction) => {
     const choice = ({ accept: "update", secondary: "play", details: "skip", back: "cancel" } as Partial<Record<InputAction, Choice>>)[action];
@@ -146,7 +148,7 @@ function UpdatePrompt({ app, notes, onChoice }: { app: TvApp; notes: string[]; o
   return (
     <Dialog app={app}>
       <h2>
-        <ArrowUpCircle aria-hidden="true" /> Update available
+        <ArrowUpCircle aria-hidden="true" /> <Trans>Update available</Trans>
       </h2>
       <p className="tv-dialog-delta">
         {versionLabel(app.installedVersion)} <span>→</span> {versionLabel(app.latestVersion)}
@@ -166,34 +168,47 @@ function UpdatePrompt({ app, notes, onChoice }: { app: TvApp; notes: string[]; o
 function Updating({ id, onBack }: { id: string; onBack: () => void }) {
   const { bridge } = useTv();
   const app = bridge.apps.find((a) => a.id === id);
-  const hints: ButtonHint[] = [{ action: "back", label: "Don't start it" }];
+  const hints: ButtonHint[] = [{ action: "back", label: t({ message: "Don't start it", comment: "Controller hint while a game updates before it starts: it won't start once updated; the update carries on" }) }];
   useInputHandler({ onAction: (a) => a === "back" && onBack(), hints: () => hints }, LAYER.dialog);
   if (!app) return null;
   const waiting = app.state === "queued";
+  const version = versionLabel(app.latestVersion);
+  const percent = app.progress !== null ? Math.round(app.progress * 100) : null;
   return (
     <Dialog app={app}>
-      <h2>{waiting ? "Waiting to update…" : `Updating to ${versionLabel(app.latestVersion)}…`}</h2>
-      <p className="tv-dialog-lead">It starts as soon as the update is installed.</p>
+      <h2>{waiting ? t`Waiting to update…` : t`Updating to ${version}…`}</h2>
+      <p className="tv-dialog-lead">
+        <Trans>It starts as soon as the update is installed.</Trans>
+      </p>
       <div className={`tv-dialog-progress${app.progress === null ? " indeterminate" : ""}`}>
         <i style={{ width: `${(app.progress ?? 0.3) * 100}%` }} />
       </div>
-      <p className="tv-dialog-lead small">{app.phase === "installing" ? "Installing" : waiting ? "Another download is ahead of it" : app.progress !== null ? `${Math.round(app.progress * 100)}%` : "Downloading"}</p>
+      <p className="tv-dialog-lead small">
+        {app.phase === "installing"
+          ? t`Installing`
+          : waiting
+            ? t`Another download is ahead of it`
+            : percent !== null
+              ? t({ message: `${percent}%`, comment: "How much of an update has downloaded" })
+              : t`Downloading`}
+      </p>
       <DialogButtons hints={hints} onPress={onBack} />
     </Dialog>
   );
 }
 
 function UpdateFailed({ app, error, onChoice }: { app: TvApp; error: string; onChoice: (playOld: boolean) => void }) {
+  const installed = versionLabel(app.installedVersion);
   const hints: ButtonHint[] = [
-    { action: "accept", label: `Play ${versionLabel(app.installedVersion)}` },
-    { action: "back", label: "Back" },
+    { action: "accept", label: t({ message: `Play ${installed}`, comment: "Button: plays the version already installed, as in Play v1.2" }) },
+    { action: "back", label: t({ message: "Back", comment: "Controller hint: what Back does, closing or going back" }) },
   ];
   const press = (action: InputAction) => (action === "accept" ? onChoice(true) : action === "back" ? onChoice(false) : undefined);
   useInputHandler({ onAction: press, hints: () => hints }, LAYER.dialog);
   return (
     <Dialog app={app}>
       <h2 className="danger">
-        <AlertTriangle aria-hidden="true" /> Update failed
+        <AlertTriangle aria-hidden="true" /> <Trans>Update failed</Trans>
       </h2>
       <p className="tv-dialog-lead">{error}</p>
       <DialogButtons hints={hints} onPress={press} />

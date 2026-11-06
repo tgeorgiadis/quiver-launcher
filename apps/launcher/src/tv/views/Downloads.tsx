@@ -1,17 +1,19 @@
 /**
- * Downloads (spec §8): Update all (when there are updates), then what's
+ * Downloads: Update all (when there are updates), then what's
  * downloading, waiting, failed, and finished this session. A plays a finished
  * game or retries a failed one; X updates all, or (held) takes a waiting
  * download out of the queue. One already downloading can't be stopped (as upstream).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock, Download, RefreshCw } from "lucide-react";
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useTv, useInputHandler } from "../context";
 import type { TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
 import type { ButtonHint } from "../input/router";
 import { versionLabel } from "../../versions";
-import { CANCEL_HOLD_MS, useTileActions, type Back } from "./tileActions";
+import { CANCEL_HOLD_MS, HINT, useTileActions, type Back } from "./tileActions";
 import { downloadRows, type DownloadRow } from "./lists";
 
 /** "Finished this session" counts from when the launcher started. */
@@ -26,20 +28,25 @@ type Props = {
 
 function statusOf(row: Extract<DownloadRow, { kind: "app" }>) {
   const { app, status } = row;
-  if (status === "active")
-    return app.phase === "installing" ? "Installing…" : app.progress !== null ? `Downloading · ${Math.round(app.progress * 100)}%` : "Downloading…";
-  if (status === "queued") return "Waiting for the download ahead";
-  if (status === "failed") return app.error ?? "Failed";
-  return `Installed ${versionLabel(app.installedVersion)}`;
+  if (status === "active") {
+    if (app.phase === "installing") return t`Installing…`;
+    if (app.progress === null) return t`Downloading…`;
+    const percent = Math.round(app.progress * 100);
+    return t`Downloading ${percent}%`;
+  }
+  if (status === "queued") return t`Waiting for the download ahead`;
+  if (status === "failed") return app.error ?? t({ message: "Failed", comment: "A download that didn't finish, when there's no message saying why" });
+  const version = versionLabel(app.installedVersion);
+  return t({ message: `Installed ${version}`, comment: "A finished download: the version now installed, as in Installed v1.2" });
 }
 
 function hintsFor(row: DownloadRow | undefined, back?: Back): ButtonHint[] {
   const hints: ButtonHint[] = [];
-  if (row?.kind === "updateAll") hints.push({ action: "secondary", label: "Update all" });
-  else if (row?.status === "done") hints.push({ action: "accept", label: "Play" });
-  else if (row?.status === "failed") hints.push({ action: "accept", label: row.app.installedVersion ? "Play" : "Retry" });
-  else if (row?.status === "queued") hints.push({ action: "secondary", label: "Cancel", hold: true });
-  if (row?.kind === "app") hints.push({ action: "details", label: "Details" });
+  if (row?.kind === "updateAll") hints.push({ action: "secondary", label: t`Update all` });
+  else if (row?.status === "done") hints.push({ action: "accept", label: HINT.play() });
+  else if (row?.status === "failed") hints.push({ action: "accept", label: row.app.installedVersion ? HINT.play() : HINT.retry() });
+  else if (row?.status === "queued") hints.push({ action: "secondary", label: HINT.cancel(), hold: true });
+  if (row?.kind === "app") hints.push({ action: "details", label: HINT.details() });
   if (back) hints.push({ action: "back", label: back.label });
   return hints;
 }
@@ -87,8 +94,12 @@ export function Downloads({ onFocus, onGlobal, back, onDetails }: Props) {
   if (!rows.length) {
     return (
       <div className="tv-empty">
-        <h2>Nothing downloading</h2>
-        <p>Games you get in Discover, and updates, download here.</p>
+        <h2>
+          <Trans>Nothing downloading</Trans>
+        </h2>
+        <p>
+          <Trans>Games you get in Discover, and updates, download here.</Trans>
+        </p>
       </div>
     );
   }
@@ -101,20 +112,22 @@ export function Downloads({ onFocus, onGlobal, back, onDetails }: Props) {
           move(i);
           act(r, r.kind === "updateAll" ? "secondary" : "accept");
         };
-        if (r.kind === "updateAll")
+        if (r.kind === "updateAll") {
+          const count = r.apps.length;
           return (
             <div key="updateAll" className={`tv-dl-row update-all${focused ? " focused" : ""}`} onMouseMove={() => move(i)} onClick={click}>
               <span className="tv-dl-icon">
                 <RefreshCw aria-hidden="true" />
               </span>
               <span className="tv-dl-text">
-                <strong>Update all</strong>
-                <span>
-                  {r.apps.length} {r.apps.length === 1 ? "game has an update" : "games have updates"}
-                </span>
+                <strong>
+                  <Trans>Update all</Trans>
+                </strong>
+                <span>{plural(count, { one: "# game has an update", other: "# games have updates" })}</span>
               </span>
             </div>
           );
+        }
         const Icon = r.status === "done" ? CheckCircle2 : r.status === "failed" ? AlertTriangle : r.status === "queued" ? Clock : Download;
         return (
           <div key={r.app.id} className={`tv-dl-row ${r.status}${focused ? " focused" : ""}`} onMouseMove={() => move(i)} onClick={click}>

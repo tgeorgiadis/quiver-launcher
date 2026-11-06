@@ -1,10 +1,12 @@
 /**
- * Home (spec §8): the focused game large across the top, and shelves below:
+ * Home: the focused game large across the top, and shelves below:
  * recently played, updates (with Update all), recently installed. Each shelf
  * remembers its column; the whole thing remembers its place across tabs.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useTv, useInputHandler } from "../context";
 import type { TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
@@ -31,13 +33,13 @@ const GAP = 18;
 
 function UpdateAllCard({ count, focused }: { count: number; focused: boolean }) {
   return (
-    <div className={`tv-tile tv-update-all${focused ? " focused" : ""}`} aria-label="Update all">
+    <div className={`tv-tile tv-update-all${focused ? " focused" : ""}`} aria-label={t`Update all`}>
       <div className="tv-tile-inner">
         <RefreshCw aria-hidden="true" />
-        <strong>Update all</strong>
-        <span>
-          {count} {count === 1 ? "game" : "games"}
-        </span>
+        <strong>
+          <Trans>Update all</Trans>
+        </strong>
+        <span>{plural(count, { one: "# game", other: "# games" })}</span>
         <span className="tv-update-all-glyph">
           <Glyph action="secondary" />
         </span>
@@ -49,7 +51,7 @@ function UpdateAllCard({ count, focused }: { count: number; focused: boolean }) 
 /**
  * Nothing installed yet. With a Quiver Launcher 3 library on this computer, Home
  * offers to bring it over (A), as desktop mode does: a first start straight into
- * Big Picture shouldn't need desktop mode for that.
+ * TV mode shouldn't need desktop mode for that.
  */
 function EmptyHome({ onGlobal }: { onGlobal: (action: InputAction) => boolean }) {
   const { bridge } = useTv();
@@ -64,30 +66,37 @@ function EmptyHome({ onGlobal }: { onGlobal: (action: InputAction) => boolean })
     onAction(action) {
       if (!onGlobal(action) && action === "accept") bring();
     },
-    hints: () => (old.length && state === "idle" ? [{ action: "accept", label: "Bring them over" }] : []),
+    hints: () => (old.length && state === "idle" ? [{ action: "accept", label: t`Bring them over` }] : []),
   });
-  if (old.length && state !== "busy" && !Array.isArray(state))
+  const count = old.length;
+  if (count && state !== "busy" && !Array.isArray(state))
     return (
       <div className="tv-empty tv-import">
-        <h2>Bring over your Quiver Launcher 3 library?</h2>
+        <h2>
+          <Trans>Bring over your Quiver Launcher 3 library?</Trans>
+        </h2>
         <p>
-          It's on this computer with {old.length} {old.length === 1 ? "game" : "games"}. Installed games stay where they are, so nothing downloads again.
+          {plural(count, {
+            one: "It's on this computer with # game. Installed games stay where they are, so nothing downloads again.",
+            other: "It's on this computer with # games. Installed games stay where they are, so nothing downloads again.",
+          })}
         </p>
         <button type="button" className="tv-details-button focused" onClick={bring}>
           <Glyph action="accept" size={22} />
-          Bring them over
+          <Trans>Bring them over</Trans>
         </button>
       </div>
     );
+  const names = Array.isArray(state) ? state.join(", ") : "";
   return (
     <div className="tv-empty">
-      <h2>{state === "busy" ? "Bringing your games over…" : "Your library is empty"}</h2>
+      <h2>{state === "busy" ? t`Bringing your games over…` : t`Your library is empty`}</h2>
       <p>
         {state === "busy"
-          ? "Matching them with the catalog."
-          : Array.isArray(state) && state.length
-            ? `Couldn't bring over: ${state.join(", ")}. Find them in Discover.`
-            : "Find something to play in Discover."}
+          ? t`Matching them with the catalog.`
+          : names
+            ? t`Couldn't bring over: ${names}. Find them in Discover.`
+            : t`Find something to play in Discover.`}
       </p>
     </div>
   );
@@ -135,7 +144,7 @@ export function Home({ nav, onFocus, onGlobal, onDetails, onDownloads, consoleNa
     },
     holdFor: (action) => (action === "secondary" ? actions.holdFor(app) : undefined),
     onHold: (action) => action === "secondary" && actions.cancel(app),
-    hints: () => (shelf?.updateAll && !app ? [{ action: "secondary", label: "Update all" }] : tileHints(app)),
+    hints: () => (shelf?.updateAll && !app ? [{ action: "secondary", label: t`Update all` }] : tileHints(app)),
     // With nothing to show, the empty state (below) takes the input: a child's handler is pushed
     // before its parent's, so this one would otherwise sit on top of it.
   }, undefined, shelves.length > 0);
@@ -156,8 +165,12 @@ export function Home({ nav, onFocus, onGlobal, onDetails, onDownloads, consoleNa
             </>
           ) : (
             <>
-              <h1 className="tv-title large">Updates waiting</h1>
-              <p className="tv-lead">Update every game with one press, then play the newest versions.</p>
+              <h1 className="tv-title large">
+                <Trans>Updates waiting</Trans>
+              </h1>
+              <p className="tv-lead">
+                <Trans>Update every game with one press, then play the newest versions.</Trans>
+              </p>
             </>
           )}
         </div>

@@ -1,11 +1,14 @@
 /**
- * A game's page (Y; spec §8): its hero, logo and story, what's installed, and
+ * A game's page (Y): its hero, logo and story, what's installed, and
  * buttons: Play (or Install / Get), Update, Change version, Console, Change program
  * (once one was picked: programs/usePrograms.ts), Open folder, Uninstall (held). Left/Right pick a button, A presses it.
  */
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowUpCircle, Download, FolderOpen, Gamepad2, History, Play, SquareTerminal, Trash2 } from "lucide-react";
 import type { Release } from "@quiverlauncher/api";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
+import { i18n } from "@quiverlauncher/i18n";
 import { useTv, useInputHandler } from "../context";
 import { LAYER, type ButtonHint } from "../input/router";
 import type { TvApp } from "../bridge";
@@ -15,9 +18,11 @@ import { native } from "../../native";
 import { useLauncher } from "../../store";
 import { playTimeLabel } from "../../sidebar";
 import { versionLabel } from "../../versions";
-import { GameChips, GameLogo, playedLabel } from "./GameHeader";
+import { GameChips, GameLogo, playedWhen } from "./GameHeader";
 import { ConsolePicker } from "./Settings";
-import { isBusy } from "./tileActions";
+import { HINT, isBusy } from "./tileActions";
+
+const back = () => t({ message: "Back", comment: "Controller hint: what Back does, closing or going back" });
 
 const UNINSTALL_HOLD_MS = 1500;
 
@@ -48,8 +53,8 @@ function VersionPicker({ app, onClose }: { app: TvApp; onClose: () => void }) {
         else if (action === "back") onClose();
       },
       hints: () => [
-        { action: "accept", label: "Install this version" },
-        { action: "back", label: "Back" },
+        { action: "accept", label: t`Install this version` },
+        { action: "back", label: back() },
       ],
     },
     LAYER.dialog,
@@ -57,18 +62,21 @@ function VersionPicker({ app, onClose }: { app: TvApp; onClose: () => void }) {
   useEffect(() => {
     document.querySelector(".tv-version-list .focused")?.scrollIntoView({ block: "nearest" });
   }, [index]);
+  const installed = app.installedVersion && versionLabel(app.installedVersion);
   return (
-    <div className="tv-dialog-backdrop" role="dialog" aria-label="Change version">
+    <div className="tv-dialog-backdrop" role="dialog" aria-label={t`Change version`}>
       <section className="tv-dialog tv-picker">
         <div className="tv-dialog-body">
           <h2>
-            <History aria-hidden="true" /> Change version
+            <History aria-hidden="true" /> <Trans>Change version</Trans>
           </h2>
-          <p className="tv-dialog-lead">Installed: {app.installedVersion ? versionLabel(app.installedVersion) : "nothing yet"}</p>
+          <p className="tv-dialog-lead">{installed ? t`Installed: ${installed}` : t`Installed: nothing yet`}</p>
           {error ? (
             <p className="tv-error">{error}</p>
           ) : !releases ? (
-            <p className="tv-dialog-lead small">Loading releases…</p>
+            <p className="tv-dialog-lead small">
+              <Trans>Loading releases…</Trans>
+            </p>
           ) : (
             <ul className="tv-settings-list tv-version-list">
               {releases.map((r, i) => (
@@ -76,12 +84,16 @@ function VersionPicker({ app, onClose }: { app: TvApp; onClose: () => void }) {
                   <span className="tv-settings-label">
                     {versionLabel(r.version)}
                     <small>
-                      {new Date(r.releasedAt).toLocaleDateString()}
-                      {r.prerelease ? " · pre-release" : ""}
+                      {new Date(r.releasedAt).toLocaleDateString(i18n.locale)}
+                      {r.prerelease ? ` · ${t({ message: "pre-release", comment: "After a release's date: its developer marked it as not yet stable" })}` : ""}
                     </small>
                   </span>
                   <span className="tv-settings-value">
-                    {r.version === app.installedVersion ? "Installed" : r.version === app.latestVersion ? "Latest" : ""}
+                    {r.version === app.installedVersion
+                      ? t({ message: "Installed", context: "release", comment: "This release is the one on this computer" })
+                      : r.version === app.latestVersion
+                        ? t({ message: "Latest", comment: "This release is the newest" })
+                        : ""}
                   </span>
                 </li>
               ))}
@@ -104,24 +116,26 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
   const installed = isInstalled(app) && app.installedVersion;
   const consoleName = consoles.get(resolveConsole(app)).name;
 
+  const next = versionLabel(app.latestVersion);
+  const program = app.program;
   const buttons: Button[] = [
-    ...(installed ? [{ id: "play", label: "Play", icon: <Play />, run: () => play(app.id) }] : []),
+    ...(installed ? [{ id: "play", label: HINT.play(), icon: <Play />, run: () => play(app.id) }] : []),
     ...(!installed && !isBusy(app)
-      ? [{ id: "get", label: app.inLibrary ? "Install" : "Get", icon: <Download />, run: () => void bridge.install(app.entry) }]
+      ? [{ id: "get", label: app.inLibrary ? HINT.install() : HINT.get(), icon: <Download />, run: () => void bridge.install(app.entry) }]
       : []),
-    ...(app.state === "updateAvailable" ? [{ id: "update", label: `Update to ${versionLabel(app.latestVersion)}`, icon: <ArrowUpCircle />, run: () => void bridge.update(app.id) }] : []),
-    ...(app.slug && !isBusy(app) ? [{ id: "version", label: "Change version", icon: <History />, run: () => setSub("version") }] : []),
-    ...(app.inLibrary ? [{ id: "console", label: "Console", icon: <Gamepad2 />, run: () => setSub("console") }] : []),
-    ...(app.program && installs[app.id]
+    ...(app.state === "updateAvailable" ? [{ id: "update", label: t`Update to ${next}`, icon: <ArrowUpCircle />, run: () => void bridge.update(app.id) }] : []),
+    ...(app.slug && !isBusy(app) ? [{ id: "version", label: t`Change version`, icon: <History />, run: () => setSub("version") }] : []),
+    ...(app.inLibrary ? [{ id: "console", label: t({ message: "Console", comment: "Button on a game's page in TV mode: picks the console tab it's in" }), icon: <Gamepad2 />, run: () => setSub("console") }] : []),
+    ...(program && installs[app.id]
       ? [
           {
             id: "program",
-            label: "Change program",
+            label: t`Change program`,
             icon: <SquareTerminal />,
             run: () => {
               const { executable: _, ...launch } = installs[app.id].launch ?? {};
               setLaunch(app.id, launch);
-              setNotice(`It started ${app.program}. The next Play asks which program starts it.`);
+              setNotice(t`It started ${program}. The next Play asks which program starts it.`);
             },
           },
         ]
@@ -130,14 +144,15 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
       ? [
           {
             id: "folder",
-            label: "Open folder",
+            label: t`Open folder`,
             icon: <FolderOpen />,
-            run: () => void native.openFolder(app.id).then(() => setNotice("The folder opened on the desktop."), (e) => setNotice(String(e))),
+            run: () => void native.openFolder(app.id).then(() => setNotice(t`The folder opened on the desktop.`), (e) => setNotice(String(e))),
           },
-          { id: "uninstall", label: "Uninstall", icon: <Trash2 />, hold: true, run: () => (void bridge.uninstall(app.id), onClose()) },
+          { id: "uninstall", label: t`Uninstall`, icon: <Trash2 />, hold: true, run: () => (void bridge.uninstall(app.id), onClose()) },
         ]
       : []),
   ];
+  const percent = app.progress !== null ? Math.round(app.progress * 100) : null;
   const at = Math.min(index, buttons.length - 1);
   const button = buttons[at];
 
@@ -153,7 +168,7 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
       onHold: (action) => action === "accept" && button?.hold && button.run(),
       hints: (): ButtonHint[] => [
         ...(button ? [{ action: "accept" as const, label: button.label, hold: button.hold }] : []),
-        { action: "back", label: "Back" },
+        { action: "back", label: back() },
       ],
     },
     LAYER.overlay,
@@ -191,34 +206,42 @@ export function Details({ app: opened, onClose }: { app: TvApp; onClose: () => v
           ))}
           {isBusy(app) && (
             <span className="tv-details-busy">
-              {app.state === "queued" ? "Waiting to download…" : app.progress !== null ? `Downloading · ${Math.round(app.progress * 100)}%` : "Downloading…"}
+              {app.state === "queued" ? t`Waiting to download…` : percent !== null ? t`Downloading ${percent}%` : t`Downloading…`}
             </span>
           )}
         </div>
-        {button?.hold && <p className="tv-details-hint">Hold to uninstall. Its files go to the Recycle Bin.</p>}
+        {button?.hold && (
+          <p className="tv-details-hint">
+            <Trans>Hold to uninstall. Its files go to the Recycle Bin.</Trans>
+          </p>
+        )}
         {notice && <p className="tv-details-hint">{notice}</p>}
         <dl className="tv-details-facts">
           {app.installedVersion && (
             <div>
-              <dt>Installed</dt>
+              <dt>{t({ message: "Installed", context: "release", comment: "The version installed, then a version" })}</dt>
               <dd>{versionLabel(app.installedVersion)}</dd>
             </div>
           )}
           {app.latestVersion && (
             <div>
-              <dt>Latest</dt>
+              <dt>{t({ message: "Latest", comment: "The newest version, then a version" })}</dt>
               <dd>{versionLabel(app.latestVersion)}</dd>
             </div>
           )}
           {app.lastPlayed && (
             <div>
-              <dt>Last played</dt>
-              <dd>{playedLabel(app.lastPlayed).replace(/^Played /, "")}</dd>
+              <dt>
+                <Trans>Last played</Trans>
+              </dt>
+              <dd>{playedWhen(app.lastPlayed)}</dd>
             </div>
           )}
           {app.playTime !== undefined && (
             <div>
-              <dt>Play time</dt>
+              <dt>
+                <Trans>Play time</Trans>
+              </dt>
               <dd>{playTimeLabel(app.playTime)}</dd>
             </div>
           )}

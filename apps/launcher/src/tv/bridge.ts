@@ -1,5 +1,5 @@
 /**
- * The only way Big Picture reaches upstream (spec §4): a view of the store's
+ * The only way TV mode reaches upstream: a view of the store's
  * library, installs, jobs and catalog as one list of apps, and its actions
  * (get, play, remove) behind a queue that installs one app at a time, so two
  * installs never both wait on the store's single release-file choice.
@@ -11,7 +11,7 @@ import { withPictures } from "../custom-art";
 export type TvState = "notInstalled" | "queued" | "downloading" | "installed" | "updateAvailable" | "updating" | "error";
 
 export type TvApp = {
-  /** The catalog entry's id (or "github:…" / "local:…"): the key for the sidecar and focus memory. */
+  /** The catalog entry's id (or "github:…" / "local:…"): the key for focus memory. */
   id: string;
   slug: string;
   /** What the library card shows: the project's name, or the player's own name for it. */
@@ -53,7 +53,7 @@ export type BridgeInput = {
   installs: Record<string, Install>;
   jobs: Record<string, Job>;
   catalog: Record<string, CatalogEntry>;
-  /** Ids waiting in Big Picture's install queue. */
+  /** Ids waiting in TV mode's install queue. */
   queued?: ReadonlySet<string>;
 };
 
@@ -66,7 +66,7 @@ function stateOf(entry: CatalogEntry, install: Install | undefined, job: Job | u
   return "installed";
 }
 
-/** One app as Big Picture shows it, with the player's own name and cover over the catalog's (as upstream's library does). */
+/** One app as TV mode shows it, with the player's own name and cover over the catalog's (as upstream's library does). */
 export function toTvApp(entry: CatalogEntry, input: BridgeInput, item?: LibraryItem): TvApp {
   const install = input.installs[entry.id];
   const job = input.jobs[entry.id];
@@ -102,7 +102,7 @@ export function toTvApp(entry: CatalogEntry, input: BridgeInput, item?: LibraryI
   };
 }
 
-/** The library as Big Picture shows it: removed apps and ones whose catalog entry hasn't loaded yet are left out. */
+/** The library as TV mode shows it: removed apps and ones whose catalog entry hasn't loaded yet are left out. */
 export function libraryApps(input: BridgeInput): TvApp[] {
   return input.library.flatMap((item) => {
     const entry = input.catalog[item.id];

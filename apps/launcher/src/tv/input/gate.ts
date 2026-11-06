@@ -1,5 +1,5 @@
 /**
- * Whether Big Picture listens (spec §5.5): only while its window is in front
+ * Whether TV mode listens: only while its window is in front
  * and no game is. Every change forgets what's held, so a button held as a
  * game exits doesn't keep repeating, and a release whose press was dropped is
  * ignored.

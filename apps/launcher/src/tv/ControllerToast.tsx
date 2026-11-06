@@ -1,12 +1,14 @@
 /**
- * Desktop mode (spec §11): when a controller is turned on, a note offers Big
- * Picture; A (or a click) opens it. It reads upstream's own controller events,
- * which desktop mode already has. Settings → "Offer Big Picture when a
- * controller connects" turns it off.
+ * Desktop mode: when a controller is turned on, a note offers TV mode; A (or a
+ * click) opens it. It reads upstream's own controller events, which desktop
+ * mode already has. Settings → "Offer TV mode when a controller connects"
+ * turns it off.
  */
 import { useEffect, useRef, useState } from "react";
 import { Gamepad2, X } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { native } from "../native";
 
 const SHOWN_FOR = 10_000;
@@ -21,7 +23,7 @@ export function ControllerToast({ enabled, onOpen }: { enabled: boolean; onOpen:
     const update = (names: string[]) => {
       // The first list is what was already connected; only a new pad after that is news.
       if (known.current !== null && names.length > known.current) {
-        setShown(names.at(-1) ?? "Controller");
+        setShown(names.at(-1) ?? t({ message: "Controller", comment: "A controller that gives no name of its own, as in “Controller connected”" }));
         clearTimeout(timer);
         timer = setTimeout(() => setShown(null), SHOWN_FOR);
       }
@@ -48,6 +50,7 @@ export function ControllerToast({ enabled, onOpen }: { enabled: boolean; onOpen:
   }, [shown, onOpen]);
 
   if (!enabled || !shown) return null;
+  const name = shown;
   return (
     <div className="tv-toast" role="status">
       <Gamepad2 aria-hidden="true" />
@@ -59,12 +62,16 @@ export function ControllerToast({ enabled, onOpen }: { enabled: boolean; onOpen:
           onOpen();
         }}
       >
-        <strong>{shown} connected</strong>
+        <strong>
+          <Trans comment="{name} is a controller's name">{name} connected</Trans>
+        </strong>
         <span>
-          Press <b className="tv-toast-a">A</b> for Big Picture
+          <Trans comment="A is the controller button">
+            Press <b className="tv-toast-a">A</b> for TV mode
+          </Trans>
         </span>
       </button>
-      <button type="button" className="tv-toast-close" aria-label="Dismiss" onClick={() => setShown(null)}>
+      <button type="button" className="tv-toast-close" aria-label={t`Dismiss`} onClick={() => setShown(null)}>
         <X aria-hidden="true" />
       </button>
     </div>

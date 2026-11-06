@@ -1,8 +1,8 @@
-/** What Discover and Downloads list (spec §8), and the remembered release file. Pure. */
+/** What Discover and Downloads list, and the remembered release file. Pure. */
 import { inLibraryView, isInstalled, type TvApp } from "../bridge";
 import { isBusy } from "./tileActions";
 
-/** Search (spec §8.3): every word of the query in the game's names or tags, any case. */
+/** Search: every word of the query in the game's names or tags, any case. */
 export function matchesSearch(app: Pick<TvApp, "title" | "gameTitle" | "tags">, query: string): boolean {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return true;
@@ -17,7 +17,7 @@ export type LibraryFilter = "notInLibrary" | "inLibrary" | "all";
  * Discover: games to get. Games in the library's tabs (installed, or downloading
  * for the first time) aren't here, except those got during this visit (`kept`):
  * they stay where they were, so getting one doesn't move the others.
- * `library` is the library as Big Picture shows it; `catalog` the catalog's pages
+ * `library` is the library as TV mode shows it; `catalog` the catalog's pages
  * (already for the chosen console), seen as apps.
  */
 export function discoverApps(

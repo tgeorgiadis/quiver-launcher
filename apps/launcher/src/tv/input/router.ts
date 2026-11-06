@@ -1,9 +1,9 @@
 /**
- * Sends input to whatever is on top (spec §5.6): the on-screen keyboard, then
+ * Sends input to whatever is on top: the on-screen keyboard, then
  * dialogs, then the overlay, then the tab's view. The hint bar shows the top
  * handler's hints.
  *
- * Destructive actions are held to confirm (spec §5.2): when the top handler
+ * Destructive actions are held to confirm: when the top handler
  * says an action needs holding, a press starts a hold, and the action fires
  * once it's been held that long. Letting go sooner does nothing.
  */

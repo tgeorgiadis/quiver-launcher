@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { t } from "@lingui/core/macro";
 import { useLauncher } from "../store";
 import { DEFAULT_KEYS, DEFAULT_PAD, suspendSpatialNavigation, withDefaults } from "../spatial";
 import { usePadLabels, usePads } from "../pad-hints";
@@ -249,7 +250,7 @@ function TvMode({ debug, picking, exit }: { debug: boolean; picking: boolean; ex
         className={`tv-root${settings.reduceMotion ? " tv-reduce-motion" : ""}${pointer ? " tv-pointer" : ""}${inGame ? " tv-in-game" : ""}`}
         style={{ "--u": `${scale}px` } as CSSProperties}
         role="application"
-        aria-label="Quiver Launcher, TV mode"
+        aria-label={t`Quiver Launcher, TV mode`}
       >
         <Shell />
         {flow.ui}

@@ -1,10 +1,12 @@
 /**
- * A 2:3 tile (spec §8.1): the art (or a stand-in), the title over a scrim when
+ * A 2:3 tile: the art (or a stand-in), the title over a scrim when
  * focused or when there's no art, a state badge, and a progress bar. Focus
  * comes from the view (`focused`), not the browser.
  */
 import { memo, useState } from "react";
 import { AlertTriangle, ArrowUp, CheckCircle2, Download, Loader2 } from "lucide-react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import type { TvApp } from "../bridge";
 import { useIconColors } from "../art/useIconColors";
 
@@ -15,7 +17,7 @@ export function hueOf(id: string) {
   return h % 360;
 }
 
-/** A tile for an app without a 2:3 picture (spec §10): its icon on a gradient of the icon's own colours, the title below. */
+/** A tile for an app without a 2:3 picture: its icon on a gradient of the icon's own colours, the title below. */
 export function FallbackArt({ app }: { app: TvApp }) {
   const [iconFailed, setIconFailed] = useState(false);
   const icon = app.art.icon && !iconFailed ? app.art.icon : undefined;
@@ -32,15 +34,15 @@ export function FallbackArt({ app }: { app: TvApp }) {
 function Badge({ app }: { app: TvApp }) {
   switch (app.state) {
     case "notInstalled":
-      return <span className="tv-badge" title={app.inLibrary ? "In your library, not installed" : "Not in your library"}><Download /></span>;
+      return <span className="tv-badge" title={app.inLibrary ? t`In your library, not installed` : t`Not in your library`}><Download /></span>;
     case "updateAvailable":
-      return <span className="tv-badge update" title="Update available"><ArrowUp /></span>;
+      return <span className="tv-badge update" title={t`Update available`}><ArrowUp /></span>;
     case "error":
       return <span className="tv-badge error" title={app.error}><AlertTriangle /></span>;
     case "queued":
     case "downloading":
     case "updating":
-      return <span className="tv-badge busy" title={app.state === "queued" ? "Waiting to download" : "Downloading"}><Loader2 /></span>;
+      return <span className="tv-badge busy" title={app.state === "queued" ? t`Waiting to download` : t`Downloading`}><Loader2 /></span>;
     default:
       return null;
   }
@@ -69,7 +71,9 @@ export const GameTile = memo(function GameTile({ app, focused, x, y, w, h, index
         {app.fresh ? (
           <div className="tv-fresh">
             <CheckCircle2 aria-hidden="true" />
-            <span>Installed</span>
+            <span>
+              <Trans comment="On a game's tile in Discover: the game just got has finished installing">Installed</Trans>
+            </span>
           </div>
         ) : (
           <Badge app={app} />

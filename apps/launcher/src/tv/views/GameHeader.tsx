@@ -1,19 +1,27 @@
 /** The focused game: its logo (or name) and chips for its console, version and state; and its art behind everything. */
 import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowUpCircle, Clock, Download, Gamepad2 } from "lucide-react";
+import { t } from "@lingui/core/macro";
+import { i18n } from "@quiverlauncher/i18n";
 import type { TvApp } from "../bridge";
 import { versionLabel } from "../../versions";
 import { useFitted } from "../art/fitted";
 
-const relative = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+/** When a game was played last, in the language shown: "today", "3 days ago", "last month". */
+export function playedWhen(at: number, now = Date.now()) {
+  const relative = new Intl.RelativeTimeFormat(i18n.locale, { numeric: "auto" });
+  const days = Math.round((at - now) / 86_400_000);
+  if (days > -1) return relative.format(0, "day");
+  if (days > -30) return relative.format(days, "day");
+  const months = Math.round(days / 30);
+  if (months > -12) return relative.format(months, "month");
+  return relative.format(Math.round(days / 365), "year");
+}
+
 /** "Played today", "Played 3 days ago", "Played last month". */
 export function playedLabel(at: number, now = Date.now()) {
-  const days = Math.round((at - now) / 86_400_000);
-  if (days > -1) return "Played today";
-  if (days > -30) return `Played ${relative.format(days, "day")}`;
-  const months = Math.round(days / 30);
-  if (months > -12) return `Played ${relative.format(months, "month")}`;
-  return `Played ${relative.format(Math.round(days / 365), "year")}`;
+  const when = playedWhen(at, now);
+  return t({ message: `Played ${when}`, comment: "When a game was played last; {when} is such as today, 3 days ago or last month" });
 }
 
 export function GameLogo({ app, className = "" }: { app: TvApp; className?: string }) {
@@ -51,13 +59,13 @@ export function GameChips({ app, consoleName }: { app: TvApp; consoleName: strin
       {app.state === "notInstalled" && (
         <span className="tv-chip accent">
           <Download aria-hidden="true" />
-          {app.inLibrary ? "In your library · not installed" : "Not in your library"}
+          {app.inLibrary ? t`In your library · not installed` : t`Not in your library`}
         </span>
       )}
       {app.state === "error" && (
         <span className="tv-chip danger">
           <AlertTriangle aria-hidden="true" />
-          {app.installedVersion ? "Didn't start" : "Download failed"}
+          {app.installedVersion ? t({ message: "Didn't start", comment: "A game's launch failed" }) : t`Download failed`}
         </span>
       )}
       {app.lastPlayed ? (

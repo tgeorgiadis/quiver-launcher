@@ -1,5 +1,5 @@
 /**
- * Which console tab an app belongs to (spec §7.2, translated for v4's catalog).
+ * Which console tab an app belongs to.
  * Pure; first match wins:
  * 1. The player's choice (Details → Console, or the consoles on the app's page): its first console. Choosing none
  *    files it under Apps & Tools when it's one, else Other.

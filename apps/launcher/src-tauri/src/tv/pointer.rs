@@ -2,7 +2,7 @@
 //! mouse (Bloodborne's bbport launcher window). In Game Mode nothing else moves a
 //! pointer, so such a window couldn't be used at all.
 //!
-//! While a game started from Big Picture runs, holding Select turns the right
+//! While a game started from Quiver runs, holding Select turns the right
 //! stick into the pointer, RT into the left button, LT into the right one, and
 //! the left stick into the scroll wheel (pads.rs). The mouse is a virtual device
 //! made through /dev/uinput, as Steam Input makes its own, so gamescope and the
@@ -62,7 +62,7 @@ impl VirtualMouse {
         // struct uinput_setup { struct input_id { u16 bustype, vendor, product, version }; char name[80]; u32 ff_effects_max }
         let mut setup = [0u8; 92];
         setup[0..2].copy_from_slice(&0x06u16.to_ne_bytes()); // BUS_VIRTUAL
-        let name = b"Big Quiver Launcher pointer";
+        let name = b"Quiver Launcher pointer";
         setup[8..8 + name.len()].copy_from_slice(name);
         // SAFETY: `setup` is laid out as struct uinput_setup and outlives the call.
         if unsafe { libc::ioctl(fd, UI_DEV_SETUP as _, setup.as_ptr()) } < 0 {

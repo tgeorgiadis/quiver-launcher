@@ -1,11 +1,14 @@
 /**
- * Discover (spec §8): catalog games and library games not yet installed, with
+ * Discover: catalog games and library games not yet installed, with
  * a filter row above (library: not in it / in it / all; then consoles). Up from
  * the grid's top row goes to the filters. A gets a game: adds it to the library
  * and downloads it in one press. Pages load as focus nears the end.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Entry } from "@quiverlauncher/api";
+import { msg, t } from "@lingui/core/macro";
+import type { MessageDescriptor } from "@lingui/core";
+import { i18n } from "@quiverlauncher/i18n";
 import { useTv, useInputHandler } from "../context";
 import { isInstalled, type TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
@@ -23,13 +26,16 @@ export type DiscoverState = {
 
 export const newDiscoverState = (): DiscoverState => ({ filter: "notInLibrary", consoleId: null, pages: new Map() });
 
-const LIBRARY_CHIPS: { id: LibraryFilter; label: string }[] = [
-  { id: "notInLibrary", label: "Not in library" },
-  { id: "inLibrary", label: "In library" },
-  { id: "all", label: "All" },
+const LIBRARY_CHIPS: { id: LibraryFilter; label: MessageDescriptor }[] = [
+  { id: "notInLibrary", label: msg({ message: "Not in library", comment: "Discover's filter: games not in the library yet" }) },
+  { id: "inLibrary", label: msg({ message: "In library", comment: "Discover's filter: games in the library but not installed" }) },
+  { id: "all", label: msg({ message: "All", comment: "Discover's filter: games in the library or not" }) },
 ];
 
-type Chip = { kind: "library"; id: LibraryFilter; label: string } | { kind: "console"; id: string | null; label: string };
+/** Discover's hint for going back down from the filters to the games. */
+const games = () => t({ message: "Games", comment: "Controller hint on Discover's filters: back down to the games" });
+
+type Chip ={ kind: "library"; id: LibraryFilter; label: string } | { kind: "console"; id: string | null; label: string };
 
 type Props = {
   state: DiscoverState;
@@ -106,8 +112,8 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   const chips: Chip[] = useMemo(() => {
     const known = [...consoles.ids()].map((id) => consoles.get(id)).filter((c) => !c.special).sort(consoles.compare);
     return [
-      ...LIBRARY_CHIPS.map((c) => ({ kind: "library" as const, ...c })),
-      { kind: "console" as const, id: null, label: "All consoles" },
+      ...LIBRARY_CHIPS.map((c) => ({ kind: "library" as const, id: c.id, label: i18n._(c.label) })),
+      { kind: "console" as const, id: null, label: t`All consoles` },
       ...known.map((c) => ({ kind: "console" as const, id: c.id, label: c.short })),
     ];
   }, [consoles]);
@@ -146,9 +152,11 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         } else if (action === "down" || action === "back") setZone("grid");
       },
       hints: () => [
-        ...(chips[chip]?.kind === "library" ? [{ action: "accept" as const, label: "Show these" }] : [{ action: "accept" as const, label: "Games" }]),
-        { action: "tabNext", label: "Tabs" },
-        { action: "back", label: "Games" },
+        ...(chips[chip]?.kind === "library"
+          ? [{ action: "accept" as const, label: t({ message: "Show these", comment: "Controller hint on Discover's filters: shows the games the focused filter picks" }) }]
+          : [{ action: "accept" as const, label: games() }]),
+        { action: "tabNext", label: t({ message: "Tabs", comment: "Controller hint: what the shoulder buttons do where there are tabs, change tab" }) },
+        { action: "back", label: games() },
       ],
     },
     undefined,
@@ -163,17 +171,17 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   const loading = filter !== "inLibrary" && page.loading && !page.entries.length;
   const emptyText =
     page.error && filter !== "inLibrary"
-      ? { title: "Couldn't reach the catalog", text: page.error }
+      ? { title: t`Couldn't reach the catalog`, text: page.error }
       : filter === "inLibrary"
-        ? { title: "Everything in your library is installed", text: "Games you add but haven't installed show here." }
+        ? { title: t`Everything in your library is installed`, text: t`Games you add but haven't installed show here.` }
         : search && !loading
-          ? { title: `Nothing in the catalog matches “${search}”`, text: "Search again, or B to clear the search." }
-          : { title: loading ? "Loading the catalog…" : "Nothing to find here", text: loading ? "" : "Try another console, or All." };
+          ? { title: t`Nothing in the catalog matches “${search}”`, text: t`Search again, or B to clear the search.` }
+          : { title: loading ? t`Loading the catalog…` : t`Nothing to find here`, text: loading ? "" : t`Try another console, or All.` };
 
   return (
     <div className="tv-discover">
       <GameHeader app={zone === "grid" ? focused : null} consoleName={focused && zone === "grid" ? consoleName(focused) : ""} />
-      <div className={`tv-chip-row${zone === "filters" ? " active" : ""}`} role="toolbar" aria-label="Filters">
+      <div className={`tv-chip-row${zone === "filters" ? " active" : ""}`} role="toolbar" aria-label={t`Filters`}>
         {chips.map((c, i) => (
           <button
             key={`${c.kind}:${c.id}`}

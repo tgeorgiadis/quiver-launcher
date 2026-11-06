@@ -1,5 +1,5 @@
 /**
- * What pressing Play does when an update is waiting (spec §9). Pure.
+ * What pressing Play does when an update is waiting. Pure.
  * - No update (one the player skipped isn't one: the launcher's declined): play.
  * - The app's own setting in desktop mode is "Install automatically": update, then play.
  * - Otherwise TV mode's setting: Off plays, Auto updates then plays, Ask asks.

@@ -1,8 +1,9 @@
 /**
- * Errors as they happen (spec S12): a game that wouldn't start, a download or
- * update that failed. The tile keeps its ⚠ badge; this says what went wrong.
+ * Errors as they happen: a game that wouldn't start, a download or update that
+ * failed. The tile keeps its ⚠ badge; this says what went wrong.
  */
 import { useEffect, useRef, useState } from "react";
+import { t } from "@lingui/core/macro";
 import { AlertTriangle } from "lucide-react";
 import { useTv } from "../context";
 import type { TvState } from "../bridge";
@@ -22,10 +23,14 @@ export function Notices() {
     const was = before.current;
     const fresh: Notice[] = [];
     for (const app of bridge.apps) {
-      // Errors already there when Big Picture opened aren't news.
+      // Errors already there when TV mode opened aren't news.
       // A game that needs its ROM has its own dialog (programs/RomDialog.tsx).
-      if (was && app.state === "error" && was.get(app.id) !== "error" && romNeed.get()?.id !== app.id)
-        fresh.push({ key: ++next.current, title: !app.installedVersion ? `${app.title} didn't install` : app.error?.startsWith("It crashed") ? `${app.title} crashed` : `${app.title} didn't start`, text: app.error ?? "" });
+      if (was && app.state === "error" && was.get(app.id) !== "error" && romNeed.get()?.id !== app.id) {
+        const name = app.title;
+        // A crash's message comes from the Rust side (session.rs), in English, so it's known by its start.
+        const title = !app.installedVersion ? t`${name} didn't install` : app.error?.startsWith("It crashed") ? t`${name} crashed` : t`${name} didn't start`;
+        fresh.push({ key: ++next.current, title, text: app.error ?? "" });
+      }
     }
     before.current = new Map(bridge.apps.map((a) => [a.id, a.state]));
     if (!fresh.length) return;

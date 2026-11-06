@@ -1,10 +1,11 @@
 /**
- * All and console tabs: a grid of 2:3 tiles (spec §8). Only the rows near the
+ * All and console tabs: a grid of 2:3 tiles. Only the rows near the
  * screen are drawn, so a library of hundreds scrolls smoothly. Focus is the
  * view's own (not the browser's), and the focused tile is scrolled to stay a
  * row away from the edge.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { t } from "@lingui/core/macro";
 import { useTv, useInputHandler } from "../context";
 import type { TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
@@ -204,8 +205,8 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
         </div>
       ) : (
         <div className="tv-empty">
-          <h2>{empty?.title ?? "No games here yet"}</h2>
-          <p>{empty?.text ?? "Find something to play in Discover."}</p>
+          <h2>{empty?.title ?? t`No games here yet`}</h2>
+          <p>{empty?.text ?? t`Find something to play in Discover.`}</p>
         </div>
       )}
     </div>

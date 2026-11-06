@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { t } from "@lingui/core/macro";
 import { useLauncher } from "../../store";
 import { romNeed } from "./RomDialog";
 
@@ -31,7 +32,7 @@ export function useFailures() {
       if (payload.rom) {
         // Before fail(): Notices leaves out the game the dialog is about.
         const entry = catalog[id];
-        const title = library.find((i) => i.id === id)?.overrides?.name || entry?.projectName || entry?.name || "This game";
+        const title = library.find((i) => i.id === id)?.overrides?.name || entry?.projectName || entry?.name || t({ message: "This game", comment: "A game with no name known, as in “This game needs your own copy of the game”" });
         romNeed.set({ id, title, ...payload.rom });
       }
       fail(id, payload.message);
