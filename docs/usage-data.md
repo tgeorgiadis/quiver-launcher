@@ -10,9 +10,9 @@ The launcher sends named events only (`apps/launcher/src/telemetry.ts`):
 
 - **Starting up:** the launcher starting, first-run setup finishing, usage data being allowed (and where), and each kind
   of controller connected (Xbox, PlayStation and so on, not its name).
-- **How it's set up** (`settings_loaded`, each launch): theme, language, TV mode, interface scale, screen size, the
+- **How it's set up** (`settings_loaded`, each launch): theme, language, TV mode, interface scale, the screen's resolution and scale, the
   library's layout and sort, the kind of Windows runner, and whether close to tray, full screen, a background picture or
-  music, controllers being off, preview updates or a GitHub token are in use. Only that they are: never the files or the
+  music, preview updates or a GitHub token are in use. Only that they are: never the files or the
   token.
 - **What's in the library:** counts of its apps by kind, installed, with updates waiting, updating by themselves,
   pinned and hidden (`library_loaded`, each launch), and once a day each catalog app installed, with its version, how

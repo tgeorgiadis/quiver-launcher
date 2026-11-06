@@ -642,5 +642,6 @@ test("failures are counted by kind, whatever they say exactly", async () => {
   expect(failureKind("The system cannot find the file specified. (os error 2)")).toBe("not_found");
   expect(failureKind(new Problem(msg`This app has no approved release yet.`))).toBe("no_release");
   expect(failureKind(new Problem(msg`This release has no download for your computer.`))).toBe("no_download");
+  expect(failureKind("Couldn't find a program to start in this app's folder.")).toBe("no_program");
   expect(failureKind("something nobody has seen")).toBe("other");
 });

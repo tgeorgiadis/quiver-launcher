@@ -1,7 +1,7 @@
 /** The Rust side of the launcher (src-tauri/src/lib.rs). */
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import type { ModSettings, ModSource, Os } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
 
@@ -222,6 +222,10 @@ export const native = {
   minimize: () => getCurrentWindow().minimize(),
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),
   closeWindow: () => getCurrentWindow().close(),
+  /** The screen the window is on, in its own pixels, and the system's scale for it; null when it can't say. WebView2's `window.screen` is the window's size instead. */
+  screen: () =>
+    currentMonitor()
+      .then((m) => (m ? { width: m.size.width, height: m.size.height, scale: m.scaleFactor } : null)),
   startDragging: () => getCurrentWindow().startDragging(),
   /** Whether the window fills the screen: maximized, or full screen. */
   windowState: async () => {
