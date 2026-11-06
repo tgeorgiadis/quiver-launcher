@@ -35,7 +35,7 @@ import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
 import { useTopBarFit } from "./top-bar-fit";
 import { WindowControls, moveWindow, useWindowButtons } from "./window-bar";
-import { SettingsPage, useTray } from "./settings-page";
+import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { FilePicker } from "./file-picker";
@@ -60,6 +60,7 @@ export function App() {
   useTelemetrySetup();
   useUpdateCheck();
   useTray();
+  useDiscordPresence();
   const { library, client, settings, setSettings, config } = useLauncher();
   // TV mode, a larger look over the library and Browse: turned on, or by itself in Steam's Game Mode.
   const tv = tvModeOn(settings, config);

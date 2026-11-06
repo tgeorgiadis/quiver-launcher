@@ -4,6 +4,7 @@ mod apps_folder;
 mod browser;
 mod custom_art;
 mod device;
+mod discord;
 #[cfg(windows)]
 mod elevate;
 mod flatpak;
@@ -331,10 +332,21 @@ struct Played {
 /// Not on the window's thread: on Android, starting an app goes through the system, which answers on that thread.
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
-async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool, program: Option<String>, launch: Option<launch::LaunchOptions>) -> Result<(), String> {
+async fn launch(
+    app: tauri::AppHandle,
+    data: State<'_, Data>,
+    id: Option<String>,
+    folder: String,
+    dir: Option<String>,
+    preferred: Vec<String>,
+    wine: bool,
+    program: Option<String>,
+    launch: Option<launch::LaunchOptions>,
+    presence: Option<discord::Game>,
+) -> Result<(), String> {
     #[cfg(target_os = "android")]
     {
-        let _ = (preferred, wine, program, launch);
+        let _ = (preferred, wine, program, launch, presence);
         let package = android::package(&app_dir(&data, &folder, dir)?).ok_or("This app has no Android version installed. Get its Android download to play it here.")?;
         android::launch(&package)?;
         // Its play time: until the player comes back to Quiver.
@@ -342,7 +354,7 @@ async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>
         Ok(())
     }
     #[cfg(not(target_os = "android"))]
-    start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default())
+    start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default(), presence)
 }
 
 /// Waits for a started program to close; whether that could be told.
@@ -366,7 +378,18 @@ async fn android_app_gone(data: State<'_, Data>, folder: String, dir: Option<Str
 
 #[cfg(not(target_os = "android"))]
 #[allow(clippy::too_many_arguments)]
-fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>, launch: &launch::LaunchOptions) -> Result<(), String> {
+fn start(
+    app: tauri::AppHandle,
+    data: &Data,
+    id: Option<String>,
+    folder: &str,
+    dir: Option<String>,
+    preferred: &[String],
+    wine: bool,
+    program: Option<String>,
+    launch: &launch::LaunchOptions,
+    presence: Option<discord::Game>,
+) -> Result<(), String> {
     let target = target(data, folder, dir, preferred, wine, program, launch)?;
     let (program, args, env) = target.command();
     let wine = program == Path::new("wine");
@@ -394,9 +417,14 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
             let Some(id) = id else { return };
             let started = std::time::Instant::now();
             app.state::<Running>().started(&id);
+            // On the player's Discord profile while it runs (discord.rs).
+            let shown = presence.map(|game| app.state::<discord::Presence>().started(&id, game)).is_some();
             std::thread::spawn(move || {
                 let closed = wait();
                 app.state::<Running>().closed(&id);
+                if shown {
+                    app.state::<discord::Presence>().closed(&id);
+                }
                 if closed {
                     let _ = app.emit("app-closed", Played { id, seconds: started.elapsed().as_secs() });
                 }
@@ -909,6 +937,12 @@ async fn to_background() -> Result<(), String> {
     Ok(())
 }
 
+/// Discord's Rich Presence on or off (discord.rs), and its words in the player's language.
+#[tauri::command]
+fn set_discord_presence(presence: State<discord::Presence>, enabled: bool, texts: discord::Texts) {
+    presence.set(enabled, texts);
+}
+
 /// Close to tray on or off (tray.rs), and its menu's words in the player's language. Windows only: elsewhere, nothing.
 #[tauri::command]
 fn set_tray(app: tauri::AppHandle, close_to_tray: bool, open: String, quit: String) -> Result<(), String> {
@@ -1375,6 +1409,7 @@ pub fn run() {
             app.manage(gamepad::Pads::default());
             app.manage(Installing::default());
             app.manage(Running::default());
+            app.manage(discord::Presence::new());
             #[cfg(target_os = "android")]
             app.manage(Playing::default());
             app.manage(picker::Picks::default());
@@ -1421,6 +1456,7 @@ pub fn run() {
             open_url,
             to_background,
             set_tray,
+            set_discord_presence,
             start_with_windows,
             set_start_with_windows,
             check_update,

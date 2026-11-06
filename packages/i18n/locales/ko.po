@@ -1051,6 +1051,11 @@ msgstr "둘러보기 카드"
 msgid "Browse the catalog"
 msgstr "카탈로그 둘러보기"
 
+#. On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Browsing games"
+msgstr "게임 둘러보는 중"
+
 #. Which platform's build of an app to install, as Linux or Windows through Wine
 #: ../../apps/launcher/src/detail.tsx
 msgid "Build"
@@ -1820,6 +1825,11 @@ msgstr "{app} 받기"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Get {newestLabel}"
 msgstr "{newestLabel} 받기"
+
+#. Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Get Quiver Launcher"
+msgstr "Quiver Launcher 받기"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Get the Windows version (Wine)"
@@ -3882,6 +3892,10 @@ msgstr "이전 버전 보기"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show on cards"
 msgstr "카드에 표시"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Show on Discord what I'm playing, or that I'm in Quiver Launcher"
+msgstr "Discord에 내가 플레이 중인 게임이나 Quiver Launcher 사용 중임을 표시"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Show password"

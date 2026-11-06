@@ -112,6 +112,9 @@ export type Installed = {
   restart: boolean;
 };
 
+/** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
+export type DiscordGame = { name: string; image?: string };
+
 /** How the player wants an app started, when the launcher's own choice isn't right. */
 export type LaunchOptions = {
   /** The program to start: inside the app's folder (relative), or anywhere for a program the player added. */
@@ -194,9 +197,11 @@ export const native = {
   startEmptyLibrary: () => invoke<void>("start_empty_library"),
   /** Fails with "cancelled" when the player stops it, "missing" when its file is gone (a 404), or "mismatch" when the download isn't the file its checksum names. */
   install: (request: InstallRequest) => invoke<Installed>("install", { request }),
-  /** Starts an app; `id` names it in `onAppClosed` once it closes. */
-  launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions) =>
-    invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch }),
+  /** Starts an app; `id` names it in `onAppClosed` once it closes. `presence` is what Discord shows the player playing while it runs. */
+  launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions, presence?: DiscordGame) =>
+    invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),
+  /** Discord's Rich Presence on or off (discord.rs), with its words in the player's language. */
+  setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long. */
   onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */

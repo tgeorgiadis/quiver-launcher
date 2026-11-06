@@ -555,6 +555,8 @@ export type Settings = {
   systemTitleBar?: boolean;
   /** Closing the window hides it in the tray, the launcher still running (tray.rs; Windows only). */
   closeToTray?: boolean;
+  /** Discord doesn't show what the player is playing, or that they're in Quiver (discord.rs). */
+  discordPresenceOff?: boolean;
   scale?: number;
   /** How many times as far a mouse wheel's turn scrolls, as in Quiver Launcher 3 (spatial.ts); unset, the system's. */
   scrollSpeed?: number;
@@ -1582,7 +1584,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
       const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
-      await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
+      // On the player's Discord profile while it runs: its square icon, else its box art.
+      const entry = catalog[id];
+      const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
+      await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
         () => (musicForGame(), track("app_launched", played)),
         async (e) => {
           // Windows asked for administrator rights and the player said no.
