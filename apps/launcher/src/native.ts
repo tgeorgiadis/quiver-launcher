@@ -2,7 +2,7 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import type { ModSettings, ModSource, Os } from "@quiverlauncher/api";
+import type { ModSettings, ModSource, Os, SetupFile } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
 
 /** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
@@ -126,7 +126,23 @@ export type LaunchOptions = {
   command?: string;
   /** The programs Play starts, relative to the app's folder: with more than one, Play asks which. The launcher itself reads only `executable`. */
   programs?: string[];
+  /** The player's copies of the game that it's told about by flag or environment variable (own-copy.ts); never saved. */
+  copies?: LaunchCopy[];
 };
+/** One of the player's copies, and how the game is told where it is. */
+export type LaunchCopy = { flag?: string; env?: string; path: string };
+/** What checking the player's copy found (own_copy.rs). */
+export type CheckedCopy = {
+  ok: boolean;
+  /** It matched a dump the catalog lists, not just its kind of file. */
+  verified: boolean;
+  dump?: string | null;
+  problem?: string | null;
+  size: number;
+  sha1?: string | null;
+};
+/** How far checking or putting a copy in place has got. */
+export type CopyProgress = { id: string; step: "check" | "place"; done: number; total: number };
 export type Proton = { name: string; path: string };
 /** What runs Windows programs on Linux, chosen in Settings for every app: unset, Automatic. */
 export type WindowsRunner = { kind: "wine" } | { kind: "proton"; path: string };
@@ -323,4 +339,15 @@ export const native = {
   onControllerLabels: (handler: (labels: PadLabels | null) => void) => listen<PadLabels | null>("pad-labels", (e) => handler(e.payload)),
   onPad: (handler: (p: { key: string; down: boolean }) => void) => listen<{ key: string; down: boolean }>("pad", (e) => handler(e.payload)),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),
+  /** Copies that could be the player's, in the places players keep them (own_copy.rs). */
+  findCopies: (file: SetupFile) => invoke<{ path: string; size: number }[]>("find_copies", { file }),
+  /** Asks for the player's copy: a file of the kinds it can be, or a folder. */
+  pickCopy: (file: SetupFile, dir?: string) => invoke<string | null>("pick_copy", { file, dir }),
+  checkCopy: (file: SetupFile, path: string) => invoke<CheckedCopy>("check_copy", { file, path }),
+  /** Puts a checked copy where the app reads it; where it went, or null when the app is told by flag or variable. */
+  placeCopy: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
+    invoke<string | null>("place_copy", { folder, dir, wine, file, path }),
+  copyPresent: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
+    invoke<boolean>("copy_present", { folder, dir, wine, file, path }),
+  onCopyProgress: (handler: (p: CopyProgress) => void) => listen<CopyProgress>("copy-progress", (e) => handler(e.payload)),
 };

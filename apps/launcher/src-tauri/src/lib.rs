@@ -15,6 +15,7 @@ mod keyboard;
 mod launch;
 mod mods;
 mod msi;
+mod own_copy;
 mod picker;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
@@ -316,7 +317,17 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         None if OS == "windows" && exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("lnk")) => (PathBuf::from("explorer"), quoted(), false),
         None => (exe.clone(), vec![], false),
     };
-    let options = launch::parse(options.command.as_deref().unwrap_or_default())?;
+    let copies = &options.copies;
+    let mut options = launch::parse(options.command.as_deref().unwrap_or_default())?;
+    // The player's own copies of the game, as the catalog says to give them (own_copy.rs), before their own options.
+    // Through Wine or Proton (Quiver's or Steam's), the game reads a Windows path.
+    let (copy_args, copy_env) = launch::copy_words(copies, OS == "linux" && (program != exe || steam_proton));
+    options.after.splice(0..0, copy_args);
+    options.env.splice(0..0, copy_env);
+    // `open` keeps the arguments it's given for itself unless they follow --args.
+    if program == Path::new("open") && !options.after.is_empty() && !options.after.iter().any(|a| a == "--args") {
+        options.after.insert(0, "--args".into());
+    }
     // Many distros no longer ship FUSE 2, which AppImages mount themselves with.
     let extract_appimage = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("appimage")) && !has_fuse2();
     Ok(shortcut::Target { dir: exe.parent().unwrap_or(Path::new(".")).to_path_buf(), exe, program, args, env, extract_appimage, steam_proton, options })
@@ -878,6 +889,81 @@ async fn pick_proton(app: tauri::AppHandle, window: tauri::WebviewWindow) -> Res
     let Some(picked) = picked else { return Ok(None) };
     launch::proton_script(&picked.to_string_lossy()).map_err(|_| "That folder isn't a Proton: it has no proton script in it.".to_string())?;
     Ok(Some(picked.to_string_lossy().into()))
+}
+
+/// How far reading or putting in place the player's copy has got (own_copy.rs).
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CopyProgress {
+    id: String,
+    /// "check" or "place".
+    step: &'static str,
+    done: u64,
+    total: u64,
+}
+
+/// Copies of the game that could be the player's, in the places players keep them; never in Quiver's apps folder.
+#[tauri::command]
+async fn find_copies(app: tauri::AppHandle, file: own_copy::SetupFile) -> Vec<own_copy::Found> {
+    let skip = vec![app.state::<Data>().apps()];
+    tauri::async_runtime::spawn_blocking(move || own_copy::find(&file, &own_copy::places(), &skip)).await.unwrap_or_default()
+}
+
+/// Asks the player for their copy: a file of the kinds it can be, or a folder. `QUIVER_PICK` (a file) and
+/// `QUIVER_PICK_FOLDER` answer instead in end-to-end tests.
+#[tauri::command]
+async fn pick_copy(app: tauri::AppHandle, window: tauri::WebviewWindow, file: own_copy::SetupFile, dir: Option<String>) -> Option<String> {
+    let folder = file.kind.as_deref() == Some("folder");
+    if let Some(path) = std::env::var_os(if folder { "QUIVER_PICK_FOLDER" } else { "QUIVER_PICK" }) {
+        return Some(path.to_string_lossy().into());
+    }
+    let title = format!("Choose your copy: {}", file.label);
+    let extensions: Vec<String> = file.extensions.iter().map(|e| e.to_ascii_lowercase()).collect();
+    let mut wanted: Vec<&str> = extensions.iter().map(String::as_str).collect();
+    if wanted.iter().any(|e| ["z64", "n64", "v64"].contains(e)) {
+        wanted.extend(["z64", "n64", "v64"]);
+        wanted.dedup();
+    }
+    let filter = (!folder && !wanted.is_empty()).then_some(("Your copy", wanted.as_slice()));
+    let want = if folder { picker::Want::Folder } else { picker::Want::File };
+    let path = picker::choose(&app, &window, want, &title, dir.as_deref().map(Path::new), filter).await?;
+    Some(path.to_string_lossy().into())
+}
+
+/// Whether `path` is a copy the app takes, reading it through once.
+#[tauri::command]
+async fn check_copy(app: tauri::AppHandle, file: own_copy::SetupFile, path: String) -> Result<own_copy::Checked, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let id = file.id.clone();
+        let progress = |done, total| {
+            let _ = app.emit("copy-progress", CopyProgress { id: id.clone(), step: "check", done, total });
+        };
+        own_copy::check(&file, Path::new(&path), &progress)
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Puts a checked copy where the app reads it, when the catalog says where: the path it went to, or null when the
+/// app is only told where it is (by flag or environment variable). `wine`: a Windows build run through Wine or Proton.
+#[tauri::command]
+async fn place_copy(app: tauri::AppHandle, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile, path: String) -> Result<Option<String>, String> {
+    let app_dir = present_app_dir(&app.state::<Data>(), &folder, dir)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let id = file.id.clone();
+        let progress = |done, total| {
+            let _ = app.emit("copy-progress", CopyProgress { id: id.clone(), step: "place", done, total });
+        };
+        own_copy::place(&file, Path::new(&path), &app_dir, wine, &progress).map(|to| to.map(|p| p.to_string_lossy().into_owned()))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Whether the player's copy is still where the app reads it.
+#[tauri::command]
+fn copy_present(data: State<'_, Data>, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile, path: String) -> bool {
+    present_app_dir(&data, &folder, dir).is_ok_and(|d| own_copy::present(&file, Path::new(&path), &d, wine))
 }
 
 /// Asks the player for a folder on this computer, opening in `dir` when it's
@@ -1481,6 +1567,11 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            find_copies,
+            pick_copy,
+            check_copy,
+            place_copy,
+            copy_present,
             android_app_gone,
             file_kinds,
             list_protons,

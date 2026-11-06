@@ -73,6 +73,9 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       window.__installs.delete(id);
     },
     secret_get: () => null,
+    // The player's own copy of a game (own-copy-setup.tsx): none found, and one set up stays where it was put.
+    find_copies: () => files.foundCopies ?? [],
+    copy_present: () => true,
     "plugin:event|listen": ({ event, handler }) => {
       const id = ++next;
       if (!listeners.has(event)) listeners.set(event, new Map());

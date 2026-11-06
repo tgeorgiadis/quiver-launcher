@@ -15,6 +15,7 @@ import { OS_NAMES, ReleaseBadge, alertTitles, fullDate, platformList, relativeTi
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
 import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
+import { launchCopies } from "./own-copy";
 import { bare, changesUpTo, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
 import { hasBuildFor, otherSystems, releaseFor, runsHere } from "./assets";
@@ -990,7 +991,7 @@ export function shortcutRequest(entry: Entry, install: Install, settings: Settin
     preferred: install.executables,
     wine: Boolean(install.wine),
     program: install.program,
-    launch: { ...install.launch, windowsRunner: settings.windowsRunner },
+    launch: { ...install.launch, windowsRunner: settings.windowsRunner, copies: launchCopies(entry, install) },
     art: { icon: entry.artwork ?? art.logo, header: art.header, capsule: art.capsule, hero: art.hero, logo: art.logo },
   };
 }
