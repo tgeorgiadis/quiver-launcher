@@ -4,14 +4,41 @@
  * deeper than in the usual places, and lists what it finds there first.
  */
 import { useState } from "react";
-import { FolderPlus, X } from "lucide-react";
+import { Disc3, FolderPlus, X } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useLauncher } from "./store";
 import { native } from "./native";
 import { EVERY_CONSOLE, withCopyFolder } from "./own-copy";
+import { foldersOn } from "./detail";
 
-export function GameCopySettings() {
+/**
+ * Once, for a player who finished the setup before it asked where their games are (or skipped it): a banner to say
+ * where. Answered by adding a folder, by Not now, or by the setup's step.
+ */
+export function GameCopiesNotice({ onOpen }: { onOpen: () => void }) {
+  const { settings, setSettings, config } = useLauncher();
+  const set = Object.keys(settings.copyFolders ?? {}).length > 0;
+  if (!foldersOn(config.os) || !settings.setupDone || settings.copyFoldersAsked || set) return null;
+  const answer = () => setSettings((s) => ({ ...s, copyFoldersAsked: true }));
+  return (
+    <div className="banner game-copies-notice" role="status" aria-label={t`Game copies`}>
+      <Disc3 size={18} aria-hidden="true" />
+      <p>
+        <Trans>Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you.</Trans>
+      </p>
+      <button className="primary" onClick={() => (answer(), onOpen())}>
+        <FolderPlus size={15} aria-hidden="true" /> <Trans>Add folders…</Trans>
+      </button>
+      <button onClick={answer}>
+        <Trans>Not now</Trans>
+      </button>
+    </div>
+  );
+}
+
+/** `inSetup`: in the first start's setup, which says what it's for itself. */
+export function GameCopySettings({ inSetup = false }: { inSetup?: boolean }) {
   const { settings, setSettings, consoles } = useLauncher();
   const folders = settings.copyFolders ?? {};
   const [adding, setAdding] = useState("");
@@ -29,9 +56,11 @@ export function GameCopySettings() {
 
   return (
     <section className="settings-section game-copies" aria-label={t`Game copies`}>
-      <p className="muted">
-        <Trans>When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks in these folders first, then in Downloads and your drives.</Trans>
-      </p>
+      {!inSetup && (
+        <p className="muted">
+          <Trans>When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks in these folders first, then in Downloads and your drives.</Trans>
+        </p>
+      )}
       <ul className="game-copy-consoles">
         {set.map((id) => {
           const console = nameOf(id);

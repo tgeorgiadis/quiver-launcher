@@ -43,12 +43,13 @@ import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
 import { OwnCopyPanel, OwnCopyPrompt } from "./own-copy-setup";
+import { GameCopiesNotice } from "./own-copy-settings";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true } | { readme: true };
-type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings" };
+type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "copies" };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
@@ -263,7 +264,7 @@ export function App() {
                 ) : view.kind === "downloads" ? (
                   <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={action} />
                 ) : view.kind === "settings" ? (
-                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} />
+                  <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} start={view.section} />
                 ) : (
                   <GamePage game={view.game} back={backFrom(i)} onBack={goBack} onOpenApp={openApp} action={action} />
                 )}
@@ -293,6 +294,8 @@ export function App() {
                 covered.current[0] = { y: 0, focus: null };
               }}
             />
+            {/* Once, for a player set up before Game copies: where their ROMs and disc images are. */}
+            <GameCopiesNotice onOpen={() => open({ kind: "settings", section: "copies" })} />
             {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
             <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} />
           </div>

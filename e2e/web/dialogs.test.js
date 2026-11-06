@@ -135,7 +135,7 @@ test("the first start's setup: each step all reached by the d-pad, the focus on 
     assert.equal(await step(), "Welcome to Quiver Launcher!");
     // Usage data is a step only in a build that sends it (VITE_USAGE_DATA), which CI's web job isn't.
     const total = Number(await setup.execute(() => document.querySelector(".setup-count")?.innerText.match(/(\d+)\s*$/)?.[1]));
-    const titles = ["Welcome to Quiver Launcher!", "Coming from Quiver Launcher 3?", "Where apps install", "Usage data", "Sign in to sync your library"].filter((t) => total === 5 || t !== "Usage data");
+    const titles = ["Welcome to Quiver Launcher!", "Coming from Quiver Launcher 3?", "Where apps install", "Where are your games?", "Usage data", "Sign in to sync your library"].filter((t) => total === 6 || t !== "Usage data");
     assert.equal(titles.length, total);
     for (const [i, title] of titles.entries()) {
       await goesTo(title);

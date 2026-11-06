@@ -691,6 +691,10 @@ msgstr "Добавить папку…"
 msgid "Add folders for a console"
 msgstr "Добавить папки для консоли"
 
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Add folders…"
+msgstr "Добавить папки…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
 msgstr "Добавить в мою библиотеку"
@@ -2993,6 +2997,7 @@ msgstr "Ещё не установлено"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/old-library.tsx
+#: ../../apps/launcher/src/own-copy-settings.tsx
 #: ../../apps/launcher/src/setup.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Not now"
@@ -4159,6 +4164,14 @@ msgstr "Чтобы можно было сбросить пароль, если �
 msgid "Some AI assistance"
 msgstr "Частично с помощью ИИ"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Some apps need your own copy of a game, like a ROM or a disc image. Add the folders you keep them in for a few consoles, and Quiver finds them for you. You can change these and add more in Settings anytime."
+msgstr "Некоторым приложениям нужна ваша копия игры, например ROM или образ диска. Добавьте папки, где вы храните их для нескольких консолей, и Quiver найдёт их сам. Вы всегда можете изменить их и добавить новые в настройках."
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."
+msgstr "Некоторым приложениям нужна ваша копия игры, например ROM или образ диска. Укажите Quiver, где вы храните их для каждой консоли, и он найдёт их сам."
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
 msgstr "Кто-то поделился плейлистом? Вставьте ссылку, чтобы добавить его в библиотеку. Он будет обновляться вместе с оригиналом."
@@ -4980,6 +4993,10 @@ msgstr "Когда приложению нужна ваша копия игры,
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
 msgstr "Куда устанавливаются приложения"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Where are your games?"
+msgstr "Где ваши игры?"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"

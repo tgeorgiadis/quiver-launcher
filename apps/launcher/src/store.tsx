@@ -572,6 +572,8 @@ export type Settings = {
    * game's setup looks there first (own-copy.ts).
    */
   copyFolders?: Record<string, string[]>;
+  /** Asked once where those folders are: in the setup, or by the banner for a player set up before it (own-copy-settings.tsx). */
+  copyFoldersAsked?: boolean;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
   /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */

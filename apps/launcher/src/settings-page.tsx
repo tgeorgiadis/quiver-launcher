@@ -57,14 +57,14 @@ function useSideBySide() {
   return width / scale >= SIDE_BY_SIDE_WIDTH && config.os !== "android" && config.os !== "ios";
 }
 
-/** `onRunSetup` opens the first start's setup (setup.tsx) again, from General. */
-export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBack: () => void; onRunSetup: () => void }) {
+/** `onRunSetup` opens the first start's setup (setup.tsx) again, from General. `start`: a section to open on. */
+export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string; onBack: () => void; onRunSetup: () => void; start?: Section }) {
   const sideBySide = useSideBySide();
   const { config } = useLauncher();
   // Game copies are for computers: a phone keeps an app's files to itself.
   const sections = SECTIONS.filter(([key]) => key !== "copies" || foldersOn(config.os));
   // Side by side, General shows until another is picked; narrow, the list does.
-  const [picked, setPicked] = useState<Section | null>(null);
+  const [picked, setPicked] = useState<Section | null>(start ?? null);
   const section = picked ?? (sideBySide ? "general" : null);
   const label = sections.find(([key]) => key === section)?.[1];
   const name = label && i18n._(label);

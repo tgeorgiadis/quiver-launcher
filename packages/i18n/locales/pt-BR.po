@@ -691,6 +691,10 @@ msgstr "Adicionar pasta…"
 msgid "Add folders for a console"
 msgstr "Adicionar pastas para um console"
 
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Add folders…"
+msgstr "Adicionar pastas…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add to my library"
 msgstr "Adicionar à minha biblioteca"
@@ -2993,6 +2997,7 @@ msgstr "Ainda não instalado"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/old-library.tsx
+#: ../../apps/launcher/src/own-copy-settings.tsx
 #: ../../apps/launcher/src/setup.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Not now"
@@ -4159,6 +4164,14 @@ msgstr "Para você poder redefinir sua senha se esquecer"
 msgid "Some AI assistance"
 msgstr "Alguma ajuda de IA"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Some apps need your own copy of a game, like a ROM or a disc image. Add the folders you keep them in for a few consoles, and Quiver finds them for you. You can change these and add more in Settings anytime."
+msgstr "Alguns apps precisam da sua própria cópia de um jogo, como uma ROM ou uma imagem de disco. Adicione as pastas onde você as guarda para alguns consoles, e o Quiver as encontra para você. Você pode mudar e adicionar mais em Configurações quando quiser."
+
+#: ../../apps/launcher/src/own-copy-settings.tsx
+msgid "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."
+msgstr "Alguns apps precisam da sua própria cópia de um jogo, como uma ROM ou uma imagem de disco. Diga ao Quiver onde você as guarda para cada console, e ele as encontra para você."
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
 msgstr "Alguém compartilhou uma playlist? Cole o link para adicioná-la à sua biblioteca. Ela fica sempre atualizada com a da pessoa."
@@ -4980,6 +4993,10 @@ msgstr "Quando um app precisa da sua própria cópia de um jogo, como uma ROM ou
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
 msgstr "Onde os apps são instalados"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Where are your games?"
+msgstr "Onde estão seus jogos?"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"
