@@ -1583,6 +1583,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
         () => (musicForGame(), track("app_launched", played)),
         async (e) => {
+          // Windows asked for administrator rights and the player said no.
+          if (e === "cancelled") return;
           fail(id, e);
           track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) });
           // No program found: what is there says why, since it's different apps on every system.
