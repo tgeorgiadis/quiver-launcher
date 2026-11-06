@@ -4295,6 +4295,7 @@ msgid "This app gets that app's page, artwork and reviews. Its files stay yours:
 msgstr "Este app recebe a página, a arte e as avaliações daquele app. Os arquivos continuam sendo seus: o Quiver não vai atualizá-los, movê-los nem apagá-los, então as novas versões ficam por sua conta."
 
 #: ../../apps/launcher/src/store.tsx
+#: ../../apps/launcher/src/telemetry.test.ts
 msgid "This app has no approved release yet."
 msgstr "Este app ainda não tem uma versão aprovada."
 
