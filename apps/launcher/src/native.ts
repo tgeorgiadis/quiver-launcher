@@ -299,6 +299,8 @@ export const native = {
   pickExecutable: (folder: string, dir?: string, program?: string) => invoke<string | null>("pick_executable", { folder, dir, program }),
   /** The programs in an installed app's folder, relative to it. */
   listPrograms: (folder: string, dir?: string) => invoke<string[]>("list_programs", { folder, dir }),
+  /** The kinds of file in an installed app's folder (extensions, not names), for an error report. */
+  fileKinds: (folder: string, dir?: string) => invoke<string[]>("file_kinds", { folder, dir }),
   listProtons: () => invoke<Proton[]>("list_protons"),
   /** What Automatic runs Windows programs with on Linux, by name (a Proton, else Wine); null with neither. */
   automaticRunner: () => invoke<string | null>("automatic_runner"),

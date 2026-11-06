@@ -1275,6 +1275,10 @@ msgstr "Escolha “Criar um token no GitHub” e entre no GitHub."
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Escolha “Generate token”, copie o token, cole acima e escolha “Salvar token”."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose its program…"
+msgstr "Escolher o programa…"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
 msgstr "Escolha uma música para tocar de fundo"

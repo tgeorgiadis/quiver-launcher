@@ -48,7 +48,8 @@ settings in the Sentry project (Security & Privacy), not in this code: its Advan
 `user.geo.city` and `user.geo.subdivision`, which Sentry works out from your IP address even when it doesn't store it.
 
 Nothing is captured automatically (no clicks, text, page views or replays), and paths, home and apps folders,
-and the computer's user name are removed from data sent.
+and the computer's user name are removed from data sent. When Play can't find an app's program, its error report
+lists the kinds of file in the app's folder (`dll`, `pak`), never their names.
 
 | Variable            | When       | What                                                                                |
 | ------------------- | ---------- | ----------------------------------------------------------------------------------- |
