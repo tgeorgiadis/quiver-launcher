@@ -43,6 +43,11 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | port / standalone game | порт / отдельная игра | |
 | Installed (a version) / (a tab) / (an app) | Установлена / Установленные / Установлено | separate strings, by context |
 | Update (a card's badge) / (a button) | Обновление / Обновить | separate strings, by context |
+| TV mode / desktop mode | режим ТВ / режим рабочего стола | |
+| Home / Discover / Apps & Tools (TV mode's tabs) | Главная / Обзор / Приложения и инструменты | Discover is the catalog, so Обзор as for Browse; in a sentence: в «Обзоре» |
+| hold (a button) | зажать / зажмите | the note after a controller hint: зажать |
+| ROM / your own copy | ROM / ваша копия | |
+| Recycle Bin | корзина | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

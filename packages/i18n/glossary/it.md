@@ -41,6 +41,13 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | port / standalone game | port / gioco autonomo | |
 | Installed (a version) / (a tab) / (an app) | Installata / Installati / Installato | separate strings, by context |
 | Update (a card's badge) / (a button) | Aggiornamento / Aggiorna | separate strings, by context |
+| TV mode / desktop mode | modalità TV / modalità desktop | |
+| tab (TV mode's Home, All, Discover…) | scheda | |
+| Discover (TV mode's tab) / Home / All / Other | Scopri / Home / Tutto / Altro | |
+| Apps & Tools (TV mode's tab) | App e strumenti | short form: App |
+| hold (a controller button) | tieni premuto | |
+| ROM / your own copy | ROM / una tua copia | |
+| On / Off (a TV mode setting) | Attivata / Disattivata | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller
