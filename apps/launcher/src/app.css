@@ -988,6 +988,21 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .own-copy-panel li.ready .own-copy-what .muted { color: var(--ok, var(--accent)); }
 .own-copy-what { display: grid; gap: 2px; min-width: 0; }
 .own-copy-prompt .choices { display: grid; gap: 6px; margin: 10px 0; }
+/* However many copies turn up, the list scrolls and the buttons under it stay in sight. */
+.own-copy-choices { max-height: min(42vh, 340px); overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.own-copy-others { display: block; margin: 0 0 10px; font-size: 13px; }
+/* Its buttons' labels on one line each: they wrap as whole buttons onto a second row instead. */
+.own-copy-prompt .row > button { flex: 1 1 auto; white-space: nowrap; }
+/* Settings → Game copies: each console with the folders its copies are looked for in first. */
+.game-copy-consoles { display: grid; gap: 12px; margin: 12px 0; padding: 0; list-style: none; }
+.game-copy-consoles > li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.game-copy-console { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.game-copy-console button { flex: none; white-space: nowrap; }
+.game-copy-folder { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
+.game-copy-folder span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.game-copy-folder button.icon { flex: none; display: grid; place-items: center; padding: 4px; border: 0; background: none; color: var(--muted); }
+.game-copy-folder button.icon:hover, .game-copy-folder button.icon:focus-visible { color: var(--strong); }
+.game-copy-add { display: grid; gap: 6px; max-width: 360px; }
 .own-copy-prompt .choices button { flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px 14px; text-align: left; }
 .own-copy-prompt .choices button .muted { font-size: 12px; overflow-wrap: anywhere; }
 .own-copy-prompt .progress { margin: 10px 0; }

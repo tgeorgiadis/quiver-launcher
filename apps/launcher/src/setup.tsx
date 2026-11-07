@@ -1,7 +1,8 @@
 /**
  * The first start's setup: a few questions in turn, in place of a banner
  * for each. The language, a Quiver Launcher 3 library to import, where
- * apps install, usage data, and signing in, each answered or skipped, and
+ * apps install, where the player keeps their game copies, usage data, and
+ * signing in, each answered or skipped, and
  * Settings has them all after. Only on a computer's first start; Skip setup
  * leaves what wasn't answered to the banners that ask it otherwise.
  */
@@ -12,10 +13,11 @@ import { useLauncher, type Settings } from "./store";
 import { useAccount } from "./account";
 import { AppsFolder, LanguageSetting } from "./settings-page";
 import { OldLibraryStep } from "./old-library";
+import { GameCopySettings } from "./own-copy-settings";
 import { TelemetrySetting, useTelemetrySwitch } from "./telemetry-ui";
 import { track, trackScreen } from "./telemetry";
 
-type Step = "welcome" | "v3" | "apps" | "usage" | "account";
+type Step = "welcome" | "v3" | "apps" | "copies" | "usage" | "account";
 
 /** Whether a start shows the setup: the first on this computer, until it's done. */
 export const showsSetup = (settings: Pick<Settings, "launched" | "setupDone">) => !settings.launched && !settings.setupDone;
@@ -25,8 +27,8 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   const { setSettings, config } = useLauncher();
   const { available } = useTelemetrySwitch();
   const phone = config.os === "android" || config.os === "ios";
-  // Quiver Launcher 3 and an apps folder are a computer's; usage data only where it's sent.
-  const steps = (["welcome", !phone && "v3", !phone && "apps", available && "usage", "account"] as const).filter(Boolean) as Step[];
+  // Quiver Launcher 3, an apps folder and game copies are a computer's; usage data only where it's sent.
+  const steps = (["welcome", !phone && "v3", !phone && "apps", !phone && "copies", available && "usage", "account"] as const).filter(Boolean) as Step[];
   const [at, setAt] = useState(0);
   const step = steps[Math.min(at, steps.length - 1)];
   const [offering, setOffering] = useState(false);
@@ -42,7 +44,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   }, [step]);
   /** Leaving a step answers it: its banner has nothing more to ask. */
   const answered = (s: Step): Partial<Settings> =>
-    s === "v3" ? { oldLibraryNoticeSeen: true } : s === "usage" ? { telemetryNoticeSeen: true } : {};
+    s === "v3" ? { oldLibraryNoticeSeen: true } : s === "usage" ? { telemetryNoticeSeen: true } : s === "copies" ? { copyFoldersAsked: true } : {};
   // From the settings as they are by then: an import that finishes on a step saves the apps it hid.
   const finish = (skipped: boolean) => {
     setSettings((s) => ({ ...s, ...(skipped ? {} : answered(step)), setupDone: true }));
@@ -73,6 +75,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
     welcome: t`Welcome to Quiver Launcher!`,
     v3: offering ? t`Bring your apps over from Quiver Launcher 3?` : t`Coming from Quiver Launcher 3?`,
     apps: t`Where apps install`,
+    copies: t`Where are your games?`,
     usage: t`Usage data`,
     account: t`Sign in to sync your library`,
   };
@@ -104,6 +107,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
               />
             )}
             {step === "apps" && <AppsStep brought={brought} />}
+            {step === "copies" && <CopiesStep />}
             {step === "usage" && <TelemetrySetting />}
             {step === "account" && <AccountStep onSignIn={onSignIn} />}
           </div>
@@ -149,6 +153,17 @@ function AppsStep({ brought }: { brought: boolean }) {
         <Trans>New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card.</Trans>
       </p>
       <AppsFolder />
+    </>
+  );
+}
+
+function CopiesStep() {
+  return (
+    <>
+      <p className="muted">
+        <Trans>Some apps need your own copy of a game, like a ROM or a disc image. Add the folders you keep them in for a few consoles, and Quiver finds them for you. You can change these and add more in Settings anytime.</Trans>
+      </p>
+      <GameCopySettings inSetup />
     </>
   );
 }

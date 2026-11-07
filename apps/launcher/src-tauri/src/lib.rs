@@ -902,11 +902,13 @@ struct CopyProgress {
     total: u64,
 }
 
-/// Copies of the game that could be the player's, in the places players keep them; never in Quiver's apps folder.
+/// Copies of the game that could be the player's: first in `folders`, the ones they keep its console's copies in (their
+/// settings), then in the places players keep them; never in Quiver's apps folder.
 #[tauri::command]
-async fn find_copies(app: tauri::AppHandle, file: own_copy::SetupFile) -> Vec<own_copy::Found> {
+async fn find_copies(app: tauri::AppHandle, file: own_copy::SetupFile, folders: Option<Vec<String>>) -> Vec<own_copy::Found> {
     let skip = vec![app.state::<Data>().apps()];
-    tauri::async_runtime::spawn_blocking(move || own_copy::find(&file, &own_copy::places(), &skip)).await.unwrap_or_default()
+    let own: Vec<PathBuf> = folders.unwrap_or_default().into_iter().map(PathBuf::from).filter(|p| p.is_absolute()).collect();
+    tauri::async_runtime::spawn_blocking(move || own_copy::find(&file, &own, &own_copy::places(), &skip)).await.unwrap_or_default()
 }
 
 /// Asks the player for their copy: a file of the kinds it can be, or a folder. `QUIVER_PICK` (a file) and

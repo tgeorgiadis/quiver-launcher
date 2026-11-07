@@ -567,6 +567,13 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 export type Settings = {
   /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
   windowsRunner?: WindowsRunner;
+  /**
+   * The folders the player keeps their game copies (ROMs, disc images) in, by console id; `*` for every console. A
+   * game's setup looks there first (own-copy.ts).
+   */
+  copyFolders?: Record<string, string[]>;
+  /** Asked once where those folders are: in the setup, or by the banner for a player set up before it (own-copy-settings.tsx). */
+  copyFoldersAsked?: boolean;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
   /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */

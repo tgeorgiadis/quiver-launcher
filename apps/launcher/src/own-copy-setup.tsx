@@ -5,13 +5,13 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { CircleCheck, Disc3, FolderOpen, Play, ShieldCheck, TriangleAlert } from "lucide-react";
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry, SetupFile } from "@quiverlauncher/api";
 import { native, type CheckedCopy, type CopyProgress } from "./native";
 import { useLauncher, type Install, type OwnCopy } from "./store";
 import { Dialog } from "./library";
-import { delivered, setupFiles, sizeText } from "./own-copy";
+import { copiesNeeded, copyFoldersFor, delivered, rankCopies, setupFiles, sizeText } from "./own-copy";
 
 const fileName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 const folderOf = (path: string) => path.slice(0, Math.max(0, path.length - fileName(path).length)).replace(/[\\/]+$/, "");
@@ -74,9 +74,17 @@ function copyState(file: SetupFile, copy: OwnCopy | undefined, missing: boolean)
   return file.required === false ? t`Optional` : t`Needed to play`;
 }
 
+/** What the dialog asks for, in the words for what it is: a ROM, a disc image, a folder or a file. */
+function intro(file: SetupFile, name: string) {
+  if (file.kind === "folder") return t`${name} needs your own copy of the game to run. Choose the folder with the game's files in it, and Quiver checks it and puts it where ${name} needs it.`;
+  if (/\brom\b/i.test(file.label)) return t`${name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where ${name} needs it.`;
+  if (/\b(disc|disk|iso|cd|dvd)\b/i.test(file.label)) return t`${name} needs your own copy of the game to run. Choose the disc image, and Quiver checks it and puts it where ${name} needs it.`;
+  return t`${name} needs your own copy of the game to run. Choose the file, and Quiver checks it and puts it where ${name} needs it.`;
+}
+
 type Phase =
   | { kind: "looking" }
-  | { kind: "choose"; found: { path: string; size: number }[] }
+  | { kind: "choose"; found: { path: string; size: number; mine?: boolean }[] }
   | { kind: "checking"; path: string }
   | { kind: "placing"; path: string }
   | { kind: "problem"; path: string; checked: CheckedCopy | null; text: string }
@@ -84,20 +92,38 @@ type Phase =
 
 /** The dialog Play and the panel open: one copy at a time, then Ready to play. */
 export function OwnCopyPrompt() {
-  const { settingUpCopy: asking, setUpCopy, catalog, installs, config, setCopy, play } = useLauncher();
+  const { settingUpCopy: asking, setUpCopy, catalog, installs, config, settings, setCopy, play } = useLauncher();
   const entry = asking ? catalog[asking.id] : undefined;
   const install = asking ? installs[asking.id] : undefined;
   const files = setupFiles(entry, config.os);
-  // The one asked for, or each the game still needs in turn.
+  // The one asked for, or each the game still needs in turn: the first left, as each set up drops out.
   const queue = asking?.fileId ? files.filter((f) => f.id === asking.fileId) : files.filter((f) => !install?.copies?.[f.id] && f.required !== false && delivered(f));
-  const [index, setIndex] = useState(0);
-  const file = queue[index] ?? queue[0];
+  const [placedCount, setPlacedCount] = useState(0);
+  const [done, setDone] = useState<OwnCopy | null>(null);
+  const file = done ? files.find((f) => install?.copies?.[f.id]?.at === done.at) ?? queue[0] : queue[0];
   const [phase, setPhase] = useState<Phase>({ kind: "looking" });
   const [progress, setProgress] = useState<CopyProgress | null>(null);
+  // Files whose names don't look like this game stay folded away till asked for.
+  const [showOthers, setShowOthers] = useState(false);
+  // Play asked for it: the game starts once its last copy is in place.
+  const [launching, setLaunching] = useState(false);
   const open = Boolean(asking && entry && install && file);
   const asked = useRef(0);
 
-  useEffect(() => setIndex(0), [asking?.id, asking?.fileId]);
+  useEffect(() => {
+    setPlacedCount(0);
+    setDone(null);
+    setLaunching(false);
+  }, [asking?.id, asking?.fileId]);
+  useEffect(() => setShowOthers(false), [asking?.id, file?.id]);
+  // Started from here once the store has the copy, so Play sees it and passes it to the game.
+  useEffect(() => {
+    if (!launching || !asking || !entry || !install) return;
+    if (copiesNeeded(entry, install, config.os).length) return;
+    setLaunching(false);
+    setUpCopy(null);
+    void play(asking.id);
+  }, [launching, install?.copies]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
     const unlisten = native.onCopyProgress(setProgress);
@@ -105,10 +131,10 @@ export function OwnCopyPrompt() {
   }, [open]);
   // Looks for copies as each one is asked for.
   useEffect(() => {
-    if (!open || !file) return;
+    if (!open || !file || done) return;
     const turn = ++asked.current;
     setPhase({ kind: "looking" });
-    native.findCopies(file).then(
+    native.findCopies(file, copyFoldersFor(settings.copyFolders, entry?.consoles)).then(
       (found) => turn === asked.current && setPhase({ kind: "choose", found }),
       () => turn === asked.current && setPhase({ kind: "choose", found: [] }),
     );
@@ -138,9 +164,12 @@ export function OwnCopyPrompt() {
       const copy: OwnCopy = { path, ...(placed ? { placed } : {}), ...(checked.dump ? { dump: checked.dump } : {}), ...(checked.verified ? { verified: true } : {}), at: Date.now() };
       setCopy(entry.id, file.id, copy);
       if (turn !== asked.current) return;
-      // The next one the game needs, if there is one.
-      if (index + 1 < queue.length) return setIndex(index + 1);
+      setPlacedCount((n) => n + 1);
+      // The next one the game needs, if there is one: it's first in the queue once this one drops out.
+      if (!asking.fileId && queue.length > 1) return;
+      setDone(copy);
       setPhase({ kind: "done", copy });
+      if (asking.play) setLaunching(true);
     } catch (e) {
       if (turn === asked.current) setPhase({ kind: "problem", path, checked, text: String(e) });
     }
@@ -150,6 +179,9 @@ export function OwnCopyPrompt() {
     if (path) void use(path);
   };
   const busy = phase.kind === "checking" || phase.kind === "placing";
+  const ranked = phase.kind === "choose" ? rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name, file.label]) : null;
+  // Choosing a file is the way on when nothing found looks like the game, or what was chosen wasn't it.
+  const chooseNext = phase.kind === "problem" || (ranked !== null && !ranked.likely.length);
   const pct = progress && progress.total > 0 ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : null;
 
   return (
@@ -174,19 +206,25 @@ export function OwnCopyPrompt() {
               )}
             </p>
             {!delivered(file) && <p className="muted">{t`When ${name} asks for it, pick this file: ${fileName(phase.copy.path)}`}</p>}
-            <div className="row">
-              <button className="primary" autoFocus onClick={() => (close(), void play(entry.id))}>
-                <Play size={16} aria-hidden="true" /> {t({ message: "Play", comment: "Button that starts an app" })}
-              </button>
-              <button onClick={close}>{t`Close`}</button>
-            </div>
+            {launching ? (
+              <p className="muted" role="status">
+                {t`Starting ${name}…`}
+              </p>
+            ) : (
+              <div className="row">
+                <button className="primary" autoFocus onClick={() => (close(), void play(entry.id))}>
+                  <Play size={16} aria-hidden="true" /> {t({ message: "Play", comment: "Button that starts an app" })}
+                </button>
+                <button onClick={close}>{t`Close`}</button>
+              </div>
+            )}
           </>
         ) : (
           <>
             <h2>
               <Disc3 size={18} aria-hidden="true" /> {t`Your copy: ${file.label}`}
             </h2>
-            <p>{file.prompt ?? (folder ? t`${name} plays your own copy of the game. Choose the folder with the game's files in it.` : t`${name} plays your own copy of the game. Choose its file, and Quiver checks it and puts it where ${name} reads it.`)}</p>
+            <p>{file.prompt ?? intro(file, name)}</p>
             {file.accepted.length > 0 && (
               <p className="muted small">
                 <ShieldCheck size={14} aria-hidden="true" />{" "}
@@ -194,24 +232,36 @@ export function OwnCopyPrompt() {
               </p>
             )}
             {phase.kind === "looking" && <p className="muted">{t`Looking in Downloads, your ROM folders and drives…`}</p>}
-            {phase.kind === "choose" && (
-              <>
-                {phase.found.length > 0 && (
-                  <div className="choices">
-                    {phase.found.map((f, i) => (
-                      <button key={f.path} autoFocus={i === 0} onClick={() => void use(f.path)}>
-                        <strong>{fileName(f.path)}</strong>
-                        <span className="muted">
-                          {folderOf(f.path)}
-                          {f.size ? ` · ${sizeText(f.size)}` : ""}
-                        </span>
+            {phase.kind === "choose" &&
+              (() => {
+                const { likely, others } = ranked ?? { likely: [], others: [] };
+                const shown = showOthers ? [...likely, ...others] : likely;
+                const game = entry.games[0]?.title ?? entry.name;
+                return (
+                  <>
+                    {shown.length > 0 && (
+                      <div className="choices own-copy-choices">
+                        {shown.map((f, i) => (
+                          <button key={f.path} autoFocus={i === 0 && likely.length > 0} onClick={() => void use(f.path)}>
+                            <strong>{fileName(f.path)}</strong>
+                            <span className="muted">
+                              {folderOf(f.path)}
+                              {f.size ? ` · ${sizeText(f.size)}` : ""}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {!phase.found.length && <p className="muted">{t`Quiver didn't find one in the usual places.`}</p>}
+                    {phase.found.length > 0 && !likely.length && <p className="muted">{t`None of the files Quiver found look like ${game}.`}</p>}
+                    {others.length > 0 && (
+                      <button className="link-button own-copy-others" onClick={() => setShowOthers(!showOthers)}>
+                        {showOthers ? t`Hide the other files` : plural(others.length, { one: "Show # other file", other: "Show # other files" })}
                       </button>
-                    ))}
-                  </div>
-                )}
-                {!phase.found.length && <p className="muted">{t`Quiver didn't find one in the usual places.`}</p>}
-              </>
-            )}
+                    )}
+                  </>
+                );
+              })()}
             {busy && (
               <div className="progress" role="status">
                 <div className="bar" style={{ width: `${pct ?? 0}%` }} />
@@ -234,7 +284,7 @@ export function OwnCopyPrompt() {
               </div>
             )}
             <div className="row">
-              <button className={phase.kind === "problem" || (phase.kind === "choose" && !phase.found.length) ? "primary" : undefined} autoFocus={phase.kind === "problem" || (phase.kind === "choose" && !phase.found.length)} disabled={busy} onClick={() => void choose()}>
+              <button className={chooseNext ? "primary" : undefined} autoFocus={chooseNext} disabled={busy} onClick={() => void choose()}>
                 <FolderOpen size={16} aria-hidden="true" /> {folder ? t`Choose a folder…` : t`Choose a file…`}
               </button>
               {asking.play && !busy && (
@@ -244,7 +294,7 @@ export function OwnCopyPrompt() {
                 {t`Cancel`}
               </button>
             </div>
-            {queue.length > 1 && <p className="muted small">{t`${index + 1} of ${queue.length}`}</p>}
+            {!asking.fileId && placedCount + queue.length > 1 && <p className="muted small">{t`${placedCount + 1} of ${placedCount + queue.length}`}</p>}
           </>
         )}
       </div>

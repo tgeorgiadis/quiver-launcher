@@ -340,7 +340,8 @@ export const native = {
   onPad: (handler: (p: { key: string; down: boolean }) => void) => listen<{ key: string; down: boolean }>("pad", (e) => handler(e.payload)),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),
   /** Copies that could be the player's, in the places players keep them (own_copy.rs). */
-  findCopies: (file: SetupFile) => invoke<{ path: string; size: number }[]>("find_copies", { file }),
+  /** `folders`: where the player keeps this game's console's copies, looked in first; what's found there is `mine`. */
+  findCopies: (file: SetupFile, folders: string[] = []) => invoke<{ path: string; size: number; mine?: boolean }[]>("find_copies", { file, folders }),
   /** Asks for the player's copy: a file of the kinds it can be, or a folder. */
   pickCopy: (file: SetupFile, dir?: string) => invoke<string | null>("pick_copy", { file, dir }),
   checkCopy: (file: SetupFile, path: string) => invoke<CheckedCopy>("check_copy", { file, path }),

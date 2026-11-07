@@ -1,6 +1,55 @@
 import { describe, expect, it } from "vitest";
 import type { SetupFile } from "@quiverlauncher/api";
-import { copiesNeeded, delivered, launchCopies, setupFiles, sizeText } from "./own-copy";
+import { copiesNeeded, copyFoldersFor, delivered, EVERY_CONSOLE, launchCopies, nameWords, rankCopies, setupFiles, sizeText, withCopyFolder } from "./own-copy";
+
+describe("copy folders", () => {
+  const folders = { n64: ["D:/roms/n64", "E:/n64"], ps1: ["D:/roms/ps1"], [EVERY_CONSOLE]: ["D:/roms", "E:/n64"] };
+
+  it("looks in the game's consoles' folders, then every console's, each once", () => {
+    expect(copyFoldersFor(folders, ["n64"])).toEqual(["D:/roms/n64", "E:/n64", "D:/roms"]);
+    expect(copyFoldersFor(folders, ["snes"])).toEqual(["D:/roms", "E:/n64"]);
+    expect(copyFoldersFor(undefined, ["n64"])).toEqual([]);
+  });
+
+  it("adds a folder once, and drops a console with none left", () => {
+    expect(withCopyFolder(folders, "n64", "E:/n64", true).n64).toEqual(["D:/roms/n64", "E:/n64"]);
+    expect(withCopyFolder(undefined, "gc", "F:/gc", true)).toEqual({ gc: ["F:/gc"] });
+    expect("ps1" in withCopyFolder(folders, "ps1", "D:/roms/ps1", false)).toBe(false);
+    expect(folders.ps1).toEqual(["D:/roms/ps1"]);
+  });
+});
+
+describe("rankCopies", () => {
+  const base = (path: string) => path.split("\\").pop();
+  const found = [
+    "Diddy Kong Racing (USA) (En,Fr) (Rev 1).z64",
+    "Legend of Zelda, The - Ocarina of Time (USA).z64",
+    "mimi-6126231.z64",
+    "007 - The World Is Not Enough (USA).z64",
+    "GoldenEye 007 (USA).v64",
+    "Banjo-Kazooie (USA) (Rev 1).z64",
+    "goldeneye.z64",
+  ].map((n) => ({ path: `C:\\Users\\p\\Downloads\\${n}`, size: 1 }));
+
+  it("puts the files named like the game first, best first, and folds the rest away", () => {
+    const { likely, others } = rankCopies(found, ["GoldenEye 007", "GoldenEye 007 ROM"]);
+    expect(likely.map((f) => base(f.path))).toEqual(["GoldenEye 007 (USA).v64", "goldeneye.z64"]);
+    expect(others).toHaveLength(5);
+  });
+
+  it("matches a title however the file words it", () => {
+    const { likely } = rankCopies(found, ["The Legend of Zelda: Ocarina of Time"]);
+    expect(likely.map((f) => base(f.path))).toEqual(["Legend of Zelda, The - Ocarina of Time (USA).z64"]);
+  });
+
+  it("keeps everything when there's no title to go by", () => {
+    expect(rankCopies(found, ["ROM", ""])).toEqual({ likely: [], others: found });
+  });
+
+  it("reads the words that tell games apart", () => {
+    expect(nameWords("Pokémon Emerald (USA, Europe) (Rev 1).gba")).toEqual(["pokemon", "emerald", "1"]);
+  });
+});
 
 const rom: SetupFile = { id: "rom", label: "Game ROM", destination: "baserom.z64", extensions: [".z64"], accepted: [{ algo: "sha1", value: "a".repeat(40) }] };
 const iso: SetupFile = { id: "iso", label: "Disc image", flag: "--iso", extensions: [".iso"], accepted: [] };
