@@ -424,9 +424,20 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
     let lower = name.to_lowercase();
     if lower.ends_with(".zip") {
         let mut archive = zip::ZipArchive::new(fs::File::open(file).map_err(text)?).map_err(text)?;
+        #[cfg(unix)]
+        let mut links = Vec::new();
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i).map_err(text)?;
-            let Some(path) = enclosed(entry.name()).map(|p| out.join(p)) else { continue };
+            let Some(inside) = enclosed(entry.name()) else { continue };
+            let path = out.join(&inside);
+            // A Mac app's frameworks link `Versions/Current`; as a copy, its signature no longer verifies.
+            #[cfg(unix)]
+            if entry.unix_mode().is_some_and(|mode| mode & 0o170000 == 0o120000) {
+                let mut target = String::new();
+                entry.read_to_string(&mut target).map_err(text)?;
+                links.push((inside, target));
+                continue;
+            }
             if entry.is_dir() {
                 fs::create_dir_all(&path).map_err(text)?;
                 continue;
@@ -440,6 +451,20 @@ fn unpack(file: &Path, name: &str, out: &Path) -> Result<(), String> {
                 use std::os::unix::fs::PermissionsExt;
                 let _ = fs::set_permissions(&path, fs::Permissions::from_mode(mode & 0o777));
             }
+        }
+        // Made last, so no entry is written through a link. Only links that point down from their own folder, as a
+        // framework's do: a chain of links with `..` can lead out of `out` even when each one seems to stay inside.
+        #[cfg(unix)]
+        for (inside, target) in links {
+            let down = !target.is_empty() && !target.starts_with('/') && !target.contains('\0') && !target.split('/').any(|p| p == "..");
+            let path = out.join(&inside);
+            if !down || fs::symlink_metadata(&path).is_ok() {
+                continue;
+            }
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).map_err(text)?;
+            }
+            std::os::unix::fs::symlink(&target, &path).map_err(text)?;
         }
         Ok(())
     } else if let Some(packing) = tarball(&lower) {
@@ -508,11 +533,14 @@ fn enclosed(name: &str) -> Option<PathBuf> {
 }
 
 /// Hoists the contents of a lone wrapper folder, as most archives have one.
+/// A Mac app (`Game.app`) is the program itself, not a wrapper: hoisting its
+/// `Contents` leaves a folder macOS can't start.
 pub(crate) fn flatten(dir: &Path) -> io::Result<()> {
     loop {
         let entries: Vec<_> = fs::read_dir(dir)?.collect::<Result<_, _>>()?;
         let [only] = entries.as_slice() else { return Ok(()) };
-        if !only.file_type()?.is_dir() {
+        let app = Path::new(&only.file_name()).extension().is_some_and(|e| e.eq_ignore_ascii_case("app"));
+        if !only.file_type()?.is_dir() || app {
             return Ok(());
         }
         let inner = dir.join(".quiver-flatten");
@@ -1242,5 +1270,63 @@ mod tests {
         fs::write(dir.path().join("Game-v1/Game.exe"), "").unwrap();
         flatten(dir.path()).unwrap();
         assert!(dir.path().join("Game.exe").exists() && dir.path().join("data").is_dir());
+    }
+
+    #[test]
+    fn a_zipped_mac_app_stays_an_app() {
+        for top in ["", "Game-v1/"] {
+            let dir = tempfile::tempdir().unwrap();
+            let zip = {
+                let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+                for name in ["Game.app/Contents/Info.plist", "Game.app/Contents/MacOS/game"] {
+                    w.start_file(format!("{top}{name}"), zip::write::SimpleFileOptions::default().unix_permissions(0o755)).unwrap();
+                    io::Write::write_all(&mut w, b"game").unwrap();
+                }
+                w.finish().unwrap().into_inner()
+            };
+            let file = dir.path().join("Game.zip");
+            fs::write(&file, zip).unwrap();
+            let out = dir.path().join("out");
+            extract(&file, "Game.zip", &out).unwrap();
+            flatten(&out).unwrap();
+            assert!(out.join("Game.app/Contents/MacOS/game").is_file(), "{top}");
+            assert_eq!(find_executable(&out, &[], "macos"), Some(out.join("Game.app")), "{top}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_zipped_mac_app_keeps_its_frameworks_links_but_none_that_lead_out() {
+        let dir = tempfile::tempdir().unwrap();
+        let framework = "Game.app/Contents/Frameworks/Engine.framework";
+        let zip = {
+            let mut w = zip::ZipWriter::new(io::Cursor::new(Vec::new()));
+            let options = zip::write::SimpleFileOptions::default();
+            w.start_file(format!("{framework}/Versions/A/Engine"), options).unwrap();
+            io::Write::write_all(&mut w, b"engine").unwrap();
+            w.add_symlink(format!("{framework}/Versions/Current"), "A", options).unwrap();
+            w.add_symlink(format!("{framework}/Engine"), "Versions/Current/Engine", options).unwrap();
+            // Each `..` seems to stay inside, but together they lead out of the folder.
+            w.add_symlink("Game.app/Contents/Frameworks/up", "..", options).unwrap();
+            w.add_symlink("Game.app/Contents/out", "Frameworks/up/../../..", options).unwrap();
+            w.add_symlink("Game.app/etc", "/etc", options).unwrap();
+            // A link to where a later file goes isn't written through.
+            w.add_symlink("Game.app/data", "Contents", options).unwrap();
+            w.start_file("Game.app/data/save.bin", options).unwrap();
+            io::Write::write_all(&mut w, b"save").unwrap();
+            w.finish().unwrap().into_inner()
+        };
+        let file = dir.path().join("Game.zip");
+        fs::write(&file, zip).unwrap();
+        let out = dir.path().join("out");
+        extract(&file, "Game.zip", &out).unwrap();
+        let link = |p: &str| fs::symlink_metadata(out.join(p)).is_ok_and(|m| m.file_type().is_symlink());
+        assert!(link(&format!("{framework}/Versions/Current")) && link(&format!("{framework}/Engine")));
+        assert_eq!(fs::read(out.join(format!("{framework}/Engine"))).unwrap(), b"engine");
+        for refused in ["Game.app/Contents/Frameworks/up", "Game.app/Contents/out", "Game.app/etc"] {
+            assert!(fs::symlink_metadata(out.join(refused)).is_err(), "{refused}");
+        }
+        assert!(!link("Game.app/data") && out.join("Game.app/data/save.bin").is_file());
+        assert!(!out.join("Game.app/Contents/save.bin").exists());
     }
 }
