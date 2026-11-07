@@ -179,7 +179,7 @@ export function OwnCopyPrompt() {
     if (path) void use(path);
   };
   const busy = phase.kind === "checking" || phase.kind === "placing";
-  const ranked = phase.kind === "choose" ? rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name, file.label]) : null;
+  const ranked = phase.kind === "choose" ? rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name], file.label) : null;
   // Choosing a file is the way on when nothing found looks like the game, or what was chosen wasn't it.
   const chooseNext = phase.kind === "problem" || (ranked !== null && !ranked.likely.length);
   const pct = progress && progress.total > 0 ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : null;
