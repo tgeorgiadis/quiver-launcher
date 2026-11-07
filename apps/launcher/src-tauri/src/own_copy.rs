@@ -1,7 +1,7 @@
 //! The player's own copy of a game, for an app that plays it (a port of a console game): a ROM, a disc image or a
 //! folder of the game's files. The catalog says what the copy is and how the app gets it (`setupFiles`, from
 //! quiverlauncher.com): put somewhere in the app's folder or the system's folders for apps' data, passed after a
-//! command-line flag, or named in an environment variable (launch.rs adds those two at every start). Here it's
+//! command-line flag or on its own, or named in an environment variable (launch.rs adds those at every start). Here it's
 //! found where players keep copies, checked (by the dumps the catalog lists, else by its kind), and put in place.
 //! Quiver never downloads or ships game files: it reads the player's, and writes them nowhere but where the app
 //! they're for reads them.
@@ -30,6 +30,9 @@ pub struct SetupFile {
     pub root: Option<String>,
     #[serde(default)]
     pub flag: Option<String>,
+    /// Its path is passed as an argument of its own, with no flag.
+    #[serde(default)]
+    pub positional: bool,
     #[serde(default)]
     pub env: Option<String>,
     /// For a folder: names it must hold.
@@ -241,7 +244,7 @@ pub fn check(file: &SetupFile, path: &Path, progress: &dyn Fn(u64, u64)) -> Chec
     if !path.exists() {
         return problem("That copy isn't there any more.");
     }
-    if (file.flag.is_some() || file.env.is_some()) && file.destination.is_none() && portal_path(path) {
+    if (file.flag.is_some() || file.positional || file.env.is_some()) && file.destination.is_none() && portal_path(path) {
         return problem("The game can't see files picked from there. Pick it from your home folder, a game drive or an SD card.");
     }
     if file.folder() {

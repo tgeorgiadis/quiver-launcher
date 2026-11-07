@@ -88,6 +88,17 @@ describe("own copy", () => {
     ]);
   });
 
+  it("passes a positional copy on its own, and a flag wins over it", () => {
+    const bare: SetupFile = { id: "bare", label: "USA ROM", positional: true, extensions: [".z64"], accepted: [] };
+    expect(delivered(bare)).toBe(true);
+    expect(delivered({ ...bare, positional: false })).toBe(false);
+    expect(setupFiles(entry(bare), "macos").map((f) => f.id)).toEqual(["bare"]);
+    expect(copiesNeeded(entry(bare), {}, "windows").map((f) => f.id)).toEqual(["bare"]);
+    const install = { copies: { bare: { path: "C:/roms/wdc.z64", at: 1 }, iso: { path: "/g.iso", at: 1 } } };
+    expect(launchCopies(entry(bare), install)).toEqual([{ positional: true, path: "C:/roms/wdc.z64" }]);
+    expect(launchCopies(entry({ ...iso, positional: true }), install)).toEqual([{ flag: "--iso", path: "/g.iso" }]);
+  });
+
   it("says sizes plainly", () => {
     expect(sizeText(500)).toBe("1 KB");
     expect(sizeText(32 * 1024 * 1024)).toBe("32 MB");

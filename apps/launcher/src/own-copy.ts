@@ -1,13 +1,14 @@
 /**
  * The player's own copy of an app's game (own_copy.rs): which of the catalog's setup files apply here, which still
- * need the player's copy, and what Play tells the game about the ones it gets by flag or environment variable.
+ * need the player's copy, and what Play tells the game about the ones it gets as an argument or environment variable.
  */
 import type { Entry, SetupFile } from "@quiverlauncher/api";
 import type { LaunchCopy } from "./native";
 import type { Install } from "./store";
 
 /** Whether the launcher gets the copy to the app itself: puts it somewhere, or tells the app where it is. */
-export const delivered = (file: SetupFile) => file.destination !== undefined || file.flag !== undefined || file.env !== undefined;
+export const delivered = (file: SetupFile) =>
+  file.destination !== undefined || file.flag !== undefined || file.positional === true || file.env !== undefined;
 
 /**
  * The catalog's setup files for this app on this computer. None on Android and iOS, which keep an app's files to
@@ -17,7 +18,7 @@ export const delivered = (file: SetupFile) => file.destination !== undefined || 
 export function setupFiles(entry: Pick<Entry, "launcher"> | undefined, os: string): SetupFile[] {
   if (os === "android" || os === "ios") return [];
   const files = entry?.launcher?.setupFiles ?? [];
-  return files.filter((f) => f && f.id && f.label && Array.isArray(f.accepted) && !(os === "macos" && f.env && !f.destination && !f.flag));
+  return files.filter((f) => f && f.id && f.label && Array.isArray(f.accepted) && !(os === "macos" && f.env && !f.destination && !f.flag && !f.positional));
 }
 
 /** The setup files Play waits for: needed, got to the app by the launcher, and without the player's copy yet. */
@@ -25,13 +26,22 @@ export function copiesNeeded(entry: Pick<Entry, "launcher"> | undefined, install
   return setupFiles(entry, os).filter((f) => f.required !== false && delivered(f) && !install?.copies?.[f.id]);
 }
 
-/** What Play passes the game: each copy it's told about on the command line or in its environment, where it is now. */
+/**
+ * What Play passes the game: each copy it's told about on the command line (after a flag, or on its own) or in its
+ * environment, where it is now. A flag wins over `positional`.
+ */
 export function launchCopies(entry: Pick<Entry, "launcher"> | undefined, install: Pick<Install, "copies"> | undefined): LaunchCopy[] {
   const out: LaunchCopy[] = [];
   for (const file of entry?.launcher?.setupFiles ?? []) {
     const copy = install?.copies?.[file.id];
-    if (!copy || (!file.flag && !file.env)) continue;
-    out.push({ ...(file.flag ? { flag: file.flag } : {}), ...(file.env ? { env: file.env } : {}), path: copy.placed ?? copy.path });
+    const positional = file.positional === true && !file.flag;
+    if (!copy || (!file.flag && !positional && !file.env)) continue;
+    out.push({
+      ...(file.flag ? { flag: file.flag } : {}),
+      ...(positional ? { positional: true } : {}),
+      ...(file.env ? { env: file.env } : {}),
+      path: copy.placed ?? copy.path,
+    });
   }
   return out;
 }
