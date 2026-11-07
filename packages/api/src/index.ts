@@ -23,7 +23,7 @@ export type SetupDump = { algo: "sha1" | "sha256"; value: string; label?: string
 /**
  * Something the player provides for an app: their own copy of its game (a ROM, a disc image, or a folder of the
  * game's files). The launcher checks it and gets it to the app: puts it at `destination` (under `root`), passes its
- * path after `flag`, or puts it in the environment variable `env`.
+ * path after `flag` or as an argument of its own (`positional`), or puts it in the environment variable `env`.
  */
 export type SetupFile = {
   id: string;
@@ -40,6 +40,11 @@ export type SetupFile = {
   root?: "app" | "data" | "config" | "localData";
   /** "--iso"; ending in "=" joins it to the path. */
   flag?: string;
+  /**
+   * Its path is an argument of its own, with no flag in front (`game.exe C:\roms\game.z64`), before any flags. A
+   * `flag` wins. Launchers from before it ignore it: they don't ask for the copy, and start the game as they did.
+   */
+  positional?: boolean;
   env?: string;
   /** For a folder: names it holds, to tell it's the right one. */
   contains?: string[];

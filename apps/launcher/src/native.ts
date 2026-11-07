@@ -126,11 +126,11 @@ export type LaunchOptions = {
   command?: string;
   /** The programs Play starts, relative to the app's folder: with more than one, Play asks which. The launcher itself reads only `executable`. */
   programs?: string[];
-  /** The player's copies of the game that it's told about by flag or environment variable (own-copy.ts); never saved. */
+  /** The player's copies of the game that it's told about as an argument or environment variable (own-copy.ts); never saved. */
   copies?: LaunchCopy[];
 };
-/** One of the player's copies, and how the game is told where it is. */
-export type LaunchCopy = { flag?: string; env?: string; path: string };
+/** One of the player's copies, and how the game is told where it is: after `flag`, on its own (`positional`), or in `env`. */
+export type LaunchCopy = { flag?: string; positional?: boolean; env?: string; path: string };
 /** What checking the player's copy found (own_copy.rs). */
 export type CheckedCopy = {
   ok: boolean;
