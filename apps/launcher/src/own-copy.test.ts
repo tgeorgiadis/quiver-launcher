@@ -66,6 +66,17 @@ describe("rankCopies", () => {
     expect(base(rankCopies(gb, ["Donkey Kong"], "Donkey Kong ROM").likely[0].path)).toBe("Donkey Kong (World) (Rev 1) (SGB Enhanced).gb");
   });
 
+  it("doesn't take the first game for its sequel", () => {
+    const snes = set([
+      "Donkey Kong Country (USA) (Rev 2).sfc",
+      "Donkey Kong Country 2 - Diddy's Kong Quest (USA) (En,Fr) (Rev 1).sfc",
+      "Donkey Kong Country 3 - Dixie Kong's Double Trouble! (USA) (En,Fr).sfc",
+    ]);
+    const first = (titles: string[], label: string) => base(rankCopies(snes, titles, label).likely[0].path);
+    expect(first(["Donkey Kong Country 2"], "Donkey Kong Country 2 (USA).sfc")).toBe("Donkey Kong Country 2 - Diddy's Kong Quest (USA) (En,Fr) (Rev 1).sfc");
+    expect(first(["Donkey Kong Country"], "Donkey Kong Country ROM")).toBe("Donkey Kong Country (USA) (Rev 2).sfc");
+  });
+
   it("goes by the copy's own label first, for an app that plays more than one game", () => {
     const gbc = set(["Legend of Zelda, The - Oracle of Ages (USA, Australia).gbc", "Legend of Zelda, The - Oracle of Seasons (USA, Australia).gbc"]);
     const titles = ["The Legend of Zelda: Oracle of Ages", "The Legend of Zelda: Oracle of Seasons"];

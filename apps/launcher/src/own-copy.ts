@@ -121,10 +121,13 @@ export function rankCopies<T extends { path: string }>(found: T[], titles: strin
     const best = fits.reduce((a, b) => (b.score > a.score ? b : a));
     // Most of a title in the name, and not just one word of it among many others.
     const likely = fits.some((x) => x.covers >= 0.6 && (x.covers === 1 || x.score >= 0.4));
-    const byLabel = own.length ? fit(words, own).score : 0;
-    return { f, i, likely, s: best.score * (UNFINISHED.test(name) ? 0.7 : 1), byLabel };
+    const byLabel = own.length ? fit(words, own) : { covers: 0, score: 0 };
+    // A name missing one of the title's words is another game, however short the word: "Donkey Kong Country" isn't
+    // "Donkey Kong Country 2", though it's nearer it in length than "Donkey Kong Country 2 - Diddy's Kong Quest".
+    const whole = (byLabel.covers === 1 ? 2 : 0) + (fits.some((x) => x.covers === 1) ? 1 : 0);
+    return { f, i, likely, whole, s: best.score * (UNFINISHED.test(name) ? 0.7 : 1), byLabel: byLabel.score };
   });
-  const order = (a: (typeof scored)[number], b: (typeof scored)[number]) => b.byLabel - a.byLabel || b.s - a.s || a.i - b.i;
+  const order = (a: (typeof scored)[number], b: (typeof scored)[number]) => b.whole - a.whole || b.byLabel - a.byLabel || b.s - a.s || a.i - b.i;
   return {
     likely: scored.filter((c) => c.likely).sort(order).map((c) => c.f),
     others: scored.filter((c) => !c.likely).sort((a, b) => b.s - a.s || a.i - b.i).map((c) => c.f),
