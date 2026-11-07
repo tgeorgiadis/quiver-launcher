@@ -57,7 +57,7 @@ export function OwnCopyPanel({ entry, install }: { entry: Entry; install: Instal
         })}
       </ul>
       <p className="muted small">
-        <Trans>Quiver checks your copy and puts it where the game reads it. It never downloads game files.</Trans>
+        <Trans>Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files.</Trans>
       </p>
     </section>
   );
@@ -76,6 +76,13 @@ function copyState(file: SetupFile, copy: OwnCopy | undefined, missing: boolean)
 
 /** What the dialog asks for, in the words for what it is: a ROM, a disc image, a folder or a file. */
 function intro(file: SetupFile, name: string) {
+  // The game asks for this one itself: Quiver only checks it, and says which file to pick.
+  if (!delivered(file)) {
+    if (file.kind === "folder") return t`${name} needs your own copy of the game to run, and asks for it when it starts. Choose the folder with the game's files in it, and Quiver checks it's one ${name} takes.`;
+    if (/\brom\b/i.test(file.label)) return t`${name} needs your own copy of the game to run, and asks for it when it starts. Choose the ROM, and Quiver checks it's one ${name} takes.`;
+    if (/\b(disc|disk|iso|cd|dvd)\b/i.test(file.label)) return t`${name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one ${name} takes.`;
+    return t`${name} needs your own copy of the game to run, and asks for it when it starts. Choose the file, and Quiver checks it's one ${name} takes.`;
+  }
   if (file.kind === "folder") return t`${name} needs your own copy of the game to run. Choose the folder with the game's files in it, and Quiver checks it and puts it where ${name} needs it.`;
   if (/\brom\b/i.test(file.label)) return t`${name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where ${name} needs it.`;
   if (/\b(disc|disk|iso|cd|dvd)\b/i.test(file.label)) return t`${name} needs your own copy of the game to run. Choose the disc image, and Quiver checks it and puts it where ${name} needs it.`;
@@ -179,7 +186,7 @@ export function OwnCopyPrompt() {
     if (path) void use(path);
   };
   const busy = phase.kind === "checking" || phase.kind === "placing";
-  const ranked = phase.kind === "choose" ? rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name, file.label]) : null;
+  const ranked = phase.kind === "choose" ? rankCopies(phase.found, [...entry.games.map((g) => g.title), entry.name], file.label) : null;
   // Choosing a file is the way on when nothing found looks like the game, or what was chosen wasn't it.
   const chooseNext = phase.kind === "problem" || (ranked !== null && !ranked.likely.length);
   const pct = progress && progress.total > 0 ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : null;
@@ -193,7 +200,17 @@ export function OwnCopyPrompt() {
               <CircleCheck size={18} aria-hidden="true" /> <Trans>Ready to play</Trans>
             </h2>
             <p>
-              {phase.copy.verified ? (
+              {!delivered(file) ? (
+                phase.copy.verified ? (
+                  phase.copy.dump ? (
+                    <Trans>Your copy is a good one ({phase.copy.dump}).</Trans>
+                  ) : (
+                    <Trans>Your copy is a good one.</Trans>
+                  )
+                ) : (
+                  <Trans>Quiver has no list of good copies for {name} to check this one against.</Trans>
+                )
+              ) : phase.copy.verified ? (
                 phase.copy.dump ? (
                   <Trans>
                     Your copy is a good one ({phase.copy.dump}), and it&apos;s where {name} reads it.

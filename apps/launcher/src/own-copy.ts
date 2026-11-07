@@ -71,9 +71,12 @@ export function withCopyFolder(folders: Record<string, string[]> | undefined, co
 /** Words in a game's or file's name that say nothing about which game it is. */
 const NOISE = new Set(["the", "of", "a", "an", "and", "rom", "iso", "disc", "disk", "image", "file", "files", "game", "copy", "usa", "us", "eu", "europe", "japan", "jp", "ntsc", "pal", "rev", "version", "v1", "en", "fr", "de"]);
 
-/** A name's words that tell games apart: lowercase, without its extension, punctuation or the words above. */
+/**
+ * A name's words that tell games apart: lowercase, without its extension, punctuation or the words above, and without
+ * the tags in brackets that ROM sets add ("(USA)", "(Rev 1)", "(SGB Enhanced)"), which say which dump, not which game.
+ */
 export function nameWords(name: string): string[] {
-  const base = name.replace(/\.[a-z0-9]{1,5}$/i, "");
+  const base = name.replace(/\.[a-z0-9]{1,5}$/i, "").replace(/\([^)]*\)|\[[^\]]*\]/g, " ");
   return base
     .toLowerCase()
     .normalize("NFKD")
@@ -82,22 +85,53 @@ export function nameWords(name: string): string[] {
     .filter((w) => w && !NOISE.has(w));
 }
 
+/** Tags that mark a dump as not the game as sold: put after the one that is. */
+const UNFINISHED = /\((?:[^)]*\b)?(?:beta|proto|prototype|demo|sample|kiosk|debug|hack|pirate|unl|aftermarket)\b[^)]*\)/i;
+
+/** Longer words weigh more: "goldeneye" says which game far more than a "007" another game shares. */
+const weight = (list: string[]) => list.reduce((sum, w) => sum + w.length, 0);
+
 /**
- * The copies found, split into the ones whose file names look like this game (most of its title in them, by the
- * length of its words, best first) and the rest, as found. `titles` are the game's names: the original games' titles and the file's label.
+ * How well a file's name fits a title, 0 to 1: how much of the title is in it, and how much of it is the title, so
+ * "Duke Nukem - Zero Hour" doesn't pass for "F-Zero X" on one word, and "F-Zero X" beats a longer name that also has it.
  */
-export function rankCopies<T extends { path: string }>(found: T[], titles: string[]): { likely: T[]; others: T[] } {
-  const wanted = titles.map(nameWords).filter((w) => w.length > 0);
+function fit(file: string[], title: string[]): { covers: number; score: number } {
+  const words = new Set(file);
+  const shared = title.filter((w) => words.has(w));
+  if (!shared.length) return { covers: 0, score: 0 };
+  const covers = weight(shared) / weight(title);
+  const own = weight(shared) / Math.max(1, weight([...words]));
+  return { covers, score: (2 * covers * own) / (covers + own) };
+}
+
+/**
+ * The copies found, split into the ones whose file names look like this game, best first, and the rest, nearest
+ * first. `titles` are the game's names (the original games' titles and the app's), and `label` the copy's own, which
+ * comes first where it names a game of its own: an Oracle of Seasons ROM before the Oracle of Ages one the app also
+ * plays. Dumps marked Beta, Proto, Demo and the like come after the one as sold.
+ */
+export function rankCopies<T extends { path: string }>(found: T[], titles: string[], label = ""): { likely: T[]; others: T[] } {
+  const wanted = [...titles, label].map(nameWords).filter((w) => w.length > 0);
   if (!wanted.length) return { likely: [], others: found };
-  const score = (path: string) => {
-    const words = new Set(nameWords(path.split(/[\\/]/).pop() ?? path));
-    // Longer words weigh more: "goldeneye" says which game far more than a "007" another game shares.
-    const weight = (list: string[]) => list.reduce((sum, w) => sum + w.length, 0);
-    return Math.max(...wanted.map((title) => weight(title.filter((w) => words.has(w))) / weight(title)));
+  const own = nameWords(label);
+  const scored = found.map((f, i) => {
+    const name = f.path.split(/[\\/]/).pop() ?? f.path;
+    const words = nameWords(name);
+    const fits = wanted.map((title) => fit(words, title));
+    const best = fits.reduce((a, b) => (b.score > a.score ? b : a));
+    // Most of a title in the name, and not just one word of it among many others.
+    const likely = fits.some((x) => x.covers >= 0.6 && (x.covers === 1 || x.score >= 0.4));
+    const byLabel = own.length ? fit(words, own) : { covers: 0, score: 0 };
+    // A name missing one of the title's words is another game, however short the word: "Donkey Kong Country" isn't
+    // "Donkey Kong Country 2", though it's nearer it in length than "Donkey Kong Country 2 - Diddy's Kong Quest".
+    const whole = (byLabel.covers === 1 ? 2 : 0) + (fits.some((x) => x.covers === 1) ? 1 : 0);
+    return { f, i, likely, whole, s: best.score * (UNFINISHED.test(name) ? 0.7 : 1), byLabel: byLabel.score };
+  });
+  const order = (a: (typeof scored)[number], b: (typeof scored)[number]) => b.whole - a.whole || b.byLabel - a.byLabel || b.s - a.s || a.i - b.i;
+  return {
+    likely: scored.filter((c) => c.likely).sort(order).map((c) => c.f),
+    others: scored.filter((c) => !c.likely).sort((a, b) => b.s - a.s || a.i - b.i).map((c) => c.f),
   };
-  const scored = found.map((f, i) => ({ f, i, s: score(f.path) }));
-  const likely = scored.filter((c) => c.s >= 0.5).sort((a, b) => b.s - a.s || a.i - b.i);
-  return { likely: likely.map((c) => c.f), others: scored.filter((c) => c.s < 0.5).map((c) => c.f) };
 }
 
 /** A size for the player: "32 MB", "7.3 GB". */

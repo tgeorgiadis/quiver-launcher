@@ -322,6 +322,22 @@ msgid "{name} menu"
 msgstr "Menu de {name}"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
+msgstr "{name} precisa da sua própria cópia do jogo para rodar, e pede por ela ao iniciar. Escolha a imagem de disco, e o Quiver confere se {name} aceita."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the file, and Quiver checks it's one {name} takes."
+msgstr "{name} precisa da sua própria cópia do jogo para rodar, e pede por ela ao iniciar. Escolha o arquivo, e o Quiver confere se {name} aceita."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the folder with the game's files in it, and Quiver checks it's one {name} takes."
+msgstr "{name} precisa da sua própria cópia do jogo para rodar, e pede por ela ao iniciar. Escolha a pasta com os arquivos do jogo, e o Quiver confere se {name} aceita."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the ROM, and Quiver checks it's one {name} takes."
+msgstr "{name} precisa da sua própria cópia do jogo para rodar, e pede por ela ao iniciar. Escolha a ROM, e o Quiver confere se {name} aceita."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run. Choose the disc image, and Quiver checks it and puts it where {name} needs it."
 msgstr "{name} precisa da sua própria cópia do jogo para rodar. Escolha a imagem de disco, e o Quiver confere e coloca onde {name} precisa."
 
@@ -3443,8 +3459,8 @@ msgid "Quiver checks it's a copy the game takes."
 msgstr "O Quiver confere se é uma cópia que o jogo aceita."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Quiver checks your copy and puts it where the game reads it. It never downloads game files."
-msgstr "O Quiver confere sua cópia e coloca onde o jogo lê. Ele nunca baixa arquivos de jogos."
+msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
+msgstr "O Quiver confere sua cópia e coloca onde o jogo lê, a não ser que o jogo peça por ela. Ele nunca baixa arquivos de jogos."
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -3461,6 +3477,10 @@ msgstr "O Quiver não conseguiu mostrar essa imagem. Ela pode ter sido movida ou
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in the usual places."
 msgstr "O Quiver não encontrou nenhuma nos lugares de sempre."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Quiver has no list of good copies for {name} to check this one against."
+msgstr "Não há uma lista de cópias boas de {name} para conferir esta."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver hasn't checked this app."
@@ -5092,9 +5112,18 @@ msgstr "Seus apps estão na sua biblioteca."
 msgid "Your copy is a good one ({0}), and it's where {name} reads it."
 msgstr "Sua cópia é boa ({0}) e está onde {name} lê."
 
+#. placeholder {0}: phase.copy.dump
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy is a good one ({0})."
+msgstr "Sua cópia é boa ({0})."
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is a good one, and it's where {name} reads it."
 msgstr "Sua cópia é boa e está onde {name} lê."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy is a good one."
+msgstr "Sua cópia é boa."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is where {name} reads it."

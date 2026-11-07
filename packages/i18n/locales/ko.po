@@ -322,6 +322,22 @@ msgid "{name} menu"
 msgstr "{name} 메뉴"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요하고, 시작할 때 사본을 물어봐요. 디스크 이미지를 고르면 Quiver가 {name}에서 쓸 수 있는 사본인지 확인해요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the file, and Quiver checks it's one {name} takes."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요하고, 시작할 때 사본을 물어봐요. 파일을 고르면 Quiver가 {name}에서 쓸 수 있는 사본인지 확인해요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the folder with the game's files in it, and Quiver checks it's one {name} takes."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요하고, 시작할 때 사본을 물어봐요. 게임 파일이 든 폴더를 고르면 Quiver가 {name}에서 쓸 수 있는 사본인지 확인해요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the ROM, and Quiver checks it's one {name} takes."
+msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요하고, 시작할 때 사본을 물어봐요. ROM을 고르면 Quiver가 {name}에서 쓸 수 있는 사본인지 확인해요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run. Choose the disc image, and Quiver checks it and puts it where {name} needs it."
 msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해요. 디스크 이미지를 고르면 Quiver가 확인하고 {name}에 필요한 위치에 놓아요."
 
@@ -3443,8 +3459,8 @@ msgid "Quiver checks it's a copy the game takes."
 msgstr "Quiver가 게임이 지원하는 사본인지 확인해요."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Quiver checks your copy and puts it where the game reads it. It never downloads game files."
-msgstr "Quiver가 사본을 확인하고 게임이 읽는 위치에 놓아요. 게임 파일은 절대 다운로드하지 않아요."
+msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
+msgstr "Quiver가 사본을 확인하고, 게임이 직접 묻지 않으면 게임이 읽는 위치에 놓아요. 게임 파일은 절대 다운로드하지 않아요."
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -3461,6 +3477,10 @@ msgstr "Quiver에서 이 이미지를 표시할 수 없습니다. 파일이 이�
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in the usual places."
 msgstr "Quiver가 평소 위치에서 찾지 못했어요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Quiver has no list of good copies for {name} to check this one against."
+msgstr "{name}의 정상 사본 목록이 없어서 이 사본을 확인할 수 없어요."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver hasn't checked this app."
@@ -5092,9 +5112,18 @@ msgstr "앱이 라이브러리에 들어왔어요."
 msgid "Your copy is a good one ({0}), and it's where {name} reads it."
 msgstr "정상 사본({0})이고 {name}이(가) 읽는 위치에 있어요."
 
+#. placeholder {0}: phase.copy.dump
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy is a good one ({0})."
+msgstr "정상 사본({0})이에요."
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is a good one, and it's where {name} reads it."
 msgstr "정상 사본이고 {name}이(가) 읽는 위치에 있어요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copy is a good one."
+msgstr "정상 사본이에요."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is where {name} reads it."

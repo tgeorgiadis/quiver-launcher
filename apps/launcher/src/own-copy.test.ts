@@ -42,12 +42,55 @@ describe("rankCopies", () => {
     expect(likely.map((f) => base(f.path))).toEqual(["Legend of Zelda, The - Ocarina of Time (USA).z64"]);
   });
 
+  // From a real ROM set: names as No-Intro has them.
+  const set = (names: string[]) => names.map((n) => ({ path: `S:\\Roms\\N64\\${n}`, size: 1 }));
+
+  it("puts the dump as sold before a beta, and doesn't take one shared word for the game", () => {
+    const n64 = set([
+      "F-Zero X (USA) (Beta) (The Legend of Zelda - Ocarina of Time leftover data).z64",
+      "Duke Nukem - Zero Hour (USA).z64",
+      "F-Zero X (USA).z64",
+      "Mortal Kombat Mythologies - Sub-Zero (USA).z64",
+    ]);
+    const { likely } = rankCopies(n64, ["F-Zero X"], "F-Zero X ROM");
+    expect(likely.map((f) => base(f.path))).toEqual(["F-Zero X (USA).z64", "F-Zero X (USA) (Beta) (The Legend of Zelda - Ocarina of Time leftover data).z64"]);
+  });
+
+  it("doesn't take another game for this one on its longest word", () => {
+    const n64 = set(["F1 Racing Championship (USA) (Beta).z64", "World Driver Championship (USA).z64", "GT 64 - Championship Edition (USA).z64"]);
+    expect(rankCopies(n64, ["World Driver Championship"]).likely.map((f) => base(f.path))).toEqual(["World Driver Championship (USA).z64"]);
+  });
+
+  it("puts the game itself before games with its name and more", () => {
+    const gb = set(["Donkey Kong Land (USA, Europe) (SGB Enhanced).gb", "Donkey Kong (World) (Rev 1) (SGB Enhanced).gb", "Donkey Kong Land 2 (USA, Europe) (SGB Enhanced).gb"]);
+    expect(base(rankCopies(gb, ["Donkey Kong"], "Donkey Kong ROM").likely[0].path)).toBe("Donkey Kong (World) (Rev 1) (SGB Enhanced).gb");
+  });
+
+  it("doesn't take the first game for its sequel", () => {
+    const snes = set([
+      "Donkey Kong Country (USA) (Rev 2).sfc",
+      "Donkey Kong Country 2 - Diddy's Kong Quest (USA) (En,Fr) (Rev 1).sfc",
+      "Donkey Kong Country 3 - Dixie Kong's Double Trouble! (USA) (En,Fr).sfc",
+    ]);
+    const first = (titles: string[], label: string) => base(rankCopies(snes, titles, label).likely[0].path);
+    expect(first(["Donkey Kong Country 2"], "Donkey Kong Country 2 (USA).sfc")).toBe("Donkey Kong Country 2 - Diddy's Kong Quest (USA) (En,Fr) (Rev 1).sfc");
+    expect(first(["Donkey Kong Country"], "Donkey Kong Country ROM")).toBe("Donkey Kong Country (USA) (Rev 2).sfc");
+  });
+
+  it("goes by the copy's own label first, for an app that plays more than one game", () => {
+    const gbc = set(["Legend of Zelda, The - Oracle of Ages (USA, Australia).gbc", "Legend of Zelda, The - Oracle of Seasons (USA, Australia).gbc"]);
+    const titles = ["The Legend of Zelda: Oracle of Ages", "The Legend of Zelda: Oracle of Seasons"];
+    expect(base(rankCopies(gbc, titles, "Oracle of Seasons (US) ROM").likely[0].path)).toBe("Legend of Zelda, The - Oracle of Seasons (USA, Australia).gbc");
+    expect(base(rankCopies(gbc, titles, "Oracle of Ages (US) ROM").likely[0].path)).toBe("Legend of Zelda, The - Oracle of Ages (USA, Australia).gbc");
+  });
+
   it("keeps everything when there's no title to go by", () => {
     expect(rankCopies(found, ["ROM", ""])).toEqual({ likely: [], others: found });
   });
 
   it("reads the words that tell games apart", () => {
-    expect(nameWords("Pokémon Emerald (USA, Europe) (Rev 1).gba")).toEqual(["pokemon", "emerald", "1"]);
+    expect(nameWords("Pokémon Emerald (USA, Europe) (Rev 1).gba")).toEqual(["pokemon", "emerald"]);
+    expect(nameWords("Super Mario World 2 - Yoshi's Island")).toEqual(["super", "mario", "world", "2", "yoshi", "s", "island"]);
   });
 });
 
