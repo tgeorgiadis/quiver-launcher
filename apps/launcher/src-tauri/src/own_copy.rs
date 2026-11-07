@@ -583,10 +583,12 @@ const DEPTH: usize = 4;
 /// How many files and folders are looked at in all, so a huge drive can't keep it looking.
 const BUDGET: usize = 50_000;
 const MOST: usize = 20;
-/// In the player's own folders for a console: deeper, longer and more, as everything there is likely a copy.
+/// In the player's own folders for a console: deeper, longer and more, as everything there is likely a copy. All of
+/// a big ROM set, not its first few hundred files in the order the drive lists them: the launcher ranks them by name,
+/// and a set's _All folder with a thousand ROMs has the one wanted anywhere in it.
 const OWN_DEPTH: usize = 6;
 const OWN_BUDGET: usize = 100_000;
-const OWN_MOST: usize = 200;
+const OWN_MOST: usize = 5_000;
 /// Folders that hold no game copies, only a lot of other files.
 const PASS_OVER: [&str; 14] = [
     "node_modules", "steamapps", "windows", "program files", "program files (x86)", "programdata", "$recycle.bin",
