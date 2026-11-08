@@ -548,11 +548,16 @@ export function EntryCardContent({
         <span className="card-cover">
           {artwork ?? <BoxArt entry={entry} sources={coverSources} name={entry.projectName} />}
           {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
-          {!shelf && (ai || easy || os.length > 0) && (
+          {/* The platforms in the corner the badge leaves, so the foot of the art is the chips' alone. */}
+          {!shelf && os.length > 0 && (
+            <span className="cover-platforms">
+              <PlatformIcons os={os} />
+            </span>
+          )}
+          {!shelf && (ai || easy) && (
             <span className="cover-strip">
               {easy && <EasySetupChip />}
               {ai && <AiChip level={entry.aiLevel} />}
-              {os.length > 0 && <PlatformIcons os={os} />}
             </span>
           )}
         </span>

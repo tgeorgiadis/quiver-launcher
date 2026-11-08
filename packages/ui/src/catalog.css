@@ -433,15 +433,14 @@
   right: auto;
   left: 8px;
 }
-/* The AI label and platforms along the foot of the art, on a shade of their own, so they read over any picture in either theme. */
+/* Easy setup and the AI label along the foot of the art, on a shade of their own, so they read over any picture in either theme. */
 .cover-strip {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   display: flex;
-  /* What doesn't fit goes on a line above, so the platforms rise over the chips rather than hang under them. */
-  flex-wrap: wrap-reverse;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px 6px;
   padding: 20px 7px 7px;
@@ -458,9 +457,20 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.cover-strip .platform-icons {
+/* The platforms in the art's top corner, opposite its badge, on a shade of their own. */
+.cover-platforms {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--ql-on-art-fg, #fff);
+  background: rgb(5 9 16 / 0.62);
+  transition: opacity 0.14s;
+}
+.cover-platforms .platform-icons {
   gap: 5px;
-  margin-left: auto;
   color: inherit;
   font-size: 11px;
 }

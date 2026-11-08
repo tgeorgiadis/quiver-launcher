@@ -173,7 +173,7 @@ describe("EntryCard", () => {
     expect(card.querySelector(".card-subtitle")?.textContent).toBe("Test Game");
     expect(card.querySelector(".card-bottom .score.positive")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
     expect(card.querySelector(".cover-strip .ai-chip")?.textContent).toBe("AI-assisted");
-    expect(card.querySelector(".cover-strip .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
+    expect(card.querySelector(".cover-platforms .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
     // A shelf of the newest says New; a badge on every recent box was noise.
     expect(card.querySelector(".cover-badge")).toBeNull();
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
@@ -229,7 +229,7 @@ describe("EntryCard", () => {
     cleanup();
     const none = render(<EntryCard entry={entry} look={look} consoleNames={names} details={["rating"]} />).container;
     expect(none.querySelector(".card-title")?.textContent).toBe("Test Port");
-    expect(none.querySelector(".card-kind, .ai-chip, .platform-icons, .cover-strip, .card-subtitle, .based-on, .release-age, .cover-badge")).toBeNull();
+    expect(none.querySelector(".card-kind, .ai-chip, .platform-icons, .cover-strip, .cover-platforms, .card-subtitle, .based-on, .release-age, .cover-badge")).toBeNull();
     expect(none.querySelector(".card-bottom .score")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
   });
 
