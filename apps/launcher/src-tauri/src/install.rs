@@ -272,6 +272,20 @@ pub fn remove_install(dir: &Path, remove: impl Fn(&Path) -> io::Result<()>) -> i
     }
 }
 
+/// What the player is told when the server answers a download with an error: who answered and what to do, in words,
+/// with the code for anyone who knows it. Never the address, which says nothing to a player and runs off the page.
+fn refused(status: reqwest::StatusCode, url: &reqwest::Url) -> String {
+    let host = url.host_str().unwrap_or_default().trim_start_matches("www.");
+    // A release's file on GitHub comes from objects.githubusercontent.com or the like.
+    let site = if host == "github.com" || host.ends_with(".github.com") || host.ends_with(".githubusercontent.com") { "GitHub" } else { host };
+    let code = status.as_u16();
+    match code {
+        429 | 403 => format!("{site} is limiting downloads right now (error {code}). Try again in a few minutes."),
+        500..=599 => format!("{site} isn't answering right now (error {code}). Try again in a few minutes."),
+        _ => format!("{site} wouldn't send the file (error {code})."),
+    }
+}
+
 /// Streams the file to disk, hashing as it goes; returns its SHA-256.
 async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress)) -> Result<String, String> {
     let response = reqwest::Client::builder()
@@ -286,7 +300,10 @@ async fn download(req: &InstallRequest, to: &Path, progress: &impl Fn(Progress))
         // Its developer deleted it, or the release, after the site last read it.
         return Err(MISSING.into());
     }
-    let response = response.error_for_status().map_err(|e| format!("The download failed: {e}"))?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(refused(status, response.url()));
+    }
     let total = response.content_length();
     let mut file = tokio::fs::File::create(to).await.map_err(text)?;
     let mut hasher = Sha256::new();
@@ -769,6 +786,15 @@ fn unrar_into(_file: &Path, _out: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_refused_download_says_who_and_what_to_do_without_the_address() {
+        let release = reqwest::Url::parse("https://github.com/HarbourMasters/SpaghettiKart/releases/download/1.0.0/spaghetti-windows.zip").unwrap();
+        assert_eq!(refused(reqwest::StatusCode::GATEWAY_TIMEOUT, &release), "GitHub isn't answering right now (error 504). Try again in a few minutes.");
+        assert_eq!(refused(reqwest::StatusCode::TOO_MANY_REQUESTS, &release), "GitHub is limiting downloads right now (error 429). Try again in a few minutes.");
+        let other = reqwest::Url::parse("https://www.example.org/game.zip").unwrap();
+        assert_eq!(refused(reqwest::StatusCode::GONE, &other), "example.org wouldn't send the file (error 410).");
+    }
 
     #[test]
     fn a_release_cant_bring_quivers_own_records() {
