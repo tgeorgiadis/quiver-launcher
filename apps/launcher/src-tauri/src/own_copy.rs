@@ -547,40 +547,6 @@ pub struct Found {
     pub mine: bool,
 }
 
-/// The usual places players keep copies of their games, on this computer.
-pub fn places() -> Vec<PathBuf> {
-    let mut out: Vec<PathBuf> = [dirs::download_dir(), dirs::desktop_dir(), dirs::document_dir()].into_iter().flatten().collect();
-    if let Some(home) = host_home() {
-        for sub in ["ROMs", "roms", "Roms", "Games", "games", "Emulation/roms", "retrodeck/roms", "ISOs"] {
-            out.push(home.join(sub));
-        }
-    }
-    // SD cards, USB drives and game drives.
-    if crate::OS == "linux" {
-        for base in ["/run/media", "/media", "/mnt"] {
-            for user in fs::read_dir(base).into_iter().flatten().flatten() {
-                let p = user.path();
-                if base == "/mnt" {
-                    out.push(p);
-                } else {
-                    out.extend(fs::read_dir(&p).into_iter().flatten().flatten().map(|e| e.path()));
-                }
-            }
-        }
-    }
-    if crate::OS == "windows" {
-        for letter in b'D'..=b'Z' {
-            let root = PathBuf::from(format!("{}:\\", letter as char));
-            if root.is_dir() {
-                out.push(root);
-            }
-        }
-    }
-    let mut seen = HashSet::new();
-    out.retain(|p| p.is_dir() && seen.insert(p.canonicalize().unwrap_or_else(|_| p.clone())));
-    out
-}
-
 /// How deep under a place copies are looked for: an SD card's Emulation/roms/n64 is three down.
 const DEPTH: usize = 4;
 /// How many files and folders are looked at in all, so a huge drive can't keep it looking.
