@@ -15,6 +15,7 @@ import { i18n } from "@quiverlauncher/i18n";
 import type { Feedback, Os } from "@quiverlauncher/api";
 import { native, type Config } from "./native";
 import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
+import type { CorrectionTopic } from "./corrections";
 
 export type ReviewInput = {
   entryId: string;
@@ -22,6 +23,14 @@ export type ReviewInput = {
   body?: string;
   platform: Exclude<Os, "unknown">;
   entryReleaseId?: string;
+};
+
+export type CorrectionInput = {
+  entryId: string;
+  topic?: CorrectionTopic;
+  body: string;
+  /** This launcher and the release of the app installed, for maintainers to check it against. */
+  client: { version: string; os: string; installed?: string };
 };
 
 export type Provider = "github" | "discord";
@@ -51,6 +60,8 @@ export type Account = {
   save: (changes: Change[]) => Promise<{ key: string; error: string }[]>;
   /** Saves the player's feedback on an app, replacing any they gave before; rejects with a message to show. */
   review: (review: ReviewInput) => Promise<void>;
+  /** Tells maintainers something on an app's page is wrong or missing (the website's corrections.submit); rejects with a message to show. */
+  suggestCorrection: (input: CorrectionInput) => Promise<void>;
   /** The player's own feedback on an app, null signed out or when they haven't given any. */
   ownReview: (entryId: string) => Promise<Feedback | null>;
   /** Shares a playlist publicly (again: updates it); resolves to its slug. Rejects with a message to show. */
@@ -93,6 +104,8 @@ const SHARE_FAILED = msg`Couldn't share this playlist. Try again.`;
 
 const REVIEW_FAILED = msg`Couldn't save your feedback. Try again.`;
 
+const CORRECTION_FAILED = msg`Couldn't send it. Try again.`;
+
 const AccountContext = createContext<Account | null>(null);
 export const useAccount = () => useContext(AccountContext)!;
 
@@ -124,6 +137,7 @@ const fns = {
   collections: ref("query", "libraryCollections:list"),
   saveCollections: ref("mutation", "libraryCollections:save"),
   review: ref("mutation", "reviews:save"),
+  suggestCorrection: ref("mutation", "corrections:submit"),
   ownReview: ref("query", "reviews:own"),
   shareList: ref("mutation", "sharedLists:share"),
   unshareList: ref("mutation", "sharedLists:unshare"),
@@ -198,6 +212,7 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
   const save = useMutation(fns.save);
   const saveCollections = useMutation(fns.saveCollections);
   const review = useMutation(fns.review);
+  const suggestCorrection = useMutation(fns.suggestCorrection);
   const setAnalytics = useMutation(fns.setAnalytics);
   const login = useSignInWithUsernamePassword({ signInWithUsernamePassword: fns.signIn as never });
   const register = useSignUpWithUsernamePassword({ signUpWithUsernamePassword: fns.signUp as never });
@@ -258,6 +273,14 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
       } catch (e) {
         // The site's reasons ("Note must be 500 characters or fewer") come as the error's data.
         throw new Error(e instanceof ConvexError && typeof e.data === "string" ? e.data : i18n._(REVIEW_FAILED));
+      }
+    },
+    async suggestCorrection(c) {
+      try {
+        await suggestCorrection({ ...c, source: "launcher" });
+      } catch (e) {
+        // The site's reasons (too many sent lately, language it doesn't allow) come as the error's data.
+        throw new Error(e instanceof ConvexError && typeof e.data === "string" ? e.data : i18n._(CORRECTION_FAILED));
       }
     },
     ownReview: (entryId) => (me ? (client.query(fns.ownReview, { entryId }) as Promise<Feedback | null>) : Promise.resolve(null)),
@@ -404,6 +427,14 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
         body: JSON.stringify(r),
       });
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? i18n._(REVIEW_FAILED));
+    },
+    async suggestCorrection(c) {
+      const response = await fetch(base + "/corrections", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ ...c, source: "launcher" }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? i18n._(CORRECTION_FAILED));
     },
     ownReview: (entryId) => (token ? call("/reviews/own", { entryId }) : Promise.resolve(null)),
     async shareList(list) {

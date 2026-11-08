@@ -870,6 +870,15 @@ button.download { width: 100%; text-align: left; }
 .content-panel dt { color: var(--text-4); margin-top: 17px; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
 .content-panel dd { margin: 0; overflow-wrap: anywhere; }
 .content-panel .release-age.stale { color: var(--caution); }
+/* Under Project details: something wrong or missing on the page (correction.tsx). */
+.correction-prompt { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; padding-block: 14px; }
+.correction-prompt p { display: flex; align-items: center; gap: 8px; margin: 0; }
+.correction-prompt .link-button { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.correction-sent { color: var(--green); font-size: 13px; }
+.correction-form .field { display: grid; gap: 6px; }
+.correction-form textarea { resize: vertical; }
+.correction-form .character-count { margin: -6px 0 0; }
+.correction-hint, .correction-note { margin: -4px 0 0; }
 .ai-evidence-toggle { display: flex; width: fit-content; align-items: center; gap: 3px; margin-top: 6px; padding: 0; background: none; color: var(--text-4); font-size: 13px; }
 .ai-evidence-toggle:hover { color: var(--strong); }
 .ai-evidence-toggle svg { transition: transform 0.16s; }

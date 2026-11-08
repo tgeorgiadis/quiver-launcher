@@ -1158,6 +1158,7 @@ msgstr "Нельзя добавить: Quiver Launcher 3 не знает, отк
 
 #: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/file-picker.tsx
@@ -1331,6 +1332,10 @@ msgstr "Выберите платформу"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose a program (.exe) that starts the app."
 msgstr "Выберите программу (.exe), которая запускает приложение."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Choose a topic (optional)"
+msgstr "Выберите тему (необязательно)"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -1566,6 +1571,10 @@ msgid "couldn't scan every file."
 msgstr "не удалось проверить все файлы."
 
 #: ../../apps/launcher/src/account.tsx
+msgid "Couldn't send it. Try again."
+msgstr "Не удалось отправить. Попробуйте ещё раз."
+
+#: ../../apps/launcher/src/account.tsx
 msgid "Couldn't share this playlist. Try again."
 msgstr "Не удалось открыть доступ к плейлисту. Попробуйте ещё раз."
 
@@ -1628,6 +1637,10 @@ msgstr "Удалить (доступ по ссылке закроется)"
 #: ../../apps/launcher/src/library.tsx
 msgid "Description"
 msgstr "Описание"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Description or details"
+msgstr "Описание или подробности"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -1842,6 +1855,10 @@ msgstr "Фильтры включены"
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "Найдите порт в каталоге и нажмите «Получить». Он появится здесь и сразу начнёт загружаться."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Finding my game files"
+msgstr "Поиск моих файлов игры"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
 msgstr "Завершите в браузере, затем войдите здесь."
@@ -1875,6 +1892,14 @@ msgstr "Для папки с играми для разных консолей."
 #: ../../apps/launcher/src/own.tsx
 msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
 msgstr "Для приложения, которого нет в каталоге. Оно будет только у вас; чтобы добавить его для всех, предложите его на quiverlauncher.com."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "For example: it starts the level editor instead of the game, or it needs the US version of the game."
+msgstr "Например: запускается редактор уровней вместо игры, или нужна американская версия игры."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "For what the listing gets wrong, like the wrong program or game file. To say how it ran, use Player feedback."
+msgstr "Для ошибок в описании, например неверной программы или файла игры. Чтобы рассказать, как работала игра, используйте Отзывы игроков."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Forgot your password?"
@@ -1923,6 +1948,10 @@ msgstr "Геймплей"
 #: ../../apps/launcher/src/game.tsx
 msgid "Games"
 msgstr "Игры"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Games, their names or consoles"
+msgstr "Игры, их названия или консоли"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
@@ -2314,6 +2343,10 @@ msgstr "Установка"
 msgid "Installing {app}."
 msgstr "Установка {app}."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Installing it"
+msgstr "Установка"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Installing: confirm it when Android asks"
 msgstr "Установка: подтвердите запрос Android"
@@ -2485,6 +2518,10 @@ msgstr "Параметры запуска"
 msgid "Launcher update"
 msgstr "Обновление лаунчера"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Launching it"
+msgstr "Запуск"
+
 #. Library view option
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Layout"
@@ -2550,6 +2587,10 @@ msgstr "Ссылка скопирована."
 #: ../../apps/launcher/src/own.tsx
 msgid "Link to a catalog app"
 msgstr "Связать с приложением из каталога"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Links"
+msgstr "Ссылки"
 
 #. Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton
 #: ../../apps/launcher/src/App.tsx
@@ -3663,6 +3704,10 @@ msgstr "Версии"
 msgid "Releases are being cataloged"
 msgstr "Версии добавляются в каталог"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Releases or downloads"
+msgstr "Версии или загрузки"
+
 #: ../../apps/launcher/src/main.tsx
 msgid "Reload"
 msgstr "Перезагрузить"
@@ -3839,6 +3884,10 @@ msgstr "Расскажите, как у вас работало {name}"
 msgid "Say how it ran for you"
 msgstr "Расскажите, как у вас работало"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Say what's wrong or missing."
+msgstr "Опишите, что неверно или чего не хватает."
+
 #. Controller hint: what the scroll stick does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Scroll"
@@ -3938,9 +3987,22 @@ msgstr "Посмотреть, какие приложения"
 msgid "Select"
 msgstr "Выбрать"
 
+#. Button: send a correction to the maintainers
+#: ../../apps/launcher/src/correction.tsx
+msgid "Send"
+msgstr "Отправить"
+
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "Отправлять данные об использовании"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Sending…"
+msgstr "Отправка…"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
+msgstr "Отправляется с именем вашей учётной записи, версией этого лаунчера и вашей системой, чтобы сопровождающие могли проверить."
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -3972,6 +4034,10 @@ msgstr "Разделы настроек"
 #: ../../apps/launcher/src/App.tsx
 msgid "Setup"
 msgstr "Настройка"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Setup instructions"
+msgstr "Инструкции по настройке"
 
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
@@ -4165,6 +4231,10 @@ msgstr "Войдите, чтобы поделиться плейлистом, к
 msgid "Sign in to share how it runs for you."
 msgstr "Войдите, чтобы рассказать, как оно у вас работает."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Sign in to suggest a correction"
+msgstr "Войдите, чтобы предложить исправление"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in to sync your library"
 msgstr "Войдите, чтобы синхронизировать библиотеку"
@@ -4227,6 +4297,14 @@ msgstr "Некоторым приложениям нужна ваша копия
 #: ../../apps/launcher/src/library.tsx
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
 msgstr "Кто-то поделился плейлистом? Вставьте ссылку, чтобы добавить его в библиотеку. Он будет обновляться вместе с оригиналом."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Something else"
+msgstr "Другое"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Something wrong or missing on this page?"
+msgstr "На этой странице что-то не так или чего-то не хватает?"
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -4333,6 +4411,10 @@ msgstr "Закрыть доступ"
 msgid "Submit an app"
 msgstr "Предложить приложение"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Suggest a correction"
+msgstr "Предложить исправление"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Suggest an app for the catalog, on quiverlauncher.com"
 msgstr "Предложить приложение для каталога на quiverlauncher.com"
@@ -4413,6 +4495,10 @@ msgstr "Протестированная версия"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Thanks for sharing how it ran."
 msgstr "Спасибо, что рассказали, как работало."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Thanks! A maintainer will take a look."
+msgstr "Спасибо! Сопровождающий посмотрит."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "That folder doesn't have an installed app in it."
@@ -5028,6 +5114,10 @@ msgstr "Отзывы игроков"
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "Что работало хорошо, а что нет? Пришлось ли что-то делать, чтобы запустить игру или исправить проблему?"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "What's it about?"
+msgstr "О чём это?"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "What's it for? (optional)"
 msgstr "Для чего он? (необязательно)"
@@ -5040,6 +5130,10 @@ msgstr "Что нового"
 #: ../../apps/launcher/src/update.tsx
 msgid "What's new in {name}"
 msgstr "Что нового в {name}"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "What's wrong or missing?"
+msgstr "Что не так или чего не хватает?"
 
 #. placeholder {0}: fileName(phase.copy.path)
 #: ../../apps/launcher/src/own-copy-setup.tsx
