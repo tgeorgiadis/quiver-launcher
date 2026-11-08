@@ -875,6 +875,13 @@ button.download { width: 100%; text-align: left; }
 .correction-prompt p { display: flex; align-items: center; gap: 8px; margin: 0; }
 .correction-prompt .link-button { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .correction-sent { color: var(--green); font-size: 13px; }
+.correction-status { display: grid; gap: 6px; min-width: 0; font-size: 13px; }
+.correction-status p { margin: 0; }
+.correction-status.done p { color: var(--green); }
+/* What the maintainer said back, on the app's page and in a notice. */
+.correction-reply { margin: 0; padding-left: 10px; border-left: 2px solid var(--line); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.correction-notice > div { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.correction-notice > div p { margin: 0; }
 .correction-form .field { display: grid; gap: 6px; }
 .correction-form textarea { resize: vertical; }
 .correction-form .character-count { margin: -6px 0 0; }

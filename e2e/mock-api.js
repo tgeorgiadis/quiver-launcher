@@ -738,6 +738,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     reviews: account.reviews,
     /** Corrections sent, oldest first: { user, entryId, topic, body, source, client, status, createdAt }. */
     corrections: account.corrections,
+    /** Marks a correction done or dismissed, with a reply, as a maintainer would; its author is told. */
+    resolveCorrection: account.resolveCorrection,
     /** Shared lists by slug. */
     lists: account.lists,
     /** The filters of the last catalog page asked for. */
@@ -867,6 +869,8 @@ function mockAccount(entries) {
           // The filters saved on the website ("Save as my default").
           ...(user.catalogDefaults ? { catalogDefaults: user.catalogDefaults } : {}),
         },
+        // As corrections.unseen: decided since they last looked, newest first.
+        correctionNotices: corrections.filter((c) => c.user === name && c.unseen).reverse().map(own),
         items: [...user.items.values()].map((i) => ({ ...i, ...(i.entryId ? { slug: entries.find((e) => e.id === i.entryId).slug } : {}) })),
         // As libraryCollections.list: the shared list's slug when the collection is shared.
         collections: [...user.collections.values()].map((c) => {
@@ -946,7 +950,16 @@ function mockAccount(entries) {
                 ? "You've sent a lot of corrections recently. Try again in a little while."
                 : null;
       if (refused) return send(res, { error: refused }, 400);
-      corrections.push({ ...body, body: text, user: name, status: "open", createdAt: Date.now() });
+      corrections.push({ ...body, body: text, id: `correction_${corrections.length + 1}`, user: name, status: "open", createdAt: Date.now() });
+      return send(res, null);
+    }
+    // As corrections.mineFor and markSeen.
+    if (path === "/corrections/own") {
+      const latest = corrections.filter((c) => c.user === name && c.entryId === body.entryId).at(-1);
+      return send(res, latest ? own(latest) : null);
+    }
+    if (path === "/corrections/seen") {
+      for (const c of corrections) if (c.user === name && body.ids.includes(c.id)) c.unseen = undefined;
       return send(res, null);
     }
     if (path === "/reviews/own") return send(res, saved.get(`${name}:${body.entryId}`) ?? null);
@@ -976,6 +989,20 @@ function mockAccount(entries) {
     }
     send(res, {}, 404);
   }
+  /** A correction as its author sees it (corrections.mine). */
+  const own = (c) => {
+    const entry = entries.find((e) => e.id === c.entryId);
+    return {
+      id: c.id, entryId: c.entryId, entryName: entry?.projectName ?? "Removed app", ...(entry ? { entrySlug: entry.slug } : {}),
+      ...(c.topic ? { topic: c.topic } : {}), body: c.body, status: c.status, ...(c.reply ? { reply: c.reply } : {}),
+      createdAt: c.createdAt, ...(c.resolvedAt ? { resolvedAt: c.resolvedAt } : {}), unseen: Boolean(c.unseen),
+    };
+  };
+  /** As a maintainer deciding one (corrections.resolve): its author is told. */
+  const resolveCorrection = (id, status, reply) => {
+    const c = corrections.find((c) => c.id === id);
+    Object.assign(c, { status, reply, resolvedAt: Date.now(), unseen: true });
+  };
   const feedback = (slug) =>
     [...saved.values()].filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id).sort((a, b) => b.createdAt - a.createdAt);
   const setAnalytics = (name, enabled) => {
@@ -987,5 +1014,5 @@ function mockAccount(entries) {
     if (user) user.catalogDefaults = defaults;
   };
   const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
-  return { handle, reviews, corrections, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
+  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
 }

@@ -580,6 +580,14 @@ msgstr "Manca un file che Quiver conserva."
 msgid "A folder you fill yourself"
 msgstr "Una cartella che riempi tu"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "A maintainer looked at your correction from {sent} and left the page as it is."
+msgstr "Un maintainer ha esaminato la tua correzione del {sent} e ha lasciato la pagina com’è."
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "A maintainer looked at your correction to {app} and left its page as it is."
+msgstr "Un maintainer ha esaminato la tua correzione a {app} e ha lasciato la pagina com’è."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "A moderator hid your feedback, so others can't see it."
 msgstr "Un moderatore ha nascosto il tuo feedback, quindi gli altri non possono vederlo."
@@ -1671,6 +1679,9 @@ msgstr "Non completato"
 #. Hide an announcement
 #. Hide an announcement
 #. Hide an announcement
+#. Hide an announcement
+#. Hide an announcement
+#. Hide an announcement
 #. Menu item that clears a failed download
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/App.tsx
@@ -1900,6 +1911,11 @@ msgstr "Ad esempio: avvia l’editor dei livelli invece del gioco, oppure serve 
 #: ../../apps/launcher/src/correction.tsx
 msgid "For what the listing gets wrong, like the wrong program or game file. To say how it ran, use Player feedback."
 msgstr "Per gli errori nella scheda, come il programma o il file di gioco sbagliato. Per dire come è andato, usa Feedback dei giocatori."
+
+#. Above news about the player's own corrections
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "For you"
+msgstr "Per te"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Forgot your password?"
@@ -3177,6 +3193,10 @@ msgstr "Opacità"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "Apri"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Open app"
+msgstr "Apri app"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -5213,6 +5233,10 @@ msgstr "Hai la versione più recente."
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
 msgstr "Hai saltato {updateVersion}. Quiver Launcher proporrà la prossima nuova versione."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "You suggested a correction on {sent}. A maintainer will take a look."
+msgstr "Hai suggerito una correzione il {sent}. Un maintainer la esaminerà."
+
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."
 msgstr "Hai visto tutto."
@@ -5271,6 +5295,18 @@ msgstr "La tua copia è dove {name} la legge."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy: {0}"
 msgstr "La tua copia: {0}"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Your correction"
+msgstr "La tua correzione"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Your correction from {sent} was made. Thanks!"
+msgstr "La tua correzione del {sent} è stata applicata. Grazie!"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Your correction to {app} was made. Thanks!"
+msgstr "La tua correzione a {app} è stata applicata. Grazie!"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"
