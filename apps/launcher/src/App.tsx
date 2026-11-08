@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -177,6 +177,7 @@ export function App() {
   const sidebarFits = useSidebarFits();
   const strip = !(tab === "library" && libraryView.layout === "sidebar" && sidebarFits);
   const action = (entry: Entry) => <Action entry={entry} />;
+  const downloadAction = (entry: Entry) => <Action entry={entry} reasonElsewhere />;
   // Without the system's title bar, the top bar's empty space moves the window.
   const { buttons, maximized } = useWindowButtons();
   const topBar = useRef<HTMLElement>(null);
@@ -263,7 +264,7 @@ export function App() {
                 {view.kind === "app" ? (
                   <AppPage entry={view.entry} at={view.at} tv={tv} back={backFrom(i)} onClose={goBack} onOpenGame={openGame} onOpenApp={openApp} onSignIn={() => setSigningIn(true)} />
                 ) : view.kind === "downloads" ? (
-                  <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={action} />
+                  <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
                 ) : view.kind === "settings" ? (
                   <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} start={view.section} />
                 ) : (
@@ -887,7 +888,8 @@ function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?:
 }
 
 /** The one button a card needs: Add, Install, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
-function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
+/** `reasonElsewhere`: a failure's reason is shown beside it (the Downloads page's row), so only its buttons here. */
+function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boolean; reasonElsewhere?: boolean }) {
   const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
@@ -920,7 +922,11 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
     const other = versionLabel(instead?.version);
     return (
       <div className="job-error" role="alert">
-        <p>{job.error}</p>
+        {!reasonElsewhere && (
+          <p>
+            <TriangleAlert size={15} aria-hidden="true" /> <span>{job.error}</span>
+          </p>
+        )}
         <div className="row">
           {/* Its file was gone or not the one Quiver checked: the newest other verified release, in its place. */}
           {instead && (
@@ -960,6 +966,12 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
           <button onClick={() => dismiss(entry.id)}>
             <Trans>Dismiss</Trans>
           </button>
+          {/* On its page, one not installed can be found on this computer instead: after the buttons that retry. */}
+          {!install && apart && locatable(entry.id, install, job) && foldersOn(config.os) && (
+            <button onClick={() => void locateInstall(entry)}>
+              <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1379,7 +1391,7 @@ function AppPage({
             <div className="app-actions" data-autofocus={tv || undefined}>
               <Action entry={entry} apart />
               {/* Already on this computer: an app needn't be in the library, or downloaded, for this. */}
-              {!install && locatable(entry.id, install, job) && foldersOn(config.os) && (
+              {!install && locatable(entry.id, install, job) && foldersOn(config.os) && !(job && "error" in job) && (
                 <button onClick={() => void locateInstall(entry)}>
                   <FolderSearch size={17} /> <Trans>Locate existing install…</Trans>
                 </button>

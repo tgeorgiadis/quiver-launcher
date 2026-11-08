@@ -416,6 +416,9 @@ const EXPECTED = new RegExp(
     "failed to fetch",
     "networkerror",
     "HTTP status (client|server) error \\((403|429|5\\d\\d)",
+    // install.rs's words for the same answers.
+    "isn't answering right now",
+    "is limiting downloads",
     "no space left",
     "not enough space",
     "os error (28|112)\\b",
@@ -474,13 +477,13 @@ export function reasonOf(error: unknown) {
 const FAILURE_KINDS: [string, RegExp][] = [
   ["checksum_mismatch", /^mismatch$|doesn't match the file|checksum|sha-?256/i],
   ["missing", /^missing$|was removed from|HTTP status client error \(404|\b404\b/i],
-  ["rate_limited", /HTTP status client error \(429|rate.?limit|too many requests|\b429\b/i],
+  ["rate_limited", /HTTP status client error \(429|rate.?limit|too many requests|limiting downloads|\b429\b/i],
   ["disk_full", /no space left|not enough space|os error (28|112)\b/i],
   ["permission", /permission denied|access is denied|os error (5|13)\b/i],
   ["in_use", /being used by another process|os error (32|16|26)\b|resource busy|text file busy/i],
   ["no_release", /no releases yet|no approved release|isn't available any more/i],
   ["no_download", /no download for|no Windows installer|no files to download/i],
-  ["network", /check your connection|error sending request|timed? ?out|took too long|connection (closed|reset|refused|aborted)|dns error|error decoding response body|failed to fetch|networkerror|HTTP status server error/i],
+  ["network", /check your connection|error sending request|timed? ?out|took too long|connection (closed|reset|refused|aborted)|dns error|error decoding response body|failed to fetch|networkerror|HTTP status server error|isn't answering right now/i],
   ["no_program", /couldn.t find a program to start/i],
   ["not_found", /os error (2|3)\b|no such file|cannot find the (file|path)/i],
 ];

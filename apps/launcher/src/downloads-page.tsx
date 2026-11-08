@@ -5,7 +5,7 @@
  * library while something is happening, and the Sidebar layout's foot.
  */
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Download, Play, ScrollText, X } from "lucide-react";
+import { ArrowLeft, Download, Play, ScrollText, TriangleAlert, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
@@ -203,8 +203,16 @@ export function DownloadsPage({
               const going = job && !("error" in job) ? job : undefined;
               const received = going ? sizeLabel(going.received) : "";
               const size = going?.total ? sizeLabel(going.total) : undefined;
+              // Why it stopped, under its name, where there's room for it: the row's buttons are beside it.
+              const failed = job && "error" in job ? job.error : "";
               const detail = !going
-                ? t`Didn't finish`
+                ? failed
+                  ? (
+                    <span className="download-failed" title={failed}>
+                      <TriangleAlert size={14} aria-hidden="true" /> {failed}
+                    </span>
+                  )
+                  : t`Didn't finish`
                 : going.phase === "installing"
                   ? t`Installing`
                   : size

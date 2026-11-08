@@ -120,7 +120,8 @@ button.danger { color: var(--danger); }
 .progress-row { flex-wrap: nowrap; gap: 6px; }
 .progress-row .progress { flex: 1; min-width: 0; }
 .progress-row > .cancel-download { flex: none; width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
-.job-error p { color: var(--danger); font-size: 12px; margin-bottom: 8px; }
+.job-error p { color: var(--danger); font-size: 12px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.job-error p > svg { vertical-align: -3px; }
 .unavailable { color: var(--muted); font-size: 12px; text-align: center; padding: 6px 0; }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 80px 20px; color: var(--muted); text-align: center; }
 .empty h2 { color: var(--strong); }
@@ -424,6 +425,10 @@ main.app-main { padding: 0 0 40px; }
 .app-actions .get-split > .get-more { width: 46px; min-width: 0; padding: 0; }
 .app-actions .progress { width: 320px; height: 46px; border-radius: 9px; }
 .app-actions .progress-row > .cancel-download { width: 46px; height: 46px; padding: 0; }
+/* A download that failed, on its page: the reason in a box over the buttons that retry it, and only as wide as reads well. */
+.app-actions > .job-error { display: grid; gap: 12px; max-width: 720px; }
+.app-actions > .job-error p { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--danger) 10%, var(--panel)); color: var(--danger); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.app-actions > .job-error p svg { flex: none; margin-top: 2px; }
 /* Beside a large Play, a plain button needs an edge to read as one over the artwork. */
 .app-actions .row > button:not(.primary) { background: color-mix(in srgb, var(--button) 85%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); backdrop-filter: blur(6px); }
 .app-actions .row > button:not(.primary):hover { background: var(--button-hover); }
@@ -1898,6 +1903,9 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .download-action { flex: 0 0 auto; width: 260px; }
 .download-action button { white-space: nowrap; }
 .download-action .job-error p { margin-bottom: 6px; }
+/* Why a download stopped, under the app's name: two lines at most, the rest in its tooltip. */
+.download-failed { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--danger); }
+.download-failed svg { vertical-align: -2px; }
 /* An update, waiting or finished: See changelog beside Update or Play, with room for both. */
 .download-buttons { display: flex; gap: 8px; }
 .download-buttons > button:not(.primary) {

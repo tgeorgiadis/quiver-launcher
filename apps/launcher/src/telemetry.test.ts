@@ -514,6 +514,8 @@ test.each([
   ["cancelled"],
   ["The download failed. Check your connection and try again."],
   ["The download stopped: error decoding response body"],
+  ["GitHub isn't answering right now (error 504). Try again in a few minutes."],
+  ["GitHub is limiting downloads right now (error 429). Try again in a few minutes."],
   ["Couldn't check for updates: error sending request for url (https://api.github.com/x)"],
   ["Couldn't check for updates: HTTP status client error (403 Forbidden) for url (https://api.github.com/x)"],
   ["Couldn't download the update: HTTP status server error (503 Service Unavailable) for url (https://x)"],
@@ -635,6 +637,8 @@ test("failures are counted by kind, whatever they say exactly", async () => {
   expect(failureKind("missing")).toBe("missing");
   expect(failureKind("HTTP status client error (429 Too Many Requests) for url")).toBe("rate_limited");
   expect(failureKind("HTTP status server error (503 Service Unavailable) for url")).toBe("network");
+  expect(failureKind("GitHub is limiting downloads right now (error 429). Try again in a few minutes.")).toBe("rate_limited");
+  expect(failureKind("GitHub isn't answering right now (error 504). Try again in a few minutes.")).toBe("network");
   expect(failureKind(new TypeError("Failed to fetch"))).toBe("network");
   expect(failureKind("There is not enough space on the disk. (os error 112)")).toBe("disk_full");
   expect(failureKind("Access is denied. (os error 5)")).toBe("permission");
