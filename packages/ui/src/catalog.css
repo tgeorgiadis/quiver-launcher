@@ -440,7 +440,8 @@
   right: 0;
   bottom: 0;
   display: flex;
-  flex-wrap: wrap;
+  /* What doesn't fit goes on a line above, so the platforms rise over the chips rather than hang under them. */
+  flex-wrap: wrap-reverse;
   align-items: center;
   gap: 4px 6px;
   padding: 20px 7px 7px;
