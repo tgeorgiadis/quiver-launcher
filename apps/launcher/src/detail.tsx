@@ -891,6 +891,12 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
               <Trans>Supported platforms</Trans>
             </dt>
             <dd>{platformList(entry.supportedOS)}</dd>
+            {/* Not a cell of its own, which would take a row more. Its title says what it means. */}
+            {hasEasySetup(entry) && (
+              <dd className="easy-setup">
+                <EasySetupChip />
+              </dd>
+            )}
           </div>
           {source && (
             <div>
@@ -917,19 +923,6 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
               )}
             </dd>
           </div>
-          {hasEasySetup(entry) && (
-            <div>
-              <dt>
-                <Trans>Setup</Trans>
-              </dt>
-              <dd className="easy-setup">
-                <EasySetupChip />
-                <span className="muted">
-                  <Trans>Quiver Launcher finds your copy of the game and puts it where the app needs it.</Trans>
-                </span>
-              </dd>
-            </div>
-          )}
           <div>
             <dt>
               <Trans>AI use</Trans>

@@ -3563,10 +3563,6 @@ msgstr "Quiver Launcher {version}이(가) 나왔어요."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
-#: ../../apps/launcher/src/detail.tsx
-msgid "Quiver Launcher finds your copy of the game and puts it where the app needs it."
-msgstr "Quiver Launcher가 게임 사본을 찾아 앱에 필요한 위치에 넣어 줍니다."
-
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher에 문제가 생겼어요"
@@ -3995,7 +3991,6 @@ msgstr "설정 섹션"
 
 #. Heading over an app's mods, launch options, versions and updates
 #: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/detail.tsx
 msgid "Setup"
 msgstr "구성"
 
