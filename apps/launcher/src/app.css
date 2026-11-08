@@ -1202,6 +1202,9 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
   .card-sample .entry-card { zoom: 0.62; }
 }
 .view-choice { display: grid; gap: 6px; }
+/* The card size slider, between a small card's picture and a large one's. */
+.card-size { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 8px; background: var(--field); color: var(--muted); }
+.card-size input { flex: 1; min-width: 0; accent-color: var(--accent); }
 .view-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segmented { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--field); }
 .view-options .segmented button {
@@ -1220,25 +1223,19 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .github-token ol { padding-left: 20px; display: grid; gap: 4px; }
 
 /*
- * Library cards as the player chose (view.ts): three sizes; box art cards are
- * portrait and icon cards square, in narrower columns, with only the name
- * under them; or a list, one app to a row.
+ * Library cards as the player chose (view.ts): a Medium card's size, times the
+ * slider's --card-scale; box art cards are portrait and icon cards square, in
+ * narrower columns, with only the name under them.
  */
 .library-grid { --card-min: 230px; --cover-h: 173px; gap: 22px; }
-.library-grid.size-small { --card-min: 185px; --cover-h: 136px; gap: 16px; }
-.library-grid.size-large { --card-min: 300px; --cover-h: 222px; }
-.library-grid.layout-grid { grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); }
-.library-grid .card-cover { height: var(--cover-h); }
+.library-grid.size-small { gap: 16px; }
+.library-grid.layout-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--card-min) * var(--card-scale, 1))), 1fr)); }
+.library-grid .card-cover { height: calc(var(--cover-h) * var(--card-scale, 1)); }
 .library-grid.image-box { --card-min: 168px; }
-.library-grid.image-box.size-small { --card-min: 128px; }
-.library-grid.image-box.size-large { --card-min: 220px; }
 .library-grid.image-icon { --card-min: 160px; }
-.library-grid.image-icon.size-small { --card-min: 124px; }
-.library-grid.image-icon.size-large { --card-min: 210px; }
 /* A phone: two box-art cards across at Medium (one at 360 px wide before), even beside a name-sorted grid's letters. */
 @media (max-width: 520px) {
   .library-grid.image-box { --card-min: 130px; gap: 22px 14px; }
-  .library-grid.image-box.size-small { --card-min: 100px; }
 }
 .layout-grid:is(.image-box, .image-icon) .card-cover { height: auto; aspect-ratio: 2 / 3; }
 .layout-grid.image-icon .card-cover { aspect-ratio: 1; }

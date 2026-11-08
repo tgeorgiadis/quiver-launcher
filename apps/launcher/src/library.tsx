@@ -690,7 +690,7 @@ export function LibraryPage({
   const gridClass = `catalog-grid library-grid layout-grid image-${view.image} size-${view.size}${view.names ? "" : " no-names"}`;
   // The lines under the name, and the tags' over it, the names keep room for (app.css's --tile-names).
   const tileLines = view.details.filter((d) => d === "subtitle" || d === "rating" || d === "updated").length + (view.details.some((d) => d === "kinds" || d === "ai" || d === "platforms") ? 1 : 0);
-  const gridStyle = { "--tile-lines": tileLines } as CSSProperties;
+  const gridStyle = { "--tile-lines": tileLines, "--card-scale": view.cardScale } as CSSProperties;
   // The triggers jump through a grid: a letter at a time by name, else a screen. A card for each game, or each app.
   const grid = (entries: Entry[]) => (
     <div className={gridClass} style={gridStyle} data-jump={byLetter ? "letters" : "pages"} ref={byLetter ? letterGrid : undefined}>

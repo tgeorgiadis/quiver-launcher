@@ -15,7 +15,7 @@ import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards,
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
 import { SIDEBAR_SIZES } from "./sidebar";
 import { GRID_GROUP_BYS, GROUP_BYS, gridGroupBy, isGroupBy, type GroupBy } from "./group";
-import { CARD_IMAGES, CARD_SIZES, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
+import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
 
 /** This computer's library view, and a way to change it. */
 export function useLibraryView() {
@@ -93,7 +93,7 @@ export function ViewOptions({ groups }: { groups?: boolean }) {
       {fits && !tv && <Choice label={t({ message: "Layout", comment: "Library view option" })} options={LAYOUTS} icons={LAYOUT_ICONS} value={layout} onChange={(layout) => set({ layout })} />}
       {/* The sidebar has no cards. */}
       {cards && !tv && <Choice label={t`Card image`} options={CARD_IMAGES} icons={IMAGE_ICONS} value={view.image} onChange={(image) => set({ image })} />}
-      {cards && !tv && <Choice label={t`Card size`} options={CARD_SIZES} value={view.size} onChange={(size) => set({ size })} />}
+      {cards && !tv && <CardSizeSlider value={view.cardScale} onChange={(cardScale) => set({ cardScale })} />}
       {cards && (
         <label className="toggle">
           <input type="checkbox" checked={view.names} onChange={(e) => set({ names: e.target.checked })} />
@@ -217,6 +217,40 @@ function SidebarWidth() {
       value={picked}
       onChange={(size) => setSettings({ ...settings, sidebarWidth: SIDEBAR_SIZES.find(([s]) => s === size)?.[2] })}
     />
+  );
+}
+
+/**
+ * The cards' size, on a slider from small to large between a small card's picture and a large one's. A controller's
+ * left and right move it (data-arrows), as the arrow keys do; up and down leave it.
+ */
+function CardSizeSlider({ value, onChange }: { value: number; onChange: (scale: number) => void }) {
+  const label = t`Card size`;
+  const step = (by: number) => onChange(Math.min(CARD_SCALE.max, Math.max(CARD_SCALE.min, value + by * CARD_SCALE.step)));
+  return (
+    <div className="view-choice">
+      <span className="view-label">{label}</span>
+      <div className="card-size" data-arrows="x">
+        <LayoutGrid size={13} aria-hidden="true" />
+        <input
+          type="range"
+          aria-label={label}
+          aria-valuetext={`${Math.round(value * 100)}%`}
+          min={CARD_SCALE.min}
+          max={CARD_SCALE.max}
+          step={CARD_SCALE.step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          onKeyDown={(e) => {
+            // The arrow keys, and a controller's left and right (sent as them): a step each, the same either way.
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            step(e.key === "ArrowRight" ? 1 : -1);
+          }}
+        />
+        <Square size={17} aria-hidden="true" />
+      </div>
+    </div>
   );
 }
 
