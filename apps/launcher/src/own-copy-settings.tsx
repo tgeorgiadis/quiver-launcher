@@ -1,7 +1,7 @@
 /**
  * Settings → Game copies: the folders the player keeps their ROMs and disc images in, for each console or for all of
- * them. When a game needs the player's own copy (own-copy-setup.tsx), its setup looks in its consoles' folders first,
- * deeper than in the usual places, and lists what it finds there first.
+ * them. When a game needs the player's own copy (own-copy-setup.tsx), its setup looks for it in its consoles' folders,
+ * and only there.
  */
 import { useState } from "react";
 import { Disc3, FolderPlus, X } from "lucide-react";
@@ -58,7 +58,7 @@ export function GameCopySettings({ inSetup = false }: { inSetup?: boolean }) {
     <section className="settings-section game-copies" aria-label={t`Game copies`}>
       {!inSetup && (
         <p className="muted">
-          <Trans>When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks in these folders first, then in Downloads and your drives.</Trans>
+          <Trans>When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else.</Trans>
         </p>
       )}
       <ul className="game-copy-consoles">
