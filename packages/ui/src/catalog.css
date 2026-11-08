@@ -147,6 +147,20 @@
 .card-tags > .platform-icons:before {
   content: none;
 }
+/* Easy setup's chip, highlighted, and the AI label after it. */
+.easy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-color: var(--ql-easy-chip-line, var(--ql-ai-chip-line));
+  color: var(--ql-easy-chip-fg, var(--ql-ai-chip-fg));
+}
+.card-tags > .ai-chip + .ai-chip {
+  margin-left: 0;
+}
+.cover-strip .ai-chip.easy-chip {
+  color: var(--ql-easy-chip-on-art, inherit);
+}
 .card-tags > .ai-chip + .platform-icons {
   margin-left: 0;
 }

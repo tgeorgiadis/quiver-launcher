@@ -462,6 +462,7 @@ function BrowsePage({
     projectTypes: d?.projectTypes?.filter((t): t is ProjectType => t in PROJECT_TYPES).slice(0, 4),
     console: d?.console,
     ai: d?.ai === "no-generated" || d?.ai === "no-ai" ? d.ai : undefined,
+    setup: d?.setup === "easy" ? "easy" : undefined,
   });
   const [filters, setFilters] = useState(() => kept?.filters ?? fromSaved(saved));
   // The account can load after Browse opens: its saved filters apply until the player picks their own.
@@ -541,7 +542,7 @@ function BrowsePage({
   const brands = [...new Set(consoles.map((c) => c.brand))];
   const [filtersOpen, setFiltersOpen] = useState(false);
   // How many filters differ from the defaults: any platform but what this computer runs counts.
-  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.os !== "here"].filter(Boolean).length;
+  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.setup, filters.os !== "here"].filter(Boolean).length;
   // An order the player picked (the sort, or a shelf's See all): the whole list in it, in place of the front page, as a
   // search or a filter has it; its pill goes back to the front page.
   const [sorted, setSorted] = useState(kept?.sorted ?? false);
@@ -555,7 +556,7 @@ function BrowsePage({
   const filterCount = filtering + (showOwned ? 1 : 0) + (hiddenView !== "hide" ? 1 : 0);
   const types = filters.projectTypes ?? [];
   /** A filter's pill: `on` names it while it differs from the default, and removing it goes back to the default. */
-  const pill = (key: "os" | "console" | "projectTypes" | "ai", on: string | undefined, select: ReactNode) =>
+  const pill = (key: "os" | "console" | "projectTypes" | "ai" | "setup", on: string | undefined, select: ReactNode) =>
     !on && !filtersOpen ? null : (
       <FilterPill key={key} on={on} onClear={() => choose({ ...filters, [key]: key === "os" ? "here" : undefined })}>
         {select}
@@ -721,6 +722,19 @@ function BrowsePage({
               <option value="">{t`Any AI use`}</option>
               <option value="no-generated">{t`Hide mostly AI-generated apps`}</option>
               <option value="no-ai">{t`Hide apps with any AI use`}</option>
+            </select>,
+          )}
+          {pill(
+            "setup",
+            filters.setup && t`Easy setup`,
+            <select
+              aria-label={t`Setup`}
+              title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}
+              value={filters.setup ?? ""}
+              onChange={set("setup")}
+            >
+              <option value="">{t`Any setup`}</option>
+              <option value="easy">{t`Easy setup only`}</option>
             </select>,
           )}
           {/* Up here with the filters, not under the list, which loads more as it's reached. */}

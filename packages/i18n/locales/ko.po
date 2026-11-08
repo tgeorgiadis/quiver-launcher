@@ -905,6 +905,10 @@ msgstr "모든 콘솔"
 msgid "Any project type"
 msgstr "모든 프로젝트 유형"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Any setup"
+msgstr "모든 설정"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Any source"
 msgstr "모든 출처"
@@ -1756,6 +1760,23 @@ msgstr "예: --fullscreen"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "예: gamemoderun %command% --fullscreen"
+
+#. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
+#. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-cards.ts
+#: ../ui/src/index.tsx
+msgid "Easy setup"
+msgstr "간편 설정"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Easy setup only"
+msgstr "간편 설정만"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../ui/src/index.tsx
+msgid "Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it."
+msgstr "간편 설정: Quiver Launcher가 게임 사본을 찾아 앱에 필요한 위치에 넣어 줍니다."
 
 #. Edits a playlist
 #: ../../apps/launcher/src/library.tsx
@@ -3542,6 +3563,10 @@ msgstr "Quiver Launcher {version}이(가) 나왔어요."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver Launcher finds your copy of the game and puts it where the app needs it."
+msgstr "Quiver Launcher가 게임 사본을 찾아 앱에 필요한 위치에 넣어 줍니다."
+
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher에 문제가 생겼어요"
@@ -3970,6 +3995,7 @@ msgstr "설정 섹션"
 
 #. Heading over an app's mods, launch options, versions and updates
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Setup"
 msgstr "구성"
 

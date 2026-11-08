@@ -233,6 +233,16 @@ describe("EntryCard", () => {
     expect(none.querySelector(".card-bottom .score")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
   });
 
+  it.each(["box", "wide"] as const)("marks an app with Easy setup on a %s card, while that detail is on", (look) => {
+    const easy = { ...entry, launcher: { ...entry.launcher, setupFiles: [{ id: "rom", label: "Game ROM", accepted: [] }] } } as typeof entry;
+    const on = render(<EntryCard entry={easy} look={look} details={["setup"]} />).container;
+    expect(on.querySelector(".easy-chip")?.textContent).toBe("Easy setup");
+    cleanup();
+    expect(render(<EntryCard entry={easy} look={look} details={["ai"]} />).container.querySelector(".easy-chip")).toBeNull();
+    cleanup();
+    expect(render(<EntryCard entry={entry} look={look} details={["setup"]} />).container.querySelector(".easy-chip")).toBeNull();
+  });
+
   it("shows a given badge in place of New, and leaves tags that aren't consoles to tagLabel", () => {
     const { container } = render(<EntryCard entry={{ ...entry, tags: ["constructor"] }} look="wide" badge="In library" />);
     expect(container.querySelector(".cover-badge")?.textContent).toBe("In library");

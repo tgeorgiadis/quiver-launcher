@@ -4,7 +4,7 @@ import { DEFAULT_BROWSE_CARDS, browseCardsOf, sampleEntry, savedBrowseCards } fr
 
 test("nothing saved is box art with every detail but New", () => {
   expect(browseCardsOf()).toEqual(DEFAULT_BROWSE_CARDS);
-  expect(browseCardsOf({})).toEqual({ look: "box", details: ["subtitle", "kinds", "rating", "updated", "platforms", "ai"] });
+  expect(browseCardsOf({})).toEqual({ look: "box", details: ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"] });
 });
 
 test("the saved choices are kept in order, and anything unknown is left out", () => {
@@ -23,6 +23,9 @@ test("a sample card shows the first app with the most details to turn on and off
   expect(sampleEntry([bare, rated, full, alike])).toBe(full);
   // No label isn't one to show.
   expect(sampleEntry([app("none", { aiLevel: "none" }), rated])).toBe(rated);
+  // Easy setup is one, so its chip can be seen to turn on and off.
+  const easy = app("easy", { recommended: 3, aiLevel: "assisted", tags: ["recomp"], launcher: { setupFiles: [{ id: "rom" }] } as Entry["launcher"] });
+  expect(sampleEntry([full, easy])).toBe(easy);
 });
 
 test("only what differs from the defaults is saved", () => {

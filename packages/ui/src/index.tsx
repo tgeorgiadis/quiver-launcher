@@ -5,7 +5,7 @@
  * `@quiverlauncher/ui/markdown`, kept apart because it's large.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, Clock, Gamepad2, ShieldAlert, ShieldCheck, ShieldX, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Clock, Gamepad2, ShieldAlert, ShieldCheck, ShieldX, WandSparkles, type LucideIcon } from "lucide-react";
 import type { IconType } from "react-icons";
 import { FaAndroid, FaApple, FaLinux, FaWindows } from "react-icons/fa6";
 import { SiIos } from "react-icons/si";
@@ -338,12 +338,30 @@ export function AiChip({ level }: { level?: Entry["aiLevel"] }) {
   );
 }
 
+/**
+ * Easy setup: the app lists the game files it needs, so Quiver Launcher finds the player's copy of the game and puts it
+ * where the app needs it, in place of following the project's README.
+ */
+export const hasEasySetup = (entry: { launcher?: { setupFiles?: readonly unknown[] } }) => Boolean(entry.launcher?.setupFiles?.length);
+
+/** A small chip saying an app has Easy setup. */
+export function EasySetupChip() {
+  return (
+    <span className="ai-chip easy-chip" title={t`Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it.`}>
+      <WandSparkles size={10} aria-hidden="true" />
+      {t({ message: "Easy setup", comment: "Chip on apps whose game files Quiver Launcher finds and puts in place for the player" })}
+    </span>
+  );
+}
+
 /** What a catalog card shows of an app: an `Entry`, or the site's own catalog row. */
 export type CardEntry = {
   projectName: string;
   tags: readonly string[];
   supportedOS: readonly string[];
   aiLevel?: Entry["aiLevel"];
+  /** Its launcher setup: the game files it lists make it Easy setup. */
+  launcher?: { setupFiles?: readonly unknown[] };
   games: readonly { id: string; title: string }[];
   recommended: number;
   reportIssues: number;
@@ -430,11 +448,11 @@ export type CardLook = "box" | "wide";
 
 /**
  * A card's details, each shown or not (the launcher's Settings): its games, its kinds (its tags, as Quiver Launcher 3's
- * cards had over the name), what players said, when it was last updated, the platforms and the AI label, and New on an
- * app added lately.
+ * cards had over the name), what players said, when it was last updated, the platforms, the AI label, Easy setup, and New
+ * on an app added lately.
  */
-export type CardDetail = "subtitle" | "kinds" | "rating" | "updated" | "platforms" | "ai" | "new";
-export const CARD_DETAILS: readonly CardDetail[] = ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "new"];
+export type CardDetail = "subtitle" | "kinds" | "rating" | "updated" | "platforms" | "ai" | "setup" | "new";
+export const CARD_DETAILS: readonly CardDetail[] = ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup", "new"];
 
 /** A box-art card's picture: the capsule; wide art shown whole over a blurred copy of itself; or the icon. */
 function BoxArt({ entry, sources, name }: { entry: CardEntry; sources?: readonly ImageSource[]; name: string }) {
@@ -523,14 +541,16 @@ export function EntryCardContent({
   if (look === "box") {
     const games = shows("subtitle") && entry.games.map((game) => game.title).join(", ");
     const ai = shows("ai") && entry.aiLevel && entry.aiLevel !== "none";
+    const easy = shows("setup") && hasEasySetup(entry);
     const os = shows("platforms") ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id)) : [];
     return (
       <>
         <span className="card-cover">
           {artwork ?? <BoxArt entry={entry} sources={coverSources} name={entry.projectName} />}
           {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
-          {!shelf && (ai || os.length > 0) && (
+          {!shelf && (ai || easy || os.length > 0) && (
             <span className="cover-strip">
+              {easy && <EasySetupChip />}
               {ai && <AiChip level={entry.aiLevel} />}
               {os.length > 0 && <PlatformIcons os={os} />}
             </span>
@@ -580,6 +600,7 @@ export function EntryCardContent({
                   <ScrollingText text={kinds.join(" · ")} />
                 </span>
               )}
+              {shows("setup") && hasEasySetup(entry) && <EasySetupChip />}
               {shows("ai") && <AiChip level={entry.aiLevel} />}
               {shows("platforms") && <PlatformIcons os={entry.supportedOS} />}
             </span>

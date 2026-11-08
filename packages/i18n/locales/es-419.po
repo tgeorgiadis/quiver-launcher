@@ -905,6 +905,10 @@ msgstr "Cualquier consola"
 msgid "Any project type"
 msgstr "Cualquier tipo de proyecto"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Any setup"
+msgstr "Cualquier configuración"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Any source"
 msgstr "Cualquier origen"
@@ -1756,6 +1760,23 @@ msgstr "p. ej. --fullscreen"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "p. ej. gamemoderun %command% --fullscreen"
+
+#. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
+#. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-cards.ts
+#: ../ui/src/index.tsx
+msgid "Easy setup"
+msgstr "Configuración fácil"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Easy setup only"
+msgstr "Solo configuración fácil"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../ui/src/index.tsx
+msgid "Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it."
+msgstr "Configuración fácil: Quiver Launcher encuentra tu copia del juego y la pone donde la app la necesita."
 
 #. Edits a playlist
 #: ../../apps/launcher/src/library.tsx
@@ -3542,6 +3563,10 @@ msgstr "Ya salió Quiver Launcher {version}."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver Launcher finds your copy of the game and puts it where the app needs it."
+msgstr "Quiver Launcher encuentra tu copia del juego y la pone donde la app la necesita."
+
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher tuvo un problema"
@@ -3970,6 +3995,7 @@ msgstr "Secciones de configuración"
 
 #. Heading over an app's mods, launch options, versions and updates
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Setup"
 msgstr "Ajustes"
 
