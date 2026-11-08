@@ -686,6 +686,10 @@ msgstr "Agregar un correo"
 msgid "Add and get"
 msgstr "Agregar y obtener"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Add another folder…"
+msgstr "Agregar otra carpeta…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
 msgstr "Agrega apps desde el menú de cada app. También muestra las apps que coinciden con estos filtros:"
@@ -726,6 +730,14 @@ msgstr "Agregar a una playlist"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add to Steam"
 msgstr "Agregar a Steam"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Add your {consoleName} games folder…"
+msgstr "Agregar tu carpeta de juegos de {consoleName}…"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Add your games folder…"
+msgstr "Agregar tu carpeta de juegos…"
 
 #. When the player added an app to their library, then a date
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -1239,6 +1251,10 @@ msgid "Check for updates"
 msgstr "Buscar actualizaciones"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Check yours"
+msgstr "Revisa la tuya"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking your copy…"
 msgstr "Revisando tu copia…"
 
@@ -1283,6 +1299,7 @@ msgid "Choose a folder to look in"
 msgstr "Elige una carpeta donde buscar"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a folder you keep game copies in"
 msgstr "Elige una carpeta donde guardas copias de juegos"
 
@@ -1415,6 +1432,10 @@ msgstr "Elegir dónde instalar las apps"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Choose where you keep your {console} games"
 msgstr "Elige dónde guardas tus juegos de {console}"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Choose where you keep your {consoleName} games"
+msgstr "Elige dónde guardas tus juegos de {consoleName}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
@@ -1923,6 +1944,10 @@ msgstr "Token de GitHub"
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "Volver"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Good copy"
+msgstr "Copia buena"
 
 #. Library layout
 #: ../../apps/launcher/src/view.ts
@@ -2587,8 +2612,8 @@ msgid "Looking for Quiver Launcher 3…"
 msgstr "Buscando Quiver Launcher 3…"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Looking in Downloads, your ROM folders and drives…"
-msgstr "Buscando en Descargas, tus carpetas de ROM y unidades…"
+msgid "Looking in your game folders…"
+msgstr "Buscando en tus carpetas de juegos…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Looking it up took too long. Check your connection and try again."
@@ -2803,6 +2828,10 @@ msgstr "Navegar hacia arriba"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Needed to play"
 msgstr "Necesaria para jugar"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Needs your {label}"
+msgstr "Falta: {label}"
 
 #. Last played: never
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3255,8 +3284,6 @@ msgstr "Plataformas"
 #. Button that starts an app
 #. Button that starts an app
 #. Button that starts an app
-#. Button that starts an app
-#. Button that starts an app
 #. Button: start the app
 #. Button: start the app
 #. Button: start the app
@@ -3475,8 +3502,8 @@ msgid "Quiver couldn't show that picture. It may have been moved or deleted."
 msgstr "Quiver no pudo mostrar esa imagen. Puede que se haya movido o eliminado."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Quiver didn't find one in the usual places."
-msgstr "Quiver no encontró ninguna en los lugares habituales."
+msgid "Quiver didn't find one in your game folders."
+msgstr "Quiver no encontró ninguna en tus carpetas de juegos."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver has no list of good copies for {name} to check this one against."
@@ -3914,6 +3941,11 @@ msgstr "Seleccionar"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "Enviar datos de uso"
+
+#. Button that sets up the player's copy of the game, then starts the app
+#: ../../apps/launcher/src/App.tsx
+msgid "Set up and play"
+msgstr "Configurar y jugar"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"
@@ -4355,6 +4387,14 @@ msgstr "Cuéntales a otros cómo funcionó después de seguir los ajustes."
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it worked for you after following the setup on this page."
 msgstr "Cuéntales a otros cómo te funcionó después de seguir los ajustes de esta página."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Tell Quiver where you keep your {consoleName} games, and it finds this copy and the next ones for you."
+msgstr "Dile a Quiver dónde guardas tus juegos de {consoleName}, y encontrará esta copia y las siguientes por ti."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Tell Quiver where you keep your game copies, and it finds this one and the next ones for you."
+msgstr "Dile a Quiver dónde guardas tus copias de juegos, y encontrará esta y las siguientes por ti."
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx
@@ -5007,8 +5047,8 @@ msgid "When {name} asks for it, pick this file: {0}"
 msgstr "Cuando {name} la pida, elige este archivo: {0}"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
-msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks in these folders first, then in Downloads and your drives."
-msgstr "Cuando una app necesita tu propia copia de un juego, como una ROM o una imagen de disco, Quiver busca primero en estas carpetas y luego en Descargas y tus unidades."
+msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
+msgstr "Cuando una app necesita tu propia copia de un juego, como una ROM o una imagen de disco, Quiver la busca solo en estas carpetas."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
@@ -5107,6 +5147,10 @@ msgstr "Tus apps"
 msgid "Your apps are in your library."
 msgstr "Tus apps están en tu biblioteca."
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copies: {ready} of {total} set up"
+msgstr "Tus copias: {ready} de {total} configuradas"
+
 #. placeholder {0}: phase.copy.dump
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is a good one ({0}), and it's where {name} reads it."
@@ -5128,10 +5172,6 @@ msgstr "Tu copia es buena."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is where {name} reads it."
 msgstr "Tu copia está donde {name} la lee."
-
-#: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Your copy of the game"
-msgstr "Tu copia del juego"
 
 #. placeholder {0}: file.label
 #: ../../apps/launcher/src/own-copy-setup.tsx

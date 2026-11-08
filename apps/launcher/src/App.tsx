@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -42,7 +42,8 @@ import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
-import { OwnCopyPanel, OwnCopyPrompt } from "./own-copy-setup";
+import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
+import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
 
 type Tab = "library" | "browse";
@@ -895,6 +896,17 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   // Get's arrow: the version, and on Linux the build, to get, in place of Get's own choice.
   const [getting, setGetting] = useState(false);
   const noWayOff = Boolean(pulledVerified(catalog[entry.id] ?? entry));
+  // On its page, Play says so when it opens the setup of the player's copy first (own-copy-setup.tsx's chip says which).
+  const setsUp = apart && install && foldersOn(config.os) && copiesNeeded(catalog[entry.id] ?? entry, install, config.os).length > 0;
+  const playLabel = setsUp ? (
+    <>
+      <Disc3 size={15} /> <Trans comment="Button that sets up the player's copy of the game, then starts the app">Set up and play</Trans>
+    </>
+  ) : (
+    <>
+      <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+    </>
+  );
   const choose = (
     <>
       <button className="primary" onClick={() => setVersions(true)}>
@@ -1006,7 +1018,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
     return (
       <div className="row">
         <button className="primary" onClick={() => play(entry.id)}>
-          <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+          {playLabel}
         </button>
         <button onClick={() => get(catalog[entry.id] ?? entry)}>
           <Trans>Update to {next}</Trans>
@@ -1020,7 +1032,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
     return (
       <div className="row pinned-action">
         <button className="primary wide" onClick={() => play(entry.id)}>
-          <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+          {playLabel}
         </button>
         {install.unverified &&
           (install.blocked ? (
@@ -1043,7 +1055,7 @@ function Action({ entry, apart }: { entry: Entry; apart?: boolean }) {
   if (install)
     return (
       <button className="primary wide" onClick={() => play(entry.id)}>
-        <Play size={15} /> <Trans comment="Button that starts an app">Play</Trans>
+        {playLabel}
       </button>
     );
   if (!availableOn(entry, config.os)) {
@@ -1385,9 +1397,9 @@ function AppPage({
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
                 </button>
               )}
+              {install && foldersOn(config.os) && !(job && !("error" in job)) && <OwnCopyChips entry={entry} install={install} />}
             </div>
             {/* When it was added to the library is the sidebar's to say; here, what playing it has come to. */}
-            {install && foldersOn(config.os) && <OwnCopyPanel entry={entry} install={install} />}
             {!onClose && <PlayStats install={install} item={item} added={false} />}
             {problem && (
               <p className="job-error" role="status">

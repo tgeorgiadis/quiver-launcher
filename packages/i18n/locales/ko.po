@@ -686,6 +686,10 @@ msgstr "이메일 추가"
 msgid "Add and get"
 msgstr "추가 후 받기"
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Add another folder…"
+msgstr "다른 폴더 추가…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Add apps from each app's menu. It also shows apps that match these filters:"
 msgstr "각 앱의 메뉴에서 앱을 추가하세요. 다음 필터와 일치하는 앱도 표시돼요:"
@@ -726,6 +730,14 @@ msgstr "재생 목록에 추가"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add to Steam"
 msgstr "Steam에 추가"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Add your {consoleName} games folder…"
+msgstr "{consoleName} 게임 폴더 추가…"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Add your games folder…"
+msgstr "게임 폴더 추가…"
 
 #. When the player added an app to their library, then a date
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -1239,6 +1251,10 @@ msgid "Check for updates"
 msgstr "업데이트 확인"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Check yours"
+msgstr "사본 확인"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking your copy…"
 msgstr "사본 확인 중…"
 
@@ -1283,6 +1299,7 @@ msgid "Choose a folder to look in"
 msgstr "찾아볼 폴더 선택"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
+#: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a folder you keep game copies in"
 msgstr "게임 사본을 보관하는 폴더 선택"
 
@@ -1415,6 +1432,10 @@ msgstr "앱 설치 위치 선택"
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Choose where you keep your {console} games"
 msgstr "{console} 게임을 보관하는 위치 선택"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Choose where you keep your {consoleName} games"
+msgstr "{consoleName} 게임을 보관하는 위치 선택"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
@@ -1923,6 +1944,10 @@ msgstr "GitHub 토큰"
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "뒤로 가기"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Good copy"
+msgstr "정상 사본"
 
 #. Library layout
 #: ../../apps/launcher/src/view.ts
@@ -2587,8 +2612,8 @@ msgid "Looking for Quiver Launcher 3…"
 msgstr "Quiver Launcher 3을 찾는 중…"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Looking in Downloads, your ROM folders and drives…"
-msgstr "다운로드, ROM 폴더와 드라이브를 찾는 중…"
+msgid "Looking in your game folders…"
+msgstr "게임 폴더에서 찾는 중…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Looking it up took too long. Check your connection and try again."
@@ -2803,6 +2828,10 @@ msgstr "위로 이동"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Needed to play"
 msgstr "플레이에 필요"
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Needs your {label}"
+msgstr "{label} 필요"
 
 #. Last played: never
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3255,8 +3284,6 @@ msgstr "플랫폼"
 #. Button that starts an app
 #. Button that starts an app
 #. Button that starts an app
-#. Button that starts an app
-#. Button that starts an app
 #. Button: start the app
 #. Button: start the app
 #. Button: start the app
@@ -3475,8 +3502,8 @@ msgid "Quiver couldn't show that picture. It may have been moved or deleted."
 msgstr "Quiver에서 이 이미지를 표시할 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Quiver didn't find one in the usual places."
-msgstr "Quiver가 평소 위치에서 찾지 못했어요."
+msgid "Quiver didn't find one in your game folders."
+msgstr "Quiver가 게임 폴더에서 찾지 못했습니다."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver has no list of good copies for {name} to check this one against."
@@ -3914,6 +3941,11 @@ msgstr "선택"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "사용 데이터 보내기"
+
+#. Button that sets up the player's copy of the game, then starts the app
+#: ../../apps/launcher/src/App.tsx
+msgid "Set up and play"
+msgstr "설정 후 플레이"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Set up Quiver Launcher"
@@ -4355,6 +4387,14 @@ msgstr "구성을 따라 한 뒤 어떻게 실행됐는지 다른 사람에게 �
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it worked for you after following the setup on this page."
 msgstr "이 페이지의 구성을 따라 한 뒤 어땠는지 다른 사람에게 알려 주세요."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Tell Quiver where you keep your {consoleName} games, and it finds this copy and the next ones for you."
+msgstr "{consoleName} 게임을 보관하는 위치를 알려 주면 Quiver가 이 사본과 다음 사본을 찾아 줍니다."
+
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Tell Quiver where you keep your game copies, and it finds this one and the next ones for you."
+msgstr "게임 사본을 보관하는 위치를 알려 주면 Quiver가 이 사본과 다음 사본을 찾아 줍니다."
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx
@@ -5007,8 +5047,8 @@ msgid "When {name} asks for it, pick this file: {0}"
 msgstr "{name}이(가) 요청하면 이 파일을 고르세요: {0}"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
-msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks in these folders first, then in Downloads and your drives."
-msgstr "앱에 ROM이나 디스크 이미지 같은 게임 사본이 필요하면 Quiver가 먼저 이 폴더에서 찾고, 그다음 다운로드와 드라이브에서 찾아요."
+msgid "When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else."
+msgstr "앱에 ROM이나 디스크 이미지 같은 내 게임 사본이 필요하면 Quiver는 이 폴더에서만 찾습니다."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where apps install"
@@ -5107,6 +5147,10 @@ msgstr "내 앱"
 msgid "Your apps are in your library."
 msgstr "앱이 라이브러리에 들어왔어요."
 
+#: ../../apps/launcher/src/own-copy-setup.tsx
+msgid "Your copies: {ready} of {total} set up"
+msgstr "내 사본: {total}개 중 {ready}개 설정됨"
+
 #. placeholder {0}: phase.copy.dump
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is a good one ({0}), and it's where {name} reads it."
@@ -5128,10 +5172,6 @@ msgstr "정상 사본이에요."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy is where {name} reads it."
 msgstr "사본이 {name}이(가) 읽는 위치에 있어요."
-
-#: ../../apps/launcher/src/own-copy-setup.tsx
-msgid "Your copy of the game"
-msgstr "내 게임 사본"
 
 #. placeholder {0}: file.label
 #: ../../apps/launcher/src/own-copy-setup.tsx
