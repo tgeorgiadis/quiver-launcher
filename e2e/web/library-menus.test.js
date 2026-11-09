@@ -244,6 +244,12 @@ test("View options' card size slider: the d-pad's left and right size the cards 
   await reach.press(app, "DPadRight");
   assert.equal(await scale(), "1.1", "two steps larger");
   assert.match(await focusIs(app), /Card size/, "the focus stays on the slider");
+  // Saved once it stops: the menu, opened again, has it.
+  await pause(400);
+  await back();
+  await app.execute(() => document.querySelector("button[aria-label='View options']").click());
+  assert.equal(await app.execute(() => document.querySelector(".card-size input").value), "1.1", "saved");
+  await app.execute(() => document.querySelector(".card-size input").focus());
   await reach.press(app, "DPadLeft");
   assert.equal(await scale(), "1.05", "a step back");
   await reach.press(app, "DPadLeft");

@@ -27,7 +27,7 @@ import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
-import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
+import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, showCardScale, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
 import { PLATFORMS, forPlatforms, type Platform } from "./platforms";
 import { gridGroupBy, isStack, sections, stacks, type Stack } from "./group";
 import { FiltersPanel, SidebarLayout, SidebarList } from "./library-sidebar";
@@ -690,7 +690,9 @@ export function LibraryPage({
   const gridClass = `catalog-grid library-grid layout-grid image-${view.image} size-${view.size}${view.names ? "" : " no-names"}`;
   // The lines under the name, and the tags' over it, the names keep room for (app.css's --tile-names).
   const tileLines = view.details.filter((d) => d === "subtitle" || d === "rating" || d === "updated").length + (view.details.some((d) => d === "kinds" || d === "ai" || d === "platforms") ? 1 : 0);
-  const gridStyle = { "--tile-lines": tileLines, "--card-scale": view.cardScale } as CSSProperties;
+  const gridStyle = { "--tile-lines": tileLines } as CSSProperties;
+  // The cards' size, on the page (showCardScale), where View options' slider changes it as it moves.
+  useEffect(() => showCardScale(view.cardScale), [view.cardScale]);
   // The triggers jump through a grid: a letter at a time by name, else a screen. A card for each game, or each app.
   const grid = (entries: Entry[]) => (
     <div className={gridClass} style={gridStyle} data-jump={byLetter ? "letters" : "pages"} ref={byLetter ? letterGrid : undefined}>

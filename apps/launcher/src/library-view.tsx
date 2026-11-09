@@ -2,7 +2,7 @@
  * The library's view options (view.ts): the controls, in the library's View
  * menu and in Settings, and the picture a box art or icon card shows.
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Gamepad2, Grid2x2, Grid3x3, LayoutGrid, PanelLeft, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
@@ -220,13 +220,37 @@ function SidebarWidth() {
   );
 }
 
+/** The library grids' card size (app.css's --card-scale), on the page itself, so a change shows without drawing them again. */
+export const showCardScale = (scale: number) => document.documentElement.style.setProperty("--card-scale", String(scale));
+
 /**
  * The cards' size, on a slider between a 3x3 grid (more, smaller cards) and a 2x2 one (fewer, larger). A controller's
- * left and right move it (data-arrows), as the arrow keys do; up and down leave it.
+ * left and right move it (data-arrows), as the arrow keys do; up and down leave it. While it moves, only the grids'
+ * size changes; it's saved once it stops, as saving draws the whole launcher again, every card with it.
  */
 function CardSizeSlider({ value, onChange }: { value: number; onChange: (scale: number) => void }) {
   const label = t`Card size`;
-  const step = (by: number) => onChange(Math.min(CARD_SCALE.max, Math.max(CARD_SCALE.min, value + by * CARD_SCALE.step)));
+  const [moving, setMoving] = useState<number | null>(null);
+  const shown = moving ?? value;
+  const pending = useRef<{ timer: number; scale: number } | null>(null);
+  const save = useRef(onChange);
+  save.current = onChange;
+  const settle = () => {
+    if (!pending.current) return;
+    clearTimeout(pending.current.timer);
+    save.current(pending.current.scale);
+    pending.current = null;
+    setMoving(null);
+  };
+  // Closing the menu mid-move keeps the size it had come to.
+  useEffect(() => settle, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const move = (scale: number) => {
+    setMoving(scale);
+    showCardScale(scale);
+    if (pending.current) clearTimeout(pending.current.timer);
+    pending.current = { scale, timer: window.setTimeout(settle, 250) };
+  };
+  const step = (by: number) => move(Math.min(CARD_SCALE.max, Math.max(CARD_SCALE.min, Number((shown + by * CARD_SCALE.step).toFixed(2)))));
   return (
     <div className="view-choice">
       <span className="view-label">{label}</span>
@@ -235,12 +259,12 @@ function CardSizeSlider({ value, onChange }: { value: number; onChange: (scale: 
         <input
           type="range"
           aria-label={label}
-          aria-valuetext={`${Math.round(value * 100)}%`}
+          aria-valuetext={`${Math.round(shown * 100)}%`}
           min={CARD_SCALE.min}
           max={CARD_SCALE.max}
           step={CARD_SCALE.step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
+          value={shown}
+          onChange={(e) => move(Number(e.target.value))}
           onKeyDown={(e) => {
             // The arrow keys, and a controller's left and right (sent as them): a step each, the same either way.
             if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
