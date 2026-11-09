@@ -86,3 +86,37 @@ test("a page opened with A has the focus in it, and a button that changes as it'
   await open("button", { text: "Change version" });
   assert.doesNotMatch(await reach.focused(app), /^body/);
 });
+
+test("a correction to an app's page: signing in opens it, B closes it to its button, and A sends one", async () => {
+  assert.equal(await appPage(), "page: Test Port");
+  // Signed out, the button signs in first, and the form opens after.
+  assert.equal(await open("button", { text: "Sign in to suggest a correction" }), "dialog: Sign in");
+  const dialog = page.locator('[role="dialog"]');
+  await dialog.locator('form > button[type="button"]').last().click();
+  await dialog.locator('input[autocomplete="username"]').fill("corrections");
+  await dialog.locator('input[autocomplete="new-password"]').fill("a password for the test");
+  await dialog.locator("button.primary").click();
+  await page.locator(".correction-form").waitFor();
+  // The focus in it, on its first control: the topic.
+  await s.until(async () => /^select .* in Suggest a correction$/.test(await reach.focused(app)));
+  // The README's links are left out: signed in, the test account's polling draws them again as the walk goes (the
+  // signed-out walk of the page has them).
+  await everything("the correction form", ".readme-body a");
+  // B in the form leaves the form, not the page, and the focus goes back to its button.
+  await page.locator(".correction-form textarea").focus();
+  assert.equal(await back(), "page: Test Port");
+  assert.equal(await page.locator(".correction-form").count(), 0);
+  await s.until(async () => /Suggest a correction/.test(await reach.focused(app)));
+  await reach.press(app, "South");
+  await page.locator(".correction-form select").selectOption("launch");
+  await page.getByText("To say how it ran, use Player feedback.").waitFor();
+  await page.locator(".correction-form textarea").fill("It starts the level editor, not the game.");
+  await page.locator(".correction-form").getByRole("button", { name: "Send" }).click();
+  await page.getByText("Thanks! A maintainer will take a look.").waitFor();
+  const [sent] = s.api.corrections;
+  assert.deepEqual(
+    { user: sent.user, entryId: sent.entryId, topic: sent.topic, body: sent.body, source: sent.source, installed: sent.client.installed },
+    { user: "corrections", entryId: "entry_test-port", topic: "launch", body: "It starts the level editor, not the game.", source: "launcher", installed: "1.0.0" },
+  );
+  assert.ok(sent.client.version && sent.client.os, "with the launcher's version and system");
+});

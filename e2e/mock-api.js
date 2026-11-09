@@ -736,6 +736,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     /** The playlists an account has saved, as libraryCollections keeps them. */
     collections: account.collections,
     reviews: account.reviews,
+    /** Corrections sent, oldest first: { user, entryId, topic, body, source, client, status, createdAt }. */
+    corrections: account.corrections,
     /** Shared lists by slug. */
     lists: account.lists,
     /** The filters of the last catalog page asked for. */
@@ -796,6 +798,8 @@ function mockAccount(entries) {
   const users = new Map(); // name -> { id, password, items: Map(entryId -> item), collections: Map(key -> collection) }
   const tokens = new Map(); // token -> name
   const reviews = [];
+  // Corrections sent, oldest first, as corrections.submit keeps them: { user, entryId, topic, body, source, client }.
+  const corrections = [];
   const analyticsCalls = [];
   // One review per player and app, as reviews.list shows it; Test Port starts with two.
   const saved = new Map();
@@ -926,6 +930,25 @@ function mockAccount(entries) {
       analyticsCalls.push({ user: name, enabled: body.enabled });
       return send(res, null);
     }
+    if (path === "/corrections") {
+      // As corrections.submit on the site checks it.
+      const text = String(body.body ?? "").trim();
+      const topics = ["description", "downloads", "install", "launch", "gameFiles", "setup", "games", "links", "other"];
+      const refused = !entries.some((e) => e.id === body.entryId)
+        ? "App not found."
+        : body.topic !== undefined && !topics.includes(body.topic)
+          ? "ArgumentValidationError"
+          : text.length < 5
+            ? "Say what's wrong or missing."
+            : text.length > 1000
+              ? "Keep it to 1000 characters or fewer."
+              : corrections.filter((c) => c.user === name).length >= 5
+                ? "You've sent a lot of corrections recently. Try again in a little while."
+                : null;
+      if (refused) return send(res, { error: refused }, 400);
+      corrections.push({ ...body, body: text, user: name, status: "open", createdAt: Date.now() });
+      return send(res, null);
+    }
     if (path === "/reviews/own") return send(res, saved.get(`${name}:${body.entryId}`) ?? null);
     if (path === "/reviews") {
       // As reviews.save on the site checks it.
@@ -964,5 +987,5 @@ function mockAccount(entries) {
     if (user) user.catalogDefaults = defaults;
   };
   const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
-  return { handle, reviews, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
+  return { handle, reviews, corrections, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
 }

@@ -19,6 +19,7 @@ import { LaunchOptionsButton } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
+import { SuggestCorrection } from "./correction";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
@@ -1562,6 +1563,8 @@ function AppPage({
             <>
               {/* Short, general facts first, over the README, which can run long. */}
               {site && <ProjectDetails entry={entry} detail={detail} source={source} />}
+              {/* Under its facts, as on the website: something there wrong or missing, for maintainers to fix. */}
+              {site && <SuggestCorrection entry={entry} installed={install && !install.local ? install.version : undefined} onSignIn={onSignIn} />}
               {/* In TV mode, long and full of links: there when asked for. */}
               {tv && !readme ? (
                 <button type="button" className="panel-action opens tv-readme" onClick={() => setReadme(true)}>

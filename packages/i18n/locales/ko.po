@@ -1158,6 +1158,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 
 #: ../../apps/launcher/src/app-files.tsx
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/file-picker.tsx
@@ -1331,6 +1332,10 @@ msgstr "플랫폼 선택"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose a program (.exe) that starts the app."
 msgstr "앱을 실행하는 프로그램(.exe)을 선택하세요."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Choose a topic (optional)"
+msgstr "주제 선택(선택 사항)"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-tile.tsx
@@ -1566,6 +1571,10 @@ msgid "couldn't scan every file."
 msgstr "일부 파일을 검사하지 못했어요."
 
 #: ../../apps/launcher/src/account.tsx
+msgid "Couldn't send it. Try again."
+msgstr "보내지 못했어요. 다시 시도하세요."
+
+#: ../../apps/launcher/src/account.tsx
 msgid "Couldn't share this playlist. Try again."
 msgstr "이 재생 목록을 공유하지 못했어요. 다시 시도하세요."
 
@@ -1628,6 +1637,10 @@ msgstr "삭제(공유 중지)"
 #: ../../apps/launcher/src/library.tsx
 msgid "Description"
 msgstr "설명"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Description or details"
+msgstr "설명 또는 세부 정보"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -1842,6 +1855,10 @@ msgstr "필터 사용 중"
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "카탈로그에서 포트를 찾아 받기를 누르세요. 여기에 추가되고 바로 다운로드돼요."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Finding my game files"
+msgstr "내 게임 파일 찾기"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
 msgstr "브라우저에서 마친 다음 여기서 로그인하세요."
@@ -1875,6 +1892,14 @@ msgstr "여러 콘솔의 게임이 든 폴더용이에요."
 #: ../../apps/launcher/src/own.tsx
 msgid "For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com."
 msgstr "카탈로그에 없는 앱을 위한 기능이에요. 나만 볼 수 있어요. 모두를 위해 추가하려면 quiverlauncher.com에서 제안하세요."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "For example: it starts the level editor instead of the game, or it needs the US version of the game."
+msgstr "예: 게임 대신 레벨 에디터가 실행되거나, 미국판 게임이 필요합니다."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "For what the listing gets wrong, like the wrong program or game file. To say how it ran, use Player feedback."
+msgstr "잘못된 프로그램이나 게임 파일처럼 목록 정보가 틀린 경우에 사용하세요. 실행이 어땠는지는 플레이어 피드백에 남겨 주세요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Forgot your password?"
@@ -1923,6 +1948,10 @@ msgstr "게임플레이"
 #: ../../apps/launcher/src/game.tsx
 msgid "Games"
 msgstr "게임"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Games, their names or consoles"
+msgstr "게임, 게임 이름 또는 콘솔"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
@@ -2314,6 +2343,10 @@ msgstr "설치 중"
 msgid "Installing {app}."
 msgstr "{app} 설치 중."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Installing it"
+msgstr "설치"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Installing: confirm it when Android asks"
 msgstr "설치 중: Android에서 확인을 요청하면 승인하세요"
@@ -2485,6 +2518,10 @@ msgstr "실행 옵션"
 msgid "Launcher update"
 msgstr "런처 업데이트"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Launching it"
+msgstr "실행"
+
 #. Library view option
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Layout"
@@ -2550,6 +2587,10 @@ msgstr "링크를 복사했어요."
 #: ../../apps/launcher/src/own.tsx
 msgid "Link to a catalog app"
 msgstr "카탈로그 앱에 연결"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Links"
+msgstr "링크"
 
 #. Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton
 #: ../../apps/launcher/src/App.tsx
@@ -3663,6 +3704,10 @@ msgstr "버전"
 msgid "Releases are being cataloged"
 msgstr "버전을 카탈로그에 등록하는 중"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Releases or downloads"
+msgstr "버전 또는 다운로드"
+
 #: ../../apps/launcher/src/main.tsx
 msgid "Reload"
 msgstr "다시 불러오기"
@@ -3839,6 +3884,10 @@ msgstr "{name} 실행 후기 남기기"
 msgid "Say how it ran for you"
 msgstr "실행 후기 남기기"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Say what's wrong or missing."
+msgstr "무엇이 잘못되었거나 빠졌는지 알려 주세요."
+
 #. Controller hint: what the scroll stick does
 #: ../../apps/launcher/src/spatial.ts
 msgid "Scroll"
@@ -3938,9 +3987,22 @@ msgstr "어떤 앱인지 보기"
 msgid "Select"
 msgstr "선택"
 
+#. Button: send a correction to the maintainers
+#: ../../apps/launcher/src/correction.tsx
+msgid "Send"
+msgstr "보내기"
+
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "사용 데이터 보내기"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Sending…"
+msgstr "보내는 중…"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
+msgstr "관리자가 확인할 수 있도록 계정 이름, 이 런처의 버전, 사용 중인 시스템과 함께 전송됩니다."
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -3972,6 +4034,10 @@ msgstr "설정 섹션"
 #: ../../apps/launcher/src/App.tsx
 msgid "Setup"
 msgstr "구성"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Setup instructions"
+msgstr "구성 안내"
 
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
@@ -4165,6 +4231,10 @@ msgstr "로그인하면 다른 사람이 자기 라이브러리에 추가할 수
 msgid "Sign in to share how it runs for you."
 msgstr "로그인하고 실행 후기를 공유해 주세요."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Sign in to suggest a correction"
+msgstr "로그인하고 수정 제안"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in to sync your library"
 msgstr "로그인하고 라이브러리 동기화하기"
@@ -4227,6 +4297,14 @@ msgstr "일부 앱은 ROM이나 디스크 이미지 같은 게임 사본이 필�
 #: ../../apps/launcher/src/library.tsx
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
 msgstr "누군가 재생 목록을 공유했나요? 링크를 붙여 넣어 라이브러리에 추가하세요. 원래 재생 목록과 계속 동기화돼요."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Something else"
+msgstr "기타"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Something wrong or missing on this page?"
+msgstr "이 페이지에 잘못되거나 빠진 내용이 있나요?"
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -4333,6 +4411,10 @@ msgstr "공유 중지"
 msgid "Submit an app"
 msgstr "앱 제출"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Suggest a correction"
+msgstr "수정 제안"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Suggest an app for the catalog, on quiverlauncher.com"
 msgstr "quiverlauncher.com에서 카탈로그에 앱 제안하기"
@@ -4413,6 +4495,10 @@ msgstr "테스트한 버전"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Thanks for sharing how it ran."
 msgstr "실행 후기를 공유해 주셔서 감사해요."
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Thanks! A maintainer will take a look."
+msgstr "감사해요! 관리자가 확인할 거예요."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "That folder doesn't have an installed app in it."
@@ -5028,6 +5114,10 @@ msgstr "플레이어 평가"
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "무엇이 잘 됐고 무엇이 안 됐나요? 실행하거나 문제를 해결하려고 따로 한 일이 있나요?"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "What's it about?"
+msgstr "어떤 내용인가요?"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "What's it for? (optional)"
 msgstr "어떤 용도인가요? (선택 사항)"
@@ -5040,6 +5130,10 @@ msgstr "새로운 기능"
 #: ../../apps/launcher/src/update.tsx
 msgid "What's new in {name}"
 msgstr "{name}의 새로운 기능"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "What's wrong or missing?"
+msgstr "무엇이 잘못되거나 빠졌나요?"
 
 #. placeholder {0}: fileName(phase.copy.path)
 #: ../../apps/launcher/src/own-copy-setup.tsx
