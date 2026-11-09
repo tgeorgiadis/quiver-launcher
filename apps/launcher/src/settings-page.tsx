@@ -461,7 +461,7 @@ function MusicSetting() {
  * has got.
  */
 export function AppsFolder() {
-  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps } = useLauncher();
+  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings } = useLauncher();
   const [asking, setAsking] = useState<{ to: string } | null>(null);
   // Moving the apps along is the player's choice; keeping them where they are is instant and first.
   const [keep, setKeep] = useState(true);
@@ -553,6 +553,10 @@ export function AppsFolder() {
   const open = (path: string) => void native.openAppsFolder(path).catch((e) => setMessage({ text: String(e), error: true }));
   return (
     <section className="settings-section apps-folder" aria-label={t`Apps folders`}>
+      <label className="toggle">
+        <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
+        <Trans>Ask where to install each app</Trans>
+      </label>
       <ul className="apps-folders">
         {folders.map((f) => {
           const state = states[f.path];

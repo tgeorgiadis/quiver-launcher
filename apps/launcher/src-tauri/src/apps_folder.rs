@@ -336,6 +336,43 @@ pub fn move_apps(data: &Path, from: &Path, to: &Path, apps: &[App], progress: im
     Ok(done)
 }
 
+/// Where one app is once moved: its folder there, and any of the old copy left to delete.
+#[derive(Serialize, Debug)]
+pub struct AppMoved {
+    pub dir: String,
+    pub left: Option<String>,
+}
+
+/// Moves one app's folder `from` into the folder `to`, under `folder` (or "folder 2" when that's taken there), the
+/// same safe way the apps folder moves: checked for room and a place it can save in first, then copied and checked
+/// before the old copy goes. `progress` hears the bytes copied, of the app's size.
+pub fn move_app(from: &Path, to: &Path, folder: &str, progress: impl Fn(u64, u64)) -> Result<AppMoved, String> {
+    if !to.is_absolute() {
+        return Err("Choose a folder on this computer.".into());
+    }
+    if !from.is_dir() {
+        return Err("This app's folder isn't there any more.".into());
+    }
+    if from.parent().is_some_and(|p| same(p, to)) {
+        return Err("It's already in that folder.".into());
+    }
+    if resolved(to).starts_with(resolved(from)) {
+        return Err("Choose a folder outside the app's own folder.".into());
+    }
+    if !writable(to) {
+        return Err("Quiver can't save files in that folder. Choose another one.".into());
+    }
+    if !same_drive(from, to) {
+        if let Some(why) = short_of_space(&[from.to_path_buf()], to, free_space(to)) {
+            return Err(why);
+        }
+    }
+    fs::create_dir_all(to).map_err(|e| format!("Couldn't use that folder: {}", explain(&e)))?;
+    let new = to.join(free_name(folder, to, &[]));
+    let left = move_one(from, &new, progress).map_err(|why| format!("Couldn't move it: {why}. It's still where it was, with all its files."))?;
+    Ok(AppMoved { dir: new.to_string_lossy().into(), left: left.map(|p| p.to_string_lossy().into_owned()) })
+}
+
 /// Moves a folder from `old` to `new`, which mustn't exist yet. On the same
 /// drive that's one rename. Across drives it's copied into a folder beside
 /// `new`, the copy checked file by file against the original, then named
@@ -753,6 +790,28 @@ mod tests {
         assert!(from.join("Game").is_dir());
         // Not one inside the folder it was.
         assert!(move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).is_err());
+    }
+
+    #[test]
+    fn moves_one_app_beside_whatever_is_there_and_refuses_where_it_cant_go() {
+        let root = tempfile::tempdir().unwrap();
+        let from = root.path().join("apps/Game");
+        fs::create_dir_all(from.join("data")).unwrap();
+        fs::write(from.join("data/save.dat"), "saved").unwrap();
+        let to = root.path().join("N64");
+        fs::create_dir_all(to.join("Game")).unwrap();
+        fs::write(to.join("Game/theirs.txt"), "the player's").unwrap();
+        // Not into its own folder, nor where it already is.
+        assert!(move_app(&from, &from.join("inside"), "Game", |_, _| {}).is_err());
+        assert!(move_app(&from, &root.path().join("apps"), "Game", |_, _| {}).is_err());
+        assert!(move_app(&from, Path::new("relative"), "Game", |_, _| {}).is_err());
+        let moved = move_app(&from, &to, "Game", |_, _| {}).unwrap();
+        assert_eq!(PathBuf::from(&moved.dir), to.join("Game 2"));
+        assert!(moved.left.is_none() && !from.exists());
+        assert_eq!(fs::read_to_string(to.join("Game 2/data/save.dat")).unwrap(), "saved");
+        assert_eq!(fs::read_to_string(to.join("Game/theirs.txt")).unwrap(), "the player's");
+        // Gone: nothing to move.
+        assert!(move_app(&from, &to, "Game", |_, _| {}).is_err());
     }
 
     #[test]

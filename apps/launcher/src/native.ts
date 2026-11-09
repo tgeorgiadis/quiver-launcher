@@ -92,6 +92,8 @@ export type InstallRequest = {
   checksum?: string;
   folder: string;
   dir?: string;
+  /** A new install goes in a folder of its own in here (one the player chose) instead of the apps folder. */
+  into?: string;
   filesToAdd: string[];
   version: string;
   /** The catalog's preferred programs, for finding the one a Windows installer installed. */
@@ -322,6 +324,13 @@ export const native = {
   openAppsFolder: (path: string) => invoke<void>("open_apps_folder", { path }),
   /** Whether each apps folder is there (a drive not plugged in isn't), and the bytes free on its drive. */
   appsFolderStates: (paths: string[]) => invoke<{ exists: boolean; free?: number | null }[]>("apps_folder_states", { paths }),
+  /**
+   * Moves one app's folder into `to`, beside what's there: `dir`, its folder there; `left`, its old copy if that
+   * couldn't all be deleted.
+   */
+  moveApp: (id: string, folder: string, dir: string | undefined, to: string) => invoke<{ dir: string; left?: string | null }>("move_app", { id, folder, dir, to }),
+  /** How far an app's move has got, in bytes copied (when it's copied to another drive). */
+  onAppMoving: (handler: (m: { id: string; copied: number; size: number }) => void) => listen<{ id: string; copied: number; size: number }>("app-moving", (e) => handler(e.payload)),
   onAppsMoving: (handler: (m: AppsMoving) => void) => listen<AppsMoving>("apps-moving", (e) => handler(e.payload)),
   /** An app is in its new folder (`dir`), mid-move. */
   onAppMoved: (handler: (m: { id: string; dir: string }) => void) => listen<{ id: string; dir: string }>("app-moved", (e) => handler(e.payload)),

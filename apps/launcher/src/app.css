@@ -1250,6 +1250,10 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .apps-folder-row .row { flex: none; flex-wrap: wrap; gap: 8px; }
 .apps-folder-row .row > button { flex: none; white-space: nowrap; }
 .move-choice { display: grid; gap: 6px; }
+/* Install to… and Move to…: a folder per line, its radio beside it. */
+.place-app .move-choice label { display: flex; align-items: baseline; gap: 10px; overflow-wrap: anywhere; }
+.place-app-folder { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.place-app-choose > button { flex: none; }
 .apps-moving { display: grid; gap: 6px; max-width: 460px; }
 /* Working out whether a move fits: a bar that sweeps, as there is nothing yet to count. */
 .progress.waiting .bar { width: 30%; animation: progress-sweep 1.4s ease-in-out infinite; }

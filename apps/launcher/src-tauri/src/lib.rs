@@ -1072,6 +1072,32 @@ async fn move_apps_folder(app: tauri::AppHandle, to: String, apps: Vec<apps_fold
     .map_err(|e| e.to_string())?
 }
 
+#[derive(Serialize, Clone)]
+struct AppMoving {
+    id: String,
+    copied: u64,
+    size: u64,
+}
+
+/// Moves one app's folder into `to`, the safe way the apps folder moves (apps_folder::move_app), reporting how far
+/// it's got ("app-moving") when it's copied to another drive.
+#[tauri::command]
+async fn move_app(app: tauri::AppHandle, id: String, folder: String, dir: Option<String>, to: String) -> Result<apps_folder::AppMoved, String> {
+    if app.state::<Running>().has(&id) {
+        return Err("Close it first, then move it.".into());
+    }
+    let from = present_app_dir(&app.state::<Data>(), &folder, dir)?;
+    let name = from.file_name().and_then(|n| n.to_str()).unwrap_or(&folder).to_string();
+    let handle = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        apps_folder::move_app(&from, Path::new(&to), &name, |copied, size| {
+            let _ = handle.emit("app-moving", AppMoving { id: id.clone(), copied, size });
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Opens a web page in the browser.
 #[tauri::command]
 async fn open_url(window: tauri::WebviewWindow, url: String) -> Result<(), String> {
@@ -1189,7 +1215,6 @@ fn uninstall_mod(data: State<'_, Data>, folder: String, dir: Option<String>, con
 /// Removes an installed app; fails with "cancelled" when the player says no to Windows uninstalling it.
 #[tauri::command]
 async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -> Result<(), String> {
-    let adopted = dir.is_some();
     let dir = app_dir(&app.state::<Data>(), &folder, dir)?;
     // Windows' uninstaller waits for the player, so not on the window's thread.
     tauri::async_runtime::spawn_blocking(move || {
@@ -1204,7 +1229,7 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
         }
         // Only a folder that still looks like an install is removed: one Quiver
         // installed into, or a 3.x install. Never a folder of the player's own.
-        if dir.exists() && install::may_remove(&dir, adopted) {
+        if dir.exists() && install::may_remove(&dir) {
             if let Some(id) = flatpak::installed(&dir) {
                 flatpak::uninstall(&id);
             }
@@ -1595,6 +1620,7 @@ pub fn run() {
             picker::browse,
             apps_folder_refusal,
             apps_folder_states,
+            move_app,
             open_apps_folder,
             move_apps_folder,
             secret_get,
