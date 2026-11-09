@@ -2797,6 +2797,10 @@ msgstr "Más como este"
 msgid "More…"
 msgstr "Más…"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
+msgstr "La mayoría de las apps necesitan tu propia copia de un juego, como una ROM o una imagen de disco, y Quiver Launcher tiene Configuración fácil para algunas de ellas. Agrega carpetas para una o dos consolas ahora, y agrega más en Configuración cuando quieras."
+
 #. Sort order for mods
 #: ../../apps/launcher/src/mods.tsx
 msgid "Most downloaded"
@@ -4326,10 +4330,6 @@ msgstr "Para que puedas restablecer tu contraseña si la olvidas"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Some AI assistance"
 msgstr "Algo de asistencia de IA"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "Some apps need your own copy of a game, like a ROM or a disc image. Add the folders you keep them in for a few consoles, and Quiver finds them for you. You can change these and add more in Settings anytime."
-msgstr "Algunas apps necesitan tu propia copia de un juego, como una ROM o una imagen de disco. Agrega las carpetas donde las guardas para algunas consolas, y Quiver las encuentra por ti. Puedes cambiarlas y agregar más en Configuración cuando quieras."
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."

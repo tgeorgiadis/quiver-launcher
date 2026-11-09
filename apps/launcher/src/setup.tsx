@@ -161,7 +161,7 @@ function CopiesStep() {
   return (
     <>
       <p className="muted">
-        <Trans>Some apps need your own copy of a game, like a ROM or a disc image. Add the folders you keep them in for a few consoles, and Quiver finds them for you. You can change these and add more in Settings anytime.</Trans>
+        <Trans>Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime.</Trans>
       </p>
       <GameCopySettings inSetup />
     </>
