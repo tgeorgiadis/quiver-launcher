@@ -13,7 +13,7 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play, Plus } from "lucid
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, filesAddable, hasUpdate, locatable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
+import { canGet, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
@@ -285,7 +285,7 @@ function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () =>
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags } = useLauncher();
+  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -351,6 +351,12 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e), { stays: true })) });
   if (renamable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Rename folder…`, act: () => askRename(entry) });
   if (filesAddable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Add files to folder…`, act: () => askAddFiles(entry) });
+  // Its own folder somewhere else: another apps folder, or one the player chooses for it.
+  if (foldersOn(config.os) && !busy && !isLocal(entry.id)) {
+    if (appMoves[entry.id]) manage.push({ text: t`Moving…`, act: () => {}, disabled: true });
+    else if (movable(install)) manage.push({ text: t`Move to…`, act: () => askPlace(entry) });
+    else if (!install && canGet(latest, config.os) && !pulledVerified(latest)) manage.push({ text: t`Install to…`, act: () => askPlace(entry) });
+  }
   if (install && shortcutsOn(config.os))
     manage.push(
       { text: t`Desktop shortcut`, act: () => void shortcut(native.createShortcut) },

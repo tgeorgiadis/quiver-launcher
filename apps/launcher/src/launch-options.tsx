@@ -54,10 +54,13 @@ export function RunnerSelect({ value, onChange, onError, automatic, direct }: { 
 
 /** What Automatic runs Windows programs with here, by name: a Proton Steam has, else Wine; null with neither, undefined until known. */
 export function useAutomaticRunner() {
+  const { config } = useLauncher();
   const [name, setName] = useState<string | null>();
+  // Only Linux runs Windows programs through a runner: elsewhere there's nothing to look for.
+  const linux = config.os === "linux";
   useEffect(() => {
-    native.automaticRunner().then(setName, () => setName(null));
-  }, []);
+    if (linux) native.automaticRunner().then(setName, () => setName(null));
+  }, [linux]);
   return name;
 }
 
