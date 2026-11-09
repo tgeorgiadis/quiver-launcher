@@ -590,7 +590,7 @@ export function AppsFolder() {
       </label>
       {settings.groupByConsole && (
         <p className="muted">
-          <Trans>In the default apps folder. Emulators, tools and standalone games get folders of their own, and apps for more than one console go in Multi-console. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.</Trans>
+          <Trans>In the default apps folder, ports go in Ports, in a folder for their console (Ports\N64, say), and those for more than one console in Ports\Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.</Trans>
         </p>
       )}
       {settings.groupByConsole && (unsorted.length > 0 || sorting) && (

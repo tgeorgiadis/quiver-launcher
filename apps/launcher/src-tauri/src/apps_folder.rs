@@ -47,10 +47,13 @@ pub struct App {
 /// Where an app goes in `to`: its console folder there, if it's in one, else `to` itself. A group that isn't a plain
 /// folder name is left out, so nothing goes outside `to`.
 fn place(app: &App, to: &Path) -> PathBuf {
-    match app.group.as_deref().and_then(|g| crate::install::plain_name(g).ok()) {
-        Some(group) => to.join(group),
-        None => to.to_path_buf(),
+    let Some(group) = app.group.as_deref() else { return to.to_path_buf() };
+    // A path with "/" (Ports/N64), each part a plain folder name, or it goes nowhere but `to`.
+    let parts: Vec<&str> = group.split('/').collect();
+    if parts.iter().any(|p| crate::install::plain_name(p).is_err()) {
+        return to.to_path_buf();
     }
+    parts.iter().fold(to.to_path_buf(), |path, part| path.join(part.trim()))
 }
 
 /// How far a move has got: `done` of `total` apps moved, and, while `folder`
@@ -593,21 +596,22 @@ mod tests {
         let data = tempfile::tempdir().unwrap();
         let elsewhere = tempfile::tempdir().unwrap();
         let from = current(data.path());
-        fs::create_dir_all(from.join("N64/Game")).unwrap();
-        fs::write(from.join("N64/Game/save.dat"), "saved").unwrap();
+        fs::create_dir_all(from.join("Ports/N64/Game")).unwrap();
+        fs::write(from.join("Ports/N64/Game/save.dat"), "saved").unwrap();
         fs::create_dir_all(from.join("Plain")).unwrap();
         let to = elsewhere.path().join("Games");
-        let grouped = App { group: Some("N64".into()), ..kept("g", "Game", &from.join("N64/Game")) };
+        let grouped = App { group: Some("Ports/N64".into()), ..kept("g", "Game", &from.join("Ports/N64/Game")) };
         let moved = std::cell::RefCell::new(vec![]);
         let done = move_apps(data.path(), &from, &to, &[app("p", "Plain"), grouped], |_| {}, |m| moved.borrow_mut().push((m.id, m.dir))).unwrap();
-        assert_eq!(fs::read_to_string(to.join("N64/Game/save.dat")).unwrap(), "saved");
-        assert!(to.join("Plain").is_dir() && !from.join("N64/Game").exists());
-        assert!(moved.into_inner().contains(&("g".to_string(), to.join("N64").join("Game").to_string_lossy().into_owned())));
+        assert_eq!(fs::read_to_string(to.join("Ports/N64/Game/save.dat")).unwrap(), "saved");
+        assert!(to.join("Plain").is_dir() && !from.join("Ports/N64/Game").exists());
+        assert!(moved.into_inner().contains(&("g".to_string(), to.join("Ports").join("N64").join("Game").to_string_lossy().into_owned())));
         // It keeps its path and console folder; only the plain one is the apps folder's own now.
         assert_eq!(done.inside, ["p"]);
         // A console folder that isn't a plain name goes nowhere outside \`to\`.
-        let sneaky = App { group: Some("../out".into()), ..app("x", "X") };
-        assert_eq!(place(&sneaky, &to), to);
+        for sneaky in ["../out", "Ports/..", "Ports\\..\\..", "/abs", "C:/x"] {
+            assert_eq!(place(&App { group: Some(sneaky.into()), ..app("x", "X") }, &to), to, "{sneaky}");
+        }
     }
 
     #[test]

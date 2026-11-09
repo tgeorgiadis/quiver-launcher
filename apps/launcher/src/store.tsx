@@ -357,9 +357,9 @@ const CONSOLE_FOLDERS: Record<string, string> = {
 };
 
 /**
- * The folder an app goes in inside its apps folder when new apps are grouped by console: emulators, tools and
- * standalone games each together, a port in its console's (or Multi-console, for more than one). None for the
- * player's own apps, which have no console to go by.
+ * The folder an app goes in inside its apps folder when new apps are grouped by console, as a path with "/": emulators,
+ * tools and standalone games each together, and ports in Ports, in their console's folder there (or Multi-console, for
+ * more than one). None for the player's own apps, which have no console to go by.
  */
 export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">, consoleNames: Record<string, string> = {}): string | undefined {
   if (isCustom(entry.id) || isLocal(entry.id)) return undefined;
@@ -367,17 +367,20 @@ export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles"
   if (entry.projectType === "tool") return "Tools";
   if (entry.projectType === "game") return "Games";
   const consoles = entry.basedOn?.console ? [entry.basedOn.console] : (entry.consoles ?? []);
-  if (consoles.length > 1) return "Multi-console";
   const id = consoles[0];
-  if (!id) return "Other";
-  return CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id);
+  const folder = consoles.length > 1 ? "Multi-console" : !id ? "Other" : (CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id));
+  return `Ports/${folder}`;
 }
 
-/** The apps folder an app kept in one is in: its folder's parent, or the one above its console folder. */
-export const rootOf = (app: { dir?: string; group?: string }) => (app.group ? parentOf(parentOf(app.dir!)) : parentOf(app.dir!));
+/** The apps folder an app kept in one is in: its folder's parent, or the one above its console folder (Ports/N64). */
+export const rootOf = (app: { dir?: string; group?: string }) => {
+  let path = parentOf(app.dir!);
+  for (let up = app.group ? app.group.split(/[\\/]/).length : 0; up > 0; up--) path = parentOf(path);
+  return path;
+};
 
-/** `folder` and `name` joined as a path, with `folder`'s own separator. */
-export const joinPath = (folder: string, name: string) => `${folder.replace(/[\\/]+$/, "")}${separator(folder)}${name}`;
+/** `folder` and `name` (which may be a path with "/") joined as a path, with `folder`'s own separator. */
+export const joinPath = (folder: string, name: string) => `${folder.replace(/[\\/]+$/, "")}${separator(folder)}${name.split(/[\\/]/).join(separator(folder))}`;
 
 const separator = (path: string) => (path.includes("\\") ? "\\" : "/");
 /** The folder a path is in. */
