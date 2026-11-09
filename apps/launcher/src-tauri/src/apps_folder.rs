@@ -314,6 +314,10 @@ pub fn move_apps(data: &Path, from: &Path, to: &Path, apps: &[App], progress: im
     let mut claimed: Vec<String> = apps.iter().filter(|a| a.dir.is_none()).map(|a| a.folder.clone()).collect();
     let mut plan: Vec<(&App, PathBuf, String)> = vec![];
     for (app, dir) in sources(from, to, apps) {
+        // A folder two entries share goes once, with the first: the second would find it gone.
+        if plan.iter().any(|(_, planned, _)| same(planned, &dir)) {
+            continue;
+        }
         // The apps folder's own keep their names, which nothing in `to` has (`refuse`); one kept elsewhere gets a
         // free one.
         let name = if app.dir.is_none() { app.folder.clone() } else { free_name(&app.folder, &place(app, to), &claimed) };
@@ -640,6 +644,22 @@ mod tests {
         for sneaky in ["../out", "Ports/..", "Ports\\..\\..", "/abs", "C:/x"] {
             assert_eq!(place(&App { group: Some(sneaky.into()), ..app("x", "X") }, &to), to, "{sneaky}");
         }
+    }
+
+    #[test]
+    fn a_folder_two_entries_share_moves_once() {
+        let data = tempfile::tempdir().unwrap();
+        let q3 = tempfile::tempdir().unwrap();
+        let shared = q3.path().join("Apps/YuGiOh");
+        fs::create_dir_all(&shared).unwrap();
+        fs::write(shared.join("save.dat"), "saved").unwrap();
+        let to = current(data.path());
+        fs::create_dir_all(&to).unwrap();
+        let moved = std::cell::RefCell::new(vec![]);
+        let done = move_apps(data.path(), &to, &to, &[kept("a", "YuGiOhRecomp", &shared), kept("b", "YuGiOh", &shared)], |_| {}, |m| moved.borrow_mut().push(m.id)).unwrap();
+        assert_eq!(fs::read_to_string(to.join("YuGiOhRecomp/save.dat")).unwrap(), "saved");
+        assert!(done.failed.is_empty(), "{:?}", done.failed);
+        assert_eq!(moved.into_inner(), ["a"]);
     }
 
     #[test]
