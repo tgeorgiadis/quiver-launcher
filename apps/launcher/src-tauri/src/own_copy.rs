@@ -366,8 +366,9 @@ pub fn target(file: &SetupFile, app: &Path, wine: bool) -> Result<Option<PathBuf
     let Some(destination) = file.destination.as_deref() else { return Ok(None) };
     let base = root_dir(file.root.as_deref(), app, wine)?;
     let path = relative(destination)?;
-    // In the system's folders it's inside a folder of the app's there, never loose among other programs' own.
-    if file.root.as_deref().is_some_and(|r| r != "app") && path.components().count() < 2 {
+    // A folder in the system's folders is inside a folder of the app's there, never loose among other programs' own. A
+    // single file may be (a ROM some apps read from there), and one already there is kept beside it.
+    if file.root.as_deref().is_some_and(|r| r != "app") && file.folder() && path.components().count() < 2 {
         return Err(format!("The catalog's place for this copy ({destination}) isn't one Quiver can use."));
     }
     Ok(Some(base.join(path)))
@@ -818,7 +819,10 @@ mod tests {
         assert!(target(&data, app, true).unwrap_err().contains("Wine or Proton"));
         assert!(target(&data, app, false).unwrap().unwrap().ends_with("Game/rom.z64"));
         // In the system's folders, only inside a folder of the app's.
-        assert!(target(&SetupFile { destination: Some("autostart".into()), root: Some("config".into()), ..Default::default() }, app, false).is_err());
+        let loose = |kind: &str| SetupFile { destination: Some("autostart".into()), root: Some("config".into()), kind: Some(kind.into()), ..Default::default() };
+        assert!(target(&loose("folder"), app, false).is_err());
+        // A file may be: one app reads its ROM from there.
+        assert!(target(&loose("file"), app, false).unwrap().unwrap().ends_with("autostart"));
     }
 
     #[test]
