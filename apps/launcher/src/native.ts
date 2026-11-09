@@ -329,7 +329,11 @@ export const native = {
    * Moves one app's folder into `to`, beside what's there: `dir`, its folder there; `left`, its old copy if that
    * couldn't all be deleted.
    */
-  moveApp: (id: string, folder: string, dir: string | undefined, to: string) => invoke<{ dir: string; left?: string | null }>("move_app", { id, folder, dir, to }),
+  /** `record`: how the app is recorded once there (in an apps folder, in a console folder), for a move the launcher closes during. */
+  moveApp: (id: string, folder: string, dir: string | undefined, to: string, record: { inApps: boolean; group?: string }) =>
+    invoke<{ dir: string; left?: string | null }>("move_app", { id, folder, dir, to, inApps: record.inApps, group: record.group ?? null }),
+  /** An old copy a move couldn't delete once the app was recorded in its new place. */
+  onMoveLeft: (handler: (path: string) => void) => listen<string>("app-move-left", (e) => handler(e.payload)),
   /** How far an app's move has got, in bytes copied (when it's copied to another drive). */
   onAppMoving: (handler: (m: { id: string; copied: number; size: number }) => void) => listen<{ id: string; copied: number; size: number }>("app-moving", (e) => handler(e.payload)),
   onAppsMoving: (handler: (m: AppsMoving) => void) => listen<AppsMoving>("apps-moving", (e) => handler(e.payload)),

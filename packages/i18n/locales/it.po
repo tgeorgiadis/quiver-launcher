@@ -928,6 +928,10 @@ msgstr "Resta sempre su questa versione"
 msgid "An app"
 msgstr "Un'app"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "An app moved, but some of its old copy couldn't be deleted. You can delete {path} yourself."
+msgstr "Un'app è stata spostata, ma parte della sua vecchia copia non è stata eliminata. Puoi eliminare {path} da solo."
+
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
 msgid "an engine flags one of its files. A lone detection is often a false alarm."
@@ -5348,12 +5352,17 @@ msgid "Wait"
 msgstr "Attendi"
 
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/store.tsx
 msgid "Wait for downloads to finish first"
 msgstr "Attendi prima la fine dei download"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Wait for it to finish moving, then play it."
 msgstr "Aspetta che finisca di spostarsi, poi avviala."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Wait for it to finish moving, then try again."
+msgstr "Aspetta che finisca di spostarsi, poi riprova."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Wait for its download to finish, then move it."

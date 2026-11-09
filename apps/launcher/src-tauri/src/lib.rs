@@ -14,6 +14,7 @@ mod install;
 mod keyboard;
 mod launch;
 mod mods;
+mod move_journal;
 mod msi;
 mod own_copy;
 mod picker;
@@ -148,13 +149,17 @@ fn read_state(data: State<Data>, name: String) -> Result<Option<serde_json::Valu
 }
 
 #[tauri::command]
-fn write_state(data: State<Data>, snapshotted: State<Snapshotted>, name: String, value: serde_json::Value) -> Result<(), String> {
+fn write_state(app: tauri::AppHandle, data: State<Data>, snapshotted: State<Snapshotted>, name: String, value: serde_json::Value) -> Result<(), String> {
     let path = state_file(&data, &name)?;
     let temp = path.with_extension("json.tmp");
     std::fs::create_dir_all(&data.0).map_err(|e| e.to_string())?;
     std::fs::write(&temp, serde_json::to_vec_pretty(&value).map_err(|e| e.to_string())?)
         .and_then(|_| std::fs::rename(&temp, &path))
         .map_err(|e| e.to_string())?;
+    // A moved app's old copy goes only now its new place is saved.
+    if name == "installs" {
+        delete_moved(Some(app), &data.0, move_journal::recorded(&data.0, &value, &data.apps()));
+    }
     if snapshots::FILES.contains(&name.as_str()) {
         let first = !snapshotted.0.swap(true, std::sync::atomic::Ordering::Relaxed);
         if let Err(e) = snapshots::take(&data.0, first) {
@@ -162,6 +167,25 @@ fn write_state(data: State<Data>, snapshotted: State<Snapshotted>, name: String,
         }
     }
     Ok(())
+}
+
+/// Deletes moved apps' old copies, off the window's thread: one big one takes a while. One that can't all go is
+/// said ("app-move-left"), and logged.
+fn delete_moved(app: Option<tauri::AppHandle>, data: &Path, old: Vec<PathBuf>) {
+    if old.is_empty() {
+        return;
+    }
+    let log = data.join("quiver.log");
+    std::thread::spawn(move || {
+        for path in old {
+            if let Err(e) = std::fs::remove_dir_all(&path) {
+                append_log(&log, &format!("Couldn't delete a moved app's old copy at {}: {e}", path.display()));
+                if let Some(app) = &app {
+                    let _ = app.emit("app-move-left", path.to_string_lossy());
+                }
+            }
+        }
+    });
 }
 
 /// Whether this run of the launcher has saved yet: its first save takes a snapshot.
@@ -1082,15 +1106,17 @@ struct AppMoving {
 /// Moves one app's folder into `to`, the safe way the apps folder moves (apps_folder::move_app), reporting how far
 /// it's got ("app-moving") when it's copied to another drive.
 #[tauri::command]
-async fn move_app(app: tauri::AppHandle, id: String, folder: String, dir: Option<String>, to: String) -> Result<apps_folder::AppMoved, String> {
+async fn move_app(app: tauri::AppHandle, id: String, folder: String, dir: Option<String>, to: String, in_apps: bool, group: Option<String>) -> Result<apps_folder::AppMoved, String> {
     if app.state::<Running>().has(&id) {
         return Err("Close it first, then move it.".into());
     }
     let from = present_app_dir(&app.state::<Data>(), &folder, dir)?;
     let name = from.file_name().and_then(|n| n.to_str()).unwrap_or(&folder).to_string();
     let handle = app.clone();
+    let data = app.state::<Data>().0.clone();
+    let record = apps_folder::Record { in_apps, group };
     tauri::async_runtime::spawn_blocking(move || {
-        apps_folder::move_app(&from, Path::new(&to), &name, |copied, size| {
+        apps_folder::move_app(&data, &id, &from, Path::new(&to), &name, &record, |copied, size| {
             let _ = handle.emit("app-moving", AppMoving { id: id.clone(), copied, size });
         })
     })
@@ -1583,6 +1609,12 @@ pub fn run() {
                 }
             }
             let apps = apps_folder::current(&dir);
+            // A move the launcher stopped during is finished before it reads where its apps are.
+            let (old, said) = move_journal::recover(&dir, &apps);
+            for line in said {
+                append_log(&dir.join("quiver.log"), &line);
+            }
+            delete_moved(None, &dir, old);
             app.manage(Data(dir, std::sync::Mutex::new(apps)));
             app.manage(Snapshotted(Default::default()));
             app.manage(gamepad::Pads::default());
