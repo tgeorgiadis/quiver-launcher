@@ -17,6 +17,18 @@ msgstr "(변경됨)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}}"
 
+#. placeholder {0}: f.apps.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# app} other {# apps}}"
+msgstr "{0, plural, other {앱 #개}}"
+
+#. placeholder {0}: bringing.apps.length
+#. placeholder {1}: bringing.path
+#. placeholder {2}: bringing.path
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move # app from {1} into {dir}?} other {Move # apps from {2} into {dir}?}}"
+msgstr "{0, plural, other {{1}의 앱 #개를 {dir}(으)로 옮길까요?}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -32,10 +44,20 @@ msgstr "{0, plural, other {다른 파일 #개 보기}}"
 msgid "{0, plural, one {Showing # app for other platforms.} other {Showing # apps for other platforms.}}"
 msgstr "{0, plural, other {다른 플랫폼용 앱 #개를 보여 주고 있어요.}}"
 
+#. placeholder {0}: message.failed.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {This one couldn't move. It's still where it was, with all its files, and plays from there:} other {These couldn't move. They're still where they were, with all their files, and play from there:}}"
+msgstr "{0, plural, other {이 앱은 옮기지 못했어요. 모든 파일과 함께 원래 자리에 그대로 있고, 거기서 실행돼요:}}"
+
 #. placeholder {0}: hidden.size
 #: ../../apps/launcher/src/App.tsx
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, other {앱 #개 모두 숨김 해제}}"
+
+#. placeholder {0}: space(state.free)
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0} free"
+msgstr "{0} 남음"
 
 #. placeholder {0}: placedCount + 1
 #. placeholder {1}: placedCount + queue.length
@@ -58,6 +80,14 @@ msgstr "{app} 다운로드를 완료하지 못했어요."
 #: ../../apps/launcher/src/App.tsx
 msgid "{app} has no verified release yet."
 msgstr "{app}에는 아직 검증된 버전이 없어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{app} is moved."
+msgstr "{app}을(를) 옮겼어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{app} is moved. Its old folder couldn't all be deleted: {left}"
+msgstr "{app}을(를) 옮겼어요. 이전 폴더를 다 지우지는 못했어요: {left}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{app} then stays on this version until you unpin it."
@@ -110,8 +140,18 @@ msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, other {앱 #개 추가}}"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "{count, plural, one {Move # installed app to {asking}? Its saves and settings go with it. Desktop and Steam shortcuts you made point at the old folder, so make them again after.} other {Move # installed apps to {asking}? Their saves and settings go with them. Desktop and Steam shortcuts you made point at the old folder, so make them again after.}}"
-msgstr "{count, plural, other {설치된 앱 #개를 {asking}(으)로 옮길까요? 저장 데이터와 설정도 함께 옮겨져요. 직접 만든 바탕 화면 및 Steam 바로 가기는 이전 폴더를 가리키므로, 옮긴 후 다시 만들어 주세요.}}"
+msgid "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
+msgstr "{count, plural, other {설치된 앱 #개는 {dir}에 그대로 두기}}"
+
+#. placeholder {0}: asking.to
+#. placeholder {1}: asking.to
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {Move it to {0} too} other {Move them to {1} too}}"
+msgstr "{count, plural, other {{1}(으)로도 옮기기}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {New apps install in {to}. Your # installed app stays where it is and plays from there.} other {New apps install in {to}. Your # installed apps stay where they are and play from there.}}"
+msgstr "{count, plural, other {새 앱은 {to}에 설치돼요. 설치된 앱 #개는 그대로 있고 거기서 실행돼요.}}"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "{count, plural, one {Puts its # app on a page anyone with the link can see, and add to their library.} other {Puts its # apps on a page anyone with the link can see, and add to their library.}}"
@@ -142,6 +182,10 @@ msgstr "{days, plural, other {#일 전}}"
 #: ../../apps/launcher/src/library.tsx
 msgid "{days, plural, one {Played # day ago} other {Played # days ago}}"
 msgstr "{days, plural, other {#일 전 플레이}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{done} of {total} apps moved"
+msgstr "앱 {total}개 중 {done}개 옮김"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "{downloadCount, plural, one {{downloads} download} other {{downloads} downloads}}"
@@ -217,6 +261,10 @@ msgstr "{issues, plural, other {#명 문제 있음}}"
 #: ../../apps/launcher/src/mods.tsx
 msgid "{kb} KB"
 msgstr "{kb} KB"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{kept, plural, one {Include # app from your other apps folders} other {Include # apps from your other apps folders}}"
+msgstr "{kept, plural, other {다른 앱 폴더의 앱 #개도 포함}}"
 
 #: ../../apps/launcher/src/media.tsx
 msgid "{kindName} video"
@@ -388,6 +436,10 @@ msgstr "{out}이(가) 나왔어요. 지금 버전: {have}."
 #: ../../apps/launcher/src/library.tsx
 msgid "{picked, plural, one {# app picked for it.} other {# apps picked for it.}}"
 msgstr "{picked, plural, other {앱 #개가 선택되어 있어요.}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{placed, plural, one {# app in a folder you chose for it stays where it is.} other {# apps in folders you chose for them stay where they are.}}"
+msgstr "{placed, plural, other {직접 고른 폴더에 있는 앱 #개는 그대로 있어요.}}"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "{playlistName} (copy)"
@@ -952,11 +1004,15 @@ msgid "Apps added from this computer, which Quiver doesn't download or update"
 msgstr "이 컴퓨터에서 추가한 앱으로, Quiver가 다운로드하거나 업데이트하지 않습니다"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Apps are installed in {dir}"
-msgstr "앱 설치 위치: {dir}"
+msgid "Apps already install there."
+msgstr "이미 그곳에 앱이 설치되고 있어요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folder"
+msgstr "앱 폴더"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps folders"
 msgstr "앱 폴더"
 
 #: ../../apps/launcher/src/old-library.tsx
@@ -1008,6 +1064,10 @@ msgstr "게임의 아트워크와 콘솔"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "As in Settings: {name}"
 msgstr "설정과 같이: {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ask where to install each app"
+msgstr "앱마다 설치할 위치 묻기"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {updateVersion} back. It installs the next new release."
@@ -1238,6 +1298,10 @@ msgstr "게임 변경"
 msgid "Change name or artwork"
 msgstr "이름 또는 아트워크 변경"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Change the default apps folder"
+msgstr "기본 앱 폴더 변경"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Change version"
 msgstr "버전 변경"
@@ -1266,6 +1330,14 @@ msgstr "업데이트 확인"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Check yours"
 msgstr "사본 확인"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Checking the folder"
+msgstr "폴더 확인 중"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Checking there's room…"
+msgstr "공간 확인 중…"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking your copy…"
@@ -1307,6 +1379,14 @@ msgstr "{label} 파일 선택"
 msgid "Choose a file…"
 msgstr "파일 선택…"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Choose a folder outside {path}, which has apps in it."
+msgstr "앱이 있는 {path} 밖의 폴더를 골라 주세요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Choose a folder that doesn't have {path} inside it."
+msgstr "{path}이(가) 들어 있지 않은 폴더를 골라 주세요."
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
 msgstr "찾아볼 폴더 선택"
@@ -1316,6 +1396,7 @@ msgstr "찾아볼 폴더 선택"
 msgid "Choose a folder you keep game copies in"
 msgstr "게임 사본을 보관하는 폴더 선택"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a folder…"
@@ -1442,9 +1523,17 @@ msgstr "이 폴더 선택"
 msgid "Choose when it expires."
 msgstr "만료 시점을 선택하세요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose where to install {app}"
+msgstr "{app}을(를) 설치할 위치 선택"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
 msgstr "앱 설치 위치 선택"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose where to move {app}"
+msgstr "{app}을(를) 옮길 위치 선택"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Choose where you keep your {console} games"
@@ -1474,6 +1563,7 @@ msgid "Clear search"
 msgstr "검색어 지우기"
 
 #. Window button: close Quiver's window
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -1549,6 +1639,10 @@ msgstr "컨트롤러"
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
 msgstr "링크 복사"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Copying {folder}… {percent}%"
+msgstr "{folder} 복사 중… {percent}%"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
@@ -1637,6 +1731,12 @@ msgstr "이름마다 빈 파일을 만듭니다. 이름이 여러 개면 쉼표�
 msgid "Dark"
 msgstr "어둡게"
 
+#. The apps folder new apps install in
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Default"
+msgstr "기본"
+
 #. Deletes a playlist
 #: ../../apps/launcher/src/library.tsx
 msgid "Delete"
@@ -1653,6 +1753,10 @@ msgstr "설명"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Description or details"
 msgstr "설명 또는 세부 정보"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Desktop and Steam shortcuts you made point at the old folder, so make them again after."
+msgstr "만들어 둔 바탕 화면 및 Steam 바로 가기는 이전 폴더를 가리키니, 끝난 뒤 다시 만들어 주세요."
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -1914,6 +2018,10 @@ msgid "flagged"
 msgstr "위험 감지됨"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Folder"
+msgstr "폴더"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Folder name"
 msgstr "폴더 이름"
 
@@ -1998,6 +2106,10 @@ msgstr "일반"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
 msgstr "Quiver Launcher 받기"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Getting ready…"
+msgstr "준비 중…"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2218,6 +2330,7 @@ msgstr "미리 보기 업데이트 포함"
 #. Button that installs this version
 #. Button: download and install the app
 #. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
+#. Installs an app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -2231,6 +2344,14 @@ msgstr "설치"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Install {app}"
 msgstr "{app} 설치"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install {app} {version} to"
+msgstr "{app} {version} 설치 위치"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install {app} to"
+msgstr "{app} 설치 위치"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -2281,13 +2402,14 @@ msgstr "철회된 버전을 설치할까요?"
 msgid "Install anyway"
 msgstr "그래도 설치"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Install apps in {asking} from now on?"
-msgstr "앞으로 {asking}에 앱을 설치할까요?"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Install automatically"
 msgstr "자동으로 설치"
+
+#. placeholder {0}: asking.to
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Install new apps in {0} from now on?"
+msgstr "이제부터 새 앱을 {0}에 설치할까요?"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Install the verified {installedVersion}"
@@ -2300,6 +2422,11 @@ msgstr "검증된 {verifiedVersion} 설치"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Install the Windows version (Wine)"
 msgstr "Windows 버전 설치 (Wine)"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install to…"
+msgstr "설치 위치…"
 
 #. A mod that's installed
 #. Filter by whether an app is installed
@@ -2410,6 +2537,14 @@ msgstr "인터페이스 크기"
 msgid "It didn't run"
 msgstr "실행되지 않았어요"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "It gets a folder of its own in there, and updates keep installing into it."
+msgstr "그곳에 자체 폴더가 생기고, 업데이트도 계속 그 폴더에 설치돼요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "It gets a folder of its own in there, with its saves and settings. Desktop and Steam shortcuts you made before point at the old place, so make them again."
+msgstr "그곳에 저장 데이터와 설정이 담긴 자체 폴더가 생겨요. 전에 만든 바탕 화면 및 Steam 바로 가기는 이전 위치를 가리키니 다시 만들어 주세요."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "출시 당시 Quiver가 확인한 파일을 설치하고, 그 뒤로 바뀐 파일은 거부해요."
@@ -2442,6 +2577,10 @@ msgstr "잘 작동했어요"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It wouldn't install, open, or start."
 msgstr "설치, 열기 또는 시작이 되지 않았어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "It's here now."
+msgstr "지금 여기에 있어요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -2488,6 +2627,14 @@ msgstr "방금 업데이트됨"
 msgid "Keep {keep}"
 msgstr "{keep} 유지"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Keep Quiver open until it's done."
+msgstr "끝날 때까지 Quiver를 열어 두세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Keep Quiver open until it's done. Each app's old copy is deleted only once its new one is checked."
+msgstr "끝날 때까지 Quiver를 열어 두세요. 각 앱의 이전 사본은 새 사본을 확인한 뒤에만 지워져요."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "토큰은 비공개로 보관하세요. 만료되면 새로 만들어 여기에 저장하세요."
@@ -2496,6 +2643,10 @@ msgstr "토큰은 비공개로 보관하세요. 만료되면 새로 만들어 �
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
 msgstr "이 앱의 데이터를 앱 폴더에 보관(<0>portable.txt</0>)"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Kept here from before."
+msgstr "예전부터 여기 있던 앱이에요."
 
 #. Controller hint: what the button bringing up Steam's on-screen keyboard does
 #: ../../apps/launcher/src/pad-hints.tsx
@@ -2710,6 +2861,10 @@ msgstr "만든 사람"
 msgid "Make a copy"
 msgstr "사본 만들기"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Make default"
+msgstr "기본으로 설정"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Make the folder"
 msgstr "폴더 만들기"
@@ -2823,21 +2978,65 @@ msgstr "대부분 AI 생성"
 msgid "Mouse wheel speed"
 msgstr "마우스 휠 속도"
 
+#. Moves an app's folder
+#: ../../apps/launcher/src/App.tsx
+msgid "Move"
+msgstr "옮기기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Move {app}"
+msgstr "{app} 옮기기"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Move apps"
 msgstr "앱 옮기기"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moved {count, plural, one {# app} other {# apps}}. New apps install here too."
-msgstr "{count, plural, other {앱 #개}}를 옮겼어요. 새 앱도 여기에 설치돼요."
+msgid "Move apps into the default folder"
+msgstr "앱을 기본 폴더로 옮기기"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving {folder}… ({step} of {total})"
-msgstr "{folder} 옮기는 중… ({total}개 중 {step}개)"
+msgid "Move into default"
+msgstr "기본 폴더로 옮기기"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Move to…"
+msgstr "옮길 위치…"
+
+#. placeholder {0}: n - failed.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
+msgstr "{n, plural, other {앱 #개}} 중 {0}개를 옮겼어요."
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving apps… ({step} of {total})"
-msgstr "앱 옮기는 중… ({total}개 중 {step}개)"
+msgid "Moved {n, plural, one {# app} other {# apps}}."
+msgstr "{n, plural, other {앱 #개}}를 옮겼어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Moving"
+msgstr "옮기는 중"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving {folder}…"
+msgstr "{folder} 옮기는 중…"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Moving {percent}%"
+msgstr "옮기는 중 {percent}%"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps"
+msgstr "앱 옮기는 중"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps…"
+msgstr "앱 옮기는 중…"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Moving…"
+msgstr "옮기는 중…"
 
 #. Library sort: by the app's name
 #. Library view option: which name the sidebar shows, the game's or the app's
@@ -2932,6 +3131,10 @@ msgstr "새 앱은 여기에 설치돼요."
 #: ../../apps/launcher/src/setup.tsx
 msgid "New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card."
 msgstr "새 앱은 여기에 설치돼요. 공간이 부족하면 Steam Deck의 microSD 카드처럼 다른 드라이브나 폴더를 선택하세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "New apps install in {to}."
+msgstr "새 앱은 {to}에 설치돼요."
 
 #. Browse card detail: a badge on apps added to the catalog lately
 #: ../../apps/launcher/src/browse-cards.ts
@@ -3102,6 +3305,10 @@ msgstr "아직 확인 안 됨"
 msgid "Not confirmed yet"
 msgstr "아직 확인 안 됨"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Not found. Is its drive connected?"
+msgstr "찾을 수 없어요. 드라이브가 연결되어 있나요?"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not in your library"
 msgstr "라이브러리에 없음"
@@ -3215,6 +3422,7 @@ msgid "Opacity"
 msgstr "불투명도"
 
 #. Controller hint: what Confirm does on an app card
+#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "열기"
@@ -3619,6 +3827,10 @@ msgstr "Quiver가 이 버전을 검증하지 않았어요"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Quiver가 이 버전을 검증하지 않았어요. 출시 당시 Quiver가 확인한 파일만 설치하고, 그 이후 바뀐 파일은 거부해요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver is measuring the apps and the free space on the drive. This can take a moment."
+msgstr "Quiver가 앱 크기와 드라이브의 남은 공간을 확인하고 있어요. 잠시 걸릴 수 있어요."
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Quiver Launcher {version} is out."
@@ -4642,6 +4854,10 @@ msgstr "프로그램 자체"
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "플레이에서 제공하는 프로그램은 앱 메뉴의 플레이할 프로그램에 있어요."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "The saves and settings come over too."
+msgstr "저장 데이터와 설정도 함께 옮겨져요."
+
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
 msgstr "공유 재생 목록이 최신 상태예요."
@@ -4670,6 +4886,10 @@ msgstr "아직 여기에 모드가 없어요."
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "아직 버전이 없어요. 원본 프로젝트에서 다운로드를 확인해 보세요."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
+msgstr "이 이전 사본들은 안전하게 옮겼지만, 일부 파일이 사용 중이어서 남았어요. 직접 지워도 돼요:"
+
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
 msgstr "이 계정은 정지됐어요."
@@ -4690,6 +4910,10 @@ msgstr "이 앱은 저장 데이터를 이 폴더에 보관할 수 있습니다.
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "이 앱이 다른 위치를 찾게 되어 저장 데이터와 설정을 찾지 못할 수 있습니다. 삭제되는 것은 없습니다."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This app's folder can't be moved."
+msgstr "이 앱의 폴더는 옮길 수 없어요."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be renamed."
@@ -5114,6 +5338,14 @@ msgstr "기다리기"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Wait for downloads to finish first"
 msgstr "먼저 다운로드가 끝날 때까지 기다리세요"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Wait for it to finish moving, then play it."
+msgstr "옮기기가 끝난 뒤에 실행해 주세요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Wait for its download to finish, then move it."
+msgstr "다운로드가 끝난 뒤에 옮겨 주세요."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Wait for its download to finish, then rename its folder."
