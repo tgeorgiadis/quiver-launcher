@@ -7,6 +7,8 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::move_journal;
+
 const FILE: &str = "apps-folder.json";
 
 #[derive(Serialize, Deserialize)]
@@ -323,15 +325,17 @@ pub fn move_apps(data: &Path, from: &Path, to: &Path, apps: &[App], progress: im
     for (i, (app, old, name)) in plan.iter().enumerate() {
         progress(Moving { done: i, total, folder: name.clone(), copied: 0, size: 0 });
         let new = place(app, to).join(name);
-        let result = fs::create_dir_all(place(app, to)).map_err(|e| explain(&e)).and_then(|_| move_one(old, &new, |copied, size| progress(Moving { done: i, total, folder: name.clone(), copied, size })));
+        let record = Record { in_apps: true, group: app.group.clone() };
+        let result = fs::create_dir_all(place(app, to))
+            .map_err(|e| explain(&e))
+            .and_then(|_| move_recorded(data, &app.id, old, &new, &record, |copied, size| progress(Moving { done: i, total, folder: name.clone(), copied, size })));
         match result {
-            Ok(left) => {
+            Ok(()) => {
                 moved(Moved { id: app.id.clone(), dir: new.to_string_lossy().into() });
                 // One in a console folder keeps its own path, and its group.
                 if *name == app.folder && app.group.is_none() {
                     done.inside.push(app.id.clone());
                 }
-                done.left.extend(left.map(|p| p.to_string_lossy().into_owned()));
             }
             // Each app moves on its own, so one that can't (a file blocked or in use) stays whole where it was and
             // the rest carry on. One of the apps folder's own goes on playing from the old folder, as one kept
@@ -363,7 +367,7 @@ pub struct AppMoved {
 /// Moves one app's folder `from` into the folder `to`, under `folder` (or "folder 2" when that's taken there), the
 /// same safe way the apps folder moves: checked for room and a place it can save in first, then copied and checked
 /// before the old copy goes. `progress` hears the bytes copied, of the app's size.
-pub fn move_app(from: &Path, to: &Path, folder: &str, progress: impl Fn(u64, u64)) -> Result<AppMoved, String> {
+pub fn move_app(data: &Path, id: &str, from: &Path, to: &Path, folder: &str, record: &Record, progress: impl Fn(u64, u64)) -> Result<AppMoved, String> {
     if !to.is_absolute() {
         return Err("Choose a folder on this computer.".into());
     }
@@ -386,29 +390,55 @@ pub fn move_app(from: &Path, to: &Path, folder: &str, progress: impl Fn(u64, u64
     }
     fs::create_dir_all(to).map_err(|e| format!("Couldn't use that folder: {}", explain(&e)))?;
     let new = to.join(free_name(folder, to, &[]));
-    let left = move_one(from, &new, progress).map_err(|why| format!("Couldn't move it: {why}. It's still where it was, with all its files."))?;
-    Ok(AppMoved { dir: new.to_string_lossy().into(), left: left.map(|p| p.to_string_lossy().into_owned()) })
+    move_recorded(data, id, from, &new, record, progress).map_err(|why| format!("Couldn't move it: {why}. It's still where it was, with all its files."))?;
+    Ok(AppMoved { dir: new.to_string_lossy().into(), left: None })
+}
+
+/// How an app is recorded in its new place: in an apps folder, and in which console folder there.
+#[derive(Default, Clone, Debug)]
+pub struct Record {
+    pub in_apps: bool,
+    pub group: Option<String>,
+}
+
+/// Where a move sets an app's old copy aside until its new place is recorded: a name beside it nothing has.
+fn retired_for(old: &Path) -> PathBuf {
+    let name = old.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let mut retired = old.with_file_name(format!(".{name}.quiver-moved"));
+    let mut n = 2;
+    while retired.exists() {
+        retired = old.with_file_name(format!(".{name}.quiver-moved-{n}"));
+        n += 1;
+    }
+    retired
+}
+
+/// `move_one`, written down first (move_journal.rs): the launcher can't lose track of the app, whenever it stops.
+fn move_recorded(data: &Path, id: &str, old: &Path, new: &Path, record: &Record, progress: impl Fn(u64, u64)) -> Result<(), String> {
+    let retired = retired_for(old);
+    let entry = move_journal::Entry { id: id.into(), from: old.into(), to: new.into(), retired: retired.clone(), in_apps: record.in_apps, group: record.group.clone() };
+    move_journal::begin(data, entry)?;
+    move_one(old, new, &retired, progress).inspect_err(|_| move_journal::cancel(data, id))
 }
 
 /// Moves a folder from `old` to `new`, which mustn't exist yet. On the same
 /// drive that's one rename. Across drives it's copied into a folder beside
 /// `new`, the copy checked file by file against the original, then named
-/// `new`, and only then the original removed. Until that last step nothing
-/// of the original is touched, so any failure leaves it whole (and removes
-/// the copy). Resolves to where some of the original was left, when it
-/// couldn't all be deleted.
-fn move_one(old: &Path, new: &Path, progress: impl Fn(u64, u64)) -> Result<Option<PathBuf>, String> {
+/// `new`, and only then the original set aside as `retired`, to delete once
+/// the app's recorded in its new place. Until then nothing of the original is
+/// touched, so any failure leaves it whole (and removes the copy).
+fn move_one(old: &Path, new: &Path, retired: &Path, progress: impl Fn(u64, u64)) -> Result<(), String> {
     if new.exists() {
         return Err("there's already a folder of its name there".into());
     }
     if fs::rename(old, new).is_ok() {
-        return Ok(None);
+        return Ok(());
     }
-    move_by_copy(old, new, progress)
+    move_by_copy(old, new, retired, progress)
 }
 
 /// `move_one` where a rename can't do it: another drive, or a file in use.
-fn move_by_copy(old: &Path, new: &Path, progress: impl Fn(u64, u64)) -> Result<Option<PathBuf>, String> {
+fn move_by_copy(old: &Path, new: &Path, retired: &Path, progress: impl Fn(u64, u64)) -> Result<(), String> {
     let name = new.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
     let copying = new.with_file_name(format!(".{name}.quiver-moving"));
     // A copy that a move before this one left unfinished.
@@ -432,14 +462,12 @@ fn move_by_copy(old: &Path, new: &Path, progress: impl Fn(u64, u64)) -> Result<O
         let _ = fs::remove_dir_all(&copying);
         return Err(e);
     }
-    // A folder with a file open in it can't be renamed, so this tells whether it's in use before deleting anything.
-    let old_name = old.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let retired = old.with_file_name(format!(".{old_name}.quiver-moved"));
-    if let Err(e) = fs::rename(old, &retired) {
+    // A folder with a file open in it can't be renamed, so this tells whether it's in use before anything goes.
+    if let Err(e) = fs::rename(old, retired) {
         let _ = fs::remove_dir_all(new);
         return Err(format!("its files are in use ({e}). Close it, and anything with its files open, then try again"));
     }
-    Ok(fs::remove_dir_all(&retired).err().map(|_| retired))
+    Ok(())
 }
 
 /// The bytes in a folder's files. A link copied as a link (on Unix) adds none, as copying it counts none.
@@ -842,16 +870,22 @@ mod tests {
         fs::create_dir_all(to.join("Game")).unwrap();
         fs::write(to.join("Game/theirs.txt"), "the player's").unwrap();
         // Not into its own folder, nor where it already is.
-        assert!(move_app(&from, &from.join("inside"), "Game", |_, _| {}).is_err());
-        assert!(move_app(&from, &root.path().join("apps"), "Game", |_, _| {}).is_err());
-        assert!(move_app(&from, Path::new("relative"), "Game", |_, _| {}).is_err());
-        let moved = move_app(&from, &to, "Game", |_, _| {}).unwrap();
+        let (data, record) = (root.path().join("data"), Record::default());
+        assert!(move_app(&data, "g", &from, &from.join("inside"), "Game", &record, |_, _| {}).is_err());
+        assert!(move_app(&data, "g", &from, &root.path().join("apps"), "Game", &record, |_, _| {}).is_err());
+        assert!(move_app(&data, "g", &from, Path::new("relative"), "Game", &record, |_, _| {}).is_err());
+        let moved = move_app(&data, "g", &from, &to, "Game", &record, |_, _| {}).unwrap();
         assert_eq!(PathBuf::from(&moved.dir), to.join("Game 2"));
         assert!(moved.left.is_none() && !from.exists());
+        // Written down till the launcher records it there.
+        let installs = serde_json::json!({ "g": { "folder": "Game", "dir": to.join("Game 2") } });
+        assert!(data.join("moves.json").is_file());
+        move_journal::recorded(&data, &installs, &root.path().join("apps"));
+        assert!(!data.join("moves.json").exists());
         assert_eq!(fs::read_to_string(to.join("Game 2/data/save.dat")).unwrap(), "saved");
         assert_eq!(fs::read_to_string(to.join("Game/theirs.txt")).unwrap(), "the player's");
         // Gone: nothing to move.
-        assert!(move_app(&from, &to, "Game", |_, _| {}).is_err());
+        assert!(move_app(&data, "g", &from, &to, "Game", &record, |_, _| {}).is_err());
     }
 
     #[test]
@@ -892,12 +926,17 @@ mod tests {
         // An unfinished copy from a move that stopped part way is started over.
         fs::create_dir_all(root.path().join("Games/.Game.quiver-moving/stale")).unwrap();
         let reports = std::cell::RefCell::new(vec![]);
-        assert_eq!(move_by_copy(&old, &new, |c, s| reports.borrow_mut().push((c, s))).unwrap(), None);
+        let retired = retired_for(&old);
+        move_by_copy(&old, &new, &retired, |c, s| reports.borrow_mut().push((c, s))).unwrap();
         assert_eq!(fs::metadata(new.join("saves/1.sav")).unwrap().len(), 40 << 20);
         assert!(!new.join("stale").exists() && !old.exists());
         let names: Vec<_> = fs::read_dir(root.path().join("Games")).unwrap().map(|e| e.unwrap().file_name()).collect();
         assert_eq!(names, ["Game"]);
-        assert!(!root.path().join("v3/.Game.quiver-moved").exists());
+        // The original's set aside whole, for deleting once the app's recorded in its new place.
+        assert_eq!(retired, root.path().join("v3/.Game.quiver-moved"));
+        assert_eq!(fs::metadata(retired.join("saves/1.sav")).unwrap().len(), 40 << 20);
+        // One already there from before isn't in the way.
+        assert_eq!(retired_for(&old), root.path().join("v3/.Game.quiver-moved-2"));
         // Reported now and then, not for every chunk, ending with all of it.
         let reports = reports.into_inner();
         assert!(reports.len() < 10, "{reports:?}");
@@ -912,7 +951,7 @@ mod tests {
         fs::write(old.join("save.dat"), "saved").unwrap();
         // The new place can't be written to: there's a file where its folder should go.
         fs::write(root.path().join("Games"), "").unwrap();
-        assert!(move_by_copy(&old, &new, |_, _| {}).is_err());
+        assert!(move_by_copy(&old, &new, &retired_for(&old), |_, _| {}).is_err());
         assert_eq!(fs::read_to_string(old.join("save.dat")).unwrap(), "saved");
         assert!(!root.path().join(".Game.quiver-moved").exists());
     }
@@ -929,7 +968,7 @@ mod tests {
         // Open as a game has its files: others may read it, not move or delete it.
         use std::os::windows::fs::OpenOptionsExt;
         let open = fs::OpenOptions::new().read(true).share_mode(1).open(old.join("save.dat")).unwrap();
-        let err = move_by_copy(&old, &new, |_, _| {}).unwrap_err();
+        let err = move_by_copy(&old, &new, &retired_for(&old), |_, _| {}).unwrap_err();
         assert!(err.contains("in use"), "{err}");
         drop(open);
         assert_eq!(fs::read_to_string(old.join("save.dat")).unwrap(), "saved");

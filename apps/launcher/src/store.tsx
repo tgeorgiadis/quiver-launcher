@@ -979,6 +979,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [catalog, setCatalog] = useState(saved.catalog);
   const [jobs, setJobs] = useState<Record<string, Job>>({});
   const [appMoves, setAppMoves] = useState<Record<string, AppMove>>({});
+  // The apps moving and installing this moment, kept as they change rather than as of a render: one mustn't start
+  // while the other is under way, even when both start together (an automatic update during Sort into console folders).
+  const moving = useRef(new Set<string>());
+  const installing = useRef(new Set<string>());
   const [finished, setFinished] = useState<Finished[]>([]);
   const [choice, setChoice] = useState<Choice | null>(null);
   // Asked one at a time, in turn: Update all can come to several.
@@ -995,6 +999,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
   const [notice, showNotice] = useState<Launcher["notice"]>(null);
   const setNotice = useMemo<Launcher["setNotice"]>(() => (text, options) => showNotice(text === null ? null : { text, ...options }), []);
+  // A moved app's old copy goes once its new place is saved (lib.rs's write_state); one that couldn't all go is said.
+  useEffect(() => {
+    const off = native.onMoveLeft((path) => setNotice(t`An app moved, but some of its old copy couldn't be deleted. You can delete ${path} yourself.`, { stays: true }));
+    return () => void off.then((stop) => stop());
+  }, [setNotice]);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
   const client = useMemo(() => createClient(config.api, {
@@ -1346,7 +1355,22 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
    * `app` is the custom app's repository, when it isn't in the library yet; `auto`, an update nobody asked for just
    * now, which doesn't ask: one whose file Quiver hasn't verified waits for it instead.
    */
+  /** Installs or updates an app, never one that's moving: its folder is on its way somewhere else. */
   async function installEntry(entry: Entry, chosen?: Release, options: InstallOptions = {}) {
+    if (moving.current.has(entry.id)) {
+      // An automatic update tries again next time.
+      if (!options.auto) setNotice(t`Wait for it to finish moving, then try again.`);
+      return;
+    }
+    installing.current.add(entry.id);
+    try {
+      await installNow(entry, chosen, options);
+    } finally {
+      installing.current.delete(entry.id);
+    }
+  }
+
+  async function installNow(entry: Entry, chosen: Release | undefined, options: InstallOptions) {
     const { app, pin = false, blocked, auto = false } = options;
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
@@ -1573,6 +1597,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   async function uninstall(id: string) {
     const install = installs[id];
     if (!install || install.local) return;
+    // Its folder is on its way somewhere else: nothing's removed, from the library either.
+    if (moving.current.has(id)) {
+      setNotice(t`Wait for it to finish moving, then try again.`);
+      throw "cancelled";
+    }
     await native.uninstall(install.folder, install.dir);
     track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
   }
@@ -2088,6 +2117,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // Those in the folders asked for, and with the default folder's own its apps in console folders.
       const kept = elsewhere.filter((a) => which.from.some((f) => samePath(rootOf(a), f)) || (which.inside && samePath(rootOf(a), config.appsDir)));
       const apps = [...inside, ...kept];
+      if (apps.some((a) => installing.current.has(a.id) || moving.current.has(a.id))) throw new Problem(msg`Wait for downloads to finish first`);
+      for (const a of apps) moving.current.add(a.id);
       // Each app is recorded where it is the moment it gets there: a move that stops part way, or a launcher closed
       // mid-move, leaves every app findable. It's in an apps folder still (or one that couldn't move stays in the
       // old one), so it comes along with the next move.
@@ -2105,14 +2136,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { left: moved.left, failed: moved.failed };
       } finally {
         stop();
+        for (const a of apps) moving.current.delete(a.id);
       }
     },
     appMoves,
     async moveApp(id, to) {
-      const install = installs[id];
+      // As it is now, not as of the render that offered the move: Sort into console folders moves one after another.
+      const install = now.current.installs[id];
       if (!movable(install)) throw new Problem(msg`This app's folder can't be moved.`);
-      if (jobs[id] && !("error" in jobs[id])) throw new Problem(msg`Wait for its download to finish, then move it.`);
-      if (appMoves[id]) return {};
+      if (installing.current.has(id)) throw new Problem(msg`Wait for its download to finish, then move it.`);
+      if (moving.current.has(id)) return {};
+      moving.current.add(id);
       setAppMoves((m) => ({ ...m, [id]: { copied: 0, size: 0 } }));
       const stop = await native.onAppMoving((m) => m.id === id && setAppMoves((all) => (all[id] ? { ...all, [id]: { copied: m.copied, size: m.size } } : all)));
       try {
@@ -2120,7 +2154,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         // Into the default apps folder while apps are grouped by console: its console's folder there, kept from
         // where it was or worked out now. Another folder is exactly where it goes.
         const group = samePath(to, config.appsDir) && settings.groupByConsole ? (install.group ?? groupFolder(catalog[id] ?? { id, projectType: "port" }, consoleNames)) : undefined;
-        const moved = await native.moveApp(id, install.folder, install.dir, group ? joinPath(to, group) : to);
+        const moved = await native.moveApp(id, install.folder, install.dir, group ? joinPath(to, group) : to, { inApps: listed, group });
         setInstalls((i) => {
           const now = i[id];
           if (!now) return i;
@@ -2133,6 +2167,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return moved.left ? { left: moved.left } : {};
       } finally {
         stop();
+        moving.current.delete(id);
         setAppMoves(({ [id]: _, ...rest }) => rest);
       }
     },
