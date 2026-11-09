@@ -650,6 +650,12 @@ fn merge(from: &Path, to: &Path) -> io::Result<()> {
         let entry = entry?;
         let dest = to.join(entry.file_name());
         if entry.file_type()?.is_dir() {
+            // A folder of the player's own game linked in here (own_copy.rs) stays theirs: an update never writes
+            // through the link into it.
+            // (A link the app's own files made stays inside the app's folder, and is merged into as before.)
+            if crate::own_copy::is_link(&dest) && !dest.canonicalize().is_ok_and(|t| to.canonicalize().is_ok_and(|root| t.starts_with(root))) {
+                continue;
+            }
             merge(&entry.path(), &dest)?;
         } else {
             if dest.is_dir() {

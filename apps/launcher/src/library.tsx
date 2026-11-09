@@ -1167,9 +1167,12 @@ export function MultiPill({
   max?: number;
 }) {
   const full = max !== undefined && picked.length >= max;
-  // In the options' order, whichever order they were ticked in.
-  const toggle = (value: string) =>
-    onChange(picked.includes(value) ? picked.filter((v) => v !== value) : options.map((o) => o.value).filter((v) => v === value || picked.includes(v)));
+  // In the options' order, whichever order they were ticked in; a pick the list no longer has (its apps left the
+  // library) stays, after them.
+  const toggle = (value: string) => {
+    const listed = options.map((o) => o.value);
+    onChange(picked.includes(value) ? picked.filter((v) => v !== value) : [...listed.filter((v) => v === value || picked.includes(v)), ...picked.filter((v) => !listed.includes(v))]);
+  };
   // Up and down go through the choices, round again at the end; the headings between them are passed over.
   const keys = (e: KeyEvent<HTMLDivElement>) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
