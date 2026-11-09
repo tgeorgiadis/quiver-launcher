@@ -63,8 +63,8 @@ function Message({ announcement }: { announcement: Announcement }) {
 export function decidedText(c: OwnCorrection) {
   const app = c.entryName;
   return c.status === "done"
-    ? t`Your correction to ${app} was made. Thanks!`
-    : t`A maintainer looked at your correction to ${app} and left its page as it is.`;
+    ? t`The problem you reported with ${app} was fixed. Thanks!`
+    : t`A maintainer looked at the problem you reported with ${app} and left its page as it is.`;
 }
 
 /** A notice's sentence and the maintainer's reply, if any. */
@@ -126,7 +126,7 @@ export function AnnouncementBanner({ onOpen, onOpenApp, edge = false }: { onOpen
   const notice = correctionNotices?.[0];
   if (notice)
     return (
-      <div className={`banner announcement-banner correction-notice${edge ? " edge" : ""}`} role="status" aria-label={t`Your correction`}>
+      <div className={`banner announcement-banner correction-notice${edge ? " edge" : ""}`} role="status" aria-label={t`Your problem report`}>
         <Flag size={18} aria-hidden="true" />
         <div>
           <Decided notice={notice} />

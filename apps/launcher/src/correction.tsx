@@ -1,6 +1,6 @@
 /**
- * Telling maintainers something on an app's page is wrong or missing, as on
- * the website's app page: a topic and a few words, sent to the website's
+ * Telling maintainers something on an app's page is wrong or missing (Report
+ * a problem, in its header), as on the website's app page: a topic and a few words, sent to the website's
  * Corrections queue (corrections.submit) with this launcher's version and
  * system. Signed in only, so the site can hold each account to a rate.
  */
@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
-import { fullDate } from "@quiverlauncher/ui";
+import { fullDate, hasEasySetup } from "@quiverlauncher/ui";
 import { useAccount, type OwnCorrection } from "./account";
 import {
   CORRECTION_MAX,
@@ -25,32 +25,110 @@ import {
 } from "./corrections";
 import { PanelFormHead } from "./detail";
 import { CharacterCount } from "./feedback";
+import { Dialog } from "./library";
 import { moveFocus } from "./spatial";
 import { useLauncher } from "./store";
 import { track } from "./telemetry";
 
 // Put in the language when shown, not here, where the module loads before any is picked.
 const TOPIC_LABELS: Record<CorrectionTopic, MessageDescriptor> = {
-  install: msg`Installing it`,
-  launch: msg`Launching it`,
-  gameFiles: msg`Finding my game files`,
+  quiver: msg`Quiver installing or launching it`,
   description: msg`Description or details`,
   downloads: msg`Releases or downloads`,
-  setup: msg`Setup instructions`,
-  games: msg`Games, their names or consoles`,
+  gameFiles: msg`Easy setup`,
+  games: msg`Linked games, their names or details`,
   links: msg`Links`,
   other: msg`Something else`,
 };
 
+// Sent from the header's dialog: the Overview's line about it asks again.
+const SENT = "quiver-correction-sent";
+
 /**
- * Under an app's Project details: a line asking whether anything's wrong, and the form once asked. Signed out, the
- * button signs in first and the form opens after.
+ * The app page's Report a problem, beside its other actions: a dialog with the form. Signed out, it signs in first and
+ * the dialog opens after.
  */
-export function SuggestCorrection({ entry, installed, onSignIn }: { entry: Entry; installed?: string; onSignIn: () => void }) {
+export function ReportProblem({ entry, installed, onSignIn }: { entry: Entry; installed?: string; onSignIn: () => void }) {
+  const { user } = useAccount();
+  const [open, setOpen] = useState(false);
+  const [sent, setSent] = useState(false);
+  // Asked for while signed out: opens once they've signed in.
+  const [waiting, setWaiting] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (waiting && user) (setWaiting(false), setOpen(true));
+  }, [waiting, user]);
+  // Another app's page in its place starts again.
+  useEffect(() => (setOpen(false), setSent(false)), [entry.id]);
+  const close = () => {
+    setOpen(false);
+    setSent(false);
+    requestAnimationFrame(() => button.current && moveFocus(button.current));
+  };
+  return (
+    <>
+      <button
+        ref={button}
+        type="button"
+        onClick={() => {
+          track("correction_started", { signedIn: Boolean(user) });
+          if (user) return setOpen(true);
+          setWaiting(true);
+          onSignIn();
+        }}
+      >
+        <Flag size={17} aria-hidden="true" /> <Trans comment="App page button: tell the maintainers something on the page is wrong or missing">Report a problem</Trans>
+      </button>
+      {open && user && (
+        <Dialog label={t`Report a problem`} className="correction-dialog" onClose={close}>
+          {sent ? (
+            <ThanksForReporting onDone={close} />
+          ) : (
+            <CorrectionForm
+              entry={entry}
+              userId={user.id}
+              installed={installed}
+              onSent={() => {
+                setSent(true);
+                window.dispatchEvent(new Event(SENT));
+              }}
+              onClose={close}
+            />
+          )}
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+function ThanksForReporting({ onDone }: { onDone: () => void }) {
+  const done = useRef<HTMLButtonElement>(null);
+  useEffect(() => void (done.current && moveFocus(done.current)), []);
+  return (
+    <div className="correction-thanks">
+      <p className="correction-sent" role="status">
+        <CircleCheck size={16} aria-hidden="true" /> <Trans>Thanks! A maintainer will take a look.</Trans>
+      </p>
+      <button ref={done} type="button" className="button" onClick={onDone}>
+        <Trans comment="Closes the thanks after a problem was reported">Done</Trans>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Under an app's Project details, only once the player has reported a problem with it: where that stands, and the
+ * maintainer's reply once decided. Seeing how it was decided here counts as seeing it.
+ */
+export function CorrectionStatusPanel({ entry }: { entry: Entry }) {
   const { user, ownCorrection, markCorrectionsSeen } = useAccount();
-  // Their last correction to this app, and where it stands; seeing how it was decided here counts as seeing it.
   const [latest, setLatest] = useState<OwnCorrection | null>(null);
   const [round, setRound] = useState(0);
+  useEffect(() => {
+    const again = () => setRound((r) => r + 1);
+    window.addEventListener(SENT, again);
+    return () => window.removeEventListener(SENT, again);
+  }, []);
   useEffect(() => {
     if (!user) return setLatest(null);
     let live = true;
@@ -60,63 +138,10 @@ export function SuggestCorrection({ entry, installed, onSignIn }: { entry: Entry
   useEffect(() => {
     if (latest?.unseen) void markCorrectionsSeen([latest.id]);
   }, [latest?.id, latest?.unseen]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [open, setOpen] = useState(() => Boolean(user && readCorrectionDraft(user.id, entry.id)));
-  const [sent, setSent] = useState(false);
-  // Asked for while signed out: opens once they've signed in.
-  const [waiting, setWaiting] = useState(false);
-  const toggle = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (waiting && user) (setWaiting(false), setOpen(true));
-  }, [waiting, user]);
-  // Another app's page in its place starts again.
-  useEffect(() => {
-    setSent(false);
-    setOpen(Boolean(user && readCorrectionDraft(user.id, entry.id)));
-  }, [entry.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  const close = () => {
-    setOpen(false);
-    requestAnimationFrame(() => toggle.current && moveFocus(toggle.current));
-  };
-  if (open && user)
-    return (
-      <CorrectionForm
-        entry={entry}
-        userId={user.id}
-        installed={installed}
-        onSent={() => {
-          setSent(true);
-          setRound((r) => r + 1);
-          close();
-        }}
-        onClose={close}
-      />
-    );
+  if (!latest) return null;
   return (
-    <section className="panel content-panel correction-prompt" aria-label={t`Suggest a correction`}>
-      {sent ? (
-        <p className="correction-sent" role="status">
-          <CircleCheck size={16} aria-hidden="true" /> <Trans>Thanks! A maintainer will take a look.</Trans>
-        </p>
-      ) : latest ? (
-        <CorrectionStatus correction={latest} />
-      ) : (
-        <p className="muted">
-          <Trans>Something wrong or missing on this page?</Trans>
-        </p>
-      )}
-      <button
-        ref={toggle}
-        type="button"
-        className="link-button"
-        onClick={() => {
-          track("correction_started", { signedIn: Boolean(user) });
-          if (user) return setOpen(true);
-          setWaiting(true);
-          onSignIn();
-        }}
-      >
-        <Flag size={14} aria-hidden="true" /> {user ? t`Suggest a correction` : t`Sign in to suggest a correction`}
-      </button>
+    <section className="panel content-panel correction-prompt" aria-label={t`Your problem report`}>
+      <CorrectionStatus correction={latest} />
     </section>
   );
 }
@@ -128,10 +153,10 @@ function CorrectionStatus({ correction: c }: { correction: OwnCorrection }) {
     <div className={`correction-status ${c.status}`}>
       <p className={c.status === "open" ? "muted" : undefined}>
         {c.status === "open"
-          ? t`You suggested a correction on ${sent}. A maintainer will take a look.`
+          ? t`You reported a problem on ${sent}. A maintainer will take a look.`
           : c.status === "done"
-            ? t`Your correction from ${sent} was made. Thanks!`
-            : t`A maintainer looked at your correction from ${sent} and left the page as it is.`}
+            ? t`The problem you reported on ${sent} was fixed. Thanks!`
+            : t`A maintainer looked at the problem you reported on ${sent} and left the page as it is.`}
       </p>
       {c.reply && <blockquote className="correction-reply">{c.reply}</blockquote>}
     </div>
@@ -184,7 +209,7 @@ function CorrectionForm({
     <form
       ref={form}
       className="panel-form correction-form"
-      aria-label={t`Suggest a correction`}
+      aria-label={t`Report a problem`}
       onSubmit={(e) => {
         e.preventDefault();
         const text = body.trim();
@@ -209,12 +234,12 @@ function CorrectionForm({
         );
       }}
     >
-      <PanelFormHead title={t`Suggest a correction`} onClose={cancel} />
+      <PanelFormHead title={t`Report a problem`} onClose={cancel} />
       <label className="field">
         <Trans>What&apos;s it about?</Trans>
         <select value={topic} onChange={(e) => setTopic(e.target.value as CorrectionTopic | "")}>
           <option value="">{t`Choose a topic (optional)`}</option>
-          {CORRECTION_TOPICS.map((id) => (
+          {CORRECTION_TOPICS.filter((id) => id !== "gameFiles" || hasEasySetup(entry)).map((id) => (
             <option key={id} value={id}>
               {i18n._(TOPIC_LABELS[id])}
             </option>

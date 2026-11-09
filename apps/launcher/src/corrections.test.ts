@@ -15,23 +15,23 @@ afterEach(() => {
 });
 
 it("keeps an unsent correction for each account and app until it's cleared", () => {
-  saveCorrectionDraft("u1", "e1", { topic: "launch", body: "Starts the editor." });
-  expect(readCorrectionDraft("u1", "e1")).toEqual({ topic: "launch", body: "Starts the editor." });
+  saveCorrectionDraft("u1", "e1", { topic: "quiver", body: "Starts the editor." });
+  expect(readCorrectionDraft("u1", "e1")).toEqual({ topic: "quiver", body: "Starts the editor." });
   expect(readCorrectionDraft("u2", "e1")).toBeNull();
   expect(readCorrectionDraft("u1", "e2")).toBeNull();
   clearCorrectionDraft("u1", "e1");
   expect(readCorrectionDraft("u1", "e1")).toBeNull();
 });
 
-it("keeps nothing for an empty form, and forgets a draft after 30 days or with a topic it doesn't know", () => {
+it("keeps nothing for an empty form, forgets a draft after 30 days, and keeps the words of one with a topic it doesn't know", () => {
   saveCorrectionDraft("u1", "e1", { topic: "", body: "  " });
   expect(localStorage.getItem("quiver-correction-draft:u1:e1")).toBeNull();
   vi.useFakeTimers();
   saveCorrectionDraft("u1", "e1", { topic: "", body: "Old." });
   vi.advanceTimersByTime(31 * 24 * 60 * 60 * 1000);
   expect(readCorrectionDraft("u1", "e1")).toBeNull();
-  localStorage.setItem("quiver-correction-draft:u1:e2", JSON.stringify({ topic: "nope", body: "x", savedAt: Date.now() }));
-  expect(readCorrectionDraft("u1", "e2")).toBeNull();
+  localStorage.setItem("quiver-correction-draft:u1:e2", JSON.stringify({ topic: "install", body: "x", savedAt: Date.now() }));
+  expect(readCorrectionDraft("u1", "e2")).toEqual({ topic: "", body: "x" });
 });
 
 it("names the launcher, its system and the release installed for maintainers", () => {

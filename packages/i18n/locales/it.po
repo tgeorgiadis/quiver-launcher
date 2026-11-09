@@ -633,12 +633,12 @@ msgid "A folder you fill yourself"
 msgstr "Una cartella che riempi tu"
 
 #: ../../apps/launcher/src/correction.tsx
-msgid "A maintainer looked at your correction from {sent} and left the page as it is."
-msgstr "Un maintainer ha esaminato la tua correzione del {sent} e ha lasciato la pagina com’è."
+msgid "A maintainer looked at the problem you reported on {sent} and left the page as it is."
+msgstr "Un manutentore ha esaminato il problema che hai segnalato il {sent} e ha lasciato la pagina com’era."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
-msgid "A maintainer looked at your correction to {app} and left its page as it is."
-msgstr "Un maintainer ha esaminato la tua correzione a {app} e ha lasciato la pagina com’è."
+msgid "A maintainer looked at the problem you reported with {app} and left its page as it is."
+msgstr "Un manutentore ha esaminato il problema che hai segnalato su {app} e ha lasciato la sua pagina com’era."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "A moderator hid your feedback, so others can't see it."
@@ -1812,7 +1812,9 @@ msgid "Don't allow"
 msgstr "Non consentire"
 
 #. Closes a dialog
+#. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Done"
 msgstr "Fatto"
@@ -1893,6 +1895,7 @@ msgstr "es. gamemoderun %command% --fullscreen"
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/correction.tsx
 #: ../ui/src/index.tsx
 msgid "Easy setup"
 msgstr "Configurazione facile"
@@ -1990,10 +1993,6 @@ msgstr "Filtri attivi"
 #: ../../apps/launcher/src/library.tsx
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "Trova un port nel catalogo e premi Ottieni. Viene aggiunto qui e scaricato subito."
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Finding my game files"
-msgstr "Trovare i miei file di gioco"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
@@ -2093,10 +2092,6 @@ msgstr "Gameplay"
 #: ../../apps/launcher/src/game.tsx
 msgid "Games"
 msgstr "Giochi"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Games, their names or consoles"
-msgstr "Giochi, i loro nomi o console"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
@@ -2507,10 +2502,6 @@ msgstr "Installazione"
 msgid "Installing {app}."
 msgstr "Installazione di {app}."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Installing it"
-msgstr "Installazione"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Installing: confirm it when Android asks"
 msgstr "Installazione: confermala quando Android lo chiede"
@@ -2706,10 +2697,6 @@ msgstr "Opzioni di avvio"
 msgid "Launcher update"
 msgstr "Aggiornamento del launcher"
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Launching it"
-msgstr "Avvio"
-
 #. Library view option
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Layout"
@@ -2775,6 +2762,10 @@ msgstr "Link copiato."
 #: ../../apps/launcher/src/own.tsx
 msgid "Link to a catalog app"
 msgstr "Collega a un'app del catalogo"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Linked games, their names or details"
+msgstr "Giochi collegati, i loro nomi o dettagli"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Links"
@@ -3828,6 +3819,10 @@ msgstr "Quiver non ha verificato questa versione"
 msgid "Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Quiver non ha verificato questa versione. Installa i file che Quiver ha visto alla sua uscita e rifiuta quelli modificati da allora."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Quiver installing or launching it"
+msgstr "Quiver che la installa o la avvia"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver is measuring the apps and the free space on the drive. This can take a moment."
 msgstr "Quiver sta misurando le app e lo spazio libero sul disco. Può volerci un momento."
@@ -4036,6 +4031,11 @@ msgstr "Rinomina cartella…"
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
 msgstr "Sostituire la tua libreria con quella di {taken} ({count, plural, one {# app} other {# app}})? Anche la libreria attuale viene conservata come backup."
+
+#. App page button: tell the maintainers something on the page is wrong or missing
+#: ../../apps/launcher/src/correction.tsx
+msgid "Report a problem"
+msgstr "Segnala un problema"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Repository"
@@ -4292,10 +4292,6 @@ msgstr "Sezioni delle impostazioni"
 msgid "Setup"
 msgstr "Configurazione"
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Setup instructions"
-msgstr "Istruzioni di configurazione"
-
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
 msgid "several engines flag one of its files."
@@ -4488,10 +4484,6 @@ msgstr "Accedi per condividere una playlist che altri possono aggiungere alla lo
 msgid "Sign in to share how it runs for you."
 msgstr "Accedi per condividere come funziona per te."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Sign in to suggest a correction"
-msgstr "Accedi per suggerire una correzione"
-
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in to sync your library"
 msgstr "Accedi per sincronizzare la tua libreria"
@@ -4554,10 +4546,6 @@ msgstr "Qualcuno ha condiviso una playlist? Incollane il link per aggiungerla al
 #: ../../apps/launcher/src/correction.tsx
 msgid "Something else"
 msgstr "Altro"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Something wrong or missing on this page?"
-msgstr "Qualcosa di sbagliato o mancante in questa pagina?"
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -4663,10 +4651,6 @@ msgstr "Interrompi condivisione"
 #: ../../apps/launcher/src/App.tsx
 msgid "Submit an app"
 msgstr "Invia un'app"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Suggest a correction"
-msgstr "Suggerisci una correzione"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Suggest an app for the catalog, on quiverlauncher.com"
@@ -4845,6 +4829,14 @@ msgstr "Il gioco la chiede all'avvio. Quiver può controllare la tua prima."
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "IL GIOCO ORIGINALE"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "The problem you reported on {sent} was fixed. Thanks!"
+msgstr "Il problema che hai segnalato il {sent} è stato risolto. Grazie!"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "The problem you reported with {app} was fixed. Thanks!"
+msgstr "Il problema che hai segnalato su {app} è stato risolto. Grazie!"
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "The program itself"
@@ -5482,13 +5474,13 @@ msgstr "Ce l'hai installata. Se accetti il rischio, puoi continuare a usarla; al
 msgid "You have the newest version."
 msgstr "Hai la versione più recente."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "You reported a problem on {sent}. A maintainer will take a look."
+msgstr "Hai segnalato un problema il {sent}. Un manutentore lo esaminerà."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
 msgstr "Hai saltato {updateVersion}. Quiver Launcher proporrà la prossima nuova versione."
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "You suggested a correction on {sent}. A maintainer will take a look."
-msgstr "Hai suggerito una correzione il {sent}. Un maintainer la esaminerà."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."
@@ -5549,18 +5541,6 @@ msgstr "La tua copia è dove {name} la legge."
 msgid "Your copy: {0}"
 msgstr "La tua copia: {0}"
 
-#: ../../apps/launcher/src/announcements-ui.tsx
-msgid "Your correction"
-msgstr "La tua correzione"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Your correction from {sent} was made. Thanks!"
-msgstr "La tua correzione del {sent} è stata applicata. Grazie!"
-
-#: ../../apps/launcher/src/announcements-ui.tsx
-msgid "Your correction to {app} was made. Thanks!"
-msgstr "La tua correzione a {app} è stata applicata. Grazie!"
-
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"
 msgstr "La tua esperienza aiuta chi viene dopo"
@@ -5589,6 +5569,11 @@ msgstr "La tua libreria si sincronizza tra i tuoi dispositivi e puoi recensire l
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
 msgstr "La tua attività"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/correction.tsx
+msgid "Your problem report"
+msgstr "La tua segnalazione"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Your tags"

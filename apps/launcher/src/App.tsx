@@ -19,7 +19,7 @@ import { LaunchOptionsButton } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
-import { SuggestCorrection } from "./correction";
+import { CorrectionStatusPanel, ReportProblem } from "./correction";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
@@ -1446,6 +1446,8 @@ function AppPage({
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
                 </button>
               )}
+              {/* Something on the page wrong or missing: to the maintainers. */}
+              {site && <ReportProblem entry={entry} installed={install && !install.local ? install.version : undefined} onSignIn={onSignIn} />}
               {install && foldersOn(config.os) && !(job && !("error" in job)) && <OwnCopyChips entry={entry} install={install} />}
             </div>
             {/* When it was added to the library is the sidebar's to say; here, what playing it has come to. */}
@@ -1600,7 +1602,7 @@ function AppPage({
               {/* Short, general facts first, over the README, which can run long. */}
               {site && <ProjectDetails entry={entry} detail={detail} source={source} />}
               {/* Under its facts, as on the website: something there wrong or missing, for maintainers to fix. */}
-              {site && <SuggestCorrection entry={entry} installed={install && !install.local ? install.version : undefined} onSignIn={onSignIn} />}
+              {site && <CorrectionStatusPanel entry={entry} />}
               {/* In TV mode, long and full of links: there when asked for. */}
               {tv && !readme ? (
                 <button type="button" className="panel-action opens tv-readme" onClick={() => setReadme(true)}>
