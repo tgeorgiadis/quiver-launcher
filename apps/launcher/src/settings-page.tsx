@@ -12,7 +12,7 @@ import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { useLauncher } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
-import { native } from "./native";
+import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
 import { DEFAULT_BACKGROUND_OPACITY, useBackgroundImage } from "./library-background";
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
@@ -454,14 +454,23 @@ function MusicSetting() {
 /**
  * Where apps install, and moving them all somewhere else (another drive, or a
  * Games folder): it asks first, says what's moving, and installs there after.
+ * Apps kept outside it, as Quiver Launcher 3's are, can come along, or be
+ * brought into it as it is, so one folder holds them all and Quiver Launcher
+ * 3's can go. A bar shows how many have moved, and how far a copy to another
+ * drive has got.
  */
 export function AppsFolder() {
-  const { config, jobs, appFolders, moveApps } = useLauncher();
-  const [asking, setAsking] = useState<string | null>(null);
-  const [moving, setMoving] = useState<{ done: number; total: number; folder: string } | null>(null);
-  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const { config, jobs, movableApps, moveApps } = useLauncher();
+  const [asking, setAsking] = useState<{ to: string } | null>(null);
+  const [bring, setBring] = useState(true);
+  const [moving, setMoving] = useState<AppsMoving | null>(null);
+  // Measuring the apps against the drive's free space takes a while for many: said while it does, with nothing to press.
+  const [checking, setChecking] = useState(false);
+  const [message, setMessage] = useState<{ text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] } | null>(null);
   const busy = Object.values(jobs).some((j) => !("error" in j));
-  const count = appFolders().length;
+  const { inside, elsewhere, placed } = movableApps();
+  const count = inside.length;
+  const kept = elsewhere.length;
   const dir = config.appsDir;
   useEffect(() => {
     const off = native.onAppsMoving(setMoving);
@@ -471,42 +480,72 @@ export function AppsFolder() {
     setMessage(null);
     const to = await native.pickFolder(t`Choose where to install apps`);
     if (!to) return;
-    const refused = await native.appsFolderRefusal(to, appFolders());
+    setChecking(true);
+    const refused = await native.appsFolderRefusal(to, [...inside, ...elsewhere]).finally(() => setChecking(false));
     if (refused) setMessage({ text: refused, error: true });
-    else setAsking(to);
+    else {
+      setBring(true);
+      setAsking({ to });
+    }
   };
-  const move = (to: string) => {
+  const bringHere = async () => {
+    setMessage(null);
+    setChecking(true);
+    const refused = await native.appsFolderRefusal(dir, elsewhere).catch((e) => String(e));
+    // The panel it's pressed in says what moving means, so it starts straight away.
+    if (refused) {
+      setChecking(false);
+      setMessage({ text: refused, error: true });
+    } else move(dir, true);
+  };
+  const move = (to: string, withKept: boolean) => {
     setAsking(null);
-    setMoving({ done: 0, total: count, folder: "" });
-    moveApps(to).then(
-      () =>
-        setMessage({
-          text: count ? t`Moved ${plural(count, { one: "# app", other: "# apps" })}. New apps install here too.` : t`New apps install here.`,
-        }),
+    const n = (to === dir ? 0 : count) + (withKept ? kept : 0);
+    // Nothing to move (only where new apps go changes): no bar for it.
+    if (n) setMoving({ done: 0, total: n, folder: "", copied: 0, size: 0 });
+    setChecking(false);
+    moveApps(to, withKept).then(
+      ({ left, failed }) =>
+        setMessage(
+          failed.length
+            ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}. New apps install here.`, error: true, left, failed }
+            : { text: n ? t`Moved ${plural(n, { one: "# app", other: "# apps" })}. New apps install here too.` : t`New apps install here.`, left },
+        ),
       (e) => setMessage({ text: String(e), error: true }),
     ).finally(() => setMoving(null));
   };
-  const step = moving && Math.min(moving.done + 1, moving.total);
-  const total = moving?.total;
-  const folder = moving?.folder;
   return (
     <section className="settings-section apps-folder" aria-label={t`Apps folder`}>
-      <p className="muted">
-        <Trans>Apps are installed in {dir}</Trans>
-      </p>
+      <div className="apps-folder-path">
+        <p className="muted">
+          <Trans>Apps are installed in {dir}</Trans>
+        </p>
+        {!asking && !moving && !checking && (
+          <button disabled={busy} title={busy ? t`Wait for downloads to finish first` : undefined} onClick={() => void pick()}>
+            <Trans>Change…</Trans>
+          </button>
+        )}
+      </div>
       {asking ? (
-        <div className="confirm" role="group" aria-label={t`Move apps`}>
-          <p>
-            {count
-              ? plural(count, {
-                  one: `Move # installed app to ${asking}? Its saves and settings go with it. Desktop and Steam shortcuts you made point at the old folder, so make them again after.`,
-                  other: `Move # installed apps to ${asking}? Their saves and settings go with them. Desktop and Steam shortcuts you made point at the old folder, so make them again after.`,
-                })
-              : t`Install apps in ${asking} from now on?`}
-          </p>
+        <div className="confirm move-confirm" role="group" aria-label={t`Move apps`}>
+          <h4>
+            {count + (bring ? kept : 0)
+              ? plural(count + (bring ? kept : 0), { one: `Move # installed app to ${asking.to}?`, other: `Move # installed apps to ${asking.to}?` })
+              : t`Install apps in ${asking.to} from now on?`}
+          </h4>
+          {kept > 0 && (
+            <label className="toggle">
+              <input type="checkbox" checked={bring} onChange={(e) => setBring(e.target.checked)} />
+              {plural(kept, {
+                one: "Include # app still in another apps folder, such as Quiver Launcher 3's",
+                other: "Include # apps still in another apps folder, such as Quiver Launcher 3's",
+              })}
+            </label>
+          )}
+          {count + (bring ? kept : 0) > 0 && <MoveNotes placed={placed} />}
           <div className="row">
-            <button className="primary" onClick={() => move(asking)}>
-              {count ? t`Move apps` : t`Use this folder`}
+            <button className="primary" onClick={() => move(asking.to, bring && kept > 0)}>
+              {count + (bring ? kept : 0) ? t`Move apps` : t`Use this folder`}
             </button>
             <button onClick={() => setAsking(null)}>
               <Trans>Cancel</Trans>
@@ -514,27 +553,105 @@ export function AppsFolder() {
           </div>
         </div>
       ) : moving ? (
-        <p role="status">
-          {folder ? (
-            <Trans>
-              Moving {folder}… ({step} of {total})
-            </Trans>
-          ) : (
-            <Trans>
-              Moving apps… ({step} of {total})
-            </Trans>
-          )}
-        </p>
+        <MovingApps moving={moving} />
+      ) : checking ? (
+        <div className="apps-moving" role="status">
+          <div className="progress waiting" aria-label={t`Checking the folder`} role="progressbar">
+            <div className="bar" />
+            <span>{t`Checking there's room…`}</span>
+          </div>
+          <p className="muted">{t`Quiver is measuring the apps and the free space on the drive. This can take a moment.`}</p>
+        </div>
       ) : (
-        <button disabled={busy} title={busy ? t`Wait for downloads to finish first` : undefined} onClick={() => void pick()}>
-          <Trans>Change…</Trans>
-        </button>
+        <>
+          {kept > 0 && (
+            <div className="move-confirm" role="group" aria-label={t`Apps outside this folder`}>
+              <h4>
+                {plural(kept, {
+                  one: "# app is still in another apps folder, such as Quiver Launcher 3's. Move it here?",
+                  other: "# apps are still in another apps folder, such as Quiver Launcher 3's. Move them here?",
+                })}
+              </h4>
+              <MoveNotes placed={placed} />
+              <div className="row">
+                <button className="primary" disabled={busy} title={busy ? t`Wait for downloads to finish first` : undefined} onClick={() => void bringHere()}>
+                  {plural(kept, { one: "Move it here", other: "Move them here" })}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
       {message && (
-        <p className={message.error ? "job-error" : "muted"} role="status">
-          {message.text}
-        </p>
+        <div className={message.error ? "job-error" : "muted"} role="status">
+          <p>{message.text}</p>
+          {message.failed?.length ? (
+            <>
+              <p>
+                {plural(message.failed.length, {
+                  one: "This one couldn't move. It's still where it was, with all its files, and plays from there:",
+                  other: "These couldn't move. They're still where they were, with all their files, and play from there:",
+                })}
+              </p>
+              <ul className="apps-left">
+                {message.failed.map((f) => (
+                  <li key={f.folder}>
+                    <strong>{f.folder}</strong>: {f.why}.
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {message.left?.length ? (
+            <>
+              <p>{t`These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:`}</p>
+              <ul className="apps-left">
+                {message.left.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
       )}
     </section>
+  );
+}
+
+/** What a move means, one point a line under its question, so each can be taken in. */
+function MoveNotes({ placed }: { placed: number }) {
+  return (
+    <ul className="move-notes">
+      <li>{t`The saves and settings come over too.`}</li>
+      {placed > 0 && (
+        <li>
+          {plural(placed, {
+            one: "# app in a folder you chose for it stays where it is.",
+            other: "# apps in folders you chose for them stay where they are.",
+          })}
+        </li>
+      )}
+      <li>{t`Desktop and Steam shortcuts you made point at the old folder, so make them again after.`}</li>
+      <li>{t`Keep Quiver open until it's done. Each app's old copy is deleted only once its new one is checked.`}</li>
+    </ul>
+  );
+}
+
+/** How far a move has got: a bar of the apps moved so far, filling as the one moving copies, and which one that is. */
+function MovingApps({ moving }: { moving: AppsMoving }) {
+  const { done, total, folder, copied, size } = moving;
+  const part = size ? Math.min(copied / size, 1) : 0;
+  const width = total ? Math.max(4, Math.floor(((done + part) / total) * 100)) : 4;
+  const percent = Math.floor(part * 100);
+  return (
+    <div className="apps-moving" role="status">
+      <div className="progress" aria-label={t`Moving apps`} aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} role="progressbar">
+        <div className="bar" style={{ width: `${width}%` }} />
+        <span>{t`${done} of ${total} apps moved`}</span>
+      </div>
+      <p className="muted">
+        {folder ? (size ? t`Copying ${folder}… ${percent}%` : t`Moving ${folder}…`) : done ? t`Moving apps…` : t`Getting ready…`} {t`Keep Quiver open until it's done.`}
+      </p>
+    </div>
   );
 }

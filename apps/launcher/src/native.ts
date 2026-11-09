@@ -25,6 +25,8 @@ export type OldApp = {
   version?: string;
   /** The program a Windows installer (MSI) put on the computer, for an app 3.x installed that way. */
   program?: string;
+  /** Its copy is in one of 3.x's apps folders, not a folder the player chose for it alone. */
+  inApps?: boolean;
   /** Its tags as 3.x showed them, the catalog's among them. */
   tags?: string[];
   /** The catalog's tags when 3.x last followed its entry. */
@@ -144,6 +146,10 @@ export type CheckedCopy = {
 /** How far checking or putting a copy in place has got. */
 export type CopyProgress = { id: string; step: "check" | "place"; done: number; total: number };
 export type Proton = { name: string; path: string };
+/** An installed app to move: its folder in the apps folder, or one kept elsewhere (`dir`), as Quiver Launcher 3's are. */
+export type MovingApp = { id: string; folder: string; dir?: string };
+/** How far a move has got: `done` of `total` apps, and `copied` of `size` bytes of `folder` while it copies to another drive. */
+export type AppsMoving = { done: number; total: number; folder: string; copied: number; size: number };
 /** What runs Windows programs on Linux, chosen in Settings for every app: unset, Automatic. */
 export type WindowsRunner = { kind: "wine" } | { kind: "proton"; path: string };
 
@@ -304,12 +310,17 @@ export const native = {
   appFiles: (folder: string, dir: string | undefined, names: string[]) => invoke<string[]>("app_files", { folder, dir, names }),
   /** Adds empty files to an installed app's folder and takes others away; returns those that stayed because they weren't empty. */
   setAppFiles: (id: string, folder: string, dir: string | undefined, add: string[], remove: string[]) => invoke<string[]>("set_app_files", { id, folder, dir, add, remove }),
-  /** Why the installed apps in `folders` can't move to `to`, or null. */
-  appsFolderRefusal: (to: string, folders: string[]) => invoke<string | null>("apps_folder_refusal", { to, folders }),
-  /** Moves the installed apps to `to`, which becomes the apps folder; resolves to it. */
-  moveAppsFolder: (to: string, folders: string[]) => invoke<string>("move_apps_folder", { to, folders }),
-  onAppsMoving: (handler: (m: { done: number; total: number; folder: string }) => void) =>
-    listen<{ done: number; total: number; folder: string }>("apps-moving", (e) => handler(e.payload)),
+  /** Why these installed apps can't move to `to`, or null. */
+  appsFolderRefusal: (to: string, apps: MovingApp[]) => invoke<string | null>("apps_folder_refusal", { to, apps }),
+  /**
+   * Moves the installed apps to `to`, which becomes the apps folder: those in it, and those kept elsewhere (with a
+   * `dir`), as Quiver Launcher 3's are. `inside`: the apps now there under their own folder's name; `left`: old copies
+   * that couldn't all be deleted.
+   */
+  moveAppsFolder: (to: string, apps: MovingApp[]) => invoke<{ appsDir: string; inside: string[]; left: string[]; failed: { folder: string; why: string }[] }>("move_apps_folder", { to, apps }),
+  onAppsMoving: (handler: (m: AppsMoving) => void) => listen<AppsMoving>("apps-moving", (e) => handler(e.payload)),
+  /** An app is in its new folder (`dir`), mid-move. */
+  onAppMoved: (handler: (m: { id: string; dir: string }) => void) => listen<{ id: string; dir: string }>("app-moved", (e) => handler(e.payload)),
   /** Asks for a program on this computer, looking in `dir` first; null when the player cancels. */
   pickProgram: (dir?: string) => invoke<string | null>("pick_program", { dir }),
   modPackages: (source: ModSource) => invoke<ModPackage[]>("mod_packages", { source }),

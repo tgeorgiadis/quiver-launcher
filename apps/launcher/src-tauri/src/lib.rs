@@ -873,10 +873,18 @@ fn automatic_proton() -> Option<launch::Proton> {
     dirs::home_dir().and_then(|home| launch::automatic_proton(launch::protons(&home)))
 }
 
-/// What Automatic runs a Windows app with on Linux, by name: a Proton, else Wine, else nothing (None).
+/// What Automatic runs a Windows app with on Linux, by name: a Proton, else Wine, else nothing (None). Looked for
+/// off the window's thread, as it reads Steam's folders and asks the shell; never on another system, where looking
+/// for Wine through a shell would flash a console window.
 #[tauri::command]
-fn automatic_runner() -> Option<String> {
-    automatic_proton().map(|p| p.name).or_else(|| sandbox::which("wine").map(|_| "Wine".into()))
+async fn automatic_runner() -> Option<String> {
+    if !cfg!(target_os = "linux") {
+        return None;
+    }
+    tauri::async_runtime::spawn_blocking(|| automatic_proton().map(|p| p.name).or_else(|| sandbox::which("wine").map(|_| "Wine".into())))
+        .await
+        .ok()
+        .flatten()
 }
 
 /// Asks for a Proton the launcher didn't find: its folder.
@@ -980,27 +988,54 @@ async fn pick_folder(app: tauri::AppHandle, window: tauri::WebviewWindow, title:
     Some(path.to_string_lossy().into())
 }
 
-/// Why the installed apps (`folders`, in the apps folder) can't move to `to`, if they can't.
+/// Why the installed apps can't move to `to`, if they can't: those in the
+/// apps folder, and those kept elsewhere (with a `dir`), as 3.x's are.
 #[tauri::command]
-fn apps_folder_refusal(data: State<Data>, to: String, folders: Vec<String>) -> Option<String> {
-    apps_folder::refuse(&data.apps(), Path::new(&to), &folders)
+fn apps_folder_refusal(data: State<Data>, running: State<Running>, to: String, apps: Vec<apps_folder::App>) -> Option<String> {
+    in_use(&running, &apps).or_else(|| apps_folder::refuse(&data.apps(), Path::new(&to), &apps))
 }
 
-/// Moves the installed apps (`folders`, in the apps folder) to `to` and
-/// installs there from now on; resolves to the new apps folder. Reports each
-/// app as it moves ("apps-moving").
+/// Why apps can't move while one of them is running, if one is.
+fn in_use(running: &Running, apps: &[apps_folder::App]) -> Option<String> {
+    apps.iter().find(|a| running.has(&a.id)).map(|a| format!("Close {} first, then move your apps.", a.folder))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppsMoved {
+    apps_dir: String,
+    #[serde(flatten)]
+    done: apps_folder::Done,
+}
+
+/// Moves the installed apps to `to` and installs there from now on: those in
+/// the apps folder, and those kept elsewhere, as 3.x's are. Reports how far
+/// it's got ("apps-moving") and each app once it's in its new folder
+/// ("app-moved"), so the page records it then and there.
 #[tauri::command]
-async fn move_apps_folder(app: tauri::AppHandle, to: String, folders: Vec<String>) -> Result<String, String> {
+async fn move_apps_folder(app: tauri::AppHandle, to: String, apps: Vec<apps_folder::App>) -> Result<AppsMoved, String> {
+    if let Some(why) = in_use(&app.state::<Running>(), &apps) {
+        return Err(why);
+    }
     let handle = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let data = handle.state::<Data>();
         let from = data.apps();
         let to = PathBuf::from(&to);
-        apps_folder::move_apps(&data.0, &from, &to, &folders, |m| {
-            let _ = handle.emit("apps-moving", m);
-        })?;
+        let done = apps_folder::move_apps(
+            &data.0,
+            &from,
+            &to,
+            &apps,
+            |m| {
+                let _ = handle.emit("apps-moving", m);
+            },
+            |m| {
+                let _ = handle.emit("app-moved", m);
+            },
+        )?;
         *data.1.lock().unwrap() = to.clone();
-        Ok(to.to_string_lossy().into())
+        Ok(AppsMoved { apps_dir: to.to_string_lossy().into(), done })
     })
     .await
     .map_err(|e| e.to_string())?

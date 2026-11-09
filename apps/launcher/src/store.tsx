@@ -9,7 +9,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type D
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
-import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
@@ -73,6 +73,11 @@ export type CatalogEntry = Entry & {
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
   dir?: string;
+  /**
+   * Its `dir` is in an apps folder (Quiver Launcher 3's, or this one under another name), so moving the apps folder
+   * takes it along. Without it, `dir` is a folder the player chose for this app alone, which stays where they put it.
+   */
+  inApps?: true;
   version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean;
   lastPlayed?: number;
   /** When it was installed here, not updated: a game's card plays the port got last until another is played (group.ts). */
@@ -273,8 +278,8 @@ type Launcher = {
   notice: { text: string; stays?: boolean } | null;
   setNotice: (text: string | null, options?: { stays?: boolean }) => void;
   dismiss: (id: string) => void;
-  /** The folders of installed apps that live in the apps folder, which moving it takes along. */
-  appFolders: () => string[];
+  /** The installed apps moving the apps folder takes along: those in it, and those kept elsewhere it can bring in. */
+  movableApps: () => MovableApps;
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
@@ -286,9 +291,50 @@ type Launcher = {
   changeVersion: (entry: Entry | null) => void;
   /** Renames an installed app's folder in the apps folder, as a folder can be named; resolves to the name it got. */
   renameFolder: (id: string, name: string) => Promise<string>;
-  /** Moves the installed apps to another folder, where apps install from then on. */
-  moveApps: (to: string) => Promise<void>;
+  /**
+   * Moves the installed apps to another folder, where apps install from then on, with those kept elsewhere when
+   * `elsewhere` (Quiver Launcher 3's). Each app's new place is recorded as soon as it's there, so one that fails part
+   * way loses none. Resolves to the old copies that moved but couldn't all be deleted.
+   */
+  /** Resolves to the old copies left to delete, and the apps that couldn't move (each still where it was, and playable). */
+  moveApps: (to: string, elsewhere: boolean) => Promise<{ left: string[]; failed: { folder: string; why: string }[] }>;
 };
+
+/** `placed`: how many apps are in folders the player chose for each, which moving the apps folder leaves be. */
+export type MovableApps = { inside: MovingApp[]; elsewhere: MovingApp[]; placed: number };
+
+/**
+ * The installs moving the apps folder takes: those in it, and those kept in another apps folder (Quiver Launcher 3's),
+ * which it can bring in. Never one in a folder the player chose for it alone (Locate existing install, or one 3.x
+ * kept outside its apps folder), the player's own files, or a program a Windows installer put where Windows looks
+ * after it.
+ */
+export function movableApps(installs: Record<string, Install>): MovableApps {
+  const all = Object.entries(installs);
+  return {
+    inside: all.flatMap(([id, i]) => (i.dir ? [] : [{ id, folder: i.folder }])),
+    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && !i.local && i.installer !== "msi" ? [{ id, folder: i.folder, dir: i.dir }] : [])),
+    placed: all.filter(([, i]) => i.dir && !i.inApps && !i.local && i.installer !== "msi").length,
+  };
+}
+
+/** Whether an install may be one of 3.x's that came over before Quiver knew which of them were in its apps folder. */
+export const unsureInApps = (i: Install) => Boolean(i.dir && !i.inApps && !i.local && i.installer !== "msi");
+
+/**
+ * The installs with those 3.x has in its apps folder marked as such, or the same object when none needs it: the ones
+ * a launcher before this brought over, which moving the apps folder can then bring in.
+ */
+export function markedInApps(installs: Record<string, Install>, old: OldApp[]): Record<string, Install> {
+  const dirs = new Set(old.flatMap((a) => (a.inApps && a.dir && !a.program ? [a.dir] : [])));
+  const marking = Object.entries(installs).filter(([, i]) => unsureInApps(i) && dirs.has(i.dir!));
+  return marking.length ? { ...installs, ...Object.fromEntries(marking.map(([id, i]) => [id, { ...i, inApps: true as const }])) } : installs;
+}
+
+/** An install once a move has put it in the apps folder under its own folder's name, where it needs no `dir`. */
+export function movedInside({ dir: _, inApps: __, ...install }: Install): Install {
+  return install;
+}
 
 const LauncherContext = createContext<Launcher | null>(null);
 
@@ -413,7 +459,8 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
   const executables = entry.launcher.preferredExecutables?.[os as "windows" | "linux" | "macos"] ?? [];
   // One 3.x installed with its Windows installer starts the program it linked.
   const msi = old.program ? { installer: "msi" as const, program: old.program } : {};
-  return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi };
+  const inApps = old.inApps && !old.program ? { inApps: true as const } : {};
+  return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi, ...inApps };
 }
 
 /**
@@ -450,7 +497,10 @@ export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined
  * isn't pointed back at 3.x's copy, unless that's another of 3.x's folders, which is the one 3.x says is this app's.
  */
 export function keptInstall(now: Install | undefined, adopted: Install): Install {
-  return !now ? adopted : now.dir && now.dir !== adopted.dir ? { ...now, ...adopted } : now;
+  if (!now) return adopted;
+  if (now.dir && now.dir !== adopted.dir) return { ...now, ...adopted };
+  // The same copy, which a launcher from before it knew could come along with the apps folder now learns can.
+  return now.dir === adopted.dir && adopted.inApps && !now.inApps ? { ...now, inApps: true } : now;
 }
 
 /** The installs 3.x has for apps in the library that have none here, by app. */
@@ -804,6 +854,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           })
           .catch(() => {});
     } else native.findV3Library().then(setOldLibrary, () => setOldLibrary(null));
+    // 3.x's installs brought over before Quiver told those in its apps folder from those placed on purpose.
+    if (Object.values(saved.installs).some(unsureInApps))
+      native
+        .findV3Library()
+        .then((old) => old && setInstalls((i) => markedInApps(i, old.apps)))
+        .catch(() => {});
     const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
     const closed = native.onAppClosed(({ id, seconds }) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], playTime: (i[id].playTime ?? 0) + seconds } } : i)));
     return () => void [off, closed].forEach((o) => o.then((stop) => stop()));
@@ -1315,10 +1371,6 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     });
   }
 
-  /** Installed apps' folders in the apps folder: not 3.x installs or programs left where they are. */
-  function appFolders() {
-    return Object.values(installs).flatMap((i) => (i.dir ? [] : [i.folder]));
-  }
 
   /** Deletes an app's files; a local app's are the player's own and stay. */
   async function uninstall(id: string) {
@@ -1776,7 +1828,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
-    appFolders,
+    movableApps: () => movableApps(installs),
     renaming,
     askRename,
     addingFiles,
@@ -1805,11 +1857,27 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       track("app_folder_renamed", appRef(id, catalog[id]?.slug ?? item?.slug ?? ""));
       return folder;
     },
-    async moveApps(to) {
-      const appsDir = await native.moveAppsFolder(to, appFolders());
-      setConfig((c) => ({ ...c, appsDir }));
-      setTelemetryAppsDir(appsDir);
-      track("apps_folder_moved", { apps: appFolders().length });
+    async moveApps(to, elsewhere) {
+      const { inside, elsewhere: kept } = movableApps(installs);
+      const apps = elsewhere ? [...inside, ...kept] : inside;
+      // Each app is recorded where it is the moment it gets there: a move that stops part way, or a launcher closed
+      // mid-move, leaves every app findable. It's in an apps folder still (or one that couldn't move stays in the
+      // old one), so it comes along with the next move.
+      const stop = await native.onAppMoved(({ id, dir }) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], dir, inApps: true } } : i)));
+      try {
+        const moved = await native.moveAppsFolder(to, apps);
+        setInstalls((i) => {
+          const next = { ...i };
+          for (const id of moved.inside) if (next[id]) next[id] = movedInside(next[id]);
+          return next;
+        });
+        setConfig((c) => ({ ...c, appsDir: moved.appsDir }));
+        setTelemetryAppsDir(moved.appsDir);
+        track("apps_folder_moved", { apps: inside.length, elsewhere: elsewhere ? kept.length : 0, failed: moved.failed.length });
+        return { left: moved.left, failed: moved.failed };
+      } finally {
+        stop();
+      }
     },
     cancel: (id) => void native.cancelInstall(id).catch(() => {}),
   };
