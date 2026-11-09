@@ -5,9 +5,9 @@
  * playlist someone shared can be followed. The Sidebar layout shows the same
  * library as a list down the left, with the app picked in it open beside it.
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as KeyEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, HardDrive, LayoutGrid, Library, ListPlus, MoreHorizontal, PanelLeft, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Clock, CloudDownload, Compass, HardDrive, LayoutGrid, Library, ListPlus, MoreHorizontal, PanelLeft, Play, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -67,16 +67,16 @@ export { newKey } from "./sync";
 /** A playlist's filters from the library's, and back. */
 const toPlaylist = (f: Filters) => ({
   tags: f.tag ? [f.tag] : [],
-  consoles: f.console ? [f.console] : [],
-  projectTypes: f.projectType ? [f.projectType] : undefined,
+  consoles: f.consoles ?? [],
+  projectTypes: f.projectTypes?.length ? f.projectTypes : undefined,
   ai: f.ai,
   installed: f.installed,
   managed: f.managed,
 });
 const fromPlaylist = (c: Collection): Filters => ({
   tag: c.tags[0],
-  console: c.consoles[0],
-  projectType: c.projectTypes?.[0],
+  consoles: c.consoles.length ? c.consoles : undefined,
+  projectTypes: c.projectTypes?.length ? c.projectTypes : undefined,
   ai: c.ai,
   installed: c.installed,
   managed: c.managed,
@@ -467,6 +467,7 @@ export function LibraryPage({
   );
   const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
   const clearFilter = (key: keyof Filters) => setFilters({ ...filters, [key]: undefined });
+  const many = (key: "consoles" | "projectTypes", picked: string[]) => setFilters({ ...filters, [key]: picked.length ? picked : undefined });
   const savePlaylist = () => setEditing({ key: newKey(), name: "", order: collections.length, ...toPlaylist(filters), ...(search.trim() ? { search: search.trim() } : {}) });
   const owner = loaded?.owner.name;
   const unavailable = loaded?.unavailable ?? 0;
@@ -583,13 +584,13 @@ export function LibraryPage({
               {/* The filters on, each removable, while the panel is away. */}
               {filtering && !filtersOpen && (
                 <div className="filter-bar sidebar-pills" role="group" aria-label={t`Filters on`}>
-                  <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: false, clear: clearFilter }} />
+                  <FilterFields value={filters} set={set} many={many} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: false, clear: clearFilter }} />
                 </div>
               )}
               {filtersOpen && (
                 <FiltersPanel onClose={() => setFiltersOpen(false)}>
                   <div className="filter-bar">
-                    <FilterFields value={filters} set={set} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: true, clear: clearFilter }} />
+                    <FilterFields value={filters} set={set} many={many} entries={candidates.map((c) => c.entry)} ownTags={ownTags} pills={{ all: true, clear: clearFilter }} />
                   </div>
                   <div className="filter-bar sidebar-filters-foot">
                     <span className="view-label">
@@ -805,6 +806,7 @@ export function LibraryPage({
           <FilterFields
             value={filters}
             set={set}
+            many={many}
             entries={candidates.map((c) => c.entry)}
             ownTags={ownTags}
             pills={{ all: filtersOpen, clear: clearFilter }}
@@ -987,7 +989,7 @@ function ContinuePlaying({ entry, played, onOpen, action }: { entry: Entry; play
 }
 
 /** How a filter reads on its chip, here and in the catalog's. */
-export function filterLabel(key: keyof Filters, value: string, consoleNames: Record<string, string>) {
+export function filterLabel(key: "console" | "projectType" | OneFilter, value: string, consoleNames: Record<string, string>) {
   if (key === "console") {
     if (!value.startsWith("maker:")) return consoleNames[value] ?? value.toUpperCase();
     const brand = value.slice(6);
@@ -1005,27 +1007,53 @@ export function filterLabel(key: keyof Filters, value: string, consoleNames: Rec
  * tags. As `pills` (the library's filter row), each is a compact dropdown,
  * removable once it's on; `all: false` shows only the ones on.
  */
+/** The library's filters with one choice each, a dropdown's. */
+type OneFilter = "ai" | "tag" | "installed" | "managed";
+/** The library's filters with several choices, a list to tick. */
+type ManyFilter = "consoles" | "projectTypes";
+
+/** The consoles to pick from, each maker's under its name, its "All Nintendo" first, as Browse's and the website's are. */
+export function consoleOptions(consoles: { id: string; name: string; brand: string }[], consoleNames: Record<string, string>): MultiOption[] {
+  const brands = [...new Set(consoles.map((c) => c.brand))];
+  return brands.flatMap((brand) => {
+    const group = brand === "OtherPlatforms" ? t`Other platforms` : brand;
+    return [
+      { value: `maker:${brand}`, label: brand === "OtherPlatforms" ? t`All other platforms` : t({ message: `All ${brand}`, comment: "Every console a maker made, as in All Nintendo" }), group },
+      ...consoles.filter((c) => c.brand === brand).map((c) => ({ value: c.id, label: consoleNames[c.id] ?? c.name, group })),
+    ];
+  });
+}
+
+/** The project types to pick from. */
+export const projectTypeOptions = (): MultiOption[] => Object.entries(PROJECT_TYPES).map(([value, name]) => ({ value, label: i18n._(name) }));
+
+/** Several picks on a pill: each one's name, as its chip reads. */
+export const pickedLabel = (key: "console" | "projectType", picked: readonly string[] | undefined, consoleNames: Record<string, string>) =>
+  picked?.length ? picked.map((v) => filterLabel(key, v, consoleNames)).join(", ") : undefined;
+
 function FilterFields({
   value,
   set,
+  many,
   entries,
   ownTags = [],
   pills,
 }: {
   value: Filters;
-  set: (key: keyof Filters) => (e: { target: { value: string } }) => void;
+  set: (key: OneFilter) => (e: { target: { value: string } }) => void;
+  /** Sets a filter of several choices; none picked is off. */
+  many: (key: ManyFilter, picked: string[]) => void;
   entries: Entry[];
   ownTags?: string[];
   pills?: { all: boolean; clear: (key: keyof Filters) => void };
 }) {
   const { consoles, consoleNames } = useLauncher();
   const here = new Set(entries.flatMap((e) => e.consoles ?? []));
-  const present = consoles.filter((c) => here.has(c.id) || value.console === c.id);
-  const brands = [...new Set(present.map((c) => c.brand))];
+  const present = consoles.filter((c) => here.has(c.id) || value.consoles?.includes(c.id));
   const tags = [...new Set([...entries.flatMap((e) => e.tags), ...ownTags, ...(value.tag ? [value.tag] : [])])].sort();
   /** What a filter's empty choice says: in full in a dialog, short on a pill. */
   const none = (full: string, short: string) => (pills ? short : full);
-  const pill = (key: keyof Filters, select: ReactNode) => {
+  const pill = (key: OneFilter, select: ReactNode) => {
     if (!pills) return select;
     const chosen = value[key];
     if (!chosen && !pills.all) return null;
@@ -1035,37 +1063,17 @@ function FilterFields({
       </FilterPill>
     );
   };
+  /** A filter of several choices: a pill in a dialog too, its list ticked. */
+  const list = (key: ManyFilter, label: string, any: string, options: MultiOption[]) => {
+    const picked = value[key] ?? [];
+    if (pills && !picked.length && !pills.all) return null;
+    const on = pickedLabel(key === "consoles" ? "console" : "projectType", picked, consoleNames);
+    return <MultiPill key={key} label={label} text={on ?? any} on={on} onClear={() => many(key, [])} options={options} picked={picked} onChange={(next) => many(key, next)} />;
+  };
   return (
     <>
-      {pill(
-        "console",
-        <select aria-label={t`Console`} value={value.console ?? ""} onChange={set("console")}>
-          <option value="">{none(t`All consoles`, t`Any console`)}</option>
-          {brands.map((brand) => (
-            <optgroup key={brand} label={brand === "OtherPlatforms" ? t`Other platforms` : brand}>
-              <option value={`maker:${brand}`}>{brand === "OtherPlatforms" ? t`All other platforms` : t`All ${brand}`}</option>
-              {present
-                .filter((c) => c.brand === brand)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {consoleNames[c.id] ?? c.name}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </select>,
-      )}
-      {pill(
-        "projectType",
-        <select aria-label={t`Project type`} value={value.projectType ?? ""} onChange={set("projectType")}>
-          <option value="">{none(t`All project types`, t`Any project type`)}</option>
-          {Object.entries(PROJECT_TYPES).map(([id, name]) => (
-            <option key={id} value={id}>
-              {i18n._(name)}
-            </option>
-          ))}
-        </select>,
-      )}
+      {list("consoles", t`Console`, none(t`All consoles`, t`Any console`), consoleOptions(present, consoleNames))}
+      {list("projectTypes", t`Project type`, none(t`All project types`, t`Any project type`), projectTypeOptions())}
       {pill(
         "ai",
         <select aria-label={t`AI use`} value={value.ai ?? ""} onChange={set("ai")}>
@@ -1126,6 +1134,73 @@ export function FilterPill({ on, onClear, children }: { on?: string; onClear: ()
         <ChevronDown size={13} aria-hidden="true" />
       )}
     </span>
+  );
+}
+
+/** One choice of a filter that takes several; `group` puts it under a heading, as a dropdown's optgroup. */
+export type MultiOption = { value: string; label: string; group?: string };
+
+/**
+ * A filter that takes several choices, as the website's do: a pill like the
+ * others whose list stays open while the player ticks them, by mouse, keys or
+ * controller. `text` is what the pill says; `on`, set while it differs from the
+ * default, tints it and gives it its remove button. `max`: no more can be ticked
+ * once that many are.
+ */
+export function MultiPill({
+  label,
+  text,
+  on,
+  onClear,
+  options,
+  picked,
+  onChange,
+  max,
+}: {
+  label: string;
+  text: string;
+  on?: string;
+  onClear: () => void;
+  options: MultiOption[];
+  picked: readonly string[];
+  onChange: (picked: string[]) => void;
+  max?: number;
+}) {
+  const full = max !== undefined && picked.length >= max;
+  // In the options' order, whichever order they were ticked in.
+  const toggle = (value: string) =>
+    onChange(picked.includes(value) ? picked.filter((v) => v !== value) : options.map((o) => o.value).filter((v) => v === value || picked.includes(v)));
+  // Up and down go through the choices, round again at the end; the headings between them are passed over.
+  const keys = (e: KeyEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>(":scope > [data-item]:not(:disabled)")];
+    const i = items.indexOf(e.target as HTMLElement);
+    items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
+  };
+  return (
+    <FilterPill on={on} onClear={onClear}>
+      <Popover label={`${label}: ${text}`} panelLabel={label} role="menu" className="pill-button" panel="pill-menu" icon={<span className="pill-text">{text}</span>}>
+        {() => (
+          <div className="game-menu" data-arrows="" onKeyDown={keys}>
+            {options.map((o, i) => {
+              const ticked = picked.includes(o.value);
+              return [
+                o.group && o.group !== options[i - 1]?.group && (
+                  <div key={`group:${o.group}`} role="presentation" className="pill-menu-group">
+                    {o.group}
+                  </div>
+                ),
+                <button key={o.value} type="button" role="menuitemcheckbox" data-item aria-checked={ticked} disabled={full && !ticked} onClick={() => toggle(o.value)}>
+                  <span className="game-menu-check">{ticked && <Check size={14} />}</span>
+                  {o.label}
+                </button>,
+              ];
+            })}
+          </div>
+        )}
+      </Popover>
+    </FilterPill>
   );
 }
 
@@ -1454,6 +1529,7 @@ function PlaylistEditor({
   const isNew = !collection.name;
   const platforms = platform === collection.platforms?.[0] ? collection.platforms : platform && [platform];
   const set = (key: keyof Filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value || undefined });
+  const many = (key: "consoles" | "projectTypes", picked: string[]) => setFilters({ ...filters, [key]: picked.length ? picked : undefined });
   const picked = collection.apps?.length ?? 0;
   return (
     <Dialog label={isNew ? t`New playlist` : t`Edit playlist`} onClose={() => onClose()}>
@@ -1462,7 +1538,7 @@ function PlaylistEditor({
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          // One choice of each shows here; a playlist with more keeps them unless that choice changes.
+          // One tag shows here; a playlist with more keeps them unless that choice changes. Consoles and kinds show all.
           const was = fromPlaylist(collection);
           const next = toPlaylist(filters);
           const saved: Collection = {
@@ -1473,8 +1549,6 @@ function PlaylistEditor({
             platforms,
             icon,
             tags: filters.tag === was.tag ? collection.tags : next.tags,
-            consoles: filters.console === was.console ? collection.consoles : next.consoles,
-            projectTypes: filters.projectType === was.projectType ? collection.projectTypes : next.projectTypes,
           };
           saveCollection(saved);
           onClose(saved);
@@ -1509,7 +1583,7 @@ function PlaylistEditor({
               </option>
             ))}
           </select>
-          <FilterFields value={filters} set={set} entries={library} ownTags={ownTags} />
+          <FilterFields value={filters} set={set} many={many} entries={library} ownTags={ownTags} />
         </div>
         <IconChoice entries={on({ ...collection, ...toPlaylist(filters), search, platforms })} value={icon} onChange={setIcon} />
         <div className="row">

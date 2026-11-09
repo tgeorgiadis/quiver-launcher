@@ -349,8 +349,12 @@ export type AppQuery = {
   projectType?: ProjectType;
   /** Apps of any of these kinds, such as a player's saved filters; replaces `projectType`. */
   projectTypes?: ProjectType[];
+  /** Apps for any of these platforms; replaces `os`. */
+  platforms?: Os[];
   /** A console id, or "maker:Nintendo" for every console a maker made. */
   console?: string;
+  /** Apps for any of these consoles (ids, or "maker:Nintendo"); replaces `console`. The site takes at most MAX_SYSTEMS. */
+  consoles?: string[];
   sort?: Sort;
   ai?: "no-generated" | "no-ai";
   /** Only apps with Easy setup: their game files found and put in place by the launcher. */
@@ -503,12 +507,21 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     apps(q: AppQuery = {}) {
       const params = new URLSearchParams({ limit: String(q.limit ?? 48) });
       if (q.search?.trim()) params.set("search", q.search.trim());
-      if (q.os) params.set("os", q.os);
+      // One of each goes as the older single parameter, the same address (and cached page) as before.
+      const oses = q.platforms ?? (q.os ? [q.os] : []);
+      if (oses.length > 1) params.set("platforms", oses.join(","));
+      else if (oses[0]) params.set("os", oses[0]);
       const types = q.projectTypes ?? (q.projectType ? [q.projectType] : []);
       if (types.length > 1) params.set("projectTypes", types.join(","));
       else if (types[0]) params.set("projectType", types[0]);
-      if (q.console?.startsWith("maker:")) params.set("maker", q.console.slice(6));
-      else if (q.console) params.set("console", q.console);
+      const systems = q.consoles ?? (q.console ? [q.console] : []);
+      if (systems.length > 1) {
+        const ids = systems.filter((s) => !s.startsWith("maker:"));
+        const makers = systems.filter((s) => s.startsWith("maker:")).map((s) => s.slice(6));
+        if (ids.length) params.set("consoles", ids.join(","));
+        if (makers.length) params.set("makers", makers.join(","));
+      } else if (systems[0]?.startsWith("maker:")) params.set("maker", systems[0].slice(6));
+      else if (systems[0]) params.set("console", systems[0]);
       if (q.sort) params.set("sort", q.sort);
       if (q.ai) params.set("ai", q.ai);
       if (q.setup) params.set("setup", q.setup);

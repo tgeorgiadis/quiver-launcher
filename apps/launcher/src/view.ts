@@ -164,24 +164,39 @@ export function artFor(entry: Pick<Entry, "libraryArt" | "artwork">, image: Excl
  * downloads and updates (from the catalog or a repository), or the player's, added from this computer, as 3.x's manually
  * managed apps were.
  */
-export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no"; managed?: "quiver" | "manual" };
+export type LibraryFilters = {
+  /** Apps for any of these consoles: ids, or "maker:Nintendo". */
+  consoles?: string[];
+  /** Apps of any of these kinds. */
+  projectTypes?: string[];
+  ai?: "no-generated" | "no-ai";
+  tag?: string;
+  installed?: "yes" | "no";
+  managed?: "quiver" | "manual";
+};
 
 /**
  * The library's filters as they were saved, each only when it's one the library has. `tab` is the saved tab: Installed
- * and Not installed were tabs as well as a filter, and a library left on one opens with the filter on instead.
+ * and Not installed were tabs as well as a filter, and a library left on one opens with the filter on instead. Before
+ * consoles and kinds could be picked several at a time, each was kept as one (`console`, `projectType`).
  */
-export function keptFilters(saved: Record<string, string> = {}, tab?: string): LibraryFilters {
-  const { console, projectType, ai, tag, managed } = saved;
+export function keptFilters(saved: Record<string, string | string[]> = {}, tab?: string): LibraryFilters {
+  const one = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+  const many = (now: unknown, was: unknown) => {
+    const list = (Array.isArray(now) ? now : [was]).filter((v): v is string => typeof v === "string" && Boolean(v));
+    return list.length ? [...new Set(list)] : undefined;
+  };
+  const { ai, tag, managed } = saved;
   const installed = tab === "installed" ? "yes" : tab === "not-installed" ? "no" : saved.installed;
   return Object.fromEntries(
     Object.entries({
-      console,
-      projectType,
-      tag,
+      consoles: many(saved.consoles, saved.console),
+      projectTypes: many(saved.projectTypes, saved.projectType),
+      tag: one(tag),
       ai: ai === "no-generated" || ai === "no-ai" ? ai : undefined,
       installed: installed === "yes" || installed === "no" ? installed : undefined,
       managed: managed === "quiver" || managed === "manual" ? managed : undefined,
-    }).filter(([, value]) => typeof value === "string" && value),
+    }).filter(([, value]) => value),
   );
 }
 

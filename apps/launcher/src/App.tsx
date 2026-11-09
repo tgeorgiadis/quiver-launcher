@@ -8,7 +8,7 @@ import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
 import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, noProgram, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
 import { TabPrompt } from "./pad-hints";
-import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
+import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
 import { DownloadsButton, DownloadsPage, DownloadsStrip, SidebarDownloads } from "./downloads-page";
 import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, RepositoryLink, Shortcuts, Consoles, Tags, Versions, checkingOf, foldersOn, hoursFrom, scanText, useAppDetail, useListed, useReleaseHistory, useReleases } from "./detail";
@@ -458,10 +458,10 @@ function BrowsePage({
   // default" on the website), but the platform starts at what this computer
   // runs ("here"), since only those apps can be installed here.
   const fromSaved = (d?: CatalogDefaults): BrowseFilters => ({
-    os: "here",
+    platforms: ["here"],
     sort: SORTS.find((s) => s === d?.sort) ?? "added",
     projectTypes: d?.projectTypes?.filter((t): t is ProjectType => t in PROJECT_TYPES).slice(0, 4),
-    console: d?.console,
+    consoles: d?.console ? [d.console] : undefined,
     ai: d?.ai === "no-generated" || d?.ai === "no-ai" ? d.ai : undefined,
     setup: d?.setup === "easy" ? "easy" : undefined,
   });
@@ -486,13 +486,17 @@ function BrowsePage({
   // Only the newest request's answer is shown: an older one can arrive after it.
   const latest = useRef(0);
 
+  // The platforms to ask the catalog for: "here" as catalogOs has it, which on Linux is every one (its apps and
+  // Windows' run there), narrowed to what runs here once they come (`runs`).
+  const askedOs = filters.platforms?.map((p) => (p === "here" ? catalogOs(config.os) : p));
+  const platforms = askedOs?.some((p) => !p) ? undefined : [...new Set(askedOs as Os[])];
   function load(cursor?: string | null) {
     const request = ++latest.current;
     setLoading(true);
     setError(null);
     client
       // A search orders by relevance.
-      .apps({ ...filters, os: filters.os === "here" ? catalogOs(config.os) : filters.os, search: query, sort: searching ? undefined : filters.sort, cursor })
+      .apps({ ...filters, platforms, search: query, sort: searching ? undefined : filters.sort, cursor })
       .then((page) => {
         if (request !== latest.current) return;
         remember(page.items);
@@ -540,10 +544,12 @@ function BrowsePage({
     track("search_no_results", { query_length: typed.length, results: 0, games: games.length, filtered });
   }, [query, loading, error, gamesFor, pages, games]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => choose({ ...filters, [key]: e.target.value || undefined });
-  const brands = [...new Set(consoles.map((c) => c.brand))];
+  const makers = Object.fromEntries(consoles.map((c) => [c.id, c.brand]));
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // How many filters differ from the defaults: any platform but what this computer runs counts.
-  const filtering = [filters.projectTypes?.length, filters.console, filters.ai, filters.setup, filters.os !== "here"].filter(Boolean).length;
+  // Only what this computer runs: the platforms' default.
+  const here = filters.platforms?.length === 1 && filters.platforms[0] === "here";
+  // How many filters differ from the defaults: any platforms but what this computer runs count.
+  const filtering = [filters.projectTypes?.length, filters.consoles?.length, filters.ai, filters.setup, !here].filter(Boolean).length;
   // An order the player picked (the sort, or a shelf's See all): the whole list in it, in place of the front page, as a
   // search or a filter has it; its pill goes back to the front page.
   const [sorted, setSorted] = useState(kept?.sorted ?? false);
@@ -555,13 +561,37 @@ function BrowsePage({
     ({ added: t`Recently added`, updated: t`Recently updated`, rating: t`Top rated`, name: t`Name A–Z` })[sort ?? "added"];
   // Apps in your library shown, a choice kept from before: on the Filters button's count, not a row of its own.
   const filterCount = filtering + (showOwned ? 1 : 0) + (hiddenView !== "hide" ? 1 : 0);
-  const types = filters.projectTypes ?? [];
+  // What each filter of several choices has picked, as its pill reads: unset while it's none.
+  const consolesOn = pickedLabel("console", filters.consoles, consoleNames);
+  const typesOn = pickedLabel("projectType", filters.projectTypes, consoleNames);
   /** A filter's pill: `on` names it while it differs from the default, and removing it goes back to the default. */
-  const pill = (key: "os" | "console" | "projectTypes" | "ai" | "setup", on: string | undefined, select: ReactNode) =>
+  const pill = (key: "ai" | "setup", on: string | undefined, select: ReactNode) =>
     !on && !filtersOpen ? null : (
-      <FilterPill key={key} on={on} onClear={() => choose({ ...filters, [key]: key === "os" ? "here" : undefined })}>
+      <FilterPill key={key} on={on} onClear={() => choose({ ...filters, [key]: undefined })}>
         {select}
       </FilterPill>
+    );
+  /** A filter of several choices, as the website's: removing it goes back to the default, `none` picked when it's unset. */
+  const list = <K extends "platforms" | "consoles" | "projectTypes">(
+    key: K,
+    label: string,
+    text: string,
+    on: string | undefined,
+    options: MultiOption[],
+    { none, max }: { none?: BrowseFilters[K]; max?: number } = {},
+  ) =>
+    !on && !filtersOpen ? null : (
+      <MultiPill
+        key={key}
+        label={label}
+        text={text}
+        on={on}
+        onClear={() => choose({ ...filters, [key]: none })}
+        options={options}
+        picked={filters[key] ?? []}
+        onChange={(picked) => choose({ ...filters, [key]: picked.length || none ? picked : undefined })}
+        max={max}
+      />
     );
 
   // Linux's own alone, beside what it runs: "Linux only".
@@ -572,10 +602,12 @@ function BrowsePage({
     config.os === "linux"
       ? t({ message: "Linux and Windows (this computer)", comment: "Browse's platform filter on Linux: the apps it runs, its own and Windows' through Proton" })
       : t`${name} (this computer)`;
+  const platformsOn = filters.platforms?.length ? filters.platforms.map((p) => (p === "here" ? hereLabel : osChoice(p))).join(", ") : undefined;
   const inLibrary = new Set(library.map((i) => i.id));
   // What this computer runs, where the catalog was asked for more (Linux's and Windows' apps: catalogOs).
-  const matching = only ? (hiddenApps ?? []).filter((e) => hidden.has(e.id) && hiddenMatches(e, query, filters) && (!filters.os || filters.os === "here" || e.supportedOS.includes(filters.os))) : pages.flatMap((p) => p.items);
-  const all = matching.filter((e) => filters.os !== "here" || availableOn(e, config.os));
+  const runs = (e: Entry) => !filters.platforms?.length || filters.platforms.some((p) => (p === "here" ? availableOn(e, config.os) : e.supportedOS.includes(p)));
+  const matching = only ? (hiddenApps ?? []).filter((e) => hidden.has(e.id) && hiddenMatches(e, query, filters, makers)) : pages.flatMap((p) => p.items);
+  const all = matching.filter(runs);
   const shown = (o: { showOwned?: boolean; view?: HiddenView }) => browseShown(all, { owned, showOwned, hidden, view: hiddenView, ...o });
   const entries = shown({});
   // What the notes under the list offer to show: apps in the library, and hidden ones.
@@ -657,65 +689,22 @@ function BrowsePage({
               <span className="pill-label">{sortName(filters.sort)}</span>
             </FilterPill>
           )}
-          {pill(
-            "os",
-            filters.os === "here" ? undefined : filters.os ? osChoice(filters.os) : t`All platforms`,
-            <select aria-label={t`Platform`} value={filters.os ?? ""} onChange={set("os")}>
-              {/* What it runs: on Linux, Linux's apps and Windows' (through Proton), as the library shows them. */}
-              <option value="here">{hereLabel}</option>
-              <option value="">{t`All platforms`}</option>
-              {Object.keys(OS_NAMES)
+          {/* What it runs ("here"): on Linux, Linux's apps and Windows' (through Proton), as the library shows them. None ticked is every platform. */}
+          {list(
+            "platforms",
+            t`Platform`,
+            here ? hereLabel : (platformsOn ?? t`All platforms`),
+            here ? undefined : (platformsOn ?? t`All platforms`),
+            [
+              { value: "here", label: hereLabel },
+              ...Object.keys(OS_NAMES)
                 .filter((id) => id !== config.os || config.os === "linux")
-                .map((id) => (
-                  <option key={id} value={id}>
-                    {osChoice(id as Os)}
-                  </option>
-                ))}
-            </select>,
+                .map((id) => ({ value: id, label: osChoice(id as Os) })),
+            ],
+            { none: ["here"] },
           )}
-          {pill(
-            "console",
-            filters.console && filterLabel("console", filters.console, consoleNames),
-            <select aria-label={t`Console`} value={filters.console ?? ""} onChange={set("console")}>
-              <option value="">{t`Any console`}</option>
-              {brands.map((brand) => (
-                <optgroup key={brand} label={brand === "OtherPlatforms" ? t`Other platforms` : brand}>
-                  <option value={`maker:${brand}`}>
-                    {brand === "OtherPlatforms" ? t`All other platforms` : t({ message: `All ${brand}`, comment: "Every console a maker made, as in All Nintendo" })}
-                  </option>
-                  {consoles
-                    .filter((c) => c.brand === brand)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>,
-          )}
-          {pill(
-            "projectTypes",
-            types.length ? types.map((t) => filterLabel("projectType", t, consoleNames)).join(", ") : undefined,
-            <select
-              aria-label={t`Project type`}
-              value={types.length > 1 ? "several" : (types[0] ?? "")}
-              onChange={(e) => choose({ ...filters, projectTypes: e.target.value ? [e.target.value as ProjectType] : undefined })}
-            >
-              <option value="">{t`Any project type`}</option>
-              {/* Several kinds come only from filters saved on the website. */}
-              {types.length > 1 && (
-                <option value="several" disabled>
-                  {types.map((type) => i18n._(PROJECT_TYPES[type])).join(", ")}
-                </option>
-              )}
-              {Object.entries(PROJECT_TYPES).map(([id, name]) => (
-                <option key={id} value={id}>
-                  {i18n._(name)}
-                </option>
-              ))}
-            </select>,
-          )}
+          {list("consoles", t`Console`, consolesOn ?? t`Any console`, consolesOn, consoleOptions(consoles, consoleNames), { max: MAX_SYSTEMS })}
+          {list("projectTypes", t`Project type`, typesOn ?? t`Any project type`, typesOn, projectTypeOptions())}
           {pill(
             "ai",
             filters.ai && filterLabel("ai", filters.ai, consoleNames),
@@ -766,7 +755,7 @@ function BrowsePage({
           )}
           {filtering > 0 && (
             <span className="filter-actions">
-              <button type="button" className="text-button" onClick={() => choose({ os: "here", sort: filters.sort })}>
+              <button type="button" className="text-button" onClick={() => choose({ platforms: ["here"], sort: filters.sort })}>
                 <Trans>Clear all</Trans>
               </button>
             </span>
@@ -1620,7 +1609,9 @@ const PROJECT_TYPES: Record<string, MessageDescriptor> = {
 const SORTS = ["added", "updated", "rating", "name"] as const;
 /** Browse's catalog filters; several kinds of project come from saved filters. */
 /** The catalog's filters, with "here" for the platforms this computer runs (catalogOs). */
-type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os"> & { os?: Os | "here" };
+type BrowseFilters = Omit<AppQuery, "search" | "cursor" | "limit" | "projectType" | "os" | "console" | "platforms"> & { platforms?: (Os | "here")[] };
+/** The most consoles and makers the catalog takes at once (the site's catalogFilters.ts). */
+const MAX_SYSTEMS = 8;
 /** Browse's filters as the player left them, and whether they picked its sort. */
 type KeptBrowse = { filters: BrowseFilters; sorted: boolean };
 
