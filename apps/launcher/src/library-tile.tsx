@@ -230,6 +230,7 @@ const Tile = memo(function Tile({
       data-slug={entry.slug}
       data-letter={letter}
       data-copy={copy}
+      data-installed={Boolean(install)}
       data-busy={busy || undefined}
       data-withdrawn={pulled ? "" : undefined}
       data-round={round || undefined}
@@ -545,7 +546,8 @@ export function GameTile(props: GameTileProps) {
   // The port whose download, or failure, the card shows, as an app's own card does.
   const busy = ports.find((_, i) => copies[i] === "busy" || copies[i] === "failed");
   const state = ports.map((p, i) => `${p.id} ${copies[i]} ${installs[p.id]?.lastPlayed ?? ""} ${props.inLibrary(p.id)}`).join("|");
-  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} state={state} consoleNames={consoleNames} />;
+  const installed = ports.some((p) => Boolean(installs[p.id]));
+  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} state={state} consoleNames={consoleNames} />;
 }
 
 const Game = memo(
@@ -565,8 +567,9 @@ const Game = memo(
     gettable,
     ready,
     busy,
+    installed,
     consoleNames,
-  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; state: string; consoleNames: Record<string, string> }) {
+  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; state: string; consoleNames: Record<string, string> }) {
     const now = useLauncherNow();
     const article = useRef<HTMLElement>(null);
     const first = ports[0];
@@ -586,7 +589,7 @@ const Game = memo(
     const title = game.title;
     const name = ready?.projectName ?? "";
     return (
-      <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined}>
+      <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-installed={installed} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined}>
         <Popover
           label={title}
           panelLabel={t`Ways to play ${title}`}
@@ -674,6 +677,7 @@ const Game = memo(
     a.gettable === b.gettable &&
     a.ready === b.ready &&
     a.busy === b.busy &&
+    a.installed === b.installed &&
     a.stack.game.id === b.stack.game.id &&
     a.stack.game.title === b.stack.game.title &&
     a.stack.ports.length === b.stack.ports.length &&
