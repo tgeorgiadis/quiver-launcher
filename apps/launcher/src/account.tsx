@@ -33,6 +33,24 @@ export type CorrectionInput = {
   client: { version: string; os: string; installed?: string };
 };
 
+/** A player's own correction, as the website's corrections.mine has it: never who decided it. */
+export type OwnCorrection = {
+  id: string;
+  entryId: string;
+  entryName: string;
+  /** Only while the app is published. */
+  entrySlug?: string;
+  topic?: CorrectionTopic;
+  body: string;
+  status: "open" | "done" | "dismissed";
+  /** What the maintainer said back, if anything. */
+  reply?: string;
+  createdAt: number;
+  resolvedAt?: number;
+  /** Decided since the player last saw it. */
+  unseen: boolean;
+};
+
 export type Provider = "github" | "discord";
 
 export type Account = {
@@ -62,6 +80,12 @@ export type Account = {
   review: (review: ReviewInput) => Promise<void>;
   /** Tells maintainers something on an app's page is wrong or missing (the website's corrections.submit); rejects with a message to show. */
   suggestCorrection: (input: CorrectionInput) => Promise<void>;
+  /** The player's corrections decided since they last saw them, newest first, live; undefined signed out or on an older site. */
+  correctionNotices: OwnCorrection[] | undefined;
+  /** The player's latest correction to an app, null signed out, with none, or from an older site. */
+  ownCorrection: (entryId: string) => Promise<OwnCorrection | null>;
+  /** Says the player has seen how these were decided, here and on the website. */
+  markCorrectionsSeen: (ids: string[]) => Promise<void>;
   /** The player's own feedback on an app, null signed out or when they haven't given any. */
   ownReview: (entryId: string) => Promise<Feedback | null>;
   /** Shares a playlist publicly (again: updates it); resolves to its slug. Rejects with a message to show. */
@@ -138,6 +162,9 @@ const fns = {
   saveCollections: ref("mutation", "libraryCollections:save"),
   review: ref("mutation", "reviews:save"),
   suggestCorrection: ref("mutation", "corrections:submit"),
+  correctionNotices: ref("query", "corrections:unseen"),
+  ownCorrection: ref("query", "corrections:mineFor"),
+  markCorrectionsSeen: ref("mutation", "corrections:markSeen"),
   ownReview: ref("query", "reviews:own"),
   shareList: ref("mutation", "sharedLists:share"),
   unshareList: ref("mutation", "sharedLists:unshare"),
@@ -205,6 +232,8 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     | undefined;
   const items = useQuery(fns.list, isAuthenticated ? {} : "skip") as ServerItem[] | undefined;
   const collections = useOptionalQuery<ServerCollection[]>(client, fns.collections, isAuthenticated);
+  // New on the site: an older one has none.
+  const correctionNotices = useOptionalQuery<OwnCorrection[]>(client, fns.correctionNotices, isAuthenticated);
   // Both are new on the site; an older one has neither, and no email login.
   const providers = useOptionalQuery<{ email?: boolean }>(client, fns.authProviders, true);
   const emailLogin = providers?.email === true;
@@ -283,6 +312,9 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
         throw new Error(e instanceof ConvexError && typeof e.data === "string" ? e.data : i18n._(CORRECTION_FAILED));
       }
     },
+    correctionNotices,
+    ownCorrection: (entryId) => (me ? (client.query(fns.ownCorrection, { entryId }) as Promise<OwnCorrection | null>).catch(() => null) : Promise.resolve(null)),
+    markCorrectionsSeen: async (ids) => void (await client.mutation(fns.markCorrectionsSeen, { ids }).catch(() => {})),
     ownReview: (entryId) => (me ? (client.query(fns.ownReview, { entryId }) as Promise<Feedback | null>) : Promise.resolve(null)),
     async shareList(list) {
       try {
@@ -362,6 +394,7 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
   const [user, setUser] = useState<Account["user"]>(null);
   const [items, setItems] = useState<ServerItem[] | undefined>();
   const [collections, setCollections] = useState<ServerCollection[] | undefined>();
+  const [correctionNotices, setCorrectionNotices] = useState<OwnCorrection[] | undefined>();
   // The saved session's account has been asked for once.
   const [polled, setPolled] = useState(false);
   // A poll that started before the usage data setting changed may answer with the old one.
@@ -378,12 +411,12 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
   };
   useEffect(() => void native.secretGet("testToken").then((t) => setToken(t ?? null)), []);
   useEffect(() => {
-    if (!token) return setUser(null), setItems(undefined), setCollections(undefined);
+    if (!token) return setUser(null), setItems(undefined), setCollections(undefined), setCorrectionNotices(undefined);
     let live = true;
     const poll = () => {
       const at = changes.current;
       return call("/library")
-        .then((r) => live && at === changes.current && (setUser(r.user), setItems(r.items), setCollections(r.collections)))
+        .then((r) => live && at === changes.current && (setUser(r.user), setItems(r.items), setCollections(r.collections), setCorrectionNotices(r.correctionNotices)))
         .catch(() => {})
         .finally(() => live && (setPolled(true), setTimeout(poll, 400)));
     };
@@ -435,6 +468,15 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
         body: JSON.stringify({ ...c, source: "launcher" }),
       });
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? i18n._(CORRECTION_FAILED));
+    },
+    correctionNotices,
+    ownCorrection: (entryId) => (token ? call("/corrections/own", { entryId }).catch(() => null) : Promise.resolve(null)),
+    async markCorrectionsSeen(ids) {
+      changes.current++;
+      setCorrectionNotices((list) => list?.filter((c) => !ids.includes(c.id)));
+      await call("/corrections/seen", { ids })
+        .catch(() => {})
+        .finally(() => changes.current++);
     },
     ownReview: (entryId) => (token ? call("/reviews/own", { entryId }) : Promise.resolve(null)),
     async shareList(list) {
