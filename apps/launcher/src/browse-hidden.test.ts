@@ -17,9 +17,13 @@ describe("Only hidden apps' search and filters", () => {
     expect(hiddenMatches(entry, "make", {})).toBe(false);
   });
   it("go by its type, console and AI use", () => {
-    expect(hiddenMatches(entry, "", { projectTypes: ["port"], console: "n64" })).toBe(true);
+    expect(hiddenMatches(entry, "", { projectTypes: ["port"], consoles: ["n64"] })).toBe(true);
+    expect(hiddenMatches(entry, "", { projectTypes: ["tool", "port"] })).toBe(true);
     expect(hiddenMatches(entry, "", { projectTypes: ["tool"] })).toBe(false);
-    expect(hiddenMatches(entry, "", { console: "snes" })).toBe(false);
+    expect(hiddenMatches(entry, "", { consoles: ["snes"] })).toBe(false);
+    expect(hiddenMatches(entry, "", { consoles: ["snes", "n64"] })).toBe(true);
+    expect(hiddenMatches(entry, "", { consoles: ["maker:Nintendo"] }, { n64: "Nintendo" })).toBe(true);
+    expect(hiddenMatches(entry, "", { consoles: ["maker:Sony"] }, { n64: "Nintendo" })).toBe(false);
     expect(hiddenMatches(entry, "", { ai: "no-generated" })).toBe(false);
     expect(hiddenMatches({ ...entry, aiLevel: "assisted" }, "", { ai: "no-generated" })).toBe(true);
     expect(hiddenMatches({ ...entry, aiLevel: "assisted" }, "", { ai: "no-ai" })).toBe(false);

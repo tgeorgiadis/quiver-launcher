@@ -45,14 +45,18 @@ test("box art and icon cards fall back to the cover, then to nothing", () => {
 });
 
 test("the library's filters and tab come back as the player left them, when the library still has them", () => {
-  expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", console: "n64", ai: "no-ai" });
+  // One console or kind, as they were kept before several could be picked; several, as they're kept now.
+  expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", consoles: ["n64"], ai: "no-ai" });
+  expect(keptFilters({ projectType: "port" })).toEqual({ projectTypes: ["port"] });
+  expect(keptFilters({ consoles: ["n64", "maker:Sony", "n64"], projectTypes: ["port", "tool"] })).toEqual({ consoles: ["n64", "maker:Sony"], projectTypes: ["port", "tool"] });
+  expect(keptFilters({ consoles: [], projectTypes: [""] })).toEqual({});
   expect(keptFilters({ installed: "maybe", ai: "some", tag: "" })).toEqual({});
   expect(keptFilters({ managed: "manual" })).toEqual({ managed: "manual" });
   expect(keptFilters({ managed: "quiver" })).toEqual({ managed: "quiver" });
   expect(keptFilters({ managed: "someone" })).toEqual({});
   expect(keptFilters(undefined)).toEqual({});
   // Installed and Not installed were tabs too: left on one, the library opens with the filter on.
-  expect(keptFilters({ console: "n64" }, "installed")).toEqual({ console: "n64", installed: "yes" });
+  expect(keptFilters({ console: "n64" }, "installed")).toEqual({ consoles: ["n64"], installed: "yes" });
   expect(keptFilters({ installed: "yes" }, "not-installed")).toEqual({ installed: "no" });
   expect(keptFilters({ installed: "yes" }, "racing")).toEqual({ installed: "yes" });
   const playlists = [{ key: "racing" }, { key: "gone", removed: true }];

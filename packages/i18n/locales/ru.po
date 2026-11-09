@@ -851,7 +851,6 @@ msgid "All"
 msgstr "Все"
 
 #. Every console a maker made, as in All Nintendo
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "All {brand}"
 msgstr "Все {brand}"
@@ -873,7 +872,6 @@ msgstr "Все консоли"
 msgid "All done: your Quiver Launcher 3 apps are in your library, and they stay where they are."
 msgstr "Готово: ваши приложения из Quiver Launcher 3 в библиотеке и остаются на месте."
 
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
 msgstr "Все остальные платформы"
@@ -3476,7 +3474,6 @@ msgstr "Другое"
 msgid "Other files"
 msgstr "Другие файлы"
 
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Other platforms"

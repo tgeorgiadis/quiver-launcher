@@ -851,7 +851,6 @@ msgid "All"
 msgstr "전체"
 
 #. Every console a maker made, as in All Nintendo
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "All {brand}"
 msgstr "{brand} 전체"
@@ -873,7 +872,6 @@ msgstr "모든 콘솔"
 msgid "All done: your Quiver Launcher 3 apps are in your library, and they stay where they are."
 msgstr "완료했어요. Quiver Launcher 3의 앱이 라이브러리에 들어왔고, 그 자리에 그대로 있어요."
 
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
 msgstr "기타 모든 플랫폼"
@@ -3476,7 +3474,6 @@ msgstr "기타"
 msgid "Other files"
 msgstr "기타 파일"
 
-#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Other platforms"

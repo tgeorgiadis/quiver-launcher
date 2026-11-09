@@ -1177,6 +1177,18 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .pill select:focus-visible { outline: none; }
 .pill:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pill-clear:focus-visible { outline-offset: 0; }
+/* A filter of several choices (MultiPill): a button that reads as the dropdowns beside it, its list ticked. */
+.pill .pill-button {
+  display: inline-flex; align-items: center; max-width: 260px; height: 100%; padding: 0 28px 0 12px; border: 0; border-radius: 999px;
+  background: transparent; color: inherit; font-size: 12.5px; cursor: pointer;
+}
+.pill.on .pill-button { padding-right: 2px; font-weight: 500; }
+.pill .pill-button:focus-visible { outline: none; }
+.pill-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pill-menu { min-width: 200px; }
+.pill-menu-group { padding: 8px 10px 3px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.pill-menu .game-menu-check { flex: none; width: 16px; height: 16px; border: 1px solid var(--line-strong); border-radius: 4px; }
+.pill-menu button[aria-checked="true"] .game-menu-check { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 .filter-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
 .filter-bar .text-button { height: 30px; padding: 0 8px; border-radius: 6px; color: var(--link); font-size: 12.5px; }
 .filter-bar .text-button:hover { text-decoration: underline; }
