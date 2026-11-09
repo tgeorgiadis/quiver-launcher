@@ -129,6 +129,29 @@ pub fn find() -> Option<Library> {
     program.and_then(|p| best(around(&p))).or_else(|| best(data_dirs()))
 }
 
+/// Every apps folder of every 3.x library in the usual places, there now: the one each was set to, and its default
+/// `Apps`. A computer with more than one copy (a portable one beside an installed one) has apps in each's, though only
+/// one library is brought over.
+pub fn apps_folders() -> Vec<String> {
+    let program = std::env::var_os("APPIMAGE").map(PathBuf::from).or_else(|| std::env::current_exe().ok());
+    let dirs = program.map(|p| around(&p)).unwrap_or_default().into_iter().chain(data_dirs());
+    let mut found: Vec<PathBuf> = vec![];
+    for dir in dirs.filter(|d| library_file(d).is_some()) {
+        for folder in folders_of(&dir) {
+            if folder.is_dir() && !found.iter().any(|f| same_folder(f, &folder)) {
+                found.push(folder);
+            }
+        }
+    }
+    found.into_iter().map(|f| f.to_string_lossy().into_owned()).collect()
+}
+
+/// A 3.x library folder's apps folders: the one its settings name, and its default `Apps`.
+fn folders_of(dir: &Path) -> Vec<PathBuf> {
+    let settings = read(&dir.join("settings.json")).unwrap_or(Value::Null);
+    field(&settings, "appsPath").map(|p| resolve(dir, p)).into_iter().chain([dir.join("Apps")]).collect()
+}
+
 /// The folders a 3.x copy beside this program keeps its library in: the
 /// folder of the exe, the AppImage or the .app (3.x keeps its own beside
 /// itself, as a Windows copy's beside its `current` folder), and the folder
@@ -433,6 +456,17 @@ mod tests {
         assert_eq!(at(&apps_in(&windows)[0]), Some(windows.join("current/Games/TestPort").as_path()));
         folder(&windows.join("Games/TestPort"), &[("port.exe", "")]);
         assert_eq!(at(&apps_in(&windows)[0]), Some(windows.join("Games/TestPort").as_path()));
+    }
+
+    #[test]
+    fn a_librarys_apps_folders_are_the_one_its_set_to_and_its_default() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("home/.local/share/QuiverLauncher");
+        let beside = root.path().join("home/Applications/Apps");
+        library(&data, PORT);
+        assert_eq!(folders_of(&data), [data.join("Apps")]);
+        std::fs::write(data.join("settings.json"), serde_json::json!({ "AppsPath": beside }).to_string()).unwrap();
+        assert_eq!(folders_of(&data), [beside, data.join("Apps")]);
     }
 
     #[test]

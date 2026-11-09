@@ -268,6 +268,8 @@ export const native = {
   setTheme: (theme: "light" | "dark" | null) => invoke<void>("set_theme", { theme }),
   logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<V3Library | null>("find_v3_library"),
+  /** Every Quiver Launcher 3 apps folder on this computer: an app in one is in an apps folder, whichever library came over. */
+  v3AppsFolders: () => invoke<string[]>("v3_apps_folders"),
   /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in those Apps folders too. */
   findV3LibraryIn: (path: string, apps?: string[]) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
   /** The install in a folder the player says holds an app: null when it doesn't. */

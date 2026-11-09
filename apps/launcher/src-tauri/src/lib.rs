@@ -1425,6 +1425,12 @@ fn find_v3_library() -> Option<v3::Library> {
     v3::find()
 }
 
+/// Every Quiver Launcher 3 apps folder on this computer, whichever library is brought over.
+#[tauri::command]
+async fn v3_apps_folders() -> Vec<String> {
+    tauri::async_runtime::spawn_blocking(v3::apps_folders).await.unwrap_or_default()
+}
+
 /// The 3.x library in a folder the player picked, or the folder around it;
 /// with `apps`, its installs in those Apps folders too.
 #[tauri::command]
@@ -1609,6 +1615,11 @@ pub fn run() {
                 }
             }
             let apps = apps_folder::current(&dir);
+            // The data folder's own apps folder is there from the start, so Settings never takes it for a drive
+            // that's gone before the first app installs. One the player chose is never made: if it's gone, they hear.
+            if apps == dir.join("apps") {
+                let _ = std::fs::create_dir_all(&apps);
+            }
             // A move the launcher stopped during is finished before it reads where its apps are.
             let (old, said) = move_journal::recover(&dir, &apps);
             for line in said {
@@ -1645,6 +1656,7 @@ pub fn run() {
             launch,
             uninstall,
             find_v3_library,
+            v3_apps_folders,
             find_v3_library_in,
             find_existing_install,
             pick_folder,
