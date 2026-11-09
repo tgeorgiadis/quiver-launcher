@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -431,5 +431,60 @@ describe("several apps folders", () => {
     expect(folderClash("E:/Games", folders)).toBeNull();
     // An apps folder already in the list can become the default.
     expect(folderClash("C:/QuiverLauncher3/Apps", folders)).toBeNull();
+  });
+});
+
+describe("grouping new apps by console", () => {
+  const app = (projectType: string, consoles: string[] = [], basedOn?: string) => ({ id: "k1", projectType, consoles, ...(basedOn ? { basedOn: { console: basedOn } } : {}) }) as unknown as Entry;
+
+  it("puts each kind of app in its folder, a port in its console's by its short name", () => {
+    expect(groupFolder(app("emulator", ["n64", "gcn"]))).toBe("Emulators");
+    expect(groupFolder(app("tool", ["n64"]))).toBe("Tools");
+    expect(groupFolder(app("game", ["pc"]))).toBe("Games");
+    expect(groupFolder(app("port", ["n64"]))).toBe("N64");
+    expect(groupFolder(app("port", ["og xbox"]))).toBe("Xbox");
+    // The version it plays decides, over the consoles its games came out on.
+    expect(groupFolder(app("port", ["ps1", "n64"], "ps1"))).toBe("PS1");
+    expect(groupFolder(app("port", ["ps1", "n64"]))).toBe("Multi-console");
+    expect(groupFolder(app("port"))).toBe("Other");
+    // One the list doesn't know yet goes by the catalog's name for it, made a folder name.
+    expect(groupFolder(app("port", ["neo"]), { neo: "Neo Geo: AES" })).not.toMatch(/[:/]/);
+    expect(groupFolder({ ...app("port", ["n64"]), id: "local:abc" })).toBeUndefined();
+  });
+
+  it("counts an app in a console folder in its apps folder, not as a folder of its own", () => {
+    const base = { version: "1.0.0", executables: [] };
+    const installs = {
+      plain: { ...base, folder: "sm64" },
+      grouped: { ...base, folder: "Zelda", dir: joinPath(joinPath("D:/Games", "N64"), "Zelda"), inApps: true as const, group: "N64" },
+      other: { ...base, folder: "Kart", dir: "E:/More/N64/Kart", inApps: true as const, group: "N64" },
+    };
+    expect(installs.grouped.dir).toBe("D:/Games/N64/Zelda");
+    expect(rootOf(installs.grouped)).toBe("D:/Games");
+    expect(appsFolders(installs, "D:/Games").map((f) => [f.path, f.apps.map((a) => a.id)])).toEqual([
+      ["D:/Games", ["plain", "grouped"]],
+      ["E:/More", ["other"]],
+    ]);
+    // A move takes it with its console folder.
+    expect(movableApps(installs).elsewhere.find((a) => a.id === "grouped")?.group).toBe("N64");
+  });
+
+  it("lists the installed apps at the top of an apps folder for sorting, each with that apps folder", () => {
+    const base = { version: "1.0.0", executables: [] };
+    const port = (id: string) => ({ ...app("port", ["n64"]), id });
+    const installs = {
+      plain: { ...base, folder: "sm64" },
+      kept: { ...base, folder: "Kart", dir: "E:/More/Kart", inApps: true as const },
+      sorted: { ...base, folder: "Zelda", dir: "D:/Games/N64/Zelda", inApps: true as const, group: "N64" },
+      chosen: { ...base, folder: "Own", dir: "F:/Mine/Own" },
+      msi: { ...base, folder: "Setup", installer: "msi" as const },
+      gone: { ...base, folder: "Gone" },
+      "local:x": { ...base, folder: "Local", local: true as const },
+    };
+    const catalog = { plain: port("plain"), kept: port("kept"), sorted: port("sorted"), chosen: port("chosen"), msi: port("msi") };
+    expect(unsortedApps(installs, "D:/Games", catalog)).toEqual([
+      { id: "plain", folder: "sm64", to: "D:/Games" },
+      { id: "kept", folder: "Kart", to: "E:/More" },
+    ]);
   });
 });

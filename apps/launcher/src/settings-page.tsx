@@ -461,7 +461,7 @@ function MusicSetting() {
  * has got.
  */
 export function AppsFolder() {
-  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings } = useLauncher();
+  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, unsortedApps, moveApp } = useLauncher();
   const [asking, setAsking] = useState<{ to: string } | null>(null);
   // Moving the apps along is the player's choice; keeping them where they are is instant and first.
   const [keep, setKeep] = useState(true);
@@ -495,7 +495,10 @@ export function AppsFolder() {
     );
     return () => void (live = false);
   }, [paths, moving]);
-  const idle = !asking && !bringing && !moving && !checking;
+  const unsorted = unsortedApps();
+  // Sorting the apps already installed into console folders: how many of how many have moved.
+  const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
+  const idle = !asking && !bringing && !moving && !checking && !sorting;
   const waitTitle = busy ? t`Wait for downloads to finish first` : undefined;
   const pick = async () => {
     setMessage(null);
@@ -550,6 +553,30 @@ export function AppsFolder() {
       (e) => setMessage({ text: String(e), error: true }),
     ).finally(() => setMoving(null));
   };
+  /** Moves each installed app at the top of an apps folder into its console's folder there, one at a time. */
+  const sort = async () => {
+    setMessage(null);
+    const apps = unsorted;
+    const failed: { folder: string; why: string }[] = [];
+    const left: string[] = [];
+    setSorting({ done: 0, total: apps.length });
+    for (const [n, app] of apps.entries()) {
+      try {
+        const moved = await moveApp(app.id, app.to);
+        if (moved.left) left.push(moved.left);
+      } catch (e) {
+        failed.push({ folder: app.folder, why: e instanceof Error ? e.message : String(e) });
+      }
+      setSorting({ done: n + 1, total: apps.length });
+    }
+    setSorting(null);
+    const n = apps.length;
+    setMessage(
+      failed.length
+        ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
+        : { text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into console folders.`, left },
+    );
+  };
   const open = (path: string) => void native.openAppsFolder(path).catch((e) => setMessage({ text: String(e), error: true }));
   return (
     <section className="settings-section apps-folder" aria-label={t`Apps folders`}>
@@ -557,6 +584,30 @@ export function AppsFolder() {
         <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
         <Trans>Ask where to install each app</Trans>
       </label>
+      <label className="toggle">
+        <input type="checkbox" checked={Boolean(settings.groupByConsole)} onChange={(e) => setSettings({ ...settings, groupByConsole: e.target.checked || undefined })} />
+        <Trans>Put new apps in a folder for their console</Trans>
+      </label>
+      {settings.groupByConsole && (
+        <p className="muted">
+          <Trans>Emulators, tools and standalone games get folders of their own, and apps for more than one console go in Multi-console. Apps already installed stay where they are until you move them.</Trans>
+        </p>
+      )}
+      {settings.groupByConsole && (unsorted.length > 0 || sorting) && (
+        <div className="row">
+          {sorting ? (
+            <p className="muted" role="status">
+              <Trans>
+                Moving apps into console folders… {sorting.done} of {sorting.total}
+              </Trans>
+            </p>
+          ) : (
+            <button disabled={!idle || busy} title={waitTitle} onClick={() => void sort()}>
+              {plural(unsorted.length, { one: "Move # installed app into its console folder", other: "Move # installed apps into their console folders" })}
+            </button>
+          )}
+        </div>
+      )}
       <ul className="apps-folders">
         {folders.map((f) => {
           const state = states[f.path];

@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, parentOf, renamable, samePath, skipped, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -2176,7 +2176,7 @@ function PlaceAppPrompt() {
   const [chosen, setChosen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const install = placing ? installs[placing.id] : undefined;
-  const here = install && (install.dir ? parentOf(install.dir) : config.appsDir);
+  const here = install && (install.dir ? rootOf(install) : config.appsDir);
   const folders = appsFolders().map((f) => f.path);
   useEffect(() => {
     setChosen(null);

@@ -29,6 +29,11 @@ msgstr "{0, plural, one {# app} other {# apps}}"
 msgid "{0, plural, one {Move # app from {1} into {dir}?} other {Move # apps from {2} into {dir}?}}"
 msgstr "{0, plural, one {¿Mover # app de {1} a {dir}?} other {¿Mover # apps de {2} a {dir}?}}"
 
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
+msgstr "{0, plural, one {Mover # app instalada a la carpeta de su consola} other {Mover # apps instaladas a las carpetas de sus consolas}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -1934,6 +1939,10 @@ msgstr "El correo, el nombre de usuario o la contraseña son incorrectos."
 msgid "Emulator"
 msgstr "Emulador"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Emulators, tools and standalone games get folders of their own, and apps for more than one console go in Multi-console. Apps already installed stay where they are until you move them."
+msgstr "Los emuladores, las herramientas y los juegos independientes tienen sus propias carpetas, y las apps para más de una consola van en Multi-console. Las apps ya instaladas se quedan donde están hasta que las muevas."
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address."
 msgstr "Ingresa un repositorio de GitHub o GitLab: propietario/nombre, o su dirección de github.com o gitlab.com."
@@ -3010,6 +3019,10 @@ msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
 msgstr "Se movieron {0} de {n, plural, one {# app} other {# apps}}."
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
+msgstr "Se {n, plural, one {movió # app} other {movieron # apps}} a carpetas de consola."
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
 msgstr "Se {n, plural, one {movió # app} other {movieron # apps}}."
 
@@ -3028,6 +3041,12 @@ msgstr "Moviendo {percent}%"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps"
 msgstr "Moviendo apps"
+
+#. placeholder {0}: sorting.done
+#. placeholder {1}: sorting.total
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps into console folders… {0} of {1}"
+msgstr "Moviendo apps a carpetas de consola… {0} de {1}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
@@ -3724,6 +3743,10 @@ msgstr "DETALLES DEL PROYECTO"
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
 msgstr "Tipo de proyecto"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Put new apps in a folder for their console"
+msgstr "Poner las apps nuevas en una carpeta para su consola"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
