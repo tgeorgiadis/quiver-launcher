@@ -1939,10 +1939,6 @@ msgstr "이메일, 사용자 이름 또는 비밀번호가 올바르지 않아�
 msgid "Emulator"
 msgstr "에뮬레이터"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Emulators, tools and standalone games get folders of their own, and apps for more than one console go in Multi-console. Apps already installed stay where they are until you move them."
-msgstr "에뮬레이터, 도구, 단독 게임은 각자의 폴더에 들어가고, 여러 콘솔용 앱은 Multi-console에 들어가요. 이미 설치된 앱은 옮기기 전까지 그대로 있어요."
-
 #: ../../apps/launcher/src/store.tsx
 msgid "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address."
 msgstr "GitHub 또는 GitLab 저장소를 입력하세요: owner/name 형식이나 github.com 또는 gitlab.com 주소."
@@ -2319,6 +2315,10 @@ msgstr "라이브러리에 있음"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "Steam 게임 모드에서"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In the default apps folder. Emulators, tools and standalone games get folders of their own, and apps for more than one console go in Multi-console. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "기본 앱 폴더에서만 적용돼요. 에뮬레이터, 도구, 단독 게임은 각자의 폴더에 들어가고, 여러 콘솔용 앱은 Multi-console에 들어가요. 다른 폴더에 넣은 앱은 바로 그곳에 설치되고, 이미 설치된 앱은 옮기기 전까지 그대로 있어요."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"

@@ -465,9 +465,10 @@ export function movableApps(installs: Record<string, Install>): MovableApps {
 }
 
 /**
- * The installed apps that grouping by console would put in a console folder but that sit at the top of an apps folder:
- * each with the apps folder it's in (`to`), which `moveApp` puts in its console's folder there. Never one in a
- * folder the player chose for it alone, the player's own, a Windows installer's, or one the catalog no longer lists.
+ * The installed apps that grouping by console would put in a console folder but that sit at the top of the default
+ * apps folder: each with that folder (`to`), which `moveApp` puts in its console's folder there. Never one in
+ * another apps folder (which may already be one console's) or one chosen for it alone, the player's own, a Windows
+ * installer's, or one the catalog no longer lists.
  */
 export function unsortedApps(
   installs: Record<string, Install>,
@@ -476,8 +477,8 @@ export function unsortedApps(
   consoleNames: Record<string, string> = {},
 ): { id: string; folder: string; to: string }[] {
   return Object.entries(installs).flatMap(([id, i]) => {
-    if (i.group || !movable(i) || (i.dir && !i.inApps) || !catalog[id] || !groupFolder(catalog[id], consoleNames)) return [];
-    return [{ id, folder: i.folder, to: i.dir ? parentOf(i.dir) : appsDir }];
+    if (i.dir || !movable(i) || !catalog[id] || !groupFolder(catalog[id], consoleNames)) return [];
+    return [{ id, folder: i.folder, to: appsDir }];
   });
 }
 
@@ -1470,12 +1471,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const files = installFiles(was, catalogFiles, portableByDefault);
       // A new install in a folder the player chose; the default apps folder is where they go anyway.
       const chosenFolder = !was && options.to && !samePath(options.to, config.appsDir) ? options.to : undefined;
-      // Grouped by console: in the apps folder it goes in (the default, or another the player picked), in its
-      // console's folder there. A folder the player chose for it alone is exactly where it goes.
+      // Grouped by console: in the default apps folder, in its console's folder there. Any other folder (another
+      // apps folder, which may already be one console's, or one chosen for it alone) is exactly where it goes.
       const desktop = config.os !== "android" && config.os !== "ios";
-      const intoApps = !chosenFolder || appsFolders(installs, config.appsDir).some((f) => samePath(f.path, chosenFolder));
-      const group = !was && desktop && groupByConsole && intoApps ? groupFolder(catalog[entry.id] ?? entry, consoleNames) : undefined;
-      const into = group ? joinPath(chosenFolder ?? config.appsDir, group) : chosenFolder;
+      const group = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(catalog[entry.id] ?? entry, consoleNames) : undefined;
+      const into = group ? joinPath(config.appsDir, group) : chosenFolder;
       const done = await native.install({
         id: entry.id,
         url: asset.url,
@@ -2114,9 +2114,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const stop = await native.onAppMoving((m) => m.id === id && setAppMoves((all) => (all[id] ? { ...all, [id]: { copied: m.copied, size: m.size } } : all)));
       try {
         const listed = appsFolders(installs, config.appsDir).some((f) => samePath(f.path, to));
-        // Into an apps folder while apps are grouped by console: its console's folder there, kept from where it was
-        // or worked out now.
-        const group = listed && settings.groupByConsole ? (install.group ?? groupFolder(catalog[id] ?? { id, projectType: "port" }, consoleNames)) : undefined;
+        // Into the default apps folder while apps are grouped by console: its console's folder there, kept from
+        // where it was or worked out now. Another folder is exactly where it goes.
+        const group = samePath(to, config.appsDir) && settings.groupByConsole ? (install.group ?? groupFolder(catalog[id] ?? { id, projectType: "port" }, consoleNames)) : undefined;
         const moved = await native.moveApp(id, install.folder, install.dir, group ? joinPath(to, group) : to);
         setInstalls((i) => {
           const now = i[id];

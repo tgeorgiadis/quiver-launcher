@@ -1939,10 +1939,6 @@ msgstr "E-Mail, Benutzername oder Passwort ist falsch."
 msgid "Emulator"
 msgstr "Emulator"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Emulators, tools and standalone games get folders of their own, and apps for more than one console go in Multi-console. Apps already installed stay where they are until you move them."
-msgstr "Emulatoren, Tools und eigenständige Spiele bekommen eigene Ordner, und Apps für mehr als eine Konsole kommen in Multi-console. Bereits installierte Apps bleiben, wo sie sind, bis du sie verschiebst."
-
 #: ../../apps/launcher/src/store.tsx
 msgid "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address."
 msgstr "Gib ein GitHub- oder GitLab-Repository ein: Besitzer/Name oder seine Adresse auf github.com oder gitlab.com."
@@ -2319,6 +2315,10 @@ msgstr "In der Bibliothek"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "In Steam's Game Mode"
 msgstr "Im Spielmodus von Steam"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In the default apps folder. Emulators, tools and standalone games get folders of their own, and apps for more than one console go in Multi-console. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "Im Standard-App-Ordner. Emulatoren, Tools und eigenständige Spiele bekommen eigene Ordner, und Apps für mehr als eine Konsole kommen in Multi-console. Apps, die du in einen anderen Ordner legst, landen genau dort, und bereits installierte Apps bleiben, wo sie sind, bis du sie verschiebst."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"

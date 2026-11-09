@@ -469,7 +469,7 @@ describe("grouping new apps by console", () => {
     expect(movableApps(installs).elsewhere.find((a) => a.id === "grouped")?.group).toBe("N64");
   });
 
-  it("lists the installed apps at the top of an apps folder for sorting, each with that apps folder", () => {
+  it("lists the installed apps at the top of the default apps folder for sorting, none kept anywhere else", () => {
     const base = { version: "1.0.0", executables: [] };
     const port = (id: string) => ({ ...app("port", ["n64"]), id });
     const installs = {
@@ -484,7 +484,6 @@ describe("grouping new apps by console", () => {
     const catalog = { plain: port("plain"), kept: port("kept"), sorted: port("sorted"), chosen: port("chosen"), msi: port("msi") };
     expect(unsortedApps(installs, "D:/Games", catalog)).toEqual([
       { id: "plain", folder: "sm64", to: "D:/Games" },
-      { id: "kept", folder: "Kart", to: "E:/More" },
     ]);
   });
 });
