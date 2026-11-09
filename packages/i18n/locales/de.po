@@ -2317,8 +2317,8 @@ msgid "In Steam's Game Mode"
 msgstr "Im Spielmodus von Steam"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports\\N64, say), and those for more than one console in Ports\\Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "Im Standard-App-Ordner kommen Ports in Ports, in einen Ordner für ihre Konsole (zum Beispiel Ports\\N64), und Ports für mehr als eine Konsole in Ports\\Multi-console. Emulatoren, Tools und eigenständige Spiele bekommen daneben eigene Ordner. Apps, die du in einen anderen Ordner legst, landen genau dort, und bereits installierte Apps bleiben, wo sie sind, bis du sie verschiebst."
+msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "Im Standard-App-Ordner kommen Ports in Ports, in einen Ordner für ihre Konsole (zum Beispiel Ports{slash}N64), und Ports für mehr als eine Konsole in Ports{slash}Multi-console. Emulatoren, Tools und eigenständige Spiele bekommen daneben eigene Ordner. Apps, die du in einen anderen Ordner legst, landen genau dort, und bereits installierte Apps bleiben, wo sie sind, bis du sie verschiebst."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"

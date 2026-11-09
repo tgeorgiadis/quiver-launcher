@@ -495,6 +495,9 @@ export function AppsFolder() {
     );
     return () => void (live = false);
   }, [paths, moving]);
+  const desktop = config.os !== "android" && config.os !== "ios";
+  // A path's separator as the player's system writes it, for the help on console folders.
+  const slash = config.os === "windows" ? "\\" : "/";
   const unsorted = unsortedApps();
   // Sorting the apps already installed into console folders: how many of how many have moved.
   const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
@@ -580,20 +583,27 @@ export function AppsFolder() {
   const open = (path: string) => void native.openAppsFolder(path).catch((e) => setMessage({ text: String(e), error: true }));
   return (
     <section className="settings-section apps-folder" aria-label={t`Apps folders`}>
-      <label className="toggle">
-        <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
-        <Trans>Ask where to install each app</Trans>
-      </label>
-      <label className="toggle">
-        <input type="checkbox" checked={Boolean(settings.groupByConsole)} onChange={(e) => setSettings({ ...settings, groupByConsole: e.target.checked || undefined })} />
-        <Trans>Put new apps in a folder for their console</Trans>
-      </label>
-      {settings.groupByConsole && (
+      {/* Where each app goes is the desktop's: on a phone the system keeps apps where it does. */}
+      {desktop && (
+        <>
+          <label className="toggle">
+            <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
+            <Trans>Ask where to install each app</Trans>
+          </label>
+          <label className="toggle">
+            <input type="checkbox" checked={Boolean(settings.groupByConsole)} onChange={(e) => setSettings({ ...settings, groupByConsole: e.target.checked || undefined })} />
+            <Trans>Put new apps in a folder for their console</Trans>
+          </label>
+        </>
+      )}
+      {desktop && settings.groupByConsole && (
         <p className="muted">
-          <Trans>In the default apps folder, ports go in Ports, in a folder for their console (Ports\N64, say), and those for more than one console in Ports\Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.</Trans>
+          <Trans>
+            In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.
+          </Trans>
         </p>
       )}
-      {settings.groupByConsole && (unsorted.length > 0 || sorting) && (
+      {desktop && settings.groupByConsole && (unsorted.length > 0 || sorting) && (
         <div className="row">
           {sorting ? (
             <p className="muted" role="status">

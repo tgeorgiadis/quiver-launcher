@@ -2317,8 +2317,8 @@ msgid "In Steam's Game Mode"
 msgstr "Steam 게임 모드에서"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports\\N64, say), and those for more than one console in Ports\\Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
-msgstr "기본 앱 폴더에서 포트는 Ports 안의 콘솔별 폴더(예: Ports\\N64)에 들어가고, 여러 콘솔용 포트는 Ports\\Multi-console에 들어가요. 에뮬레이터, 도구, 단독 게임은 그 옆에 각자의 폴더가 생겨요. 다른 폴더에 넣은 앱은 바로 그곳에 설치되고, 이미 설치된 앱은 옮기기 전까지 그대로 있어요."
+msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "기본 앱 폴더에서 포트는 Ports 안의 콘솔별 폴더(예: Ports{slash}N64)에 들어가고, 여러 콘솔용 포트는 Ports{slash}Multi-console에 들어가요. 에뮬레이터, 도구, 단독 게임은 그 옆에 각자의 폴더가 생겨요. 다른 폴더에 넣은 앱은 바로 그곳에 설치되고, 이미 설치된 앱은 옮기기 전까지 그대로 있어요."
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
