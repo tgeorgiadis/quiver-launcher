@@ -581,12 +581,12 @@ msgid "A folder you fill yourself"
 msgstr "직접 채우는 폴더"
 
 #: ../../apps/launcher/src/correction.tsx
-msgid "A maintainer looked at your correction from {sent} and left the page as it is."
-msgstr "관리자가 {sent}에 보낸 수정 제안을 검토했고 페이지를 그대로 두었습니다."
+msgid "A maintainer looked at the problem you reported on {sent} and left the page as it is."
+msgstr "관리자가 {sent}에 신고한 문제를 확인했고 페이지를 그대로 두었습니다."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
-msgid "A maintainer looked at your correction to {app} and left its page as it is."
-msgstr "관리자가 {app}에 대한 수정 제안을 검토했고 페이지를 그대로 두었습니다."
+msgid "A maintainer looked at the problem you reported with {app} and left its page as it is."
+msgstr "관리자가 {app}에 대해 신고한 문제를 확인했고 페이지를 그대로 두었습니다."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "A moderator hid your feedback, so others can't see it."
@@ -1708,7 +1708,9 @@ msgid "Don't allow"
 msgstr "허용 안 함"
 
 #. Closes a dialog
+#. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Done"
 msgstr "완료"
@@ -3821,6 +3823,11 @@ msgstr "폴더 이름 바꾸기…"
 msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
 msgstr "라이브러리를 {taken}의 라이브러리({count, plural, other {앱 #개}})로 바꿀까요? 현재 라이브러리도 백업으로 보관돼요."
 
+#. App page button: tell the maintainers something on the page is wrong or missing
+#: ../../apps/launcher/src/correction.tsx
+msgid "Report a problem"
+msgstr "문제 신고"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Repository"
 msgstr "저장소"
@@ -4272,10 +4279,6 @@ msgstr "로그인하면 다른 사람이 자기 라이브러리에 추가할 수
 msgid "Sign in to share how it runs for you."
 msgstr "로그인하고 실행 후기를 공유해 주세요."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Sign in to suggest a correction"
-msgstr "로그인하고 수정 제안"
-
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in to sync your library"
 msgstr "로그인하고 라이브러리 동기화하기"
@@ -4342,10 +4345,6 @@ msgstr "누군가 재생 목록을 공유했나요? 링크를 붙여 넣어 라�
 #: ../../apps/launcher/src/correction.tsx
 msgid "Something else"
 msgstr "기타"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Something wrong or missing on this page?"
-msgstr "이 페이지에 잘못되거나 빠진 내용이 있나요?"
 
 #. Label of the library's sort order
 #. Label of the library's sort order
@@ -4451,10 +4450,6 @@ msgstr "공유 중지"
 #: ../../apps/launcher/src/App.tsx
 msgid "Submit an app"
 msgstr "앱 제출"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Suggest a correction"
-msgstr "수정 제안"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Suggest an app for the catalog, on quiverlauncher.com"
@@ -4633,6 +4628,14 @@ msgstr "게임이 시작할 때 요청해요. Quiver가 먼저 확인해 줄 수
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "원작 게임"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "The problem you reported on {sent} was fixed. Thanks!"
+msgstr "{sent}에 신고한 문제가 해결되었습니다. 감사합니다!"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "The problem you reported with {app} was fixed. Thanks!"
+msgstr "{app}에 대해 신고한 문제가 해결되었습니다. 감사합니다!"
 
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "The program itself"
@@ -5250,13 +5253,13 @@ msgstr "이 버전이 설치되어 있어요. 위험을 감수할 수 있다면 
 msgid "You have the newest version."
 msgstr "최신 버전을 사용 중이에요."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "You reported a problem on {sent}. A maintainer will take a look."
+msgstr "{sent}에 문제를 신고했습니다. 관리자가 확인할 예정입니다."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
 msgstr "{updateVersion}을(를) 건너뛰었어요. Quiver Launcher가 다음 새 버전을 제안해요."
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "You suggested a correction on {sent}. A maintainer will take a look."
-msgstr "{sent}에 수정을 제안했습니다. 관리자가 확인할 예정입니다."
 
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."
@@ -5317,18 +5320,6 @@ msgstr "사본이 {name}이(가) 읽는 위치에 있어요."
 msgid "Your copy: {0}"
 msgstr "내 사본: {0}"
 
-#: ../../apps/launcher/src/announcements-ui.tsx
-msgid "Your correction"
-msgstr "내 수정 제안"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Your correction from {sent} was made. Thanks!"
-msgstr "{sent}에 보낸 수정 제안이 반영되었습니다. 감사합니다!"
-
-#: ../../apps/launcher/src/announcements-ui.tsx
-msgid "Your correction to {app} was made. Thanks!"
-msgstr "{app}에 대한 수정 제안이 반영되었습니다. 감사합니다!"
-
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"
 msgstr "여러분의 경험이 다음 사람에게 도움이 돼요"
@@ -5357,6 +5348,11 @@ msgstr "라이브러리가 모든 기기에서 동기화되고, 앱 리뷰도 �
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
 msgstr "내 플레이"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/correction.tsx
+msgid "Your problem report"
+msgstr "내 문제 신고"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Your tags"

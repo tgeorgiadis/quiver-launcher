@@ -875,6 +875,12 @@ button.download { width: 100%; text-align: left; }
 .correction-prompt p { display: flex; align-items: center; gap: 8px; margin: 0; }
 .correction-prompt .link-button { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .correction-sent { color: var(--green); font-size: 13px; }
+.correction-dialog { width: min(560px, 100%); }
+.correction-dialog .correction-form { margin: 0; border: 0; background: none; box-shadow: none; }
+/* The dialog closes with Cancel, B or outside it, as the others do: no close button of the form's own. */
+.correction-dialog .panel-close { display: none; }
+.correction-thanks { display: grid; justify-items: start; gap: 16px; padding: 20px; }
+.correction-thanks .correction-sent { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
 .correction-status { display: grid; gap: 6px; min-width: 0; font-size: 13px; }
 .correction-status p { margin: 0; }
 .correction-status.done p { color: var(--green); }
