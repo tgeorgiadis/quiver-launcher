@@ -580,6 +580,14 @@ msgstr "Quiver가 보관하는 파일이 없어졌어요."
 msgid "A folder you fill yourself"
 msgstr "직접 채우는 폴더"
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "A maintainer looked at your correction from {sent} and left the page as it is."
+msgstr "관리자가 {sent}에 보낸 수정 제안을 검토했고 페이지를 그대로 두었습니다."
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "A maintainer looked at your correction to {app} and left its page as it is."
+msgstr "관리자가 {app}에 대한 수정 제안을 검토했고 페이지를 그대로 두었습니다."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "A moderator hid your feedback, so others can't see it."
 msgstr "운영자가 피드백을 숨겨서 다른 사람에게 보이지 않아요."
@@ -1675,6 +1683,9 @@ msgstr "완료되지 않음"
 #. Hide an announcement
 #. Hide an announcement
 #. Hide an announcement
+#. Hide an announcement
+#. Hide an announcement
+#. Hide an announcement
 #. Menu item that clears a failed download
 #: ../../apps/launcher/src/announcements-ui.tsx
 #: ../../apps/launcher/src/App.tsx
@@ -1921,6 +1932,11 @@ msgstr "예: 게임 대신 레벨 에디터가 실행되거나, 미국판 게임
 #: ../../apps/launcher/src/correction.tsx
 msgid "For what the listing gets wrong, like the wrong program or game file. To say how it ran, use Player feedback."
 msgstr "잘못된 프로그램이나 게임 파일처럼 목록 정보가 틀린 경우에 사용하세요. 실행이 어땠는지는 플레이어 피드백에 남겨 주세요."
+
+#. Above news about the player's own corrections
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "For you"
+msgstr "내 소식"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Forgot your password?"
@@ -3198,6 +3214,10 @@ msgstr "불투명도"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "열기"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Open app"
+msgstr "앱 열기"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -5234,6 +5254,10 @@ msgstr "최신 버전을 사용 중이에요."
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."
 msgstr "{updateVersion}을(를) 건너뛰었어요. Quiver Launcher가 다음 새 버전을 제안해요."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "You suggested a correction on {sent}. A maintainer will take a look."
+msgstr "{sent}에 수정을 제안했습니다. 관리자가 확인할 예정입니다."
+
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."
 msgstr "모두 확인했어요."
@@ -5292,6 +5316,18 @@ msgstr "사본이 {name}이(가) 읽는 위치에 있어요."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy: {0}"
 msgstr "내 사본: {0}"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Your correction"
+msgstr "내 수정 제안"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Your correction from {sent} was made. Thanks!"
+msgstr "{sent}에 보낸 수정 제안이 반영되었습니다. 감사합니다!"
+
+#: ../../apps/launcher/src/announcements-ui.tsx
+msgid "Your correction to {app} was made. Thanks!"
+msgstr "{app}에 대한 수정 제안이 반영되었습니다. 감사합니다!"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"
