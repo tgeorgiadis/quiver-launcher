@@ -3,7 +3,7 @@
  * menu and in Settings, and the picture a box art or icon card shows.
  */
 import { useEffect, useState, type ReactNode } from "react";
-import { ChevronDown, Gamepad2, LayoutGrid, PanelLeft, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
+import { ChevronDown, Gamepad2, Grid2x2, Grid3x3, LayoutGrid, PanelLeft, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -221,7 +221,7 @@ function SidebarWidth() {
 }
 
 /**
- * The cards' size, on a slider from small to large between a small card's picture and a large one's. A controller's
+ * The cards' size, on a slider between a 3x3 grid (more, smaller cards) and a 2x2 one (fewer, larger). A controller's
  * left and right move it (data-arrows), as the arrow keys do; up and down leave it.
  */
 function CardSizeSlider({ value, onChange }: { value: number; onChange: (scale: number) => void }) {
@@ -231,7 +231,7 @@ function CardSizeSlider({ value, onChange }: { value: number; onChange: (scale: 
     <div className="view-choice">
       <span className="view-label">{label}</span>
       <div className="card-size" data-arrows="x">
-        <LayoutGrid size={13} aria-hidden="true" />
+        <Grid3x3 size={14} aria-hidden="true" />
         <input
           type="range"
           aria-label={label}
@@ -248,7 +248,7 @@ function CardSizeSlider({ value, onChange }: { value: number; onChange: (scale: 
             step(e.key === "ArrowRight" ? 1 : -1);
           }}
         />
-        <Square size={17} aria-hidden="true" />
+        <Grid2x2 size={18} aria-hidden="true" />
       </div>
     </div>
   );
