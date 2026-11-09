@@ -26,12 +26,12 @@ import { boxZoom, windowBox, zoom } from "./zoom";
 /** How long a finger stays down before it's a long press, in ms. */
 const LONG_PRESS = 500;
 
-/** At the top of a library card, opening below its ⋯ button; the card around it opens it too. */
-export function CardMenu({ entry, onOpen }: { entry: Entry; onOpen: () => void }) {
+/** At the top of a library card, opening below its ⋯ button; the card around it opens it too. `heading` and `pad`, as GameMenu's. */
+export function CardMenu({ entry, onOpen, heading, pad }: { entry: Entry; onOpen: () => void; heading?: string; pad?: boolean }) {
   const anchor = useRef<HTMLSpanElement>(null);
   return (
     <span ref={anchor} className="card-menu">
-      <GameMenu entry={entry} onOpen={onOpen} target={() => anchor.current?.closest("article") ?? null} where="card" />
+      <GameMenu entry={entry} onOpen={onOpen} target={() => anchor.current?.closest("article") ?? null} where="card" heading={heading} pad={pad} />
     </span>
   );
 }
@@ -39,14 +39,38 @@ export function CardMenu({ entry, onOpen }: { entry: Entry; onOpen: () => void }
 /**
  * An app's menu over `target` (a card, a sidebar row), which opens it. With
  * `bare`, there's no ⋯ button: closing it puts focus back on what had it.
+ * `heading` names the app over its items, where the card has others (a game's).
+ * With `pad` false, a controller's Options button leaves `target` to do what
+ * it did (a game's card lists its ports).
  */
-export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry; onOpen: () => void; target: () => Element | null; bare?: boolean; where: "card" | "sidebar" }) {
-  const opener = useMenuOpener(target, where);
+export function GameMenu({
+  entry,
+  onOpen,
+  target,
+  bare,
+  where,
+  heading,
+  pad = true,
+}: {
+  entry: Entry;
+  onOpen: () => void;
+  target: () => Element | null;
+  bare?: boolean;
+  where: "card" | "sidebar";
+  heading?: string;
+  pad?: boolean;
+}) {
+  const opener = useMenuOpener(target, where, pad);
   const escape = useRef<(() => boolean) | null>(null);
   const name = entry.projectName;
   return (
     <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={<MoreHorizontal size={16} />} bare={bare} role="menu" opener={opener} escape={escape} align="end" panel="card-menu-panel">
-      {(close) => <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />}
+      {(close) => (
+        <>
+          {heading && <div className="game-menu-heading">{heading}</div>}
+          <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />
+        </>
+      )}
     </Popover>
   );
 }
@@ -109,15 +133,15 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
 /**
  * Opens a menu over `target` (a card, a sidebar row) on a right-click, a long
  * press, the Menu key or Shift+F10, or a controller's Options button; set as
- * the menu's `opener`.
+ * the menu's `opener`; a controller's Options button only with `pad`.
  */
-function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" | "browse") {
+function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" | "browse", pad = true) {
   const opener = useRef<((x: number, y: number) => void) | null>(null);
   useEffect(() => {
     const card = target();
     if (!card) return;
     // Where a controller's Options button looks for a menu (spatial.ts).
-    card.setAttribute("data-menu", "");
+    if (pad) card.setAttribute("data-menu", "");
     let pressed = false;
     const open = (x: number, y: number, how: string) => {
       opener.current?.(x, y);
@@ -185,7 +209,7 @@ function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" |
       window.removeEventListener("pointerdown", anew, true);
       window.removeEventListener("mousedown", swallow, true);
       clearTimeout(timer);
-      card.removeAttribute("data-menu");
+      if (pad) card.removeAttribute("data-menu");
       card.removeEventListener("contextmenu", contextmenu);
       card.removeEventListener("keydown", keydown);
       card.removeEventListener("pointerdown", down);
