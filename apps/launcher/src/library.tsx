@@ -27,7 +27,7 @@ import { withPictures, type Pictures } from "./custom-art";
 import { LIBRARY_SORTS, compareApps, isLibrarySort, type LibrarySort } from "./sort";
 import { keepsTab, keptFilters, type LibraryFilters } from "./view";
 import { track } from "./telemetry";
-import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
+import { CardArt, GroupBySelect, PlatformChoice, ViewOptions, showCardScale, useLibraryView, usePlatforms, useSidebarFits } from "./library-view";
 import { PLATFORMS, forPlatforms, type Platform } from "./platforms";
 import { gridGroupBy, isStack, sections, stacks, type Stack } from "./group";
 import { FiltersPanel, SidebarLayout, SidebarList } from "./library-sidebar";
@@ -111,6 +111,9 @@ export function LibraryPage({
 }) {
   const { client, config, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
   const { view, groupBy } = useLibraryView();
+  // The cards' size, on the page (showCardScale), where View options' slider changes it as it moves. Up here, before
+  // the sidebar's page returns early, so it's the same hooks either way.
+  useEffect(() => showCardScale(view.cardScale), [view.cardScale]);
   // TV mode's look: the cards as TV mode's own screen has them, and fewer stops on the way to them.
   const tv = tvModeOn(settings, config);
   // The cards' Get or Play and opening, the same functions every render, so a card is drawn again only as its app changes.
