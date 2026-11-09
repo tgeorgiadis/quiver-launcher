@@ -508,6 +508,21 @@ export function movedInside({ dir: _, inApps: __, ...install }: Install): Instal
   return install;
 }
 
+/**
+ * An install whose folder went from `from` to `to`, with its copies put inside it (a ROM in the app's own folder)
+ * known where they are now: Play passes that path to a game told of its copy by flag or variable.
+ */
+export function withCopiesIn(install: Install, from: string, to: string): Install {
+  if (!install.copies || samePath(from, to)) return install;
+  const norm = (p: string) => p.replace(/[\\/]+/g, "/").replace(/\/$/, "");
+  const fold = (p: string) => (/^[A-Za-z]:/.test(p) ? norm(p).toLowerCase() : norm(p));
+  const old = `${fold(from)}/`;
+  const copies = Object.fromEntries(
+    Object.entries(install.copies).map(([id, c]) => [id, c.placed && fold(c.placed).startsWith(old) ? { ...c, placed: joinPath(to, norm(c.placed).slice(old.length)) } : c]),
+  );
+  return { ...install, copies };
+}
+
 /** Where an install's folder is: its own path, or its folder in the default apps folder `appsDir`. */
 export const placeOf = (install: Install, appsDir: string) => install.dir ?? joinPath(appsDir, install.folder);
 
@@ -1037,6 +1052,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // while the other is under way, even when both start together (an automatic update during Sort into console folders).
   const moving = useRef(new Set<string>());
   const installing = useRef(new Set<string>());
+  // The folder the player chose for an app not installed yet (Install to…), so Try again after a failed download
+  // installs there too.
+  const chosenFolder = useRef(new Map<string, string>());
   const [finished, setFinished] = useState<Finished[]>([]);
   const [choice, setChoice] = useState<Choice | null>(null);
   // Asked one at a time, in turn: Update all can come to several.
@@ -1416,8 +1434,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return;
     }
     installing.current.add(entry.id);
+    if (options.to) chosenFolder.current.set(entry.id, options.to);
+    // Installed since: an update goes where the app is.
+    else if (installs[entry.id]) chosenFolder.current.delete(entry.id);
+    const to = options.to ?? chosenFolder.current.get(entry.id);
     try {
-      await installNow(entry, chosen, options);
+      await installNow(entry, chosen, to ? { ...options, to } : options);
     } finally {
       installing.current.delete(entry.id);
     }
@@ -1597,7 +1619,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const dir = into && !msi ? done.dir : i[entry.id]?.dir;
         const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;
         const kept = into && !msi ? group : i[entry.id]?.group;
-        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -1656,6 +1678,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       throw "cancelled";
     }
     await native.uninstall(install.folder, install.dir);
+    chosenFolder.current.delete(id);
     track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
   }
 
@@ -2147,7 +2170,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const taken = Object.entries(installs).some(([other, i]) => other !== id && !i.dir && i.folder.toLowerCase() === folder.toLowerCase());
       if (taken) throw new Problem(msg`Another app in your library uses a folder named ${folder}. Choose another name.`);
       await native.renameAppFolder(id, install.folder, folder);
-      setInstalls((i) => ({ ...i, [id]: { ...i[id], folder } }));
+      setInstalls((i) => ({ ...i, [id]: { ...withCopiesIn(i[id], joinPath(config.appsDir, install.folder), joinPath(config.appsDir, folder)), folder } }));
       // A folder the player fills keeps its name in the library too, which its page shows.
       const item = library.find((i) => i.id === id);
       if (item?.local?.kind === "folder") {
@@ -2178,7 +2201,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // mid-move, leaves every app findable. It's in an apps folder still (or one that couldn't move stays in the
       // old one), so it comes along with the next move.
       const stop = await native.onAppMoved(({ id, dir }) =>
-        setInstalls((i) => (i[id] ? withTwins({ ...i, [id]: { ...i[id], dir, inApps: true } }, id, twins.get(id) ?? [], config.appsDir) : i)),
+        setInstalls((i) => (i[id] ? withTwins({ ...i, [id]: { ...withCopiesIn(i[id], placeOf(i[id], config.appsDir), dir), dir, inApps: true } }, id, twins.get(id) ?? [], config.appsDir) : i)),
       );
       try {
         const moved = await native.moveAppsFolder(to, apps);
@@ -2220,7 +2243,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         setInstalls((i) => {
           const now = i[id];
           if (!now) return i;
-          const { dir: _, inApps: __, group: ___, ...rest } = now;
+          const { dir: _, inApps: __, group: ___, ...rest } = withCopiesIn(now, placeOf(now, config.appsDir), moved.dir);
           // In the default folder under its own name: one of its apps like any other.
           const own = !group && samePath(parentOf(moved.dir), config.appsDir) && baseName(moved.dir) === now.folder;
           const next = { ...i, [id]: own ? rest : { ...rest, dir: moved.dir, ...(listed ? { inApps: true as const } : {}), ...(group ? { group } : {}) } };

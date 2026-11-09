@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, oncePerFolder, twinsOf, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -438,6 +438,16 @@ describe("two library entries in one folder", () => {
       folder: "YuGiOhRecomp",
       dir: "/mnt/sd/YuGiOh-Recompiled",
     });
+  });
+
+  it("knows a copy put in the app's folder where the folder went", () => {
+    const install = { ...base, folder: "Game", copies: { rom: { path: "D:/Roms/game.z64", placed: "C:\\Apps\\Game\\data\\baserom.z64", at: 1 }, disc: { path: "D:/Roms/disc.iso", at: 1 } } };
+    const moved = withCopiesIn(install, "c:/Apps/Game", "E:\\Ports\\N64\\Game");
+    expect(moved.copies?.rom.placed).toBe("E:\\Ports\\N64\\Game\\data\\baserom.z64");
+    expect(moved.copies?.disc).toBe(install.copies.disc);
+    // One placed in the system's folders stays where it is.
+    const outside = { ...base, folder: "Game", copies: { rom: { path: "/roms/a.z64", placed: "/home/deck/.local/share/game/a.z64", at: 1 } } };
+    expect(withCopiesIn(outside, "/apps/Game", "/sd/Game").copies?.rom.placed).toBe("/home/deck/.local/share/game/a.z64");
   });
 
   it("sorts a shared folder into its console folder once", () => {

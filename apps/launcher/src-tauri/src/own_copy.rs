@@ -312,11 +312,17 @@ fn relative(destination: &str) -> Result<PathBuf, String> {
         || destination.starts_with('/')
         || destination.contains(':')
         || parts.len() > 4
-        || parts.iter().any(|p| p.is_empty() || *p == "." || *p == "..");
+        || parts.iter().any(|p| p.is_empty() || *p == "." || *p == ".." || !plain(p));
     if bad {
         return Err(format!("The catalog's place for this copy ({destination}) isn't one Quiver can use."));
     }
     Ok(parts.iter().collect())
+}
+
+/// Whether a part of a destination is a plain file name on every system: none of the characters a command line or
+/// Windows reads as more than a name, and no space or dot at its end (which Windows drops).
+fn plain(part: &str) -> bool {
+    !part.chars().any(|c| c.is_control() || "<>\"|?*%&^!`$;".contains(c)) && !part.ends_with([' ', '.']) && !part.starts_with(' ')
 }
 
 /// The home folder games see: in the Flatpak, the host's (games start outside the sandbox), not the sandbox's.
@@ -359,7 +365,12 @@ pub fn root_dir(root: Option<&str>, app: &Path, wine: bool) -> Result<PathBuf, S
 pub fn target(file: &SetupFile, app: &Path, wine: bool) -> Result<Option<PathBuf>, String> {
     let Some(destination) = file.destination.as_deref() else { return Ok(None) };
     let base = root_dir(file.root.as_deref(), app, wine)?;
-    Ok(Some(base.join(relative(destination)?)))
+    let path = relative(destination)?;
+    // In the system's folders it's inside a folder of the app's there, never loose among other programs' own.
+    if file.root.as_deref().is_some_and(|r| r != "app") && path.components().count() < 2 {
+        return Err(format!("The catalog's place for this copy ({destination}) isn't one Quiver can use."));
+    }
+    Ok(Some(base.join(path)))
 }
 
 /// Whether `b` is surely `a`, put in place before (in big-endian order, with `order`), without reading either
@@ -416,16 +427,8 @@ fn aside(path: &Path) -> PathBuf {
 fn link_dir(from: &Path, to: &Path) -> Result<(), String> {
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        let out = std::process::Command::new("cmd")
-            .raw_arg(format!("/C mklink /J \"{}\" \"{}\"", to.display(), from.display()))
-            .creation_flags(0x0800_0000)
-            .output()
-            .map_err(|e| format!("Couldn't link the game's folder into place: {e}"))?;
-        if !out.status.success() {
-            return Err(format!("Couldn't link the game's folder into place: {}", String::from_utf8_lossy(&out.stdout).trim()));
-        }
-        Ok(())
+        // Made by the system call, never through a command line: neither path is ever read as a command.
+        junction::create(from, to).map_err(|e| format!("Couldn't link the game's folder into place: {e}"))
     }
     #[cfg(unix)]
     {
@@ -486,14 +489,23 @@ pub fn place(file: &SetupFile, copy: &Path, app: &Path, wine: bool, progress: &d
         if to.canonicalize().ok().is_some_and(|t| copy.canonicalize().ok().is_some_and(|c| c == t)) {
             return Ok(Some(to));
         }
+        // A folder in the place it's linked to, or around it, can't be linked there: moving what's there aside
+        // would take the copy with it, or the link would lead to itself.
+        let (mine, place) = (crate::apps_folder::resolved(copy), crate::apps_folder::resolved(&to));
+        if mine.starts_with(&place) || place.starts_with(&mine) {
+            return Err(format!("That folder is where the app keeps its own files ({}). Choose the folder your copy of the game is in.", to.display()));
+        }
     } else if same_copy(copy, &to, order) {
         return Ok(Some(to));
     }
     if to.symlink_metadata().is_ok() {
         // A link Quiver made for an earlier copy goes; anything else is kept.
-        let link = fs::symlink_metadata(&to).map(|m| m.file_type().is_symlink()).unwrap_or(false) || is_junction(&to);
-        if link {
+        if is_link(&to) {
             remove_link(&to)?;
+        } else if file.root.as_deref().is_some_and(|r| r != "app") && to.is_dir() {
+            // Outside the app's folder no folder is moved: it may be another program's. A file (a copy put there
+            // before) is kept beside the new one, as in the app's folder.
+            return Err(format!("There's already something at {}. Move it somewhere else, then try again.", to.display()));
         } else {
             fs::rename(&to, aside(&to)).map_err(|e| format!("Couldn't move aside what's already at {}: {e}", to.display()))?;
         }
@@ -520,6 +532,11 @@ fn is_junction(_: &Path) -> bool {
     false
 }
 /// Takes away a link, never what it points at.
+/// Whether something at `path` is a link (a symbolic link, or a junction on Windows), not a file or folder itself.
+pub fn is_link(path: &Path) -> bool {
+    fs::symlink_metadata(path).map(|m| m.file_type().is_symlink()).unwrap_or(false) || is_junction(path)
+}
+
 fn remove_link(path: &Path) -> Result<(), String> {
     let meta = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     // A junction (or a folder link) on Windows is removed as a folder; that removes the link only.
@@ -793,13 +810,28 @@ mod tests {
     #[test]
     fn refuses_places_outside_its_roots() {
         let app = Path::new("/apps/game");
-        for bad in ["../x.z64", "/etc/x", "a\\b.z64", "C:/x.z64", "a//b", "a/b/c/d/e.z64"] {
+        for bad in ["../x.z64", "/etc/x", "a\\b.z64", "C:/x.z64", "a//b", "a/b/c/d/e.z64", "x\"&calc&\"", "a%PATH%", "a|b", "rom.z64 ", "rom."] {
             let file = SetupFile { destination: Some(bad.into()), ..Default::default() };
             assert!(target(&file, app, false).is_err(), "{bad}");
         }
         let data = SetupFile { destination: Some("Game/rom.z64".into()), root: Some("localData".into()), ..Default::default() };
         assert!(target(&data, app, true).unwrap_err().contains("Wine or Proton"));
         assert!(target(&data, app, false).unwrap().unwrap().ends_with("Game/rom.z64"));
+        // In the system's folders, only inside a folder of the app's.
+        assert!(target(&SetupFile { destination: Some("autostart".into()), root: Some("config".into()), ..Default::default() }, app, false).is_err());
+    }
+
+    #[test]
+    fn never_links_a_folder_to_itself_or_moves_the_copy_aside() {
+        let dir = temp("inside");
+        let app = dir.join("app");
+        fs::create_dir_all(app.join("assets/game")).unwrap();
+        fs::write(app.join("assets/game/default.xex"), b"x").unwrap();
+        let folder = SetupFile { id: "game".into(), label: "Game".into(), kind: Some("folder".into()), destination: Some("assets".into()), ..Default::default() };
+        // The copy inside the place it goes, and the app's own folder around it.
+        assert!(place(&folder, &app.join("assets/game"), &app, false, &none).is_err());
+        assert!(place(&folder, &app, &app, false, &none).is_err());
+        assert!(app.join("assets/game/default.xex").is_file() && !app.join("assets (before Quiver)").exists());
     }
 
     #[test]

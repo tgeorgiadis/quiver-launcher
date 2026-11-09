@@ -267,7 +267,7 @@ fn free_at(_: &Path) -> Option<u64> {
 /// too: its nearest existing parent, resolved, with the rest added back. So
 /// both sides of a comparison are written alike, as Windows' `\\?\` form or
 /// its long names are once resolved.
-fn resolved(path: &Path) -> PathBuf {
+pub fn resolved(path: &Path) -> PathBuf {
     let mut rest = vec![];
     let mut at = path;
     loop {

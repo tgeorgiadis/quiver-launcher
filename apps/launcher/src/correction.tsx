@@ -41,6 +41,9 @@ const TOPIC_LABELS: Record<CorrectionTopic, MessageDescriptor> = {
   other: msg`Something else`,
 };
 
+/** How long after Report a problem a sign-in still opens its dialog: longer, and it was for something else. */
+const SIGN_IN_WAIT = 5 * 60_000;
+
 // Sent from the header's dialog: the Overview's line about it asks again.
 const SENT = "quiver-correction-sent";
 
@@ -52,14 +55,17 @@ export function ReportProblem({ entry, installed, onSignIn }: { entry: Entry; in
   const { user } = useAccount();
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
-  // Asked for while signed out: opens once they've signed in.
-  const [waiting, setWaiting] = useState(false);
+  // Asked for while signed out: opens once they've signed in, if that's soon. When it was asked, else 0.
+  const [waiting, setWaiting] = useState(0);
   const button = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (waiting && user) (setWaiting(false), setOpen(true));
+    if (!waiting || !user) return;
+    setWaiting(0);
+    // A sign-in given up on, then done much later for something else, opens nothing.
+    if (Date.now() - waiting < SIGN_IN_WAIT) setOpen(true);
   }, [waiting, user]);
   // Another app's page in its place starts again.
-  useEffect(() => (setOpen(false), setSent(false)), [entry.id]);
+  useEffect(() => (setOpen(false), setSent(false), setWaiting(0)), [entry.id]);
   const close = () => {
     setOpen(false);
     setSent(false);
@@ -73,7 +79,7 @@ export function ReportProblem({ entry, installed, onSignIn }: { entry: Entry; in
         onClick={() => {
           track("correction_started", { signedIn: Boolean(user) });
           if (user) return setOpen(true);
-          setWaiting(true);
+          setWaiting(Date.now());
           onSignIn();
         }}
       >
