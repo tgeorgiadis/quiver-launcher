@@ -649,3 +649,13 @@ test("failures are counted by kind, whatever they say exactly", async () => {
   expect(failureKind("Couldn't find a program to start in this app's folder.")).toBe("no_program");
   expect(failureKind("something nobody has seen")).toBe("other");
 });
+
+test("every apps folder is taken out of what's sent, not only the default", async () => {
+  const telemetry = await import("./telemetry");
+  telemetry.startTelemetry(context);
+  // A folder no path pattern would know, with a space in it.
+  telemetry.setTelemetryAppsFolders(["D:\Quiver\apps", "/gamesdrive/My Apps"]);
+  const out = telemetry.scrub("couldn't start /gamesdrive/My Apps/zelda/run");
+  expect(out).not.toContain("gamesdrive");
+  expect(out).not.toContain("My Apps");
+});

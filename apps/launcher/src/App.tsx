@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, noProgram, pulledVerified, renamable, skipped, tvModeOn, updateFor, useLauncher } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, parentOf, renamable, samePath, skipped, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, Popover, filterLabel, withOverrides } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -339,6 +339,7 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <PlaceAppPrompt />
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
@@ -905,7 +906,7 @@ function BrowseAction({ entry, onOpen }: { entry: Entry; onOpen: (e: Entry, at?:
 /** The one button a card needs: Add, Install, progress, Play or Update. `apart`: the page says why a release was withdrawn itself. */
 /** `reasonElsewhere`: a failure's reason is shown beside it (the Downloads page's row), so only its buttons here. */
 function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boolean; reasonElsewhere?: boolean }) {
-  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary } = useLauncher();
+  const { config, library, installs, jobs, catalog, get, play, dismiss, setUpdates, cancel, locateInstall, setLaunch, setNotice, addToLibrary, appMoves } = useLauncher();
   const job = jobs[entry.id];
   const install = installs[entry.id];
   // Its verified release was withdrawn too: Choose a version, in place of installing it.
@@ -991,6 +992,8 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
       </div>
     );
   }
+  const moving = appMoves[entry.id];
+  if (moving) return <MovingBar moving={moving} />;
   if (job) {
     const percent = job.total ? Math.round((job.received / job.total) * 100) : null;
     const name = entry.projectName;
@@ -1167,7 +1170,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1287,6 +1290,25 @@ function AppPage({
             <FolderPen size={16} aria-hidden="true" /> <Trans>Rename folder</Trans>
           </button>
         )}
+        {/* Its own folder somewhere else, as its menu's Move to… and Install to… do. */}
+        {foldersOn(config.os) && !isLocal(entry.id) && !(job && !("error" in job)) &&
+          (appMoves[entry.id] ? (
+            <button className="panel-action" disabled>
+              <FolderInput size={16} aria-hidden="true" /> <Trans>Moving…</Trans>
+            </button>
+          ) : movable(install) ? (
+            <button className="panel-action opens" onClick={() => askPlace(entry)}>
+              <FolderInput size={16} aria-hidden="true" /> <Trans>Move to…</Trans>
+            </button>
+          ) : (
+            !install &&
+            canGet(known, config.os) &&
+            !pulledVerified(known) && (
+              <button className="panel-action opens" onClick={() => askPlace(entry)}>
+                <FolderInput size={16} aria-hidden="true" /> <Trans>Install to…</Trans>
+              </button>
+            )
+          ))}
         {item && !isLocal(item.id) && <Versions entry={entry} source={source} />}
         {locatable(entry.id, install, job) && foldersOn(config.os) && (
           <button className="panel-action opens" onClick={() => void locateInstall(entry)}>
@@ -2130,6 +2152,130 @@ function RenameFolderPrompt() {
           </button>
         </div>
       </form>
+    </Dialog>
+  );
+}
+
+/** How far an app's move to another folder has got: a sweep until it's known to be copying, then its share copied. */
+function MovingBar({ moving }: { moving: AppMove }) {
+  const percent = moving.size ? Math.round((moving.copied / moving.size) * 100) : null;
+  return (
+    <div className={percent === null ? "progress waiting" : "progress"} aria-label={t`Moving`}>
+      <div className="bar" style={{ width: `${percent ?? 100}%` }} />
+      <span>{percent === null ? t`Moving…` : t`Moving ${percent}%`}</span>
+    </div>
+  );
+}
+
+/**
+ * Where an app goes, from its menu's Install to… or Move to…: one of the apps folders, or a folder the player
+ * chooses. Moving is the apps folder's safe move, for this one app, and its bar shows here and on the app's page.
+ */
+function PlaceAppPrompt() {
+  const { placing: asked, askPlace, installs, catalog, config, appsFolders, appMoves, get, moveApp, setNotice } = useLauncher();
+  const placing = asked?.entry;
+  const [to, setTo] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const install = placing ? installs[placing.id] : undefined;
+  const here = install && (install.dir ? parentOf(install.dir) : config.appsDir);
+  const folders = appsFolders().map((f) => f.path);
+  useEffect(() => {
+    setChosen(null);
+    setError(null);
+    // The first folder it isn't in already.
+    setTo(folders.find((f) => !here || !samePath(f, here)) ?? null);
+  }, [asked]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!placing) return null;
+  const entry = catalog[placing.id] ?? placing;
+  const app = entry.projectName;
+  // The version it was going to install, when one was chosen (Choose a version…): said, so it's clear which goes.
+  const version = asked?.release ? versionLabel(asked.release.version) : null;
+  const moving = appMoves[placing.id];
+  const close = () => askPlace(null);
+  // The apps folders, and where it is now and the folder chosen, when neither is one.
+  const options = [...folders, ...[here, chosen].filter((p): p is string => Boolean(p))].filter((p, i, all) => all.findIndex((q) => samePath(p, q)) === i);
+  const choose = async () => {
+    const picked = await native.pickFolder(install ? t`Choose where to move ${app}` : t`Choose where to install ${app}`).catch(() => null);
+    if (picked) {
+      setChosen(picked);
+      setTo(picked);
+      setError(null);
+    }
+  };
+  const go = () => {
+    if (!to) return;
+    setError(null);
+    if (!install) {
+      close();
+      void get(entry, asked?.release, { ...asked?.options, to });
+      return;
+    }
+    moveApp(placing.id, to).then(
+      ({ left }) => {
+        close();
+        setNotice(left ? t`${app} is moved. Its old folder couldn't all be deleted: ${left}` : t`${app} is moved.`, left ? { stays: true } : undefined);
+      },
+      (e) => setError(e instanceof Error ? e.message : String(e)),
+    );
+  };
+  return (
+    <Dialog label={install ? t`Move ${app}` : version ? t`Install ${app} ${version} to` : t`Install ${app} to`} onClose={close}>
+      <div className="detail-body place-app">
+        <h2>
+          <FolderOpen size={18} /> {install ? <Trans>Move {app}</Trans> : version ? <Trans>Install {app} {version} to</Trans> : <Trans>Install {app} to</Trans>}
+        </h2>
+        <div className="move-choice" role="radiogroup" aria-label={t`Folder`}>
+          {options.map((path) => {
+            const current = Boolean(here && samePath(path, here));
+            return (
+              <label key={path}>
+                <input type="radio" name="place-app" checked={Boolean(to && samePath(to, path))} disabled={current || Boolean(moving)} onChange={() => setTo(path)} />
+                <span className="place-app-folder">
+                  <span className="apps-folder-name">{path}</span>
+                  {samePath(path, config.appsDir) && (
+                    <span className="apps-folder-badge">
+                      <Trans comment="The apps folder new apps install in">Default</Trans>
+                    </span>
+                  )}
+                  {current && (
+                    <span className="muted">
+                      {" "}
+                      <Trans>It's here now.</Trans>
+                    </span>
+                  )}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <div className="row place-app-choose">
+          <button type="button" disabled={Boolean(moving)} onClick={() => void choose()}>
+            <Trans>Choose a folder…</Trans>
+          </button>
+        </div>
+        <p className="muted">
+          {install ? (
+            <Trans>It gets a folder of its own in there, with its saves and settings. Desktop and Steam shortcuts you made before point at the old place, so make them again.</Trans>
+          ) : (
+            <Trans>It gets a folder of its own in there, and updates keep installing into it.</Trans>
+          )}
+        </p>
+        {moving && <MovingBar moving={moving} />}
+        {error && (
+          <p className="job-error" role="status">
+            {error}
+          </p>
+        )}
+        <div className="row">
+          <button className="primary" disabled={!to || Boolean(moving)} onClick={go}>
+            {install ? <Trans comment="Moves an app's folder">Move</Trans> : <Trans comment="Installs an app">Install</Trans>}
+          </button>
+          <button type="button" onClick={close}>
+            {moving ? <Trans>Close</Trans> : <Trans>Cancel</Trans>}
+          </button>
+        </div>
+      </div>
     </Dialog>
   );
 }

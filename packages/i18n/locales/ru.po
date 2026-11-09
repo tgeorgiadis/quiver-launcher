@@ -17,6 +17,18 @@ msgstr "(изменены)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {# приложение для других платформ не показано.} few {# приложения для других платформ не показаны.} many {# приложений для других платформ не показаны.} other {# приложения для других платформ не показаны.}}"
 
+#. placeholder {0}: f.apps.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# app} other {# apps}}"
+msgstr "{0, plural, one {# приложение} few {# приложения} many {# приложений} other {# приложения}}"
+
+#. placeholder {0}: bringing.apps.length
+#. placeholder {1}: bringing.path
+#. placeholder {2}: bringing.path
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move # app from {1} into {dir}?} other {Move # apps from {2} into {dir}?}}"
+msgstr "{0, plural, one {Переместить # приложение из {1} в {dir}?} few {Переместить # приложения из {2} в {dir}?} many {Переместить # приложений из {2} в {dir}?} other {Переместить # приложения из {2} в {dir}?}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -32,10 +44,20 @@ msgstr "{0, plural, one {Показать ещё # файл} few {Показат
 msgid "{0, plural, one {Showing # app for other platforms.} other {Showing # apps for other platforms.}}"
 msgstr "{0, plural, one {Показано # приложение для других платформ.} few {Показаны # приложения для других платформ.} many {Показаны # приложений для других платформ.} other {Показаны # приложения для других платформ.}}"
 
+#. placeholder {0}: message.failed.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {This one couldn't move. It's still where it was, with all its files, and plays from there:} other {These couldn't move. They're still where they were, with all their files, and play from there:}}"
+msgstr "{0, plural, one {Это приложение не удалось переместить. Оно осталось на месте со всеми файлами и запускается оттуда:} few {Эти приложения не удалось переместить. Они остались на месте со всеми файлами и запускаются оттуда:} many {Эти приложения не удалось переместить. Они остались на месте со всеми файлами и запускаются оттуда:} other {Эти приложения не удалось переместить. Они остались на месте со всеми файлами и запускаются оттуда:}}"
+
 #. placeholder {0}: hidden.size
 #: ../../apps/launcher/src/App.tsx
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, one {Вернуть # приложение} few {Вернуть все # приложения} many {Вернуть все # приложений} other {Вернуть все # приложения}}"
+
+#. placeholder {0}: space(state.free)
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0} free"
+msgstr "Свободно: {0}"
 
 #. placeholder {0}: placedCount + 1
 #. placeholder {1}: placedCount + queue.length
@@ -58,6 +80,14 @@ msgstr "Загрузка {app} не завершилась."
 #: ../../apps/launcher/src/App.tsx
 msgid "{app} has no verified release yet."
 msgstr "У приложения {app} пока нет проверенной версии."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{app} is moved."
+msgstr "{app} перемещено."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{app} is moved. Its old folder couldn't all be deleted: {left}"
+msgstr "{app} перемещено. Старую папку не удалось удалить полностью: {left}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{app} then stays on this version until you unpin it."
@@ -110,8 +140,18 @@ msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Добавить # приложение} few {Добавить # приложения} many {Добавить # приложений} other {Добавить # приложения}}"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "{count, plural, one {Move # installed app to {asking}? Its saves and settings go with it. Desktop and Steam shortcuts you made point at the old folder, so make them again after.} other {Move # installed apps to {asking}? Their saves and settings go with them. Desktop and Steam shortcuts you made point at the old folder, so make them again after.}}"
-msgstr "{count, plural, one {Переместить # установленное приложение в {asking}? Его сохранения и настройки переедут вместе с ним. Созданные вами ярлыки на рабочем столе и в Steam указывают на старую папку, так что потом создайте их заново.} few {Переместить # установленных приложения в {asking}? Их сохранения и настройки переедут вместе с ними. Созданные вами ярлыки на рабочем столе и в Steam указывают на старую папку, так что потом создайте их заново.} many {Переместить # установленных приложений в {asking}? Их сохранения и настройки переедут вместе с ними. Созданные вами ярлыки на рабочем столе и в Steam указывают на старую папку, так что потом создайте их заново.} other {Переместить # установленных приложения в {asking}? Их сохранения и настройки переедут вместе с ними. Созданные вами ярлыки на рабочем столе и в Steam указывают на старую папку, так что потом создайте их заново.}}"
+msgid "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
+msgstr "{count, plural, one {Оставить # установленное приложение на месте, в {dir}} few {Оставить # установленных приложения на месте, в {dir}} many {Оставить # установленных приложений на месте, в {dir}} other {Оставить # установленного приложения на месте, в {dir}}}"
+
+#. placeholder {0}: asking.to
+#. placeholder {1}: asking.to
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {Move it to {0} too} other {Move them to {1} too}}"
+msgstr "{count, plural, one {Переместить его тоже в {0}} few {Переместить их тоже в {1}} many {Переместить их тоже в {1}} other {Переместить их тоже в {1}}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {New apps install in {to}. Your # installed app stays where it is and plays from there.} other {New apps install in {to}. Your # installed apps stay where they are and play from there.}}"
+msgstr "{count, plural, one {Новые приложения устанавливаются в {to}. # установленное приложение остаётся на месте и запускается оттуда.} few {Новые приложения устанавливаются в {to}. # установленных приложения остаются на месте и запускаются оттуда.} many {Новые приложения устанавливаются в {to}. # установленных приложений остаются на месте и запускаются оттуда.} other {Новые приложения устанавливаются в {to}. # установленного приложения остаются на месте и запускаются оттуда.}}"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "{count, plural, one {Puts its # app on a page anyone with the link can see, and add to their library.} other {Puts its # apps on a page anyone with the link can see, and add to their library.}}"
@@ -142,6 +182,10 @@ msgstr "{days, plural, one {# день назад} few {# дня назад} man
 #: ../../apps/launcher/src/library.tsx
 msgid "{days, plural, one {Played # day ago} other {Played # days ago}}"
 msgstr "{days, plural, one {Играли # день назад} few {Играли # дня назад} many {Играли # дней назад} other {Играли # дня назад}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{done} of {total} apps moved"
+msgstr "Перемещено приложений: {done} из {total}"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "{downloadCount, plural, one {{downloads} download} other {{downloads} downloads}}"
@@ -217,6 +261,10 @@ msgstr "{issues, plural, one {# с проблемами} few {# с пробле�
 #: ../../apps/launcher/src/mods.tsx
 msgid "{kb} KB"
 msgstr "{kb} КБ"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{kept, plural, one {Include # app from your other apps folders} other {Include # apps from your other apps folders}}"
+msgstr "{kept, plural, one {Включить # приложение из других папок приложений} few {Включить # приложения из других папок приложений} many {Включить # приложений из других папок приложений} other {Включить # приложения из других папок приложений}}"
 
 #: ../../apps/launcher/src/media.tsx
 msgid "{kindName} video"
@@ -388,6 +436,10 @@ msgstr "Вышла версия {out}. У вас {have}."
 #: ../../apps/launcher/src/library.tsx
 msgid "{picked, plural, one {# app picked for it.} other {# apps picked for it.}}"
 msgstr "{picked, plural, one {Для него выбрано # приложение.} few {Для него выбрано # приложения.} many {Для него выбрано # приложений.} other {Для него выбрано # приложения.}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{placed, plural, one {# app in a folder you chose for it stays where it is.} other {# apps in folders you chose for them stay where they are.}}"
+msgstr "{placed, plural, one {# приложение в папке, которую вы выбрали для него, остаётся на месте.} few {# приложения в папках, которые вы выбрали для них, остаются на месте.} many {# приложений в папках, которые вы выбрали для них, остаются на месте.} other {# приложения в папках, которые вы выбрали для них, остаются на месте.}}"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "{playlistName} (copy)"
@@ -952,12 +1004,16 @@ msgid "Apps added from this computer, which Quiver doesn't download or update"
 msgstr "Приложения, добавленные с этого компьютера: Quiver их не скачивает и не обновляет"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Apps are installed in {dir}"
-msgstr "Приложения устанавливаются в {dir}"
+msgid "Apps already install there."
+msgstr "Приложения уже устанавливаются туда."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folder"
 msgstr "Папка приложений"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Apps folders"
+msgstr "Папки приложений"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Apps in that folder"
@@ -1008,6 +1064,10 @@ msgstr "Изображения и консоли из игры"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "As in Settings: {name}"
 msgstr "Как в настройках: {name}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Ask where to install each app"
+msgstr "Спрашивать, куда устанавливать каждое приложение"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Auto Update won't put {updateVersion} back. It installs the next new release."
@@ -1238,6 +1298,10 @@ msgstr "Сменить игру"
 msgid "Change name or artwork"
 msgstr "Изменить название или изображения"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Change the default apps folder"
+msgstr "Изменить папку приложений по умолчанию"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Change version"
 msgstr "Сменить версию"
@@ -1266,6 +1330,14 @@ msgstr "Проверить обновления"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Check yours"
 msgstr "Проверить свою"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Checking the folder"
+msgstr "Проверка папки"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Checking there's room…"
+msgstr "Проверка свободного места…"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking your copy…"
@@ -1307,6 +1379,14 @@ msgstr "Выбрать файл: {label}"
 msgid "Choose a file…"
 msgstr "Выбрать файл…"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Choose a folder outside {path}, which has apps in it."
+msgstr "Выберите папку вне {path}: в ней есть приложения."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Choose a folder that doesn't have {path} inside it."
+msgstr "Выберите папку, внутри которой нет {path}."
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose a folder to look in"
 msgstr "Выберите папку для поиска"
@@ -1316,6 +1396,7 @@ msgstr "Выберите папку для поиска"
 msgid "Choose a folder you keep game copies in"
 msgstr "Выберите папку, где вы храните копии игр"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Choose a folder…"
@@ -1442,9 +1523,17 @@ msgstr "Выбрать эту папку"
 msgid "Choose when it expires."
 msgstr "Выберите срок действия."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose where to install {app}"
+msgstr "Выберите, куда установить {app}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose where to install apps"
 msgstr "Выберите, куда устанавливать приложения"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Choose where to move {app}"
+msgstr "Выберите, куда переместить {app}"
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Choose where you keep your {console} games"
@@ -1474,6 +1563,7 @@ msgid "Clear search"
 msgstr "Очистить поиск"
 
 #. Window button: close Quiver's window
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
@@ -1549,6 +1639,10 @@ msgstr "Контроллеры"
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
 msgstr "Копировать ссылку"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Copying {folder}… {percent}%"
+msgstr "Копирование {folder}… {percent}%"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
@@ -1637,6 +1731,12 @@ msgstr "Создаёт пустой файл для каждого имени. �
 msgid "Dark"
 msgstr "Тёмная"
 
+#. The apps folder new apps install in
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Default"
+msgstr "По умолчанию"
+
 #. Deletes a playlist
 #: ../../apps/launcher/src/library.tsx
 msgid "Delete"
@@ -1653,6 +1753,10 @@ msgstr "Описание"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Description or details"
 msgstr "Описание или подробности"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Desktop and Steam shortcuts you made point at the old folder, so make them again after."
+msgstr "Созданные вами ярлыки на рабочем столе и в Steam указывают на старую папку, поэтому потом создайте их заново."
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -1913,6 +2017,10 @@ msgid "flagged"
 msgstr "есть срабатывания"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Folder"
+msgstr "Папка"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Folder name"
 msgstr "Имя папки"
 
@@ -1993,6 +2101,10 @@ msgstr "Общие"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Get Quiver Launcher"
 msgstr "Получить Quiver Launcher"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Getting ready…"
+msgstr "Подготовка…"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2213,6 +2325,7 @@ msgstr "Получать предварительные версии"
 #. Button that installs this version
 #. Button: download and install the app
 #. Controller hint: what Quick action does on a catalog card or an app's page, installing the app
+#. Installs an app
 #. Menu item that installs an app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -2226,6 +2339,14 @@ msgstr "Установить"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Install {app}"
 msgstr "Установить {app}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install {app} {version} to"
+msgstr "Установить {app} {version} в"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install {app} to"
+msgstr "Установить {app} в"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -2276,13 +2397,14 @@ msgstr "Установить отозванную версию?"
 msgid "Install anyway"
 msgstr "Всё равно установить"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Install apps in {asking} from now on?"
-msgstr "Устанавливать приложения в {asking} с этого момента?"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Install automatically"
 msgstr "Устанавливать автоматически"
+
+#. placeholder {0}: asking.to
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Install new apps in {0} from now on?"
+msgstr "Устанавливать новые приложения в {0} с этого момента?"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Install the verified {installedVersion}"
@@ -2295,6 +2417,11 @@ msgstr "Установить проверенную {verifiedVersion}"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Install the Windows version (Wine)"
 msgstr "Установить версию для Windows (Wine)"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install to…"
+msgstr "Установить в…"
 
 #. A mod that's installed
 #. Filter by whether an app is installed
@@ -2401,6 +2528,14 @@ msgstr "Размер интерфейса"
 msgid "It didn't run"
 msgstr "Не запустилось"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "It gets a folder of its own in there, and updates keep installing into it."
+msgstr "Там у него будет своя папка, и обновления будут устанавливаться в неё."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "It gets a folder of its own in there, with its saves and settings. Desktop and Steam shortcuts you made before point at the old place, so make them again."
+msgstr "Там у него будет своя папка с сохранениями и настройками. Созданные вами раньше ярлыки на рабочем столе и в Steam указывают на старое место, поэтому создайте их заново."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Устанавливаются файлы, которые Quiver видел при её выходе, а изменённые с тех пор отклоняются."
@@ -2433,6 +2568,10 @@ msgstr "Работало хорошо"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It wouldn't install, open, or start."
 msgstr "Не устанавливалось, не открывалось или не запускалось."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "It's here now."
+msgstr "Сейчас оно здесь."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -2479,6 +2618,14 @@ msgstr "Только что обновлено"
 msgid "Keep {keep}"
 msgstr "Оставить {keep}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Keep Quiver open until it's done."
+msgstr "Не закрывайте Quiver, пока всё не закончится."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Keep Quiver open until it's done. Each app's old copy is deleted only once its new one is checked."
+msgstr "Не закрывайте Quiver, пока всё не закончится. Старая копия каждого приложения удаляется, только когда новая проверена."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "Никому не показывайте токен. Когда его срок истечёт, создайте новый и сохраните здесь."
@@ -2487,6 +2634,10 @@ msgstr "Никому не показывайте токен. Когда его �
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
 msgstr "Хранить данные приложения в его папке (<0>portable.txt</0>)"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Kept here from before."
+msgstr "Остались здесь с прошлого раза."
 
 #. Controller hint: what the button bringing up Steam's on-screen keyboard does
 #: ../../apps/launcher/src/pad-hints.tsx
@@ -2701,6 +2852,10 @@ msgstr "Автор"
 msgid "Make a copy"
 msgstr "Создать копию"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Make default"
+msgstr "Сделать папкой по умолчанию"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Make the folder"
 msgstr "Создать папку"
@@ -2788,6 +2943,10 @@ msgstr "Похожие"
 msgid "More…"
 msgstr "Ещё…"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Most apps need your own copy of a game, like a ROM or a disc image, and Quiver Launcher has Easy setup for some of them. Add folders for a console or two now, and add more in Settings anytime."
+msgstr "Большинству приложений нужна ваша копия игры, например ROM или образ диска, и для некоторых из них в Quiver Launcher есть «Простая настройка». Добавьте папки для одной-двух консолей сейчас, а остальные — в настройках в любое время."
+
 #. Sort order for mods
 #: ../../apps/launcher/src/mods.tsx
 msgid "Most downloaded"
@@ -2810,21 +2969,65 @@ msgstr "В основном создано ИИ"
 msgid "Mouse wheel speed"
 msgstr "Скорость колёсика мыши"
 
+#. Moves an app's folder
+#: ../../apps/launcher/src/App.tsx
+msgid "Move"
+msgstr "Переместить"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Move {app}"
+msgstr "Переместить {app}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Move apps"
 msgstr "Переместить приложения"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moved {count, plural, one {# app} other {# apps}}. New apps install here too."
-msgstr "Перемещено {count, plural, one {# приложение} few {# приложения} many {# приложений} other {# приложения}}. Новые приложения тоже устанавливаются сюда."
+msgid "Move apps into the default folder"
+msgstr "Переместить приложения в папку по умолчанию"
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving {folder}… ({step} of {total})"
-msgstr "Перемещение {folder}… ({step} из {total})"
+msgid "Move into default"
+msgstr "Переместить в папку по умолчанию"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Move to…"
+msgstr "Переместить в…"
+
+#. placeholder {0}: n - failed.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
+msgstr "Перемещено {0} из {n, plural, one {# приложения} few {# приложений} many {# приложений} other {# приложения}}."
 
 #: ../../apps/launcher/src/settings-page.tsx
-msgid "Moving apps… ({step} of {total})"
-msgstr "Перемещение приложений… ({step} из {total})"
+msgid "Moved {n, plural, one {# app} other {# apps}}."
+msgstr "{n, plural, one {Перемещено # приложение} few {Перемещено # приложения} many {Перемещено # приложений} other {Перемещено # приложения}}."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Moving"
+msgstr "Перемещение"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving {folder}…"
+msgstr "Перемещение {folder}…"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Moving {percent}%"
+msgstr "Перемещение: {percent}%"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps"
+msgstr "Перемещение приложений"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps…"
+msgstr "Перемещение приложений…"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Moving…"
+msgstr "Перемещение…"
 
 #. Library sort: by the app's name
 #. Library view option: which name the sidebar shows, the game's or the app's
@@ -2919,6 +3122,10 @@ msgstr "Новые приложения устанавливаются сюда.
 #: ../../apps/launcher/src/setup.tsx
 msgid "New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card."
 msgstr "Новые приложения устанавливаются сюда. Выберите другой диск или папку, если здесь мало места, например карту microSD в Steam Deck."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "New apps install in {to}."
+msgstr "Новые приложения устанавливаются в {to}."
 
 #. Browse card detail: a badge on apps added to the catalog lately
 #: ../../apps/launcher/src/browse-cards.ts
@@ -3089,6 +3296,10 @@ msgstr "Ещё не проверено"
 msgid "Not confirmed yet"
 msgstr "Ещё не подтверждено"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Not found. Is its drive connected?"
+msgstr "Не найдена. Подключён ли её диск?"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not in your library"
 msgstr "Нет в вашей библиотеке"
@@ -3202,6 +3413,7 @@ msgid "Opacity"
 msgstr "Непрозрачность"
 
 #. Controller hint: what Confirm does on an app card
+#: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Open"
 msgstr "Открыть"
@@ -3610,6 +3822,10 @@ msgstr "Quiver не проверял эту версию. Устанавлива
 #: ../../apps/launcher/src/correction.tsx
 msgid "Quiver installing or launching it"
 msgstr "Quiver при установке или запуске"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver is measuring the apps and the free space on the drive. This can take a moment."
+msgstr "Quiver измеряет приложения и свободное место на диске. Это может занять немного времени."
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Quiver Launcher {version} is out."
@@ -4319,10 +4535,6 @@ msgstr "Чтобы можно было сбросить пароль, если �
 msgid "Some AI assistance"
 msgstr "Частично с помощью ИИ"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Some apps need your own copy of a game, like a ROM or a disc image. Add the folders you keep them in for a few consoles, and Quiver finds them for you. You can change these and add more in Settings anytime."
-msgstr "Некоторым приложениям нужна ваша копия игры, например ROM или образ диска. Добавьте папки, где вы храните их для нескольких консолей, и Quiver найдёт их сам. Вы всегда можете изменить их и добавить новые в настройках."
-
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Some apps need your own copy of a game, like a ROM or a disc image. Tell Quiver where you keep them for each console, and it finds them for you."
 msgstr "Некоторым приложениям нужна ваша копия игры, например ROM или образ диска. Укажите Quiver, где вы храните их для каждой консоли, и он найдёт их сам."
@@ -4634,6 +4846,10 @@ msgstr "Сама программа"
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Программы, которые предлагает «Играть», находятся в пункте «Запустить через» меню приложения."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "The saves and settings come over too."
+msgstr "Сохранения и настройки тоже переносятся."
+
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
 msgstr "Общий плейлист актуален."
@@ -4662,6 +4878,10 @@ msgstr "Здесь пока нет модов."
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "Версий пока нет. Загрузки ищите в исходном проекте."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
+msgstr "Эти старые копии перемещены без потерь, но некоторые их файлы использовались и остались. Их можно удалить:"
+
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
 msgstr "Этот аккаунт приостановлен."
@@ -4682,6 +4902,10 @@ msgstr "Это приложение может хранить сохранени
 #: ../../apps/launcher/src/app-files.tsx
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "Приложение может перестать находить сохранения и настройки, потому что будет искать их в другом месте. Ничего не удаляется."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "This app's folder can't be moved."
+msgstr "Папку этого приложения нельзя переместить."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be renamed."
@@ -5106,6 +5330,14 @@ msgstr "Подождать"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Wait for downloads to finish first"
 msgstr "Сначала дождитесь окончания загрузок"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Wait for it to finish moving, then play it."
+msgstr "Дождитесь окончания перемещения, затем запустите его."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Wait for its download to finish, then move it."
+msgstr "Дождитесь окончания загрузки, затем переместите его."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Wait for its download to finish, then rename its folder."

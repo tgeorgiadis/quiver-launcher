@@ -13,7 +13,7 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play, Plus } from "lucid
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, filesAddable, hasUpdate, locatable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
+import { canGet, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
@@ -26,12 +26,12 @@ import { boxZoom, windowBox, zoom } from "./zoom";
 /** How long a finger stays down before it's a long press, in ms. */
 const LONG_PRESS = 500;
 
-/** At the top of a library card, opening below its ⋯ button; the card around it opens it too. */
-export function CardMenu({ entry, onOpen }: { entry: Entry; onOpen: () => void }) {
+/** At the top of a library card, opening below its ⋯ button; the card around it opens it too. `heading` and `pad`, as GameMenu's. */
+export function CardMenu({ entry, onOpen, heading, pad }: { entry: Entry; onOpen: () => void; heading?: string; pad?: boolean }) {
   const anchor = useRef<HTMLSpanElement>(null);
   return (
     <span ref={anchor} className="card-menu">
-      <GameMenu entry={entry} onOpen={onOpen} target={() => anchor.current?.closest("article") ?? null} where="card" />
+      <GameMenu entry={entry} onOpen={onOpen} target={() => anchor.current?.closest("article") ?? null} where="card" heading={heading} pad={pad} />
     </span>
   );
 }
@@ -39,14 +39,38 @@ export function CardMenu({ entry, onOpen }: { entry: Entry; onOpen: () => void }
 /**
  * An app's menu over `target` (a card, a sidebar row), which opens it. With
  * `bare`, there's no ⋯ button: closing it puts focus back on what had it.
+ * `heading` names the app over its items, where the card has others (a game's).
+ * With `pad` false, a controller's Options button leaves `target` to do what
+ * it did (a game's card lists its ports).
  */
-export function GameMenu({ entry, onOpen, target, bare, where }: { entry: Entry; onOpen: () => void; target: () => Element | null; bare?: boolean; where: "card" | "sidebar" }) {
-  const opener = useMenuOpener(target, where);
+export function GameMenu({
+  entry,
+  onOpen,
+  target,
+  bare,
+  where,
+  heading,
+  pad = true,
+}: {
+  entry: Entry;
+  onOpen: () => void;
+  target: () => Element | null;
+  bare?: boolean;
+  where: "card" | "sidebar";
+  heading?: string;
+  pad?: boolean;
+}) {
+  const opener = useMenuOpener(target, where, pad);
   const escape = useRef<(() => boolean) | null>(null);
   const name = entry.projectName;
   return (
     <Popover label={t({ message: `${name} menu`, comment: "An app's menu, named for the app" })} icon={<MoreHorizontal size={16} />} bare={bare} role="menu" opener={opener} escape={escape} align="end" panel="card-menu-panel">
-      {(close) => <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />}
+      {(close) => (
+        <>
+          {heading && <div className="game-menu-heading">{heading}</div>}
+          <MenuItems entry={entry} onOpen={onOpen} close={close} escape={escape} />
+        </>
+      )}
     </Popover>
   );
 }
@@ -109,15 +133,15 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
 /**
  * Opens a menu over `target` (a card, a sidebar row) on a right-click, a long
  * press, the Menu key or Shift+F10, or a controller's Options button; set as
- * the menu's `opener`.
+ * the menu's `opener`; a controller's Options button only with `pad`.
  */
-function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" | "browse") {
+function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" | "browse", pad = true) {
   const opener = useRef<((x: number, y: number) => void) | null>(null);
   useEffect(() => {
     const card = target();
     if (!card) return;
     // Where a controller's Options button looks for a menu (spatial.ts).
-    card.setAttribute("data-menu", "");
+    if (pad) card.setAttribute("data-menu", "");
     let pressed = false;
     const open = (x: number, y: number, how: string) => {
       opener.current?.(x, y);
@@ -185,7 +209,7 @@ function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" |
       window.removeEventListener("pointerdown", anew, true);
       window.removeEventListener("mousedown", swallow, true);
       clearTimeout(timer);
-      card.removeAttribute("data-menu");
+      if (pad) card.removeAttribute("data-menu");
       card.removeEventListener("contextmenu", contextmenu);
       card.removeEventListener("keydown", keydown);
       card.removeEventListener("pointerdown", down);
@@ -261,7 +285,7 @@ function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () =>
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags } = useLauncher();
+  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -327,6 +351,12 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e), { stays: true })) });
   if (renamable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Rename folder…`, act: () => askRename(entry) });
   if (filesAddable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Add files to folder…`, act: () => askAddFiles(entry) });
+  // Its own folder somewhere else: another apps folder, or one the player chooses for it.
+  if (foldersOn(config.os) && !busy && !isLocal(entry.id)) {
+    if (appMoves[entry.id]) manage.push({ text: t`Moving…`, act: () => {}, disabled: true });
+    else if (movable(install)) manage.push({ text: t`Move to…`, act: () => askPlace(entry) });
+    else if (!install && canGet(latest, config.os) && !pulledVerified(latest)) manage.push({ text: t`Install to…`, act: () => askPlace(entry) });
+  }
   if (install && shortcutsOn(config.os))
     manage.push(
       { text: t`Desktop shortcut`, act: () => void shortcut(native.createShortcut) },

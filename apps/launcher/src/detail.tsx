@@ -3,7 +3,7 @@
  * releases, the project's details, shortcuts, picking another version, and
  * the player's tags.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { FaSteam } from "react-icons/fa6";
@@ -1048,6 +1048,7 @@ export function Versions({
   onClose,
   start,
   getting,
+  over,
 }: {
   entry: Entry;
   source: Source | null | undefined;
@@ -1057,6 +1058,8 @@ export function Versions({
   start?: { version: string; asset?: string };
   /** Set, it's Get's own choices, from beside Get: what Get would install first, and the build to install where there's a choice. */
   getting?: boolean;
+  /** Its dialog over a floating panel that stays open under it (Dialog's `over`). */
+  over?: boolean;
 }) {
   const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config } = useLauncher();
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
@@ -1303,7 +1306,7 @@ export function Versions({
   // As a dialog: the list, or how it's loading, in one.
   const shown = (body: ReactNode) =>
     onClose ? (
-      <Dialog label={getting ? t`Install ${app}` : t`Versions`} className="versions-window" onClose={onClose}>
+      <Dialog label={getting ? t`Install ${app}` : t`Versions`} className="versions-window" onClose={onClose} over={over}>
         <div className="detail-body versions-dialog">
           {head}
           {body}
@@ -1391,13 +1394,20 @@ export function Versions({
 }
 
 /**
+ * Set inside a floating panel that stays open under the dialogs opened from it (a game's ports, from its card): their
+ * versions show over it, and closing them goes back to it.
+ */
+export const OverMenu = createContext(false);
+
+/**
  * The app's versions in a dialog of their own, from a library card's Install button or its menu's Change version;
- * from the Releases tab, the one release the player chose (`start`).
+ * from the Releases tab, the one release the player chose (`start`). Inside OverMenu, over the panel it came from.
  */
 export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entry; onClose: () => void; start?: { version: string; asset?: string }; getting?: boolean }) {
   const { source } = useAppDetail(entry);
+  const over = useContext(OverMenu);
   // Over the page, not in the card, which a lifted (transformed) card would hold it inside.
-  return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} />, document.body);
+  return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} over={over} />, document.body);
 }
 
 /**

@@ -41,6 +41,8 @@ export type TelemetryContext = {
   home?: string | null;
   user?: string | null;
   appsDir?: string | null;
+  /** The other apps folders the player's apps are kept in. */
+  appsFolders?: string[];
 };
 
 /** The signed-in account's setting, as the website's users.me has it. */
@@ -285,6 +287,11 @@ export function setTelemetryAppsDir(appsDir: string) {
   if (context) context = { ...context, appsDir };
 }
 
+/** Every apps folder, the default first: each is taken out of what's sent. */
+export function setTelemetryAppsFolders(paths: string[]) {
+  if (context) context = { ...context, appsDir: paths[0] ?? context.appsDir, appsFolders: paths.slice(1) };
+}
+
 /** This computer's choices, from Settings: on or off, and whether the player has said yes. */
 export function setTelemetryLocal(enabled: boolean, consent = false) {
   const was = off();
@@ -513,7 +520,9 @@ const PATHS = [
 /** Takes paths, the home and apps folders, and the computer's user name out of a string. */
 export function scrub(text: string) {
   let out = text;
-  for (const folder of [context?.appsDir, context?.home]) {
+  // The longest first, so one folder inside another goes whole.
+  const folders = [context?.appsDir, ...(context?.appsFolders ?? []), context?.home].filter((f): f is string => Boolean(f)).sort((a, b) => b.length - a.length);
+  for (const folder of folders) {
     if (folder && folder.length > 2) out = out.replace(new RegExp(escape(folder), "gi"), PATH);
   }
   for (const pattern of PATHS) out = out.replace(pattern, PATH);

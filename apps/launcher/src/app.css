@@ -126,6 +126,8 @@ button.danger { color: var(--danger); }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 80px 20px; color: var(--muted); text-align: center; }
 .empty h2 { color: var(--strong); }
 .more { display: flex; justify-content: center; padding: 24px; }
+/* Over a floating panel (z-index 20) it was opened from, which stays open under it (library.tsx's Dialog `over`). */
+.overlay.over-menu { z-index: 25; }
 .overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--overlay); }
 .detail { position: relative; width: min(760px, 100%); max-height: 100%; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
 .detail.choose { width: min(480px, 100%); }
@@ -1004,6 +1006,8 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 /* Play with: a program's folder after its name, quieter; a note when there's none. */
 .game-menu-path { min-width: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 11.5px; }
 .game-menu-note { padding: 6px 10px; color: var(--muted); font-size: 12.5px; }
+/* A game's card, with more than one way to play it: which app the menu is for. */
+.game-menu-heading { max-width: 260px; padding: 6px 10px 4px; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 /* Play's question, with more than one program picked: each a row, its folder under its name. */
 .program-prompt .choices button { flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px 14px; text-align: left; }
 .program-prompt .choices button .muted { font-size: 12px; overflow-wrap: anywhere; }
@@ -1240,6 +1244,33 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .view-options .toggle:has(input:disabled) { opacity: 0.55; }
 .settings-section { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
 .settings-section h3 { font-size: 15px; }
+/* Moving the apps folder (settings-page.tsx): the panel asking, the move's bar, and old copies left behind. */
+/* The apps folders, one row each: path and what's in it on the left, its actions on the right. */
+.apps-folders { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
+.apps-folder-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.apps-folder-row[data-default] { border-color: var(--line-strong); background: var(--panel); }
+.apps-folder-info { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.apps-folder-info p { margin: 0; overflow-wrap: anywhere; }
+.apps-folder-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--strong); font-weight: 600; }
+.apps-folder-badge { padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 600; }
+.apps-folder-row .row { flex: none; flex-wrap: wrap; gap: 8px; }
+.apps-folder-row .row > button { flex: none; white-space: nowrap; }
+.move-choice { display: grid; gap: 6px; }
+/* Install to… and Move to…: a folder per line, its radio beside it. */
+.place-app .move-choice label { display: flex; align-items: baseline; gap: 10px; overflow-wrap: anywhere; }
+.place-app-folder { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.place-app-choose > button { flex: none; }
+.apps-moving { display: grid; gap: 6px; max-width: 460px; }
+/* Working out whether a move fits: a bar that sweeps, as there is nothing yet to count. */
+.progress.waiting .bar { width: 30%; animation: progress-sweep 1.4s ease-in-out infinite; }
+@keyframes progress-sweep { from { left: -30%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .progress.waiting .bar { animation: none; left: 0; width: 100%; opacity: 0.5; } }
+.apps-left { margin: 4px 0 0; padding-left: 18px; font-size: 12px; overflow-wrap: anywhere; }
+.move-confirm { display: grid; gap: 12px; max-width: 620px; padding: 16px 18px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.move-confirm h4 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.move-notes { display: grid; gap: 6px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.move-confirm .row { margin-top: 2px; }
+.move-confirm .row > button:only-child { flex: none; min-width: 200px; }
 .settings-pane > .view-options, .settings-section > .view-options { max-width: 380px; }
 .github-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
 .github-token ol { padding-left: 20px; display: grid; gap: 4px; }

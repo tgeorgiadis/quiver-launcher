@@ -18,6 +18,10 @@ pub struct OldApp {
     version: Option<String>,
     /// The program a Windows installer (MSI) put on the computer, for an app 3.x installed that way.
     program: Option<String>,
+    /// Its installed copy is in one of 3.x's apps folders, not a folder of its own the player chose for it, so
+    /// moving the apps folder here can bring it in.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    in_apps: bool,
     /// Its tags as 3.x showed them: the player's, and the catalog's among them.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tags: Vec<String>,
@@ -268,6 +272,11 @@ pub fn existing(dir: &Path) -> Option<Existing> {
     Some(Existing { version: own.unwrap_or(version), program })
 }
 
+/// Whether two paths name one folder, however they're written.
+fn same_folder(a: &Path, b: &Path) -> bool {
+    a == b || a.canonicalize().ok().zip(b.canonicalize().ok()).is_some_and(|(a, b)| a == b)
+}
+
 /// The apps in a folder's library file, if it's a 3.x one: each has a name,
 /// and at least one has a repository.
 fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
@@ -290,6 +299,7 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
             let gone = own.as_ref().is_some_and(|d| !d.is_dir());
             let install = own.into_iter().chain(named).find_map(|d| installed(&d).map(|(version, program)| (d, version, program)));
             let lost = gone && install.is_none();
+            let in_apps = install.as_ref().is_some_and(|(d, ..)| d.parent().is_some_and(|p| folders.iter().any(|f| same_folder(p, f))));
             let (dir, version, program) = match install {
                 Some((d, version, program)) => (Some(d.to_string_lossy().into()), Some(version), program),
                 None => (None, None, None),
@@ -317,6 +327,7 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
                 dir,
                 version,
                 program,
+                in_apps,
             })
         })
         .collect::<Vec<_>>();
@@ -431,7 +442,21 @@ mod tests {
         folder(&elsewhere, &[("port.exe", "")]);
         let apps = serde_json::json!({ "apps": [{ "name": "Test Port", "repository": "quiver/test-port", "folderName": "TestPort", "installPath": elsewhere }] });
         library(&root.path().join("data"), &apps.to_string());
-        assert_eq!(at(&apps_in(&root.path().join("data"))[0]), Some(elsewhere.as_path()));
+        let found = apps_in(&root.path().join("data"));
+        assert_eq!(at(&found[0]), Some(elsewhere.as_path()));
+        // A folder chosen for it alone, which moving the apps folder leaves be.
+        assert!(!found[0].in_apps);
+    }
+
+    #[test]
+    fn knows_an_app_in_3xs_apps_folder_can_come_along() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("data");
+        folder(&data.join("Apps/TestPort"), &[("port.exe", "")]);
+        // 3.x wrote the folder it installed in as the app's path too.
+        let apps = serde_json::json!({ "apps": [{ "name": "Test Port", "repository": "quiver/test-port", "folderName": "TestPort", "installPath": data.join("Apps/TestPort") }] });
+        library(&data, &apps.to_string());
+        assert!(apps_in(&data)[0].in_apps);
     }
 
     #[test]

@@ -1185,10 +1185,12 @@ export function Popover({
   };
   useEffect(() => {
     if (!at) return;
-    const inside = (n: EventTarget | null) => n instanceof Node && Boolean(button.current?.contains(n) || panel.current?.contains(n));
+    // A dialog opened from it (Dialog's `over`) counts as in it: it stays open under that.
+    const over = (n: EventTarget | null) => n instanceof Element && Boolean(n.closest("[data-over-menu]"));
+    const inside = (n: EventTarget | null) => n instanceof Node && Boolean(button.current?.contains(n) || panel.current?.contains(n) || over(n));
     const away = (e: MouseEvent) => !inside(e.target) && close();
     const key = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (e.key !== "Escape" || over(e.target)) return;
       // Only this closes: a page under it doesn't go back too.
       e.stopPropagation();
       if (escape?.current?.()) return;
@@ -1400,15 +1402,27 @@ export function PlaylistChoices({ id, playlists }: { id: string; playlists: Coll
   );
 }
 
-/** A dialog: closes on Escape or outside. */
-export function Dialog({ label, className, onClose, children }: { label: string; className?: string; onClose: () => void; children: ReactNode }) {
+/**
+ * A dialog: closes on Escape or outside. With `over`, opened from a floating panel (Popover) that stays open under it:
+ * shown over the panel, which leaves its clicks, focus and Escape to it; closed, the focus goes back to what had it.
+ */
+export function Dialog({ label, className, onClose, over, children }: { label: string; className?: string; onClose: () => void; over?: boolean; children: ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  useEffect(() => {
+    if (!over) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return () => {
+      // Unless something else took it as it closed (a download started from it, which closes the panel).
+      const now = document.activeElement;
+      if (opener?.isConnected && (!now || now === document.body)) opener.focus({ preventScroll: true });
+    };
+  }, [over]);
   return (
-    <div className="overlay" {...closesOutside(onClose)}>
+    <div className={over ? "overlay over-menu" : "overlay"} data-over-menu={over ? "" : undefined} {...closesOutside(onClose)}>
       <section className={className ? `detail choose ${className}` : "detail choose"} role="dialog" aria-label={label} onClick={(e) => e.stopPropagation()}>
         {children}
       </section>
