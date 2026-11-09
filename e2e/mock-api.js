@@ -937,7 +937,7 @@ function mockAccount(entries) {
     if (path === "/corrections") {
       // As corrections.submit on the site checks it.
       const text = String(body.body ?? "").trim();
-      const topics = ["description", "downloads", "install", "launch", "gameFiles", "setup", "games", "links", "other"];
+      const topics = ["quiver", "description", "downloads", "gameFiles", "games", "links", "other", "install", "launch", "setup"];
       const refused = !entries.some((e) => e.id === body.entryId)
         ? "App not found."
         : body.topic !== undefined && !topics.includes(body.topic)

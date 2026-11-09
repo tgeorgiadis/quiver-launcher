@@ -1791,6 +1791,7 @@ msgstr "например, gamemoderun %command% --fullscreen"
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/correction.tsx
 #: ../ui/src/index.tsx
 msgid "Easy setup"
 msgstr "Простая настройка"
@@ -1889,10 +1890,6 @@ msgstr "Фильтры включены"
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "Найдите порт в каталоге и нажмите «Получить». Он появится здесь и сразу начнёт загружаться."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Finding my game files"
-msgstr "Поиск моих файлов игры"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
 msgstr "Завершите в браузере, затем войдите здесь."
@@ -1987,10 +1984,6 @@ msgstr "Геймплей"
 #: ../../apps/launcher/src/game.tsx
 msgid "Games"
 msgstr "Игры"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Games, their names or consoles"
-msgstr "Игры, их названия или консоли"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
@@ -2382,10 +2375,6 @@ msgstr "Установка"
 msgid "Installing {app}."
 msgstr "Установка {app}."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Installing it"
-msgstr "Установка"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Installing: confirm it when Android asks"
 msgstr "Установка: подтвердите запрос Android"
@@ -2557,10 +2546,6 @@ msgstr "Параметры запуска"
 msgid "Launcher update"
 msgstr "Обновление лаунчера"
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Launching it"
-msgstr "Запуск"
-
 #. Library view option
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Layout"
@@ -2626,6 +2611,10 @@ msgstr "Ссылка скопирована."
 #: ../../apps/launcher/src/own.tsx
 msgid "Link to a catalog app"
 msgstr "Связать с приложением из каталога"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Linked games, their names or details"
+msgstr "Связанные игры, их названия или детали"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Links"
@@ -3618,6 +3607,10 @@ msgstr "Quiver не проверял эту версию"
 msgid "Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Quiver не проверял эту версию. Устанавливаются файлы, которые Quiver видел при её выходе, а изменённые с тех пор отклоняются."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Quiver installing or launching it"
+msgstr "Quiver при установке или запуске"
+
 #: ../../apps/launcher/src/update.tsx
 msgid "Quiver Launcher {version} is out."
 msgstr "Вышел Quiver Launcher {version}."
@@ -4082,10 +4075,6 @@ msgstr "Разделы настроек"
 #: ../../apps/launcher/src/App.tsx
 msgid "Setup"
 msgstr "Настройка"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Setup instructions"
-msgstr "Инструкции по настройке"
 
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx

@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
-import { fullDate } from "@quiverlauncher/ui";
+import { fullDate, hasEasySetup } from "@quiverlauncher/ui";
 import { useAccount, type OwnCorrection } from "./account";
 import {
   CORRECTION_MAX,
@@ -32,13 +32,11 @@ import { track } from "./telemetry";
 
 // Put in the language when shown, not here, where the module loads before any is picked.
 const TOPIC_LABELS: Record<CorrectionTopic, MessageDescriptor> = {
-  install: msg`Installing it`,
-  launch: msg`Launching it`,
-  gameFiles: msg`Finding my game files`,
+  quiver: msg`Quiver installing or launching it`,
   description: msg`Description or details`,
   downloads: msg`Releases or downloads`,
-  setup: msg`Setup instructions`,
-  games: msg`Games, their names or consoles`,
+  gameFiles: msg`Easy setup`,
+  games: msg`Linked games, their names or details`,
   links: msg`Links`,
   other: msg`Something else`,
 };
@@ -241,7 +239,7 @@ function CorrectionForm({
         <Trans>What&apos;s it about?</Trans>
         <select value={topic} onChange={(e) => setTopic(e.target.value as CorrectionTopic | "")}>
           <option value="">{t`Choose a topic (optional)`}</option>
-          {CORRECTION_TOPICS.map((id) => (
+          {CORRECTION_TOPICS.filter((id) => id !== "gameFiles" || hasEasySetup(entry)).map((id) => (
             <option key={id} value={id}>
               {i18n._(TOPIC_LABELS[id])}
             </option>

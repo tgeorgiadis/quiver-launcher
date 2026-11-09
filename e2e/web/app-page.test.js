@@ -109,7 +109,7 @@ test("Report a problem, by the app's actions: signing in opens its dialog, B clo
   assert.equal(await page.locator(".correction-dialog").count(), 0);
   await s.until(async () => /Report a problem/.test(await reach.focused(app)));
   await reach.press(app, "South");
-  await form.locator("select").selectOption("launch");
+  await form.locator("select").selectOption("quiver");
   await page.getByText("To say how it ran, use Player feedback.").waitFor();
   await form.locator("textarea").fill("It starts the level editor, not the game.");
   await form.getByRole("button", { name: "Send" }).click();
@@ -117,7 +117,7 @@ test("Report a problem, by the app's actions: signing in opens its dialog, B clo
   const [sent] = s.api.corrections;
   assert.deepEqual(
     { user: sent.user, entryId: sent.entryId, topic: sent.topic, body: sent.body, source: sent.source, installed: sent.client.installed },
-    { user: "corrections", entryId: "entry_test-port", topic: "launch", body: "It starts the level editor, not the game.", source: "launcher", installed: "1.0.0" },
+    { user: "corrections", entryId: "entry_test-port", topic: "quiver", body: "It starts the level editor, not the game.", source: "launcher", installed: "1.0.0" },
   );
   assert.ok(sent.client.version && sent.client.os, "with the launcher's version and system");
   // Done, which has the focus, closes it back to the button; the Overview now says where the report stands.

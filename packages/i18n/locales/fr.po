@@ -1791,6 +1791,7 @@ msgstr "ex. : gamemoderun %command% --fullscreen"
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/correction.tsx
 #: ../ui/src/index.tsx
 msgid "Easy setup"
 msgstr "Configuration facile"
@@ -1889,10 +1890,6 @@ msgstr "Filtres actifs"
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "Trouvez un portage dans le catalogue et appuyez sur Obtenir. Il est ajouté ici et se télécharge aussitôt."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Finding my game files"
-msgstr "Trouver mes fichiers du jeu"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
 msgstr "Terminez dans votre navigateur, puis connectez-vous ici."
@@ -1987,10 +1984,6 @@ msgstr "Gameplay"
 #: ../../apps/launcher/src/game.tsx
 msgid "Games"
 msgstr "Jeux"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Games, their names or consoles"
-msgstr "Les jeux, leurs noms ou leurs consoles"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
@@ -2382,10 +2375,6 @@ msgstr "Installation"
 msgid "Installing {app}."
 msgstr "Installation de {app}."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Installing it"
-msgstr "L’installation"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Installing: confirm it when Android asks"
 msgstr "Installation : confirmez-la quand Android le demande"
@@ -2557,10 +2546,6 @@ msgstr "Options de lancement"
 msgid "Launcher update"
 msgstr "Mise à jour du lanceur"
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Launching it"
-msgstr "Le lancement"
-
 #. Library view option
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Layout"
@@ -2626,6 +2611,10 @@ msgstr "Lien copié."
 #: ../../apps/launcher/src/own.tsx
 msgid "Link to a catalog app"
 msgstr "Associer à une app du catalogue"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Linked games, their names or details"
+msgstr "Jeux liés, leurs noms ou détails"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Links"
@@ -3618,6 +3607,10 @@ msgstr "Quiver n'a pas vérifié cette version"
 msgid "Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Quiver n'a pas vérifié cette version. Il installe les fichiers que Quiver a vus à sa sortie, et refuse ceux qui ont changé depuis."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Quiver installing or launching it"
+msgstr "Quiver à l’installation ou au lancement"
+
 #: ../../apps/launcher/src/update.tsx
 msgid "Quiver Launcher {version} is out."
 msgstr "Quiver Launcher {version} est disponible."
@@ -4082,10 +4075,6 @@ msgstr "Sections des paramètres"
 #: ../../apps/launcher/src/App.tsx
 msgid "Setup"
 msgstr "Configuration"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Setup instructions"
-msgstr "Instructions de configuration"
 
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx

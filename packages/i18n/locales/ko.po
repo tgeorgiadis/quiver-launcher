@@ -1791,6 +1791,7 @@ msgstr "예: gamemoderun %command% --fullscreen"
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/browse-cards.ts
+#: ../../apps/launcher/src/correction.tsx
 #: ../ui/src/index.tsx
 msgid "Easy setup"
 msgstr "간편 설정"
@@ -1889,10 +1890,6 @@ msgstr "필터 사용 중"
 msgid "Find a port in the catalog and press Get. It's added here and downloads straight away."
 msgstr "카탈로그에서 포트를 찾아 받기를 누르세요. 여기에 추가되고 바로 다운로드돼요."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Finding my game files"
-msgstr "내 게임 파일 찾기"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Finish in your browser, then sign in here."
 msgstr "브라우저에서 마친 다음 여기서 로그인하세요."
@@ -1987,10 +1984,6 @@ msgstr "게임플레이"
 #: ../../apps/launcher/src/game.tsx
 msgid "Games"
 msgstr "게임"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Games, their names or consoles"
-msgstr "게임, 게임 이름 또는 콘솔"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
@@ -2382,10 +2375,6 @@ msgstr "설치 중"
 msgid "Installing {app}."
 msgstr "{app} 설치 중."
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Installing it"
-msgstr "설치"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Installing: confirm it when Android asks"
 msgstr "설치 중: Android에서 확인을 요청하면 승인하세요"
@@ -2557,10 +2546,6 @@ msgstr "실행 옵션"
 msgid "Launcher update"
 msgstr "런처 업데이트"
 
-#: ../../apps/launcher/src/correction.tsx
-msgid "Launching it"
-msgstr "실행"
-
 #. Library view option
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Layout"
@@ -2626,6 +2611,10 @@ msgstr "링크를 복사했어요."
 #: ../../apps/launcher/src/own.tsx
 msgid "Link to a catalog app"
 msgstr "카탈로그 앱에 연결"
+
+#: ../../apps/launcher/src/correction.tsx
+msgid "Linked games, their names or details"
+msgstr "연결된 게임, 이름 또는 세부 정보"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Links"
@@ -3618,6 +3607,10 @@ msgstr "Quiver가 이 버전을 검증하지 않았어요"
 msgid "Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since."
 msgstr "Quiver가 이 버전을 검증하지 않았어요. 출시 당시 Quiver가 확인한 파일만 설치하고, 그 이후 바뀐 파일은 거부해요."
 
+#: ../../apps/launcher/src/correction.tsx
+msgid "Quiver installing or launching it"
+msgstr "Quiver의 설치 또는 실행"
+
 #: ../../apps/launcher/src/update.tsx
 msgid "Quiver Launcher {version} is out."
 msgstr "Quiver Launcher {version}이(가) 나왔어요."
@@ -4082,10 +4075,6 @@ msgstr "설정 섹션"
 #: ../../apps/launcher/src/App.tsx
 msgid "Setup"
 msgstr "구성"
-
-#: ../../apps/launcher/src/correction.tsx
-msgid "Setup instructions"
-msgstr "구성 안내"
 
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx

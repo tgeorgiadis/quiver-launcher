@@ -4,11 +4,14 @@
  */
 import { OS_NAMES } from "@quiverlauncher/ui";
 
-/** What a correction is about, as the website's correctionTopics.ts has them; the launcher's own part first. */
-export const CORRECTION_TOPICS = ["install", "launch", "gameFiles", "description", "downloads", "setup", "games", "links", "other"] as const;
+/**
+ * What a problem report is about, as the website's correctionTopics.ts offers them, in order. "gameFiles" is Easy
+ * setup, offered only on apps that have it.
+ */
+export const CORRECTION_TOPICS = ["quiver", "description", "downloads", "gameFiles", "games", "links", "other"] as const;
 export type CorrectionTopic = (typeof CORRECTION_TOPICS)[number];
-/** About the launcher's part, where how it ran belongs in Player feedback instead. */
-export const LAUNCHER_TOPICS: readonly CorrectionTopic[] = ["install", "launch", "gameFiles"];
+/** About Quiver's part, where how it ran belongs in Player feedback instead. */
+export const LAUNCHER_TOPICS: readonly CorrectionTopic[] = ["quiver", "gameFiles"];
 /** The longest correction the site takes. */
 export const CORRECTION_MAX = 1000;
 
@@ -25,13 +28,14 @@ export function readCorrectionDraft(userId: string, entryId: string): Correction
     if (
       typeof d.savedAt !== "number" ||
       Date.now() - d.savedAt > KEEP_FOR ||
-      typeof d.body !== "string" ||
-      !(d.topic === "" || CORRECTION_TOPICS.includes(d.topic as CorrectionTopic))
+      typeof d.body !== "string"
     ) {
       localStorage.removeItem(draftKey(userId, entryId));
       return null;
     }
-    return { topic: d.topic as CorrectionDraft["topic"], body: d.body };
+    // A topic no longer offered (from before they were reworked): the words are kept, the topic is chosen again.
+    const topic = CORRECTION_TOPICS.includes(d.topic as CorrectionTopic) ? (d.topic as CorrectionTopic) : "";
+    return { topic, body: d.body };
   } catch {
     return null;
   }
