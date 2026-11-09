@@ -111,6 +111,9 @@ export function LibraryPage({
 }) {
   const { client, config, library: all, catalog, installs, jobs, get, add, settings, setSettings, collections, saveCollection, consoles, consoleNames, cache } = useLauncher();
   const { view, groupBy } = useLibraryView();
+  // The cards' size, on the page (showCardScale), where View options' slider changes it as it moves. Up here, before
+  // the sidebar's page returns early, so it's the same hooks either way.
+  useEffect(() => showCardScale(view.cardScale), [view.cardScale]);
   // TV mode's look: the cards as TV mode's own screen has them, and fewer stops on the way to them.
   const tv = tvModeOn(settings, config);
   // The cards' Get or Play and opening, the same functions every render, so a card is drawn again only as its app changes.
@@ -691,8 +694,6 @@ export function LibraryPage({
   // The lines under the name, and the tags' over it, the names keep room for (app.css's --tile-names).
   const tileLines = view.details.filter((d) => d === "subtitle" || d === "rating" || d === "updated").length + (view.details.some((d) => d === "kinds" || d === "ai" || d === "platforms") ? 1 : 0);
   const gridStyle = { "--tile-lines": tileLines } as CSSProperties;
-  // The cards' size, on the page (showCardScale), where View options' slider changes it as it moves.
-  useEffect(() => showCardScale(view.cardScale), [view.cardScale]);
   // The triggers jump through a grid: a letter at a time by name, else a screen. A card for each game, or each app.
   const grid = (entries: Entry[]) => (
     <div className={gridClass} style={gridStyle} data-jump={byLetter ? "letters" : "pages"} ref={byLetter ? letterGrid : undefined}>
