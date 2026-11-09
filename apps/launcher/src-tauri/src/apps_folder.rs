@@ -425,13 +425,13 @@ fn move_by_copy(old: &Path, new: &Path, progress: impl Fn(u64, u64)) -> Result<O
     Ok(fs::remove_dir_all(&retired).err().map(|_| retired))
 }
 
-/// The bytes in a folder's files.
+/// The bytes in a folder's files. A link copied as a link (on Unix) adds none, as copying it counts none.
 fn size_of(dir: &Path) -> io::Result<u64> {
     let mut size = 0;
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let meta = followed(&entry.path(), entry.file_type()?)?;
-        size += if meta.is_dir() { size_of(&entry.path())? } else { meta.len() };
+        size += if meta.is_dir() { size_of(&entry.path())? } else if meta.file_type().is_symlink() { 0 } else { meta.len() };
     }
     Ok(size)
 }
