@@ -194,6 +194,25 @@ fn same_drive(a: &Path, b: &Path) -> bool {
     }
 }
 
+/// How an apps folder is now: whether it's there (a drive that isn't plugged in, or a folder renamed, isn't), and the
+/// bytes free on its drive when it is.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct FolderState {
+    pub exists: bool,
+    pub free: Option<u64>,
+}
+
+/// How each apps folder is now, in the order given.
+pub fn states(paths: &[PathBuf]) -> Vec<FolderState> {
+    paths
+        .iter()
+        .map(|p| {
+            let exists = p.is_dir();
+            FolderState { exists, free: if exists { free_space(p) } else { None } }
+        })
+        .collect()
+}
+
 /// The bytes free for this user on the drive `path` is on (or will be, for a folder not made yet), when the system
 /// says.
 pub fn free_space(path: &Path) -> Option<u64> {
@@ -710,6 +729,30 @@ mod tests {
         // Free space unknown, or nothing to copy (a move on the same drive is a rename): nothing to say.
         assert!(short_of_space(&[game], to, None).is_none());
         assert!(short_of_space(&[], to, Some(0)).is_none());
+    }
+
+    #[test]
+    fn says_whether_each_apps_folder_is_there_and_its_room() {
+        let root = tempfile::tempdir().unwrap();
+        let gone = root.path().join("unplugged");
+        let found = states(&[root.path().to_path_buf(), gone]);
+        assert!(found[0].exists && found[0].free.is_some_and(|f| f > 0));
+        assert_eq!(found[1], FolderState { exists: false, free: None });
+    }
+
+    #[test]
+    fn switches_where_new_apps_go_moving_nothing() {
+        let data = tempfile::tempdir().unwrap();
+        let from = current(data.path());
+        fs::create_dir_all(from.join("Game")).unwrap();
+        let to = data.path().join("Games");
+        // The launcher has recorded Game where it is first, so nothing is asked to move.
+        let done = move_apps(data.path(), &from, &to, &[], |_| {}, |_| {}).unwrap();
+        assert!(done.inside.is_empty() && done.failed.is_empty());
+        assert_eq!(current(data.path()), to);
+        assert!(from.join("Game").is_dir());
+        // Not one inside the folder it was.
+        assert!(move_apps(data.path(), &to, &to.join("More"), &[], |_| {}, |_| {}).is_err());
     }
 
     #[test]

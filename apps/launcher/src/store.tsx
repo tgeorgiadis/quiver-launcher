@@ -13,7 +13,7 @@ import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, t
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
-import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, telemetryChoice, track, type TelemetryContext } from "./telemetry";
+import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
@@ -291,17 +291,96 @@ type Launcher = {
   changeVersion: (entry: Entry | null) => void;
   /** Renames an installed app's folder in the apps folder, as a folder can be named; resolves to the name it got. */
   renameFolder: (id: string, name: string) => Promise<string>;
+  /** The apps folders, the default first: the one apps install in, and each other one apps are kept in. */
+  appsFolders: () => AppsFolder[];
   /**
-   * Moves the installed apps to another folder, where apps install from then on, with those kept elsewhere when
-   * `elsewhere` (Quiver Launcher 3's). Each app's new place is recorded as soon as it's there, so one that fails part
-   * way loses none. Resolves to the old copies that moved but couldn't all be deleted.
+   * Makes `to` the folder new apps install in, moving nothing: the apps in the old one stay there and play from it,
+   * which becomes one more apps folder. Apps already in `to` become its own again.
    */
-  /** Resolves to the old copies left to delete, and the apps that couldn't move (each still where it was, and playable). */
-  moveApps: (to: string, elsewhere: boolean) => Promise<{ left: string[]; failed: { folder: string; why: string }[] }>;
+  switchAppsFolder: (to: string) => Promise<void>;
+  /**
+   * Moves installed apps to `to`, where apps install from then on: the default folder's (`inside`), and those in the
+   * other apps folders named in `from`. Each app's new place is recorded as soon as it's there, so one that fails part
+   * way loses none. Resolves to the old copies left to delete, and the apps that couldn't move (each still where it
+   * was, and playable).
+   */
+  moveApps: (to: string, which: { inside: boolean; from: string[] }) => Promise<{ left: string[]; failed: { folder: string; why: string }[] }>;
 };
 
 /** `placed`: how many apps are in folders the player chose for each, which moving the apps folder leaves be. */
 export type MovableApps = { inside: MovingApp[]; elsewhere: MovingApp[]; placed: number };
+
+/** A folder apps are installed in: the default, which new apps install in, or another the player's apps are kept in. */
+export type AppsFolder = { path: string; default: boolean; apps: MovingApp[] };
+
+const separator = (path: string) => (path.includes("\\") ? "\\" : "/");
+/** The folder a path is in. */
+export const parentOf = (path: string) => path.replace(/[\\/]+$/, "").replace(/[\\/][^\\/]*$/, "");
+/** A path's last part. */
+const baseName = (path: string) => path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? "";
+/** Whether two paths name one folder, however their separators, trailing slash or (on Windows) case. */
+export const samePath = (a: string, b: string) => {
+  const norm = (p: string) => {
+    const s = p.replace(/[\\/]+/g, "/").replace(/\/$/, "");
+    return /^[A-Za-z]:/.test(s) ? s.toLowerCase() : s;
+  };
+  return norm(a) === norm(b);
+};
+/** Whether `inner` is `outer` or a folder somewhere inside it. */
+const within = (inner: string, outer: string) => {
+  let at = inner;
+  for (let i = 0; i < 64 && at; i++) {
+    if (samePath(at, outer)) return true;
+    const up = parentOf(at);
+    if (up === at) break;
+    at = up;
+  }
+  return false;
+};
+
+/** The apps folders: the default (`appsDir`) first, then each other folder apps are kept in, by path. */
+export function appsFolders(installs: Record<string, Install>, appsDir: string): AppsFolder[] {
+  const { inside, elsewhere } = movableApps(installs);
+  const folders: AppsFolder[] = [{ path: appsDir, default: true, apps: [...inside] }];
+  for (const app of elsewhere) {
+    const path = parentOf(app.dir!);
+    const folder = folders.find((f) => samePath(f.path, path));
+    if (folder) folder.apps.push(app);
+    else folders.push({ path, default: false, apps: [app] });
+  }
+  return [folders[0], ...folders.slice(1).sort((a, b) => a.path.localeCompare(b.path))];
+}
+
+/** Why `to` can't be a new default folder beside `folders`: one inside another would show its apps as an app's folder. */
+export function folderClash(to: string, folders: AppsFolder[]): string | null {
+  for (const f of folders) {
+    if (samePath(to, f.path)) continue;
+    const path = f.path;
+    if (within(to, path)) return t`Choose a folder outside ${path}, which has apps in it.`;
+    if (within(path, to)) return t`Choose a folder that doesn't have ${path} inside it.`;
+  }
+  return null;
+}
+
+/**
+ * The installs with those in the default folder `appsDir` kept where they are, by their folder there, as another
+ * apps folder's: what they need before another folder becomes the default, so none is looked for in the new one.
+ */
+export function keptWhereTheyAre(installs: Record<string, Install>, appsDir: string): Record<string, Install> {
+  const sep = separator(appsDir);
+  const root = appsDir.replace(/[\\/]+$/, "");
+  return Object.fromEntries(Object.entries(installs).map(([id, i]) => [id, i.dir ? i : { ...i, dir: `${root}${sep}${i.folder}`, inApps: true as const }]));
+}
+
+/**
+ * The installs once `to` is the default folder: those kept in it under their own folder's name become its own, as if
+ * installed there. One kept under another name (a move gave it "Name 2") keeps its folder.
+ */
+export function ownedBy(installs: Record<string, Install>, to: string): Record<string, Install> {
+  return Object.fromEntries(
+    Object.entries(installs).map(([id, i]) => [id, i.dir && i.inApps && samePath(parentOf(i.dir), to) && baseName(i.dir) === i.folder ? movedInside(i) : i]),
+  );
+}
 
 /**
  * The installs moving the apps folder takes: those in it, and those kept in another apps folder (Quiver Launcher 3's),
@@ -313,7 +392,8 @@ export function movableApps(installs: Record<string, Install>): MovableApps {
   const all = Object.entries(installs);
   return {
     inside: all.flatMap(([id, i]) => (i.dir ? [] : [{ id, folder: i.folder }])),
-    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && !i.local && i.installer !== "msi" ? [{ id, folder: i.folder, dir: i.dir }] : [])),
+    // A folder of the player's own files kept in another apps folder (by changing the default) goes with that folder.
+    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && i.installer !== "msi" ? [{ id, folder: i.folder, dir: i.dir }] : [])),
     placed: all.filter(([, i]) => i.dir && !i.inApps && !i.local && i.installer !== "msi").length,
   };
 }
@@ -865,6 +945,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => void [off, closed].forEach((o) => o.then((stop) => stop()));
   }, [saved]);
 
+  // Every folder the player's apps are in is a path usage data never carries.
+  const folderPaths = appsFolders(installs, config.appsDir)
+    .map((f) => f.path)
+    .join("\n");
+  useEffect(() => setTelemetryAppsFolders(folderPaths.split("\n")), [folderPaths]);
+
   usePersist("library", allItems);
   usePersist("installs", installs);
   usePersist("catalog", catalog);
@@ -1279,8 +1365,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         unverified = true;
       }
       format = installFormat(asset.filename);
-      // One folder, one app: uninstalling either would take the other's files.
-      const taken = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id && !i.dir ? [i.folder] : []));
+      // One folder, one app: uninstalling either would take the other's files. A new install keeps clear of names apps
+      // use in other apps folders too, as Quiver keeps an app's Proton prefix, icon and Steam art by its folder's
+      // name; one installed already keeps its folder, as before, so an update never leaves its files behind.
+      const otherInstalls = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id ? [i] : []));
+      const taken = (installs[entry.id] ? otherInstalls.filter((i) => !i.dir) : otherInstalls).map((i) => i.folder);
       const folder = freeFolder(settings.folderName?.trim() || entry.slug, installs[entry.id]?.folder, taken);
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
@@ -1829,6 +1918,21 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
     movableApps: () => movableApps(installs),
+    appsFolders: () => appsFolders(installs, config.appsDir),
+    async switchAppsFolder(to) {
+      const from = config.appsDir;
+      if (samePath(to, from)) return;
+      // Saved before the default changes, so even a launcher closed mid-way finds every app: each one in the old folder
+      // is recorded where it is, which is where it already was.
+      const kept = keptWhereTheyAre(installs, from);
+      await native.writeState("installs", kept);
+      setInstalls(kept);
+      const switched = await native.moveAppsFolder(to, []);
+      setInstalls((i) => ownedBy(i, switched.appsDir));
+      setConfig((c) => ({ ...c, appsDir: switched.appsDir }));
+      setTelemetryAppsDir(switched.appsDir);
+      track("apps_folder_changed", { kept: movableApps(installs).inside.length });
+    },
     renaming,
     askRename,
     addingFiles,
@@ -1857,9 +1961,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       track("app_folder_renamed", appRef(id, catalog[id]?.slug ?? item?.slug ?? ""));
       return folder;
     },
-    async moveApps(to, elsewhere) {
-      const { inside, elsewhere: kept } = movableApps(installs);
-      const apps = elsewhere ? [...inside, ...kept] : inside;
+    async moveApps(to, which) {
+      let now = installs;
+      // The default folder's apps left behind when apps go to another folder that becomes the default stay findable.
+      if (!which.inside && !samePath(to, config.appsDir)) {
+        now = keptWhereTheyAre(installs, config.appsDir);
+        await native.writeState("installs", now);
+        setInstalls(now);
+      }
+      const { inside, elsewhere } = movableApps(now);
+      const kept = elsewhere.filter((a) => which.from.some((f) => samePath(parentOf(a.dir!), f)));
+      const apps = [...inside, ...kept];
       // Each app is recorded where it is the moment it gets there: a move that stops part way, or a launcher closed
       // mid-move, leaves every app findable. It's in an apps folder still (or one that couldn't move stays in the
       // old one), so it comes along with the next move.
@@ -1873,7 +1985,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         });
         setConfig((c) => ({ ...c, appsDir: moved.appsDir }));
         setTelemetryAppsDir(moved.appsDir);
-        track("apps_folder_moved", { apps: inside.length, elsewhere: elsewhere ? kept.length : 0, failed: moved.failed.length });
+        track("apps_folder_moved", { apps: inside.length, elsewhere: kept.length, failed: moved.failed.length });
         return { left: moved.left, failed: moved.failed };
       } finally {
         stop();

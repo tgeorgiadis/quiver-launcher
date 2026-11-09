@@ -318,6 +318,10 @@ export const native = {
    * that couldn't all be deleted.
    */
   moveAppsFolder: (to: string, apps: MovingApp[]) => invoke<{ appsDir: string; inside: string[]; left: string[]; failed: { folder: string; why: string }[] }>("move_apps_folder", { to, apps }),
+  /** Opens an apps folder (the default, or one an installed app is kept in) in the file manager. */
+  openAppsFolder: (path: string) => invoke<void>("open_apps_folder", { path }),
+  /** Whether each apps folder is there (a drive not plugged in isn't), and the bytes free on its drive. */
+  appsFolderStates: (paths: string[]) => invoke<{ exists: boolean; free?: number | null }[]>("apps_folder_states", { paths }),
   onAppsMoving: (handler: (m: AppsMoving) => void) => listen<AppsMoving>("apps-moving", (e) => handler(e.payload)),
   /** An app is in its new folder (`dir`), mid-move. */
   onAppMoved: (handler: (m: { id: string; dir: string }) => void) => listen<{ id: string; dir: string }>("app-moved", (e) => handler(e.payload)),

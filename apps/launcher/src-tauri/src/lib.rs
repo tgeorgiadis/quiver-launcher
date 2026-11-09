@@ -573,6 +573,30 @@ fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
     reveal(&present_app_dir(&data, folder, install["dir"].as_str().map(str::to_string))?)
 }
 
+/// Opens an apps folder in the file manager: the one apps install in, or one
+/// an installed app is kept in (installs.json), never any other path.
+#[tauri::command]
+fn open_apps_folder(data: State<Data>, path: String) -> Result<(), String> {
+    let path = PathBuf::from(path);
+    let installs: serde_json::Value = std::fs::read(state_file(&data, "installs")?)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let holds_one = installs
+        .as_object()
+        .into_iter()
+        .flat_map(|o| o.values())
+        .filter_map(|i| i["dir"].as_str())
+        .any(|d| Path::new(d).parent().is_some_and(|p| p == path));
+    if path != data.apps() && !holds_one {
+        return Err("That isn't one of your apps folders.".into());
+    }
+    if !path.is_dir() {
+        return Err("This folder isn't there. Is its drive connected?".into());
+    }
+    reveal(&path)
+}
+
 /// Shows a folder in Explorer, Files or Finder. End-to-end tests note it in
 /// `QUIVER_OPENED` instead of opening a window.
 fn reveal(dir: &Path) -> Result<(), String> {
@@ -986,6 +1010,13 @@ async fn pick_folder(app: tauri::AppHandle, window: tauri::WebviewWindow, title:
     }
     let path = picker::choose(&app, &window, picker::Want::Folder, &title, dir.as_deref().map(Path::new), None).await?;
     Some(path.to_string_lossy().into())
+}
+
+/// How each apps folder is now: there or not, and the room on its drive. Off the window's thread, as a drive that
+/// isn't plugged in, or one on the network, can take a while to answer.
+#[tauri::command]
+async fn apps_folder_states(paths: Vec<PathBuf>) -> Vec<apps_folder::FolderState> {
+    tauri::async_runtime::spawn_blocking(move || apps_folder::states(&paths)).await.unwrap_or_default()
 }
 
 /// Why the installed apps can't move to `to`, if they can't: those in the
@@ -1563,6 +1594,8 @@ pub fn run() {
             picker::picked,
             picker::browse,
             apps_folder_refusal,
+            apps_folder_states,
+            open_apps_folder,
             move_apps_folder,
             secret_get,
             secret_set,

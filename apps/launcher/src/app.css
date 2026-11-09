@@ -1239,9 +1239,17 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .settings-section { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
 .settings-section h3 { font-size: 15px; }
 /* Moving the apps folder (settings-page.tsx): the panel asking, the move's bar, and old copies left behind. */
-.apps-folder-path { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-.apps-folder-path p { min-width: 0; overflow-wrap: anywhere; }
-.apps-folder-path button { flex: none; }
+/* The apps folders, one row each: path and what's in it on the left, its actions on the right. */
+.apps-folders { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
+.apps-folder-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.apps-folder-row[data-default] { border-color: var(--line-strong); background: var(--panel); }
+.apps-folder-info { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.apps-folder-info p { margin: 0; overflow-wrap: anywhere; }
+.apps-folder-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--strong); font-weight: 600; }
+.apps-folder-badge { padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 600; }
+.apps-folder-row .row { flex: none; flex-wrap: wrap; gap: 8px; }
+.apps-folder-row .row > button { flex: none; white-space: nowrap; }
+.move-choice { display: grid; gap: 6px; }
 .apps-moving { display: grid; gap: 6px; max-width: 460px; }
 /* Working out whether a move fits: a bar that sweeps, as there is nothing yet to count. */
 .progress.waiting .bar { width: 30%; animation: progress-sweep 1.4s ease-in-out infinite; }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -385,5 +385,51 @@ describe("moving the apps folder", () => {
     expect(after.v3.inApps).toBe(true);
     expect(after.placed).toBe(before.placed);
     expect(markedInApps(after, old)).toBe(after);
+  });
+});
+
+describe("several apps folders", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const installs = {
+    here: { ...base, folder: "sm64" },
+    zelda: { ...base, folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp", inApps: true as const },
+    // The same folder written the Windows way, as a move records it.
+    mario: { ...base, folder: "mario", dir: "C:\\QuiverLauncher3\\Apps\\mario", inApps: true as const },
+    placed: { ...base, folder: "kart", dir: "E:/Fast SSD/Kart" },
+    msi: { ...base, folder: "msi", dir: "C:/Program Files/Thing", installer: "msi" as const, program: "C:/Program Files/Thing/thing.exe" },
+  };
+
+  it("lists the default first, then each folder apps are kept in, never one chosen for a single app", () => {
+    const folders = appsFolders(installs, "D:\\Games");
+    expect(folders.map((f) => [f.path, f.default, f.apps.map((a) => a.id)])).toEqual([
+      ["D:\\Games", true, ["here"]],
+      ["C:/QuiverLauncher3/Apps", false, ["zelda", "mario"]],
+    ]);
+  });
+
+  it("keeps the default's apps where they are before another folder becomes the default", () => {
+    const kept = keptWhereTheyAre(installs, "D:\\Games\\");
+    expect(kept.here).toEqual({ ...installs.here, dir: "D:\\Games\\sm64", inApps: true });
+    expect(kept.zelda).toBe(installs.zelda);
+    expect(appsFolders(kept, "E:\\New").map((f) => f.path)).toEqual(["E:\\New", "C:/QuiverLauncher3/Apps", "D:\\Games"]);
+  });
+
+  it("gives the new default back the apps in it under their own name, and keeps one under another name where it is", () => {
+    const within = {
+      a: { ...base, folder: "zelda", dir: "E:\\New\\zelda", inApps: true as const },
+      b: { ...base, folder: "kart", dir: "E:\\New\\kart 2", inApps: true as const },
+    };
+    const owned = ownedBy(within, "e:/new/");
+    expect(owned.a).toEqual({ ...base, folder: "zelda" });
+    expect(owned.b).toBe(within.b);
+  });
+
+  it("refuses a new default inside another apps folder, or around one", () => {
+    const folders = appsFolders(installs, "D:\\Games");
+    expect(folderClash("D:\\Games\\More", folders)).toContain("D:\\Games");
+    expect(folderClash("C:/", folders)).toContain("QuiverLauncher3");
+    expect(folderClash("E:/Games", folders)).toBeNull();
+    // An apps folder already in the list can become the default.
+    expect(folderClash("C:/QuiverLauncher3/Apps", folders)).toBeNull();
   });
 });

@@ -37,6 +37,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
   const answers = {
     open_url: ({ url }) => void window.__opened.push(url),
     config: () => config,
+    // Every apps folder is there, with room to spare.
+    apps_folder_states: ({ paths }) => paths.map(() => ({ exists: true, free: 500e9 })),
     read_state: ({ name }) => files[name] ?? null,
     write_state: ({ name, value }) => void (files[name] = value),
     // Damaged files, if `state` says so (stateProblems), or the Rust side not answering (stateFailure).
