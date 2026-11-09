@@ -38,8 +38,8 @@ export type LibraryView = {
   details: readonly CardDetail[];
 };
 
-/** The details a library card can show: Browse's, but New, which is the catalog's. */
-export const LIBRARY_DETAILS = CARD_DETAILS.filter((d) => d !== "new");
+/** The details a library card can show: Browse's, but New and Easy setup, which are about getting an app. */
+export const LIBRARY_DETAILS = CARD_DETAILS.filter((d) => d !== "new" && d !== "setup");
 /**
  * The same choice of details as one list each time it's read, so the cards (memo) aren't all drawn again with each
  * change to the launcher for a list that's equal but new.

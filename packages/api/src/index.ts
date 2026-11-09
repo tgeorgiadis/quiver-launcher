@@ -353,6 +353,8 @@ export type AppQuery = {
   console?: string;
   sort?: Sort;
   ai?: "no-generated" | "no-ai";
+  /** Only apps with Easy setup: their game files found and put in place by the launcher. */
+  setup?: "easy";
   cursor?: string | null;
   limit?: number;
 };
@@ -509,6 +511,7 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       else if (q.console) params.set("console", q.console);
       if (q.sort) params.set("sort", q.sort);
       if (q.ai) params.set("ai", q.ai);
+      if (q.setup) params.set("setup", q.setup);
       if (q.cursor) params.set("cursor", q.cursor);
       return get<Page<Entry>>(`/apps?${params}`);
     },

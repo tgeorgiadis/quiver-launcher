@@ -165,6 +165,9 @@ h1, h2, h3, p { margin: 0; }
   --ql-separator: var(--text-4);
   --ql-ai-chip-line: var(--line-strong);
   --ql-ai-chip-fg: var(--chip-muted);
+  --ql-easy-chip-line: color-mix(in srgb, var(--accent) 45%, transparent);
+  --ql-easy-chip-fg: var(--accent);
+  --ql-easy-chip-on-art: #7dd3fc;
   --ql-based-on-label: var(--text-4);
   --ql-chip-fg: var(--chip-fg);
   --ql-chip-bg: var(--chip-bg);

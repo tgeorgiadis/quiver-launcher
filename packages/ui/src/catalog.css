@@ -147,6 +147,20 @@
 .card-tags > .platform-icons:before {
   content: none;
 }
+/* Easy setup's chip, highlighted, and the AI label after it. */
+.easy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-color: var(--ql-easy-chip-line, var(--ql-ai-chip-line));
+  color: var(--ql-easy-chip-fg, var(--ql-ai-chip-fg));
+}
+.card-tags > .ai-chip + .ai-chip {
+  margin-left: 0;
+}
+.cover-strip .ai-chip.easy-chip {
+  color: var(--ql-easy-chip-on-art, inherit);
+}
 .card-tags > .ai-chip + .platform-icons {
   margin-left: 0;
 }
@@ -419,7 +433,7 @@
   right: auto;
   left: 8px;
 }
-/* The AI label and platforms along the foot of the art, on a shade of their own, so they read over any picture in either theme. */
+/* Easy setup and the AI label along the foot of the art, on a shade of their own, so they read over any picture in either theme. */
 .cover-strip {
   position: absolute;
   left: 0;
@@ -443,9 +457,20 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.cover-strip .platform-icons {
+/* The platforms in the art's top corner, opposite its badge, on a shade of their own. */
+.cover-platforms {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--ql-on-art-fg, #fff);
+  background: rgb(5 9 16 / 0.62);
+  transition: opacity 0.14s;
+}
+.cover-platforms .platform-icons {
   gap: 5px;
-  margin-left: auto;
   color: inherit;
   font-size: 11px;
 }

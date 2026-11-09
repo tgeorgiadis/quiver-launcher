@@ -196,7 +196,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   const ARGS = {
     "catalog:list": {
       paginationOpts: "page!", search: "string", os: OS, projectType: ["port", "tool", "emulator", "game"], projectTypes: "array", console: "string",
-      maker: BRANDS, sort: ["name", "updated", "added", "rating"], ai: ["no-generated", "no-ai"], developer: "string", hideDevelopers: "array",
+      maker: BRANDS, sort: ["name", "updated", "added", "rating"], ai: ["no-generated", "no-ai"], setup: ["easy"], developer: "string", hideDevelopers: "array",
     },
     "catalog:detail": { slug: "string!" },
     "catalog:readme": { slug: "string!" },
@@ -229,7 +229,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       // As URL parameters, so tests read the last listing's filters the same way as before.
       lastQuery = new URLSearchParams(Object.entries(a).filter(([k, v]) => k !== "paginationOpts" && v !== undefined).map(([k, v]) => [k, String(v)]));
       const search = (a.search ?? "").toLowerCase();
-      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)));
+      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.setup || e.launcher?.setupFiles?.length));
       return page(items.map(withVersion), a.paginationOpts);
     },
     "catalog:detail": ({ slug }) => {
@@ -641,7 +641,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       const given = (...names) => Object.fromEntries(names.flatMap((n) => (p.get(n) ? [[n, p.get(n)]] : [])));
       const route =
         resource === "apps" && !slug
-          ? ["catalog:list", { paginationOpts, ...given("search", "os", "projectType", "console", "maker", "sort", "ai"), ...(p.get("projectTypes") ? { projectTypes: p.get("projectTypes").split(",") } : {}) }]
+          ? ["catalog:list", { paginationOpts, ...given("search", "os", "projectType", "console", "maker", "sort", "ai", "setup"), ...(p.get("projectTypes") ? { projectTypes: p.get("projectTypes").split(",") } : {}) }]
           : resource === "apps" && !child ? ["catalog:detail", { slug }]
           : resource === "apps" && child === "readme" ? ["catalog:readme", { slug }]
           : resource === "apps" && child === "releases" ? ["catalog:releases", { slug, paginationOpts }]

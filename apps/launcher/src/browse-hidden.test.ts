@@ -24,6 +24,13 @@ describe("Only hidden apps' search and filters", () => {
     expect(hiddenMatches({ ...entry, aiLevel: "assisted" }, "", { ai: "no-generated" })).toBe(true);
     expect(hiddenMatches({ ...entry, aiLevel: "assisted" }, "", { ai: "no-ai" })).toBe(false);
   });
+  it("keep only apps with Easy setup when it's picked", () => {
+    const easy = { ...entry, launcher: { setupFiles: [{ id: "rom" }] } } as Entry;
+    expect(hiddenMatches(entry, "", { setup: "easy" })).toBe(false);
+    expect(hiddenMatches({ ...entry, launcher: { setupFiles: [] } } as unknown as Entry, "", { setup: "easy" })).toBe(false);
+    expect(hiddenMatches(easy, "", { setup: "easy" })).toBe(true);
+    expect(hiddenMatches(easy, "", {})).toBe(true);
+  });
 });
 
 const apps = ["a", "owned", "hid", "both"].map((id) => ({ id }));

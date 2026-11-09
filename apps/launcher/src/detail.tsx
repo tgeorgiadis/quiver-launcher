@@ -11,7 +11,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { ApiError, type AiUse, type Asset, type Checking, type Client, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
-import { OS_NAMES, ReleaseBadge, alertTitles, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
+import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
 import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
@@ -891,6 +891,12 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
               <Trans>Supported platforms</Trans>
             </dt>
             <dd>{platformList(entry.supportedOS)}</dd>
+            {/* Not a cell of its own, which would take a row more. Its title says what it means. */}
+            {hasEasySetup(entry) && (
+              <dd className="easy-setup">
+                <EasySetupChip />
+              </dd>
+            )}
           </div>
           {source && (
             <div>

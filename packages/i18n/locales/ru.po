@@ -905,6 +905,10 @@ msgstr "Любая консоль"
 msgid "Any project type"
 msgstr "Любой тип проекта"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Any setup"
+msgstr "Любая настройка"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Any source"
 msgstr "Любой источник"
@@ -1769,6 +1773,23 @@ msgstr "например, --fullscreen"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "например, gamemoderun %command% --fullscreen"
+
+#. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
+#. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/browse-cards.ts
+#: ../ui/src/index.tsx
+msgid "Easy setup"
+msgstr "Простая настройка"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Easy setup only"
+msgstr "Только простая настройка"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../ui/src/index.tsx
+msgid "Easy setup: Quiver Launcher finds your copy of the game and puts it where the app needs it."
+msgstr "Простая настройка: Quiver Launcher находит вашу копию игры и кладёт её туда, где она нужна приложению."
 
 #. Edits a playlist
 #: ../../apps/launcher/src/library.tsx

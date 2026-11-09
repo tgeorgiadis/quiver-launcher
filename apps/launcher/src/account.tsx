@@ -93,6 +93,7 @@ export type CatalogDefaults = {
   platforms?: string[];
   console?: string;
   ai?: string;
+  setup?: string;
   sort?: string;
 };
 
