@@ -11,7 +11,8 @@ import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import type { Entry } from "@quiverlauncher/api";
-import { useAccount } from "./account";
+import { fullDate } from "@quiverlauncher/ui";
+import { useAccount, type OwnCorrection } from "./account";
 import {
   CORRECTION_MAX,
   CORRECTION_TOPICS,
@@ -46,7 +47,19 @@ const TOPIC_LABELS: Record<CorrectionTopic, MessageDescriptor> = {
  * button signs in first and the form opens after.
  */
 export function SuggestCorrection({ entry, installed, onSignIn }: { entry: Entry; installed?: string; onSignIn: () => void }) {
-  const { user } = useAccount();
+  const { user, ownCorrection, markCorrectionsSeen } = useAccount();
+  // Their last correction to this app, and where it stands; seeing how it was decided here counts as seeing it.
+  const [latest, setLatest] = useState<OwnCorrection | null>(null);
+  const [round, setRound] = useState(0);
+  useEffect(() => {
+    if (!user) return setLatest(null);
+    let live = true;
+    ownCorrection(entry.id).then((c) => live && setLatest(c));
+    return () => void (live = false);
+  }, [user?.id, entry.id, round]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (latest?.unseen) void markCorrectionsSeen([latest.id]);
+  }, [latest?.id, latest?.unseen]); // eslint-disable-line react-hooks/exhaustive-deps
   const [open, setOpen] = useState(() => Boolean(user && readCorrectionDraft(user.id, entry.id)));
   const [sent, setSent] = useState(false);
   // Asked for while signed out: opens once they've signed in.
@@ -72,6 +85,7 @@ export function SuggestCorrection({ entry, installed, onSignIn }: { entry: Entry
         installed={installed}
         onSent={() => {
           setSent(true);
+          setRound((r) => r + 1);
           close();
         }}
         onClose={close}
@@ -83,6 +97,8 @@ export function SuggestCorrection({ entry, installed, onSignIn }: { entry: Entry
         <p className="correction-sent" role="status">
           <CircleCheck size={16} aria-hidden="true" /> <Trans>Thanks! A maintainer will take a look.</Trans>
         </p>
+      ) : latest ? (
+        <CorrectionStatus correction={latest} />
       ) : (
         <p className="muted">
           <Trans>Something wrong or missing on this page?</Trans>
@@ -102,6 +118,23 @@ export function SuggestCorrection({ entry, installed, onSignIn }: { entry: Entry
         <Flag size={14} aria-hidden="true" /> {user ? t`Suggest a correction` : t`Sign in to suggest a correction`}
       </button>
     </section>
+  );
+}
+
+/** Where the player's last correction to the app stands, with the maintainer's reply once decided. */
+function CorrectionStatus({ correction: c }: { correction: OwnCorrection }) {
+  const sent = fullDate(c.createdAt);
+  return (
+    <div className={`correction-status ${c.status}`}>
+      <p className={c.status === "open" ? "muted" : undefined}>
+        {c.status === "open"
+          ? t`You suggested a correction on ${sent}. A maintainer will take a look.`
+          : c.status === "done"
+            ? t`Your correction from ${sent} was made. Thanks!`
+            : t`A maintainer looked at your correction from ${sent} and left the page as it is.`}
+      </p>
+      {c.reply && <blockquote className="correction-reply">{c.reply}</blockquote>}
+    </div>
   );
 }
 

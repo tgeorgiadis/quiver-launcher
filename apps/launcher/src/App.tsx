@@ -300,7 +300,7 @@ export function App() {
             {/* Once, for a player set up before Game copies: where their ROMs and disc images are. */}
             <GameCopiesNotice onOpen={() => open({ kind: "settings", section: "copies" })} />
             {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
-            <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} />
+            <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} onOpenApp={openApp} />
           </div>
           {tab === "library" ? (
             <LibraryPage

@@ -120,3 +120,25 @@ test("a correction to an app's page: signing in opens it, B closes it to its but
   );
   assert.ok(sent.client.version && sent.client.os, "with the launcher's version and system");
 });
+
+test("a decided correction comes to the top bar's announcements, for a controller to read and dismiss", async () => {
+  await page.locator(".account button").click();
+  const dialog = page.locator('[role="dialog"]');
+  await dialog.locator('form > button[type="button"]').last().click();
+  await dialog.locator('input[autocomplete="username"]').fill("notices");
+  await dialog.locator('input[autocomplete="new-password"]').fill("a password for the test");
+  await dialog.locator("button.primary").click();
+  await page.locator(".account-button").waitFor();
+  // A maintainer decides one the player sent, with a reply.
+  s.api.corrections.push({ id: "correction_notice", user: "notices", entryId: "entry_test-port", topic: "launch", body: "It launches the wrong file.", status: "open", createdAt: Date.now() - 86400_000 });
+  s.api.resolveCorrection("correction_notice", "dismissed", "That file is the game; the other one is a level editor.");
+  // In the banners over the library (one shows at a time: another may be ahead of it).
+  const banner = page.locator(".banner.correction-notice");
+  await banner.waitFor({ state: "attached" });
+  assert.match(await banner.textContent(), /left its page as it is.*level editor/);
+  assert.equal(await open(".announcements-button"), "dialog: Announcements");
+  await everything("Announcements with a correction's news");
+  await reach.pressOn(app, ".correction-notice .announcement-dismiss", "South");
+  await s.until(() => !s.api.corrections.find((c) => c.id === "correction_notice").unseen);
+  assert.equal(await page.locator(".correction-notice").count(), 0, "gone from the dialog and the banner");
+});
