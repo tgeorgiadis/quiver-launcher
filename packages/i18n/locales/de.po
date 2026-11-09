@@ -29,6 +29,11 @@ msgstr "{0, plural, one {# App} other {# Apps}}"
 msgid "{0, plural, one {Move # app from {1} into {dir}?} other {Move # apps from {2} into {dir}?}}"
 msgstr "{0, plural, one {# App aus {1} nach {dir} verschieben?} other {# Apps aus {2} nach {dir} verschieben?}}"
 
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
+msgstr "{0, plural, one {# installierte App in ihren Konsolenordner verschieben} other {# installierte Apps in ihre Konsolenordner verschieben}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -2304,6 +2309,10 @@ msgstr "In der Bibliothek"
 msgid "In Steam's Game Mode"
 msgstr "Im Spielmodus von Steam"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "Im Standard-App-Ordner kommen Ports in Ports, in einen Ordner für ihre Konsole (zum Beispiel Ports{slash}N64), und Ports für mehr als eine Konsole in Ports{slash}Multi-console. Emulatoren, Tools und eigenständige Spiele bekommen daneben eigene Ordner. Apps, die du in einen anderen Ordner legst, landen genau dort, und bereits installierte Apps bleiben, wo sie sind, bis du sie verschiebst."
+
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
 msgstr "In diesem Ordner"
@@ -2999,6 +3008,10 @@ msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
 msgstr "{0} von {n, plural, one {# App} other {# Apps}} verschoben."
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
+msgstr "{n, plural, one {# App} other {# Apps}} in Konsolenordner verschoben."
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
 msgstr "{n, plural, one {# App} other {# Apps}} verschoben."
 
@@ -3017,6 +3030,12 @@ msgstr "Wird verschoben: {percent} %"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps"
 msgstr "Apps werden verschoben"
+
+#. placeholder {0}: sorting.done
+#. placeholder {1}: sorting.total
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps into console folders… {0} of {1}"
+msgstr "Apps werden in Konsolenordner verschoben … {0} von {1}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
@@ -3712,6 +3731,10 @@ msgstr "PROJEKTDETAILS"
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
 msgstr "Projekttyp"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Put new apps in a folder for their console"
+msgstr "Neue Apps in einen Ordner für ihre Konsole legen"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"

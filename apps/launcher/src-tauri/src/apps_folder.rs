@@ -39,6 +39,21 @@ pub struct App {
     pub folder: String,
     #[serde(default)]
     pub dir: Option<String>,
+    /// The console folder it's in inside its apps folder ("N64"), which it keeps in the new one.
+    #[serde(default)]
+    pub group: Option<String>,
+}
+
+/// Where an app goes in `to`: its console folder there, if it's in one, else `to` itself. A group that isn't a plain
+/// folder name is left out, so nothing goes outside `to`.
+fn place(app: &App, to: &Path) -> PathBuf {
+    let Some(group) = app.group.as_deref() else { return to.to_path_buf() };
+    // A path with "/" (Ports/N64), each part a plain folder name, or it goes nowhere but `to`.
+    let parts: Vec<&str> = group.split('/').collect();
+    if parts.iter().any(|p| crate::install::plain_name(p).is_err()) {
+        return to.to_path_buf();
+    }
+    parts.iter().fold(to.to_path_buf(), |path, part| path.join(part.trim()))
 }
 
 /// How far a move has got: `done` of `total` apps moved, and, while `folder`
@@ -102,7 +117,7 @@ fn same(a: &Path, b: &Path) -> bool {
 fn elsewhere<'a>(apps: &'a [App], to: &'a Path) -> impl Iterator<Item = (&'a App, PathBuf)> + 'a {
     apps.iter()
         .filter_map(|a| Some((a, PathBuf::from(a.dir.as_ref()?))))
-        .filter(|(_, dir)| dir.is_dir() && !dir.parent().is_some_and(|p| same(p, to)))
+        .filter(move |(a, dir)| dir.is_dir() && !dir.parent().is_some_and(|p| same(p, &place(a, to))))
 }
 
 /// Why apps can't move from `from` to `to`, if they can't.
@@ -299,7 +314,7 @@ pub fn move_apps(data: &Path, from: &Path, to: &Path, apps: &[App], progress: im
     for (app, dir) in sources(from, to, apps) {
         // The apps folder's own keep their names, which nothing in `to` has (`refuse`); one kept elsewhere gets a
         // free one.
-        let name = if app.dir.is_none() { app.folder.clone() } else { free_name(&app.folder, to, &claimed) };
+        let name = if app.dir.is_none() { app.folder.clone() } else { free_name(&app.folder, &place(app, to), &claimed) };
         claimed.push(name.clone());
         plan.push((app, dir, name));
     }
@@ -307,11 +322,13 @@ pub fn move_apps(data: &Path, from: &Path, to: &Path, apps: &[App], progress: im
     let mut done = Done::default();
     for (i, (app, old, name)) in plan.iter().enumerate() {
         progress(Moving { done: i, total, folder: name.clone(), copied: 0, size: 0 });
-        let new = to.join(name);
-        match move_one(old, &new, |copied, size| progress(Moving { done: i, total, folder: name.clone(), copied, size })) {
+        let new = place(app, to).join(name);
+        let result = fs::create_dir_all(place(app, to)).map_err(|e| explain(&e)).and_then(|_| move_one(old, &new, |copied, size| progress(Moving { done: i, total, folder: name.clone(), copied, size })));
+        match result {
             Ok(left) => {
                 moved(Moved { id: app.id.clone(), dir: new.to_string_lossy().into() });
-                if *name == app.folder {
+                // One in a console folder keeps its own path, and its group.
+                if *name == app.folder && app.group.is_none() {
                     done.inside.push(app.id.clone());
                 }
                 done.left.extend(left.map(|p| p.to_string_lossy().into_owned()));
@@ -567,11 +584,34 @@ mod tests {
     }
 
     fn app(id: &str, folder: &str) -> App {
-        App { id: id.into(), folder: folder.into(), dir: None }
+        App { id: id.into(), folder: folder.into(), dir: None, group: None }
     }
 
     fn kept(id: &str, folder: &str, dir: &Path) -> App {
-        App { id: id.into(), folder: folder.into(), dir: Some(dir.to_string_lossy().into()) }
+        App { id: id.into(), folder: folder.into(), dir: Some(dir.to_string_lossy().into()), group: None }
+    }
+
+    #[test]
+    fn an_app_in_a_console_folder_keeps_it_in_the_new_apps_folder() {
+        let data = tempfile::tempdir().unwrap();
+        let elsewhere = tempfile::tempdir().unwrap();
+        let from = current(data.path());
+        fs::create_dir_all(from.join("Ports/N64/Game")).unwrap();
+        fs::write(from.join("Ports/N64/Game/save.dat"), "saved").unwrap();
+        fs::create_dir_all(from.join("Plain")).unwrap();
+        let to = elsewhere.path().join("Games");
+        let grouped = App { group: Some("Ports/N64".into()), ..kept("g", "Game", &from.join("Ports/N64/Game")) };
+        let moved = std::cell::RefCell::new(vec![]);
+        let done = move_apps(data.path(), &from, &to, &[app("p", "Plain"), grouped], |_| {}, |m| moved.borrow_mut().push((m.id, m.dir))).unwrap();
+        assert_eq!(fs::read_to_string(to.join("Ports/N64/Game/save.dat")).unwrap(), "saved");
+        assert!(to.join("Plain").is_dir() && !from.join("Ports/N64/Game").exists());
+        assert!(moved.into_inner().contains(&("g".to_string(), to.join("Ports").join("N64").join("Game").to_string_lossy().into_owned())));
+        // It keeps its path and console folder; only the plain one is the apps folder's own now.
+        assert_eq!(done.inside, ["p"]);
+        // A console folder that isn't a plain name goes nowhere outside \`to\`.
+        for sneaky in ["../out", "Ports/..", "Ports\\..\\..", "/abs", "C:/x"] {
+            assert_eq!(place(&App { group: Some(sneaky.into()), ..app("x", "X") }, &to), to, "{sneaky}");
+        }
     }
 
     #[test]

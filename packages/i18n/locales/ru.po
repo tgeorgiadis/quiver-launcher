@@ -29,6 +29,11 @@ msgstr "{0, plural, one {# приложение} few {# приложения} ma
 msgid "{0, plural, one {Move # app from {1} into {dir}?} other {Move # apps from {2} into {dir}?}}"
 msgstr "{0, plural, one {Переместить # приложение из {1} в {dir}?} few {Переместить # приложения из {2} в {dir}?} many {Переместить # приложений из {2} в {dir}?} other {Переместить # приложения из {2} в {dir}?}}"
 
+#. placeholder {0}: unsorted.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {Move # installed app into its console folder} other {Move # installed apps into their console folders}}"
+msgstr "{0, plural, one {Переместить # установленное приложение в папку его консоли} few {Переместить # установленных приложения в папки их консолей} many {Переместить # установленных приложений в папки их консолей} other {Переместить # установленного приложения в папки их консолей}}"
+
 #. placeholder {0}: elsewhere.size
 #: ../../apps/launcher/src/library.tsx
 msgid "{0, plural, one {Platforms: # app hidden} other {Platforms: # apps hidden}}"
@@ -2304,6 +2309,10 @@ msgstr "В библиотеке"
 msgid "In Steam's Game Mode"
 msgstr "В игровом режиме Steam"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them."
+msgstr "В папке приложений по умолчанию порты попадают в Ports, в папку своей консоли (например, Ports{slash}N64), а порты для нескольких консолей — в Ports{slash}Multi-console. Эмуляторы, инструменты и самостоятельные игры получают свои папки рядом. Приложения, которые вы кладёте в другую папку, устанавливаются именно туда, а уже установленные приложения остаются на месте, пока вы их не переместите."
+
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "In this folder"
 msgstr "В этой папке"
@@ -2999,6 +3008,10 @@ msgid "Moved {0} of {n, plural, one {# app} other {# apps}}."
 msgstr "Перемещено {0} из {n, plural, one {# приложения} few {# приложений} many {# приложений} other {# приложения}}."
 
 #: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
+msgstr "{n, plural, one {Перемещено # приложение} few {Перемещено # приложения} many {Перемещено # приложений} other {Перемещено # приложения}} в папки консолей."
+
+#: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
 msgstr "{n, plural, one {Перемещено # приложение} few {Перемещено # приложения} many {Перемещено # приложений} other {Перемещено # приложения}}."
 
@@ -3017,6 +3030,12 @@ msgstr "Перемещение: {percent}%"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps"
 msgstr "Перемещение приложений"
+
+#. placeholder {0}: sorting.done
+#. placeholder {1}: sorting.total
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moving apps into console folders… {0} of {1}"
+msgstr "Перемещение приложений в папки консолей… {0} из {1}"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moving apps…"
@@ -3712,6 +3731,10 @@ msgstr "О ПРОЕКТЕ"
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
 msgstr "Тип проекта"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Put new apps in a folder for their console"
+msgstr "Класть новые приложения в папку их консоли"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"

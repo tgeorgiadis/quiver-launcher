@@ -149,7 +149,8 @@ export type CheckedCopy = {
 export type CopyProgress = { id: string; step: "check" | "place"; done: number; total: number };
 export type Proton = { name: string; path: string };
 /** An installed app to move: its folder in the apps folder, or one kept elsewhere (`dir`), as Quiver Launcher 3's are. */
-export type MovingApp = { id: string; folder: string; dir?: string };
+/** `group`: the console folder it's in inside its apps folder ("N64"), which it keeps in the new one. */
+export type MovingApp = { id: string; folder: string; dir?: string; group?: string };
 /** How far a move has got: `done` of `total` apps, and `copied` of `size` bytes of `folder` while it copies to another drive. */
 export type AppsMoving = { done: number; total: number; folder: string; copied: number; size: number };
 /** What runs Windows programs on Linux, chosen in Settings for every app: unset, Automatic. */
