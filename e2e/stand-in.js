@@ -76,6 +76,15 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       window.__installs.delete(id);
     },
     secret_get: () => null,
+    // GitLab's request limit, as the real Rust side reads it: the page can't see these headers itself.
+    gitlab_limit: async ({ url, token }) => {
+      const response = await fetch(url, { headers: token ? { "PRIVATE-TOKEN": token } : {} });
+      const header = (name) => {
+        const value = response.headers.get(name);
+        return value == null ? null : Number(value);
+      };
+      return { status: response.status, limit: header("ratelimit-limit"), remaining: header("ratelimit-remaining"), reset: header("ratelimit-reset") };
+    },
     // The player's own copy of a game (own-copy-setup.tsx): none found, and one set up stays where it was put.
     find_copies: () => files.foundCopies ?? [],
     copy_present: () => true,

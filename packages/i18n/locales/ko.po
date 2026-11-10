@@ -291,6 +291,10 @@ msgstr "{left, plural, other {앱 표시}}"
 msgid "{left} of {most} requests left this hour, until {until}."
 msgstr "{until}까지 이번 시간 요청이 {most}회 중 {left}회 남았어요."
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "{left} of {most} requests left this minute."
+msgstr "이번 분 요청이 {most}회 중 {left}회 남았어요."
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{mb} MB"
 msgstr "{mb} MB"
@@ -1058,6 +1062,10 @@ msgstr "지원하는 앱은 저장 데이터와 설정을 자체 폴더에 보�
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "GitHub에서 추가한 앱은 GitHub에서 직접 버전을 가져와요. GitHub는 이 네트워크에 시간당 60회, 토큰이 있으면 5,000회까지 요청을 허용해요. 카탈로그의 앱에는 토큰이 필요 없어요."
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Apps you add from GitLab get their releases from GitLab itself, which allows fewer requests from this network without a token. Apps from the catalog don't need one."
+msgstr "GitLab에서 추가한 앱은 GitLab에서 직접 버전을 가져와요. GitLab은 토큰이 없으면 이 네트워크의 요청을 더 적게 허용해요. 카탈로그의 앱에는 토큰이 필요 없어요."
+
 #. Get is the label of the button that installs an app
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
@@ -1351,6 +1359,7 @@ msgid "Checking your copy…"
 msgstr "사본 확인 중…"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
 msgstr "확인 중…"
@@ -1481,8 +1490,14 @@ msgstr "다른 항목 선택…"
 msgid "Choose Create a token on GitHub, and sign in to GitHub."
 msgstr "‘GitHub에서 토큰 만들기’를 선택하고 GitHub에 로그인하세요."
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Choose Create a token on GitLab, and sign in to GitLab."
+msgstr "‘GitLab에서 토큰 만들기’를 선택하고 GitLab에 로그인하세요."
+
 #. Generate token is the name of GitHub's button, as GitHub shows it in English
+#. Generate token is the name of GitLab's button, as GitLab shows it in English
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Generate token을 선택하고, 토큰을 복사해 위에 붙여 넣은 다음 ‘토큰 저장’을 선택하세요."
 
@@ -1527,6 +1542,7 @@ msgid "Choose this folder"
 msgstr "이 폴더 선택"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose when it expires."
 msgstr "만료 시점을 선택하세요."
 
@@ -1671,6 +1687,7 @@ msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "quiverlauncher.com에 연결할 수 없어요. 연결 상태를 확인하고 다시 시도하세요."
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Couldn't save the token. Try again."
 msgstr "토큰을 저장하지 못했어요. 다시 시도하세요."
 
@@ -1716,6 +1733,10 @@ msgstr "충돌, 낮은 성능, 작동하지 않는 조작이나 기능이 있었
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Create a token on GitHub"
 msgstr "GitHub에서 토큰 만들기"
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Create a token on GitLab"
+msgstr "GitLab에서 토큰 만들기"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Create account"
@@ -2121,6 +2142,14 @@ msgstr "GitHub에서 토큰을 받아들이지 않아 저장하지 않았어요.
 msgid "GitHub token"
 msgstr "GitHub 토큰"
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "GitLab didn't accept that token, so it wasn't saved. Check that you copied all of it."
+msgstr "GitLab에서 토큰을 받아들이지 않아 저장하지 않았어요. 전부 복사했는지 확인하세요."
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "GitLab token"
+msgstr "GitLab 토큰"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "뒤로 가기"
@@ -2242,6 +2271,7 @@ msgid "Hide the other files"
 msgstr "다른 파일 숨기기"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Hide the steps"
 msgstr "단계 숨기기"
 
@@ -2264,6 +2294,7 @@ msgid "How did it run"
 msgstr "어떻게 실행됐나요"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "How to make one"
 msgstr "만드는 방법"
 
@@ -2643,6 +2674,7 @@ msgid "Keep Quiver open until it's done. Each app's old copy is deleted only onc
 msgstr "끝날 때까지 Quiver를 열어 두세요. 각 앱의 이전 사본은 새 사본을 확인한 뒤에만 지워져요."
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "토큰은 비공개로 보관하세요. 만료되면 새로 만들어 여기에 저장하세요."
 
@@ -2721,6 +2753,10 @@ msgstr "레이아웃"
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요."
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Leave the read_api scope ticked: public releases need nothing more."
+msgstr "read_api 범위는 선택한 채로 두세요. 공개 버전에는 더 필요 없어요."
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx
@@ -4024,11 +4060,14 @@ msgid "Remove tag {tag}"
 msgstr "태그 {tag} 삭제"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Remove token"
 msgstr "토큰 삭제"
 
 #. The GitHub token was removed
+#. The GitLab token was removed
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Removed."
 msgstr "삭제했어요."
 
@@ -4151,12 +4190,17 @@ msgid "Save as playlist"
 msgstr "재생 목록으로 저장"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Save token"
 msgstr "토큰 저장"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
 msgstr "저장했어요. 이제 GitHub 요청에 토큰을 사용해요."
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Saved. Requests to GitLab use your token now."
+msgstr "저장했어요. 이제 GitLab 요청에 토큰을 사용해요."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Saving…"

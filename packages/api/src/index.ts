@@ -727,13 +727,52 @@ export function createGithub(base = "https://api.github.com", token?: string) {
 
 export type Github = ReturnType<typeof createGithub>;
 
-/** Releases on GitLab, for catalog apps hosted there. GitLab gives no checksums. */
-export function createGitlab(base = "https://gitlab.com/api/v4") {
+/**
+ * Why GitLab refused, worded for players. GitLab allows a network fewer
+ * requests without a token, and its answer says when that starts again.
+ */
+function gitlabError(response: Response, token: boolean): ApiError {
+  const { status, headers } = response;
+  if (status === 401 && token) return new ApiError(status, "GitLab didn't accept your GitLab token. Change or remove it in Settings.");
+  if (status === 403 || status === 429) {
+    const reset = Number(headers.get("ratelimit-reset"));
+    if (headers.get("ratelimit-remaining") === "0" && reset > 0) {
+      const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      return new ApiError(
+        status,
+        token
+          ? `Your GitLab token's limit of requests is used up until ${at}. Try again then.`
+          : `GitLab's limit of requests from this network is used up until ${at}. Try again then, or add a GitLab token in Settings to raise the limit.`,
+      );
+    }
+    const wait = Number(headers.get("retry-after"));
+    if (wait > 0) return new ApiError(status, `GitLab is limiting requests from this network. Try again in ${Math.ceil(wait / 60)} min.`);
+  }
+  return new ApiError(status, `GitLab answered ${status}. Try again later.`);
+}
+
+/**
+ * What GitLab's answer says about the request limit, as the Rust side reads it.
+ * The browser can't see GitLab's rate-limit headers (GitLab doesn't expose
+ * them to pages), so the launcher asks the Rust side, which can.
+ */
+export type GitlabLimit = { status: number; limit?: number | null; remaining?: number | null; reset?: number | null };
+/** Reads a GitLab URL's status and rate-limit headers, the Rust side's way. */
+export type GitlabLimitReader = (url: string, token: string | null) => Promise<GitlabLimit>;
+
+/**
+ * Releases on GitLab, for catalog apps hosted there. GitLab gives no checksums.
+ * With the player's token, GitLab counts requests against it rather than the
+ * network.
+ */
+export function createGitlab(base = "https://gitlab.com/api/v4", token?: string, readLimit?: GitlabLimitReader) {
+  const auth: Record<string, string> = token?.trim() ? { "PRIVATE-TOKEN": token.trim() } : {};
+  const fail = (response: Response) => gitlabError(response, Boolean(auth["PRIVATE-TOKEN"]));
   return {
     async releases(repository: string, count = 30): Promise<Release[]> {
-      const response = await fetch(`${base}/projects/${encodeURIComponent(repository)}/releases?per_page=${count}`);
+      const response = await fetch(`${base}/projects/${encodeURIComponent(repository)}/releases?per_page=${count}`, { headers: auth });
       if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitLab.");
-      if (!response.ok) throw new ApiError(response.status, `GitLab answered ${response.status}. Try again later.`);
+      if (!response.ok) throw fail(response);
       type Raw = {
         tag_name: string;
         released_at: string;
@@ -762,5 +801,33 @@ export function createGitlab(base = "https://gitlab.com/api/v4") {
         }),
       }));
     },
+    /**
+     * How many requests GitLab allows, how many are left, and when it starts
+     * again. Null when GitLab doesn't say, as some instances don't. Asking
+     * with a token checks it: a 401 ApiError when GitLab refuses it.
+     */
+    async rateLimit(): Promise<RateLimit | null> {
+      // `/user` checks a token; a project list is public, so it still answers without one.
+      const url = `${base}/${auth["PRIVATE-TOKEN"] ? "user" : "projects?per_page=1"}`;
+      // The browser can't read GitLab's rate-limit headers, so the Rust side does when it can.
+      let response: Response;
+      if (readLimit) {
+        const { status, limit, remaining, reset } = await readLimit(url, auth["PRIVATE-TOKEN"] ?? null);
+        const headers = new Headers();
+        if (limit != null) headers.set("ratelimit-limit", String(limit));
+        if (remaining != null) headers.set("ratelimit-remaining", String(remaining));
+        if (reset != null) headers.set("ratelimit-reset", String(reset));
+        response = new Response(null, { status, headers });
+      } else {
+        response = await fetch(url, { headers: auth });
+      }
+      if (!response.ok) throw fail(response);
+      const limit = Number(response.headers.get("ratelimit-limit"));
+      const remaining = Number(response.headers.get("ratelimit-remaining"));
+      const resetAt = Number(response.headers.get("ratelimit-reset")) * 1000;
+      return limit > 0 && remaining >= 0 && resetAt > 0 ? { limit, remaining, resetAt } : null;
+    },
   };
 }
+
+export type Gitlab = ReturnType<typeof createGitlab>;

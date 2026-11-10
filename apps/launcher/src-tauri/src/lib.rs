@@ -1281,6 +1281,39 @@ fn secret_set(data: State<Data>, key: String, value: Option<String>) -> Result<(
     secrets::set(&data.0, &secrets::OsKeychain, secrets::store(), &key, value.as_deref())
 }
 
+/// What GitLab says about the player's request limit. A page can't read GitLab's
+/// rate-limit headers (GitLab doesn't expose them to pages), so the Rust side
+/// asks instead: `/user` with a token, which also checks it, or a public project
+/// list without one.
+#[derive(Serialize)]
+struct GitlabLimit {
+    status: u16,
+    limit: Option<u64>,
+    remaining: Option<u64>,
+    reset: Option<u64>,
+}
+
+#[tauri::command]
+async fn gitlab_limit(url: String, token: Option<String>) -> Result<GitlabLimit, String> {
+    let mut request = reqwest::Client::builder()
+        .user_agent("QuiverLauncher/4")
+        .build()
+        .map_err(|e| e.to_string())?
+        .get(&url);
+    if let Some(token) = token.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+        request = request.header("PRIVATE-TOKEN", token);
+    }
+    let response = request.send().await.map_err(|_| "Couldn't reach GitLab. Check your connection and try again.".to_string())?;
+    let status = response.status().as_u16();
+    let header = |name: &str| response.headers().get(name).and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok());
+    Ok(GitlabLimit {
+        status,
+        limit: header("ratelimit-limit"),
+        remaining: header("ratelimit-remaining"),
+        reset: header("ratelimit-reset"),
+    })
+}
+
 /// Opens a GitHub or Discord sign-in page and waits for it to come back,
 /// then brings the launcher back in front of the browser.
 #[tauri::command]
@@ -1669,6 +1702,7 @@ pub fn run() {
             move_apps_folder,
             secret_get,
             secret_set,
+            gitlab_limit,
             browser_sign_in,
             browser_sign_in_cancel,
             log_error,

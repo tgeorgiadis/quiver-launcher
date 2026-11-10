@@ -436,6 +436,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   };
   const signedInPages = [];
   const githubRequests = [];
+  const gitlabRequests = [];
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
     if (url.pathname.startsWith("/account/")) return account.handle(req, res, url.pathname.slice(8));
@@ -463,8 +464,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       res.writeHead(204, headers);
       return res.end();
     }
-    const send = (body, status = 200) => {
-      res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+    const send = (body, status = 200, extra = {}) => {
+      res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", ...extra });
       res.end(JSON.stringify(body));
     };
     // GitHub's API answers the preflight a token's Authorization header needs, notes which requests carried a token,
@@ -480,6 +481,29 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         if (token === "Bearer bad-token") return send({ message: "Bad credentials" }, 401);
         return send({ resources: { core: { limit: token ? 5000 : 60, remaining: token ? 4999 : 59, reset: Math.floor(Date.now() / 1000) + 1800 } } });
       }
+    }
+    // GitLab's API answers the preflight a token's PRIVATE-TOKEN header needs, notes which requests carried a
+    // token, and says how many requests are left: fewer without a token, more with one, and none for a token it
+    // refuses. `/user` checks a token; a project list is public, so it answers without one. The headers are exposed
+    // to the page only because the stand-in reads them for `gitlab_limit`, as the Rust side does for real.
+    if (url.pathname.startsWith("/gitlab/")) {
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Allow-Headers": "private-token, accept" });
+        return res.end();
+      }
+      const token = req.headers["private-token"] ?? null;
+      gitlabRequests.push({ path: url.pathname, token });
+      const rate = {
+        "RateLimit-Limit": token ? "2000" : "500",
+        "RateLimit-Remaining": token ? "1999" : "499",
+        "RateLimit-Reset": String(Math.floor(Date.now() / 1000) + 60),
+        "Access-Control-Expose-Headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset",
+      };
+      if (url.pathname === "/gitlab/user") {
+        if (token === "bad-token") return send({ message: "401 Unauthorized" }, 401);
+        return send({ username: "someone" }, 200, rate);
+      }
+      if (url.pathname === "/gitlab/projects") return send([], 200, rate);
     }
     // GitHub's API: every release of a catalog app (one the site verified, one it didn't), and READMEs.
     // And its newest, out on GitHub before the site saw it.
@@ -715,6 +739,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     github: `${base}/github`,
     /** Requests to GitHub's API, oldest first: { path, token }, the token null without one. */
     githubRequests: () => githubRequests,
+    /** Requests to GitLab's API, oldest first: { path, token }, the token null without one. */
+    gitlabRequests: () => gitlabRequests,
     gitlab: `${base}/gitlab`,
     thunderstore: `${base}/thunderstore`,
     gamebanana: `${base}/gamebanana`,

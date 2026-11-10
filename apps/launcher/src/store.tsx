@@ -7,7 +7,7 @@
  */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
@@ -171,7 +171,10 @@ type Launcher = {
   /** The player's GitHub token (GITHUB_TOKEN); saving one keeps it in the keychain, none removes it. */
   githubToken?: string;
   saveGithubToken: (token: string | undefined) => Promise<void>;
-  gitlab: ReturnType<typeof createGitlab>;
+  /** The player's GitLab token (GITLAB_TOKEN); saving one keeps it in the keychain, none removes it. */
+  gitlabToken?: string;
+  saveGitlabToken: (token: string | undefined) => Promise<void>;
+  gitlab: Gitlab;
   /** The catalog's consoles, and their names by id. */
   consoles: Console[];
   consoleNames: Record<string, string>;
@@ -960,6 +963,14 @@ async function githubToken(settings: Settings | null): Promise<string | undefine
   return (await native.secretGet(GITHUB_TOKEN)) ?? undefined;
 }
 
+/** The player's GitLab token, for GitLab's higher limit: in the keychain (secret_set), sent only to GitLab's API, never synced. */
+const GITLAB_TOKEN = "gitlabToken";
+
+/** The GitLab token from the keychain. */
+async function gitlabToken(): Promise<string | undefined> {
+  return (await native.secretGet(GITLAB_TOKEN)) ?? undefined;
+}
+
 /** An app as usage data names it: a catalog app by its slug; one the player added only by where it's from. */
 export const appRef = (id: string, slug: string) => ({
   slug: isCustom(id) || isLocal(id) ? null : slug,
@@ -980,6 +991,7 @@ type Saved = {
   catalog: Record<string, CatalogEntry>;
   collections: Collection[];
   githubToken?: string;
+  gitlabToken?: string;
 };
 
 /** What usage data says about this copy of the launcher, and takes out of what it sends. */
@@ -1022,10 +1034,10 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       ]).then(async ([config, library, installs, catalog, settings, collections]) => {
         // The language picked here before anything shows, not the system's for a moment first.
         await activate(languageOf(settings ?? {})).catch(() => {});
-        // Without it GitHub still answers, at its lower limit.
-        const token = await githubToken(settings).catch(() => undefined);
+        // Without them GitHub and GitLab still answer, at their lower limits.
+        const [token, labToken] = await Promise.all([githubToken(settings).catch(() => undefined), gitlabToken().catch(() => undefined)]);
         if (settings?.scale) settings.scale = nearestInterfaceSize(settings.scale);
-        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token });
+        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token, gitlabToken: labToken });
       });
     }).catch((e) => setBroken(e instanceof Error ? e : new Error(String(e))));
   }, []);
@@ -1082,7 +1094,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e), error: failureKind(e) }),
         onUnreachable: (e) => track("catalog_load_failed", { reason: reasonOf(e), error: failureKind(e) }),
       }), [config.api]);
-  const gitlab = useMemo(() => createGitlab(config.gitlabApi), [config.gitlabApi]);
+  const [gitlabToken, setGitlabToken] = useState(saved.gitlabToken);
+  const gitlab = useMemo(() => createGitlab(config.gitlabApi, gitlabToken, native.gitlabLimit), [config.gitlabApi, gitlabToken]);
   /** A custom app's releases, newest first. */
   const releasesOf = (app: Pick<CustomApp, "provider" | "repository">) =>
     app.provider === "gitlab" ? gitlab.releases(app.repository) : github.releases(app.repository);
@@ -1773,6 +1786,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setGithubToken(token);
     },
     gitlab,
+    gitlabToken,
+    saveGitlabToken: async (token) => {
+      await native.secretSet(GITLAB_TOKEN, token ?? null);
+      setGitlabToken(token);
+    },
     consoles,
     consoleNames,
     collections,

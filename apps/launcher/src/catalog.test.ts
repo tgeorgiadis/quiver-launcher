@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { ApiError, createClient, createGithub, DEFAULT_API, FALLBACK_API } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, DEFAULT_API, FALLBACK_API } from "@quiverlauncher/api";
 import { byPlayerFeedback } from "./catalog";
 
 /** The site's REST API, answering each path from `answers` (404 otherwise) and recording what was asked. */
@@ -276,6 +276,76 @@ test("a saved GitHub token goes with every request to GitHub, and the limit is r
   expect((await createGithub("https://gh.test").rateLimit()).limit).toBe(60);
   expect(asked.at(-1)!.auth).toBeNull();
   await expect(createGithub("https://gh.test", "bad").rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
+});
+
+test("GitLab's request limit says when it resets, rather than only its status", async () => {
+  const reset = Date.UTC(2026, 9, 21, 9, 30) / 1000;
+  const limited = new Response("", {
+    status: 429,
+    headers: { "ratelimit-remaining": "0", "ratelimit-reset": String(reset) },
+  });
+  vi.stubGlobal("fetch", async () => limited);
+  const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  await expect(createGitlab("https://gl.test").releases("o/r")).rejects.toSatisfy(
+    (e) =>
+      e instanceof ApiError &&
+      e.status === 429 &&
+      e.message === `GitLab's limit of requests from this network is used up until ${at}. Try again then, or add a GitLab token in Settings to raise the limit.`,
+  );
+  await expect(createGitlab("https://gl.test", "glpat-x").releases("o/r")).rejects.toThrow(`Your GitLab token's limit of requests is used up until ${at}. Try again then.`);
+  vi.stubGlobal("fetch", async () => new Response("", { status: 429, headers: { "retry-after": "90" } }));
+  await expect(createGitlab("https://gl.test").releases("o/r")).rejects.toThrow("GitLab is limiting requests from this network. Try again in 2 min.");
+  vi.stubGlobal("fetch", async () => new Response("", { status: 500 }));
+  await expect(createGitlab("https://gl.test").releases("o/r")).rejects.toThrow("GitLab answered 500. Try again later.");
+});
+
+test("a saved GitLab token goes with every request to GitLab, and the limit is read for it", async () => {
+  const asked: { url: string; token: string | null }[] = [];
+  const rate = (limit: number, remaining: number) => ({
+    "ratelimit-limit": String(limit),
+    "ratelimit-remaining": String(remaining),
+    "ratelimit-reset": "1800000000",
+  });
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    const token = new Headers(init?.headers).get("private-token");
+    asked.push({ url, token });
+    if (url.endsWith("/user"))
+      return token === "glpat-bad" ? new Response(JSON.stringify({ message: "401 Unauthorized" }), { status: 401 }) : new Response("{}", { headers: rate(2000, 1999) });
+    if (url.endsWith("/projects?per_page=1")) return new Response("{}", { headers: rate(500, 499) });
+    return Response.json([]);
+  });
+  const gitlab = createGitlab("https://gl.test", "  glpat-x ");
+  await gitlab.releases("o/r");
+  expect(await gitlab.rateLimit()).toEqual({ limit: 2000, remaining: 1999, resetAt: 1_800_000_000_000 });
+  expect(asked.map((a) => a.token)).toEqual(["glpat-x", "glpat-x"]);
+  // Without one, GitLab still says how many are left; with one GitLab refuses, it says so.
+  expect(await createGitlab("https://gl.test").rateLimit()).toEqual({ limit: 500, remaining: 499, resetAt: 1_800_000_000_000 });
+  expect(asked.at(-1)!.token).toBeNull();
+  await expect(createGitlab("https://gl.test", "glpat-bad").rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
+  // An instance that doesn't say has no usage line.
+  vi.stubGlobal("fetch", async () => Response.json({}));
+  expect(await createGitlab("https://gl.test", "glpat-x").rateLimit()).toBeNull();
+});
+
+test("the Rust side reads GitLab's limit, since the page can't see its headers", async () => {
+  const asked: { url: string; token: string | null }[] = [];
+  const read = async (url: string, token: string | null) => {
+    asked.push({ url, token });
+    return token === "glpat-bad" ? { status: 401 } : token ? { status: 200, limit: 2000, remaining: 1999, reset: 1_800_000_000 } : { status: 200, limit: 500, remaining: 499, reset: 1_800_000_000 };
+  };
+  const browser = vi.fn();
+  vi.stubGlobal("fetch", browser);
+  const gitlab = createGitlab("https://gl.test", "glpat-x", read);
+  expect(await gitlab.rateLimit()).toEqual({ limit: 2000, remaining: 1999, resetAt: 1_800_000_000_000 });
+  expect(asked).toEqual([{ url: "https://gl.test/user", token: "glpat-x" }]);
+  expect(browser).not.toHaveBeenCalled();
+  // Without a token, a public project list says how many are left.
+  expect(await createGitlab("https://gl.test", undefined, read).rateLimit()).toEqual({ limit: 500, remaining: 499, resetAt: 1_800_000_000_000 });
+  expect(asked.at(-1)).toEqual({ url: "https://gl.test/projects?per_page=1", token: null });
+  // A token GitLab refuses is an ApiError, so Settings doesn't save it.
+  await expect(createGitlab("https://gl.test", "glpat-bad", read).rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
+  // An instance that doesn't say has no usage line.
+  expect(await createGitlab("https://gl.test", "glpat-x", async () => ({ status: 200 })).rateLimit()).toBeNull();
 });
 
 test("says once when neither address answers, and not when the other one does", async () => {

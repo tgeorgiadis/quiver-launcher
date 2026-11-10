@@ -23,6 +23,7 @@ import { WindowsRunnerSetting } from "./launch-options";
 import { PortableDefaultSetting } from "./app-files";
 import { UpdateSettings } from "./update";
 import { GithubTokenSetting } from "./github-token";
+import { GitlabTokenSetting } from "./gitlab-token";
 import { TelemetrySetting } from "./telemetry-ui";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
@@ -134,7 +135,10 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
             ) : section === "updates" ? (
               <UpdateSettings />
             ) : (
-              <GithubTokenSetting />
+              <>
+                <GithubTokenSetting />
+                <GitlabTokenSetting />
+              </>
             )}
           </div>
         )}
