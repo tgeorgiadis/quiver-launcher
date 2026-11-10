@@ -691,7 +691,7 @@ export function LibraryPage({
       />
     );
   // The player's view: the cards' picture and size, names or not. A sidebar that doesn't fit is a grid.
-  const gridClass = `catalog-grid library-grid layout-grid image-${view.image} size-${view.size}${view.names ? "" : " no-names"}`;
+  const gridClass = `catalog-grid library-grid layout-grid image-${view.image} size-${view.size}${view.names ? "" : " no-names"}${view.greyUninstalled ? " grey-uninstalled" : ""}`;
   // The lines under the name, and the tags' over it, the names keep room for (app.css's --tile-names).
   const tileLines = view.details.filter((d) => d === "subtitle" || d === "rating" || d === "updated").length + (view.details.some((d) => d === "kinds" || d === "ai" || d === "platforms") ? 1 : 0);
   const gridStyle = { "--tile-lines": tileLines } as CSSProperties;

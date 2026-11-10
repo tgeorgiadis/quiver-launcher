@@ -130,6 +130,12 @@ export function ViewOptions({ groups }: { groups?: boolean }) {
           <Trans>Show installed and update icons</Trans>
         </label>
       )}
+      {cards && (
+        <label className="toggle">
+          <input type="checkbox" checked={view.greyUninstalled} onChange={(e) => set({ greyUninstalled: e.target.checked })} />
+          <Trans comment="Library view option: the cards of apps in the library but not installed on this computer have a greyed picture">Grey out apps that aren't installed</Trans>
+        </label>
+      )}
       {/* With the names: a card without them has the art alone. */}
       {cards && view.names && <DetailChoice options={LIBRARY_DETAILS} value={view.details} onChange={(details) => set({ details })} names={LIBRARY_DETAIL_NAMES} />}
       {groups && (

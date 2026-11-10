@@ -2129,6 +2129,11 @@ msgstr "Zurück"
 msgid "Good copy"
 msgstr "Gute Kopie"
 
+#. Library view option: the cards of apps in the library but not installed on this computer have a greyed picture
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Grey out apps that aren't installed"
+msgstr "Nicht installierte Apps ausgrauen"
+
 #. Library layout
 #: ../../apps/launcher/src/view.ts
 msgid "Grid"

@@ -10,6 +10,11 @@ test("a library view keeps only what differs from today's look, and ignores what
   expect(savedView({ ...DEFAULT_VIEW, continuePlaying: false })).toEqual({ continuePlaying: false });
   expect(viewOf({ byGame: true })).toEqual({ ...DEFAULT_VIEW, byGame: true });
   expect(savedView({ ...DEFAULT_VIEW, byGame: true })).toEqual({ byGame: true });
+  // Cards for apps not installed are greyed unless turned off; anything but a boolean is the default.
+  expect(viewOf({}).greyUninstalled).toBe(true);
+  expect(viewOf({ greyUninstalled: false })).toEqual({ ...DEFAULT_VIEW, greyUninstalled: false });
+  expect(viewOf({ greyUninstalled: "no" as never }).greyUninstalled).toBe(true);
+  expect(savedView({ ...DEFAULT_VIEW, greyUninstalled: false })).toEqual({ greyUninstalled: false });
 });
 
 test("the details a library card shows are kept in order, the same list each time, without New or anything unknown", () => {

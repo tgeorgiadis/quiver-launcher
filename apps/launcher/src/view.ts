@@ -32,6 +32,8 @@ export type LibraryView = {
   continuePlaying: boolean;
   /** The grid's cards show their copy's mark by the name (Get's symbol not installed, a cloud for an update). */
   marks: boolean;
+  /** The grid's cards for apps not installed here have their picture greyed. */
+  greyUninstalled: boolean;
   /** The grid has a card for each game, its ports picked from it (group.ts), not one for each app. */
   byGame: boolean;
   /** What the grid's cards show with their names, as Browse's can (browse-cards.ts): the line under the name, at first. */
@@ -58,7 +60,7 @@ const sameDetails = (a: readonly CardDetail[], b: readonly CardDetail[]) => a.le
  * A shelf of box art, medium, with names: unlike Browse's wide catalog cards.
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
-export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, byGame: false, details: ["subtitle"] };
+export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, greyUninstalled: true, byGame: false, details: ["subtitle"] };
 /** TV mode's look (tvModeOn), over the player's own view, which stays saved for when it's left. */
 export const TV_VIEW: Pick<LibraryView, "layout" | "image" | "cardScale" | "size"> = { layout: "grid", image: "box", cardScale: 1.3, size: "large" };
 
@@ -117,6 +119,7 @@ export function viewOf(saved?: Partial<LibraryView>): LibraryView {
     bothNames: typeof saved?.bothNames === "boolean" ? saved.bothNames : DEFAULT_VIEW.bothNames,
     continuePlaying: typeof saved?.continuePlaying === "boolean" ? saved.continuePlaying : DEFAULT_VIEW.continuePlaying,
     marks: typeof saved?.marks === "boolean" ? saved.marks : DEFAULT_VIEW.marks,
+    greyUninstalled: typeof saved?.greyUninstalled === "boolean" ? saved.greyUninstalled : DEFAULT_VIEW.greyUninstalled,
     byGame: typeof saved?.byGame === "boolean" ? saved.byGame : DEFAULT_VIEW.byGame,
     details: detailsOf(saved?.details),
   };
