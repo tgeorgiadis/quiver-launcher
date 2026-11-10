@@ -115,6 +115,30 @@ test("the library's sidebar layout", async () => {
   assert.equal(await reach.focused(app), 'button "Overview" in App sections');
 });
 
+test("the library's sidebar rows line up: one icon size and one name column", async () => {
+  // A catalog app with a game (two names) beside one the player added (one name): the two used to have icons of different sizes.
+  const mixed = {
+    library: [...state.library, { id: "local:mine", slug: "", addedAt: Date.now() - 2 * 86400_000, local: { kind: "program", path: "/games/Test.exe", name: "Test" } }],
+    installs: state.installs,
+  };
+  const s2 = await openApp({ state: { ...mixed, settings: { library: { layout: "sidebar" } } }, height: 700 });
+  try {
+    await s2.page.locator(".sidebar-row").first().waitFor();
+    const rows = await s2.page.evaluate(() =>
+      [...document.querySelectorAll(".sidebar-row")].map((row) => {
+        const icon = row.querySelector(".sidebar-icon")?.getBoundingClientRect();
+        const names = row.querySelector(".sidebar-names")?.getBoundingClientRect();
+        return { lines: row.getAttribute("data-lines"), icon: icon && `${icon.width}x${icon.height}`, left: names?.left };
+      }),
+    );
+    assert.deepEqual(rows.map((r) => r.lines).sort(), ["1", "2"], "a row with one name and one with two");
+    assert.equal(new Set(rows.map((r) => r.icon)).size, 1, `every row's icon is the same size (${rows.map((r) => r.icon).join(", ")})`);
+    assert.equal(new Set(rows.map((r) => r.left)).size, 1, `every row's name starts at the same place (${rows.map((r) => r.left).join(", ")})`);
+  } finally {
+    await s2.close();
+  }
+});
+
 test("A on a dropdown opens its options: the d-pad goes through them, A picks one, and B closes them and goes no further", async () => {
   await home();
   await open("button", { text: "Library" });

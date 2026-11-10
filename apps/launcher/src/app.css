@@ -1838,12 +1838,12 @@ html[data-halo] :focus-visible { outline-color: transparent; }
 /* The other name, the app's or the game's, under it. */
 .sidebar-other { color: var(--text-3); font-size: 11.5px; line-height: 1.3; }
 .sidebar-row[data-lines="2"] { min-height: 40px; }
-.sidebar-row[data-lines="2"] .sidebar-icon { width: 28px; height: 28px; }
 .sidebar-note { flex-shrink: 0; margin-left: 0.3em; color: var(--link); font-size: 12px; white-space: nowrap; }
 /* An app kept on its version, beside its name: it gets no updates. */
 .sidebar-pin { flex-shrink: 0; align-self: center; margin-left: 5px; color: var(--muted); }
 .sidebar-row[data-state="error"] .sidebar-note { color: var(--danger); }
-.sidebar-icon { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; overflow: hidden; }
+/* One size for every row, whether it shows one name or two, so the icons line up and the names start at the same place. */
+.sidebar-icon { flex-shrink: 0; width: 28px; height: 28px; border-radius: 5px; overflow: hidden; }
 .sidebar-icon .card-art img { object-fit: contain; filter: none; }
 .sidebar-icon .card-art.icon img { width: 100%; height: 100%; }
 .sidebar-icon .card-art-blur { display: none; }
