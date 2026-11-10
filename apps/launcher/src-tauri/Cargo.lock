@@ -3335,7 +3335,7 @@ dependencies = [
 
 [[package]]
 name = "quiver-launcher"
-version = "4.0.0-beta.3"
+version = "4.0.0-beta.4"
 dependencies = [
  "base64 0.22.1",
  "bzip2 0.6.1",
