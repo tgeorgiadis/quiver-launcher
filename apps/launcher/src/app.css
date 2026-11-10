@@ -1452,6 +1452,14 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .layout-grid .library-tile .card-body > .card-subtitle { display: block; min-width: 0; color: rgb(255 255 255 / 0.82); font-size: 12.5px; text-shadow: 0 1px 2px rgb(0 0 0 / 0.8), 0 0 6px rgb(0 0 0 / 0.5); }
 .size-small .library-tile .card-title { font-size: 14px; }
 .size-large .library-tile .card-title { font-size: 20px; }
+/*
+ * An app in the library that isn't installed here: its picture and the tile behind an icon greyed, as the sidebar's
+ * rows are, so a shelf says at a glance what's ready to play. Its names stay as they are. It still opens, and offers Get.
+ */
+.library-tile[data-installed="false"] :is(.card-art, .artwork) { opacity: 0.55; filter: grayscale(0.7); }
+.layout-grid.image-icon:not(.no-names) .library-tile[data-installed="false"]:not(:hover) .card-open { background: color-mix(in srgb, var(--field) 60%, var(--bg)); }
+/* A pointer on it shows it in its colours again, ready to Get. */
+.library-tile[data-installed="false"]:hover:where(:not([data-navigating] *)) :is(.card-art, .artwork) { opacity: 1; filter: none; }
 .tile-mark { flex-shrink: 0; color: #fff; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.6)); }
 span.tile-mark { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: rgb(255 255 255 / 0.4); }
 .tile-mark[data-copy="update"] { color: #6fd0ff; }
