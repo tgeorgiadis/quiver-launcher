@@ -2,14 +2,17 @@
  * Announcements on screen (announcements.ts): a button in the top bar with
  * how many are waiting, its list, and the newest in a banner above the
  * library or Browse. Both layouts get the same, and a controller reaches the
- * button by moving up into the top bar.
+ * button by moving up into the top bar. With them, signed in: how the
+ * player's corrections to app pages were decided (correctionNotices), until
+ * they've seen it here or on the website.
  */
 import { useEffect, useState } from "react";
-import { Megaphone, X } from "lucide-react";
+import { Flag, Megaphone, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import type { Announcement } from "@quiverlauncher/api";
+import type { Announcement, Entry } from "@quiverlauncher/api";
 import { useLauncher } from "./store";
+import { useAccount, type OwnCorrection } from "./account";
 import { dayLabel } from "./sidebar";
 import { track, trackScreen } from "./telemetry";
 import { bannerAnnouncement, keptDismissals, sorted, useAnnouncementList } from "./announcements";
@@ -56,12 +59,42 @@ function Message({ announcement }: { announcement: Announcement }) {
   );
 }
 
-/** In the top bar, once there's anything: how many haven't been dismissed. */
+/** How a correction was decided, in a sentence. */
+export function decidedText(c: OwnCorrection) {
+  const app = c.entryName;
+  return c.status === "done"
+    ? t`The problem you reported with ${app} was fixed. Thanks!`
+    : t`A maintainer looked at the problem you reported with ${app} and left its page as it is.`;
+}
+
+/** A notice's sentence and the maintainer's reply, if any. */
+function Decided({ notice }: { notice: OwnCorrection }) {
+  return (
+    <>
+      <p>{decidedText(notice)}</p>
+      {notice.reply && <blockquote className="correction-reply">{notice.reply}</blockquote>}
+    </>
+  );
+}
+
+/** Opens a notice's app page, from the site, as it is now. */
+function useOpenNotice(onOpenApp: (entry: Entry) => void) {
+  const { client } = useLauncher();
+  return (notice: OwnCorrection) =>
+    notice.entrySlug &&
+    client.app(notice.entrySlug).then(
+      (detail) => onOpenApp(detail.entry),
+      () => {},
+    );
+}
+
+/** In the top bar, once there's anything: how many haven't been dismissed, with the player's correction notices. */
 export function AnnouncementsButton({ onOpen }: { onOpen: () => void }) {
   const list = useAnnouncementList();
   const { dismissed } = useDismissals();
-  if (!list?.length) return null;
-  const waiting = sorted(list, dismissed).shown.length;
+  const notices = useAccount().correctionNotices ?? [];
+  if (!list?.length && !notices.length) return null;
+  const waiting = sorted(list ?? [], dismissed).shown.length + notices.length;
   return (
     <button
       className="icon announcements-button"
@@ -84,9 +117,35 @@ export function AnnouncementsButton({ onOpen }: { onOpen: () => void }) {
  * Sidebar layout it's a strip across the window under the top bar instead of
  * a box, so it reads as part of the window rather than pushing a box in.
  */
-export function AnnouncementBanner({ onOpen, edge = false }: { onOpen: () => void; edge?: boolean }) {
+export function AnnouncementBanner({ onOpen, onOpenApp, edge = false }: { onOpen: () => void; onOpenApp: (entry: Entry) => void; edge?: boolean }) {
   const list = useAnnouncementList();
   const { dismissed, dismiss } = useDismissals();
+  const { correctionNotices, markCorrectionsSeen } = useAccount();
+  const openNotice = useOpenNotice(onOpenApp);
+  // The player's own news first: a correction of theirs decided.
+  const notice = correctionNotices?.[0];
+  if (notice)
+    return (
+      <div className={`banner announcement-banner correction-notice${edge ? " edge" : ""}`} role="status" aria-label={t`Your problem report`}>
+        <Flag size={18} aria-hidden="true" />
+        <div>
+          <Decided notice={notice} />
+        </div>
+        {notice.entrySlug && (
+          <button
+            onClick={() => {
+              void markCorrectionsSeen([notice.id]);
+              void openNotice(notice);
+            }}
+          >
+            <Trans>Open app</Trans>
+          </button>
+        )}
+        <button onClick={() => void markCorrectionsSeen([notice.id])}>
+          <Trans comment="Hide an announcement">Dismiss</Trans>
+        </button>
+      </div>
+    );
   const newest = list && bannerAnnouncement(list, dismissed);
   if (!newest) return null;
   return (
@@ -114,6 +173,7 @@ export function AnnouncementsDialog({ onClose }: { onClose: () => void }) {
   const [showDismissed, setShowDismissed] = useState(false);
   const { shown, dismissed: hidden } = sorted(list, dismissed);
   const count = hidden.length;
+  const { correctionNotices: notices = [], markCorrectionsSeen } = useAccount();
   useEffect(() => void trackScreen({ screen: "announcements" }), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -159,9 +219,34 @@ export function AnnouncementsDialog({ onClose }: { onClose: () => void }) {
           <h2>
             <Trans>Announcements</Trans>
           </h2>
+          {notices.length > 0 && (
+            <>
+              <h3 className="eyebrow">
+                <Trans comment="Above news about the player's own corrections">For you</Trans>
+              </h3>
+              <ul className="announcement-list">
+                {notices.map((n) => (
+                  <li key={n.id} className="announcement correction-notice">
+                    <div>
+                      <p className="muted">{n.resolvedAt ? dayLabel(n.resolvedAt) : null}</p>
+                      <Decided notice={n} />
+                    </div>
+                    <button
+                      className="announcement-dismiss"
+                      aria-label={t({ message: "Dismiss", comment: "Hide an announcement" })}
+                      title={t({ message: "Dismiss", comment: "Hide an announcement" })}
+                      onClick={() => void markCorrectionsSeen([n.id])}
+                    >
+                      <X size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           {shown.length ? (
             <ul className="announcement-list">{shown.map((a) => item(a, false))}</ul>
-          ) : (
+          ) : notices.length ? null : (
             <p className="muted">
               <Trans>You&apos;re all caught up.</Trans>
             </p>

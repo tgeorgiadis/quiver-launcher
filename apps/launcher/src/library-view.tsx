@@ -2,8 +2,8 @@
  * The library's view options (view.ts): the controls, in the library's View
  * menu and in Settings, and the picture a box art or icon card shows.
  */
-import { useEffect, useState, type ReactNode } from "react";
-import { ChevronDown, Gamepad2, LayoutGrid, PanelLeft, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, Gamepad2, Grid2x2, Grid3x3, LayoutGrid, PanelLeft, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -15,7 +15,7 @@ import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards,
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
 import { SIDEBAR_SIZES } from "./sidebar";
 import { GRID_GROUP_BYS, GROUP_BYS, gridGroupBy, isGroupBy, type GroupBy } from "./group";
-import { CARD_IMAGES, CARD_SIZES, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
+import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
 
 /** This computer's library view, and a way to change it. */
 export function useLibraryView() {
@@ -93,7 +93,7 @@ export function ViewOptions({ groups }: { groups?: boolean }) {
       {fits && !tv && <Choice label={t({ message: "Layout", comment: "Library view option" })} options={LAYOUTS} icons={LAYOUT_ICONS} value={layout} onChange={(layout) => set({ layout })} />}
       {/* The sidebar has no cards. */}
       {cards && !tv && <Choice label={t`Card image`} options={CARD_IMAGES} icons={IMAGE_ICONS} value={view.image} onChange={(image) => set({ image })} />}
-      {cards && !tv && <Choice label={t`Card size`} options={CARD_SIZES} value={view.size} onChange={(size) => set({ size })} />}
+      {cards && !tv && <CardSizeSlider value={view.cardScale} onChange={(cardScale) => set({ cardScale })} />}
       {cards && (
         <label className="toggle">
           <input type="checkbox" checked={view.names} onChange={(e) => set({ names: e.target.checked })} />
@@ -217,6 +217,64 @@ function SidebarWidth() {
       value={picked}
       onChange={(size) => setSettings({ ...settings, sidebarWidth: SIDEBAR_SIZES.find(([s]) => s === size)?.[2] })}
     />
+  );
+}
+
+/** The library grids' card size (app.css's --card-scale), on the page itself, so a change shows without drawing them again. */
+export const showCardScale = (scale: number) => document.documentElement.style.setProperty("--card-scale", String(scale));
+
+/**
+ * The cards' size, on a slider between a 3x3 grid (more, smaller cards) and a 2x2 one (fewer, larger). A controller's
+ * left and right move it (data-arrows), as the arrow keys do; up and down leave it. While it moves, only the grids'
+ * size changes; it's saved once it stops, as saving draws the whole launcher again, every card with it.
+ */
+function CardSizeSlider({ value, onChange }: { value: number; onChange: (scale: number) => void }) {
+  const label = t`Card size`;
+  const [moving, setMoving] = useState<number | null>(null);
+  const shown = moving ?? value;
+  const pending = useRef<{ timer: number; scale: number } | null>(null);
+  const save = useRef(onChange);
+  save.current = onChange;
+  const settle = () => {
+    if (!pending.current) return;
+    clearTimeout(pending.current.timer);
+    save.current(pending.current.scale);
+    pending.current = null;
+    setMoving(null);
+  };
+  // Closing the menu mid-move keeps the size it had come to.
+  useEffect(() => settle, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const move = (scale: number) => {
+    setMoving(scale);
+    showCardScale(scale);
+    if (pending.current) clearTimeout(pending.current.timer);
+    pending.current = { scale, timer: window.setTimeout(settle, 250) };
+  };
+  const step = (by: number) => move(Math.min(CARD_SCALE.max, Math.max(CARD_SCALE.min, Number((shown + by * CARD_SCALE.step).toFixed(2)))));
+  return (
+    <div className="view-choice">
+      <span className="view-label">{label}</span>
+      <div className="card-size" data-arrows="x">
+        <Grid3x3 size={14} aria-hidden="true" />
+        <input
+          type="range"
+          aria-label={label}
+          aria-valuetext={`${Math.round(shown * 100)}%`}
+          min={CARD_SCALE.min}
+          max={CARD_SCALE.max}
+          step={CARD_SCALE.step}
+          value={shown}
+          onChange={(e) => move(Number(e.target.value))}
+          onKeyDown={(e) => {
+            // The arrow keys, and a controller's left and right (sent as them): a step each, the same either way.
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            step(e.key === "ArrowRight" ? 1 : -1);
+          }}
+        />
+        <Grid2x2 size={18} aria-hidden="true" />
+      </div>
+    </div>
   );
 }
 

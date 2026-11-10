@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { artFor, keepsTab, keptFilters, savedView, viewOf, DEFAULT_VIEW } from "./view";
+import { artFor, cardScaleOf, keepsTab, keptFilters, savedView, sizeOf, viewOf, DEFAULT_VIEW } from "./view";
 
 test("a library view keeps only what differs from today's look, and ignores what it doesn't know", () => {
   expect(viewOf(undefined)).toEqual(DEFAULT_VIEW);
@@ -45,11 +45,18 @@ test("box art and icon cards fall back to the cover, then to nothing", () => {
 });
 
 test("the library's filters and tab come back as the player left them, when the library still has them", () => {
-  expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", console: "n64", ai: "no-ai" });
+  // One console or kind, as they were kept before several could be picked; several, as they're kept now.
+  expect(keptFilters({ installed: "yes", console: "n64", ai: "no-ai" })).toEqual({ installed: "yes", consoles: ["n64"], ai: "no-ai" });
+  expect(keptFilters({ projectType: "port" })).toEqual({ projectTypes: ["port"] });
+  expect(keptFilters({ consoles: ["n64", "maker:Sony", "n64"], projectTypes: ["port", "tool"] })).toEqual({ consoles: ["n64", "maker:Sony"], projectTypes: ["port", "tool"] });
+  expect(keptFilters({ consoles: [], projectTypes: [""] })).toEqual({});
   expect(keptFilters({ installed: "maybe", ai: "some", tag: "" })).toEqual({});
+  expect(keptFilters({ managed: "manual" })).toEqual({ managed: "manual" });
+  expect(keptFilters({ managed: "quiver" })).toEqual({ managed: "quiver" });
+  expect(keptFilters({ managed: "someone" })).toEqual({});
   expect(keptFilters(undefined)).toEqual({});
   // Installed and Not installed were tabs too: left on one, the library opens with the filter on.
-  expect(keptFilters({ console: "n64" }, "installed")).toEqual({ console: "n64", installed: "yes" });
+  expect(keptFilters({ console: "n64" }, "installed")).toEqual({ consoles: ["n64"], installed: "yes" });
   expect(keptFilters({ installed: "yes" }, "not-installed")).toEqual({ installed: "no" });
   expect(keptFilters({ installed: "yes" }, "racing")).toEqual({ installed: "yes" });
   const playlists = [{ key: "racing" }, { key: "gone", removed: true }];
@@ -59,4 +66,23 @@ test("the library's filters and tab come back as the player left them, when the 
   expect(keepsTab("updates", playlists)).toBe(false);
   expect(keepsTab("hidden", playlists)).toBe(false);
   expect(keepsTab(undefined, playlists)).toBe(false);
+});
+
+test("the card size slider keeps a library saved before it at the size it had, and saves its step with it", () => {
+  expect(viewOf({ size: "small" })).toMatchObject({ cardScale: 0.8, size: "small" });
+  expect(viewOf({ size: "large" })).toMatchObject({ cardScale: 1.3, size: "large" });
+  // The slider's own scale wins over an older size.
+  expect(viewOf({ size: "small", cardScale: 1.45 })).toMatchObject({ cardScale: 1.45, size: "large" });
+  expect(savedView({ ...DEFAULT_VIEW, cardScale: 0.7 })).toEqual({ cardScale: 0.7, size: "small" });
+  expect(savedView({ ...DEFAULT_VIEW, cardScale: 1.05 })).toEqual({ cardScale: 1.05 });
+});
+
+test("a card scale stays on the slider: its ends at most, on a step", () => {
+  expect(cardScaleOf(0.1)).toBe(0.6);
+  expect(cardScaleOf(9)).toBe(1.6);
+  expect(cardScaleOf(0.6 + 0.05 * 3)).toBe(0.75);
+  expect(cardScaleOf(1.12)).toBe(1.1);
+  expect(cardScaleOf("big", 0.8)).toBe(0.8);
+  expect(cardScaleOf(NaN)).toBe(1);
+  expect([0.6, 0.85, 0.9, 1.1, 1.15, 1.6].map(sizeOf)).toEqual(["small", "small", "medium", "medium", "large", "large"]);
 });

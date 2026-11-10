@@ -5,14 +5,14 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ChevronRight, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronRight, Disc3, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
-import { useLauncher } from "./store";
+import { folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
-import { native } from "./native";
+import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
 import { DEFAULT_BACKGROUND_OPACITY, useBackgroundImage } from "./library-background";
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
@@ -26,13 +26,16 @@ import { GithubTokenSetting } from "./github-token";
 import { TelemetrySetting } from "./telemetry-ui";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
+import { GameCopySettings } from "./own-copy-settings";
+import { foldersOn } from "./detail";
 
-type Section = "general" | "library" | "apps" | "controllers" | "updates" | "advanced";
+type Section = "general" | "library" | "apps" | "copies" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
 const SECTIONS: [Section, MessageDescriptor, ReactNode][] = [
   ["general", msg`General`, <Monitor size={17} />],
   ["library", msg`Library`, <Library size={17} />],
   ["apps", msg`Apps folder`, <FolderOpen size={17} />],
+  ["copies", msg`Game copies`, <Disc3 size={17} />],
   ["controllers", msg`Controllers`, <Gamepad2 size={17} />],
   ["updates", msg`Updates`, <RefreshCw size={17} />],
   ["advanced", msg`Advanced`, <Wrench size={17} />],
@@ -54,13 +57,16 @@ function useSideBySide() {
   return width / scale >= SIDE_BY_SIDE_WIDTH && config.os !== "android" && config.os !== "ios";
 }
 
-/** `onRunSetup` opens the first start's setup (setup.tsx) again, from General. */
-export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBack: () => void; onRunSetup: () => void }) {
+/** `onRunSetup` opens the first start's setup (setup.tsx) again, from General. `start`: a section to open on. */
+export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string; onBack: () => void; onRunSetup: () => void; start?: Section }) {
   const sideBySide = useSideBySide();
+  const { config } = useLauncher();
+  // Game copies are for computers: a phone keeps an app's files to itself.
+  const sections = SECTIONS.filter(([key]) => key !== "copies" || foldersOn(config.os));
   // Side by side, General shows until another is picked; narrow, the list does.
-  const [picked, setPicked] = useState<Section | null>(null);
+  const [picked, setPicked] = useState<Section | null>(start ?? null);
   const section = picked ?? (sideBySide ? "general" : null);
-  const label = SECTIONS.find(([key]) => key === section)?.[1];
+  const label = sections.find(([key]) => key === section)?.[1];
   const name = label && i18n._(label);
   const backLink = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLElement>(null);
@@ -99,7 +105,7 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
       <div className="settings-columns">
         {(sideBySide || !section) && (
           <nav ref={list} className="settings-nav" aria-label={t`Settings sections`}>
-            {SECTIONS.map(([key, label, icon]) => (
+            {sections.map(([key, label, icon]) => (
               <button key={key} data-section={key} aria-current={key === section ? "page" : undefined} onClick={() => setPicked(key)}>
                 {icon}
                 <span>{i18n._(label)}</span>
@@ -121,6 +127,8 @@ export function SettingsPage({ back, onBack, onRunSetup }: { back: string; onBac
                 <PortableDefaultSetting />
                 <WindowsRunnerSetting />
               </>
+            ) : section === "copies" ? (
+              <GameCopySettings />
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (
@@ -179,6 +187,20 @@ export function useTray() {
     if (config.os === "windows") native.setTray(Boolean(settings.closeToTray), open, quit).catch(() => {});
   }, [config.os, settings.closeToTray, open, quit]);
 }
+
+/** Discord's Rich Presence as the setting has it, in the player's language (discord.rs; computers only). */
+export function useDiscordPresence() {
+  const { settings, config } = useLauncher();
+  const idle = t({ message: "Browsing games", comment: "On the player's Discord profile, under Quiver Launcher's name, while no game they started from it is running" });
+  const button = t({
+    message: "Get Quiver Launcher",
+    comment: "Button on the player's Discord profile that opens Quiver Launcher's download page, for their friends. Discord cuts it at 32 characters",
+  });
+  const enabled = !settings.discordPresenceOff && onComputer(config.os);
+  useEffect(() => void native.setDiscordPresence(enabled, { idle, button }).catch(() => {}), [enabled, idle, button]);
+}
+
+const onComputer = (os: string) => os === "windows" || os === "linux" || os === "macos";
 
 /** The window, the interface size and theme, the language, usage data, and the first start's setup again. */
 function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
@@ -260,6 +282,12 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       </label>
       <LanguageSetting />
       {config.os !== "android" && config.os !== "ios" && <MusicSetting />}
+      {onComputer(config.os) && (
+        <label className="toggle">
+          <input type="checkbox" checked={!settings.discordPresenceOff} onChange={(e) => setSettings({ ...settings, discordPresenceOff: e.target.checked ? undefined : true })} />
+          <Trans>Show on Discord what I'm playing, or that I'm in Quiver Launcher</Trans>
+        </label>
+      )}
       <TelemetrySetting />
       <div className="settings-section">
         <button onClick={onRunSetup}>
@@ -424,89 +452,345 @@ function MusicSetting() {
 }
 
 /**
- * Where apps install, and moving them all somewhere else (another drive, or a
- * Games folder): it asks first, says what's moving, and installs there after.
+ * The apps folders: the default, which new apps install in, and each other
+ * one the player's apps are kept in (Quiver Launcher 3's, or the one before a
+ * Change…). Changing the default keeps every app where it is unless the player
+ * asks to move them too; another folder's apps can be moved into the default,
+ * or it can become the default itself. A move asks first, says what's moving,
+ * and a bar shows how many have moved, and how far a copy to another drive
+ * has got.
  */
 export function AppsFolder() {
-  const { config, jobs, appFolders, moveApps } = useLauncher();
-  const [asking, setAsking] = useState<string | null>(null);
-  const [moving, setMoving] = useState<{ done: number; total: number; folder: string } | null>(null);
-  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, unsortedApps, moveApp } = useLauncher();
+  const [asking, setAsking] = useState<{ to: string } | null>(null);
+  // Moving the apps along is the player's choice; keeping them where they are is instant and first.
+  const [keep, setKeep] = useState(true);
+  const [bring, setBring] = useState(true);
+  // The other apps folder whose apps the player asked to move into the default.
+  const [bringing, setBringing] = useState<AppsFolderRow | null>(null);
+  const [moving, setMoving] = useState<AppsMoving | null>(null);
+  // Measuring the apps against the drive's free space takes a while for many: said while it does, with nothing to press.
+  const [checking, setChecking] = useState(false);
+  const [message, setMessage] = useState<{ text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] } | null>(null);
+  const [states, setStates] = useState<Record<string, { exists: boolean; free?: number | null }>>({});
   const busy = Object.values(jobs).some((j) => !("error" in j));
-  const count = appFolders().length;
+  const { placed } = movableApps();
+  const folders = appsFolders();
+  const [home, ...others] = folders;
   const dir = config.appsDir;
+  const count = home.apps.length;
+  const kept = others.reduce((n, f) => n + f.apps.length, 0);
+  const paths = folders.map((f) => f.path).join("\n");
   useEffect(() => {
-    const off = native.onAppsMoving(setMoving);
+    // Only where new apps go changing moves nothing, and needs no bar.
+    const off = native.onAppsMoving((m) => m.total > 0 && setMoving(m));
     return () => void off.then((stop) => stop());
   }, []);
+  useEffect(() => {
+    let live = true;
+    const list = paths.split("\n");
+    native.appsFolderStates(list).then(
+      (found) => live && setStates(Object.fromEntries(list.map((p, i) => [p, found?.[i] ?? { exists: true }]))),
+      () => {},
+    );
+    return () => void (live = false);
+  }, [paths, moving]);
+  const desktop = config.os !== "android" && config.os !== "ios";
+  // A path's separator as the player's system writes it, for the help on console folders.
+  const slash = config.os === "windows" ? "\\" : "/";
+  const unsorted = unsortedApps();
+  // Sorting the apps already installed into console folders: how many of how many have moved.
+  const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
+  const idle = !asking && !bringing && !moving && !checking && !sorting;
+  const waitTitle = busy ? t`Wait for downloads to finish first` : undefined;
   const pick = async () => {
     setMessage(null);
     const to = await native.pickFolder(t`Choose where to install apps`);
     if (!to) return;
-    const refused = await native.appsFolderRefusal(to, appFolders());
-    if (refused) setMessage({ text: refused, error: true });
-    else setAsking(to);
+    if (samePath(to, dir)) return setMessage({ text: t`Apps already install there.`, error: true });
+    const clash = folderClash(to, folders);
+    if (clash) return setMessage({ text: clash, error: true });
+    setKeep(true);
+    setBring(true);
+    setAsking({ to });
   };
-  const move = (to: string) => {
+  const useFolder = (to: string) => {
     setAsking(null);
-    setMoving({ done: 0, total: count, folder: "" });
-    moveApps(to).then(
+    setMessage(null);
+    switchAppsFolder(to).then(
       () =>
         setMessage({
-          text: count ? t`Moved ${plural(count, { one: "# app", other: "# apps" })}. New apps install here too.` : t`New apps install here.`,
+          text: count
+            ? plural(count, {
+                one: `New apps install in ${to}. Your # installed app stays where it is and plays from there.`,
+                other: `New apps install in ${to}. Your # installed apps stay where they are and play from there.`,
+              })
+            : t`New apps install in ${to}.`,
         }),
+      (e) => setMessage({ text: String(e), error: true }),
+    );
+  };
+  /** Checks there's room, then moves: the default's apps when `inside`, and those of the folders in `from`. */
+  const checkThenMove = async (to: string, inside: boolean, from: AppsFolderRow[]) => {
+    setAsking(null);
+    setBringing(null);
+    setMessage(null);
+    setChecking(true);
+    const apps = [...(inside ? home.apps : []), ...from.flatMap((f) => f.apps)];
+    const refused = await native.appsFolderRefusal(to, apps).catch((e) => String(e));
+    if (refused) {
+      setChecking(false);
+      return setMessage({ text: refused, error: true });
+    }
+    const n = (inside && !samePath(to, dir) ? count : 0) + from.reduce((s, f) => s + f.apps.length, 0);
+    // Nothing to move (only where new apps go changes): no bar for it.
+    if (n) setMoving({ done: 0, total: n, folder: "", copied: 0, size: 0 });
+    setChecking(false);
+    moveApps(to, { inside, from: from.map((f) => f.path) }).then(
+      ({ left, failed }) =>
+        setMessage(
+          failed.length
+            ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
+            : { text: n ? t`Moved ${plural(n, { one: "# app", other: "# apps" })}.` : t`New apps install here.`, left },
+        ),
       (e) => setMessage({ text: String(e), error: true }),
     ).finally(() => setMoving(null));
   };
-  const step = moving && Math.min(moving.done + 1, moving.total);
-  const total = moving?.total;
-  const folder = moving?.folder;
+  /** Moves each installed app at the top of an apps folder into its console's folder there, one at a time. */
+  const sort = async () => {
+    setMessage(null);
+    const apps = unsorted;
+    const failed: { folder: string; why: string }[] = [];
+    const left: string[] = [];
+    setSorting({ done: 0, total: apps.length });
+    for (const [n, app] of apps.entries()) {
+      try {
+        const moved = await moveApp(app.id, app.to);
+        if (moved.left) left.push(moved.left);
+      } catch (e) {
+        failed.push({ folder: app.folder, why: e instanceof Error ? e.message : String(e) });
+      }
+      setSorting({ done: n + 1, total: apps.length });
+    }
+    setSorting(null);
+    const n = apps.length;
+    setMessage(
+      failed.length
+        ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
+        : { text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into console folders.`, left },
+    );
+  };
+  const open = (path: string) => void native.openAppsFolder(path).catch((e) => setMessage({ text: String(e), error: true }));
   return (
-    <section className="settings-section apps-folder" aria-label={t`Apps folder`}>
-      <p className="muted">
-        <Trans>Apps are installed in {dir}</Trans>
-      </p>
+    <section className="settings-section apps-folder" aria-label={t`Apps folders`}>
+      {/* Where each app goes is the desktop's: on a phone the system keeps apps where it does. */}
+      {desktop && (
+        <>
+          <label className="toggle">
+            <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
+            <Trans>Ask where to install each app</Trans>
+          </label>
+          <label className="toggle">
+            <input type="checkbox" checked={Boolean(settings.groupByConsole)} onChange={(e) => setSettings({ ...settings, groupByConsole: e.target.checked || undefined })} />
+            <Trans>Put new apps in a folder for their console</Trans>
+          </label>
+        </>
+      )}
+      {desktop && settings.groupByConsole && (
+        <p className="muted">
+          <Trans>
+            In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.
+          </Trans>
+        </p>
+      )}
+      {desktop && settings.groupByConsole && (unsorted.length > 0 || sorting) && (
+        <div className="row">
+          {sorting ? (
+            <p className="muted" role="status">
+              <Trans>
+                Moving apps into console folders… {sorting.done} of {sorting.total}
+              </Trans>
+            </p>
+          ) : (
+            <button disabled={!idle || busy} title={waitTitle} onClick={() => void sort()}>
+              {plural(unsorted.length, { one: "Move # installed app into its console folder", other: "Move # installed apps into their console folders" })}
+            </button>
+          )}
+        </div>
+      )}
+      <ul className="apps-folders">
+        {folders.map((f) => {
+          const state = states[f.path];
+          return (
+            <li key={f.path} className="apps-folder-row" data-default={f.default || undefined}>
+              <div className="apps-folder-info">
+                <p className="apps-folder-name">
+                  <span>{f.path}</span>
+                  {f.default && <span className="apps-folder-badge">{t`Default`}</span>}
+                </p>
+                <p className={state && !state.exists ? "job-error" : "muted"}>
+                  {f.default ? t`New apps install here.` : t`Kept here from before.`} {plural(f.apps.length, { one: "# app", other: "# apps" })}
+                  {state && !state.exists ? ` · ${t`Not found. Is its drive connected?`}` : state?.free != null ? ` · ${t`${space(state.free)} free`}` : ""}
+                </p>
+              </div>
+              {idle && (
+                <div className="row">
+                  <button onClick={() => open(f.path)} disabled={state ? !state.exists : false}>
+                    <Trans>Open</Trans>
+                  </button>
+                  {f.default ? (
+                    <button disabled={busy} title={waitTitle} onClick={() => void pick()}>
+                      <Trans>Change…</Trans>
+                    </button>
+                  ) : (
+                    <>
+                      <button className="primary" disabled={busy || state?.exists === false} title={waitTitle} onClick={() => setBringing(f)}>
+                        <Trans>Move into default</Trans>
+                      </button>
+                      <button disabled={busy || state?.exists === false} title={waitTitle} onClick={() => useFolder(f.path)}>
+                        <Trans>Make default</Trans>
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
       {asking ? (
-        <div className="confirm" role="group" aria-label={t`Move apps`}>
-          <p>
-            {count
-              ? plural(count, {
-                  one: `Move # installed app to ${asking}? Its saves and settings go with it. Desktop and Steam shortcuts you made point at the old folder, so make them again after.`,
-                  other: `Move # installed apps to ${asking}? Their saves and settings go with them. Desktop and Steam shortcuts you made point at the old folder, so make them again after.`,
-                })
-              : t`Install apps in ${asking} from now on?`}
-          </p>
+        <div className="confirm move-confirm" role="group" aria-label={t`Change the default apps folder`}>
+          <h4>{t`Install new apps in ${asking.to} from now on?`}</h4>
+          {count > 0 && (
+            <div className="move-choice" role="radiogroup">
+              <label className="toggle">
+                <input type="radio" name="apps-keep" checked={keep} onChange={() => setKeep(true)} />
+                <span>{plural(count, { one: `Keep your # installed app where it is, in ${dir}`, other: `Keep your # installed apps where they are, in ${dir}` })}</span>
+              </label>
+              <label className="toggle">
+                <input type="radio" name="apps-keep" checked={!keep} onChange={() => setKeep(false)} />
+                <span>{plural(count, { one: `Move it to ${asking.to} too`, other: `Move them to ${asking.to} too` })}</span>
+              </label>
+            </div>
+          )}
+          {!keep && kept > 0 && (
+            <label className="toggle">
+              <input type="checkbox" checked={bring} onChange={(e) => setBring(e.target.checked)} />
+              {plural(kept, { one: "Include # app from your other apps folders", other: "Include # apps from your other apps folders" })}
+            </label>
+          )}
+          {!keep && <MoveNotes placed={placed} />}
           <div className="row">
-            <button className="primary" onClick={() => move(asking)}>
-              {count ? t`Move apps` : t`Use this folder`}
+            <button className="primary" onClick={() => (keep || !count ? useFolder(asking.to) : void checkThenMove(asking.to, true, bring ? others : []))}>
+              {keep || !count ? t`Use this folder` : t`Move apps`}
             </button>
             <button onClick={() => setAsking(null)}>
               <Trans>Cancel</Trans>
             </button>
           </div>
         </div>
+      ) : bringing ? (
+        <div className="confirm move-confirm" role="group" aria-label={t`Move apps into the default folder`}>
+          <h4>
+            {plural(bringing.apps.length, { one: `Move # app from ${bringing.path} into ${dir}?`, other: `Move # apps from ${bringing.path} into ${dir}?` })}
+          </h4>
+          <MoveNotes placed={placed} />
+          <div className="row">
+            <button className="primary" onClick={() => void checkThenMove(dir, false, [bringing])}>
+              <Trans>Move apps</Trans>
+            </button>
+            <button onClick={() => setBringing(null)}>
+              <Trans>Cancel</Trans>
+            </button>
+          </div>
+        </div>
       ) : moving ? (
-        <p role="status">
-          {folder ? (
-            <Trans>
-              Moving {folder}… ({step} of {total})
-            </Trans>
-          ) : (
-            <Trans>
-              Moving apps… ({step} of {total})
-            </Trans>
-          )}
-        </p>
-      ) : (
-        <button disabled={busy} title={busy ? t`Wait for downloads to finish first` : undefined} onClick={() => void pick()}>
-          <Trans>Change…</Trans>
-        </button>
-      )}
+        <MovingApps moving={moving} />
+      ) : checking ? (
+        <div className="apps-moving" role="status">
+          <div className="progress waiting" aria-label={t`Checking the folder`} role="progressbar">
+            <div className="bar" />
+            <span>{t`Checking there's room…`}</span>
+          </div>
+          <p className="muted">{t`Quiver is measuring the apps and the free space on the drive. This can take a moment.`}</p>
+        </div>
+      ) : null}
       {message && (
-        <p className={message.error ? "job-error" : "muted"} role="status">
-          {message.text}
-        </p>
+        <div className={message.error ? "job-error" : "muted"} role="status">
+          <p>{message.text}</p>
+          {message.failed?.length ? (
+            <>
+              <p>
+                {plural(message.failed.length, {
+                  one: "This one couldn't move. It's still where it was, with all its files, and plays from there:",
+                  other: "These couldn't move. They're still where they were, with all their files, and play from there:",
+                })}
+              </p>
+              <ul className="apps-left">
+                {message.failed.map((f) => (
+                  <li key={f.folder}>
+                    <strong>{f.folder}</strong>: {f.why}.
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {message.left?.length ? (
+            <>
+              <p>{t`These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:`}</p>
+              <ul className="apps-left">
+                {message.left.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
       )}
     </section>
+  );
+}
+
+/** Bytes as a drive's room is usually said: TB past a thousand GB. */
+function space(bytes: number) {
+  const gb = bytes / 1e9;
+  return gb >= 1000 ? `${(gb / 1000).toFixed(1)} TB` : `${Math.floor(gb)} GB`;
+}
+
+/** What a move means, one point a line under its question, so each can be taken in. */
+function MoveNotes({ placed }: { placed: number }) {
+  return (
+    <ul className="move-notes">
+      <li>{t`The saves and settings come over too.`}</li>
+      {placed > 0 && (
+        <li>
+          {plural(placed, {
+            one: "# app in a folder you chose for it stays where it is.",
+            other: "# apps in folders you chose for them stay where they are.",
+          })}
+        </li>
+      )}
+      <li>{t`Desktop and Steam shortcuts you made point at the old folder, so make them again after.`}</li>
+      <li>{t`Keep Quiver open until it's done. Each app's old copy is deleted only once its new one is checked.`}</li>
+    </ul>
+  );
+}
+
+/** How far a move has got: a bar of the apps moved so far, filling as the one moving copies, and which one that is. */
+function MovingApps({ moving }: { moving: AppsMoving }) {
+  const { done, total, folder, copied, size } = moving;
+  const part = size ? Math.min(copied / size, 1) : 0;
+  const width = total ? Math.max(4, Math.floor(((done + part) / total) * 100)) : 4;
+  const percent = Math.floor(part * 100);
+  return (
+    <div className="apps-moving" role="status">
+      <div className="progress" aria-label={t`Moving apps`} aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} role="progressbar">
+        <div className="bar" style={{ width: `${width}%` }} />
+        <span>{t`${done} of ${total} apps moved`}</span>
+      </div>
+      <p className="muted">
+        {folder ? (size ? t`Copying ${folder}… ${percent}%` : t`Moving ${folder}…`) : done ? t`Moving apps…` : t`Getting ready…`} {t`Keep Quiver open until it's done.`}
+      </p>
+    </div>
   );
 }

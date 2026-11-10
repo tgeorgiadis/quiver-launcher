@@ -34,6 +34,9 @@ finish-args:
   - --filesystem=/mnt
   # Steam's Flatpak, for Add to Steam and its Protons (home leaves ~/.var/app out).
   - --filesystem=~/.var/app/com.valvesoftware.Steam
+  # Discord's socket, for Rich Presence (discord.rs): Discord installed on the system, or as a Flatpak itself.
+  - --filesystem=xdg-run/discord-ipc-0
+  - --filesystem=xdg-run/app/com.discordapp.Discord:create
   # flatpak-spawn --host (sandbox.rs).
   - --talk-name=org.freedesktop.Flatpak
   # The sign-in, kept in the system's keyring.

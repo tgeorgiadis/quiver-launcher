@@ -9,11 +9,12 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type D
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
-import { native, type Config, type LaunchOptions, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
-import { captureError, captureFailure, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, track, type TelemetryContext } from "./telemetry";
+import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
+import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
 import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
 import type { Platform } from "./platforms";
@@ -24,6 +25,7 @@ import { artFiles, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
+import { copiesNeeded, launchCopies } from "./own-copy";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
@@ -71,6 +73,16 @@ export type CatalogEntry = Entry & {
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
   dir?: string;
+  /**
+   * Its `dir` is in an apps folder (Quiver Launcher 3's, or this one under another name), so moving the apps folder
+   * takes it along. Without it, `dir` is a folder the player chose for this app alone, which stays where they put it.
+   */
+  inApps?: true;
+  /**
+   * The console folder it's in inside its apps folder ("N64", "Emulators"): `dir` is `<apps folder>/<group>/<its
+   * folder>`, so its apps folder is two up, and moving that folder keeps it in its console folder.
+   */
+  group?: string;
   version: string; releasedAt?: number; releaseId?: string; folder: string; executables: string[]; wine?: boolean;
   lastPlayed?: number;
   /** When it was installed here, not updated: a game's card plays the port got last until another is played (group.ts). */
@@ -103,6 +115,20 @@ export type Install = {
   pick?: string;
   /** The empty files its folder has, once the player or Settings chose them (Add files to folder); unset, the catalog's. Kept through updates. */
   files?: string[];
+  /** The player's own copies of its game, by the catalog's setup file id (own-copy.ts). Kept through updates. */
+  copies?: Record<string, OwnCopy>;
+};
+/** The player's copy of an app's game, checked and put where the app reads it. */
+export type OwnCopy = {
+  /** Where the player keeps it. */
+  path: string;
+  /** Where Quiver put it for the app, when the catalog says where. */
+  placed?: string;
+  /** The dump it matched ("US 1.0"), when it matched one. */
+  dump?: string;
+  /** It matched a dump the catalog lists, not only its kind of file. */
+  verified?: boolean;
+  at: number;
 };
 /** A repository the catalog doesn't list, before it's added: its latest release and the files for this computer. */
 export type RepositoryPreview = { app: CustomApp; latest?: Release; files: Asset[] };
@@ -135,7 +161,8 @@ export type Asking = {
   resolve: (install: boolean) => void;
 };
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
-type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os };
+/** `to`: the folder a new install goes in, in a folder of its own; the default apps folder when absent. */
+type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os; to?: string };
 
 type Launcher = {
   config: Config;
@@ -164,6 +191,9 @@ type Launcher = {
   /** The app whose Play asks which of the player's programs to start; null closes the prompt. */
   choosingProgram: string | null;
   chooseProgram: (id: string | null) => void;
+  /** The app whose page asks for the player's own copy of its game (own-copy-setup.tsx): `play` once it's set up, from Play. */
+  settingUpCopy: { id: string; fileId?: string; play?: boolean } | null;
+  setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
   /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
@@ -187,9 +217,10 @@ type Launcher = {
    * `asset`: the name of the release's file the player picked, in place of the one Quiver would choose.
    * `platform`: the system whose build to install, as Windows' through Wine on Linux; later updates keep to it.
    */
-  get: (entry: Entry, release?: Release, options?: { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os }) => Promise<void>;
+  get: (entry: Entry, release?: Release, options?: GetOptions) => Promise<void>;
   /** Starts an app: `executable`, else its one program the player picked, else asks which of them, else the launcher's own choice. */
-  play: (id: string, executable?: string) => Promise<void>;
+  /** Starts an installed app. Without the player's copy of its game that it needs, asks for it first, unless `withoutCopy`. */
+  play: (id: string, executable?: string, withoutCopy?: boolean) => Promise<void>;
   /** Runs a Windows installer's setup again, for the version installed. */
   reinstall: (id: string) => Promise<void>;
   /** Stops a download; whatever was installed before stays as it was. */
@@ -230,6 +261,8 @@ type Launcher = {
   setLaunch: (id: string, launch: LaunchOptions) => void;
   /** The empty files the player chose for an app's folder, which updates keep to. */
   setFiles: (id: string, files: string[]) => void;
+  /** Records (or, with undefined, forgets) the player's copy for one of an app's setup files. */
+  setCopy: (id: string, fileId: string, copy: OwnCopy | undefined) => void;
   /** Sets the player's own name and artwork; undefined shows the catalog's. */
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
@@ -251,11 +284,17 @@ type Launcher = {
   notice: { text: string; stays?: boolean } | null;
   setNotice: (text: string | null, options?: { stays?: boolean }) => void;
   dismiss: (id: string) => void;
-  /** The folders of installed apps that live in the apps folder, which moving it takes along. */
-  appFolders: () => string[];
+  /** The installed apps moving the apps folder takes along: those in it, and those kept elsewhere it can bring in. */
+  movableApps: () => MovableApps;
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /**
+   * The app the player is choosing a folder for: to install it in (the version and options it was going to install
+   * with, if any), or move it to; null closes the prompt.
+   */
+  placing: Placing | null;
+  askPlace: (entry: Entry | null, release?: Release, options?: GetOptions) => void;
   /** The app whose folder the player is adding files to, from its menu; null closes the prompt. */
   addingFiles: Entry | null;
   askAddFiles: (entry: Entry | null) => void;
@@ -264,9 +303,274 @@ type Launcher = {
   changeVersion: (entry: Entry | null) => void;
   /** Renames an installed app's folder in the apps folder, as a folder can be named; resolves to the name it got. */
   renameFolder: (id: string, name: string) => Promise<string>;
-  /** Moves the installed apps to another folder, where apps install from then on. */
-  moveApps: (to: string) => Promise<void>;
+  /** The apps folders, the default first: the one apps install in, and each other one apps are kept in. */
+  appsFolders: () => AppsFolder[];
+  /** The installed apps not yet in a folder for their console, each with the apps folder it's in (`unsortedApps`). */
+  unsortedApps: () => { id: string; folder: string; to: string }[];
+  /**
+   * Makes `to` the folder new apps install in, moving nothing: the apps in the old one stay there and play from it,
+   * which becomes one more apps folder. Apps already in `to` become its own again.
+   */
+  switchAppsFolder: (to: string) => Promise<void>;
+  /**
+   * Moves installed apps to `to`, where apps install from then on: the default folder's (`inside`), and those in the
+   * other apps folders named in `from`. Each app's new place is recorded as soon as it's there, so one that fails part
+   * way loses none. Resolves to the old copies left to delete, and the apps that couldn't move (each still where it
+   * was, and playable).
+   */
+  moveApps: (to: string, which: { inside: boolean; from: string[] }) => Promise<{ left: string[]; failed: { folder: string; why: string }[] }>;
+  /**
+   * Moves one installed app's folder into `to`, beside what's there, the same safe way the apps folder moves. Resolves
+   * to its old copy if that couldn't all be deleted.
+   */
+  moveApp: (id: string, to: string) => Promise<{ left?: string }>;
+  /** The apps moving now, by id, with how far each has got. */
+  appMoves: Record<string, AppMove>;
 };
+
+/** What Get installs with: `to`, the folder a new install goes in; the default apps folder when absent. */
+export type GetOptions = { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os; to?: string };
+
+/** An app whose folder the player is choosing, with what it was going to install. */
+export type Placing = { entry: Entry; release?: Release; options?: GetOptions };
+
+/** How far an app's move has got: bytes copied of its size, both 0 until it's known to be copying. */
+export type AppMove = { copied: number; size: number };
+
+/** Whether an install's folder can move to another: one Quiver put there, not a Windows installer's or the player's own. */
+export const movable = (install: Install | undefined) => Boolean(install && !install.local && install.installer !== "msi");
+
+/** `placed`: how many apps are in folders the player chose for each, which moving the apps folder leaves be. */
+export type MovableApps = { inside: MovingApp[]; elsewhere: MovingApp[]; placed: number };
+
+/** A folder apps are installed in: the default, which new apps install in, or another the player's apps are kept in. */
+export type AppsFolder = { path: string; default: boolean; apps: MovingApp[] };
+
+/** The short names of console folders, by the catalog's console ids (its facets). */
+const CONSOLE_FOLDERS: Record<string, string> = {
+  nes: "NES", snes: "SNES", n64: "N64", gcn: "GameCube", wii: "Wii", wiiu: "Wii U", switch: "Switch", switch2: "Switch 2",
+  gb: "Game Boy", vb: "Virtual Boy", gbc: "Game Boy Color", gba: "GBA", nds: "DS", "3ds": "3DS",
+  ps1: "PS1", ps2: "PS2", ps3: "PS3", ps4: "PS4", ps5: "PS5", psp: "PSP", vita: "Vita",
+  "og xbox": "Xbox", x360: "Xbox 360", xone: "Xbox One",
+  sms: "Master System", gg: "Game Gear", gen: "Genesis", segacd: "Sega CD", "32x": "32X", saturn: "Saturn", dreamcast: "Dreamcast",
+  cdi: "CD-i", "3do": "3DO", ami: "Amiga", arcade: "Arcade", pc: "PC", mobile: "Mobile",
+};
+
+/**
+ * The folder an app goes in inside its apps folder when new apps are grouped by console, as a path with "/": emulators,
+ * tools and standalone games each together, and ports in Ports, in their console's folder there (or Multi-console, for
+ * more than one). None for the player's own apps, which have no console to go by.
+ */
+export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">, consoleNames: Record<string, string> = {}): string | undefined {
+  if (isCustom(entry.id) || isLocal(entry.id)) return undefined;
+  if (entry.projectType === "emulator") return "Emulators";
+  if (entry.projectType === "tool") return "Tools";
+  if (entry.projectType === "game") return "Games";
+  const consoles = entry.basedOn?.console ? [entry.basedOn.console] : (entry.consoles ?? []);
+  const id = consoles[0];
+  const folder = consoles.length > 1 ? "Multi-console" : !id ? "Other" : (CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id));
+  return `Ports/${folder}`;
+}
+
+/** The apps folder an app kept in one is in: its folder's parent, or the one above its console folder (Ports/N64). */
+export const rootOf = (app: { dir?: string; group?: string }) => {
+  let path = parentOf(app.dir!);
+  for (let up = app.group ? app.group.split(/[\\/]/).length : 0; up > 0; up--) path = parentOf(path);
+  return path;
+};
+
+/** `folder` and `name` (which may be a path with "/") joined as a path, with `folder`'s own separator. */
+export const joinPath = (folder: string, name: string) => `${folder.replace(/[\\/]+$/, "")}${separator(folder)}${name.split(/[\\/]/).join(separator(folder))}`;
+
+const separator = (path: string) => (path.includes("\\") ? "\\" : "/");
+/** The folder a path is in. */
+export const parentOf = (path: string) => path.replace(/[\\/]+$/, "").replace(/[\\/][^\\/]*$/, "");
+/** A path's last part. */
+const baseName = (path: string) => path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? "";
+/** Whether two paths name one folder, however their separators, trailing slash or (on Windows) case. */
+export const samePath = (a: string, b: string) => {
+  const norm = (p: string) => {
+    const s = p.replace(/[\\/]+/g, "/").replace(/\/$/, "");
+    return /^[A-Za-z]:/.test(s) ? s.toLowerCase() : s;
+  };
+  return norm(a) === norm(b);
+};
+/** Whether `inner` is `outer` or a folder somewhere inside it. */
+const within = (inner: string, outer: string) => {
+  let at = inner;
+  for (let i = 0; i < 64 && at; i++) {
+    if (samePath(at, outer)) return true;
+    const up = parentOf(at);
+    if (up === at) break;
+    at = up;
+  }
+  return false;
+};
+
+/** The apps folders: the default (`appsDir`) first, then each other folder apps are kept in, by path. */
+export function appsFolders(installs: Record<string, Install>, appsDir: string): AppsFolder[] {
+  const { inside, elsewhere } = movableApps(installs);
+  const folders: AppsFolder[] = [{ path: appsDir, default: true, apps: [...inside] }];
+  for (const app of elsewhere) {
+    const path = rootOf(app);
+    const folder = folders.find((f) => samePath(f.path, path));
+    if (folder) folder.apps.push(app);
+    else folders.push({ path, default: false, apps: [app] });
+  }
+  return [folders[0], ...folders.slice(1).sort((a, b) => a.path.localeCompare(b.path))];
+}
+
+/** Why `to` can't be a new default folder beside `folders`: one inside another would show its apps as an app's folder. */
+export function folderClash(to: string, folders: AppsFolder[]): string | null {
+  for (const f of folders) {
+    if (samePath(to, f.path)) continue;
+    const path = f.path;
+    if (within(to, path)) return t`Choose a folder outside ${path}, which has apps in it.`;
+    if (within(path, to)) return t`Choose a folder that doesn't have ${path} inside it.`;
+  }
+  return null;
+}
+
+/**
+ * The installs with those in the default folder `appsDir` kept where they are, by their folder there, as another
+ * apps folder's: what they need before another folder becomes the default, so none is looked for in the new one.
+ */
+export function keptWhereTheyAre(installs: Record<string, Install>, appsDir: string): Record<string, Install> {
+  const sep = separator(appsDir);
+  const root = appsDir.replace(/[\\/]+$/, "");
+  return Object.fromEntries(Object.entries(installs).map(([id, i]) => [id, i.dir ? i : { ...i, dir: `${root}${sep}${i.folder}`, inApps: true as const }]));
+}
+
+/**
+ * The installs once `to` is the default folder: those kept in it under their own folder's name become its own, as if
+ * installed there. One kept under another name (a move gave it "Name 2") keeps its folder.
+ */
+export function ownedBy(installs: Record<string, Install>, to: string): Record<string, Install> {
+  return Object.fromEntries(
+    Object.entries(installs).map(([id, i]) => [id, i.dir && i.inApps && samePath(parentOf(i.dir), to) && baseName(i.dir) === i.folder ? movedInside(i) : i]),
+  );
+}
+
+/**
+ * The installs moving the apps folder takes: those in it, and those kept in another apps folder (Quiver Launcher 3's),
+ * which it can bring in. Never one in a folder the player chose for it alone (Locate existing install, or one 3.x
+ * kept outside its apps folder), the player's own files, or a program a Windows installer put where Windows looks
+ * after it.
+ */
+export function movableApps(installs: Record<string, Install>): MovableApps {
+  const all = Object.entries(installs);
+  return {
+    inside: all.flatMap(([id, i]) => (i.dir ? [] : [{ id, folder: i.folder }])),
+    // A folder of the player's own files kept in another apps folder (by changing the default) goes with that folder.
+    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && i.installer !== "msi" ? [{ id, folder: i.folder, dir: i.dir, ...(i.group ? { group: i.group } : {}) }] : [])),
+    placed: all.filter(([, i]) => i.dir && !i.inApps && !i.local && i.installer !== "msi").length,
+  };
+}
+
+/**
+ * The installed apps that grouping by console would put in a console folder but that sit at the top of the default
+ * apps folder: each with that folder (`to`), which `moveApp` puts in its console's folder there. Never one in
+ * another apps folder (which may already be one console's) or one chosen for it alone, the player's own, a Windows
+ * installer's, or one the catalog no longer lists.
+ */
+export function unsortedApps(
+  installs: Record<string, Install>,
+  appsDir: string,
+  catalog: Record<string, Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">>,
+  consoleNames: Record<string, string> = {},
+): { id: string; folder: string; to: string }[] {
+  const apps = Object.entries(installs).flatMap(([id, i]) => {
+    if (i.dir || !movable(i) || !catalog[id] || !groupFolder(catalog[id], consoleNames)) return [];
+    return [{ id, folder: i.folder, to: appsDir }];
+  });
+  // A folder two entries share moves once, with the first; the other goes with it (`moveApp`).
+  return apps.filter((a, n) => !apps.slice(0, n).some((b) => samePath(joinPath(appsDir, b.folder), joinPath(appsDir, a.folder))));
+}
+
+/** Whether an install may be one of 3.x's that came over before Quiver knew which of them were in its apps folder. */
+export const unsureInApps = (i: Install) => Boolean(i.dir && !i.inApps && !i.local && i.installer !== "msi");
+
+/**
+ * The installs with those 3.x has in its apps folder marked as such, or the same object when none needs it: the ones
+ * a launcher before this brought over, which moving the apps folder can then bring in.
+ */
+export function markedInApps(installs: Record<string, Install>, old: OldApp[], folders: string[] = []): Record<string, Install> {
+  const dirs = new Set(old.flatMap((a) => (a.inApps && a.dir && !a.program ? [a.dir] : [])));
+  // One in any of 3.x's apps folders is too, though the library brought over doesn't list it: another 3.x copy's,
+  // or one 3.x forgot.
+  const inFolder = (dir: string) => folders.some((f) => samePath(parentOf(dir), f));
+  const marking = Object.entries(installs).filter(([, i]) => unsureInApps(i) && (dirs.has(i.dir!) || inFolder(i.dir!)));
+  return marking.length ? { ...installs, ...Object.fromEntries(marking.map(([id, i]) => [id, { ...i, inApps: true as const }])) } : installs;
+}
+
+/** An install once a move has put it in the apps folder under its own folder's name, where it needs no `dir`. */
+export function movedInside({ dir: _, inApps: __, ...install }: Install): Install {
+  return install;
+}
+
+/**
+ * An install whose folder went from `from` to `to`, with its copies put inside it (a ROM in the app's own folder)
+ * known where they are now: Play passes that path to a game told of its copy by flag or variable.
+ */
+export function withCopiesIn(install: Install, from: string, to: string): Install {
+  if (!install.copies || samePath(from, to)) return install;
+  const norm = (p: string) => p.replace(/[\\/]+/g, "/").replace(/\/$/, "");
+  const fold = (p: string) => (/^[A-Za-z]:/.test(p) ? norm(p).toLowerCase() : norm(p));
+  const old = `${fold(from)}/`;
+  const copies = Object.fromEntries(
+    Object.entries(install.copies).map(([id, c]) => [id, c.placed && fold(c.placed).startsWith(old) ? { ...c, placed: joinPath(to, norm(c.placed).slice(old.length)) } : c]),
+  );
+  return { ...install, copies };
+}
+
+/** Where an install's folder is: its own path, or its folder in the default apps folder `appsDir`. */
+export const placeOf = (install: Install, appsDir: string) => install.dir ?? joinPath(appsDir, install.folder);
+
+/**
+ * The other installs in `id`'s very folder: two library entries for one app (an entry the catalog renamed, kept beside
+ * the one it became) can both point at it. A move takes the folder once, and they go with it.
+ */
+export function twinsOf(installs: Record<string, Install>, id: string, appsDir: string): string[] {
+  const at = installs[id];
+  if (!at) return [];
+  const place = placeOf(at, appsDir);
+  return Object.entries(installs).flatMap(([other, i]) => (other !== id && samePath(placeOf(i, appsDir), place) ? [other] : []));
+}
+
+/**
+ * The installs with `twins` recorded where `id`'s folder is now: in it, in its apps folder and console folder too. One
+ * whose own folder name it has, at the top of the default apps folder, is one of that folder's own.
+ */
+export function withTwins(installs: Record<string, Install>, id: string, twins: string[], appsDir: string): Record<string, Install> {
+  const at = installs[id];
+  if (!at || !twins.length) return installs;
+  const dir = placeOf(at, appsDir);
+  const next = { ...installs };
+  for (const twin of twins) {
+    if (!next[twin]) continue;
+    const { dir: _, inApps: __, group: ___, ...rest } = next[twin];
+    const own = !at.group && samePath(parentOf(dir), appsDir) && baseName(dir) === rest.folder;
+    next[twin] = own ? rest : { ...rest, dir, ...(at.inApps || !at.dir ? { inApps: true as const } : {}), ...(at.group ? { group: at.group } : {}) };
+  }
+  return next;
+}
+
+/**
+ * `apps` with only the first of each folder: a folder two library entries share moves once. With, for each app kept,
+ * the others in its folder, which go where it does.
+ */
+export function oncePerFolder<T extends { id: string }>(apps: T[], installs: Record<string, Install>, appsDir: string): { apps: T[]; twins: Map<string, string[]> } {
+  const twins = new Map<string, string[]>();
+  const taken = new Set<string>();
+  const kept = apps.filter((a) => {
+    if (taken.has(a.id)) return false;
+    const others = twinsOf(installs, a.id, appsDir);
+    others.forEach((o) => taken.add(o));
+    if (others.length) twins.set(a.id, others);
+    return true;
+  });
+  return { apps: kept, twins };
+}
 
 const LauncherContext = createContext<Launcher | null>(null);
 
@@ -391,7 +695,8 @@ export function adoptedInstall(old: OldApp, entry: Entry, os: Os): Install | und
   const executables = entry.launcher.preferredExecutables?.[os as "windows" | "linux" | "macos"] ?? [];
   // One 3.x installed with its Windows installer starts the program it linked.
   const msi = old.program ? { installer: "msi" as const, program: old.program } : {};
-  return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi };
+  const inApps = old.inApps && !old.program ? { inApps: true as const } : {};
+  return { dir: old.dir, version: old.version, folder: entry.launcher.folderName || entry.slug, executables: old.program ? [] : executables, ...msi, ...inApps };
 }
 
 /**
@@ -406,6 +711,10 @@ export function relocatedInstall(now: Install | undefined, found: Install): Inst
 
 /** Whether starting an app failed because its folder is gone: lib.rs's FOLDER_GONE. */
 export const folderGone = (job: Job | undefined) => Boolean(job && "error" in job && job.error === "This app's folder isn't there any more.");
+
+const NO_PROGRAM = "Couldn't find a program to start in this app's folder.";
+/** Whether starting an app failed because Quiver can't tell which program starts it: lib.rs's NO_PROGRAM. */
+export const noProgram = (job: Job | undefined) => Boolean(job && "error" in job && job.error === NO_PROGRAM);
 
 /** Whether the player can point Quiver at where an app is: it has no install here, or the one here lost its folder. Never during a download, or for the player's own files. */
 export const locatable = (id: string, install: Install | undefined, job: Job | undefined) =>
@@ -424,7 +733,10 @@ export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined
  * isn't pointed back at 3.x's copy, unless that's another of 3.x's folders, which is the one 3.x says is this app's.
  */
 export function keptInstall(now: Install | undefined, adopted: Install): Install {
-  return !now ? adopted : now.dir && now.dir !== adopted.dir ? { ...now, ...adopted } : now;
+  if (!now) return adopted;
+  if (now.dir && now.dir !== adopted.dir) return { ...now, ...adopted };
+  // The same copy, which a launcher from before it knew could come along with the apps folder now learns can.
+  return now.dir === adopted.dir && adopted.inApps && !now.inApps ? { ...now, inApps: true } : now;
 }
 
 /** The installs 3.x has for apps in the library that have none here, by app. */
@@ -541,6 +853,13 @@ export const tvModeOn = (settings: Pick<Settings, "tvMode">, config: Pick<Config
 export type Settings = {
   /** What runs Windows programs on Linux, for every app without a runner of its own; unset, Automatic (a Proton, else Wine). */
   windowsRunner?: WindowsRunner;
+  /**
+   * The folders the player keeps their game copies (ROMs, disc images) in, by console id; `*` for every console. A
+   * game's setup looks there first (own-copy.ts).
+   */
+  copyFolders?: Record<string, string[]>;
+  /** Asked once where those folders are: in the setup, or by the banner for a player set up before it (own-copy-settings.tsx). */
+  copyFoldersAsked?: boolean;
   /** An app's page's Project details folded away, for every app. */
   projectDetailsClosed?: boolean;
   /** TV mode: on, off, or unset, on by itself in Steam's Game Mode. */
@@ -550,6 +869,8 @@ export type Settings = {
   systemTitleBar?: boolean;
   /** Closing the window hides it in the tray, the launcher still running (tray.rs; Windows only). */
   closeToTray?: boolean;
+  /** Discord doesn't show what the player is playing, or that they're in Quiver (discord.rs). */
+  discordPresenceOff?: boolean;
   scale?: number;
   /** How many times as far a mouse wheel's turn scrolls, as in Quiver Launcher 3 (spatial.ts); unset, the system's. */
   scrollSpeed?: number;
@@ -569,6 +890,10 @@ export type Settings = {
   language?: Language;
   /** New installs get `portable.txt` in their folder, beside what the catalog asks for. */
   portableByDefault?: boolean;
+  /** Every new install asks where it goes first (Install to…), whichever button started it. */
+  askWhereToInstall?: boolean;
+  /** New installs go in a folder for their console inside the apps folder (`groupFolder`). */
+  groupByConsole?: boolean;
   /** Apps hidden from the library here. */
   hidden?: string[];
   /** Keyboard and controller bindings; unset uses the defaults. */
@@ -593,7 +918,7 @@ export type Settings = {
   /** The library's tab, when it's one kept (library.tsx keepsTab); unset is All. */
   libraryTab?: string;
   /** The library's filters (library.tsx keptFilters); unset is none. */
-  libraryFilters?: Record<string, string>;
+  libraryFilters?: Record<string, string | string[]>;
   /** The platforms whose apps the library shows here (platforms.ts); unset is this device's own. */
   platforms?: string[];
   /** How the library shows its apps (view.ts); only what differs from the defaults. */
@@ -641,6 +966,12 @@ export const appRef = (id: string, slug: string) => ({
   source: isLocal(id) ? "local" : isCustom(id) ? "custom" : "catalog",
 });
 
+/** An app being played, as usage data names it: a catalog app with its version too; one the player added stays named only by kind. */
+export const playedRef = (ref: ReturnType<typeof appRef>, version: string) => ({ ...ref, version: ref.slug ? version : null });
+
+/** How long after starting usage data counts what's in the library. */
+const USAGE_COUNTED_AFTER_MS = 20_000;
+
 type Saved = {
   settings: Settings;
   config: Config;
@@ -657,6 +988,10 @@ export const telemetryContext = (config: Config): TelemetryContext => ({
   version: config.version,
   os: config.os,
   arch: config.arch,
+  osVersion: config.osVersion,
+  steamDeck: config.steamDeck,
+  package: config.package,
+  gameMode: config.gameMode,
   home: config.home,
   user: config.user,
   appsDir: config.appsDir,
@@ -712,22 +1047,41 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [installs, setInstalls] = useState(saved.installs);
   const [catalog, setCatalog] = useState(saved.catalog);
   const [jobs, setJobs] = useState<Record<string, Job>>({});
+  const [appMoves, setAppMoves] = useState<Record<string, AppMove>>({});
+  // The apps moving and installing this moment, kept as they change rather than as of a render: one mustn't start
+  // while the other is under way, even when both start together (an automatic update during Sort into console folders).
+  const moving = useRef(new Set<string>());
+  const installing = useRef(new Set<string>());
+  // The folder the player chose for an app not installed yet (Install to…), so Try again after a failed download
+  // installs there too.
+  const chosenFolder = useRef(new Map<string, string>());
   const [finished, setFinished] = useState<Finished[]>([]);
   const [choice, setChoice] = useState<Choice | null>(null);
   // Asked one at a time, in turn: Update all can come to several.
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [placing, setPlacing] = useState<Placing | null>(null);
+  const askPlace = (entry: Entry | null, release?: Release, options?: GetOptions) => setPlacing(entry ? { entry, release, options } : null);
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
+  const [settingUpCopy, setUpCopy] = useState<Launcher["settingUpCopy"]>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
   const [notice, showNotice] = useState<Launcher["notice"]>(null);
   const setNotice = useMemo<Launcher["setNotice"]>(() => (text, options) => showNotice(text === null ? null : { text, ...options }), []);
+  // A moved app's old copy goes once its new place is saved (lib.rs's write_state); one that couldn't all go is said.
+  useEffect(() => {
+    const off = native.onMoveLeft((path) => setNotice(t`An app moved, but some of its old copy couldn't be deleted. You can delete ${path} yourself.`, { stays: true }));
+    return () => void off.then((stop) => stop());
+  }, [setNotice]);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
-  const client = useMemo(() => createClient(config.api, { onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e) }) }), [config.api]);
+  const client = useMemo(() => createClient(config.api, {
+        onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e), error: failureKind(e) }),
+        onUnreachable: (e) => track("catalog_load_failed", { reason: reasonOf(e), error: failureKind(e) }),
+      }), [config.api]);
   const gitlab = useMemo(() => createGitlab(config.gitlabApi), [config.gitlabApi]);
   /** A custom app's releases, newest first. */
   const releasesOf = (app: Pick<CustomApp, "provider" | "repository">) =>
@@ -755,10 +1109,21 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           })
           .catch(() => {});
     } else native.findV3Library().then(setOldLibrary, () => setOldLibrary(null));
+    // 3.x's installs brought over before Quiver told those in its apps folder from those placed on purpose.
+    if (Object.values(saved.installs).some(unsureInApps))
+      Promise.all([native.findV3Library().catch(() => null), native.v3AppsFolders().catch(() => [])])
+        .then(([old, folders]) => setInstalls((i) => markedInApps(i, old?.apps ?? [], folders)))
+        .catch(() => {});
     const off = native.onProgress((p) => setJobs((j) => ({ ...j, [p.id]: p })));
     const closed = native.onAppClosed(({ id, seconds }) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], playTime: (i[id].playTime ?? 0) + seconds } } : i)));
     return () => void [off, closed].forEach((o) => o.then((stop) => stop()));
   }, [saved]);
+
+  // Every folder the player's apps are in is a path usage data never carries.
+  const folderPaths = appsFolders(installs, config.appsDir)
+    .map((f) => f.path)
+    .join("\n");
+  useEffect(() => setTelemetryAppsFolders(folderPaths.split("\n")), [folderPaths]);
 
   usePersist("library", allItems);
   usePersist("installs", installs);
@@ -767,6 +1132,53 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("settings", settings);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
+  // What usage data reads later on, as it stands by then.
+  const forUsage = useRef({ library, installs, catalog, settings });
+  forUsage.current = { library, installs, catalog, settings };
+  useEffect(() => {
+    const closed = native.onAppClosed(({ id, seconds }) => {
+      const { catalog, installs } = forUsage.current;
+      track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds });
+    });
+    // Once the catalog and the account have had time to come in, so its counts are of the library as it is.
+    const counted = setTimeout(() => {
+      if (!telemetryChoice().enabled) return;
+      const { library, installs, catalog, settings } = forUsage.current;
+      track("library_loaded", librarySummary(library, installs, catalog, settings, telemetryChoice().signedIn));
+      // Not marked as counted with nothing to count yet: a first start's apps are counted once it has some.
+      const apps = appsOnComputer(library, installs, catalog);
+      if (apps.length && appsDueToday(new Date())) apps.forEach((app) => track("app_on_computer", app));
+    }, USAGE_COUNTED_AFTER_MS);
+    return () => {
+      clearTimeout(counted);
+      void closed.then((stop) => stop());
+    };
+  }, []);
+  // On Android a player can remove an app in the system's settings, which Quiver isn't told about. Checked when Quiver
+  // comes back into view, so its card offers Install rather than a Play that can only fail.
+  const forAndroid = useRef({ installs, jobs });
+  forAndroid.current = { installs, jobs };
+  useEffect(() => {
+    if (config.os !== "android") return;
+    const check = () => {
+      if (document.visibilityState !== "visible") return;
+      for (const [id, install] of Object.entries(forAndroid.current.installs)) {
+        void native.androidAppGone(install.folder, install.dir).then(
+          (gone) => {
+            const job = forAndroid.current.jobs[id];
+            // One being got again is on its way back.
+            if (!gone || (job && !("error" in job))) return;
+            setInstalls(({ [id]: _, ...rest }) => rest);
+            setJobs(({ [id]: _, ...rest }) => rest);
+          },
+          () => {},
+        );
+      }
+    };
+    check();
+    document.addEventListener("visibilitychange", check);
+    return () => document.removeEventListener("visibilitychange", check);
+  }, [config.os]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {
@@ -1014,7 +1426,26 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
    * `app` is the custom app's repository, when it isn't in the library yet; `auto`, an update nobody asked for just
    * now, which doesn't ask: one whose file Quiver hasn't verified waits for it instead.
    */
+  /** Installs or updates an app, never one that's moving: its folder is on its way somewhere else. */
   async function installEntry(entry: Entry, chosen?: Release, options: InstallOptions = {}) {
+    if (moving.current.has(entry.id)) {
+      // An automatic update tries again next time.
+      if (!options.auto) setNotice(t`Wait for it to finish moving, then try again.`);
+      return;
+    }
+    installing.current.add(entry.id);
+    if (options.to) chosenFolder.current.set(entry.id, options.to);
+    // Installed since: an update goes where the app is.
+    else if (installs[entry.id]) chosenFolder.current.delete(entry.id);
+    const to = options.to ?? chosenFolder.current.get(entry.id);
+    try {
+      await installNow(entry, chosen, to ? { ...options, to } : options);
+    } finally {
+      installing.current.delete(entry.id);
+    }
+  }
+
+  async function installNow(entry: Entry, chosen: Release | undefined, options: InstallOptions) {
     const { app, pin = false, blocked, auto = false } = options;
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
@@ -1023,6 +1454,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const was = installs[entry.id];
     const from = was?.version;
     const portableByDefault = settings.portableByDefault && config.os !== "android" && config.os !== "ios";
+    // The player's, read here: further down, `settings` is the catalog's for installing it.
+    const groupByConsole = Boolean(settings.groupByConsole);
     let version = chosen?.version ?? entry.verified?.version;
     let format: string | undefined;
     // A release Quiver hasn't verified, or a file of one it has, that the player said to install.
@@ -1037,9 +1470,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const platform = options.platform ?? (was?.wine ? "windows" : undefined);
     const lastPick = options.platform && was && options.platform !== (was.wine ? "windows" : config.os) ? undefined : was?.pick;
     const noAnswer = () => new Problem(msg`Couldn't reach quiverlauncher.com. Check your connection and try again.`);
-    const stop = () => {
+    const stop = (stage: "unverified_prompt" | "file_choice") => {
       setJobs(({ [entry.id]: _, ...rest }) => rest);
-      track("app_install_cancelled", { ...ref, version: version ?? null });
+      track("app_install_cancelled", { ...ref, version: version ?? null, update: Boolean(from), stage });
     };
     track("app_install_started", { ...ref, version: version ?? null, update: Boolean(from), verified: !unverified, blocked: Boolean(blocked) });
     try {
@@ -1063,7 +1496,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (newest) {
           version = newest.version;
           if (newest.state !== "verified") {
-            if (!(await ask({ entry, version: newest.version, reasons: newest.reasons, scan: newest.scan, checkEndsAt: newest.checkEndsAt }))) return stop();
+            if (!(await ask({ entry, version: newest.version, reasons: newest.reasons, scan: newest.scan, checkEndsAt: newest.checkEndsAt }))) return stop("unverified_prompt");
             unverified = true;
           }
           release = fromSite(newest);
@@ -1114,7 +1547,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const choices = [asset, ...others];
         const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
         setChoice(null);
-        if (!picked) return stop();
+        if (!picked) return stop("file_choice");
         asset = picked;
         pick = assetFilterFor(picked.filename, choices.map((a) => a.filename));
       }
@@ -1123,18 +1556,28 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const why = !custom && !unverified ? unverifiedFile(asset, release) : undefined;
       if (why) {
         if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
-        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop();
+        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop("unverified_prompt");
         unverified = true;
       }
       format = installFormat(asset.filename);
-      // One folder, one app: uninstalling either would take the other's files.
-      const taken = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id && !i.dir ? [i.folder] : []));
+      // One folder, one app: uninstalling either would take the other's files. A new install keeps clear of names apps
+      // use in other apps folders too, as Quiver keeps an app's Proton prefix, icon and Steam art by its folder's
+      // name; one installed already keeps its folder, as before, so an update never leaves its files behind.
+      const otherInstalls = Object.entries(installs).flatMap(([id, i]) => (id !== entry.id ? [i] : []));
+      const taken = (installs[entry.id] ? otherInstalls.filter((i) => !i.dir) : otherInstalls).map((i) => i.folder);
       const folder = freeFolder(settings.folderName?.trim() || entry.slug, installs[entry.id]?.folder, taken);
       const runs = asset.os === "windows" ? "windows" : (config.os as "windows" | "linux" | "macos");
       const executables = settings.preferredExecutables?.[runs] ?? [];
       tried = { release, asset };
       const catalogFiles = settings.filesToAdd ?? [];
       const files = installFiles(was, catalogFiles, portableByDefault);
+      // A new install in a folder the player chose; the default apps folder is where they go anyway.
+      const chosenFolder = !was && options.to && !samePath(options.to, config.appsDir) ? options.to : undefined;
+      // Grouped by console: in the default apps folder, in its console's folder there. Any other folder (another
+      // apps folder, which may already be one console's, or one chosen for it alone) is exactly where it goes.
+      const desktop = config.os !== "android" && config.os !== "ios";
+      const group = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(catalog[entry.id] ?? entry, consoleNames) : undefined;
+      const into = group ? joinPath(config.appsDir, group) : chosenFolder;
       const done = await native.install({
         id: entry.id,
         url: asset.url,
@@ -1143,6 +1586,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         checksum: asset.checksum ?? asset.unverifiedChecksum,
         folder,
         dir: was?.dir,
+        into,
         filesToAdd: files ?? catalogFiles,
         version: release.version,
         preferred: executables,
@@ -1171,7 +1615,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const wine = asset.os === "windows" && config.os === "linux";
         const old = i[entry.id]?.launch;
         const launch = old && Boolean(i[entry.id]?.wine) !== wine ? (old.command ? { command: old.command } : undefined) : old;
-        return { ...i, [entry.id]: { dir: i[entry.id]?.dir, lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        // Kept where it was, or in the folder it went in: one that's an apps folder already is one of its apps.
+        const dir = into && !msi ? done.dir : i[entry.id]?.dir;
+        const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;
+        const kept = into && !msi ? group : i[entry.id]?.group;
+        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -1181,7 +1629,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // A Windows installer's setup the player closed is cancelled too.
       if (error === "cancelled") {
         setJobs(({ [entry.id]: _, ...rest }) => rest);
-        track("app_install_cancelled", { ...ref, version: version ?? null, format: format ?? null });
+        track("app_install_cancelled", { ...ref, version: version ?? null, update: Boolean(from), stage: "installing", format: format ?? null });
         return;
       }
       let problem = error;
@@ -1203,7 +1651,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         }
       }
       fail(entry.id, problem, true, instead);
-      track("app_install_failed", { ...ref, version: version ?? null, update: Boolean(from), reason: reasonOf(problem), format: format ?? null });
+      // By the first error: "missing" and "mismatch" say exactly what `problem` then words for the player.
+      track("app_install_failed", { ...ref, version: version ?? null, update: Boolean(from), reason: reasonOf(problem), error: failureKind(error), format: format ?? null });
       captureFailure("install", problem, { ...ref, version: version ?? null, update: Boolean(from), format: format ?? null });
     }
   }
@@ -1218,16 +1667,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     });
   }
 
-  /** Installed apps' folders in the apps folder: not 3.x installs or programs left where they are. */
-  function appFolders() {
-    return Object.values(installs).flatMap((i) => (i.dir ? [] : [i.folder]));
-  }
 
   /** Deletes an app's files; a local app's are the player's own and stay. */
   async function uninstall(id: string) {
     const install = installs[id];
     if (!install || install.local) return;
+    // Its folder is on its way somewhere else: nothing's removed, from the library either.
+    if (moving.current.has(id)) {
+      setNotice(t`Wait for it to finish moving, then try again.`);
+      throw "cancelled";
+    }
     await native.uninstall(install.folder, install.dir);
+    chosenFolder.current.delete(id);
     track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
   }
 
@@ -1350,6 +1801,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     add: (entry) => add(entry),
     addToLibrary(entry) {
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
+      if (!library.some((i) => i.id === entry.id)) track("app_added", { kind: "catalog", slug: entry.slug });
       add(entry);
       const name = entry.projectName;
       setNotice(t`${name} is in your library.`);
@@ -1364,6 +1816,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         return { ...i, [id]: Object.keys(set).length ? { ...install, launch: set } : install };
       }),
     setFiles: (id, files) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], files } } : i)),
+    setCopy: (id, fileId, copy) =>
+      setInstalls((i) => {
+        if (!i[id]) return i;
+        const { [fileId]: _, ...rest } = i[id].copies ?? {};
+        const copies = copy ? { ...rest, [fileId]: copy } : rest;
+        const { copies: __, ...install } = i[id];
+        return { ...i, [id]: Object.keys(copies).length ? { ...install, copies } : install };
+      }),
     lookUpRepository(input) {
       // A lookup that never answers ends with a message, and the button tries again.
       let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1477,6 +1937,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     confirmUninstall,
     choosingProgram,
     chooseProgram,
+    settingUpCopy,
+    setUpCopy,
     cache: (entries) => setCatalog((c) => ({ ...c, ...Object.fromEntries(entries.map((e) => [e.id, { ...c[e.id], ...e }])) })),
     remember: (entries) => {
       const known = new Set(library.map((i) => i.id));
@@ -1494,18 +1956,24 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const reason = pulled.reason;
         return setNotice(t`${version} of ${name} was withdrawn: ${reason} Choose another version from its page.`, { stays: true });
       }
+      // The player asks to choose where each new app goes: whichever button this came from, the folder first.
+      const desktop = config.os !== "android" && config.os !== "ios";
+      if (settings.askWhereToInstall && desktop && !installs[entry.id] && !options?.to && !isLocal(entry.id)) return askPlace(entry, release, options);
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform });
+      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform, to: options?.to });
     },
-    async play(id, executable) {
+    async play(id, executable, withoutCopy) {
       const install = installs[id];
       if (!install) return;
+      if (appMoves[id]) return setNotice(t`Wait for it to finish moving, then play it.`);
+      // The game needs the player's own copy, which Quiver gets to it: asked for first.
+      if (!withoutCopy && copiesNeeded(catalog[id], install, config.os).length) return setUpCopy({ id, play: true });
       // The programs the player picked for Play: one starts; more, and they choose.
       const programs = install.launch?.programs ?? [];
       if (!executable && programs.length > 1) return chooseProgram(id);
       const chosen = executable ?? programs[0];
-      const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner };
+      const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner, copies: launchCopies(catalog[id], install) };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
       if (install.installer === "msi" && !program) {
@@ -1514,9 +1982,24 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       setInstalls((i) => ({ ...i, [id]: { ...i[id], lastPlayed: Date.now(), ...(program ? { program } : {}) } }));
       const ref = appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? "");
-      await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch).then(
-        () => (musicForGame(), track("app_launched", ref)),
-        (e) => (fail(id, e), track("app_launch_failed", { ...ref, reason: reasonOf(e) }), captureFailure("launch", e, { ...ref, wine: Boolean(install.wine) })),
+      const played = { ...playedRef(ref, install.version), wine: Boolean(install.wine) };
+      // On the player's Discord profile while it runs: its square icon, else its box art.
+      const entry = catalog[id];
+      const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
+      await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
+        () => (musicForGame(), track("app_launched", played)),
+        async (e) => {
+          // Windows asked for administrator rights and the player said no.
+          if (e === "cancelled") return;
+          fail(id, e);
+          track("app_launch_failed", { ...played, reason: reasonOf(e), error: failureKind(e) });
+          // No program found: what is there says why, since it's different apps on every system.
+          const kinds = e === NO_PROGRAM ? await native.fileKinds(install.folder, install.dir).catch(() => null) : null;
+          const report = () => captureFailure("launch", e, { ...ref, wine: Boolean(install.wine), ...(kinds ? { kinds: kinds.join(",") } : {}) });
+          if (config.os !== "android") return report();
+          // Removed in Android's settings while Quiver stayed in view: its card offers Install again, and there's nothing to report.
+          void native.androidAppGone(install.folder, install.dir).then((gone) => (gone ? setInstalls(({ [id]: _, ...rest }) => rest) : report()), report);
+        },
       );
     },
     async reinstall(id) {
@@ -1541,6 +2024,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     async remove(id) {
       // Saying no when Windows asks to uninstall it keeps it, in the library too.
       if (await uninstall(id).then(() => false, (e) => (captureFailure("remove", e, appRef(id, catalog[id]?.slug ?? "")), e === "cancelled"))) return;
+      track("app_removed", appRef(id, catalog[id]?.slug ?? ""));
       setInstalls(({ [id]: _, ...rest }) => rest);
       // A synced app is removed from its account too; one that never synced just goes.
       setLibrary((l) =>
@@ -1650,9 +2134,27 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       return missing;
     },
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
-    appFolders,
+    movableApps: () => movableApps(installs),
+    appsFolders: () => appsFolders(installs, config.appsDir),
+    unsortedApps: () => unsortedApps(installs, config.appsDir, catalog, consoleNames),
+    async switchAppsFolder(to) {
+      const from = config.appsDir;
+      if (samePath(to, from)) return;
+      // Saved before the default changes, so even a launcher closed mid-way finds every app: each one in the old folder
+      // is recorded where it is, which is where it already was.
+      const kept = keptWhereTheyAre(installs, from);
+      await native.writeState("installs", kept);
+      setInstalls(kept);
+      const switched = await native.moveAppsFolder(to, []);
+      setInstalls((i) => ownedBy(i, switched.appsDir));
+      setConfig((c) => ({ ...c, appsDir: switched.appsDir }));
+      setTelemetryAppsDir(switched.appsDir);
+      track("apps_folder_changed", { kept: movableApps(installs).inside.length });
+    },
     renaming,
     askRename,
+    placing,
+    askPlace,
     addingFiles,
     askAddFiles,
     changingVersion,
@@ -1668,7 +2170,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const taken = Object.entries(installs).some(([other, i]) => other !== id && !i.dir && i.folder.toLowerCase() === folder.toLowerCase());
       if (taken) throw new Problem(msg`Another app in your library uses a folder named ${folder}. Choose another name.`);
       await native.renameAppFolder(id, install.folder, folder);
-      setInstalls((i) => ({ ...i, [id]: { ...i[id], folder } }));
+      setInstalls((i) => ({ ...i, [id]: { ...withCopiesIn(i[id], joinPath(config.appsDir, install.folder), joinPath(config.appsDir, folder)), folder } }));
       // A folder the player fills keeps its name in the library too, which its page shows.
       const item = library.find((i) => i.id === id);
       if (item?.local?.kind === "folder") {
@@ -1679,11 +2181,81 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       track("app_folder_renamed", appRef(id, catalog[id]?.slug ?? item?.slug ?? ""));
       return folder;
     },
-    async moveApps(to) {
-      const appsDir = await native.moveAppsFolder(to, appFolders());
-      setConfig((c) => ({ ...c, appsDir }));
-      setTelemetryAppsDir(appsDir);
-      track("apps_folder_moved", { apps: appFolders().length });
+    async moveApps(to, which) {
+      let now = installs;
+      // The default folder's apps left behind when apps go to another folder that becomes the default stay findable.
+      if (!which.inside && !samePath(to, config.appsDir)) {
+        now = keptWhereTheyAre(installs, config.appsDir);
+        await native.writeState("installs", now);
+        setInstalls(now);
+      }
+      const { inside, elsewhere } = movableApps(now);
+      // Those in the folders asked for, and with the default folder's own its apps in console folders.
+      const kept = elsewhere.filter((a) => which.from.some((f) => samePath(rootOf(a), f)) || (which.inside && samePath(rootOf(a), config.appsDir)));
+      // A folder two library entries share moves once, and both go with it.
+      const { apps, twins } = oncePerFolder([...inside, ...kept], now, config.appsDir);
+      const all = apps.flatMap((a) => [a.id, ...(twins.get(a.id) ?? [])]);
+      if (all.some((id) => installing.current.has(id) || moving.current.has(id))) throw new Problem(msg`Wait for downloads to finish first`);
+      for (const id of all) moving.current.add(id);
+      // Each app is recorded where it is the moment it gets there: a move that stops part way, or a launcher closed
+      // mid-move, leaves every app findable. It's in an apps folder still (or one that couldn't move stays in the
+      // old one), so it comes along with the next move.
+      const stop = await native.onAppMoved(({ id, dir }) =>
+        setInstalls((i) => (i[id] ? withTwins({ ...i, [id]: { ...withCopiesIn(i[id], placeOf(i[id], config.appsDir), dir), dir, inApps: true } }, id, twins.get(id) ?? [], config.appsDir) : i)),
+      );
+      try {
+        const moved = await native.moveAppsFolder(to, apps);
+        setInstalls((i) => {
+          let next = { ...i };
+          for (const id of moved.inside) if (next[id]) next[id] = movedInside(next[id]);
+          // Those in a folder another entry moved: where it is now, in the apps folder that is the default now.
+          for (const [id, others] of twins) next = withTwins(next, id, others, moved.appsDir);
+          return next;
+        });
+        setConfig((c) => ({ ...c, appsDir: moved.appsDir }));
+        setTelemetryAppsDir(moved.appsDir);
+        track("apps_folder_moved", { apps: inside.length, elsewhere: kept.length, failed: moved.failed.length });
+        return { left: moved.left, failed: moved.failed };
+      } finally {
+        stop();
+        for (const id of all) moving.current.delete(id);
+      }
+    },
+    appMoves,
+    async moveApp(id, to) {
+      // As it is now, not as of the render that offered the move: Sort into console folders moves one after another.
+      const install = now.current.installs[id];
+      if (!movable(install)) throw new Problem(msg`This app's folder can't be moved.`);
+      if (installing.current.has(id)) throw new Problem(msg`Wait for its download to finish, then move it.`);
+      if (moving.current.has(id)) return {};
+      // Another library entry in its very folder goes with it.
+      const twins = twinsOf(now.current.installs, id, config.appsDir);
+      if (twins.some((t) => installing.current.has(t) || moving.current.has(t))) throw new Problem(msg`Wait for its download to finish, then move it.`);
+      for (const t of [id, ...twins]) moving.current.add(t);
+      setAppMoves((m) => ({ ...m, [id]: { copied: 0, size: 0 } }));
+      const stop = await native.onAppMoving((m) => m.id === id && setAppMoves((all) => (all[id] ? { ...all, [id]: { copied: m.copied, size: m.size } } : all)));
+      try {
+        const listed = appsFolders(installs, config.appsDir).some((f) => samePath(f.path, to));
+        // Into the default apps folder while apps are grouped by console: its console's folder there, kept from
+        // where it was or worked out now. Another folder is exactly where it goes.
+        const group = samePath(to, config.appsDir) && settings.groupByConsole ? (install.group ?? groupFolder(catalog[id] ?? { id, projectType: "port" }, consoleNames)) : undefined;
+        const moved = await native.moveApp(id, install.folder, install.dir, group ? joinPath(to, group) : to, { inApps: listed, group });
+        setInstalls((i) => {
+          const now = i[id];
+          if (!now) return i;
+          const { dir: _, inApps: __, group: ___, ...rest } = withCopiesIn(now, placeOf(now, config.appsDir), moved.dir);
+          // In the default folder under its own name: one of its apps like any other.
+          const own = !group && samePath(parentOf(moved.dir), config.appsDir) && baseName(moved.dir) === now.folder;
+          const next = { ...i, [id]: own ? rest : { ...rest, dir: moved.dir, ...(listed ? { inApps: true as const } : {}), ...(group ? { group } : {}) } };
+          return withTwins(next, id, twins, config.appsDir);
+        });
+        track("app_moved", { ...appRef(id, catalog[id]?.slug ?? ""), appsFolder: listed });
+        return moved.left ? { left: moved.left } : {};
+      } finally {
+        stop();
+        for (const t of [id, ...twins]) moving.current.delete(t);
+        setAppMoves(({ [id]: _, ...rest }) => rest);
+      }
     },
     cancel: (id) => void native.cancelInstall(id).catch(() => {}),
   };

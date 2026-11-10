@@ -10,7 +10,7 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | playlist | 재생 목록 | |
 | Browse | 둘러보기 | the catalog page |
 | catalog | 카탈로그 | |
-| Get | 받기 | the button that installs an app |
+| Add / Install | 추가 / 설치 | the buttons that put an app in the library, then install it |
 | Play / Play anyway | 플레이 / 그래도 플레이 | |
 | install / uninstall | 설치 / 제거 | |
 | download | 다운로드 | Downloads page: 다운로드 |

@@ -21,10 +21,10 @@ test("with a controller connected, the bottom says what its buttons do, as it la
   // On a library card: A plays it, Y opens its menu.
   await app.execute(() => document.querySelector(".library-tile .card-open").focus());
   await s.until(async () => (await hints()).join(", ").startsWith("A Play, Y Menu"));
-  // On a catalog card: A opens it, Y opens its menu, X gets it, with that button showing X.
+  // On a catalog card: A opens it, Y opens its menu, X adds it, with that button showing X.
   await open("button", { text: "Browse" });
   await app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-open').focus());
-  await s.until(async () => (await hints()).join(", ").startsWith("A Open, Y Menu, X Get"));
+  await s.until(async () => (await hints()).join(", ").startsWith("A Open, Y Menu, X Add"));
   await s.until(() => app.execute(() => document.querySelector('article[data-slug="tampered-port"] .card-action .primary')?.getAttribute("data-pad-glyph") === "X"));
   await open("button", { text: "Library" });
   // It doesn't cover the page: the d-pad still gets everywhere, every move in sight above it.

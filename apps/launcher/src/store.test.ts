@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -20,6 +20,12 @@ describe("locating an install", () => {
     expect(locatable("port", found, { error: "The download failed." })).toBe(false);
     expect(folderGone(gone)).toBe(true);
     expect(locatable("port", found, gone)).toBe(true);
+  });
+
+  it("knows when no program was found, which lets the player choose one", () => {
+    expect(noProgram({ error: "Couldn't find a program to start in this app's folder." })).toBe(true);
+    expect(noProgram(gone)).toBe(false);
+    expect(noProgram(undefined)).toBe(false);
   });
 
   it("isn't offered during a download, or for the player's own files", () => {
@@ -322,5 +328,233 @@ describe("an update for this computer", () => {
     const pinned = { ...install, updates: "pinned" as const };
     expect(hasUpdate(found(windows), pinned)).toBe(false);
     expect(updateFor(found(windows), pinned)).toEqual(windows);
+  });
+});
+
+describe("naming an app being played in usage data", () => {
+  it("gives a catalog app's version", () => {
+    expect(playedRef(appRef("port", "test-port"), "v1.2.0")).toEqual({ slug: "test-port", source: "catalog", version: "v1.2.0" });
+  });
+
+  it("keeps an app the player added to its kind", () => {
+    expect(playedRef(appRef("github:someone/private-port", "private-port"), "my-tag")).toEqual({ slug: null, source: "custom", version: null });
+    expect(playedRef(appRef("local:abc", "my-game"), "1")).toEqual({ slug: null, source: "local", version: null });
+  });
+});
+
+describe("moving the apps folder", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const installs = {
+    here: { ...base, folder: "sm64" },
+    v3: { ...base, folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp", inApps: true as const },
+    // Put on a drive of its own on purpose: in 3.x, or with Locate existing install.
+    placed: { ...base, folder: "mario", dir: "E:/Fast SSD/Mario" },
+    own:{ ...base, folder: "mine", dir: "D:/Games/Mine", local: true as const, program: "D:/Games/Mine/mine.exe" },
+    msi: { ...base, folder: "msi", dir: "C:/Program Files/Thing", installer: "msi" as const, program: "C:/Program Files/Thing/thing.exe" },
+  };
+
+  it("takes the apps folder's apps, and offers to bring in Quiver 3's, never one placed on purpose, the player's own or an installer's", () => {
+    expect(movableApps(installs)).toEqual({
+      inside: [{ id: "here", folder: "sm64" }],
+      elsewhere: [{ id: "v3", folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp" }],
+      placed: 1,
+    });
+  });
+
+  it("drops the old folder once an app is in the apps folder under its own name, keeping the rest", () => {
+    expect(movedInside({ ...installs.v3, lastPlayed: 5 })).toEqual({ ...base, folder: "zelda", lastPlayed: 5 });
+  });
+
+  it("knows a 3.x app in 3.x's apps folder can come along, and one 3.x kept in a folder of its own can't", () => {
+    const entry = { slug: "zelda", launcher: { folderName: "zelda" } } as unknown as Parameters<typeof adoptedInstall>[1];
+    const old = { name: "Zelda", provider: "github", dir: "C:/Q3/Apps/Zelda", version: "1.0.0" };
+    expect(adoptedInstall({ ...old, inApps: true }, entry, "windows")?.inApps).toBe(true);
+    expect(adoptedInstall(old, entry, "windows")?.inApps).toBeUndefined();
+    // Brought over again by a launcher that knows, the same copy learns it.
+    expect(keptInstall({ ...base, folder: "zelda", dir: old.dir }, { ...base, folder: "zelda", dir: old.dir, inApps: true }).inApps).toBe(true);
+  });
+
+  it("marks 3.x's apps-folder installs that came over before it knew, and no other", () => {
+    const { v3: _, ...rest } = installs;
+    const before = { ...rest, v3: { ...base, folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp" } };
+    const old = [
+      { name: "Zelda", provider: "github", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp", version: "1.0.0", inApps: true },
+      { name: "Mario", provider: "github", dir: "E:/Fast SSD/Mario", version: "1.0.0" },
+    ];
+    const after = markedInApps(before, old);
+    expect(after.v3.inApps).toBe(true);
+    expect(after.placed).toBe(before.placed);
+    expect(markedInApps(after, old)).toBe(after);
+  });
+
+  it("marks an install in any of 3.x's apps folders, though the library brought over doesn't list it", () => {
+    const { v3: _, ...rest } = installs;
+    const before = { ...rest, v3: { ...base, folder: "Emerald", dir: "/home/deck/.local/share/QuiverLauncher/Apps/Emerald" } };
+    const after = markedInApps(before, [], ["/home/deck/.local/share/QuiverLauncher/Apps"]);
+    expect(after.v3.inApps).toBe(true);
+    // One the player placed elsewhere stays theirs.
+    expect(after.placed).toBe(before.placed);
+    expect(markedInApps(before, [], ["/home/deck/Downloads/quiver current/Apps"])).toBe(before);
+  });
+});
+
+describe("two library entries in one folder", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const shared = "/home/deck/Downloads/quiver current/Apps/YuGiOh-Recompiled";
+  const installs = {
+    old: { ...base, folder: "YuGiOh-Recompiled", dir: shared, inApps: true as const },
+    renamed: { ...base, folder: "YuGiOhRecomp", dir: shared, inApps: true as const },
+    other: { ...base, folder: "Banjo", dir: "/home/deck/Downloads/quiver current/Apps/Banjo", inApps: true as const },
+  };
+  const appsDir = "/home/deck/apps";
+
+  it("finds the others in an install's folder", () => {
+    expect(twinsOf(installs, "old", appsDir)).toEqual(["renamed"]);
+    expect(twinsOf(installs, "other", appsDir)).toEqual([]);
+    // The default folder's own, by their folder there.
+    expect(twinsOf({ a: { ...base, folder: "Game" }, b: { ...base, folder: "Game" }, c: { ...base, folder: "Other" } }, "a", appsDir)).toEqual(["b"]);
+  });
+
+  it("moves a shared folder once, and the others go where it went", () => {
+    const { apps, twins } = oncePerFolder(
+      Object.keys(installs).map((id) => ({ id })),
+      installs,
+      appsDir,
+    );
+    expect(apps.map((a) => a.id)).toEqual(["old", "other"]);
+    expect(twins.get("old")).toEqual(["renamed"]);
+    // Into the default under the first's own name: it's one of the folder's own, and the other has its path.
+    const moved = withTwins({ ...installs, old: movedInside(installs.old) }, "old", ["renamed"], appsDir);
+    expect(moved.renamed).toEqual({ ...base, folder: "YuGiOhRecomp", dir: "/home/deck/apps/YuGiOh-Recompiled", inApps: true });
+    // Into a console folder: the other's there too, and in it.
+    const grouped = withTwins({ ...installs, old: { ...installs.old, dir: "/home/deck/apps/Ports/PS1/YuGiOh-Recompiled", group: "Ports/PS1" } }, "old", ["renamed"], appsDir);
+    expect(grouped.renamed).toEqual({ ...base, folder: "YuGiOhRecomp", dir: "/home/deck/apps/Ports/PS1/YuGiOh-Recompiled", inApps: true, group: "Ports/PS1" });
+    // One with the same folder name is the default folder's own too.
+    const same = withTwins({ a: { ...base, folder: "Game" }, b: { ...base, folder: "Game", dir: "/x/Game", inApps: true as const } }, "a", ["b"], appsDir);
+    expect(same.b).toEqual({ ...base, folder: "Game" });
+    // To a folder of the player's: no longer in an apps folder.
+    expect(withTwins({ ...installs, old: { ...base, folder: "YuGiOh-Recompiled", dir: "/mnt/sd/YuGiOh-Recompiled" } }, "old", ["renamed"], appsDir).renamed).toEqual({
+      ...base,
+      folder: "YuGiOhRecomp",
+      dir: "/mnt/sd/YuGiOh-Recompiled",
+    });
+  });
+
+  it("knows a copy put in the app's folder where the folder went", () => {
+    const install = { ...base, folder: "Game", copies: { rom: { path: "D:/Roms/game.z64", placed: "C:\\Apps\\Game\\data\\baserom.z64", at: 1 }, disc: { path: "D:/Roms/disc.iso", at: 1 } } };
+    const moved = withCopiesIn(install, "c:/Apps/Game", "E:\\Ports\\N64\\Game");
+    expect(moved.copies?.rom.placed).toBe("E:\\Ports\\N64\\Game\\data\\baserom.z64");
+    expect(moved.copies?.disc).toBe(install.copies.disc);
+    // One placed in the system's folders stays where it is.
+    const outside = { ...base, folder: "Game", copies: { rom: { path: "/roms/a.z64", placed: "/home/deck/.local/share/game/a.z64", at: 1 } } };
+    expect(withCopiesIn(outside, "/apps/Game", "/sd/Game").copies?.rom.placed).toBe("/home/deck/.local/share/game/a.z64");
+  });
+
+  it("sorts a shared folder into its console folder once", () => {
+    const catalog = { a: { id: "a", projectType: "port", consoles: ["n64"] }, b: { id: "b", projectType: "port", consoles: ["n64"] } } as const;
+    const sorted = unsortedApps({ a: { ...base, folder: "Game" }, b: { ...base, folder: "Game" } }, appsDir, catalog as never);
+    expect(sorted.map((a) => a.id)).toEqual(["a"]);
+  });
+});
+
+describe("several apps folders", () => {
+  const base = { version: "1.0.0", executables: [] };
+  const installs = {
+    here: { ...base, folder: "sm64" },
+    zelda: { ...base, folder: "zelda", dir: "C:/QuiverLauncher3/Apps/Zelda64Recomp", inApps: true as const },
+    // The same folder written the Windows way, as a move records it.
+    mario: { ...base, folder: "mario", dir: "C:\\QuiverLauncher3\\Apps\\mario", inApps: true as const },
+    placed: { ...base, folder: "kart", dir: "E:/Fast SSD/Kart" },
+    msi: { ...base, folder: "msi", dir: "C:/Program Files/Thing", installer: "msi" as const, program: "C:/Program Files/Thing/thing.exe" },
+  };
+
+  it("lists the default first, then each folder apps are kept in, never one chosen for a single app", () => {
+    const folders = appsFolders(installs, "D:\\Games");
+    expect(folders.map((f) => [f.path, f.default, f.apps.map((a) => a.id)])).toEqual([
+      ["D:\\Games", true, ["here"]],
+      ["C:/QuiverLauncher3/Apps", false, ["zelda", "mario"]],
+    ]);
+  });
+
+  it("keeps the default's apps where they are before another folder becomes the default", () => {
+    const kept = keptWhereTheyAre(installs, "D:\\Games\\");
+    expect(kept.here).toEqual({ ...installs.here, dir: "D:\\Games\\sm64", inApps: true });
+    expect(kept.zelda).toBe(installs.zelda);
+    expect(appsFolders(kept, "E:\\New").map((f) => f.path)).toEqual(["E:\\New", "C:/QuiverLauncher3/Apps", "D:\\Games"]);
+  });
+
+  it("gives the new default back the apps in it under their own name, and keeps one under another name where it is", () => {
+    const within = {
+      a: { ...base, folder: "zelda", dir: "E:\\New\\zelda", inApps: true as const },
+      b: { ...base, folder: "kart", dir: "E:\\New\\kart 2", inApps: true as const },
+    };
+    const owned = ownedBy(within, "e:/new/");
+    expect(owned.a).toEqual({ ...base, folder: "zelda" });
+    expect(owned.b).toBe(within.b);
+  });
+
+  it("refuses a new default inside another apps folder, or around one", () => {
+    const folders = appsFolders(installs, "D:\\Games");
+    expect(folderClash("D:\\Games\\More", folders)).toContain("D:\\Games");
+    expect(folderClash("C:/", folders)).toContain("QuiverLauncher3");
+    expect(folderClash("E:/Games", folders)).toBeNull();
+    // An apps folder already in the list can become the default.
+    expect(folderClash("C:/QuiverLauncher3/Apps", folders)).toBeNull();
+  });
+});
+
+describe("grouping new apps by console", () => {
+  const app = (projectType: string, consoles: string[] = [], basedOn?: string) => ({ id: "k1", projectType, consoles, ...(basedOn ? { basedOn: { console: basedOn } } : {}) }) as unknown as Entry;
+
+  it("puts each kind of app in its folder, a port in its console's by its short name", () => {
+    expect(groupFolder(app("emulator", ["n64", "gcn"]))).toBe("Emulators");
+    expect(groupFolder(app("tool", ["n64"]))).toBe("Tools");
+    expect(groupFolder(app("game", ["pc"]))).toBe("Games");
+    expect(groupFolder(app("port", ["n64"]))).toBe("Ports/N64");
+    expect(groupFolder(app("port", ["og xbox"]))).toBe("Ports/Xbox");
+    // The version it plays decides, over the consoles its games came out on.
+    expect(groupFolder(app("port", ["ps1", "n64"], "ps1"))).toBe("Ports/PS1");
+    expect(groupFolder(app("port", ["ps1", "n64"]))).toBe("Ports/Multi-console");
+    expect(groupFolder(app("port"))).toBe("Ports/Other");
+    // One the list doesn't know yet goes by the catalog's name for it, made a folder name.
+    expect(groupFolder(app("port", ["neo"]), { neo: "Neo Geo: AES" })).toMatch(/^Ports\/[^:/]+$/);
+    expect(groupFolder({ ...app("port", ["n64"]), id: "local:abc" })).toBeUndefined();
+  });
+
+  it("counts an app in a console folder in its apps folder, not as a folder of its own", () => {
+    const base = { version: "1.0.0", executables: [] };
+    const installs = {
+      plain: { ...base, folder: "sm64" },
+      grouped: { ...base, folder: "Zelda", dir: joinPath(joinPath("D:/Games", "Ports/N64"), "Zelda"), inApps: true as const, group: "Ports/N64" },
+      other: { ...base, folder: "Kart", dir: "E:/More/Emulators/Kart", inApps: true as const, group: "Emulators" },
+    };
+    expect(installs.grouped.dir).toBe("D:/Games/Ports/N64/Zelda");
+    expect(joinPath("D:\\Games", "Ports/N64")).toBe("D:\\Games\\Ports\\N64");
+    expect(rootOf(installs.other)).toBe("E:/More");
+    expect(rootOf(installs.grouped)).toBe("D:/Games");
+    expect(appsFolders(installs, "D:/Games").map((f) => [f.path, f.apps.map((a) => a.id)])).toEqual([
+      ["D:/Games", ["plain", "grouped"]],
+      ["E:/More", ["other"]],
+    ]);
+    // A move takes it with its console folder.
+    expect(movableApps(installs).elsewhere.find((a) => a.id === "grouped")?.group).toBe("Ports/N64");
+  });
+
+  it("lists the installed apps at the top of the default apps folder for sorting, none kept anywhere else", () => {
+    const base = { version: "1.0.0", executables: [] };
+    const port = (id: string) => ({ ...app("port", ["n64"]), id });
+    const installs = {
+      plain: { ...base, folder: "sm64" },
+      kept: { ...base, folder: "Kart", dir: "E:/More/Kart", inApps: true as const },
+      sorted: { ...base, folder: "Zelda", dir: "D:/Games/N64/Zelda", inApps: true as const, group: "N64" },
+      chosen: { ...base, folder: "Own", dir: "F:/Mine/Own" },
+      msi: { ...base, folder: "Setup", installer: "msi" as const },
+      gone: { ...base, folder: "Gone" },
+      "local:x": { ...base, folder: "Local", local: true as const },
+    };
+    const catalog = { plain: port("plain"), kept: port("kept"), sorted: port("sorted"), chosen: port("chosen"), msi: port("msi") };
+    expect(unsortedApps(installs, "D:/Games", catalog)).toEqual([
+      { id: "plain", folder: "sm64", to: "D:/Games" },
+    ]);
   });
 });

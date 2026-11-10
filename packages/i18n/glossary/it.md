@@ -9,7 +9,7 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | playlist | playlist | |
 | Browse | Esplora | the catalog page |
 | catalog | catalogo | |
-| Get | Ottieni | the button that installs an app |
+| Add / Install | Aggiungi / Installa | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Gioca / Gioca comunque | |
 | install / uninstall | installare / disinstallare | |
 | download | download / scaricare | Downloads page: Download |

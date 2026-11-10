@@ -14,6 +14,44 @@ export type InstallSettings = {
   preferredExecutables?: Partial<Record<"windows" | "linux" | "macos", string[]>>;
   /** Where its mods go, and the Thunderstore communities and GameBanana games they come from. */
   mods?: ModSettings;
+  /** What the player brings of their own, such as their copy of the game, and how the app gets it. */
+  setupFiles?: SetupFile[];
+};
+
+/** A dump an app takes of the player's copy, as No-Intro, Redump or the app's own list gives it. */
+export type SetupDump = { algo: "sha1" | "sha256"; value: string; label?: string };
+/**
+ * Something the player provides for an app: their own copy of its game (a ROM, a disc image, or a folder of the
+ * game's files). The launcher checks it and gets it to the app: puts it at `destination` (under `root`), passes its
+ * path after `flag` or as an argument of its own (`positional`), or puts it in the environment variable `env`.
+ */
+export type SetupFile = {
+  id: string;
+  /** What to provide: "Super Mario 64 ROM". */
+  label: string;
+  /** Said when asking for it. */
+  prompt?: string;
+  /** Unset means it's needed to play. */
+  required?: boolean;
+  kind?: "file" | "folder";
+  /** Relative, with / between folders. */
+  destination?: string;
+  /** What `destination` is in: the app's folder (unset), or the system's folders for apps' data, settings and local data. */
+  root?: "app" | "data" | "config" | "localData";
+  /** "--iso"; ending in "=" joins it to the path. */
+  flag?: string;
+  /**
+   * Its path is an argument of its own, with no flag in front (`game.exe C:\roms\game.z64`), before any flags. A
+   * `flag` wins. Launchers from before it ignore it: they don't ask for the copy, and start the game as they did.
+   */
+  positional?: boolean;
+  env?: string;
+  /** For a folder: names it holds, to tell it's the right one. */
+  contains?: string[];
+  /** Without a dot. */
+  extensions?: string[];
+  /** Any one of them is a copy it takes. Empty: no dump is published, so any copy of the right kind is taken. */
+  accepted: SetupDump[];
 };
 
 /** A site to get mods from: "thunderstore" or "gamebanana" (the site keeps any it was given; the launcher skips ones it has no provider for). */
@@ -311,10 +349,16 @@ export type AppQuery = {
   projectType?: ProjectType;
   /** Apps of any of these kinds, such as a player's saved filters; replaces `projectType`. */
   projectTypes?: ProjectType[];
+  /** Apps for any of these platforms; replaces `os`. */
+  platforms?: Os[];
   /** A console id, or "maker:Nintendo" for every console a maker made. */
   console?: string;
+  /** Apps for any of these consoles (ids, or "maker:Nintendo"); replaces `console`. The site takes at most MAX_SYSTEMS. */
+  consoles?: string[];
   sort?: Sort;
   ai?: "no-generated" | "no-ai";
+  /** Only apps with Easy setup: their game files found and put in place by the launcher. */
+  setup?: "easy";
   cursor?: string | null;
   limit?: number;
 };
@@ -351,6 +395,8 @@ export type ClientOptions = {
   fetch?: typeof globalThis.fetch;
   /** Called once, when the default address can't be reached and FALLBACK_API answered instead. */
   onFallback?: (error: unknown) => void;
+  /** Called once, the first time neither the default address nor FALLBACK_API answered. */
+  onUnreachable?: (error: unknown) => void;
   /** How long a call waits for an answer before giving up on it; 20 seconds unless a test says otherwise. */
   timeoutMs?: number;
 };
@@ -405,6 +451,7 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     }
   }
   let origin = base;
+  let unreachable = false;
   /**
    * When api.quiverlauncher.com gives no answer at all (no connection, a failed
    * TLS handshake, no answer in time, or the 499 its proxy sometimes sends) or
@@ -433,6 +480,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
         origin = FALLBACK_API;
         return other;
       }
+      if (!unreachable) {
+        unreachable = true;
+        options.onUnreachable?.(problem);
+      }
     }
     // The player's real problem is the first one.
     if (failed) return failed;
@@ -456,14 +507,24 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     apps(q: AppQuery = {}) {
       const params = new URLSearchParams({ limit: String(q.limit ?? 48) });
       if (q.search?.trim()) params.set("search", q.search.trim());
-      if (q.os) params.set("os", q.os);
+      // One of each goes as the older single parameter, the same address (and cached page) as before.
+      const oses = q.platforms ?? (q.os ? [q.os] : []);
+      if (oses.length > 1) params.set("platforms", oses.join(","));
+      else if (oses[0]) params.set("os", oses[0]);
       const types = q.projectTypes ?? (q.projectType ? [q.projectType] : []);
       if (types.length > 1) params.set("projectTypes", types.join(","));
       else if (types[0]) params.set("projectType", types[0]);
-      if (q.console?.startsWith("maker:")) params.set("maker", q.console.slice(6));
-      else if (q.console) params.set("console", q.console);
+      const systems = q.consoles ?? (q.console ? [q.console] : []);
+      if (systems.length > 1) {
+        const ids = systems.filter((s) => !s.startsWith("maker:"));
+        const makers = systems.filter((s) => s.startsWith("maker:")).map((s) => s.slice(6));
+        if (ids.length) params.set("consoles", ids.join(","));
+        if (makers.length) params.set("makers", makers.join(","));
+      } else if (systems[0]?.startsWith("maker:")) params.set("maker", systems[0].slice(6));
+      else if (systems[0]) params.set("console", systems[0]);
       if (q.sort) params.set("sort", q.sort);
       if (q.ai) params.set("ai", q.ai);
+      if (q.setup) params.set("setup", q.setup);
       if (q.cursor) params.set("cursor", q.cursor);
       return get<Page<Entry>>(`/apps?${params}`);
     },

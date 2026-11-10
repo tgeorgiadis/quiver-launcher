@@ -77,6 +77,20 @@ pub fn kind() -> Kind {
     Kind::Elsewhere
 }
 
+/// How this copy was installed, in a word for usage data: never its path.
+pub fn package() -> &'static str {
+    match kind() {
+        Kind::Installer => "installer",
+        Kind::Portable(_) => "portable",
+        Kind::AppImage(_) => "appimage",
+        Kind::Apk => "apk",
+        Kind::Flatpak => "flatpak_bundle",
+        Kind::Elsewhere if crate::sandbox::id().is_some() => "flatpak",
+        Kind::Elsewhere if cfg!(target_os = "macos") => "macos",
+        Kind::Elsewhere => "system_package",
+    }
+}
+
 /// The file in a release that updates this kind of copy.
 pub fn asset<'a>(release: &'a Release, kind: &Kind) -> Option<&'a Asset> {
     let arch = if cfg!(target_arch = "aarch64") { ["aarch64", "arm64"] } else { ["x86_64", "amd64"] };

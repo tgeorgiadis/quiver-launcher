@@ -10,7 +10,7 @@ before « : ; ! ? », and « » for quotes.
 | playlist | playlist | |
 | Browse | Parcourir | the catalog page |
 | catalog | catalogue | |
-| Get | Obtenir | the button that installs an app |
+| Add / Install | Ajouter / Installer | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Jouer / Jouer quand même | |
 | install / uninstall | installer / désinstaller | |
 | download | téléchargement / télécharger | Downloads page: Téléchargements |

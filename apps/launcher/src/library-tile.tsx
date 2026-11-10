@@ -10,7 +10,8 @@
  * it and Play anyway. In TV mode, focus shows its buttons alone.
  *
  * And a game's card, for its ports in the library (group.ts): the game's name over the port to play, and a list of
- * every port with its button, from the card.
+ * every port with its button, from the card. Its menu is the app's its Play starts (or the first's), as an app's card
+ * has it; a controller's Options button lists the ports instead.
  */
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
@@ -20,7 +21,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel, type CardDetail } from "@quiverlauncher/ui";
 import { canGet, hasUpdate, pulledVerified, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
-import { VersionsDialog, foldersOn } from "./detail";
+import { OverMenu, VersionsDialog, foldersOn } from "./detail";
 import { native, type Config } from "./native";
 import { CardArt, artSizes } from "./library-view";
 import { CopyStatus, PlaylistPicker, Popover } from "./library";
@@ -74,13 +75,23 @@ const TAG_DETAILS: readonly CardDetail[] = ["kinds", "ai", "platforms"];
 
 /**
  * Over the name, those of its tags (not its console), AI label and platforms picked (view.ts), as Browse's cards have
- * them. Its row is there on every card when any is picked, so the names line up along a row of cards; empty on a
- * game's card with more than one port (`entry` unset), which they'd differ between.
+ * them. Its row is there on every card when any is picked, so the names line up along a row of cards.
+ *
+ * On a game's card (`ports` set), the same for every game, however many ports it has: how each port plays it (a port's
+ * first tag, Recomp or Decomp, each once), not the series after it, which the game's name says already; every
+ * platform one of them is for; the AI label only with one port (`entry`), as ports differ in it.
  */
-function TileTags({ entry, details, consoleNames }: { entry?: Entry; details: readonly CardDetail[]; consoleNames: Record<string, string> }) {
+function TileTags({ entry, ports, details, consoleNames }: { entry?: Entry; ports?: readonly Entry[]; details: readonly CardDetail[]; consoleNames: Record<string, string> }) {
   if (!details.some((d) => TAG_DETAILS.includes(d))) return null;
-  const kinds = entry && details.includes("kinds") ? entry.tags.filter((tag) => !Object.hasOwn(consoleNames, tag)).slice(0, 2).map(tagLabel) : [];
-  const os = entry && details.includes("platforms") ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id)) : [];
+  const own = (e: Entry) => e.tags.filter((tag) => !Object.hasOwn(consoleNames, tag));
+  const kinds = !details.includes("kinds") ? [] : ports ? [...new Set(ports.flatMap((p) => own(p).slice(0, 1)))].slice(0, 3).map(tagLabel) : entry ? own(entry).slice(0, 2).map(tagLabel) : [];
+  const os = !details.includes("platforms")
+    ? []
+    : ports
+      ? Object.keys(OS_ICONS).filter((id) => ports.some((p) => (p.supportedOS as readonly string[]).includes(id)))
+      : entry
+        ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id))
+        : [];
   return (
     <span className="tile-tags">
       {kinds.length > 0 && (
@@ -215,7 +226,7 @@ const Tile = memo(function Tile({
   const getIt = (
     <button type="button" className="tile-play tile-get" onClick={() => get(entry)}>
       <Download size={24} />
-      <span className="tile-label">{t({ message: "Get", comment: "Button: download and install the app" })}</span>
+      <span className="tile-label">{t({ message: "Install", comment: "Button: download and install the app" })}</span>
     </button>
   );
   const others = (
@@ -494,7 +505,7 @@ function PortList({
   });
   const apps = ports.length;
   return (
-    <div className="port-list" ref={list} onFocus={(e) => (line.current = e.target.closest(".port-row")?.getAttribute("data-slug") ?? undefined)}>
+    <div className="port-list" ref={list} onFocus={(e) => list.current?.contains(e.target) && (line.current = e.target.closest(".port-row")?.getAttribute("data-slug") ?? undefined)}>
       <div className="port-head">
         <strong>{title}</strong>
         <span className="muted">{plural(apps, { one: "# way to play", other: "# ways to play" })}</span>
@@ -588,8 +599,16 @@ const Game = memo(
     const small = apps === 1 ? first.projectName : plural(apps, { one: "# way to play", other: "# ways to play" });
     const title = game.title;
     const name = ready?.projectName ?? "";
+    // The app its menu is for: the one Play starts, else the first; named over the menu where there are others.
+    const mine = ready ?? first;
+    const menu = inLibrary(mine.id);
+    const heading = apps > 1 ? mine.projectName : undefined;
+    const openMine = () => onOpen(mine);
+    const cardButton = () => article.current?.querySelector<HTMLElement>(".card-open");
     return (
       <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-installed={installed} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined}>
+        {/* TV mode's has no ⋯ button (a mouse's), and its menu, closed, gives the focus back to the card. */}
+        {tv && menu && <GameMenu entry={mine} onOpen={openMine} target={() => article.current} bare where="card" heading={heading} pad={false} />}
         <Popover
           label={title}
           panelLabel={t`Ways to play ${title}`}
@@ -610,7 +629,7 @@ const Game = memo(
               <span className="card-body">
                 {names ? (
                   <>
-                    <TileTags entry={one} details={details} consoleNames={consoleNames} />
+                    <TileTags entry={one} ports={ports} details={details} consoleNames={consoleNames} />
                     <span className="tile-name">
                       <span className="card-title">
                         <ScrollingText text={title} />
@@ -632,19 +651,18 @@ const Game = memo(
           }
         >
           {(close) => (
-            <PortList
-              title={title}
-              ports={ports}
-              consoleNames={consoleNames}
-              inLibrary={inLibrary}
-              action={action}
-              onOpen={onOpen}
-              close={close}
-              card={() => article.current?.querySelector<HTMLElement>(".card-open")}
-            />
+            // A port's versions open over the list, which stays open under them.
+            <OverMenu.Provider value={true}>
+              <PortList title={title} ports={ports} consoleNames={consoleNames} inLibrary={inLibrary} action={action} onOpen={onOpen} close={close} card={cardButton} />
+            </OverMenu.Provider>
           )}
         </Popover>
         <div className="tile-overlay">
+          {!tv && menu && (
+            <div className="tile-icons">
+              <CardMenu entry={mine} onOpen={openMine} heading={heading} pad={false} />
+            </div>
+          )}
           {!tv && ready && (
             <div className="tile-facts">
               <span className="card-status">

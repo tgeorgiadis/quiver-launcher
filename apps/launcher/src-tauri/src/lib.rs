@@ -3,6 +3,10 @@ mod android;
 mod apps_folder;
 mod browser;
 mod custom_art;
+mod device;
+mod discord;
+#[cfg(windows)]
+mod elevate;
 mod flatpak;
 mod gamepad;
 mod host;
@@ -10,7 +14,9 @@ mod install;
 mod keyboard;
 mod launch;
 mod mods;
+mod move_journal;
 mod msi;
+mod own_copy;
 mod picker;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
@@ -74,6 +80,12 @@ struct Config {
     steam_keyboard: bool,
     /// Steam is running Quiver, so Add to Steam can't work now (add_to_steam): the UI greys it out.
     steam_runs_us: bool,
+    /// The system's version, sent with usage data (device.rs).
+    os_version: Option<String>,
+    /// A Steam Deck, sent with usage data.
+    steam_deck: bool,
+    /// How this copy was installed, sent with usage data (update.rs).
+    package: &'static str,
 }
 
 /// Steam is running Quiver as one of its games, so it would overwrite a new shortcut as it closes.
@@ -114,6 +126,9 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         game_mode: keyboard::game_mode(|name| std::env::var(name).ok()),
         steam_keyboard: cfg!(target_os = "linux") && keyboard::offered(|name| std::env::var(name).ok()),
         steam_runs_us: steam_runs_us(),
+        os_version: device::os_version(),
+        steam_deck: device::steam_deck(|name| std::env::var(name).ok(), device::board_vendor()),
+        package: update::package(),
     }
 }
 
@@ -134,13 +149,17 @@ fn read_state(data: State<Data>, name: String) -> Result<Option<serde_json::Valu
 }
 
 #[tauri::command]
-fn write_state(data: State<Data>, snapshotted: State<Snapshotted>, name: String, value: serde_json::Value) -> Result<(), String> {
+fn write_state(app: tauri::AppHandle, data: State<Data>, snapshotted: State<Snapshotted>, name: String, value: serde_json::Value) -> Result<(), String> {
     let path = state_file(&data, &name)?;
     let temp = path.with_extension("json.tmp");
     std::fs::create_dir_all(&data.0).map_err(|e| e.to_string())?;
     std::fs::write(&temp, serde_json::to_vec_pretty(&value).map_err(|e| e.to_string())?)
         .and_then(|_| std::fs::rename(&temp, &path))
         .map_err(|e| e.to_string())?;
+    // A moved app's old copy goes only now its new place is saved.
+    if name == "installs" {
+        delete_moved(Some(app), &data.0, move_journal::recorded(&data.0, &value, &data.apps()));
+    }
     if snapshots::FILES.contains(&name.as_str()) {
         let first = !snapshotted.0.swap(true, std::sync::atomic::Ordering::Relaxed);
         if let Err(e) = snapshots::take(&data.0, first) {
@@ -148,6 +167,25 @@ fn write_state(data: State<Data>, snapshotted: State<Snapshotted>, name: String,
         }
     }
     Ok(())
+}
+
+/// Deletes moved apps' old copies, off the window's thread: one big one takes a while. One that can't all go is
+/// said ("app-move-left"), and logged.
+fn delete_moved(app: Option<tauri::AppHandle>, data: &Path, old: Vec<PathBuf>) {
+    if old.is_empty() {
+        return;
+    }
+    let log = data.join("quiver.log");
+    std::thread::spawn(move || {
+        for path in old {
+            if let Err(e) = std::fs::remove_dir_all(&path) {
+                append_log(&log, &format!("Couldn't delete a moved app's old copy at {}: {e}", path.display()));
+                if let Some(app) = &app {
+                    let _ = app.emit("app-move-left", path.to_string_lossy());
+                }
+            }
+        }
+    });
 }
 
 /// Whether this run of the launcher has saved yet: its first save takes a snapshot.
@@ -303,7 +341,17 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         None if OS == "windows" && exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("lnk")) => (PathBuf::from("explorer"), quoted(), false),
         None => (exe.clone(), vec![], false),
     };
-    let options = launch::parse(options.command.as_deref().unwrap_or_default())?;
+    let copies = &options.copies;
+    let mut options = launch::parse(options.command.as_deref().unwrap_or_default())?;
+    // The player's own copies of the game, as the catalog says to give them (own_copy.rs), before their own options.
+    // Through Wine or Proton (Quiver's or Steam's), the game reads a Windows path.
+    let (copy_args, copy_env) = launch::copy_words(copies, OS == "linux" && (program != exe || steam_proton));
+    options.after.splice(0..0, copy_args);
+    options.env.splice(0..0, copy_env);
+    // `open` keeps the arguments it's given for itself unless they follow --args.
+    if program == Path::new("open") && !options.after.is_empty() && !options.after.iter().any(|a| a == "--args") {
+        options.after.insert(0, "--args".into());
+    }
     // Many distros no longer ship FUSE 2, which AppImages mount themselves with.
     let extract_appimage = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("appimage")) && !has_fuse2();
     Ok(shortcut::Target { dir: exe.parent().unwrap_or(Path::new(".")).to_path_buf(), exe, program, args, env, extract_appimage, steam_proton, options })
@@ -319,10 +367,21 @@ struct Played {
 /// Not on the window's thread: on Android, starting an app goes through the system, which answers on that thread.
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
-async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool, program: Option<String>, launch: Option<launch::LaunchOptions>) -> Result<(), String> {
+async fn launch(
+    app: tauri::AppHandle,
+    data: State<'_, Data>,
+    id: Option<String>,
+    folder: String,
+    dir: Option<String>,
+    preferred: Vec<String>,
+    wine: bool,
+    program: Option<String>,
+    launch: Option<launch::LaunchOptions>,
+    presence: Option<discord::Game>,
+) -> Result<(), String> {
     #[cfg(target_os = "android")]
     {
-        let _ = (preferred, wine, program, launch);
+        let _ = (preferred, wine, program, launch, presence);
         let package = android::package(&app_dir(&data, &folder, dir)?).ok_or("This app has no Android version installed. Get its Android download to play it here.")?;
         android::launch(&package)?;
         // Its play time: until the player comes back to Quiver.
@@ -330,18 +389,48 @@ async fn launch(app: tauri::AppHandle, data: State<'_, Data>, id: Option<String>
         Ok(())
     }
     #[cfg(not(target_os = "android"))]
-    start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default())
+    start(app, &data, id, &folder, dir, &preferred, wine, program, &launch.unwrap_or_default(), presence)
+}
+
+/// Waits for a started program to close; whether that could be told.
+#[cfg(not(target_os = "android"))]
+type Waiting = Box<dyn FnOnce() -> bool + Send>;
+/// Whether Android no longer has an app Quiver installed from an APK: the player removed it in the system's settings.
+/// False for an app that wasn't installed that way, and everywhere else. Not on the window's thread, as `launch` isn't.
+#[tauri::command]
+async fn android_app_gone(data: State<'_, Data>, folder: String, dir: Option<String>) -> Result<bool, String> {
+    #[cfg(target_os = "android")]
+    {
+        let Some(package) = android::package(&app_dir(&data, &folder, dir)?) else { return Ok(false) };
+        android::is_installed(&package).map(|installed| !installed)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (data, folder, dir);
+        Ok(false)
+    }
 }
 
 #[cfg(not(target_os = "android"))]
 #[allow(clippy::too_many_arguments)]
-fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>, launch: &launch::LaunchOptions) -> Result<(), String> {
+fn start(
+    app: tauri::AppHandle,
+    data: &Data,
+    id: Option<String>,
+    folder: &str,
+    dir: Option<String>,
+    preferred: &[String],
+    wine: bool,
+    program: Option<String>,
+    launch: &launch::LaunchOptions,
+    presence: Option<discord::Game>,
+) -> Result<(), String> {
     let target = target(data, folder, dir, preferred, wine, program, launch)?;
     let (program, args, env) = target.command();
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
-    sandbox::check(&program)
+    let spawned: std::io::Result<Waiting> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::host(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
@@ -350,20 +439,36 @@ fn start(app: tauri::AppHandle, data: &Data, id: Option<String>, folder: &str, d
                 .stderr(std::process::Stdio::null())
                 .spawn()
         })
-        .map(|mut child| {
+        .map(|mut child| Box::new(move || child.wait().is_ok()) as Waiting);
+    // One that needs administrator rights: Windows asks the player, as a double click would.
+    #[cfg(windows)]
+    let spawned = spawned.or_else(|e| match e.raw_os_error() {
+        Some(elevate::REQUIRED) => elevate::start(&program, &args, &target.dir).map(|process| Box::new(move || process.is_some_and(|p| p.wait())) as Waiting),
+        _ => Err(e),
+    });
+    spawned
+        .map(|wait| {
             // Its play time: from now until it closes. A program that hands off to another and returns at once counts only its own time.
             let Some(id) = id else { return };
             let started = std::time::Instant::now();
             app.state::<Running>().started(&id);
+            // On the player's Discord profile while it runs (discord.rs).
+            let shown = presence.map(|game| app.state::<discord::Presence>().started(&id, game)).is_some();
             std::thread::spawn(move || {
-                let closed = child.wait().is_ok();
+                let closed = wait();
                 app.state::<Running>().closed(&id);
+                if shown {
+                    app.state::<discord::Presence>().closed(&id);
+                }
                 if closed {
                     let _ = app.emit("app-closed", Played { id, seconds: started.elapsed().as_secs() });
                 }
             });
         })
         .map_err(|e| match e.kind() {
+            // No, at Windows' prompt for administrator rights.
+            #[cfg(windows)]
+            _ if e.raw_os_error() == Some(elevate::DECLINED) => "cancelled".into(),
             // Automatic found no Proton either; or the player chose Wine.
             std::io::ErrorKind::NotFound if wine && target.steam_proton => "This is a Windows app. Install Steam (it brings Proton) or Wine to play it on Linux.".into(),
             std::io::ErrorKind::NotFound if wine => "Wine isn't installed. Install it, or choose a Proton under Run with, in Settings or the app's launch options.".into(),
@@ -490,6 +595,30 @@ fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
     }
     let folder = install["folder"].as_str().unwrap_or_default();
     reveal(&present_app_dir(&data, folder, install["dir"].as_str().map(str::to_string))?)
+}
+
+/// Opens an apps folder in the file manager: the one apps install in, or one
+/// an installed app is kept in (installs.json), never any other path.
+#[tauri::command]
+fn open_apps_folder(data: State<Data>, path: String) -> Result<(), String> {
+    let path = PathBuf::from(path);
+    let installs: serde_json::Value = std::fs::read(state_file(&data, "installs")?)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default();
+    let holds_one = installs
+        .as_object()
+        .into_iter()
+        .flat_map(|o| o.values())
+        .filter_map(|i| i["dir"].as_str())
+        .any(|d| Path::new(d).parent().is_some_and(|p| p == path));
+    if path != data.apps() && !holds_one {
+        return Err("That isn't one of your apps folders.".into());
+    }
+    if !path.is_dir() {
+        return Err("This folder isn't there. Is its drive connected?".into());
+    }
+    reveal(&path)
 }
 
 /// Shows a folder in Explorer, Files or Finder. End-to-end tests note it in
@@ -749,6 +878,12 @@ fn list_programs(data: State<'_, Data>, folder: String, dir: Option<String>) -> 
         .collect())
 }
 
+/// The kinds of file in an installed app's folder, for an error report (`install::file_kinds`).
+#[tauri::command]
+fn file_kinds(data: State<'_, Data>, folder: String, dir: Option<String>) -> Result<Vec<String>, String> {
+    Ok(install::file_kinds(&app_dir(&data, &folder, dir)?))
+}
+
 /// Asks which program starts an installed app, starting in its folder; the
 /// answer is relative to that folder so it survives the folder moving. An app
 /// the player added from elsewhere (`program`) can start anything.
@@ -786,10 +921,18 @@ fn automatic_proton() -> Option<launch::Proton> {
     dirs::home_dir().and_then(|home| launch::automatic_proton(launch::protons(&home)))
 }
 
-/// What Automatic runs a Windows app with on Linux, by name: a Proton, else Wine, else nothing (None).
+/// What Automatic runs a Windows app with on Linux, by name: a Proton, else Wine, else nothing (None). Looked for
+/// off the window's thread, as it reads Steam's folders and asks the shell; never on another system, where looking
+/// for Wine through a shell would flash a console window.
 #[tauri::command]
-fn automatic_runner() -> Option<String> {
-    automatic_proton().map(|p| p.name).or_else(|| sandbox::which("wine").map(|_| "Wine".into()))
+async fn automatic_runner() -> Option<String> {
+    if !cfg!(target_os = "linux") {
+        return None;
+    }
+    tauri::async_runtime::spawn_blocking(|| automatic_proton().map(|p| p.name).or_else(|| sandbox::which("wine").map(|_| "Wine".into())))
+        .await
+        .ok()
+        .flatten()
 }
 
 /// Asks for a Proton the launcher didn't find: its folder.
@@ -804,6 +947,83 @@ async fn pick_proton(app: tauri::AppHandle, window: tauri::WebviewWindow) -> Res
     Ok(Some(picked.to_string_lossy().into()))
 }
 
+/// How far reading or putting in place the player's copy has got (own_copy.rs).
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CopyProgress {
+    id: String,
+    /// "check" or "place".
+    step: &'static str,
+    done: u64,
+    total: u64,
+}
+
+/// Copies of the game that could be the player's, in `folders`: the ones they keep its console's copies in (their
+/// settings). Nowhere else, so Quiver only looks where the player said; and never in Quiver's apps folder.
+#[tauri::command]
+async fn find_copies(app: tauri::AppHandle, file: own_copy::SetupFile, folders: Option<Vec<String>>) -> Vec<own_copy::Found> {
+    let skip = vec![app.state::<Data>().apps()];
+    let own: Vec<PathBuf> = folders.unwrap_or_default().into_iter().map(PathBuf::from).filter(|p| p.is_absolute()).collect();
+    tauri::async_runtime::spawn_blocking(move || own_copy::find(&file, &own, &[], &skip)).await.unwrap_or_default()
+}
+
+/// Asks the player for their copy: a file of the kinds it can be, or a folder. `QUIVER_PICK` (a file) and
+/// `QUIVER_PICK_FOLDER` answer instead in end-to-end tests.
+#[tauri::command]
+async fn pick_copy(app: tauri::AppHandle, window: tauri::WebviewWindow, file: own_copy::SetupFile, dir: Option<String>) -> Option<String> {
+    let folder = file.kind.as_deref() == Some("folder");
+    if let Some(path) = std::env::var_os(if folder { "QUIVER_PICK_FOLDER" } else { "QUIVER_PICK" }) {
+        return Some(path.to_string_lossy().into());
+    }
+    let title = format!("Choose your copy: {}", file.label);
+    let extensions: Vec<String> = file.extensions.iter().map(|e| e.to_ascii_lowercase()).collect();
+    let mut wanted: Vec<&str> = extensions.iter().map(String::as_str).collect();
+    if wanted.iter().any(|e| ["z64", "n64", "v64"].contains(e)) {
+        wanted.extend(["z64", "n64", "v64"]);
+        wanted.dedup();
+    }
+    let filter = (!folder && !wanted.is_empty()).then_some(("Your copy", wanted.as_slice()));
+    let want = if folder { picker::Want::Folder } else { picker::Want::File };
+    let path = picker::choose(&app, &window, want, &title, dir.as_deref().map(Path::new), filter).await?;
+    Some(path.to_string_lossy().into())
+}
+
+/// Whether `path` is a copy the app takes, reading it through once.
+#[tauri::command]
+async fn check_copy(app: tauri::AppHandle, file: own_copy::SetupFile, path: String) -> Result<own_copy::Checked, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let id = file.id.clone();
+        let progress = |done, total| {
+            let _ = app.emit("copy-progress", CopyProgress { id: id.clone(), step: "check", done, total });
+        };
+        own_copy::check(&file, Path::new(&path), &progress)
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Puts a checked copy where the app reads it, when the catalog says where: the path it went to, or null when the
+/// app is only told where it is (by flag or environment variable). `wine`: a Windows build run through Wine or Proton.
+#[tauri::command]
+async fn place_copy(app: tauri::AppHandle, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile, path: String) -> Result<Option<String>, String> {
+    let app_dir = present_app_dir(&app.state::<Data>(), &folder, dir)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let id = file.id.clone();
+        let progress = |done, total| {
+            let _ = app.emit("copy-progress", CopyProgress { id: id.clone(), step: "place", done, total });
+        };
+        own_copy::place(&file, Path::new(&path), &app_dir, wine, &progress).map(|to| to.map(|p| p.to_string_lossy().into_owned()))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Whether the player's copy is still where the app reads it.
+#[tauri::command]
+fn copy_present(data: State<'_, Data>, folder: String, dir: Option<String>, wine: bool, file: own_copy::SetupFile, path: String) -> bool {
+    present_app_dir(&data, &folder, dir).is_ok_and(|d| own_copy::present(&file, Path::new(&path), &d, wine))
+}
+
 /// Asks the player for a folder on this computer, opening in `dir` when it's
 /// one; null if they cancel. `QUIVER_PICK_FOLDER` answers instead in
 /// end-to-end tests.
@@ -816,27 +1036,89 @@ async fn pick_folder(app: tauri::AppHandle, window: tauri::WebviewWindow, title:
     Some(path.to_string_lossy().into())
 }
 
-/// Why the installed apps (`folders`, in the apps folder) can't move to `to`, if they can't.
+/// How each apps folder is now: there or not, and the room on its drive. Off the window's thread, as a drive that
+/// isn't plugged in, or one on the network, can take a while to answer.
 #[tauri::command]
-fn apps_folder_refusal(data: State<Data>, to: String, folders: Vec<String>) -> Option<String> {
-    apps_folder::refuse(&data.apps(), Path::new(&to), &folders)
+async fn apps_folder_states(paths: Vec<PathBuf>) -> Vec<apps_folder::FolderState> {
+    tauri::async_runtime::spawn_blocking(move || apps_folder::states(&paths)).await.unwrap_or_default()
 }
 
-/// Moves the installed apps (`folders`, in the apps folder) to `to` and
-/// installs there from now on; resolves to the new apps folder. Reports each
-/// app as it moves ("apps-moving").
+/// Why the installed apps can't move to `to`, if they can't: those in the
+/// apps folder, and those kept elsewhere (with a `dir`), as 3.x's are.
 #[tauri::command]
-async fn move_apps_folder(app: tauri::AppHandle, to: String, folders: Vec<String>) -> Result<String, String> {
+fn apps_folder_refusal(data: State<Data>, running: State<Running>, to: String, apps: Vec<apps_folder::App>) -> Option<String> {
+    in_use(&running, &apps).or_else(|| apps_folder::refuse(&data.apps(), Path::new(&to), &apps))
+}
+
+/// Why apps can't move while one of them is running, if one is.
+fn in_use(running: &Running, apps: &[apps_folder::App]) -> Option<String> {
+    apps.iter().find(|a| running.has(&a.id)).map(|a| format!("Close {} first, then move your apps.", a.folder))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppsMoved {
+    apps_dir: String,
+    #[serde(flatten)]
+    done: apps_folder::Done,
+}
+
+/// Moves the installed apps to `to` and installs there from now on: those in
+/// the apps folder, and those kept elsewhere, as 3.x's are. Reports how far
+/// it's got ("apps-moving") and each app once it's in its new folder
+/// ("app-moved"), so the page records it then and there.
+#[tauri::command]
+async fn move_apps_folder(app: tauri::AppHandle, to: String, apps: Vec<apps_folder::App>) -> Result<AppsMoved, String> {
+    if let Some(why) = in_use(&app.state::<Running>(), &apps) {
+        return Err(why);
+    }
     let handle = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let data = handle.state::<Data>();
         let from = data.apps();
         let to = PathBuf::from(&to);
-        apps_folder::move_apps(&data.0, &from, &to, &folders, |m| {
-            let _ = handle.emit("apps-moving", m);
-        })?;
+        let done = apps_folder::move_apps(
+            &data.0,
+            &from,
+            &to,
+            &apps,
+            |m| {
+                let _ = handle.emit("apps-moving", m);
+            },
+            |m| {
+                let _ = handle.emit("app-moved", m);
+            },
+        )?;
         *data.1.lock().unwrap() = to.clone();
-        Ok(to.to_string_lossy().into())
+        Ok(AppsMoved { apps_dir: to.to_string_lossy().into(), done })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Serialize, Clone)]
+struct AppMoving {
+    id: String,
+    copied: u64,
+    size: u64,
+}
+
+/// Moves one app's folder into `to`, the safe way the apps folder moves (apps_folder::move_app), reporting how far
+/// it's got ("app-moving") when it's copied to another drive.
+#[tauri::command]
+async fn move_app(app: tauri::AppHandle, id: String, folder: String, dir: Option<String>, to: String, in_apps: bool, group: Option<String>) -> Result<apps_folder::AppMoved, String> {
+    if app.state::<Running>().has(&id) {
+        return Err("Close it first, then move it.".into());
+    }
+    let from = present_app_dir(&app.state::<Data>(), &folder, dir)?;
+    let name = from.file_name().and_then(|n| n.to_str()).unwrap_or(&folder).to_string();
+    let handle = app.clone();
+    let data = app.state::<Data>().0.clone();
+    let record = apps_folder::Record { in_apps, group };
+    tauri::async_runtime::spawn_blocking(move || {
+        apps_folder::move_app(&data, &id, &from, Path::new(&to), &name, &record, |copied, size| {
+            let _ = handle.emit("app-moving", AppMoving { id: id.clone(), copied, size });
+        })
     })
     .await
     .map_err(|e| e.to_string())?
@@ -859,6 +1141,12 @@ async fn to_background() -> Result<(), String> {
     return android::to_background();
     #[cfg(not(target_os = "android"))]
     Ok(())
+}
+
+/// Discord's Rich Presence on or off (discord.rs), and its words in the player's language.
+#[tauri::command]
+fn set_discord_presence(presence: State<discord::Presence>, enabled: bool, texts: discord::Texts) {
+    presence.set(enabled, texts);
 }
 
 /// Close to tray on or off (tray.rs), and its menu's words in the player's language. Windows only: elsewhere, nothing.
@@ -953,7 +1241,6 @@ fn uninstall_mod(data: State<'_, Data>, folder: String, dir: Option<String>, con
 /// Removes an installed app; fails with "cancelled" when the player says no to Windows uninstalling it.
 #[tauri::command]
 async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -> Result<(), String> {
-    let adopted = dir.is_some();
     let dir = app_dir(&app.state::<Data>(), &folder, dir)?;
     // Windows' uninstaller waits for the player, so not on the window's thread.
     tauri::async_runtime::spawn_blocking(move || {
@@ -968,14 +1255,14 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
         }
         // Only a folder that still looks like an install is removed: one Quiver
         // installed into, or a 3.x install. Never a folder of the player's own.
-        if dir.exists() && install::may_remove(&dir, adopted) {
+        if dir.exists() && install::may_remove(&dir) {
             if let Some(id) = flatpak::installed(&dir) {
                 flatpak::uninstall(&id);
             }
             #[cfg(not(target_os = "android"))]
-            trash::delete(&dir).or_else(|_| std::fs::remove_dir_all(&dir)).map_err(|e| e.to_string())?;
+            install::remove_install(&dir, |d| trash::delete(d).or_else(|_| std::fs::remove_dir_all(d))).map_err(|e| e.to_string())?;
             #[cfg(target_os = "android")]
-            std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+            install::remove_install(&dir, |d| std::fs::remove_dir_all(d)).map_err(|e| e.to_string())?;
         }
         Ok(())
     })
@@ -1136,6 +1423,12 @@ fn set_theme(window: tauri::WebviewWindow, theme: Option<String>) -> Result<(), 
 #[tauri::command]
 fn find_v3_library() -> Option<v3::Library> {
     v3::find()
+}
+
+/// Every Quiver Launcher 3 apps folder on this computer, whichever library is brought over.
+#[tauri::command]
+async fn v3_apps_folders() -> Vec<String> {
+    tauri::async_runtime::spawn_blocking(v3::apps_folders).await.unwrap_or_default()
 }
 
 /// The 3.x library in a folder the player picked, or the folder around it;
@@ -1322,11 +1615,23 @@ pub fn run() {
                 }
             }
             let apps = apps_folder::current(&dir);
+            // The data folder's own apps folder is there from the start, so Settings never takes it for a drive
+            // that's gone before the first app installs. One the player chose is never made: if it's gone, they hear.
+            if apps == dir.join("apps") {
+                let _ = std::fs::create_dir_all(&apps);
+            }
+            // A move the launcher stopped during is finished before it reads where its apps are.
+            let (old, said) = move_journal::recover(&dir, &apps);
+            for line in said {
+                append_log(&dir.join("quiver.log"), &line);
+            }
+            delete_moved(None, &dir, old);
             app.manage(Data(dir, std::sync::Mutex::new(apps)));
             app.manage(Snapshotted(Default::default()));
             app.manage(gamepad::Pads::default());
             app.manage(Installing::default());
             app.manage(Running::default());
+            app.manage(discord::Presence::new());
             #[cfg(target_os = "android")]
             app.manage(Playing::default());
             app.manage(picker::Picks::default());
@@ -1351,12 +1656,16 @@ pub fn run() {
             launch,
             uninstall,
             find_v3_library,
+            v3_apps_folders,
             find_v3_library_in,
             find_existing_install,
             pick_folder,
             picker::picked,
             picker::browse,
             apps_folder_refusal,
+            apps_folder_states,
+            move_app,
+            open_apps_folder,
             move_apps_folder,
             secret_get,
             secret_set,
@@ -1373,6 +1682,7 @@ pub fn run() {
             open_url,
             to_background,
             set_tray,
+            set_discord_presence,
             start_with_windows,
             set_start_with_windows,
             check_update,
@@ -1397,6 +1707,13 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            find_copies,
+            pick_copy,
+            check_copy,
+            place_copy,
+            copy_present,
+            android_app_gone,
+            file_kinds,
             list_protons,
             automatic_runner,
             pick_proton,

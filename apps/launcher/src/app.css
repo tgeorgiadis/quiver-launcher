@@ -120,11 +120,14 @@ button.danger { color: var(--danger); }
 .progress-row { flex-wrap: nowrap; gap: 6px; }
 .progress-row .progress { flex: 1; min-width: 0; }
 .progress-row > .cancel-download { flex: none; width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
-.job-error p { color: var(--danger); font-size: 12px; margin-bottom: 8px; }
+.job-error p { color: var(--danger); font-size: 12px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.job-error p > svg { vertical-align: -3px; }
 .unavailable { color: var(--muted); font-size: 12px; text-align: center; padding: 6px 0; }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 80px 20px; color: var(--muted); text-align: center; }
 .empty h2 { color: var(--strong); }
 .more { display: flex; justify-content: center; padding: 24px; }
+/* Over a floating panel (z-index 20) it was opened from, which stays open under it (library.tsx's Dialog `over`). */
+.overlay.over-menu { z-index: 25; }
 .overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--overlay); }
 .detail { position: relative; width: min(760px, 100%); max-height: 100%; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); }
 .detail.choose { width: min(480px, 100%); }
@@ -424,6 +427,10 @@ main.app-main { padding: 0 0 40px; }
 .app-actions .get-split > .get-more { width: 46px; min-width: 0; padding: 0; }
 .app-actions .progress { width: 320px; height: 46px; border-radius: 9px; }
 .app-actions .progress-row > .cancel-download { width: 46px; height: 46px; padding: 0; }
+/* A download that failed, on its page: the reason in a box over the buttons that retry it, and only as wide as reads well. */
+.app-actions > .job-error { display: grid; gap: 12px; max-width: 720px; }
+.app-actions > .job-error p { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--danger) 10%, var(--panel)); color: var(--danger); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.app-actions > .job-error p svg { flex: none; margin-top: 2px; }
 /* Beside a large Play, a plain button needs an edge to read as one over the artwork. */
 .app-actions .row > button:not(.primary) { background: color-mix(in srgb, var(--button) 85%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); backdrop-filter: blur(6px); }
 .app-actions .row > button:not(.primary):hover { background: var(--button-hover); }
@@ -865,6 +872,28 @@ button.download { width: 100%; text-align: left; }
 .content-panel dt { color: var(--text-4); margin-top: 17px; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
 .content-panel dd { margin: 0; overflow-wrap: anywhere; }
 .content-panel .release-age.stale { color: var(--caution); }
+/* Under Project details: something wrong or missing on the page (correction.tsx). */
+.correction-prompt { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; padding-block: 14px; }
+.correction-prompt p { display: flex; align-items: center; gap: 8px; margin: 0; }
+.correction-prompt .link-button { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.correction-sent { color: var(--green); font-size: 13px; }
+.correction-dialog { width: min(560px, 100%); }
+.correction-dialog .correction-form { margin: 0; border: 0; background: none; box-shadow: none; }
+/* The dialog closes with Cancel, B or outside it, as the others do: no close button of the form's own. */
+.correction-dialog .panel-close { display: none; }
+.correction-thanks { display: grid; justify-items: start; gap: 16px; padding: 20px; }
+.correction-thanks .correction-sent { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.correction-status { display: grid; gap: 6px; min-width: 0; font-size: 13px; }
+.correction-status p { margin: 0; }
+.correction-status.done p { color: var(--green); }
+/* What the maintainer said back, on the app's page and in a notice. */
+.correction-reply { margin: 0; padding-left: 10px; border-left: 2px solid var(--line); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.correction-notice > div { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.correction-notice > div p { margin: 0; }
+.correction-form .field { display: grid; gap: 6px; }
+.correction-form textarea { resize: vertical; }
+.correction-form .character-count { margin: -6px 0 0; }
+.correction-hint, .correction-note { margin: -4px 0 0; }
 .ai-evidence-toggle { display: flex; width: fit-content; align-items: center; gap: 3px; margin-top: 6px; padding: 0; background: none; color: var(--text-4); font-size: 13px; }
 .ai-evidence-toggle:hover { color: var(--strong); }
 .ai-evidence-toggle svg { transition: transform 0.16s; }
@@ -977,9 +1006,46 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 /* Play with: a program's folder after its name, quieter; a note when there's none. */
 .game-menu-path { min-width: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 11.5px; }
 .game-menu-note { padding: 6px 10px; color: var(--muted); font-size: 12.5px; }
+/* A game's card, with more than one way to play it: which app the menu is for. */
+.game-menu-heading { max-width: 260px; padding: 6px 10px 4px; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 /* Play's question, with more than one program picked: each a row, its folder under its name. */
 .program-prompt .choices button { flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px 14px; text-align: left; }
 .program-prompt .choices button .muted { font-size: 12px; overflow-wrap: anywhere; }
+/* The player's own copy of the game: a chip in the app page's Play row for each one it takes; and the dialog that sets it up. */
+.app-actions button.own-copy-chip { display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; gap: 7px; border-radius: 999px; font-size: 14px; color: var(--text-2); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.own-copy-chip .own-copy-name { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.own-copy-chip .own-copy-state { color: var(--muted); }
+.own-copy-chip.ready > svg, .own-copy-chip.ready .own-copy-state { color: var(--green); }
+.app-actions button.own-copy-chip.needed { color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+.own-copy-chip .flipped { transform: rotate(180deg); }
+/* More than two, shown: on their own line under the Play row. */
+.own-copy-chips { display: flex; flex-wrap: wrap; flex-basis: 100%; gap: 8px; }
+.own-copy-prompt .choices { display: grid; gap: 6px; margin: 10px 0; }
+/* However many copies turn up, the list scrolls and the buttons under it stay in sight. */
+.own-copy-choices { max-height: min(42vh, 340px); overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.own-copy-others { display: block; margin: 0 0 10px; font-size: 13px; }
+.own-copy-looking { display: flex; align-items: center; gap: 8px; }
+.own-copy-looking .spinning { flex: none; animation: spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .own-copy-looking .spinning { animation: none; } }
+.own-copy-prompt .own-copy-add-folder { display: flex; align-self: flex-start; justify-self: start; margin-right: auto !important; align-items: center; gap: 6px; width: auto; min-height: 0; margin: 0 0 12px; padding: 0; border: 0; background: none; color: var(--accent); font-size: 13px; text-decoration: underline; }
+/* Its buttons' labels on one line each: they wrap as whole buttons onto a second row instead. */
+.own-copy-prompt .row > button { flex: 1 1 auto; white-space: nowrap; }
+/* Settings → Game copies: each console with the folders its copies are looked for in first. */
+.game-copy-consoles { display: grid; gap: 12px; margin: 12px 0; padding: 0; list-style: none; }
+.game-copy-consoles > li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.game-copy-console { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.game-copy-console button { flex: none; white-space: nowrap; }
+.game-copy-folder { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
+.game-copy-folder span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.game-copy-folder button.icon { flex: none; display: grid; place-items: center; padding: 4px; border: 0; background: none; color: var(--muted); }
+.game-copy-folder button.icon:hover, .game-copy-folder button.icon:focus-visible { color: var(--strong); }
+.game-copy-add { display: grid; gap: 6px; max-width: 360px; }
+.own-copy-prompt .choices button { flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px 14px; text-align: left; }
+.own-copy-prompt .choices button .muted { font-size: 12px; overflow-wrap: anywhere; }
+.own-copy-prompt .progress { margin: 10px 0; }
+.own-copy-problem { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--danger); border-radius: 8px; }
+.own-copy-problem p { margin: 0 0 4px; }
+.own-copy-path { overflow-wrap: anywhere; font-family: ui-monospace, monospace; }
 .game-menu-new { margin: 2px 0 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 13px; outline: 0; }
 .game-menu-new:focus { border-color: var(--accent); }
 .playlists { flex-wrap: nowrap; }
@@ -1111,6 +1177,18 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .pill select:focus-visible { outline: none; }
 .pill:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pill-clear:focus-visible { outline-offset: 0; }
+/* A filter of several choices (MultiPill): a button that reads as the dropdowns beside it, its list ticked. */
+.pill .pill-button {
+  display: inline-flex; align-items: center; max-width: 260px; height: 100%; padding: 0 28px 0 12px; border: 0; border-radius: 999px;
+  background: transparent; color: inherit; font-size: 12.5px; cursor: pointer;
+}
+.pill.on .pill-button { padding-right: 2px; font-weight: 500; }
+.pill .pill-button:focus-visible { outline: none; }
+.pill-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pill-menu { min-width: 200px; }
+.pill-menu-group { padding: 8px 10px 3px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.pill-menu .game-menu-check { flex: none; width: 16px; height: 16px; border: 1px solid var(--line-strong); border-radius: 4px; }
+.pill-menu button[aria-checked="true"] .game-menu-check { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 .filter-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
 .filter-bar .text-button { height: 30px; padding: 0 8px; border-radius: 6px; color: var(--link); font-size: 12.5px; }
 .filter-bar .text-button:hover { text-decoration: underline; }
@@ -1162,6 +1240,9 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
   .card-sample .entry-card { zoom: 0.62; }
 }
 .view-choice { display: grid; gap: 6px; }
+/* The card size slider, between a small card's picture and a large one's. */
+.card-size { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 8px; background: var(--field); color: var(--muted); }
+.card-size input { flex: 1; min-width: 0; accent-color: var(--accent); }
 .view-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .segmented { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--field); }
 .view-options .segmented button {
@@ -1175,30 +1256,51 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .view-options .toggle:has(input:disabled) { opacity: 0.55; }
 .settings-section { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
 .settings-section h3 { font-size: 15px; }
+/* Moving the apps folder (settings-page.tsx): the panel asking, the move's bar, and old copies left behind. */
+/* The apps folders, one row each: path and what's in it on the left, its actions on the right. */
+.apps-folders { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
+.apps-folder-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.apps-folder-row[data-default] { border-color: var(--line-strong); background: var(--panel); }
+.apps-folder-info { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
+.apps-folder-info p { margin: 0; overflow-wrap: anywhere; }
+.apps-folder-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--strong); font-weight: 600; }
+.apps-folder-badge { padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 600; }
+.apps-folder-row .row { flex: none; flex-wrap: wrap; gap: 8px; }
+.apps-folder-row .row > button { flex: none; white-space: nowrap; }
+.move-choice { display: grid; gap: 6px; }
+/* Install to… and Move to…: a folder per line, its radio beside it. */
+.place-app .move-choice label { display: flex; align-items: baseline; gap: 10px; overflow-wrap: anywhere; }
+.place-app-folder { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.place-app-choose > button { flex: none; }
+.apps-moving { display: grid; gap: 6px; max-width: 460px; }
+/* Working out whether a move fits: a bar that sweeps, as there is nothing yet to count. */
+.progress.waiting .bar { width: 30%; animation: progress-sweep 1.4s ease-in-out infinite; }
+@keyframes progress-sweep { from { left: -30%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .progress.waiting .bar { animation: none; left: 0; width: 100%; opacity: 0.5; } }
+.apps-left { margin: 4px 0 0; padding-left: 18px; font-size: 12px; overflow-wrap: anywhere; }
+.move-confirm { display: grid; gap: 12px; max-width: 620px; padding: 16px 18px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.move-confirm h4 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.move-notes { display: grid; gap: 6px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.move-confirm .row { margin-top: 2px; }
+.move-confirm .row > button:only-child { flex: none; min-width: 200px; }
 .settings-pane > .view-options, .settings-section > .view-options { max-width: 380px; }
 .github-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
 .github-token ol { padding-left: 20px; display: grid; gap: 4px; }
 
 /*
- * Library cards as the player chose (view.ts): three sizes; box art cards are
- * portrait and icon cards square, in narrower columns, with only the name
- * under them; or a list, one app to a row.
+ * Library cards as the player chose (view.ts): a Medium card's size, times the
+ * slider's --card-scale; box art cards are portrait and icon cards square, in
+ * narrower columns, with only the name under them.
  */
 .library-grid { --card-min: 230px; --cover-h: 173px; gap: 22px; }
-.library-grid.size-small { --card-min: 185px; --cover-h: 136px; gap: 16px; }
-.library-grid.size-large { --card-min: 300px; --cover-h: 222px; }
-.library-grid.layout-grid { grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); }
-.library-grid .card-cover { height: var(--cover-h); }
+.library-grid.size-small { gap: 16px; }
+.library-grid.layout-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--card-min) * var(--card-scale, 1))), 1fr)); }
+.library-grid .card-cover { height: calc(var(--cover-h) * var(--card-scale, 1)); }
 .library-grid.image-box { --card-min: 168px; }
-.library-grid.image-box.size-small { --card-min: 128px; }
-.library-grid.image-box.size-large { --card-min: 220px; }
 .library-grid.image-icon { --card-min: 160px; }
-.library-grid.image-icon.size-small { --card-min: 124px; }
-.library-grid.image-icon.size-large { --card-min: 210px; }
 /* A phone: two box-art cards across at Medium (one at 360 px wide before), even beside a name-sorted grid's letters. */
 @media (max-width: 520px) {
   .library-grid.image-box { --card-min: 130px; gap: 22px 14px; }
-  .library-grid.image-box.size-small { --card-min: 100px; }
 }
 .layout-grid:is(.image-box, .image-icon) .card-cover { height: auto; aspect-ratio: 2 / 3; }
 .layout-grid.image-icon .card-cover { aspect-ratio: 1; }
@@ -1233,7 +1335,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
   .entry-card.wide .card-action { height: 173px; }
   .entry-card:is(.box, .wide) .card-action > * { pointer-events: auto; }
   .entry-card:is(.box, .wide):is(:hover:where(:not([data-navigating] *)), :focus-within, .busy) .card-action { opacity: 1; }
-  .entry-card:is(.box, .wide):is(:hover:where(:not([data-navigating] *)), :focus-within, .busy) :is(.card-arrow, .cover-strip) { opacity: 0; }
+  .entry-card:is(.box, .wide):is(:hover:where(:not([data-navigating] *)), :focus-within, .busy) :is(.card-arrow, .cover-strip, .cover-platforms) { opacity: 0; }
   /* With the art as it lifts. */
   .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-action { transform: translateY(-4px); }
   .entry-card:is(.box, .wide) .card-action :is(.primary, .row > button) { box-shadow: 0 6px 16px rgb(0 0 0 / 0.45); }
@@ -1871,6 +1973,9 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .download-action { flex: 0 0 auto; width: 260px; }
 .download-action button { white-space: nowrap; }
 .download-action .job-error p { margin-bottom: 6px; }
+/* Why a download stopped, under the app's name: two lines at most, the rest in its tooltip. */
+.download-failed { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--danger); }
+.download-failed svg { vertical-align: -2px; }
 /* An update, waiting or finished: See changelog beside Update or Play, with room for both. */
 .download-buttons { display: flex; gap: 8px; }
 .download-buttons > button:not(.primary) {
@@ -1957,7 +2062,7 @@ main:has(> div:not([hidden]) > .library-split) > div > .banner-stack > .banner.a
  */
 .tv-mode .entry-card.box .card-cover { transition: none; }
 .tv-mode .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-cover { transform: none; border-color: var(--ql-card-line); box-shadow: 0 10px 24px var(--ql-card-shadow); }
-.tv-mode .entry-card.box :is(.card-action, .cover-strip) { transition: none; }
+.tv-mode .entry-card.box :is(.card-action, .cover-strip, .cover-platforms) { transition: none; }
 .tv-mode .entry-card.box:is(:hover:where(:not([data-navigating] *)), :focus-within) .card-action { transform: none; }
 .tv-mode .layout-grid .library-tile, .tv-mode .layout-grid .library-tile .card-cover { transition: none; }
 .tv-mode .layout-grid .library-tile:is(:hover:where(:not([data-navigating] *)), :focus-within, [data-focus]) { transform: none; }
@@ -2018,6 +2123,7 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .app-page[data-tv] .app-tagline { max-width: 820px; font-size: 16.5px; }
 .app-page[data-tv] .app-actions button, .app-page[data-tv] .app-actions .row > button { min-height: 54px; padding: 0 28px; border-radius: 12px; font-size: 17px; }
 .app-page[data-tv] .app-actions .progress { width: 340px; height: 54px; border-radius: 12px; }
+.app-page[data-tv] .app-actions button.own-copy-chip { min-height: 40px; padding: 0 16px; border-radius: 999px; font-size: 15px; }
 .app-page[data-tv] .app-content { font-size: 15px; }
 .app-page[data-tv] .content-panel dl { font-size: 14px; }
 .tv-readme { width: 100%; justify-content: flex-start; padding: 18px 22px; border-radius: 12px; font-size: 16px; }
@@ -2068,4 +2174,7 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .tv-mode .letter-index > button { width: 30px; height: 24px; font-size: 13px; }
 @media (max-height: 820px) {
   .tv-mode .letter-index > button { height: 18px; font-size: 11px; }
+}
+.project-details dd.easy-setup {
+  margin-top: 6px;
 }

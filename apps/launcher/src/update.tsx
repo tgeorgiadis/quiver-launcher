@@ -9,7 +9,7 @@ import { Trans } from "@lingui/react/macro";
 import { NotesDialog } from "./detail";
 import { native, type LauncherUpdate } from "./native";
 import { useLauncher } from "./store";
-import { captureFailure } from "./telemetry";
+import { captureFailure, failureKind, reasonOf, track } from "./telemetry";
 import { versionLabel } from "./versions";
 
 type State = {
@@ -51,11 +51,13 @@ async function check(preview: boolean, asked: boolean) {
 async function install(version: string) {
   set({ installing: { done: 0 }, error: null });
   const off = native.onUpdateProgress((p) => set({ installing: p }));
+  track("launcher_update_started", { to: version });
   try {
     // On success this copy closes and the new one starts.
     await native.installUpdate(version);
   } catch (e) {
     set({ installing: null, error: String(e) });
+    track("launcher_update_failed", { to: version, reason: reasonOf(e), error: failureKind(e) });
     captureFailure("launcher_update", e, { version });
   } finally {
     void off.then((stop) => stop());

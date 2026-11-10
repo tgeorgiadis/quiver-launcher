@@ -1,7 +1,7 @@
 /**
  * How the library shows its apps on this computer: a grid, or a sidebar of
  * names beside the open app's page; which picture each card has,
- * how big the cards are, and whether names show under them. Kept in
+ * how big the cards are (a slider), and whether names show under them. Kept in
  * settings.json with the other preferences for this device.
  */
 import { msg } from "@lingui/core/macro";
@@ -13,12 +13,16 @@ import { CARD_DETAILS, coverOf, type CardDetail } from "@quiverlauncher/ui";
 export type Layout = "grid" | "sidebar";
 /** Cover: the wide library art, as the catalog shows it. Box art: the portrait capsule. Icon: the app's icon on a plain tile. */
 export type CardImage = "cover" | "box" | "icon";
+/** The size the cards' finer points go by (app.css's size-*): the slider's scale, in three steps. */
 export type CardSize = "small" | "medium" | "large";
 /** Which name is the large one on a card: the game's, or the app's (the port's). */
 export type NameOrder = "game" | "app";
 export type LibraryView = {
   layout: Layout;
   image: CardImage;
+  /** How big the cards are, from the slider: their width over a Medium card's. */
+  cardScale: number;
+  /** The step of it the cards' finer points go by (sizeOf), and what older launchers read. */
   size: CardSize;
   names: boolean;
   nameOrder: NameOrder;
@@ -34,8 +38,8 @@ export type LibraryView = {
   details: readonly CardDetail[];
 };
 
-/** The details a library card can show: Browse's, but New, which is the catalog's. */
-export const LIBRARY_DETAILS = CARD_DETAILS.filter((d) => d !== "new");
+/** The details a library card can show: Browse's, but New and Easy setup, which are about getting an app. */
+export const LIBRARY_DETAILS = CARD_DETAILS.filter((d) => d !== "new" && d !== "setup");
 /**
  * The same choice of details as one list each time it's read, so the cards (memo) aren't all drawn again with each
  * change to the launcher for a list that's equal but new.
@@ -54,9 +58,9 @@ const sameDetails = (a: readonly CardDetail[], b: readonly CardDetail[]) => a.le
  * A shelf of box art, medium, with names: unlike Browse's wide catalog cards.
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
-export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, byGame: false, details: ["subtitle"] };
+export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, byGame: false, details: ["subtitle"] };
 /** TV mode's look (tvModeOn), over the player's own view, which stays saved for when it's left. */
-export const TV_VIEW: Pick<LibraryView, "layout" | "image" | "size"> = { layout: "grid", image: "box", size: "large" };
+export const TV_VIEW: Pick<LibraryView, "layout" | "image" | "cardScale" | "size"> = { layout: "grid", image: "box", cardScale: 1.3, size: "large" };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const LAYOUTS: [Layout, MessageDescriptor][] = [
@@ -80,6 +84,19 @@ export const CARD_SIZES: [CardSize, MessageDescriptor][] = [
   ["large", msg({ message: "Large", comment: "Library card size" })],
 ];
 
+/** The card size slider's ends and step: from about half a Medium card's width to over half as wide again. */
+export const CARD_SCALE = { min: 0.6, max: 1.6, step: 0.05 } as const;
+/** Where each of the sizes before the slider sits on it. */
+const SIZE_SCALES: Record<CardSize, number> = { small: 0.8, medium: 1, large: 1.3 };
+/** A scale on the slider, its ends at most and on a step. */
+export function cardScaleOf(value: unknown, fallback = 1): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  const clamped = Math.min(CARD_SCALE.max, Math.max(CARD_SCALE.min, value));
+  return Number((Math.round(clamped / CARD_SCALE.step) * CARD_SCALE.step).toFixed(2));
+}
+/** The step a scale is in, for what goes by Small, Medium and Large: smaller titles, fewer facts on a tile. */
+export const sizeOf = (scale: number): CardSize => (scale < 0.9 ? "small" : scale >= 1.15 ? "large" : "medium");
+
 /**
  * The saved choices over the defaults; anything unknown (an older or newer
  * launcher's) is the default. The List layout is gone: a library saved as one
@@ -88,10 +105,13 @@ export const CARD_SIZES: [CardSize, MessageDescriptor][] = [
 export function viewOf(saved?: Partial<LibraryView>): LibraryView {
   const list = (saved?.layout as string | undefined) === "list";
   const pick = <T,>(options: [T, MessageDescriptor][], value: unknown, fallback: T) => (options.some(([o]) => o === value) ? (value as T) : fallback);
+  const scale = cardScaleOf(saved?.cardScale, SIZE_SCALES[pick(CARD_SIZES, saved?.size, DEFAULT_VIEW.size)]);
   return {
     layout: pick(LAYOUTS, saved?.layout, DEFAULT_VIEW.layout),
     image: pick(CARD_IMAGES, saved?.image, DEFAULT_VIEW.image),
-    size: pick(CARD_SIZES, saved?.size, DEFAULT_VIEW.size),
+    // A library saved before the slider keeps the size it had.
+    cardScale: scale,
+    size: sizeOf(scale),
     names: !list && typeof saved?.names === "boolean" ? saved.names : DEFAULT_VIEW.names,
     nameOrder: pick(NAME_ORDERS, saved?.nameOrder, DEFAULT_VIEW.nameOrder),
     bothNames: typeof saved?.bothNames === "boolean" ? saved.bothNames : DEFAULT_VIEW.bothNames,
@@ -104,7 +124,8 @@ export function viewOf(saved?: Partial<LibraryView>): LibraryView {
 
 /** Only what differs from the defaults is saved; the details in their own order. */
 export function savedView(view: LibraryView): Partial<LibraryView> | undefined {
-  const { details, ...rest } = view;
+  // The step goes with the scale, so an older launcher shows about the same size.
+  const { details, ...rest } = { ...view, cardScale: cardScaleOf(view.cardScale), size: sizeOf(cardScaleOf(view.cardScale)) };
   const changed: Partial<LibraryView> = Object.fromEntries(Object.entries(rest).filter(([k, v]) => DEFAULT_VIEW[k as keyof LibraryView] !== v));
   if (!sameDetails(details, DEFAULT_VIEW.details)) changed.details = LIBRARY_DETAILS.filter((d) => details.includes(d));
   return Object.keys(changed).length ? changed : undefined;
@@ -138,24 +159,44 @@ export function artFor(entry: Pick<Entry, "libraryArt" | "artwork">, image: Excl
   return list.filter((a, i) => list.findIndex((b) => b.src === a.src) === i);
 }
 
-/** What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). */
-export type LibraryFilters = { console?: string; projectType?: string; ai?: "no-generated" | "no-ai"; tag?: string; installed?: "yes" | "no" };
+/**
+ * What the library's filters ask of its apps; settings.json keeps them (`libraryFilters`). `managed`: Quiver's, which it
+ * downloads and updates (from the catalog or a repository), or the player's, added from this computer, as 3.x's manually
+ * managed apps were.
+ */
+export type LibraryFilters = {
+  /** Apps for any of these consoles: ids, or "maker:Nintendo". */
+  consoles?: string[];
+  /** Apps of any of these kinds. */
+  projectTypes?: string[];
+  ai?: "no-generated" | "no-ai";
+  tag?: string;
+  installed?: "yes" | "no";
+  managed?: "quiver" | "manual";
+};
 
 /**
  * The library's filters as they were saved, each only when it's one the library has. `tab` is the saved tab: Installed
- * and Not installed were tabs as well as a filter, and a library left on one opens with the filter on instead.
+ * and Not installed were tabs as well as a filter, and a library left on one opens with the filter on instead. Before
+ * consoles and kinds could be picked several at a time, each was kept as one (`console`, `projectType`).
  */
-export function keptFilters(saved: Record<string, string> = {}, tab?: string): LibraryFilters {
-  const { console, projectType, ai, tag } = saved;
+export function keptFilters(saved: Record<string, string | string[]> = {}, tab?: string): LibraryFilters {
+  const one = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+  const many = (now: unknown, was: unknown) => {
+    const list = (Array.isArray(now) ? now : [was]).filter((v): v is string => typeof v === "string" && Boolean(v));
+    return list.length ? [...new Set(list)] : undefined;
+  };
+  const { ai, tag, managed } = saved;
   const installed = tab === "installed" ? "yes" : tab === "not-installed" ? "no" : saved.installed;
   return Object.fromEntries(
     Object.entries({
-      console,
-      projectType,
-      tag,
+      consoles: many(saved.consoles, saved.console),
+      projectTypes: many(saved.projectTypes, saved.projectType),
+      tag: one(tag),
       ai: ai === "no-generated" || ai === "no-ai" ? ai : undefined,
       installed: installed === "yes" || installed === "no" ? installed : undefined,
-    }).filter(([, value]) => typeof value === "string" && value),
+      managed: managed === "quiver" || managed === "manual" ? managed : undefined,
+    }).filter(([, value]) => value),
   );
 }
 

@@ -35,6 +35,25 @@ test("several kinds of project, from saved filters, go as projectTypes; one goes
   expect(asked).toEqual(["/apps?limit=48&projectTypes=port%2Cgame", "/apps?limit=48&projectType=tool", "/apps?limit=48"]);
 });
 
+test("several consoles go as consoles and makers, several platforms as platforms; one of each as before", async () => {
+  const urls = [
+    "/apps?limit=48&consoles=n64%2Cps1&makers=Sega",
+    "/apps?limit=48&makers=Sega%2CSony",
+    "/apps?limit=48&maker=Sega",
+    "/apps?limit=48&console=n64",
+    "/apps?limit=48&platforms=windows%2Cmacos",
+    "/apps?limit=48&os=linux",
+  ];
+  const { client, asked } = fakeApi(Object.fromEntries(urls.map((u) => [u, empty])));
+  await client.apps({ consoles: ["n64", "maker:Sega", "ps1"] });
+  await client.apps({ consoles: ["maker:Sega", "maker:Sony"] });
+  await client.apps({ consoles: ["maker:Sega"] });
+  await client.apps({ consoles: ["n64"] });
+  await client.apps({ platforms: ["windows", "macos"] });
+  await client.apps({ platforms: ["linux"] });
+  expect(asked).toEqual(urls);
+});
+
 test("an app, its README and releases; a missing app is a 404 and a missing README null", async () => {
   const detail = { entry: { id: "a" }, project: { name: "A", description: "", provider: "github", repository: "o/a" }, withdrawn: [] };
   const { client } = fakeApi({
@@ -257,4 +276,25 @@ test("a saved GitHub token goes with every request to GitHub, and the limit is r
   expect((await createGithub("https://gh.test").rateLimit()).limit).toBe(60);
   expect(asked.at(-1)!.auth).toBeNull();
   await expect(createGithub("https://gh.test", "bad").rateLimit()).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 401);
+});
+
+test("says once when neither address answers, and not when the other one does", async () => {
+  const lost: unknown[] = [];
+  const fell: unknown[] = [];
+  const fetch = (async () => {
+    throw new TypeError("Failed to fetch");
+  }) as typeof globalThis.fetch;
+  const client = createClient(DEFAULT_API, { fetch, onUnreachable: (e) => lost.push(e), onFallback: (e) => fell.push(e) });
+  await expect(client.facets()).rejects.toThrow("Failed to fetch");
+  await expect(client.facets()).rejects.toThrow("Failed to fetch");
+  expect(lost).toHaveLength(1);
+  expect(fell).toHaveLength(0);
+
+  const answered: unknown[] = [];
+  const other = (async (url: string) => {
+    if (url.startsWith(DEFAULT_API)) throw new TypeError("Failed to fetch");
+    return new Response("{}", { status: 200 });
+  }) as typeof globalThis.fetch;
+  await createClient(DEFAULT_API, { fetch: other, onUnreachable: (e) => answered.push(e) }).facets();
+  expect(answered).toHaveLength(0);
 });

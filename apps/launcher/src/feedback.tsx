@@ -464,7 +464,7 @@ function ReviewEditor({
 }
 
 /** "120/500" under the note, and a clear message once it's full, so typing never just stops. */
-function CharacterCount({ id, length, limit }: { id: string; length: number; limit: number }) {
+export function CharacterCount({ id, length, limit }: { id: string; length: number; limit: number }) {
   const full = length >= limit;
   return (
     <div id={id} className={`character-count${full ? " full" : ""}`}>

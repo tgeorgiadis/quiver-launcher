@@ -3,7 +3,7 @@
  * releases, the project's details, shortcuts, picking another version, and
  * the player's tags.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { FaSteam } from "react-icons/fa6";
@@ -11,10 +11,11 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { ApiError, type AiUse, type Asset, type Checking, type Client, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
-import { OS_NAMES, ReleaseBadge, alertTitles, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
+import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
 import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
+import { launchCopies } from "./own-copy";
 import { bare, changesUpTo, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
 import { hasBuildFor, otherSystems, releaseFor, runsHere } from "./assets";
@@ -890,6 +891,12 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
               <Trans>Supported platforms</Trans>
             </dt>
             <dd>{platformList(entry.supportedOS)}</dd>
+            {/* Not a cell of its own, which would take a row more. Its title says what it means. */}
+            {hasEasySetup(entry) && (
+              <dd className="easy-setup">
+                <EasySetupChip />
+              </dd>
+            )}
           </div>
           {source && (
             <div>
@@ -990,7 +997,7 @@ export function shortcutRequest(entry: Entry, install: Install, settings: Settin
     preferred: install.executables,
     wine: Boolean(install.wine),
     program: install.program,
-    launch: { ...install.launch, windowsRunner: settings.windowsRunner },
+    launch: { ...install.launch, windowsRunner: settings.windowsRunner, copies: launchCopies(entry, install) },
     art: { icon: entry.artwork ?? art.logo, header: art.header, capsule: art.capsule, hero: art.hero, logo: art.logo },
   };
 }
@@ -1041,6 +1048,7 @@ export function Versions({
   onClose,
   start,
   getting,
+  over,
 }: {
   entry: Entry;
   source: Source | null | undefined;
@@ -1050,6 +1058,8 @@ export function Versions({
   start?: { version: string; asset?: string };
   /** Set, it's Get's own choices, from beside Get: what Get would install first, and the build to install where there's a choice. */
   getting?: boolean;
+  /** Its dialog over a floating panel that stays open under it (Dialog's `over`). */
+  over?: boolean;
 }) {
   const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config } = useLauncher();
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
@@ -1264,10 +1274,10 @@ export function Versions({
   const buildName = (os: Os) => (os === "windows" ? t`Windows (Wine)` : (OS_NAMES[os] ?? os));
   const build = platform && buildName(platform);
   const missing = build && t`No ${build} build`;
-  const newestLabel = versionLabel(newestRelease?.version);
+  const version = versionLabel(newestRelease?.version);
   const head = getting && (
     <div className="get-choices">
-      <PanelFormHead title={t`Get ${app}`} onClose={onClose!} />
+      <PanelFormHead title={t`Install ${app}`} onClose={onClose!} />
       {builds.length > 0 && (
         <div className="segmented" role="group" aria-label={t({ message: "Build", comment: "Which platform's build of an app to install, as Linux or Windows through Wine" })}>
           {builds.map((os) => (
@@ -1288,7 +1298,7 @@ export function Versions({
             void get(entry, undefined, platform ? { platform } : undefined);
           }}
         >
-          <Download size={15} aria-hidden="true" /> {newestRelease ? t`Get ${newestLabel}` : t({ message: "Get", comment: "Button that installs an app" })}
+          <Download size={15} aria-hidden="true" /> {newestRelease ? t`Install ${version}` : t({ message: "Install", comment: "Button that installs an app" })}
         </button>
       )}
     </div>
@@ -1296,7 +1306,7 @@ export function Versions({
   // As a dialog: the list, or how it's loading, in one.
   const shown = (body: ReactNode) =>
     onClose ? (
-      <Dialog label={getting ? t`Get ${app}` : t`Versions`} className="versions-window" onClose={onClose}>
+      <Dialog label={getting ? t`Install ${app}` : t`Versions`} className="versions-window" onClose={onClose} over={over}>
         <div className="detail-body versions-dialog">
           {head}
           {body}
@@ -1384,13 +1394,20 @@ export function Versions({
 }
 
 /**
+ * Set inside a floating panel that stays open under the dialogs opened from it (a game's ports, from its card): their
+ * versions show over it, and closing them goes back to it.
+ */
+export const OverMenu = createContext(false);
+
+/**
  * The app's versions in a dialog of their own, from a library card's Install button or its menu's Change version;
- * from the Releases tab, the one release the player chose (`start`).
+ * from the Releases tab, the one release the player chose (`start`). Inside OverMenu, over the panel it came from.
  */
 export function VersionsDialog({ entry, onClose, start, getting }: { entry: Entry; onClose: () => void; start?: { version: string; asset?: string }; getting?: boolean }) {
   const { source } = useAppDetail(entry);
+  const over = useContext(OverMenu);
   // Over the page, not in the card, which a lifted (transformed) card would hold it inside.
-  return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} />, document.body);
+  return createPortal(<Versions entry={entry} source={source} onClose={onClose} start={start} getting={getting} over={over} />, document.body);
 }
 
 /**

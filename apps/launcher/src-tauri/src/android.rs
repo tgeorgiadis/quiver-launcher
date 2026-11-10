@@ -55,6 +55,15 @@ pub fn install(apk: &Path) -> Result<App, String> {
     run("install", Apk { path: apk.to_string_lossy().into_owned() })
 }
 
+/// Whether a package is still on this device.
+pub fn is_installed(package: &str) -> Result<bool, String> {
+    #[derive(Deserialize)]
+    struct Answer {
+        installed: bool,
+    }
+    run::<Answer>("isInstalled", Package { package_name: package }).map(|a| a.installed)
+}
+
 pub fn launch(package: &str) -> Result<(), String> {
     run("launch", Package { package_name: package })
 }
