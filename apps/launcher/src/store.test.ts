@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -328,6 +328,70 @@ describe("an update for this computer", () => {
     const pinned = { ...install, updates: "pinned" as const };
     expect(hasUpdate(found(windows), pinned)).toBe(false);
     expect(updateFor(found(windows), pinned)).toEqual(windows);
+  });
+});
+
+describe("Newest right away: an update Quiver hasn't verified yet", () => {
+  const verified = { version: "v1.2.0", releasedAt: 20 };
+  const newest = { version: "v1.3.0", releasedAt: 30 };
+  const listed = { verified, lastReleaseVersion: "v1.3.0", lastReleaseAt: 30 } as unknown as Entry;
+  const install = { version: "v1.2.0", releasedAt: 20, folder: "Port", executables: [] };
+  const waiting = (release?: { version: string; releasedAt: number }, on = install) => ({ ...listed, early: { of: earlyKey(listed, on)!, ...(release ? { release } : {}) } });
+  const found = (release?: { version: string; releasedAt: number }, on = install) => ({ ...listed, early: { ...waiting(release, on).early, now: true as const } });
+
+  it("isn't looked up when the newest release is the one installed, or the verified one", () => {
+    expect(earlyKey(listed, install)).toBe("1.3.0:own:files");
+    expect(earlyKey(listed, { ...install, version: "1.3.0" })).toBeUndefined();
+    expect(earlyKey({ ...listed, lastReleaseVersion: "1.2.0" }, { ...install, version: "v1.1.0" })).toBeUndefined();
+    expect(earlyKey({ ...listed, lastReleaseVersion: undefined }, install)).toBeUndefined();
+    expect(earlyKey(listed, { ...install, local: true } as typeof install)).toBeUndefined();
+  });
+
+  it("isn't offered until the site's history says there's one, which only happens with the setting on", () => {
+    expect(updateFor(listed, install)).toBeUndefined();
+    expect(hasUpdate(listed, install)).toBe(false);
+    expect(hasUpdate(found(), install)).toBe(false);
+  });
+
+  it("is offered ahead of the verified release, with none verified to update to, too", () => {
+    expect(updateFor(found(newest), install)).toEqual(newest);
+    expect(hasUpdate(found(newest), install)).toBe(true);
+    const older = { ...install, version: "v1.1.0", releasedAt: 10 };
+    const both = { ...found(newest, older), forHere: { of: forHereKey(verified, older), release: verified } };
+    expect(updateFor(both, older)).toEqual(newest);
+    const none = { ...found(newest), verified: undefined } as unknown as Entry;
+    expect(updateFor(none, install)).toEqual(newest);
+  });
+
+  it("is looked up again for a newer release upstream, or another build", () => {
+    const stale = found(newest);
+    expect(earlyUpdate({ ...stale, lastReleaseVersion: "v1.4.0" }, install)).toBeUndefined();
+    expect(earlyUpdate(stale, { ...install, wine: true } as typeof install)).toBeUndefined();
+  });
+
+  it("is never one that was withdrawn, or older than what's installed", () => {
+    const pulled = { ...found(newest), withdrawn: [{ version: "1.3.0", reason: "Broken saves" }] } as unknown as Entry;
+    expect(updateFor(pulled, install)).toBeUndefined();
+    expect(earlyUpdate(found(newest), { ...install, version: "v1.3.1", releasedAt: 31 })).toBeUndefined();
+  });
+
+  it("waiting 48 hours, is never the update, only what the player can ask for early; not for a pinned app", () => {
+    expect(updateFor(waiting(newest), install)).toBeUndefined();
+    expect(hasUpdate(waiting(newest), install)).toBe(false);
+    expect(earlyRelease(waiting(newest), install)).toEqual(newest);
+    expect(earlyOffer(waiting(newest), install)).toEqual(newest);
+    expect(earlyOffer(waiting(newest), { ...install, updates: "pinned" as const })).toBeUndefined();
+    expect(earlyOffer(waiting(newest), { ...install, updates: "auto" as const })).toEqual(newest);
+    // Right away it's the update itself, so there's nothing more to offer.
+    expect(earlyOffer(found(newest), install)).toBeUndefined();
+    const pulled = { ...waiting(newest), withdrawn: [{ version: "1.3.0", reason: "Broken saves" }] } as unknown as Entry;
+    expect(earlyOffer(pulled, install)).toBeUndefined();
+  });
+
+  it("keeps to what the player said of the app: pinned, skipped or gone back from", () => {
+    expect(hasUpdate(found(newest), { ...install, updates: "pinned" as const })).toBe(false);
+    expect(hasUpdate(found(newest), { ...install, declined: "1.3.0" })).toBe(false);
+    expect(skipped(found(newest), { ...install, skip: "v1.3.0" })).toBe(true);
   });
 });
 

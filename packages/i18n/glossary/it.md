@@ -18,7 +18,7 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | Change version / Choose a version | Cambia versione / Scegli una versione | |
 | pinned | fissata | |
 | withdrawn | ritirata | |
-| verified / unverified / blocked (a release) | verificata / non verificata / bloccata | |
+| available / not offered / blocked (a release) | disponibile / non proposta / bloccata | |
 | preview release | versione di anteprima | |
 | play time / recently played | tempo di gioco / giocati di recente | |
 | controller / keyboard | controller / tastiera | |

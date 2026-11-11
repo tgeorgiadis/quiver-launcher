@@ -304,12 +304,12 @@ export function CheckingStatus({ checking }: { checking: Checking }) {
   // Each follows "Version 1.2 is".
   if (checking.checkEndsAt === undefined)
     return checking.needsReview
-      ? t({ message: "unverified · waiting for a maintainer", comment: "Follows “Version 1.2 is”" })
-      : t({ message: "unverified · being checked", comment: "Follows “Version 1.2 is”" });
+      ? t({ message: "not offered yet · waiting for a maintainer", comment: "Follows “Version 1.2 is”" })
+      : t({ message: "not offered yet · being checked", comment: "Follows “Version 1.2 is”" });
   const hours = Math.ceil((checking.checkEndsAt - now) / 3_600_000);
   return hours <= 0
-    ? t({ message: "unverified · verified shortly", comment: "Follows “Version 1.2 is”" })
-    : plural(hours, { one: "unverified · verified in about # hour", other: "unverified · verified in about # hours" });
+    ? t({ message: "not offered yet · available shortly", comment: "Follows “Version 1.2 is”" })
+    : plural(hours, { one: "not offered yet · available in about # hour", other: "not offered yet · available in about # hours" });
 }
 
 /** The newer release being checked, shown only when the app has an approved one to install meanwhile. */
@@ -397,8 +397,8 @@ function ReleaseCard({
             <>
               <p>
                 {plural(hours, {
-                  one: "It's in its 48-hour waiting period and will be verified in about # hour.",
-                  other: "It's in its 48-hour waiting period and will be verified in about # hours.",
+                  one: "It's in its 48-hour waiting period, which ends in about # hour.",
+                  other: "It's in its 48-hour waiting period, which ends in about # hours.",
                 })}
               </p>
               <p className="muted">
@@ -410,8 +410,8 @@ function ReleaseCard({
             <p>
               <strong>
                 {installed
-                  ? t`You have it installed. If you're happy to accept the risk, you can keep using it; otherwise, remove it and install a verified release instead.`
-                  : t`If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install a verified release instead.`}
+                  ? t`You have it installed. If you're happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead.`
+                  : t`If you installed it and are happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead.`}
               </strong>
             </p>
           )}
@@ -434,7 +434,7 @@ function ReleaseCard({
           ) : (
             state === "unverified" && (
               <p className="release-files-note">
-                <Trans>Quiver hasn&apos;t verified these files. Installing one asks you to confirm first.</Trans>
+                <Trans>Quiver Launcher doesn&apos;t offer this release by itself. Installing one of its files asks you to confirm first.</Trans>
               </p>
             )
           )}
@@ -523,10 +523,10 @@ function installLabel(release: string) {
  * when it's verified by itself, unless the site's automatic verification is paused (no `checkEndsAt`).
  */
 function changedFile(checkEndsAt?: number) {
-  if (checkEndsAt === undefined) return t`Changed on GitHub after Quiver verified this release.`;
+  if (checkEndsAt === undefined) return t`Changed on GitHub after this release finished its 48-hour wait.`;
   // "in 31 hours", as the player's language says it.
   const when = new Intl.RelativeTimeFormat(i18n.locale, { numeric: "auto" }).format(hoursFrom(checkEndsAt), "hour");
-  return t({ message: `Changed on GitHub after Quiver verified this release. Verified by itself ${when}`, comment: "{when} reads “in 31 hours”" });
+  return t({ message: `Changed on GitHub after this release finished its 48-hour wait. Its own wait ends ${when}`, comment: "{when} reads “in 31 hours”" });
 }
 
 /**
@@ -551,7 +551,7 @@ export function ReleasesTab({
 }) {
   const [toggled, setToggled] = useState<Set<string>>(new Set());
   const { items } = history;
-  const { client, installs, jobs, catalog, config } = useLauncher();
+  const { client, installs, jobs, catalog, config, settings } = useLauncher();
   const install = installs[entry.id];
   // A release the player chose to install, with the file they chose, in Change version's dialog for its questions.
   const [chosen, setChosen] = useState<{ version: string; asset?: string } | null>(null);
@@ -591,7 +591,7 @@ export function ReleasesTab({
       {newestVerified?.prerelease && (
         <div className="prerelease-notice" role="note">
           <Trans>
-            <strong>The newest verified release is a pre-release build.</strong> The project hasn&apos;t published a newer stable release with downloads, so Quiver
+            <strong>The newest available release is a pre-release build.</strong> The project hasn&apos;t published a newer stable release with downloads, so Quiver
             Launcher installs this one. Expect bugs and unfinished features.
           </Trans>
         </div>
@@ -613,7 +613,11 @@ export function ReleasesTab({
       ) : (
         <>
           <p className="muted release-intro">
-            <Trans>Quiver Launcher only updates to verified releases. It installs an unverified or blocked one only if you pick it and confirm. Verified means each of a release&apos;s files has been out for 48 hours, so there was time for a bad upload to be spotted, and a Quiver maintainer checked any file VirusTotal flagged. Quiver Launcher checks every download against the file Quiver verified. If a file is replaced after that, the new one waits its own 48 hours.</Trans>
+            {settings.appUpdates === "newest" ? (
+              <Trans>Apps are set to update to the newest release right away (Settings, Updates), so Quiver Launcher also updates to releases it wouldn&apos;t offer yet, without asking first. It installs a blocked one only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw.</Trans>
+            ) : (
+              <Trans>Quiver Launcher offers a release once each of its files has been out for 48 hours, so there was time for a bad upload to be spotted and withdrawn. It installs one it doesn&apos;t offer yet, or a blocked one, only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw. If a file is replaced after that, the new one waits its own 48 hours.</Trans>
+            )}
           </p>
           {releases.map((release) => {
             // The newest verified release starts open; the others fold.
@@ -1204,14 +1208,14 @@ export function Versions({
     const hours = waits ? hoursFrom(version.checkEndsAt!) : 0;
     const release = version.release.version;
     return (
-      <Dialog label={t`Install a release before it's verified`} onClose={close}>
+      <Dialog label={t`Install a release before Quiver offers it`} onClose={close}>
         <div className="detail-body unverified-prompt">
           <h2>
-            <ShieldAlert size={18} /> <Trans>Install {release} before it&apos;s verified?</Trans>
+            <ShieldAlert size={18} /> <Trans>Install {release} before Quiver offers it?</Trans>
           </h2>
           <p>
             {version.known
-              ? t`Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since.`
+              ? t`Quiver Launcher doesn't offer this release by itself yet. It installs the files Quiver saw when it came out, and refuses any that changed since.`
               : t`Quiver hasn't checked this release's files. It downloads straight from ${host}, as the developer published it.`}
           </p>
           {version.reasons.length > 0 && (
@@ -1235,8 +1239,8 @@ export function Versions({
             <p className="wait-line">
               <ShieldCheck size={14} aria-hidden="true" />{" "}
               {plural(hours, {
-                one: "If you wait, it's verified in about # hour and offered as an update then.",
-                other: "If you wait, it's verified in about # hours and offered as an update then.",
+                one: "If you wait, its 48 hours are up in about # hour, and it's offered as an update then.",
+                other: "If you wait, its 48 hours are up in about # hours, and it's offered as an update then.",
               })}
             </p>
           )}

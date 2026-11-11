@@ -13,7 +13,7 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play, Plus } from "lucid
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
+import { canGet, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
@@ -268,6 +268,10 @@ function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Ite
     top.push({ text: t`Update to ${newer}`, act: () => void get(latest) });
     top.push({ text: t`Skip this update`, act: () => declineUpdate(entry.id, update.version) });
   }
+  // Waiting 48 hours for updates: this app's newest release, early, which asks first.
+  const early = earlyOffer(latest, install);
+  const earlier = versionLabel(early?.version);
+  if (early && !job) top.push({ text: t`Update early to ${earlier}…`, act: () => void get(latest, undefined, { early: true }) });
   return { main, top };
 }
 

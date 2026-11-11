@@ -19,7 +19,7 @@ import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel, type CardDetail } from "@quiverlauncher/ui";
-import { canGet, hasUpdate, pulledVerified, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
+import { canGet, hasUpdate, pulledVerified, stillWaiting, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
 import { OverMenu, VersionsDialog, foldersOn } from "./detail";
 import { native, type Config } from "./native";
@@ -310,15 +310,15 @@ const Tile = memo(function Tile({
                 )}
                 {verified && (
                   <span>
-                    <Trans>Verified {verifiedLabel}</Trans>
+                    <Trans>Available {verifiedLabel}</Trans>
                   </span>
                 )}
                 {newer && (
                   <span className="tile-unverified">
-                    <Trans>{newerLabel} not verified yet</Trans>
+                    {stillWaiting(latest.lastReleaseAt) ? <Trans>{newerLabel} not offered yet: less than 48 hours old</Trans> : <Trans>{newerLabel} not offered yet</Trans>}
                   </span>
                 )}
-                {install?.unverified && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`This version isn't verified`}</span>}
+                {install?.unverified && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`Installed before Quiver offered it`}</span>}
                 {pinned && (
                   <span>
                     <Trans>Staying on {installedLabel}</Trans>
@@ -414,7 +414,7 @@ const Tile = memo(function Tile({
                     <Trans>Update to {updateLabel}</Trans>
                   </span>
                   <span className="tile-label tile-label-short">
-                    <Trans context="button" comment="Button on a library card: update the app to its newest verified version">
+                    <Trans context="button" comment="Button on a library card: update the app to the newest version Quiver offers">
                       Update
                     </Trans>
                   </span>
@@ -422,7 +422,7 @@ const Tile = memo(function Tile({
               )}
             </>
           ) : gettable && noWayOff ? (
-            <button type="button" className="tile-play tile-get" title={t`Its newest verified version was withdrawn: choose a version`} onClick={() => setVersions(true)}>
+            <button type="button" className="tile-play tile-get" title={t`Its newest available version was withdrawn: choose a version`} onClick={() => setVersions(true)}>
               <History size={24} />
               <span className="tile-label">{t`Choose a version`}</span>
             </button>

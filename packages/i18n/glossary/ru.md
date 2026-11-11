@@ -20,7 +20,7 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | Change version / Choose a version | Сменить версию / Выбрать версию | |
 | pinned | закреплена | |
 | withdrawn | отозвана | |
-| verified / unverified / blocked (a release) | проверена / не проверена / заблокирована | |
+| available / not offered / blocked (a release) | доступна / не предлагается / заблокирована | |
 | preview release | предварительная версия | |
 | play time / recently played | время в игре / недавно сыгранные | |
 | controller / keyboard | контроллер / клавиатура | |
