@@ -985,8 +985,8 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
   );
 }
 
-/** Why Add to Steam is greyed out where Steam is running Quiver (lib.rs). */
-export const steamRunsUsNote = () => t`Steam is running Quiver, so it can't add games now. Start Quiver outside Steam, in Desktop Mode, and add it from there.`;
+/** Why Add to Steam is greyed out where Steam is running Quiver (lib.rs); on Linux it can add games even then. */
+export const steamRunsUsNote = () => t`Steam is running Quiver, so it can't add games now. Close Steam and start Quiver on its own, then add it from there.`;
 
 /** A desktop shortcut and a Steam shortcut, both starting the game directly. */
 export function Shortcuts({ entry }: { entry: Entry }) {
@@ -1005,10 +1005,10 @@ export function Shortcuts({ entry }: { entry: Entry }) {
       <button className="panel-action" onClick={() => run(native.createShortcut(request))}>
         <Monitor size={16} aria-hidden="true" /> <Trans>Desktop shortcut</Trans>
       </button>
-      <button className="panel-action" disabled={config.steamRunsUs} onClick={() => run(native.addToSteam(request))}>
+      <button className="panel-action" disabled={config.steamRunsUs && config.os !== "linux"} onClick={() => run(native.addToSteam(request))}>
         <FaSteam size={15} aria-hidden="true" /> <Trans>Add to Steam</Trans>
       </button>
-      {config.steamRunsUs && <p className="muted">{steamRunsUsNote()}</p>}
+      {config.steamRunsUs && config.os !== "linux" && <p className="muted">{steamRunsUsNote()}</p>}
       {message && (
         <p className={message.error ? "job-error" : "muted"} role="status">
           {message.text}
