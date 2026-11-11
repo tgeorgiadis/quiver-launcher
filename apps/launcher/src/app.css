@@ -32,6 +32,17 @@
 .window-controls button:focus-visible { outline-offset: -2px; }
 /* The front square at the bottom left, as the system draws Restore. */
 .window-controls .restore { transform: scaleX(-1); }
+/* Linux's window edges to resize it by (ResizeEdges): thin strips over the page's sides, a little more at the corners. */
+.resize-edge { position: fixed; z-index: 2147483647; touch-action: none; }
+.resize-edge:is(.n, .s) { left: 10px; right: 10px; height: 5px; cursor: ns-resize; }
+.resize-edge:is(.e, .w) { top: 10px; bottom: 10px; width: 5px; cursor: ew-resize; }
+.resize-edge:is(.ne, .nw, .se, .sw) { width: 10px; height: 10px; }
+.resize-edge:is(.n, .ne, .nw) { top: 0; }
+.resize-edge:is(.s, .se, .sw) { bottom: 0; }
+.resize-edge:is(.e, .ne, .se) { right: 0; }
+.resize-edge:is(.w, .nw, .sw) { left: 0; }
+.resize-edge:is(.nw, .se) { cursor: nwse-resize; }
+.resize-edge:is(.ne, .sw) { cursor: nesw-resize; }
 /* The website's brand (its src/styles.css), smaller as the window narrows. */
 .brand { display: flex; align-items: center; gap: 10px; padding: 0; flex-shrink: 0; }
 .brand > img { width: 34px; height: 34px; }

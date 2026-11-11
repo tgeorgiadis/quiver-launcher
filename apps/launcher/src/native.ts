@@ -117,7 +117,10 @@ export type Installed = {
 };
 
 /** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
-export type DiscordGame = { name: string; image?: string };
+/** A window's place and size, in the screen's pixels. */
+export type Rect = { x: number; y: number; width: number; height: number };
+export type WindowRect = Rect & { minWidth: number; minHeight: number };
+export type DiscordGame ={ name: string; image?: string };
 
 /** How the player wants an app started, when the launcher's own choice isn't right. */
 export type LaunchOptions = {
@@ -257,6 +260,9 @@ export const native = {
     currentMonitor()
       .then((m) => (m ? { width: m.size.width, height: m.size.height, scale: m.scaleFactor } : null)),
   startDragging: () => getCurrentWindow().startDragging(),
+  /** The window's place and size in the screen's pixels, and the smallest it can be. */
+  windowRect: () => invoke<WindowRect>("window_rect"),
+  setWindowRect: (r: Rect) => invoke<void>("set_window_rect", { ...r }),
   /** Whether the window fills the screen: maximized, or full screen. */
   windowState: async () => {
     const window = getCurrentWindow();

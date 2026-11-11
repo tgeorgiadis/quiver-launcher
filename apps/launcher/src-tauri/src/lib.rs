@@ -1420,6 +1420,44 @@ fn set_theme(window: tauri::WebviewWindow, theme: Option<String>) -> Result<(), 
     Ok(())
 }
 
+/// The window's place and size in the screen's pixels, and the smallest it goes, for resizing it from the page's edges
+/// (`ResizeEdges` in window-bar.tsx).
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WindowRect {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    min_width: u32,
+    min_height: u32,
+}
+
+#[tauri::command]
+fn window_rect(window: tauri::WebviewWindow) -> Result<WindowRect, String> {
+    let position = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.inner_size().map_err(|e| e.to_string())?;
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let config = window.config().app.windows.first();
+    let min = |v: Option<f64>| (v.unwrap_or(0.0) * scale).round() as u32;
+    Ok(WindowRect {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+        min_width: min(config.and_then(|c| c.min_width)),
+        min_height: min(config.and_then(|c| c.min_height)),
+    })
+}
+
+/// Puts the window at a place and size together, as an edge of the page is pulled. Linux's Chromium window has no
+/// resize borders of its own, and the window manager can't take over the pointer to resize it on X11.
+#[tauri::command]
+fn set_window_rect(window: tauri::WebviewWindow, x: i32, y: i32, width: u32, height: u32) -> Result<(), String> {
+    window.set_size(tauri::PhysicalSize::new(width, height)).map_err(|e| e.to_string())?;
+    window.set_position(tauri::PhysicalPosition::new(x, y)).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn find_v3_library() -> Option<v3::Library> {
     v3::find()
@@ -1677,6 +1715,8 @@ pub fn run() {
             set_fullscreen,
             set_system_title_bar,
             set_theme,
+            window_rect,
+            set_window_rect,
             create_shortcut,
             add_to_steam,
             open_url,
