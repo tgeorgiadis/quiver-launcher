@@ -66,6 +66,8 @@ export type Config = {
   user: string | null;
   /** Under gamescope, as a Steam Deck's Game Mode runs it: TV mode comes on by itself. Missing from an older build. */
   gameMode?: boolean;
+  /** An X11 desktop on Linux, where the page moves the window itself (window-bar.tsx). Missing from an older build. */
+  x11?: boolean;
   /** Steam's on-screen keyboard can be brought up for a text field (keyboard.rs). Missing from an older build. */
   steamKeyboard?: boolean;
   /** Steam is running Quiver, so Quiver can't add games to it now (lib.rs). Missing from an older build. */
@@ -117,7 +119,10 @@ export type Installed = {
 };
 
 /** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
-export type DiscordGame = { name: string; image?: string };
+/** A window's place and size, in the screen's pixels. */
+export type Rect = { x: number; y: number; width: number; height: number };
+export type WindowRect = Rect & { minWidth: number; minHeight: number };
+export type DiscordGame ={ name: string; image?: string };
 
 /** How the player wants an app started, when the launcher's own choice isn't right. */
 export type LaunchOptions = {
@@ -257,6 +262,10 @@ export const native = {
     currentMonitor()
       .then((m) => (m ? { width: m.size.width, height: m.size.height, scale: m.scaleFactor } : null)),
   startDragging: () => getCurrentWindow().startDragging(),
+  /** The window's place and size in the screen's pixels, and the smallest it can be. */
+  windowRect: () => invoke<WindowRect>("window_rect"),
+  setWindowRect: (r: Rect) => invoke<void>("set_window_rect", { ...r }),
+  setWindowPosition: (x: number, y: number) => invoke<void>("set_window_position", { x, y }),
   /** Whether the window fills the screen: maximized, or full screen. */
   windowState: async () => {
     const window = getCurrentWindow();

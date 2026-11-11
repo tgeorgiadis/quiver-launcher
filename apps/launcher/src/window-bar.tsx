@@ -4,12 +4,12 @@
  * The top bar then moves the window, and a double-click on it maximizes. A
  * Mac keeps its own title bar; full screen has none, so it gets a way out.
  */
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent, type PointerEvent } from "react";
 import { Copy, Minimize2, Minus, Square, X } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import type { Os } from "@quiverlauncher/api";
 import { useLauncher } from "./store";
-import { native } from "./native";
+import { native, type Rect, type WindowRect } from "./native";
 
 export type WindowButtons = "none" | "window" | "fullscreen" | "close";
 
@@ -45,8 +45,11 @@ const CONTROLS = "button, a, input, select, textarea, label, summary, [role], [t
  * a double-click maximizes or restores it. The move starts once the pointer
  * moves, not on the press: a window manager moving the window holds the
  * pointer, and on Linux took the second click of a double-click.
+ *
+ * With `byPage` the page moves the window itself, following the pointer: on an X11 desktop the window manager can't
+ * take the pointer from Chromium to move it (`x11_session` in lib.rs).
  */
-export function moveWindow(e: MouseEvent) {
+export function moveWindow(e: MouseEvent, byPage = false) {
   if (e.button !== 0 || (e.target as Element).closest(CONTROLS)) return;
   e.preventDefault();
   if (e.detail === 2) {
@@ -61,11 +64,132 @@ export function moveWindow(e: MouseEvent) {
   const move = (m: globalThis.MouseEvent) => {
     if (!(m.buttons & 1)) return stop();
     if (Math.hypot(m.screenX - x, m.screenY - y) < 4) return;
+    if (byPage) return follow(m);
     stop();
     void native.startDragging();
   };
+  // Where the window was at the press, and the latest place for it: one change at a time, as ResizeEdges sends them.
+  const scale = window.devicePixelRatio || 1;
+  let start: Rect | undefined;
+  let next: { x: number; y: number } | undefined;
+  let sending = false;
+  const send = () => {
+    if (sending || !next) return;
+    const to = next;
+    next = undefined;
+    sending = true;
+    void native
+      .setWindowPosition(to.x, to.y)
+      .catch(() => {})
+      .finally(() => {
+        sending = false;
+        send();
+      });
+  };
+  const follow = (m: globalThis.MouseEvent) => {
+    if (!start) return;
+    next = moved(start, (m.screenX - x) * scale, (m.screenY - y) * scale);
+    send();
+  };
+  if (byPage) void native.windowRect().then((r) => (start = r), () => {});
   window.addEventListener("mousemove", move);
   window.addEventListener("mouseup", stop);
+}
+
+/** Where the window goes as it's dragged `dx` and `dy` screen pixels from where it was at `start`. */
+export function moved(start: { x: number; y: number }, dx: number, dy: number) {
+  return { x: Math.round(start.x + dx), y: Math.round(start.y + dy) };
+}
+
+/** Whether the page moves the window itself: on an X11 desktop, un-maximized (a maximized one stays where it is). */
+export function movesByPage(x11: boolean | undefined, maximized: boolean) {
+  return Boolean(x11) && !maximized;
+}
+
+/** A side or corner of the window, by compass point. */
+export type Edge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+const EDGES: Edge[] = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
+
+/**
+ * Where the window goes as `edge` is pulled `dx` and `dy` screen pixels from where it was at `start`: the far side
+ * stays put, and it's never smaller than its smallest.
+ */
+export function resized(start: WindowRect, edge: Edge, dx: number, dy: number): Rect {
+  let { x, y, width, height } = start;
+  if (edge.includes("e")) width = Math.max(start.minWidth, start.width + dx);
+  if (edge.includes("w")) {
+    width = Math.max(start.minWidth, start.width - dx);
+    x = start.x + start.width - width;
+  }
+  if (edge.includes("s")) height = Math.max(start.minHeight, start.height + dy);
+  if (edge.includes("n")) {
+    height = Math.max(start.minHeight, start.height - dy);
+    y = start.y + start.height - height;
+  }
+  return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) };
+}
+
+/** Whether the page draws its own edges to resize the window by: on Linux with Quiver's own title bar, un-maximized. */
+export function resizeEdges(os: Os, buttons: WindowButtons, maximized: boolean) {
+  return os === "linux" && buttons === "window" && !maximized;
+}
+
+/**
+ * Pulling one moves that side of the window. Linux runs the page in Chromium, whose window has no resize borders, and
+ * the window manager can't take the pointer to resize it on X11 (as it does Windows' and the system title bar's), so
+ * the page holds the pointer and sizes the window itself.
+ */
+export function ResizeEdges() {
+  const pull = (edge: Edge) => (e: PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+    // Screen coordinates, which don't move with the window; the page's pixels are the screen's over its pixel ratio.
+    const [x, y, scale] = [e.screenX, e.screenY, window.devicePixelRatio || 1];
+    let start: WindowRect | undefined;
+    let next: Rect | undefined;
+    let sending = false;
+    // One change at a time, and only the latest of those that came in meanwhile.
+    const send = () => {
+      if (sending || !next) return;
+      const rect = next;
+      next = undefined;
+      sending = true;
+      void native
+        .setWindowRect(rect)
+        .catch(() => {})
+        .finally(() => {
+          sending = false;
+          send();
+        });
+    };
+    void native.windowRect().then((r) => (start = r), () => {});
+    const move = (m: globalThis.PointerEvent) => {
+      // A release that never reached the page (seen once on X11) would leave the edge following the pointer.
+      if (!(m.buttons & 1)) return stop();
+      if (!start) return;
+      next = resized(start, edge, (m.screenX - x) * scale, (m.screenY - y) * scale);
+      send();
+    };
+    const stop = () => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", stop);
+      handle.removeEventListener("pointercancel", stop);
+      handle.removeEventListener("lostpointercapture", stop);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", stop);
+    handle.addEventListener("pointercancel", stop);
+    handle.addEventListener("lostpointercapture", stop);
+  };
+  return (
+    <div className="resize-edges" aria-hidden="true">
+      {EDGES.map((edge) => (
+        <div key={edge} className={`resize-edge ${edge}`} onPointerDown={pull(edge)} />
+      ))}
+    </div>
+  );
 }
 
 export function WindowControls({ buttons, maximized }: { buttons: WindowButtons; maximized: boolean }) {
