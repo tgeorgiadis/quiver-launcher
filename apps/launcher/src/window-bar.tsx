@@ -45,8 +45,11 @@ const CONTROLS = "button, a, input, select, textarea, label, summary, [role], [t
  * a double-click maximizes or restores it. The move starts once the pointer
  * moves, not on the press: a window manager moving the window holds the
  * pointer, and on Linux took the second click of a double-click.
+ *
+ * With `byPage` the page moves the window itself, following the pointer: on an X11 desktop the window manager can't
+ * take the pointer from Chromium to move it (`x11_session` in lib.rs).
  */
-export function moveWindow(e: MouseEvent) {
+export function moveWindow(e: MouseEvent, byPage = false) {
   if (e.button !== 0 || (e.target as Element).closest(CONTROLS)) return;
   e.preventDefault();
   if (e.detail === 2) {
@@ -61,11 +64,46 @@ export function moveWindow(e: MouseEvent) {
   const move = (m: globalThis.MouseEvent) => {
     if (!(m.buttons & 1)) return stop();
     if (Math.hypot(m.screenX - x, m.screenY - y) < 4) return;
+    if (byPage) return follow(m);
     stop();
     void native.startDragging();
   };
+  // Where the window was at the press, and the latest place for it: one change at a time, as ResizeEdges sends them.
+  const scale = window.devicePixelRatio || 1;
+  let start: Rect | undefined;
+  let next: { x: number; y: number } | undefined;
+  let sending = false;
+  const send = () => {
+    if (sending || !next) return;
+    const to = next;
+    next = undefined;
+    sending = true;
+    void native
+      .setWindowPosition(to.x, to.y)
+      .catch(() => {})
+      .finally(() => {
+        sending = false;
+        send();
+      });
+  };
+  const follow = (m: globalThis.MouseEvent) => {
+    if (!start) return;
+    next = moved(start, (m.screenX - x) * scale, (m.screenY - y) * scale);
+    send();
+  };
+  if (byPage) void native.windowRect().then((r) => (start = r), () => {});
   window.addEventListener("mousemove", move);
   window.addEventListener("mouseup", stop);
+}
+
+/** Where the window goes as it's dragged `dx` and `dy` screen pixels from where it was at `start`. */
+export function moved(start: { x: number; y: number }, dx: number, dy: number) {
+  return { x: Math.round(start.x + dx), y: Math.round(start.y + dy) };
+}
+
+/** Whether the page moves the window itself: on an X11 desktop, un-maximized (a maximized one stays where it is). */
+export function movesByPage(x11: boolean | undefined, maximized: boolean) {
+  return Boolean(x11) && !maximized;
 }
 
 /** A side or corner of the window, by compass point. */

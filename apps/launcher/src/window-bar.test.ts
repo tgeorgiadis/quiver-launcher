@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { resized, resizeEdges, windowButtons } from "./window-bar";
+import { moved, movesByPage, resized, resizeEdges, windowButtons } from "./window-bar";
 
 vi.mock("./native", () => ({ native: {} }));
 vi.mock("./store", () => ({}));
@@ -61,5 +61,19 @@ describe("resizing the window from the page's edges", () => {
     expect(resizeEdges("linux", "fullscreen", false)).toBe(false);
     expect(resizeEdges("linux", "close", false)).toBe(false);
     expect(resizeEdges("windows", "window", false)).toBe(false);
+  });
+});
+
+describe("moving the window from the page on an X11 desktop", () => {
+  it("follows the pointer from where the window was", () => {
+    expect(moved({ x: 300, y: 20 }, 45, -12)).toEqual({ x: 345, y: 8 });
+    expect(moved({ x: 300, y: 20 }, -1.4, 2.6)).toEqual({ x: 299, y: 23 });
+  });
+
+  it("is for X11 only, and not for a maximized window", () => {
+    expect(movesByPage(true, false)).toBe(true);
+    expect(movesByPage(true, true)).toBe(false);
+    expect(movesByPage(false, false)).toBe(false);
+    expect(movesByPage(undefined, false)).toBe(false);
   });
 });

@@ -35,7 +35,7 @@ import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
 import { useTopBarFit } from "./top-bar-fit";
-import { ResizeEdges, WindowControls, moveWindow, resizeEdges, useWindowButtons } from "./window-bar";
+import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
@@ -186,7 +186,7 @@ export function App() {
   return (
     <div className={tv ? "shell tv-mode" : "shell"}>
       {resizeEdges(config.os, buttons, maximized) && <ResizeEdges />}
-      <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? moveWindow : undefined}>
+      <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? (e) => moveWindow(e, movesByPage(config.x11, maximized)) : undefined}>
         {/* As on the website; it goes to the library. For a mouse: the Library tab beside it does the same for the d-pad and Tab. */}
         <button className="brand" tabIndex={-1} aria-label={t`Quiver Launcher: go to your library`} onClick={() => switchTab("library")}>
           <img src="/quiver-icon-96.png" alt="" width="34" height="34" />
