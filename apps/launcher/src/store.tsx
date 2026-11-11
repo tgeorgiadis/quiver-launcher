@@ -678,13 +678,14 @@ export const mayUpdate = (entry: CatalogEntry | undefined, install: Install | un
   Boolean(entry?.verified && install && !install.local && !pulledVerified(entry) && newerThan(entry.verified, install));
 
 /**
- * What `early` was looked up for: the newest release upstream, and the kind of build installed. None when there's
- * nothing to look up: the newest is the one installed, or the verified one, which updates as it always has.
+ * What `early` was looked up for: the newest release upstream, and the kind of build installed (this computer's own,
+ * for an app not installed yet). None when there's nothing to look up: the newest is the one installed, or the
+ * verified one, which updates as it always has.
  */
 export const earlyKey = (entry: Pick<Entry, "lastReleaseVersion" | "verified"> | undefined, install: Install | undefined) => {
   const newest = entry?.lastReleaseVersion;
-  if (!newest || !install || install.local || bare(newest) === bare(install.version) || (entry.verified && bare(newest) === bare(entry.verified.version))) return undefined;
-  return `${bare(newest)}:${install.wine ? "windows" : "own"}:${install.installer === "msi" ? "msi" : "files"}`;
+  if (!newest || install?.local || (install && bare(newest) === bare(install.version)) || (entry.verified && bare(newest) === bare(entry.verified.version))) return undefined;
+  return `${bare(newest)}:${install?.wine ? "windows" : "own"}:${install?.installer === "msi" ? "msi" : "files"}`;
 };
 
 /**
@@ -698,6 +699,39 @@ export function earlyRelease(entry: CatalogEntry | undefined, install: Install |
   if (entry?.withdrawn?.some((w) => bare(w.version) === bare(release.version))) return undefined;
   return newerThan(release, install) ? release : undefined;
 }
+
+/**
+ * The newest release upstream that a card says isn't offered yet: one newer than the verified release. None once
+ * `early` was looked up for an install and found no release this computer can take (only another system's build, or
+ * an updater's files), as that one is never offered here, however long the wait.
+ */
+export function notOfferedYet(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const newest = entry?.lastReleaseVersion;
+  const verified = entry?.verified;
+  if (!newest || !verified || bare(newest) === bare(verified.version) || (entry.lastReleaseAt ?? 0) <= (verified.releasedAt ?? 0)) return undefined;
+  const of = earlyKey(entry, install);
+  return of && entry.early?.of === of && !entry.early.release ? undefined : newest;
+}
+
+/**
+ * For an app that isn't installed yet, the release ahead of the verified one that this computer could install: the
+ * newest with a file for it. None until `early` is looked up, or once it's withdrawn.
+ */
+function earlyToGet(entry: CatalogEntry | undefined) {
+  const found = entry?.early;
+  const release = found?.release;
+  if (!release || found.of !== earlyKey(entry, undefined)) return undefined;
+  return entry?.withdrawn?.some((w) => bare(w.version) === bare(release.version)) ? undefined : release;
+}
+
+/** With Newest right away, that release as the one Install takes. */
+export const earlyGet = (entry: CatalogEntry | undefined) => (entry?.early?.now ? earlyToGet(entry) : undefined);
+
+/** Waiting 48 hours, that release as what the player can install in the verified one's place, by asking: Install latest. */
+export const earlyGetOffer = (entry: CatalogEntry | undefined, install: Install | undefined) => (install || entry?.early?.now ? undefined : earlyToGet(entry));
+
+/** With Newest right away, the release this computer takes ahead of the verified one: an install's update, or what Install gets. */
+export const earlyHereFor = (entry: CatalogEntry | undefined, install: Install | undefined) => (install ? earlyUpdate(entry, install) : earlyGet(entry));
 
 /** With Newest right away, that release as the app's update. */
 export const earlyUpdate = (entry: CatalogEntry | undefined, install: Install | undefined) => (entry?.early?.now ? earlyRelease(entry, install) : undefined);
@@ -1446,6 +1480,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     for (const item of library) {
       const entry = catalog[item.id];
       const install = installs[item.id];
+      // An app not installed yet, too: what Install takes with Newest right away, or Install latest offers.
       const of = !isCustom(item.id) && earlyKey(entry, install);
       if (!entry || !of || entry.early?.of === of) continue;
       const asked = `${item.id}@${of}`;

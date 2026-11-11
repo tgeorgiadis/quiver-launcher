@@ -483,12 +483,8 @@ msgid "{received} so far"
 msgstr "{received} até agora"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "{release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait. Quiver Launcher still checks the download against the file Quiver saw when it came out."
-msgstr "{release} tem menos de 48 horas. Você escolheu esperar 48 horas pelas atualizações para que, se uma versão se mostrar maliciosa, o Quiver tenha tempo de retirá-la antes que ela chegue até você. Instalar agora pula essa espera. O Quiver Launcher ainda confere o download com o arquivo que o Quiver viu quando ela saiu."
-
-#: ../../apps/launcher/src/App.tsx
-msgid "{release} is newer than the release Quiver offers, so there may have been little time to spot a problem with it."
-msgstr "{release} é mais nova que a versão que o Quiver oferece, então pode ter havido pouco tempo para perceber algum problema nela."
+msgid "{release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait."
+msgstr "{release} tem menos de 48 horas. Você escolheu esperar 48 horas pelas atualizações para que, se uma versão se mostrar maliciosa, o Quiver tenha tempo de retirá-la antes que ela chegue até você. Instalar agora pula essa espera."
 
 #: ../ui/src/index.tsx
 msgid "{runs, plural, one {# runs well} other {# run well}}"
@@ -1031,8 +1027,17 @@ msgid "Apps already install there."
 msgstr "Os apps já são instalados lá."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Apps are set to update to the newest release right away (Settings, Updates), so Quiver Launcher also updates to releases it wouldn't offer yet, without asking first. It installs a blocked one only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw."
-msgstr "Os apps estão configurados para atualizar para a versão mais nova na hora (Configurações, Atualizações), então o Quiver Launcher também atualiza para versões que ainda não ofereceria, sem perguntar antes. Ele só instala uma bloqueada se você a escolher e confirmar. O Quiver Launcher confere cada download com o arquivo que o Quiver viu."
+msgid "Apps are set to update to the newest release right away (Settings, Updates), so Quiver Launcher offers an app's newest release as soon as it's out, without the 48-hour wait. A release marked Not offered or Blocked installs only if you choose it and confirm. Quiver Launcher checks that every download hasn't changed since its release came out."
+msgstr "Os apps estão configurados para atualizar para a versão mais nova na hora (Configurações, Atualizações), então o Quiver Launcher oferece a versão mais nova de um app assim que ela sai, sem a espera de 48 horas. Uma versão marcada como “Não oferecida” ou “Bloqueada” só é instalada se você a escolher e confirmar. O Quiver Launcher confere que nenhum download mudou desde que a versão dele saiu."
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Apps are set to update to the newest release right away, and {release} is the newest. Quiver Launcher is asking in this case because of its virus scan."
+msgstr "Os apps estão configurados para atualizar para a versão mais nova na hora, e {release} é a mais nova. O Quiver Launcher pergunta neste caso por causa da verificação de vírus dela."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Apps are set to update to the newest release right away, so Quiver Launcher offers this one now"
+msgstr "Os apps estão configurados para atualizar para a versão mais nova na hora, então o Quiver Launcher já oferece esta"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folder"
@@ -1117,13 +1122,15 @@ msgid "Automatic: {name}"
 msgstr "Automático: {name}"
 
 #. A release Quiver Launcher offers: its files have been out for 48 hours
+#. A release Quiver Launcher offers: its files have been out for 48 hours
+#: ../../apps/launcher/src/detail.tsx
 #: ../ui/src/index.tsx
 msgid "Available"
 msgstr "Disponível"
 
 #: ../../apps/launcher/src/library-tile.tsx
-msgid "Available {verifiedLabel}"
-msgstr "Disponível: {verifiedLabel}"
+msgid "Available {availableLabel}"
+msgstr "Disponível: {availableLabel}"
 
 #. Controller hint: what Back does, closing or going back
 #. The setup's previous step
@@ -2416,8 +2423,23 @@ msgstr "Instalar {other} no lugar"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
+msgid "Install {release} before its 48 hours are up?"
+msgstr "Instalar {release} antes de as 48 horas dela passarem?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {release} before its virus scan finishes?"
+msgstr "Instalar {release} antes de a verificação de vírus terminar?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Install {release} before Quiver offers it?"
 msgstr "Instalar {release} antes de o Quiver oferecê-la?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {release} with a virus scan warning?"
+msgstr "Instalar {release} com um aviso da verificação de vírus?"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Install {verifiedVersion} instead"
@@ -2465,6 +2487,14 @@ msgstr "Instalar mesmo assim"
 #: ../../apps/launcher/src/App.tsx
 msgid "Install automatically"
 msgstr "Instalar automaticamente"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install latest ({latestVersion})…"
+msgstr "Instalar a mais nova ({latestVersion})…"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install latest…"
+msgstr "Instalar a mais nova…"
 
 #. placeholder {0}: asking.to
 #: ../../apps/launcher/src/settings-page.tsx
@@ -2594,10 +2624,6 @@ msgstr "Ele ganha uma pasta própria lá, e as atualizações continuam sendo in
 msgid "It gets a folder of its own in there, with its saves and settings. Desktop and Steam shortcuts you made before point at the old place, so make them again."
 msgstr "Ele ganha uma pasta própria lá, com os saves e as configurações. Os atalhos na área de trabalho e na Steam que você criou antes apontam para o lugar antigo, então crie-os de novo."
 
-#: ../../apps/launcher/src/detail.tsx
-msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
-msgstr "O Quiver instala os arquivos que viu quando ela saiu e recusa os que mudaram desde então."
-
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "It isn't linked to your Quiver account."
 msgstr "Eles não são vinculados à sua conta Quiver."
@@ -2644,8 +2670,8 @@ msgid "Its files go to the trash. {name} stays in your library, so you can get i
 msgstr "Os arquivos vão para a lixeira. {name} continua na sua biblioteca, então você pode obtê-lo de novo."
 
 #: ../ui/src/index.tsx
-msgid "Its files have each been out for 48 hours, which gives time to spot and withdraw a bad upload, and Quiver Launcher checks every download against the file Quiver saw."
-msgstr "Cada arquivo dela está disponível há 48 horas, o que dá tempo para perceber e retirar um envio nocivo, e o Quiver Launcher confere cada download com o arquivo que o Quiver viu."
+msgid "Its files have each been out for 48 hours, which gives time to spot and withdraw a bad upload, and Quiver Launcher checks that every download hasn't changed since its release came out."
+msgstr "Cada arquivo dela está disponível há 48 horas, o que dá tempo para perceber e retirar um envio nocivo, e o Quiver Launcher confere que nenhum download mudou desde que a versão dele saiu."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest available version was withdrawn: choose a version"
@@ -3927,11 +3953,6 @@ msgstr "Quiver Launcher 3"
 msgid "Quiver Launcher doesn't offer this release by itself"
 msgstr "O Quiver Launcher não oferece esta versão por conta própria"
 
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/detail.tsx
-msgid "Quiver Launcher doesn't offer this release by itself yet. It installs the files Quiver saw when it came out, and refuses any that changed since."
-msgstr "O Quiver Launcher ainda não oferece esta versão por conta própria. Ele instala os arquivos que o Quiver viu quando ela saiu, e recusa os que mudaram desde então."
-
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver Launcher doesn't offer this release by itself. Installing one of its files asks you to confirm first."
 msgstr "O Quiver Launcher não oferece esta versão por conta própria. Para instalar um dos arquivos dela, você precisa confirmar primeiro."
@@ -3940,13 +3961,18 @@ msgstr "O Quiver Launcher não oferece esta versão por conta própria. Para ins
 msgid "Quiver Launcher hit a problem"
 msgstr "O Quiver Launcher encontrou um problema"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver Launcher isn't offering this release as an update yet."
+msgstr "O Quiver Launcher ainda não oferece esta versão como atualização."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver Launcher never updates to it. Install it only if you know why you need this exact version and accept the risk."
 msgstr "O Quiver Launcher nunca atualiza para ela. Instale só se você souber por que precisa exatamente desta versão e aceitar o risco."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver Launcher offers a release once each of its files has been out for 48 hours, so there was time for a bad upload to be spotted and withdrawn. It installs one it doesn't offer yet, or a blocked one, only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw. If a file is replaced after that, the new one waits its own 48 hours."
-msgstr "O Quiver Launcher oferece uma versão quando cada arquivo dela está disponível há 48 horas, então houve tempo para perceber e retirar um envio nocivo. Ele só instala uma que ainda não oferece, ou uma bloqueada, se você a escolher e confirmar. O Quiver Launcher confere cada download com o arquivo que o Quiver viu. Se um arquivo for substituído depois disso, o novo espera suas próprias 48 horas."
+msgid "Quiver Launcher offers a release once each of its files has been out for 48 hours, so there was time for a bad upload to be spotted and withdrawn. A release marked Not offered or Blocked installs only if you choose it and confirm. Quiver Launcher checks that every download hasn't changed since its release came out. If a file is replaced after that, the new one waits its own 48 hours."
+msgstr "O Quiver Launcher oferece uma versão quando cada arquivo dela está disponível há 48 horas, então houve tempo para perceber e retirar um envio nocivo. Uma versão marcada como “Não oferecida” ou “Bloqueada” só é instalada se você a escolher e confirmar. O Quiver Launcher confere que nenhum download mudou desde que a versão dele saiu. Se um arquivo for substituído depois disso, o novo espera suas próprias 48 horas."
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
@@ -5182,6 +5208,11 @@ msgstr "Desafixar e instalar a {version}"
 msgid "Up"
 msgstr "Subir"
 
+#. On an app's card: the installed version is the newest there is
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Up to date"
+msgstr "Atualizado"
+
 #. Button that updates a mod
 #. Button: update the one app with an update
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -5411,6 +5442,10 @@ msgstr "Opções de exibição"
 msgid "View repository"
 msgstr "Ver repositório"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "VirusTotal hasn't cleared this release, so installing it asks you to confirm first."
+msgstr "O VirusTotal ainda não liberou esta versão, então para instalá-la você precisa confirmar primeiro."
+
 #. Background music's volume
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Volume"
@@ -5599,6 +5634,10 @@ msgstr "Você entrou como {name}."
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "You're signed in, so this follows your Quiver account's setting, as on quiverlauncher.com."
 msgstr "Você está conectado, então isso segue a configuração da sua conta do Quiver, como em quiverlauncher.com."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "You've chosen to wait 48 hours for updates, so Quiver Launcher won't install {release} yet unless you choose to."
+msgstr "Você escolheu esperar 48 horas pelas atualizações, então o Quiver Launcher ainda não instala {release}, a menos que você decida."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You've reached the {limit}-character limit."

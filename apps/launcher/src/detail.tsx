@@ -14,9 +14,9 @@ import { ApiError, type AiUse, type Asset, type Checking, type Client, type Deta
 import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
-import { pulledVerified, useLauncher, type Install, type Settings } from "./store";
+import { earlyHereFor, pulledVerified, useLauncher, type Install, type Settings } from "./store";
 import { launchCopies } from "./own-copy";
-import { bare, changesUpTo, saidOf, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
+import { bare, changesUpTo, saidOf, scanAsks, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
 import { hasBuildFor, otherSystems, releaseFor, runsHere } from "./assets";
 import { isCustom, isLocal } from "./custom";
@@ -327,6 +327,8 @@ function ReleaseCard({
   onToggle,
   host,
   installed,
+  offered,
+  checking,
   said,
   onInstall,
   runsHere,
@@ -338,6 +340,10 @@ function ReleaseCard({
   host: string;
   /** The version installed on this computer. */
   installed: boolean;
+  /** With Newest right away, the release that's this app's update ahead of its wait: available, as the card has it. */
+  offered: boolean;
+  /** Where it stands while the site still checks it (how long its wait has left, say): said in its header, with Not offered. */
+  checking?: Checking;
   said?: Said;
   /** Installs this release, asking first as Change version does: `asset`, the file the player chose. Unset when it can't install now. */
   onInstall?: (asset?: string) => void;
@@ -382,7 +388,22 @@ function ReleaseCard({
             )}
           </span>
           {/* One status each: Withdrawn says it all, in place of Blocked. */}
-          {!withdrawn && <ReleaseBadge state={state} />}
+          {!withdrawn && (
+            <ReleaseBadge
+              state={state}
+              label={
+                offered ? (
+                  t({ message: "Available", comment: "A release Quiver Launcher offers: its files have been out for 48 hours" })
+                ) : checking ? (
+                  // Worded to follow "Version 1.2 is": here it stands alone, so its first letter is a capital (app.css).
+                  <span className="release-checking">
+                    <CheckingStatus checking={checking} />
+                  </span>
+                ) : undefined
+              }
+              title={offered ? t`Apps are set to update to the newest release right away, so Quiver Launcher offers this one now` : undefined}
+            />
+          )}
           <span className="release-chevron" aria-hidden="true">
             <ChevronDown size={20} />
           </span>
@@ -432,11 +453,19 @@ function ReleaseCard({
                 : t`Quiver blocked this release, so it doesn't link its files. Installing it asks you to accept the risk first.`}
             </p>
           ) : (
-            state === "unverified" && (
+            state === "unverified" &&
+            (!offered ? (
               <p className="release-files-note">
                 <Trans>Quiver Launcher doesn&apos;t offer this release by itself. Installing one of its files asks you to confirm first.</Trans>
               </p>
-            )
+            ) : (
+              // Offered, so nothing to say of it, unless its scan still makes it ask (versions.ts's scanAsks).
+              scanAsks(scan) && (
+                <p className="release-files-note">
+                  <Trans>VirusTotal hasn&apos;t cleared this release, so installing it asks you to confirm first.</Trans>
+                </p>
+              )
+            ))
           )}
           {install && (
             <button type="button" className={`release-install ${state}`} onClick={() => install()}>
@@ -575,10 +604,25 @@ export function ReleasesTab({
   const newestVerified = releases?.find((r) => r.state === "verified");
   // Put in the sentence by name, as it was on the page's top.
   const checkingVersion = checking?.version;
+  // With Newest right away, the release that's this install's update though its wait isn't over.
+  const early = earlyHereFor(catalog[entry.id] ?? entry, install)?.version;
+  const isChecking = (r: HistoryRelease & { withdrawn?: Withdrawn }) => Boolean(checking && r.state === "unverified" && !r.withdrawn && bare(r.version) === bare(checking.version));
+  const checkingListed = Boolean(releases?.some(isChecking));
   return (
     <section className="release-section">
       {/* As on the website: a newer release the site is still checking. */}
-      {checking && (
+      {/* How releases are offered, first: the notices under it are about this app's own. */}
+      {releases && releases.length > 0 && (
+        <p className="muted release-intro">
+          {settings.appUpdates === "newest" ? (
+            <Trans>Apps are set to update to the newest release right away (Settings, Updates), so Quiver Launcher offers an app&apos;s newest release as soon as it&apos;s out, without the 48-hour wait. A release marked Not offered or Blocked installs only if you choose it and confirm. Quiver Launcher checks that every download hasn&apos;t changed since its release came out.</Trans>
+          ) : (
+            <Trans>Quiver Launcher offers a release once each of its files has been out for 48 hours, so there was time for a bad upload to be spotted and withdrawn. A release marked Not offered or Blocked installs only if you choose it and confirm. Quiver Launcher checks that every download hasn&apos;t changed since its release came out. If a file is replaced after that, the new one waits its own 48 hours.</Trans>
+          )}
+        </p>
+      )}
+      {/* Only when its release isn't in the list below, whose header says it. */}
+      {checking && !checkingListed && !(early && bare(early) === bare(checking.version)) && (
         <p className="release-checking-line">
           <ShieldAlert size={14} aria-hidden="true" />
           <span>
@@ -612,13 +656,6 @@ export function ReleasesTab({
         </div>
       ) : (
         <>
-          <p className="muted release-intro">
-            {settings.appUpdates === "newest" ? (
-              <Trans>Apps are set to update to the newest release right away (Settings, Updates), so Quiver Launcher also updates to releases it wouldn&apos;t offer yet, without asking first. It installs a blocked one only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw.</Trans>
-            ) : (
-              <Trans>Quiver Launcher offers a release once each of its files has been out for 48 hours, so there was time for a bad upload to be spotted and withdrawn. It installs one it doesn&apos;t offer yet, or a blocked one, only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw. If a file is replaced after that, the new one waits its own 48 hours.</Trans>
-            )}
-          </p>
           {releases.map((release) => {
             // The newest verified release starts open; the others fold.
             const open = (release === newestVerified || (openVersion !== undefined && bare(release.version) === bare(openVersion))) !== toggled.has(release.releaseId);
@@ -630,7 +667,8 @@ export function ReleasesTab({
                 return next;
               });
             const installed = Boolean(install && !install.local && bare(install.version) === bare(release.version));
-            const facts = { installed, said: said.get(bare(release.version)) };
+            const offered = Boolean(early && release.state === "unverified" && bare(early) === bare(release.version));
+            const facts = { installed, offered, checking: !offered && isChecking(release) ? checking : undefined, said: said.get(bare(release.version)) };
             const onInstall = canInstall && !installed ? (asset?: string) => setChosen({ version: release.version, ...(asset ? { asset } : {}) }) : undefined;
             return <ReleaseCard key={release.releaseId} release={release} open={open} onToggle={flip} host={host} onInstall={onInstall} runsHere={fits} {...facts} />;
           })}
@@ -1065,7 +1103,7 @@ export function Versions({
   /** Its dialog over a floating panel that stays open under it (Dialog's `over`). */
   over?: boolean;
 }) {
-  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config } = useLauncher();
+  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config, settings } = useLauncher();
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
   const builds: Os[] = getting && config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows") ? ["linux", "windows"] : [];
   const [platform, setPlatform] = useState<Os | undefined>(builds[0]);
@@ -1137,7 +1175,10 @@ export function Versions({
   }
   function pick(version: Version, pin = false) {
     if (version.state === "blocked" && !custom) return (setUnderstood(false), setInsisting(version));
-    if (version.state === "unverified" && !custom) return setAsking({ version, pin });
+    // With Newest right away the app's update installs without the question, here as from Update (store.tsx), unless its scan asks.
+    const early = earlyHereFor(catalog[entry.id] ?? entry, install)?.version;
+    const offered = Boolean(early && bare(early) === bare(version.release.version)) && !scanAsks(version.scan);
+    if (version.state === "unverified" && !custom && !offered) return setAsking({ version, pin });
     installVersion(version, pin);
   }
   if (insisting) {
@@ -1173,9 +1214,6 @@ export function Versions({
               )}
             </p>
           )}
-          <p>
-            <Trans>It installs the files Quiver saw when it came out, and refuses any that changed since.</Trans>
-          </p>
           <label className="blocked-consent">
             <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} />{" "}
             {withdrawn ? t`I understand this release was withdrawn, and I accept the risk` : t`I understand Quiver blocked this release`}
@@ -1207,15 +1245,32 @@ export function Versions({
     const waits = version.checkEndsAt !== undefined;
     const hours = waits ? hoursFrom(version.checkEndsAt!) : 0;
     const release = version.release.version;
+    // Why it asks, by how apps update (Settings, Updates). Newest right away: this app's update, which only its scan
+    // holds back, as Update asks of it (App.tsx). Waiting 48 hours: one still in its wait, which is the player's choice.
+    const rightAway = settings.appUpdates === "newest";
+    const early = earlyHereFor(catalog[entry.id] ?? entry, install)?.version;
+    const scanned = version.known && rightAway && Boolean(early && bare(early) === bare(release));
+    const chose = version.known && !rightAway && waits;
+    const title = scanned
+      ? version.scan?.verdict === "pending"
+        ? t`Install ${release} before its virus scan finishes?`
+        : t`Install ${release} with a virus scan warning?`
+      : chose
+        ? t`Install ${release} before its 48 hours are up?`
+        : t`Install ${release} before Quiver offers it?`;
     return (
-      <Dialog label={t`Install a release before Quiver offers it`} onClose={close}>
+      <Dialog label={scanned || chose ? title : t`Install a release before Quiver offers it`} onClose={close}>
         <div className="detail-body unverified-prompt">
           <h2>
-            <ShieldAlert size={18} /> <Trans>Install {release} before Quiver offers it?</Trans>
+            <ShieldAlert size={18} /> {title}
           </h2>
           <p>
             {version.known
-              ? t`Quiver Launcher doesn't offer this release by itself yet. It installs the files Quiver saw when it came out, and refuses any that changed since.`
+              ? scanned
+                ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
+                : chose
+                  ? t`You've chosen to wait 48 hours for updates, so Quiver Launcher won't install ${release} yet unless you choose to.`
+                  : t`Quiver Launcher isn't offering this release as an update yet.`
               : t`Quiver hasn't checked this release's files. It downloads straight from ${host}, as the developer published it.`}
           </p>
           {version.reasons.length > 0 && (

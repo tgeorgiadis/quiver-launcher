@@ -13,7 +13,7 @@ import { Check, ChevronRight, Download, MoreHorizontal, Play, Plus } from "lucid
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { canGet, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
+import { canGet, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
@@ -272,6 +272,10 @@ function useMainItems(entry: Entry, onOpen: () => void): { main?: Item; top: Ite
   const early = earlyOffer(latest, install);
   const earlier = versionLabel(early?.version);
   if (early && !job) top.push({ text: t`Update early to ${earlier}…`, act: () => void get(latest, undefined, { early: true }) });
+  // Not installed, waiting 48 hours: its newest release in the offered one's place, under Install, which asks first.
+  const latestToGet = main?.icon === "get" ? earlyGetOffer(latest, install) : undefined;
+  const latestVersion = versionLabel(latestToGet?.version);
+  if (latestToGet && !job) top.push({ text: t`Install latest (${latestVersion})…`, act: () => void get(latest, undefined, { early: true }) });
   return { main, top };
 }
 

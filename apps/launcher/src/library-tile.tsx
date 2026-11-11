@@ -19,7 +19,7 @@ import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel, type CardDetail } from "@quiverlauncher/ui";
-import { canGet, hasUpdate, pulledVerified, stillWaiting, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
+import { canGet, earlyGet, hasUpdate, notOfferedYet, pulledVerified, stillWaiting, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
 import { OverMenu, VersionsDialog, foldersOn } from "./detail";
 import { native, type Config } from "./native";
@@ -188,10 +188,7 @@ const Tile = memo(function Tile({
   // Under the app's name, its games and console, as Browse's cards have them.
   const small = nameOrder === "game" ? games : boxSubtitle(entry, (tag) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined)) || undefined;
   const verified = latest.verified?.version;
-  const newer =
-    latest.lastReleaseVersion && verified && bare(latest.lastReleaseVersion) !== bare(verified) && (latest.lastReleaseAt ?? 0) > (latest.verified?.releasedAt ?? 0)
-      ? latest.lastReleaseVersion
-      : undefined;
+  const newest = notOfferedYet(latest, install);
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
   const coverArt = coverOf(entry);
   // Box art and icons are the library's own pictures; a cover is the catalog card's, at about the size it shows.
@@ -218,8 +215,20 @@ const Tile = memo(function Tile({
   const play = () => void now.current.play(entry.id);
   // Plain names for the sentences below to put in place.
   const name = entry.projectName;
-  const verifiedLabel = versionLabel(verified);
-  const updateLabel = versionLabel(updateFor(latest, install)?.version);
+  const updateTo = updateFor(latest, install)?.version;
+  const updateLabel = versionLabel(updateTo);
+  // With Newest right away the newest release is the update itself: it's what's available, and nothing is held back.
+  // The same once it's the one installed, however apps update: there's none newer, so it's up to date and nothing to warn of.
+  const hasNewest = Boolean(newest && install && bare(install.version) === bare(newest));
+  // Not installed yet: the one Install takes.
+  const getsNewest = Boolean(newest && !install && bare(earlyGet(latest)?.version ?? "") === bare(newest));
+  const offeredEarly = hasNewest || getsNewest || Boolean(newest && updateTo && bare(updateTo) === bare(newest));
+  const newer = offeredEarly ? undefined : newest;
+  const available = offeredEarly ? newest : verified;
+  const availableLabel = versionLabel(available);
+  // The version installed is the one available, with none newer to mention: said once, not the number twice.
+  const hasAvailable = Boolean(install && available && bare(install.version) === bare(available));
+  const upToDate = hasAvailable && !newer;
   const installedLabel = install ? versionLabel(install.version) : "";
   const pulledLabel = pulled ? versionLabel(pulled.version) : "";
   const newerLabel = newer ? versionLabel(newer) : "";
@@ -308,9 +317,11 @@ const Tile = memo(function Tile({
                     <Trans>Installed {installedLabel}</Trans>
                   </span>
                 )}
-                {verified && (
-                  <span>
-                    <Trans>Available {verifiedLabel}</Trans>
+                {/* On the available version with a newer one not offered yet: that line says it all, without the same number twice. */}
+                {available && !(hasAvailable && newer) && (
+                  // The version there is to have: in the update mark's blue, so it stands out from what's installed. Up to date: in green.
+                  <span className={upToDate ? "tile-current" : "tile-newer"}>
+                    {upToDate ? <Trans comment="On an app's card: the installed version is the newest there is">Up to date</Trans> : <Trans>Available {availableLabel}</Trans>}
                   </span>
                 )}
                 {newer && (
@@ -318,7 +329,7 @@ const Tile = memo(function Tile({
                     {stillWaiting(latest.lastReleaseAt) ? <Trans>{newerLabel} not offered yet: less than 48 hours old</Trans> : <Trans>{newerLabel} not offered yet</Trans>}
                   </span>
                 )}
-                {install?.unverified && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`Installed before Quiver offered it`}</span>}
+                {install?.unverified && (install.blocked || !hasNewest) && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`Installed before Quiver offered it`}</span>}
                 {pinned && (
                   <span>
                     <Trans>Staying on {installedLabel}</Trans>
