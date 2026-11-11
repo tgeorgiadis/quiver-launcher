@@ -166,6 +166,8 @@ export function ResizeEdges() {
     };
     void native.windowRect().then((r) => (start = r), () => {});
     const move = (m: globalThis.PointerEvent) => {
+      // A release that never reached the page (seen once on X11) would leave the edge following the pointer.
+      if (!(m.buttons & 1)) return stop();
       if (!start) return;
       next = resized(start, edge, (m.screenX - x) * scale, (m.screenY - y) * scale);
       send();
@@ -174,10 +176,12 @@ export function ResizeEdges() {
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", stop);
       handle.removeEventListener("pointercancel", stop);
+      handle.removeEventListener("lostpointercapture", stop);
     };
     handle.addEventListener("pointermove", move);
     handle.addEventListener("pointerup", stop);
     handle.addEventListener("pointercancel", stop);
+    handle.addEventListener("lostpointercapture", stop);
   };
   return (
     <div className="resize-edges" aria-hidden="true">
