@@ -217,7 +217,7 @@ export const fullDate = (time: number) =>
 
 /**
  * One-line text that truncates with an ellipsis, then scrolls back and forth
- * while its card is hovered or focused, from a moment after: not on each card
+ * while its card (or, outside one, its button or link) is hovered or focused, from a moment after: not on each card
  * a controller passes on its way down a long grid, where starting and stopping
  * its animation had WebKit rebuild the page's layers with every step. `children` shows styled content in
  * place of `text`, which is then only its plain-text version for the tooltip.
@@ -226,11 +226,14 @@ export function ScrollingText({
   text,
   children,
   speed = 18,
+  onCut,
 }: {
   text: string;
   children?: ReactNode;
   /** Pixels a second; a long row of chips reads better faster than text. */
   speed?: number;
+  /** Told whether it's cut short, when that changes: to say it in full somewhere else too. */
+  onCut?: (cut: boolean) => void;
 }) {
   const outer = useRef<HTMLSpanElement>(null);
   const inner = useRef<HTMLSpanElement>(null);
@@ -244,8 +247,11 @@ export function ScrollingText({
     if (outer.current) observer.observe(outer.current);
     return () => observer.disconnect();
   }, [text, children]);
+  const cut = shift > 0;
+  useEffect(() => onCut?.(cut), [cut, onCut]);
   useEffect(() => {
-    const host = outer.current?.closest(".entry-card");
+    // Its card; or, outside a card (a game a search matched), the button or link it's in.
+    const host = outer.current?.closest(".entry-card") ?? outer.current?.closest("button, a");
     if (!host || !shift) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const start = () => {
@@ -520,6 +526,8 @@ export function EntryCardContent({
   details?: readonly CardDetail[];
 }) {
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
+  // The name cut short: its tooltip over the picture too, which a mouse is on more often than the name.
+  const [cut, setCut] = useState(false);
   // A heading isn't phrasing content, so it can't sit in a span.
   const Body = Title === "span" ? "span" : "div";
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleName?.(tag) ?? tagLabel(tag));
@@ -545,7 +553,7 @@ export function EntryCardContent({
     const os = shows("platforms") ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id)) : [];
     return (
       <>
-        <span className="card-cover">
+        <span className="card-cover" title={cut ? entry.projectName : undefined}>
           {artwork ?? <BoxArt entry={entry} sources={coverSources} name={entry.projectName} />}
           {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
           {/* The platforms in the corner the badge leaves, so the foot of the art is the chips' alone. */}
@@ -568,7 +576,7 @@ export function EntryCardContent({
             </span>
           )}
           <Title className="card-title">
-            <ScrollingText text={entry.projectName} />
+            <ScrollingText text={entry.projectName} onCut={setCut} />
           </Title>
           {games && (
             <span className="card-subtitle">
@@ -582,7 +590,7 @@ export function EntryCardContent({
   }
   return (
     <>
-      <span className="card-cover">
+      <span className="card-cover" title={cut ? entry.projectName : undefined}>
         {artwork ?? <Artwork src={coverOf(entry)} sources={coverSources} name={entry.projectName} className={wide ? "cover-photo" : ""} />}
         {badge ? <span className="cover-badge">{badge}</span> : fresh && newBadge}
         <span className="card-arrow">
@@ -593,7 +601,7 @@ export function EntryCardContent({
         {shelf ? (
           <>
             <Title className="card-title">
-              <ScrollingText text={entry.projectName} />
+              <ScrollingText text={entry.projectName} onCut={setCut} />
             </Title>
             <span className="card-status">{status}</span>
           </>
@@ -610,7 +618,7 @@ export function EntryCardContent({
               {shows("platforms") && <PlatformIcons os={entry.supportedOS} />}
             </span>
             <Title className="card-title">
-              <ScrollingText text={entry.projectName} />
+              <ScrollingText text={entry.projectName} onCut={setCut} />
             </Title>
             {shows("subtitle") && entry.games.length > 0 && (
               <span className="based-on">

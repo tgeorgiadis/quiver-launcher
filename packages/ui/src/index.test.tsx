@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import {
   Artwork,
   EntryCard,
@@ -10,6 +10,7 @@ import {
   EntryCardContent,
   ReleaseBadge,
   Score,
+  ScrollingText,
   isNew,
   isStale,
   platformList,
@@ -155,6 +156,36 @@ const entry: CardEntry & { slug: string } = {
   libraryArt: { header: "header.png" },
 };
 
+describe("ScrollingText", () => {
+  it("scrolls a title that doesn't fit while the button it's in is hovered, with no card around it", () => {
+    vi.useFakeTimers();
+    const widths = { scrollWidth: 300, clientWidth: 200 };
+    for (const [name, value] of Object.entries(widths)) Object.defineProperty(HTMLElement.prototype, name, { configurable: true, get: () => value });
+    try {
+      const { container } = render(
+        <button>
+          <ScrollingText text="The Legend of Zelda: Ocarina of Time 3D" />
+        </button>,
+      );
+      // A card's name cut short says itself in full over its picture too, where a mouse more often is.
+      const card = render(<EntryCard entry={entry} />).container;
+      expect(card.querySelector(".card-cover")?.getAttribute("title")).toBe("Test Port");
+      const text = container.querySelector(".scrolling-text")!;
+      // The whole title on a mouse's tooltip too, cut off as it is.
+      expect(text.getAttribute("title")).toBe("The Legend of Zelda: Ocarina of Time 3D");
+      expect(text.classList.contains("overflows")).toBe(true);
+      fireEvent.pointerEnter(container.querySelector("button")!);
+      act(() => void vi.advanceTimersByTime(700));
+      expect(text.classList.contains("active")).toBe(true);
+      fireEvent.pointerLeave(container.querySelector("button")!);
+      expect(text.classList.contains("active")).toBe(false);
+    } finally {
+      for (const name of Object.keys(widths)) delete (HTMLElement.prototype as unknown as Record<string, unknown>)[name];
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("EntryCard", () => {
   it("shows the box art over the catalog's details, and opens it from its button", () => {
     let opened = 0;
@@ -176,6 +207,8 @@ describe("EntryCard", () => {
     expect(card.querySelector(".cover-platforms .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
     // A shelf of the newest says New; a badge on every recent box was noise.
     expect(card.querySelector(".cover-badge")).toBeNull();
+    // Its name fits: no tooltip over the picture.
+    expect(card.querySelector(".card-cover")?.hasAttribute("title")).toBe(false);
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
     fireEvent.click(getByRole("button", { name: "Test Port" }));
     expect(opened).toBe(1);
@@ -203,6 +236,8 @@ describe("EntryCard", () => {
     expect(card.querySelector(".cover-badge")?.textContent).toBe("New");
     expect(card.querySelector(".artwork.cover-photo img")?.getAttribute("src")).toBe("header.png");
     expect(card.querySelector(".release-age.stale")?.textContent).toBe(" No release in 1 yr+");
+    // Its name fits: no tooltip over the picture.
+    expect(card.querySelector(".card-cover")?.hasAttribute("title")).toBe(false);
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
     fireEvent.click(getByRole("button", { name: "Test Port" }));
     expect(opened).toBe(1);
