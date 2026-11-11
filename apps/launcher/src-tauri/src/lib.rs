@@ -435,7 +435,7 @@ fn start(
     command.args(&args).envs(env).current_dir(&target.dir);
     let spawned: std::io::Result<Waiting> = sandbox::check(&program)
         .and_then(|_| {
-            sandbox::host(command)
+            sandbox::game(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
                 .stdin(std::process::Stdio::null())
                 .stdout(std::process::Stdio::null())
