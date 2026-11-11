@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -1252,7 +1252,8 @@ function AppPage({
   const update = updateFor(known, install);
   const updateVersion = versionLabel(update?.version);
   // Waiting 48 hours for updates: the newest release, which the player can take early for this app.
-  const early = jobs[entry.id] ? undefined : earlyOffer(known, install);
+  // Not installed: the same release, to install in the offered one's place.
+  const early = jobs[entry.id] ? undefined : (earlyOffer(known, install) ?? (canGet(known, config.os) ? earlyGetOffer(known, install) : undefined));
   const earlyVersion = versionLabel(early?.version);
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
@@ -1540,7 +1541,7 @@ function AppPage({
                   )}
                 </span>
                 <button type="button" className="link-button" onClick={() => void get(known, undefined, { early: true })}>
-                  <Trans>Update early…</Trans>
+                  {install ? <Trans>Update early…</Trans> : <Trans>Install latest…</Trans>}
                 </button>
               </p>
             )}
@@ -2354,7 +2355,7 @@ function ChooseFile() {
  * first, and where a controller starts.
  */
 function UnverifiedPrompt() {
-  const { asking } = useLauncher();
+  const { asking, installs } = useLauncher();
   if (!asking) return null;
   const { entry, file, reasons, scan, checkEndsAt, early, resolve } = asking;
   // Put in the sentences below by name.
@@ -2364,14 +2365,32 @@ function UnverifiedPrompt() {
   const unchecked = file?.why === "unchecked";
   const waits = checkEndsAt !== undefined;
   const hours = waits ? hoursFrom(checkEndsAt) : 0;
+  // Newest right away, where only its scan makes it ask: that's the question, not that it isn't offered.
+  const scanned = !file && early === "scan";
   const title = unchecked
     ? t`Install a file Quiver didn't check?`
     : early === "asked" && waits
-      ? t`Update to ${release} before its 48 hours are up?`
-      : t`Install ${release} before Quiver offers it?`;
+      ? installs[asking.entry.id]
+        ? t`Update to ${release} before its 48 hours are up?`
+        : t`Install ${release} before its 48 hours are up?`
+      : scanned
+        ? scan?.verdict === "pending"
+          ? t`Install ${release} before its virus scan finishes?`
+          : t`Install ${release} with a virus scan warning?`
+        : t`Install ${release} before Quiver offers it?`;
+  const scanLine = scan && (
+    <p className="scan-line">
+      VirusTotal: {scanText(scan)}{" "}
+      {scan.url && (
+        <a href={scan.url} target="_blank" rel="noreferrer">
+          <Trans>See the report</Trans>
+        </a>
+      )}
+    </p>
+  );
   return (
     // Each question its own: the next one in turn starts afresh, its first button focused.
-    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked ? title : t`Install a release before Quiver offers it`} onClose={() => resolve(false)}>
+    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked || scanned ? title : t`Install a release before Quiver offers it`} onClose={() => resolve(false)}>
       <div className="detail-body unverified-prompt">
         <h2>
           <ShieldAlert size={18} /> {title}
@@ -2380,12 +2399,16 @@ function UnverifiedPrompt() {
           {!file
             ? early === "asked" && waits
               ? // They chose to wait for updates: what that wait is for, and that this skips it.
-                t`${release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait. Quiver Launcher still checks the download against the file Quiver saw when it came out.`
-              : `${early ? t`${release} is newer than the release Quiver offers, so there may have been little time to spot a problem with it.` : t`Quiver doesn't offer a release of ${app} yet.`} ${t`Quiver Launcher doesn't offer this release by itself yet. It installs the files Quiver saw when it came out, and refuses any that changed since.`}`
+                t`${release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait.`
+              : scanned
+                ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
+                : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
             : unchecked
               ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
               : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
         </p>
+        {/* Asked because of its scan: the scan first, as what the sentence above leads to. */}
+        {scanned && scanLine}
         {reasons.length > 0 && (
           <ul className="unverified-reasons">
             {reasons.map((r) => (
@@ -2393,16 +2416,7 @@ function UnverifiedPrompt() {
             ))}
           </ul>
         )}
-        {scan && (
-          <p className="scan-line">
-            VirusTotal: {scanText(scan)}{" "}
-            {scan.url && (
-              <a href={scan.url} target="_blank" rel="noreferrer">
-                <Trans>See the report</Trans>
-              </a>
-            )}
-          </p>
-        )}
+        {!scanned && scanLine}
         {waits && (
           <p className="wait-line">
             <ShieldCheck size={14} aria-hidden="true" />{" "}

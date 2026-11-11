@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -361,6 +361,38 @@ describe("Newest right away: an update Quiver hasn't verified yet", () => {
     expect(updateFor(both, older)).toEqual(newest);
     const none = { ...found(newest), verified: undefined } as unknown as Entry;
     expect(updateFor(none, install)).toEqual(newest);
+  });
+
+  it("shows on a card as not offered yet, until the history has nothing of it for this computer", () => {
+    expect(notOfferedYet(listed, undefined)).toBe("v1.3.0");
+    expect(notOfferedYet(listed, install)).toBe("v1.3.0");
+    expect(notOfferedYet(waiting(newest), install)).toBe("v1.3.0");
+    // Only a macOS build, say: looked up, and nothing found.
+    expect(notOfferedYet(waiting(), install)).toBeUndefined();
+    expect(notOfferedYet(found(), install)).toBeUndefined();
+    // A newer release upstream since hasn't been looked up.
+    expect(notOfferedYet({ ...waiting(), lastReleaseVersion: "v1.4.0" }, install)).toBe("v1.4.0");
+    expect(notOfferedYet({ ...listed, lastReleaseVersion: "1.2.0" }, install)).toBeUndefined();
+    expect(notOfferedYet({ ...listed, lastReleaseAt: 10 }, install)).toBeUndefined();
+  });
+
+  it("is what Install takes for an app not installed yet, with the setting on", () => {
+    const of = earlyKey(listed, undefined)!;
+    expect(of).toBe("1.3.0:own:files");
+    expect(earlyGet({ ...listed, early: { of, release: newest, now: true } })).toEqual(newest);
+    // Waiting 48 hours, not looked up yet, or nothing for this computer: the verified one.
+    expect(earlyGet({ ...listed, early: { of, release: newest } })).toBeUndefined();
+    expect(earlyGet(listed)).toBeUndefined();
+    expect(earlyGet({ ...listed, early: { of, now: true } })).toBeUndefined();
+    expect(earlyGet({ ...listed, early: { of, release: newest, now: true }, withdrawn: [{ version: "1.3.0", reason: "" }] } as unknown as Entry)).toBeUndefined();
+    // Never an update, or an early one to ask for, of an app that isn't installed.
+    expect(hasUpdate({ ...listed, early: { of, release: newest, now: true } }, undefined)).toBe(false);
+    expect(earlyOffer({ ...listed, early: { of, release: newest } }, undefined)).toBeUndefined();
+    // Waiting 48 hours, it's what Install latest offers; never with the setting on, or once it's installed.
+    expect(earlyGetOffer({ ...listed, early: { of, release: newest } }, undefined)).toEqual(newest);
+    expect(earlyGetOffer({ ...listed, early: { of, release: newest, now: true } }, undefined)).toBeUndefined();
+    expect(earlyGetOffer({ ...listed, early: { of, release: newest } }, install)).toBeUndefined();
+    expect(earlyGetOffer({ ...listed, early: { of } }, undefined)).toBeUndefined();
   });
 
   it("is looked up again for a newer release upstream, or another build", () => {

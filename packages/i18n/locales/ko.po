@@ -483,12 +483,8 @@ msgid "{received} so far"
 msgstr "지금까지 {received}"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "{release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait. Quiver Launcher still checks the download against the file Quiver saw when it came out."
-msgstr "{release}은(는) 나온 지 48시간이 안 됐어요. 업데이트를 48시간 기다리도록 선택하셨어요. 버전이 악성으로 밝혀지면 전달되기 전에 Quiver가 내릴 시간을 두기 위해서예요. 지금 설치하면 이 대기를 건너뛰어요. Quiver Launcher는 그래도 다운로드를 출시 때 Quiver가 본 파일과 대조해요."
-
-#: ../../apps/launcher/src/App.tsx
-msgid "{release} is newer than the release Quiver offers, so there may have been little time to spot a problem with it."
-msgstr "{release}은(는) Quiver가 제공하는 버전보다 최신이라, 문제를 발견할 시간이 거의 없었을 수 있어요."
+msgid "{release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait."
+msgstr "{release}은(는) 나온 지 48시간이 안 됐어요. 업데이트를 48시간 기다리도록 선택하셨어요. 버전이 악성으로 밝혀지면 전달되기 전에 Quiver가 내릴 시간을 두기 위해서예요. 지금 설치하면 이 대기를 건너뛰어요."
 
 #: ../ui/src/index.tsx
 msgid "{runs, plural, one {# runs well} other {# run well}}"
@@ -1031,8 +1027,17 @@ msgid "Apps already install there."
 msgstr "이미 그곳에 앱이 설치되고 있어요."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Apps are set to update to the newest release right away (Settings, Updates), so Quiver Launcher also updates to releases it wouldn't offer yet, without asking first. It installs a blocked one only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw."
-msgstr "앱이 최신 버전으로 바로 업데이트되도록 설정되어 있어서(설정, 업데이트) Quiver Launcher가 아직 제공하지 않을 버전으로도 묻지 않고 업데이트해요. 차단된 버전은 직접 골라 확인할 때만 설치해요. Quiver Launcher는 모든 다운로드를 Quiver가 본 파일과 대조해요."
+msgid "Apps are set to update to the newest release right away (Settings, Updates), so Quiver Launcher offers an app's newest release as soon as it's out, without the 48-hour wait. A release marked Not offered or Blocked installs only if you choose it and confirm. Quiver Launcher checks that every download hasn't changed since its release came out."
+msgstr "앱이 최신 버전으로 바로 업데이트되도록 설정되어 있어서(설정, 업데이트) Quiver Launcher가 앱의 최신 버전을 48시간 기다리지 않고 나오자마자 제공해요. '제공 안 함'이나 '차단됨'으로 표시된 버전은 직접 골라 확인할 때만 설치돼요. Quiver Launcher는 모든 다운로드가 버전 출시 이후 바뀌지 않았는지 확인해요."
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Apps are set to update to the newest release right away, and {release} is the newest. Quiver Launcher is asking in this case because of its virus scan."
+msgstr "앱이 최신 버전으로 바로 업데이트되도록 설정되어 있고, {release}이(가) 최신 버전이에요. 바이러스 검사 결과 때문에 이번에는 Quiver Launcher가 물어봐요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Apps are set to update to the newest release right away, so Quiver Launcher offers this one now"
+msgstr "앱이 최신 버전으로 바로 업데이트되도록 설정되어 있어서 Quiver Launcher가 이 버전을 지금 제공해요"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Apps folder"
@@ -1117,13 +1122,15 @@ msgid "Automatic: {name}"
 msgstr "자동: {name}"
 
 #. A release Quiver Launcher offers: its files have been out for 48 hours
+#. A release Quiver Launcher offers: its files have been out for 48 hours
+#: ../../apps/launcher/src/detail.tsx
 #: ../ui/src/index.tsx
 msgid "Available"
 msgstr "사용 가능"
 
 #: ../../apps/launcher/src/library-tile.tsx
-msgid "Available {verifiedLabel}"
-msgstr "사용 가능: {verifiedLabel}"
+msgid "Available {availableLabel}"
+msgstr "사용 가능: {availableLabel}"
 
 #. Controller hint: what Back does, closing or going back
 #. The setup's previous step
@@ -2416,8 +2423,23 @@ msgstr "대신 {other} 설치"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
+msgid "Install {release} before its 48 hours are up?"
+msgstr "48시간이 지나기 전에 {release}을(를) 설치할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {release} before its virus scan finishes?"
+msgstr "바이러스 검사가 끝나기 전에 {release}을(를) 설치할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
 msgid "Install {release} before Quiver offers it?"
 msgstr "Quiver가 제공하기 전에 {release}을(를) 설치할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Install {release} with a virus scan warning?"
+msgstr "바이러스 검사 경고가 있는 {release}을(를) 설치할까요?"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Install {verifiedVersion} instead"
@@ -2465,6 +2487,14 @@ msgstr "그래도 설치"
 #: ../../apps/launcher/src/App.tsx
 msgid "Install automatically"
 msgstr "자동으로 설치"
+
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Install latest ({latestVersion})…"
+msgstr "최신 버전 설치({latestVersion})…"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Install latest…"
+msgstr "최신 버전 설치…"
 
 #. placeholder {0}: asking.to
 #: ../../apps/launcher/src/settings-page.tsx
@@ -2594,10 +2624,6 @@ msgstr "그곳에 자체 폴더가 생기고, 업데이트도 계속 그 폴더�
 msgid "It gets a folder of its own in there, with its saves and settings. Desktop and Steam shortcuts you made before point at the old place, so make them again."
 msgstr "그곳에 저장 데이터와 설정이 담긴 자체 폴더가 생겨요. 전에 만든 바탕 화면 및 Steam 바로 가기는 이전 위치를 가리키니 다시 만들어 주세요."
 
-#: ../../apps/launcher/src/detail.tsx
-msgid "It installs the files Quiver saw when it came out, and refuses any that changed since."
-msgstr "출시 당시 Quiver가 확인한 파일을 설치하고, 그 뒤로 바뀐 파일은 거부해요."
-
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "It isn't linked to your Quiver account."
 msgstr "Quiver 계정과 연결되지 않습니다."
@@ -2644,8 +2670,8 @@ msgid "Its files go to the trash. {name} stays in your library, so you can get i
 msgstr "파일은 휴지통으로 이동해요. {name}은(는) 라이브러리에 남아 있어서 다시 받을 수 있어요."
 
 #: ../ui/src/index.tsx
-msgid "Its files have each been out for 48 hours, which gives time to spot and withdraw a bad upload, and Quiver Launcher checks every download against the file Quiver saw."
-msgstr "모든 파일이 공개된 지 48시간이 지나 문제 있는 업로드를 발견하고 내릴 시간이 있었고, Quiver Launcher는 모든 다운로드를 Quiver가 본 파일과 대조해요."
+msgid "Its files have each been out for 48 hours, which gives time to spot and withdraw a bad upload, and Quiver Launcher checks that every download hasn't changed since its release came out."
+msgstr "모든 파일이 공개된 지 48시간이 지나 문제 있는 업로드를 발견하고 내릴 시간이 있었고, Quiver Launcher는 모든 다운로드가 버전 출시 이후 바뀌지 않았는지 확인해요."
 
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest available version was withdrawn: choose a version"
@@ -3927,11 +3953,6 @@ msgstr "Quiver Launcher 3"
 msgid "Quiver Launcher doesn't offer this release by itself"
 msgstr "Quiver Launcher가 이 버전을 알아서 제공하지 않아요"
 
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/detail.tsx
-msgid "Quiver Launcher doesn't offer this release by itself yet. It installs the files Quiver saw when it came out, and refuses any that changed since."
-msgstr "Quiver Launcher가 아직 이 버전을 알아서 제공하지 않아요. 출시 때 Quiver가 본 파일을 설치하고, 그 뒤로 바뀐 파일은 거부해요."
-
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver Launcher doesn't offer this release by itself. Installing one of its files asks you to confirm first."
 msgstr "Quiver Launcher가 이 버전을 알아서 제공하지 않아요. 파일을 설치하려면 먼저 확인해야 해요."
@@ -3940,13 +3961,18 @@ msgstr "Quiver Launcher가 이 버전을 알아서 제공하지 않아요. 파�
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher에 문제가 생겼어요"
 
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "Quiver Launcher isn't offering this release as an update yet."
+msgstr "Quiver Launcher가 아직 이 버전을 업데이트로 제공하지 않아요."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver Launcher never updates to it. Install it only if you know why you need this exact version and accept the risk."
 msgstr "Quiver Launcher는 이 버전으로 절대 업데이트하지 않아요. 꼭 이 버전이 필요한 이유를 알고 위험을 감수할 때만 설치하세요."
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Quiver Launcher offers a release once each of its files has been out for 48 hours, so there was time for a bad upload to be spotted and withdrawn. It installs one it doesn't offer yet, or a blocked one, only if you pick it and confirm. Quiver Launcher checks every download against the file Quiver saw. If a file is replaced after that, the new one waits its own 48 hours."
-msgstr "Quiver Launcher는 버전의 모든 파일이 공개된 지 48시간이 지나면 그 버전을 제공해요. 문제 있는 업로드를 발견하고 내릴 시간을 두기 위해서예요. 아직 제공하지 않는 버전이나 차단된 버전은 직접 골라 확인할 때만 설치해요. Quiver Launcher는 모든 다운로드를 Quiver가 본 파일과 대조해요. 그 뒤에 파일이 교체되면 새 파일은 다시 48시간을 기다려요."
+msgid "Quiver Launcher offers a release once each of its files has been out for 48 hours, so there was time for a bad upload to be spotted and withdrawn. A release marked Not offered or Blocked installs only if you choose it and confirm. Quiver Launcher checks that every download hasn't changed since its release came out. If a file is replaced after that, the new one waits its own 48 hours."
+msgstr "Quiver Launcher는 버전의 모든 파일이 공개된 지 48시간이 지나면 그 버전을 제공해요. 문제 있는 업로드를 발견하고 내릴 시간을 두기 위해서예요. '제공 안 함'이나 '차단됨'으로 표시된 버전은 직접 골라 확인할 때만 설치돼요. Quiver Launcher는 모든 다운로드가 버전 출시 이후 바뀌지 않았는지 확인해요. 그 뒤에 파일이 교체되면 새 파일은 다시 48시간을 기다려요."
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Quiver Launcher sends usage data to help improve it. It isn't linked to your Quiver account. You can turn this off in Settings."
@@ -5182,6 +5208,11 @@ msgstr "고정 해제 후 {version} 설치"
 msgid "Up"
 msgstr "위로"
 
+#. On an app's card: the installed version is the newest there is
+#: ../../apps/launcher/src/library-tile.tsx
+msgid "Up to date"
+msgstr "최신 버전"
+
 #. Button that updates a mod
 #. Button: update the one app with an update
 #: ../../apps/launcher/src/downloads-page.tsx
@@ -5411,6 +5442,10 @@ msgstr "보기 옵션"
 msgid "View repository"
 msgstr "저장소 보기"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "VirusTotal hasn't cleared this release, so installing it asks you to confirm first."
+msgstr "VirusTotal이 아직 이 버전을 통과시키지 않아서, 설치하려면 먼저 확인해야 해요."
+
 #. Background music's volume
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Volume"
@@ -5599,6 +5634,10 @@ msgstr "{name}(으)로 로그인했어요."
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "You're signed in, so this follows your Quiver account's setting, as on quiverlauncher.com."
 msgstr "로그인되어 있으므로 quiverlauncher.com에서처럼 Quiver 계정 설정을 따라요."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "You've chosen to wait 48 hours for updates, so Quiver Launcher won't install {release} yet unless you choose to."
+msgstr "업데이트를 48시간 기다리도록 선택했기 때문에, 직접 선택하지 않는 한 Quiver Launcher가 아직 {release}을(를) 설치하지 않아요."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You've reached the {limit}-character limit."
