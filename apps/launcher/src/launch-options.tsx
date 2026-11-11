@@ -17,6 +17,11 @@ type Runner = LaunchOptions["runner"];
 const runnerValue = (runner: Runner) => (!runner ? "" : runner.kind === "proton" ? `proton:${runner.path}` : runner.kind);
 const runnerFrom = (value: string): Runner =>
   value === "direct" || value === "wine" ? { kind: value } : value.startsWith("proton:") ? { kind: "proton", path: value.slice(7) } : undefined;
+/**
+ * Whether an app's program is a Windows one, which on Linux runs through Wine or a Proton: the program the player
+ * chose, by its name as launch reads it, else the release they installed. Only then is there a runner to choose.
+ */
+export const windowsProgram = (executable: string | undefined, wine: boolean | undefined) => (executable ? /\.(exe|bat)$/i.test(executable) : Boolean(wine));
 /** A Proton's name from its folder. */
 const folderName = (path: string) => path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || path;
 
@@ -146,6 +151,8 @@ export function LaunchOptionsButton({ id }: { id: string }) {
     );
   };
   const unclosed = (command.match(/"/g)?.length ?? 0) % 2 === 1 || (command.match(/'/g)?.length ?? 0) % 2 === 1;
+  // A Linux program runs as itself: a runner would only break it, so there's none to choose, and none is kept.
+  const runs = linux && windowsProgram(executable, install.wine);
   return (
     <form
       className="panel-form launch-options"
@@ -153,7 +160,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         if (unclosed) return;
-        setLaunch(id, { executable, runner, command: command.trim() || undefined });
+        setLaunch(id, { executable, runner: runs ? runner : undefined, command: command.trim() || undefined });
         setOpen(false);
       }}
     >
@@ -182,7 +189,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
           )}
         </div>
       </div>
-      {linux && (
+      {runs && (
         <label>
           <span className="field-label">
             <Trans>Run with</Trans>
