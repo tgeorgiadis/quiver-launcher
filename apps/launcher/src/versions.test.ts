@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { Asset, HistoryRelease, Release, UnverifiedRelease } from "@quiverlauncher/api";
-import { changesUpTo, installedFile, insteadOf, newestUnblocked, saidOf, unverifiedFile, unverifiedIn, versionList, wayOffLabel, withdrawnAsBlocked } from "./versions";
+import { changesUpTo, installedFile, insteadOf, newestUnblocked, saidOf, scanAsks, unverifiedFile, unverifiedIn, versionList, wayOffLabel, withdrawnAsBlocked } from "./versions";
 
 const release = (version: string, releasedAt: number, id = `gh-${version}`): Release => ({
   id,
@@ -178,4 +178,13 @@ test("the way off a withdrawn release says Downgrade when it goes back to an old
   // Without dates, by version number: 0.10 comes after 0.9.
   expect(wayOffLabel({ version: "0.10.0" }, { version: "0.9.0" })).toBe("Downgrade to v0.9.0");
   expect(wayOffLabel({ version: "0.9.0" }, { version: "0.10.0" })).toBe("Install v0.10.0");
+});
+
+test("Newest right away asks first of a release VirusTotal hasn't cleared: warned of, flagged, or still being scanned", () => {
+  expect(scanAsks(undefined)).toBe(false);
+  expect(scanAsks({ verdict: "clean" })).toBe(false);
+  expect(scanAsks({ verdict: "missing" })).toBe(false);
+  expect(scanAsks({ verdict: "pending" })).toBe(true);
+  expect(scanAsks({ verdict: "warning", engines: "1 of 70 engines" })).toBe(true);
+  expect(scanAsks({ verdict: "flagged", engines: "9 of 70 engines" })).toBe(true);
 });

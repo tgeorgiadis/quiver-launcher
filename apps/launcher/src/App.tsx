@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -46,12 +46,13 @@ import { closesOutside } from "./overlay";
 import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
 import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
+import { AppUpdatesNotice } from "./app-updates";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true } | { readme: true };
-type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "copies" };
+type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "copies" | "updates" };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
@@ -300,6 +301,8 @@ export function App() {
             />
             {/* Once, for a player set up before Game copies: where their ROMs and disc images are. */}
             <GameCopiesNotice onOpen={() => open({ kind: "settings", section: "copies" })} />
+            {/* Once, for a player set up before there was a choice: how apps update. */}
+            <AppUpdatesNotice onOpen={() => open({ kind: "settings", section: "updates" })} />
             {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
             <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} onOpenApp={openApp} />
           </div>
@@ -1060,7 +1063,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
               <ShieldX size={14} />
             </span>
           ) : (
-            <span className="unverified-mark" role="img" aria-label={t`${version} is unverified`} title={t`${version} is unverified`}>
+            <span className="unverified-mark" role="img" aria-label={t`${version} was installed before Quiver offered it`} title={t`${version} was installed before Quiver offered it`}>
               <ShieldAlert size={14} />
             </span>
           ))}
@@ -1248,6 +1251,9 @@ function AppPage({
   const known = catalog[entry.id] ?? entry;
   const update = updateFor(known, install);
   const updateVersion = versionLabel(update?.version);
+  // Waiting 48 hours for updates: the newest release, which the player can take early for this app.
+  const early = jobs[entry.id] ? undefined : earlyOffer(known, install);
+  const earlyVersion = versionLabel(early?.version);
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
   const blockedWhy = install?.blocked ?? "";
@@ -1385,8 +1391,8 @@ function AppPage({
                     {isOwn(entry.id)
                       ? t`${verifiedVersion} · not checked by Quiver`
                       : entry.verified.pinned
-                        ? t`${verifiedVersion} · verified`
-                        : t`${verifiedVersion} · files can't be verified`}
+                        ? verifiedVersion
+                        : t`${verifiedVersion} · downloads can't be checked`}
                   </span>
                 )}
                 {install && !install.local && (
@@ -1398,7 +1404,7 @@ function AppPage({
                   (install.blocked ? (
                     <ReleaseBadge state="blocked" title={t`Quiver blocked it: ${blockedWhy}`} />
                   ) : (
-                    <ReleaseBadge state="unverified" title={t`Installed before Quiver verified it`} />
+                    <ReleaseBadge state="unverified" title={t`Installed before Quiver offered it`} />
                   ))}
               </div>
             )}
@@ -1482,7 +1488,7 @@ function AppPage({
                 </span>
                 {entry.verified && bare(entry.verified.version) !== bare(install.version) && (
                   <button type="button" className="link-button" onClick={() => get(entry)}>
-                    <Trans>Install the verified {verifiedVersion}</Trans>
+                    <Trans>Install {verifiedVersion} instead</Trans>
                   </button>
                 )}
               </p>
@@ -1491,10 +1497,10 @@ function AppPage({
               <p className="release-pinned-line differs" role="alert">
                 <ShieldAlert size={14} aria-hidden="true" />
                 <span>
-                  <Trans>The verified {installedVersion} isn&apos;t the file you installed.</Trans>
+                  <Trans>The {installedVersion} Quiver offers isn&apos;t the file you installed.</Trans>
                 </span>
                 <button type="button" className="link-button" onClick={() => get(entry)}>
-                  <Trans>Install the verified {installedVersion}</Trans>
+                  <Trans>Reinstall {installedVersion}</Trans>
                 </button>
               </p>
             )}
@@ -1521,6 +1527,20 @@ function AppPage({
                 </span>
                 <button type="button" className="link-button" onClick={() => declineUpdate(entry.id, update.version)}>
                   <Trans>Skip this update</Trans>
+                </button>
+              </p>
+            )}
+            {early && (
+              <p className="release-pinned-line">
+                <span>
+                  {stillWaiting(early.releasedAt) ? (
+                    <Trans>{earlyVersion} is less than 48 hours old, so Quiver Launcher isn't offering it yet.</Trans>
+                  ) : (
+                    <Trans>{earlyVersion} is out, but Quiver Launcher isn't offering it yet.</Trans>
+                  )}
+                </span>
+                <button type="button" className="link-button" onClick={() => void get(known, undefined, { early: true })}>
+                  <Trans>Update early…</Trans>
                 </button>
               </p>
             )}
@@ -2336,7 +2356,7 @@ function ChooseFile() {
 function UnverifiedPrompt() {
   const { asking } = useLauncher();
   if (!asking) return null;
-  const { entry, file, reasons, scan, checkEndsAt, resolve } = asking;
+  const { entry, file, reasons, scan, checkEndsAt, early, resolve } = asking;
   // Put in the sentences below by name.
   const release = versionLabel(asking.version);
   const app = entry.projectName;
@@ -2344,20 +2364,27 @@ function UnverifiedPrompt() {
   const unchecked = file?.why === "unchecked";
   const waits = checkEndsAt !== undefined;
   const hours = waits ? hoursFrom(checkEndsAt) : 0;
-  const title = unchecked ? t`Install a file Quiver didn't check?` : t`Install ${release} before it's verified?`;
+  const title = unchecked
+    ? t`Install a file Quiver didn't check?`
+    : early === "asked" && waits
+      ? t`Update to ${release} before its 48 hours are up?`
+      : t`Install ${release} before Quiver offers it?`;
   return (
     // Each question its own: the next one in turn starts afresh, its first button focused.
-    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked ? title : t`Install a release before it's verified`} onClose={() => resolve(false)}>
+    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked ? title : t`Install a release before Quiver offers it`} onClose={() => resolve(false)}>
       <div className="detail-body unverified-prompt">
         <h2>
           <ShieldAlert size={18} /> {title}
         </h2>
         <p>
           {!file
-            ? `${t`${app} has no verified release yet.`} ${t`Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since.`}`
+            ? early === "asked" && waits
+              ? // They chose to wait for updates: what that wait is for, and that this skips it.
+                t`${release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait. Quiver Launcher still checks the download against the file Quiver saw when it came out.`
+              : `${early ? t`${release} is newer than the release Quiver offers, so there may have been little time to spot a problem with it.` : t`Quiver doesn't offer a release of ${app} yet.`} ${t`Quiver Launcher doesn't offer this release by itself yet. It installs the files Quiver saw when it came out, and refuses any that changed since.`}`
             : unchecked
               ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
-              : t`${name} changed after Quiver verified ${release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since.`}
+              : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
         </p>
         {reasons.length > 0 && (
           <ul className="unverified-reasons">
@@ -2379,7 +2406,7 @@ function UnverifiedPrompt() {
         {waits && (
           <p className="wait-line">
             <ShieldCheck size={14} aria-hidden="true" />{" "}
-            {plural(hours, { one: "If you wait, it's verified in about # hour.", other: "If you wait, it's verified in about # hours." })}
+            {plural(hours, { one: "If you wait, its 48 hours are up in about # hour.", other: "If you wait, its 48 hours are up in about # hours." })}
           </p>
         )}
         <div className="row">

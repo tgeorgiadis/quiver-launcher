@@ -408,8 +408,8 @@ export function ReleaseAge({ entry }: { entry: CardEntry }) {
 export type ReleaseState = "verified" | "unverified" | "blocked";
 // Put in the language when shown, not here, where the module loads before any is picked.
 const RELEASE_STATES: Record<ReleaseState, { icon: LucideIcon; label: MessageDescriptor; title: MessageDescriptor }> = {
-  verified: { icon: ShieldCheck, label: msg({ message: "Verified", comment: "A release Quiver checked" }), title: msg`Its files have each been out for 48 hours, a maintainer checked any that VirusTotal flagged, and Quiver Launcher checks every download against the file Quiver verified.` },
-  unverified: { icon: ShieldAlert, label: msg({ message: "Unverified", comment: "A release Quiver hasn't checked" }), title: msg`Quiver hasn't verified this release` },
+  verified: { icon: ShieldCheck, label: msg({ message: "Available", comment: "A release Quiver Launcher offers: its files have been out for 48 hours" }), title: msg`Its files have each been out for 48 hours, which gives time to spot and withdraw a bad upload, and Quiver Launcher checks every download against the file Quiver saw.` },
+  unverified: { icon: ShieldAlert, label: msg({ message: "Not offered", comment: "A release Quiver Launcher doesn't offer by itself, such as one still in its 48-hour wait" }), title: msg`Quiver Launcher doesn't offer this release by itself` },
   blocked: { icon: ShieldX, label: msg({ message: "Blocked", comment: "A release Quiver won't install" }), title: msg`Quiver won't install this release` },
 };
 

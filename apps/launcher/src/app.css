@@ -638,6 +638,19 @@ main.app-main { padding: 0 0 40px; }
 .setup .add-choice > svg, .add-app .add-choice > svg { flex-shrink: 0; color: var(--accent); }
 .setup .add-choice span, .add-app .add-choice span { display: grid; gap: 2px; }
 .setup .add-choice small, .add-app .add-choice small { color: var(--muted); font-size: 12px; }
+/* How apps update (app-updates.tsx): two choices, the one picked marked; in Settings too, outside the setup. */
+.update-choices { display: grid; gap: 10px; }
+.update-choice {
+  display: flex; align-items: center; justify-content: flex-start; gap: 14px; width: 100%; padding: 14px 16px; text-align: left;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--panel); transition: border-color 0.15s;
+}
+.update-choice:hover, .update-choice:focus-visible { border-color: var(--accent); }
+.update-choice > svg { flex-shrink: 0; color: var(--muted); }
+.update-choice span { display: grid; gap: 2px; }
+.update-choice small { color: var(--muted); font-size: 12px; }
+.update-choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.update-choice[aria-checked="true"] > svg { color: var(--accent); }
+.update-choice[aria-checked="true"] strong { color: var(--strong); }
 .field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .picked-path { font-size: 12px; overflow-wrap: anywhere; }
 .add-app .pick-file, .add-app .art-match { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }

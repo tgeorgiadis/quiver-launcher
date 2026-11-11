@@ -7,8 +7,9 @@
  * Passed to Playwright's addInitScript, so it can use nothing from outside itself but its argument.
  */
 export function standInForRust({ api, state = {}, config: more = {}, maximized = false }) {
-  // The first start's setup (setup.tsx) is taken as done, unless a test's settings say `setupDone: false`.
-  const files = { library: [], installs: {}, catalog: {}, collections: [], ...state, settings: { setupDone: true, ...state.settings } };
+  // The first start's setup (setup.tsx) is taken as done, unless a test's settings say `setupDone: false`; how apps
+  // update (app-updates.tsx) as answered, so its banner isn't over every test.
+  const files = { library: [], installs: {}, catalog: {}, collections: [], ...state, settings: { setupDone: true, appUpdatesAsked: true, ...state.settings } };
   const config = {
     api,
     // Nothing listens at either: no account, and no usage data sent anywhere.

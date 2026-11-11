@@ -118,6 +118,13 @@ export function withdrawnAsBlocked<T extends { state: ReleaseState; reasons: str
 }
 
 /**
+ * Whether a release Quiver hasn't verified asks the player before it installs even with Newest right away
+ * (`Settings.appUpdates`): VirusTotal warned of a file or flagged it, or is still scanning. Clean, or with nothing
+ * to scan, it doesn't.
+ */
+export const scanAsks = (scan: ReleaseScan | undefined) => scan?.verdict === "warning" || scan?.verdict === "flagged" || scan?.verdict === "pending";
+
+/**
  * What an app with no verified release offers in its place, after a warning,
  * as Quiver Launcher 3 does: its newest release that isn't blocked and still
  * has files. Undefined when there's none.

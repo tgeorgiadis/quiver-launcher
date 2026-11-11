@@ -19,7 +19,7 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | Change version / Choose a version | Version ändern / Version wählen | |
 | pinned | festgehalten | |
 | withdrawn | zurückgezogen | |
-| verified / unverified / blocked (a release) | geprüft / ungeprüft / gesperrt | |
+| available / not offered / blocked (a release) | verfügbar / nicht angeboten / gesperrt | |
 | preview release | Vorschauversion | |
 | play time / recently played | Spielzeit / zuletzt gespielt | |
 | controller / keyboard | Controller / Tastatur | |

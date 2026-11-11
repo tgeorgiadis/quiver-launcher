@@ -318,8 +318,8 @@ describe("ReleaseBadge", () => {
     );
     const badges = [...container.querySelectorAll(".release-badge")];
     expect(badges.map((b) => [b.className, b.textContent])).toEqual([
-      ["release-badge verified", "Verified"],
-      ["release-badge unverified", "Unverified"],
+      ["release-badge verified", "Available"],
+      ["release-badge unverified", "Not offered"],
       ["release-badge blocked", "Withdrawn"],
     ]);
     expect(badges.every((b) => b.querySelector("svg[aria-hidden=true]"))).toBe(true);

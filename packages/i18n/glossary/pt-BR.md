@@ -24,7 +24,7 @@ and headings, as in English.
 | Downgrade | Voltar à versão anterior | |
 | pinned (to a version) | fixado | |
 | withdrawn (release) | retirada | "A versão 1.2 foi retirada" |
-| verified | verificada | |
+| available / not offered (a release) | disponível / não oferecida | |
 | preview release | versão prévia | |
 | play time | tempo de jogo | |
 | recently played | jogados recentemente | |
