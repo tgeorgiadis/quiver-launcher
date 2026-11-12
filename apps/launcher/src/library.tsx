@@ -211,19 +211,20 @@ export function LibraryPage({
       const items = ([...el.children] as HTMLElement[]).filter((item) => !item.matches(".library-show"));
       return items.length ? items[items.length - 1].offsetLeft + items[items.length - 1].offsetWidth - items[0].offsetLeft : 0;
     };
-    for (const el of row?.querySelectorAll<HTMLElement>(".playlist-tab") ?? []) tabWidths.current.set(el.dataset.tab!, el.offsetWidth);
+    // TV mode's tabs are larger (app.css), so each is measured for the look it's in, with the gap between them.
+    const big = Boolean(bar.current.closest(".tv-mode"));
+    const [look, gap] = [big ? "tv:" : "", big ? 10 : 6];
+    for (const el of row?.querySelectorAll<HTMLElement>(".playlist-tab") ?? []) tabWidths.current.set(look + el.dataset.tab!, el.offsetWidth);
     const room = bar.current.clientWidth;
-    // The search at its width beside the tabs (app.css's clamp), whatever it's stretched to once they fold: measured
-    // as it is, stretched across a folded row, the tabs never came back. Then the tools, the gaps between the three
-    // (.library-bar's), and Add a playlist after the tabs.
-    const search = Math.min(420, Math.max(260, room * 0.24));
-    const left = room - search - across(tools) - 20 * 2 - 40;
+    // The row less the tools, the gap between them (.library-bar's), and Add a playlist after the tabs. The search
+    // has a row of its own.
+    const left = room - across(tools) - 20 - (big ? 58 : 40);
     // A tab and the gap after it (.playlists'); one not yet seen, about a playlist's.
-    const widths = tabKeys.current.map((key) => (tabWidths.current.get(key) ?? 140) + 6);
+    const widths = tabKeys.current.map((key) => (tabWidths.current.get(look + key) ?? (big ? 180 : 140)) + gap);
     let fit = widths.length;
     if (widths.reduce((sum, w) => sum + w, 0) > left) {
       // As many as fit with More beside them.
-      let used = (row?.querySelector<HTMLElement>(".more-tabs")?.offsetWidth ?? 110) + 6;
+      let used = (row?.querySelector<HTMLElement>(".more-tabs")?.offsetWidth ?? (big ? 140 : 110)) + gap;
       fit = 0;
       while (fit < widths.length && used + widths[fit] <= left) used += widths[fit++];
     }
@@ -724,18 +725,8 @@ export function LibraryPage({
     <>
       <LibraryBackground />
       {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
-      <div ref={bar} className={`library-bar${stacked || tv ? " stacked" : ""}`}>
-        {/* The search first, where Browse has its own, so it's the first thing seen of the row. */}
-        <label className="search library-search">
-          <Search size={15} />
-          <input aria-label={t`Search your library`} placeholder={t`Search your library`} value={search} onChange={(e) => setSearch(e.target.value)} />
-          {search && (
-            <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => setSearch("")}>
-              <X size={13} />
-            </button>
-          )}
-        </label>
-        {!stacked && !tv && (
+      <div ref={bar} className={`library-bar${stacked ? " stacked" : ""}`}>
+        {!stacked && (
           <nav ref={tabRow} className="playlists" aria-label={t`Playlists`}>
             {inRow.map(([key, name]) => (
               <span key={key} className="playlist-tab" data-tab={key}>
@@ -774,7 +765,7 @@ export function LibraryPage({
         )}
         <div className="library-tools page-tools">
           {/* The tabs, folded: every tab and playlist in one menu, the open playlist's menu and Add a playlist beside it. */}
-          {(stacked || tv) && (
+          {stacked && (
             <span className="library-show">
               <span className="quiet-select">
                 <select aria-label={t({ message: "Show", comment: "Picks which library tab or playlist the library shows, where the tabs don't fit" })} value={collection || tabs.some(([key]) => key === tab) ? tab : "all"} onChange={(e) => setTab(e.target.value)}>
@@ -827,6 +818,18 @@ export function LibraryPage({
               </span>
             </button>
           )}
+        </div>
+        {/* The search on a row of its own under the tabs and tools, centred and larger, so it's seen first. */}
+        <div className="search-row">
+          <label className="search library-search">
+            <Search size={17} />
+            <input aria-label={t`Search your library`} placeholder={t`Search your library`} value={search} onChange={(e) => setSearch(e.target.value)} />
+            {search && (
+              <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => setSearch("")}>
+                <X size={14} />
+              </button>
+            )}
+          </label>
         </div>
       </div>
       {/* Filters: pills to pick from while open; the ones on stay, each removable, while it's closed. */}

@@ -1104,11 +1104,25 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .library-bar .playlists button:not(.active):hover { border-color: var(--line-strong); background: none; }
 .library-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-left: auto; }
 .page-tools > * { height: 34px; }
-/* First in the row, as Browse's: before the tabs at one width (library.tsx measures with it), so focusing it never moves them. */
-/* A quarter of the row, from 260 to 420 (a little short of Browse's 520), whatever the tabs: library.tsx fits them by it. */
-.library-search { flex: 0 0 auto; width: clamp(260px, 24cqw, 420px); min-width: 150px; max-width: 420px; height: 34px; gap: 7px; padding: 0 8px 0 11px; }
+.library-search { gap: 7px; padding: 0 8px 0 11px; }
 .library-search:focus-within { border-color: var(--accent); }
 .library-search input { min-width: 0; height: 100%; font-size: 13px; color: var(--fg); }
+/*
+ * The library's and the catalog's search: a row of its own under the tabs and tools, centred, taller and with larger
+ * type than the tools, so it's the first thing seen of the page's header.
+ */
+.search-row { display: flex; justify-content: center; flex: 0 0 100%; margin-top: 12px; }
+.search-row .search { flex: 0 1 720px; width: auto; min-width: 0; max-width: 720px; height: 44px; gap: 10px; padding: 0 10px 0 15px; border-radius: 10px; }
+.search-row .search > svg { flex-shrink: 0; }
+.search-row .search input { font-size: 15px; }
+.search-row .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search-row .search-clear { width: 26px; height: 26px; }/*
+ * The library's, under the tabs and tools: room over it, so it reads as a row of its own, and the room under it
+ * the grid's (the bar's margin). Its Filters, when they show, close under it, the grid's room under them.
+ */
+.library-bar > .search-row { margin-top: 24px; }
+.library-bar:has(> .search-row) { margin-bottom: 32px; }
+#library-filters { margin: -18px 0 30px; }
 .search-clear { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--muted); flex-shrink: 0; }
 .search-clear:hover, .search-clear:focus-visible { color: var(--strong); background: var(--field); }
 .quiet-select { position: relative; display: inline-flex; align-items: center; }
@@ -1146,28 +1160,19 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .library-bar.stacked .library-tools { flex: 1 1 auto; margin-left: 0; }
 .library-show { display: inline-flex; align-items: center; gap: 2px; margin-right: auto; min-width: 0; }
 .library-show .quiet-select { height: 100%; min-width: 0; }
-/* Folded, the search takes what room the tools leave it (its growth far over theirs), up to 420 as beside the tabs, the
-   Show menu after it and the rest at the row's end; where the tools don't fit beside it, they take the next row. */
-.library-bar.stacked .library-search { flex: 999 1 220px; width: auto; min-width: 150px; }
-/* As Browse's: only a narrow row's search goes past 420, on a row of its own. */
-@container library-bar (max-width: 640px) {
-  .library-bar.stacked .library-search { max-width: none; }
-}
 .library-show select { max-width: 160px; border: 1px solid var(--line); background: var(--panel); color: var(--strong); text-overflow: ellipsis; }
 @container library-bar (max-width: 1040px) {
   .library-bar .playlists { flex-basis: 100%; }
 }
 /*
- * A phone: two rows. The search, what to show and Add an app (an icon); then the sort, and the platforms, Filters and
- * View as icons. Group by is in View (library.tsx). The tools' box gives way, so the search orders among them.
+ * A phone: two rows, then the search's. What to show and Add an app (an icon); then the sort, and the platforms,
+ * Filters and View as icons. Group by is in View (library.tsx).
  */
 @container library-bar (max-width: 520px) {
-  .library-bar { gap: 10px 8px; }
-  .library-tools { display: contents; }
   .library-tools > * { order: 3; }
-  .library-bar.stacked .library-search { order: 0; flex: 1 1 140px; min-width: 0; }
-  .library-tools > .library-show { order: 1; margin-right: 0; }
-  .page-tools .add-app { order: 2; width: 34px; padding: 0; justify-content: center; }
+  .library-tools > .library-show { order: 0; }
+  .page-tools .add-app { order: 1; width: 34px; padding: 0; justify-content: center; }
+  .library-bar > .search-row { margin-top: 8px; }
   .library-sort { margin-right: auto; }
   .library-sort select { padding-left: 2px; }
   .page-tools .filters-tool { padding: 0 9px; }
@@ -1175,20 +1180,29 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 }
 
 /*
- * The catalog's header, as the library's: the search on the left; sort,
- * Filters and Submit an app on the right, all one height. Narrow, the search
- * takes the row and the tools the next, all three on it.
+ * The catalog's header: one row, the search in its middle (.search-row, as the library's) and sort, Filters and
+ * Submit an app at its end. The tools' column is never narrower than they are, so where the row is short of room
+ * for both sides the search moves left of the middle rather than onto a row of its own. The wrapper sits in the
+ * container, so its queries measure the page's width.
  */
-.browse-bar { container: browse-bar / inline-size; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin-bottom: 24px; }
-.browse-search {
-  flex: 1 1 320px; max-width: 520px; height: 34px; gap: 7px; padding: 0 8px 0 11px; transition: border-color 0.15s;
+.browse-head { container: browse-bar / inline-size; }
+.browse-bar {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 720px) minmax(max-content, 1fr);
+  align-items: center; gap: 12px 20px; margin-bottom: 24px;
 }
+.browse-bar > .search-row { grid-column: 2; grid-row: 1; margin-top: 0; }
+.browse-bar > .browse-tools { grid-column: 3; grid-row: 1; justify-self: end; }
 .browse-search:focus-within { border-color: var(--accent); }
-.browse-search input { min-width: 0; height: 100%; font-size: 13px; color: var(--fg); }
-.browse-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.browse-search input { min-width: 0; height: 100%; color: var(--fg); }
+.browse-tools { display: flex; align-items: center; gap: 8px; }
+/* Narrower, the tools first and the search on the row under them. */
+@container browse-bar (max-width: 1100px) {
+  .browse-bar { grid-template-columns: minmax(0, 1fr); }
+  .browse-bar > .browse-tools { grid-column: 1; grid-row: 1; }
+  .browse-bar > .search-row { grid-column: 1; grid-row: 2; }
+}
 @container browse-bar (max-width: 640px) {
-  .browse-search { flex-basis: 100%; max-width: none; }
-  .browse-tools { width: 100%; margin-left: 0; }
+  .browse-bar > .browse-tools { justify-self: stretch; }
   .browse-tools .submit-app { margin-left: auto; }
 }
 /* A phone: Submit an app is its icon, so the row still fits. */
@@ -1199,6 +1213,8 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 
 /* Filters: one slim row of pill dropdowns; a pill that's on is tinted and has its own remove button. */
 .filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -6px 0 18px; }
+/* The library's and the catalog's, under their centred search: centred with it. */
+:is(#library-filters, #browse-filters) { justify-content: center; }
 .pill {
   position: relative; display: inline-flex; align-items: center; height: 30px; border: 1px solid var(--line); border-radius: 999px;
   background: var(--panel); color: var(--text-2); transition: border-color 0.15s;
@@ -2135,6 +2151,7 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .tv-mode .topbar .tab-prompt { margin-top: 0; }
 /* The library's and Browse's tools, large enough to read and to find the focus on from across a room. */
 .tv-mode .library-bar { margin-bottom: 22px; }
+.tv-mode #library-filters { margin-top: -8px; }
 .tv-mode .page-tools { gap: 12px; }
 .tv-mode .page-tools > * { height: 46px; }
 .tv-mode :is(.library-search, .browse-search) { gap: 10px; height: 46px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); }
@@ -2150,6 +2167,12 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .tv-mode .page-tools .tool:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
 .tv-mode .page-tools .tool.on { background: var(--accent-soft); border-color: var(--accent); }
 .tv-mode .page-tools .tool.icon-only { width: 46px; padding: 0; }
+/* The tabs, where they fit beside the tools, as large: More and Add a playlist with them. */
+.tv-mode .library-bar .playlists { gap: 10px; }
+.tv-mode .library-bar .playlists button:not(.menu-button), .tv-mode .playlists .more-tabs select { height: 46px; padding: 0 20px; font-size: 15px; font-weight: 600; }
+.tv-mode .playlists .more-tabs select { padding-right: 40px; }
+.tv-mode .more-select > svg { right: 16px; }
+.tv-mode .library-bar .playlists .menu-button { width: 46px; height: 46px; }
 .tv-mode .library-show { gap: 12px; }
 .tv-mode .library-show .menu-button { width: 46px; height: 46px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--field); color: var(--strong); }
 .tv-mode .library-show .menu-button:is(:hover, [aria-expanded="true"]) { background: var(--field-hover); }
