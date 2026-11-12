@@ -61,6 +61,29 @@ export function GameCopySettings({ inSetup = false }: { inSetup?: boolean }) {
           <Trans>When an app needs your own copy of a game, like a ROM or a disc image, Quiver looks for it in these folders, and nowhere else.</Trans>
         </p>
       )}
+      {/* Above the consoles, so it isn't pushed further down with every one added. */}
+      {unset.length > 0 && (
+        <label className="game-copy-add">
+          <span>
+            <Trans>Add folders for a console</Trans>
+          </span>
+          <select
+            value={adding}
+            onChange={(e) => {
+              const id = e.target.value;
+              setAdding("");
+              if (id) void add(id);
+            }}
+          >
+            <option value="">{t`Choose a console…`}</option>
+            {unset.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <ul className="game-copy-consoles">
         {set.map((id) => {
           const console = nameOf(id);
@@ -89,28 +112,6 @@ export function GameCopySettings({ inSetup = false }: { inSetup?: boolean }) {
           );
         })}
       </ul>
-      {unset.length > 0 && (
-        <label className="game-copy-add">
-          <span>
-            <Trans>Add folders for a console</Trans>
-          </span>
-          <select
-            value={adding}
-            onChange={(e) => {
-              const id = e.target.value;
-              setAdding("");
-              if (id) void add(id);
-            }}
-          >
-            <option value="">{t`Choose a console…`}</option>
-            {unset.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
     </section>
   );
 }

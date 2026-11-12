@@ -198,8 +198,11 @@ export function LibraryPage({
   const letterGrid = useRef<HTMLDivElement>(null);
   const [stacked, setStacked] = useState(false);
   const [narrow, setNarrow] = useState(false);
-  // How wide the tabs are, measured while they show, for whether they'd fit once folded.
-  const tabsWide = useRef(0);
+  // How many of the tabs show as tabs, in order; the rest are in a More menu after them.
+  const [shownTabs, setShownTabs] = useState(Infinity);
+  // Each tab's width, measured while it shows, for whether it would fit once it's in More. The tabs' keys, this render's.
+  const tabWidths = useRef(new Map<string, number>());
+  const tabKeys = useRef<string[]>([]);
   const fitTabs = () => {
     const row = tabRow.current;
     const tools = bar.current?.querySelector<HTMLElement>(".library-tools");
@@ -208,19 +211,30 @@ export function LibraryPage({
       const items = ([...el.children] as HTMLElement[]).filter((item) => !item.matches(".library-show"));
       return items.length ? items[items.length - 1].offsetLeft + items[items.length - 1].offsetWidth - items[0].offsetLeft : 0;
     };
-    if (row) tabsWide.current = across(row);
+    for (const el of row?.querySelectorAll<HTMLElement>(".playlist-tab") ?? []) tabWidths.current.set(el.dataset.tab!, el.offsetWidth);
     const room = bar.current.clientWidth;
-    // The gap between them (.library-bar's), and the room the search grows into when it has focus, so focusing it
-    // never moves the tabs. The search measured at its width beside the tabs, 240 (app.css): grown with the focus,
-    // focusing it folded the tabs away from the d-pad on its way to them, and stretched across a folded row, the
-    // tabs never came back. At 1040 or less the tools have a row of their own anyway.
-    const search = tools.querySelector<HTMLElement>(".library-search");
-    const tools240 = across(tools) - (search ? search.offsetWidth - 240 : 0);
-    setStacked(room <= 1040 || tabsWide.current + tools240 + 20 + 80 > room);
+    // The search at its width beside the tabs (app.css's clamp), whatever it's stretched to once they fold: measured
+    // as it is, stretched across a folded row, the tabs never came back. Then the tools, the gaps between the three
+    // (.library-bar's), and Add a playlist after the tabs.
+    const search = Math.min(420, Math.max(260, room * 0.24));
+    const left = room - search - across(tools) - 20 * 2 - 40;
+    // A tab and the gap after it (.playlists'); one not yet seen, about a playlist's.
+    const widths = tabKeys.current.map((key) => (tabWidths.current.get(key) ?? 140) + 6);
+    let fit = widths.length;
+    if (widths.reduce((sum, w) => sum + w, 0) > left) {
+      // As many as fit with More beside them.
+      let used = (row?.querySelector<HTMLElement>(".more-tabs")?.offsetWidth ?? 110) + 6;
+      fit = 0;
+      while (fit < widths.length && used + widths[fit] <= left) used += widths[fit++];
+    }
+    setShownTabs(fit);
+    // All of them fold into a menu at the tools' start when not even one fits, rather than take a row of their own
+    // from a short screen (a Steam Deck's). At 1040 or less the tools have a row of their own anyway.
+    setStacked(room <= 1040 || fit < 1);
     // As app.css's @container library-bar (max-width: 520px): a phone, where Group by goes into View options.
     setNarrow(room <= 520);
   };
-  useEffect(fitTabs);
+  useLayoutEffect(fitTabs);
   useEffect(() => {
     if (!bar.current || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => fitTabs());
@@ -418,6 +432,8 @@ export function LibraryPage({
     ...(hidden.size || tab === "hidden" ? [["hidden", t({ message: `Hidden (${hiddenCount})`, comment: "Library tab: apps the player hid" })] as [Tab, string]] : []),
     ...collections.map((c): [Tab, string] => [c.key, c.name]),
   ];
+  tabKeys.current = tabs.map(([key]) => key);
+  const [inRow, inMore] = [tabs.slice(0, shownTabs), tabs.slice(shownTabs)];
   const playlistName = collection?.name ?? "";
   const playlistMenu = collection && (
     <Menu
@@ -709,10 +725,20 @@ export function LibraryPage({
       <LibraryBackground />
       {resume && <ContinuePlaying entry={resume} played={installs[resume.id].lastPlayed!} onOpen={() => onOpen(resume)} action={action(resume)} />}
       <div ref={bar} className={`library-bar${stacked || tv ? " stacked" : ""}`}>
+        {/* The search first, where Browse has its own, so it's the first thing seen of the row. */}
+        <label className="search library-search">
+          <Search size={15} />
+          <input aria-label={t`Search your library`} placeholder={t`Search your library`} value={search} onChange={(e) => setSearch(e.target.value)} />
+          {search && (
+            <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => setSearch("")}>
+              <X size={13} />
+            </button>
+          )}
+        </label>
         {!stacked && !tv && (
           <nav ref={tabRow} className="playlists" aria-label={t`Playlists`}>
-            {tabs.map(([key, name]) => (
-              <span key={key} className="playlist-tab">
+            {inRow.map(([key, name]) => (
+              <span key={key} className="playlist-tab" data-tab={key}>
                 <button className={tab === key ? "active" : ""} aria-pressed={tab === key} onClick={() => setTab(key)}>
                   <PlaylistIcon entry={iconOf(key)} />
                   {name}
@@ -721,17 +747,29 @@ export function LibraryPage({
                 {tab === key && collection && playlistMenu}
               </span>
             ))}
-            {addPlaylist}
-            {collections.length > 6 && (
-              <select aria-label={t`All playlists`} value={collection ? tab : ""} onChange={(e) => e.target.value && setTab(e.target.value)}>
-                <option value="">{t({ message: "More…", comment: "Picks a playlist that isn't among the tabs" })}</option>
-                {collections.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+            {/* The tabs that don't fit beside the search and the tools; the open one named on it, its menu beside it. */}
+            {inMore.length > 0 && (
+              <span className="playlist-tab more-tabs">
+                <span className="more-select">
+                  <select
+                    aria-label={t`More playlists`}
+                    className={inMore.some(([key]) => key === tab) ? "active" : ""}
+                    value={inMore.some(([key]) => key === tab) ? tab : ""}
+                    onChange={(e) => e.target.value && setTab(e.target.value)}
+                  >
+                    <option value="">{t({ message: "More…", comment: "Picks a playlist that isn't among the tabs" })}</option>
+                    {inMore.map(([key, name]) => (
+                      <option key={key} value={key}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} aria-hidden="true" />
+                </span>
+                {inMore.some(([key]) => key === tab) && collection && playlistMenu}
+              </span>
             )}
+            {addPlaylist}
           </nav>
         )}
         <div className="library-tools page-tools">
@@ -752,15 +790,6 @@ export function LibraryPage({
               {addPlaylist}
             </span>
           )}
-          <label className="search library-search">
-            <Search size={15} />
-            <input aria-label={t`Search your library`} placeholder={t`Search your library`} value={search} onChange={(e) => setSearch(e.target.value)} />
-            {search && (
-              <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => setSearch("")}>
-                <X size={13} />
-              </button>
-            )}
-          </label>
           <span className="quiet-select library-sort">
             <select aria-label={t({ message: "Sort", comment: "Label of the library's sort order" })} value={sort} onChange={(e) => setSort(e.target.value as LibrarySort)}>
               {LIBRARY_SORTS.map(([value, label]) => (

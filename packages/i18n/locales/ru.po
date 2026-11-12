@@ -895,10 +895,6 @@ msgid "All platforms"
 msgstr "Все платформы"
 
 #: ../../apps/launcher/src/library.tsx
-msgid "All playlists"
-msgstr "Все плейлисты"
-
-#: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "Все типы проектов"
 
@@ -3021,6 +3017,10 @@ msgstr "Моды для обзора"
 #: ../ui/src/discover.tsx
 msgid "More like this"
 msgstr "Похожие"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "More playlists"
+msgstr ""
 
 #. Picks a playlist that isn't among the tabs
 #: ../../apps/launcher/src/library.tsx
