@@ -9,6 +9,7 @@ import {
   heroSources,
   EntryCardContent,
   ReleaseBadge,
+  badgeState,
   Score,
   ScrollingText,
   isNew,
@@ -314,6 +315,9 @@ describe("ReleaseBadge", () => {
         <ReleaseBadge state="verified" />
         <ReleaseBadge state="unverified" />
         <ReleaseBadge state="blocked" label="Withdrawn" title="Pulled by a maintainer" />
+        <ReleaseBadge state={badgeState({ state: "unverified", assets: [] })} />
+        <ReleaseBadge state={badgeState({ state: "unverified", assets: [{}] })} />
+        <ReleaseBadge state={badgeState({ state: "blocked", assets: [] })} />
       </>,
     );
     const badges = [...container.querySelectorAll(".release-badge")];
@@ -321,6 +325,10 @@ describe("ReleaseBadge", () => {
       ["release-badge verified", "Available"],
       ["release-badge unverified", "Not offered"],
       ["release-badge blocked", "Withdrawn"],
+      // Nothing to install isn't a wait: it says so in place of "Not offered".
+      ["release-badge empty", "No files"],
+      ["release-badge unverified", "Not offered"],
+      ["release-badge blocked", "Blocked"],
     ]);
     expect(badges.every((b) => b.querySelector("svg[aria-hidden=true]"))).toBe(true);
     expect(badges[2].getAttribute("title")).toBe("Pulled by a maintainer");

@@ -3312,6 +3312,11 @@ msgstr "Пока нет приложений для этой игры."
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "Контроллеры не обнаружены. Подключите контроллер, и он появится здесь."
 
+#. A release with no files Quiver Launcher can install, such as one with only source code
+#: ../ui/src/index.tsx
+msgid "No files"
+msgstr "Нет файлов"
+
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "No folders in here."
 msgstr "Здесь нет папок."
@@ -5066,6 +5071,10 @@ msgstr "Доступ к этому плейлисту закрыт."
 #: ../../apps/launcher/src/telemetry.test.ts
 msgid "This release has no download for your computer."
 msgstr "В этой версии нет загрузки для вашего компьютера."
+
+#: ../ui/src/index.tsx
+msgid "This release has no files Quiver Launcher can install"
+msgstr "В этой версии нет файлов, которые Quiver Launcher может установить"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download."

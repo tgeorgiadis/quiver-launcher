@@ -11,7 +11,7 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { ApiError, type AiUse, type Asset, type Checking, type Client, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
-import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
+import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
 import { earlyHereFor, pulledVerified, useLauncher, type Install, type Settings } from "./store";
@@ -352,8 +352,8 @@ function ReleaseCard({
 }) {
   const { state, scan, withdrawn, version } = release;
   const files = release.assets.length;
-  // A blocked release the site lists no files for (one from before blocked installs) can't install, as in Change version.
-  const install = onInstall && !(state === "blocked" && files === 0) ? onInstall : undefined;
+  // A release the site lists no files for (a blocked one from before blocked installs, or one with nothing to install) can't install, as in Change version.
+  const install = onInstall && !(state !== "verified" && files === 0) ? onInstall : undefined;
   const hours = release.checkEndsAt !== undefined ? hoursFrom(release.checkEndsAt) : 0;
   const engines = scan?.engines ?? t({ message: "flagged", comment: "What VirusTotal said of a release's files, after “VirusTotal:”" });
   return (
@@ -390,7 +390,7 @@ function ReleaseCard({
           {/* One status each: Withdrawn says it all, in place of Blocked. */}
           {!withdrawn && (
             <ReleaseBadge
-              state={state}
+              state={offered || checking ? state : badgeState(release)}
               label={
                 offered ? (
                   t({ message: "Available", comment: "A release Quiver Launcher offers: its files have been out for 48 hours" })
@@ -1399,17 +1399,19 @@ export function Versions({
       <ul>
         {versions.map((version) => {
           const { release, state, reasons } = version;
-          // A site from before blocked installs lists no files for one.
-          const unavailable = !custom && state === "blocked" && release.assets.length === 0;
+          // A site from before blocked installs lists no files for one; a release with nothing to install has none either.
+          const unavailable = !custom && state !== "verified" && release.assets.length === 0;
           const why =
             custom || state !== "blocked" ? "" : [...(version.withdrawn ? [t({ message: "Withdrawn:", comment: "Before why a release was withdrawn" })] : []), ...reasons, ...(unavailable ? [t`Quiver won't install it.`] : [])].join(" ");
+          // "No files" for one with nothing to install, though not for one Quiver hasn't seen, whose files GitHub lists.
+          const badge = version.known ? badgeState({ state, assets: release.assets }) : state;
           // Files for other systems only: still the player's to install, as the site can mark a file wrongly, but it says so.
           const elsewhere = otherSystems(release.assets, config.os, config.arch);
           const systems = platformList(elsewhere);
           // One row each: the badge as its icon (its word for screen readers and on hover), the version with when under it, its buttons, and why.
           return (
             <li key={release.id + release.version} className={`version ${custom ? "verified" : state}`}>
-              {!custom && <ReleaseBadge state={state} title={reasons.join(" ") || undefined} />}
+              {!custom && <ReleaseBadge state={badge} title={reasons.join(" ") || undefined} />}
               <strong>{release.version}</strong>
               {(release.releasedAt || release.prerelease || elsewhere.length > 0) && (
                 <span className="version-date muted">

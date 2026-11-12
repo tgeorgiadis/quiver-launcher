@@ -3312,6 +3312,11 @@ msgstr "Aún no hay apps para jugar este juego."
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "No se detectaron controles. Conecta uno y aparecerá aquí."
 
+#. A release with no files Quiver Launcher can install, such as one with only source code
+#: ../ui/src/index.tsx
+msgid "No files"
+msgstr "Sin archivos"
+
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "No folders in here."
 msgstr "Aquí no hay carpetas."
@@ -5066,6 +5071,10 @@ msgstr "Esta playlist ya no se comparte."
 #: ../../apps/launcher/src/telemetry.test.ts
 msgid "This release has no download for your computer."
 msgstr "Esta versión no tiene descarga para tu computadora."
+
+#: ../ui/src/index.tsx
+msgid "This release has no files Quiver Launcher can install"
+msgstr "Esta versión no tiene archivos que Quiver Launcher pueda instalar"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download."
