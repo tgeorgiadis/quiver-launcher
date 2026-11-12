@@ -20,6 +20,8 @@ loads both.
 | Русский                 | [`locales/ru.po`](locales/ru.po)         | [`glossary/ru.md`](glossary/ru.md)             |
 | Italiano                | [`locales/it.po`](locales/it.po)         | [`glossary/it.md`](glossary/it.md)             |
 | 한국어                  | [`locales/ko.po`](locales/ko.po)         | [`glossary/ko.md`](glossary/ko.md)             |
+| 简体中文                | [`locales/zh-CN.po`](locales/zh-CN.po)   | [`glossary/zh-CN.md`](glossary/zh-CN.md)       |
+| 繁體中文                | [`locales/zh-TW.po`](locales/zh-TW.po)   | [`glossary/zh-TW.md`](glossary/zh-TW.md)       |
 
 The translations were first made by machine. A native speaker reading one
 over and fixing what reads wrong is the most useful contribution there is.
