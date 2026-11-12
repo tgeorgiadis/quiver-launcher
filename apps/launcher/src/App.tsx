@@ -625,24 +625,9 @@ function BrowsePage({
   const typed = search.trim();
   return (
     <>
-      {/* As the library's: the search, then sort, Filters and Submit an app, all one height. */}
+      {/* The search in the row's middle, as large as the library's; sort, Filters and Submit an app at its end. */}
+      <div className="browse-head">
       <div className="browse-bar">
-        <label className="search browse-search">
-          <Search size={15} />
-          <input
-            // Not on a phone, where the focus brings up the keyboard over the page each time Browse opens.
-            autoFocus={config.os !== "android" && config.os !== "ios"}
-            aria-label={t`Search the catalog`}
-            placeholder={t`Search ports, games and tools`}
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-          />
-          {search && (
-            <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => onSearch("")}>
-              <X size={13} />
-            </button>
-          )}
-        </label>
         <div className="browse-tools page-tools">
           <span className="quiet-select">
             <select
@@ -682,6 +667,26 @@ function BrowsePage({
             <PackagePlus size={15} aria-hidden="true" /> <span><Trans>Submit an app</Trans></span>
           </button>
         </div>
+        {/* The search on a row of its own under the tools, centred and larger, as the library's. */}
+        <div className="search-row">
+          <label className="search browse-search">
+            <Search size={17} />
+            <input
+              // Not on a phone, where the focus brings up the keyboard over the page each time Browse opens.
+              autoFocus={config.os !== "android" && config.os !== "ios"}
+              aria-label={t`Search the catalog`}
+              placeholder={t`Search ports, games and tools`}
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+            />
+            {search && (
+              <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => onSearch("")}>
+                <X size={14} />
+              </button>
+            )}
+          </label>
+        </div>
+      </div>
       </div>
       {/*
         Filters: pills to pick from while open; the ones that differ from the defaults stay, each removable, while it's

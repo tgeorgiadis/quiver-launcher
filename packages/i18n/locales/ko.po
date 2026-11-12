@@ -895,10 +895,6 @@ msgid "All platforms"
 msgstr "모든 플랫폼"
 
 #: ../../apps/launcher/src/library.tsx
-msgid "All playlists"
-msgstr "모든 재생 목록"
-
-#: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "모든 프로젝트 유형"
 
@@ -3021,6 +3017,10 @@ msgstr "둘러볼 모드"
 #: ../ui/src/discover.tsx
 msgid "More like this"
 msgstr "비슷한 앱"
+
+#: ../../apps/launcher/src/library.tsx
+msgid "More playlists"
+msgstr ""
 
 #. Picks a playlist that isn't among the tabs
 #: ../../apps/launcher/src/library.tsx
