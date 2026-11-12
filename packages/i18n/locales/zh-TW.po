@@ -895,10 +895,6 @@ msgid "All platforms"
 msgstr "所有平臺"
 
 #: ../../apps/launcher/src/library.tsx
-msgid "All playlists"
-msgstr "所有播放清單"
-
-#: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "所有專案型別"
 
@@ -3022,6 +3018,10 @@ msgstr "可瀏覽的模組"
 msgid "More like this"
 msgstr "類似內容"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "More playlists"
+msgstr "更多播放清單"
+
 #. Picks a playlist that isn't among the tabs
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
@@ -3311,6 +3311,11 @@ msgstr "目前沒有應用程式可以遊玩此遊戲。"
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "未檢測到遊戲控制器。連線遊戲控制器後，它會顯示在這裡。"
+
+#. A release with no files Quiver Launcher can install, such as one with only source code
+#: ../ui/src/index.tsx
+msgid "No files"
+msgstr "沒有檔案"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "No folders in here."
@@ -5066,6 +5071,10 @@ msgstr "此播放清單已停止共享。"
 #: ../../apps/launcher/src/telemetry.test.ts
 msgid "This release has no download for your computer."
 msgstr "此版本沒有適用於你電腦的下載檔案。"
+
+#: ../ui/src/index.tsx
+msgid "This release has no files Quiver Launcher can install"
+msgstr "此發行版本沒有 Quiver Launcher 可安裝的檔案"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download."
