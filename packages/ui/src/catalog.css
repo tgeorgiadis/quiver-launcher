@@ -306,6 +306,9 @@
 .release-badge.blocked {
   color: var(--ql-negative);
 }
+.release-badge.empty {
+  color: var(--ql-score-muted);
+}
 .card-bottom .score {
   font-size: 12px;
 }
