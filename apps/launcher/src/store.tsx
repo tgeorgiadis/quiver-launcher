@@ -5,9 +5,9 @@
  * overrides); names, artwork and files always come from the catalog. The
  * last catalog data seen is cached so the library shows instantly offline.
  */
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
@@ -76,6 +76,11 @@ export type CatalogEntry = Entry & {
    * player can update to early by asking (`earlyOffer`).
    */
   early?: { of: string; release?: { version: string; releasedAt: number }; now?: true };
+  /**
+   * The site's `verified` (its newest main release), while `verified` is the newest pre-release because the player
+   * chose pre-releases for this app (`withPrereleases`). Only in the store's `catalog`; never kept.
+   */
+  verifiedMain?: Verified;
 };
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
@@ -98,6 +103,8 @@ export type Install = {
   playTime?: number;
   /** Install new releases without asking, or stay on this one (only ever the player's own choice). Unset: offer them. */
   updates?: "auto" | "pinned";
+  /** Whether this app gets pre-releases, whatever the player's default (`Settings.prereleases`). Unset: the default. */
+  prereleases?: "include" | "main";
   /** A verified version Auto Update leaves alone: the one the player went back from by picking an older release. */
   skip?: string;
   /** A release the player said to skip: not offered or installed by itself, until a newer one comes. */
@@ -269,6 +276,8 @@ type Launcher = {
   /** Adds an app the player picked out, without downloading it, and says so: its card in Browse looks no different. */
   addToLibrary: (entry: Entry) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
+  /** Sets whether an installed app gets pre-releases; undefined goes back to the player's default. */
+  setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
   /** Stops offering this release of an app; a newer one is offered as usual. */
   declineUpdate: (id: string, version: string) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
@@ -653,6 +662,38 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
  */
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
+/** Whether an app gets pre-releases: its own choice, else the player's default. */
+export const wantsPrereleases = (settings: Pick<Settings, "prereleases">, install: Pick<Install, "prereleases"> | undefined) =>
+  install?.prereleases ? install.prereleases === "include" : Boolean(settings.prereleases);
+
+/** The app's newest verified main release, whatever the player chose; a pre-release only for a project with nothing else. */
+export const mainRelease = (entry: CatalogEntry) => entry.verifiedMain ?? entry.verified;
+
+/** A project that only publishes pre-releases: every player gets its newest. */
+export const onlyPrereleases = (entry: CatalogEntry) => Boolean(mainRelease(entry)?.prerelease);
+
+/** The entry as the site sent it, without the player's pre-release choice. */
+export function withMainRelease(entry: CatalogEntry): CatalogEntry {
+  if (!entry.verifiedMain) return entry;
+  const { verifiedMain, ...rest } = entry;
+  return { ...rest, verified: verifiedMain };
+}
+
+/**
+ * The entry for a player who chose pre-releases for it: its newest verified pre-release, when it's newer than its main
+ * release, is the release it updates to. Every reader of `verified` then follows the choice.
+ */
+export function withPrereleases(entry: CatalogEntry, wants: boolean): CatalogEntry {
+  const main = withMainRelease(entry);
+  return wants && main.verifiedPrerelease ? { ...main, verified: main.verifiedPrerelease, verifiedMain: main.verified } : main;
+}
+
+/** Entries as they're kept: each the site's own. The same object when none had the player's choice in it. */
+function keptAsSent(catalog: Record<string, CatalogEntry>) {
+  if (!Object.values(catalog).some((e) => e.verifiedMain)) return catalog;
+  return Object.fromEntries(Object.entries(catalog).map(([id, e]) => [id, withMainRelease(e)]));
+}
+
 /** "v1.2" and "1.2" are the same release. */
 const bare = (version: string) => version.trim().replace(/^v/i, "");
 
@@ -1034,6 +1075,8 @@ export type Settings = {
   appUpdates?: "newest";
   /** Asked once which: in the setup, or by the banner for a player set up before it. */
   appUpdatesAsked?: boolean;
+  /** Apps get pre-releases too, unless an app says otherwise (`Install.prereleases`). Unset: main releases only. */
+  prereleases?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
   previewUpdates?: boolean;
   /** Announcements dismissed here, by id (announcements.ts). */
@@ -1140,7 +1183,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const account = useAccount();
   const [allItems, setLibrary] = useState(saved.library);
   const [installs, setInstalls] = useState(saved.installs);
-  const [catalog, setCatalog] = useState(saved.catalog);
+  // As the site sent them; `catalog`, below, has each player's pre-release choice in it.
+  const [rawCatalog, setRawCatalog] = useState(() => keptAsSent(saved.catalog));
+  // What's written back may be from `catalog`: kept as the site sent it.
+  const setCatalog: Dispatch<SetStateAction<Record<string, CatalogEntry>>> = useCallback(
+    (next) => setRawCatalog((c) => keptAsSent(typeof next === "function" ? next(c) : next)),
+    [],
+  );
   const [jobs, setJobs] = useState<Record<string, Job>>({});
   const [appMoves, setAppMoves] = useState<Record<string, AppMove>>({});
   // The apps moving and installing this moment, kept as they change rather than as of a render: one mustn't start
@@ -1222,9 +1271,22 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   usePersist("library", allItems);
   usePersist("installs", installs);
-  usePersist("catalog", catalog);
+  usePersist("catalog", rawCatalog);
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
+  // Each app's verified release as the player chose: the newest pre-release for an app that gets them.
+  const prereleasesOn = Boolean(settings.prereleases);
+  const catalog = useMemo(() => {
+    let shown = rawCatalog;
+    for (const [id, entry] of Object.entries(rawCatalog)) {
+      if (!entry.verifiedPrerelease || !wantsPrereleases({ prereleases: prereleasesOn }, installs[id])) continue;
+      if (shown === rawCatalog) shown = { ...rawCatalog };
+      shown[id] = withPrereleases(entry, true);
+    }
+    return shown;
+  }, [rawCatalog, installs, prereleasesOn]);
+  /** Whether this app gets pre-releases: what's asked of the site's releases for it. */
+  const prereleasesFor = (id: string) => wantsPrereleases(settings, installs[id]);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
   // What usage data reads later on, as it stands by then.
@@ -1435,7 +1497,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (entry.forHere?.of === of || lookingUp.current.has(asked)) continue;
       lookingUp.current.add(asked);
       const custom = isCustom(item.id) ? (item.custom ?? fromKey(item.id)) : null;
-      (custom ? releasesOf(custom) : client.releases(entry.slug, 100).then((p) => p.items))
+      (custom ? releasesOf(custom) : client.releases(entry.slug, 100, null, prereleasesFor(item.id)).then((p) => p.items))
         .then((list) => {
           const found = releaseHere(entry, list, Boolean(custom), install);
           const release = found && { version: found.version, releasedAt: found.releasedAt };
@@ -1455,7 +1517,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
    * Quiver saw of them.
    */
   const earlyHere = (entry: Entry, history: HistoryRelease[], was?: Install, platform?: Os) => {
-    const open = withdrawnAsBlocked(history, (r) => r.version, catalog[entry.id]?.withdrawn).filter((r) => r.state !== "blocked" && r.assets.length > 0);
+    // On main releases, a project's pre-releases aren't updates, unless it publishes nothing else.
+    const known = catalog[entry.id] ?? entry;
+    const mainOnly = !prereleasesFor(entry.id) && Boolean(mainRelease(known)) && !onlyPrereleases(known);
+    const open = withdrawnAsBlocked(history, (r) => r.version, catalog[entry.id]?.withdrawn).filter((r) => r.state !== "blocked" && r.assets.length > 0 && !(mainOnly && r.prerelease));
     const here = releaseHere(entry, open.map(fromSite), false, was, platform);
     const found = here && open.find((r) => r.releaseId === here.id);
     return found?.state === "unverified" ? found : undefined;
@@ -1512,7 +1577,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!install.unverified || install.differs || !entry?.verified || bare(entry.verified.version) !== bare(install.version) || (compared.current.get(key) ?? 0) > Date.now()) continue;
       compared.current.set(key, Infinity);
       client
-        .releases(entry.slug, 5)
+        .releases(entry.slug, 5, null, true)
         .then(({ items }) => {
           const release = items.find((r) => bare(r.version) === bare(install.version));
           if (!release) return;
@@ -1629,7 +1694,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? undefined
         : custom
           ? await releasesOf(custom)
-          : (await client.releases(entry.slug, 100).catch(() => {
+          : (await client.releases(entry.slug, 100, null, prereleasesFor(entry.id)).catch(() => {
               throw noAnswer();
             })).items;
       const here = listed && releaseHere(entry, listed, Boolean(custom), was, options.platform);
@@ -1818,7 +1883,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (!custom) {
           void client.downloadProblem(entry, { version: release.version, file, problem: error }).catch(() => {});
           const fits = (r: Release) => bestAssets(r.assets, config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
-          instead = insteadOf((await client.releases(entry.slug).catch(() => null))?.items ?? [], release.version, from, fits);
+          instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, from, fits);
         }
       }
       fail(entry.id, problem, true, instead);
@@ -1978,6 +2043,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setNotice(t`${name} is in your library.`);
     },
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
+    setPrereleases: (id, prereleases) =>
+      setInstalls((i) => {
+        if (!i[id]) return i;
+        const { prereleases: _, ...install } = i[id];
+        return { ...i, [id]: prereleases ? { ...install, prereleases } : install };
+      }),
     declineUpdate: (id, version) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], declined: version } } : i)),
     setLaunch: (id, launch) =>
       setInstalls((i) => {
@@ -2182,7 +2253,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       try {
         const release = custom
           ? (await releasesOf(custom)).find(same)
-          : ((await client.releases(entry.slug, 100)).items.find(same) ??
+          : ((await client.releases(entry.slug, 100, null, true)).items.find(same) ??
             (install.unverified ? (await client.unverifiedReleases(entry.slug).catch(() => [])).filter(same).map(fromSite)[0] : undefined));
         const version = versionLabel(install.version);
         if (!release) throw new Problem(msg`${version} can't be installed again: its release isn't available any more.`);

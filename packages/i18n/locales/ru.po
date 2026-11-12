@@ -621,10 +621,6 @@ msgstr "+ Новый плейлист…"
 msgid "+ New tag…"
 msgstr "+ Новый тег…"
 
-#: ../../apps/launcher/src/detail.tsx
-msgid "<0>The newest available release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
-msgstr "<0>Самая новая доступная версия — предварительная сборка.</0> Проект не опубликовал более новую стабильную версию с загрузками, поэтому Quiver Launcher устанавливает эту. Возможны ошибки и незавершённые функции."
-
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "Адрес обложки хранится в вашем аккаунте. Остальные изображения и всё, что выбрано из файла, остаются на этом компьютере."
@@ -935,6 +931,10 @@ msgstr "Приложение"
 #: ../../apps/launcher/src/store.tsx
 msgid "An app moved, but some of its old copy couldn't be deleted. You can delete {path} yourself."
 msgstr "Приложение перемещено, но часть его старой копии не удалось удалить. Вы можете удалить {path} самостоятельно."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "An early or experimental build the developer marked as a pre-release. It may change how things work or leave out some systems."
+msgstr "Ранняя или экспериментальная сборка, которую разработчик отметил как предварительную версию. Она может работать иначе или не поддерживать некоторые системы."
 
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
@@ -1823,6 +1823,10 @@ msgstr "По словам разработчика, без ИИ"
 msgid "Developer wasn't sure"
 msgstr "Разработчик не уверен"
 
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Developers mark some releases as pre-releases: early or experimental builds, such as betas and nightlies. They can bring new features sooner, but they may change how things work, break saves or settings, or leave out builds for some systems. Most players should use main releases."
+msgstr "Разработчики отмечают некоторые выпуски как предварительные версии: ранние или экспериментальные сборки, например беты и ночные сборки. Они могут раньше принести новые функции, но могут изменить то, как всё работает, повредить сохранения или настройки или не включать сборки для некоторых систем. Большинству игроков лучше использовать основные версии."
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Didn't finish"
 msgstr "Не завершено"
@@ -1933,6 +1937,10 @@ msgstr "например, --fullscreen"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "например, gamemoderun %command% --fullscreen"
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Each app can include pre-releases or not, whatever this says, from its own settings."
+msgstr "В собственных настройках каждого приложения можно включить или исключить предварительные версии, независимо от этого параметра."
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Each app's own setting still says whether it updates by itself, asks first, or stays on its version."
@@ -2377,6 +2385,13 @@ msgstr "В этой папке"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Include NSFW"
 msgstr "Показывать NSFW"
+
+#. Setting: apps also update to releases their developers marked as pre-releases
+#. Which releases an app gets: pre-releases too
+#: ../../apps/launcher/src/app-updates.tsx
+#: ../../apps/launcher/src/App.tsx
+msgid "Include pre-releases"
+msgstr "Включать предварительные версии приложений"
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Include preview updates"
@@ -2927,6 +2942,11 @@ msgstr "Поиск…"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Made by"
 msgstr "Автор"
+
+#. Which releases an app gets: only the ones its developer didn't mark as pre-releases
+#: ../../apps/launcher/src/App.tsx
+msgid "Main releases only"
+msgstr "Только основные версии"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Make a copy"
@@ -3786,8 +3806,7 @@ msgstr "Порт"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "Вертикальное, примерно 600×900. Карточки библиотеки и режим ТВ."
 
-#. A release its developer marked as not yet stable
-#. A release its developer marked as not yet stable
+#. A release its developer marked as a pre-release: an early or experimental build
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
 msgstr "Предварительная версия"
@@ -4088,6 +4107,7 @@ msgid "Reinstall {installedVersion}"
 msgstr "Переустановить {installedVersion}"
 
 #. Tab of an app's page
+#. Which of an app's releases it gets: main releases only, or pre-releases too
 #: ../../apps/launcher/src/App.tsx
 msgid "Releases"
 msgstr "Версии"
@@ -5067,6 +5087,10 @@ msgstr "На этой странице возникла проблема"
 msgid "This playlist isn't shared any more."
 msgstr "Доступ к этому плейлисту закрыт."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "This project only publishes pre-releases, so Quiver Launcher offers its newest one."
+msgstr "Этот проект публикует только предварительные версии, поэтому Quiver Launcher предлагает самую новую из них."
+
 #: ../../apps/launcher/src/store.tsx
 #: ../../apps/launcher/src/telemetry.test.ts
 msgid "This release has no download for your computer."
@@ -5388,6 +5412,16 @@ msgstr "Используйте не менее 10 символов."
 #: ../../apps/launcher/src/controls.tsx
 msgid "Use controllers to move around Quiver"
 msgstr "Использовать контроллеры для навигации в Quiver"
+
+#. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (include pre-releases)"
+msgstr "По умолчанию (включать предварительные версии)"
+
+#. Which releases an app gets: whatever Settings, Updates says, which is main releases only
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (main releases only)"
+msgstr "По умолчанию (только основные версии)"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Use no more than 100 characters."

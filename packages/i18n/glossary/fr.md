@@ -21,6 +21,8 @@ before « : ; ! ? », and « » for quotes.
 | withdrawn | retirée | |
 | available / not offered / blocked (a release) | disponible / non proposée / bloquée | |
 | preview release | version préliminaire | |
+| pre-release | Version préliminaire | a release its developer marked as one: an early or experimental build |
+| main release | version principale | a release not marked as a pre-release; never "stable" |
 | play time / recently played | temps de jeu / joués récemment | |
 | controller / keyboard | manette / clavier | |
 | Settings | Paramètres | |

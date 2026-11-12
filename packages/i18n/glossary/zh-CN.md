@@ -22,6 +22,8 @@
 | withdrawn (release) | 已撤回 | 发布者或目录撤回了该版本，不等于玩家卸载 |
 | available / not offered / blocked (a release) | 可用 / 暂不提供 / 已阻止 | Not offered 常指 48 小时等待期间暂不提供；blocked 是已阻止安装，按状态分别使用 |
 | preview release | 预览版 | |
+| pre-release | 预发布版本 | a release its developer marked as one: an early or experimental build |
+| main release | 正式版本 | a release not marked as a pre-release; never "stable" |
 | play time / recently played | 游戏时长 / 最近游玩 | |
 | controller / keyboard | 手柄 / 键盘 | |
 | Settings | 设置 | Quiver Launcher 的全局设置 |

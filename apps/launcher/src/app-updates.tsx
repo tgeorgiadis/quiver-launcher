@@ -66,7 +66,41 @@ export function AppUpdatesSetting({ inSetup = false }: { inSetup?: boolean }) {
           <Trans>Each app's own setting still says whether it updates by itself, asks first, or stays on its version.</Trans>
         </p>
       )}
+      {!inSetup && <PrereleasesSetting />}
     </section>
+  );
+}
+
+/** Whether apps get pre-releases by default; each app can say otherwise in its own settings. */
+function PrereleasesSetting() {
+  const { settings, setSettings } = useLauncher();
+  return (
+    <div className="prereleases-setting">
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={Boolean(settings.prereleases)}
+          onChange={(e) => {
+            const on = e.target.checked;
+            setSettings((s) => {
+              const { prereleases: _, ...rest } = s;
+              return on ? { ...rest, prereleases: true } : rest;
+            });
+            track("app_prereleases_set", { on });
+          }}
+        />
+        <Trans comment="Setting: apps also update to releases their developers marked as pre-releases">Include pre-releases</Trans>
+      </label>
+      <p className="muted">
+        <Trans>
+          Developers mark some releases as pre-releases: early or experimental builds, such as betas and nightlies. They can bring new features sooner, but they may
+          change how things work, break saves or settings, or leave out builds for some systems. Most players should use main releases.
+        </Trans>
+      </p>
+      <p className="muted">
+        <Trans>Each app can include pre-releases or not, whatever this says, from its own settings.</Trans>
+      </p>
+    </div>
   );
 }
 

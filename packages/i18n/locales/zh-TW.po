@@ -621,10 +621,6 @@ msgstr "+ 新建播放清單 →"
 msgid "+ New tag…"
 msgstr "+ 新建標籤 →"
 
-#: ../../apps/launcher/src/detail.tsx
-msgid "<0>The newest available release is a pre-release build.</0> The project hasn't published a newer stable release with downloads, so Quiver Launcher installs this one. Expect bugs and unfinished features."
-msgstr "<0>最新的可用版本是預釋出版本。</0>該專案尚未釋出包含下載檔案的更新穩定版本，因此 Quiver Launcher 將安裝此版本。請注意，此版本可能存在錯誤，功能也可能尚未完成。"
-
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "封面圖片的地址與你的帳戶繫結。其他圖片以及從檔案新增的圖片僅儲存在此電腦上。"
@@ -935,6 +931,10 @@ msgstr "一個應用程式"
 #: ../../apps/launcher/src/store.tsx
 msgid "An app moved, but some of its old copy couldn't be deleted. You can delete {path} yourself."
 msgstr "一個應用程式已移動，但其舊副本的部分內容無法刪除。你可以自行刪除 {path}。"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "An early or experimental build the developer marked as a pre-release. It may change how things work or leave out some systems."
+msgstr "開發者標示為預釋出版本的早期或實驗性建置。它可能會改變某些功能的運作方式，或不提供某些系統的建置。"
 
 #. Follows “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
@@ -1823,6 +1823,10 @@ msgstr "開發者宣告未使用 AI"
 msgid "Developer wasn't sure"
 msgstr "開發者不確定"
 
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Developers mark some releases as pre-releases: early or experimental builds, such as betas and nightlies. They can bring new features sooner, but they may change how things work, break saves or settings, or leave out builds for some systems. Most players should use main releases."
+msgstr "開發者會把一些發行版本標示為預釋出版本：早期或實驗性的建置，例如測試版和每夜建置。它們可以更早帶來新功能，但可能會改變功能的運作方式、損壞存檔或設定，或不提供某些系統的建置。大多數玩家應使用正式版本。"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Didn't finish"
 msgstr "未完成"
@@ -1933,6 +1937,10 @@ msgstr "例如：--fullscreen"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "e.g. gamemoderun %command% --fullscreen"
 msgstr "例如：gamemoderun %command% --fullscreen"
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Each app can include pre-releases or not, whatever this says, from its own settings."
+msgstr "無論這裡如何設定，每個應用程式都可以在自己的設定中選擇是否包含預釋出版本。"
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Each app's own setting still says whether it updates by itself, asks first, or stays on its version."
@@ -2377,6 +2385,13 @@ msgstr "在此資料夾中"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Include NSFW"
 msgstr "包含成人內容"
+
+#. Setting: apps also update to releases their developers marked as pre-releases
+#. Which releases an app gets: pre-releases too
+#: ../../apps/launcher/src/app-updates.tsx
+#: ../../apps/launcher/src/App.tsx
+msgid "Include pre-releases"
+msgstr "包含應用程式的預釋出版本"
 
 #: ../../apps/launcher/src/update.tsx
 msgid "Include preview updates"
@@ -2927,6 +2942,11 @@ msgstr "正在查詢 →"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Made by"
 msgstr "製作方"
+
+#. Which releases an app gets: only the ones its developer didn't mark as pre-releases
+#: ../../apps/launcher/src/App.tsx
+msgid "Main releases only"
+msgstr "僅正式版本"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Make a copy"
@@ -3786,8 +3806,7 @@ msgstr "移植版"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "豎版，約 600 × 900。適用於遊戲庫卡片和電視模式。"
 
-#. A release its developer marked as not yet stable
-#. A release its developer marked as not yet stable
+#. A release its developer marked as a pre-release: an early or experimental build
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
 msgstr "預釋出版本"
@@ -4088,6 +4107,7 @@ msgid "Reinstall {installedVersion}"
 msgstr "重新安裝 {installedVersion}"
 
 #. Tab of an app's page
+#. Which of an app's releases it gets: main releases only, or pre-releases too
 #: ../../apps/launcher/src/App.tsx
 msgid "Releases"
 msgstr "版本"
@@ -5067,6 +5087,10 @@ msgstr "此頁面遇到問題"
 msgid "This playlist isn't shared any more."
 msgstr "此播放清單已停止共享。"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "This project only publishes pre-releases, so Quiver Launcher offers its newest one."
+msgstr "此專案只發布預釋出版本，因此 Quiver Launcher 會提供其中最新的一個。"
+
 #: ../../apps/launcher/src/store.tsx
 #: ../../apps/launcher/src/telemetry.test.ts
 msgid "This release has no download for your computer."
@@ -5388,6 +5412,16 @@ msgstr "至少輸入 10 個字元。"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Use controllers to move around Quiver"
 msgstr "使用遊戲控制器瀏覽 Quiver"
+
+#. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (include pre-releases)"
+msgstr "使用我的預設設定（包含預釋出版本）"
+
+#. Which releases an app gets: whatever Settings, Updates says, which is main releases only
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (main releases only)"
+msgstr "使用我的預設設定（僅正式版本）"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Use no more than 100 characters."

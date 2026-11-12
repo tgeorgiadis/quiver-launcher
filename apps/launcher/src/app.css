@@ -655,6 +655,10 @@ main.app-main { padding: 0 0 40px; }
 .update-choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .update-choice[aria-checked="true"] > svg { color: var(--accent); }
 .update-choice[aria-checked="true"] strong { color: var(--strong); }
+/* Whether apps get pre-releases (app-updates.tsx): the toggle, what pre-releases are, and that each app can say otherwise. */
+.prereleases-setting { display: grid; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.prereleases-setting .toggle { color: var(--strong); font-size: 14px; }
+.prereleases-setting p { margin: 0; font-size: 12.5px; line-height: 1.5; }
 .field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 .picked-path { font-size: 12px; overflow-wrap: anywhere; }
 .add-app .pick-file, .add-app .art-match { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }

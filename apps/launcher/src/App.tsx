@@ -28,7 +28,7 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
-import { isLocal, isOwn } from "./custom";
+import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
 import { AddApp, ChangeGame, LinkToCatalog } from "./own";
 import { ModsButton } from "./mods";
@@ -1318,6 +1318,7 @@ function AppPage({
           </button>
         )}
         {item && <UpdatesChoice id={item.id} />}
+        {item && <PrereleasesChoice id={item.id} />}
       </div>
       {item && (
         <div className="panel-group">
@@ -1699,6 +1700,31 @@ function UpdatesChoice({ id }: { id: string }) {
         <option value="ask">{t({ message: "Offer them", comment: "Updates: offer new releases to install" })}</option>
         {auto && <option value="auto">{t`Install automatically`}</option>}
         <option value="pinned">{t`Always stay on ${installedVersion}`}</option>
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Whether an installed app gets pre-releases, whatever the player's default (Settings, Updates). A version it's set to
+ * stay on wins over either.
+ */
+function PrereleasesChoice({ id }: { id: string }) {
+  const { installs, settings, setPrereleases } = useLauncher();
+  const install = installs[id];
+  if (!install || install.local || isCustom(id)) return null;
+  const byDefault = settings.prereleases
+    ? t({ message: "Use my default (include pre-releases)", comment: "Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases" })
+    : t({ message: "Use my default (main releases only)", comment: "Which releases an app gets: whatever Settings, Updates says, which is main releases only" });
+  return (
+    <label className="panel-field">
+      <span className="field-label">
+        <Trans comment="Which of an app's releases it gets: main releases only, or pre-releases too">Releases</Trans>
+      </span>
+      <select value={install.prereleases ?? "default"} onChange={(e) => setPrereleases(id, e.target.value === "default" ? undefined : (e.target.value as "include" | "main"))}>
+        <option value="default">{byDefault}</option>
+        <option value="main">{t({ message: "Main releases only", comment: "Which releases an app gets: only the ones its developer didn't mark as pre-releases" })}</option>
+        <option value="include">{t({ message: "Include pre-releases", comment: "Which releases an app gets: pre-releases too" })}</option>
       </select>
     </label>
   );
