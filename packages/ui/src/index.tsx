@@ -5,7 +5,7 @@
  * `@quiverlauncher/ui/markdown`, kept apart because it's large.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUpRight, Clock, Gamepad2, ShieldAlert, ShieldCheck, ShieldX, WandSparkles, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Clock, Gamepad2, PackageX, ShieldAlert, ShieldCheck, ShieldX, WandSparkles, type LucideIcon } from "lucide-react";
 import type { IconType } from "react-icons";
 import { FaAndroid, FaApple, FaLinux, FaWindows } from "react-icons/fa6";
 import { SiIos } from "react-icons/si";
@@ -406,15 +406,21 @@ export function ReleaseAge({ entry }: { entry: CardEntry }) {
  * down, stopped, or flagged, so it's never installed).
  */
 export type ReleaseState = "verified" | "unverified" | "blocked";
+/** What a release's badge says: its state, or "empty" for one that isn't offered because it has nothing to install. */
+export type ReleaseBadgeState = ReleaseState | "empty";
+/** The badge for a release: "No files" in place of "Not offered" when it has none to install, which no wait changes. */
+export const badgeState = (release: { state: ReleaseState; assets: unknown[] }): ReleaseBadgeState =>
+  release.state === "unverified" && release.assets.length === 0 ? "empty" : release.state;
 // Put in the language when shown, not here, where the module loads before any is picked.
-const RELEASE_STATES: Record<ReleaseState, { icon: LucideIcon; label: MessageDescriptor; title: MessageDescriptor }> = {
+const RELEASE_STATES: Record<ReleaseBadgeState, { icon: LucideIcon; label: MessageDescriptor; title: MessageDescriptor }> = {
   verified: { icon: ShieldCheck, label: msg({ message: "Available", comment: "A release Quiver Launcher offers: its files have been out for 48 hours" }), title: msg`Its files have each been out for 48 hours, which gives time to spot and withdraw a bad upload, and Quiver Launcher checks that every download hasn't changed since its release came out.` },
   unverified: { icon: ShieldAlert, label: msg({ message: "Not offered", comment: "A release Quiver Launcher doesn't offer by itself, such as one still in its 48-hour wait" }), title: msg`Quiver Launcher doesn't offer this release by itself` },
   blocked: { icon: ShieldX, label: msg({ message: "Blocked", comment: "A release Quiver won't install" }), title: msg`Quiver won't install this release` },
+  empty: { icon: PackageX, label: msg({ message: "No files", comment: "A release with no files Quiver Launcher can install, such as one with only source code" }), title: msg`This release has no files Quiver Launcher can install` },
 };
 
-/** A release's state, green, orange or red, with its shield. */
-export function ReleaseBadge({ state, label, title }: { state: ReleaseState; label?: ReactNode; title?: string }) {
+/** A release's state, green, orange or red, with its shield; grey, with a crossed box, for one with no files. */
+export function ReleaseBadge({ state, label, title }: { state: ReleaseBadgeState; label?: ReactNode; title?: string }) {
   const { icon: Icon, ...words } = RELEASE_STATES[state];
   return (
     <span className={`release-badge ${state}`} title={title ?? i18n._(words.title)}>

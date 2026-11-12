@@ -895,10 +895,6 @@ msgid "All platforms"
 msgstr "Todas as plataformas"
 
 #: ../../apps/launcher/src/library.tsx
-msgid "All playlists"
-msgstr "Todas as playlists"
-
-#: ../../apps/launcher/src/library.tsx
 msgid "All project types"
 msgstr "Todos os tipos de projeto"
 
@@ -3022,6 +3018,10 @@ msgstr "Mods para explorar"
 msgid "More like this"
 msgstr "Mais como este"
 
+#: ../../apps/launcher/src/library.tsx
+msgid "More playlists"
+msgstr ""
+
 #. Picks a playlist that isn't among the tabs
 #: ../../apps/launcher/src/library.tsx
 msgid "More…"
@@ -3311,6 +3311,11 @@ msgstr "Nenhum app roda este jogo ainda."
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "Nenhum controle detectado. Conecte um e ele aparece aqui."
+
+#. A release with no files Quiver Launcher can install, such as one with only source code
+#: ../ui/src/index.tsx
+msgid "No files"
+msgstr "Sem arquivos"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "No folders in here."
@@ -5066,6 +5071,10 @@ msgstr "Esta playlist não é mais compartilhada."
 #: ../../apps/launcher/src/telemetry.test.ts
 msgid "This release has no download for your computer."
 msgstr "Esta versão não tem download para o seu computador."
+
+#: ../ui/src/index.tsx
+msgid "This release has no files Quiver Launcher can install"
+msgstr "Esta versão não tem arquivos que o Quiver Launcher possa instalar"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download."
