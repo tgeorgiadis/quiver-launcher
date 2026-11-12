@@ -27,12 +27,15 @@ const shared: Catalogs = import.meta.glob<string>("../locales/*.po", { query: "?
 /**
  * Our language closest to the first of `wanted` (BCP 47 tags, most wanted
  * first) we have one for: the same tag, or else the same language, so pt-PT
- * gets Brazilian Portuguese. English when none is near.
+ * gets Brazilian Portuguese. English when none is near. Chinese goes by its
+ * writing: Traditional (zh-Hant, or Taiwan, Hong Kong and Macau) gets zh-TW,
+ * any other Chinese Simplified.
  */
 export function pick(wanted: readonly (string | undefined)[]): Language {
   const base = (tag: string) => tag.toLowerCase().split("-")[0];
-  for (const tag of wanted) {
+  for (let tag of wanted) {
     if (!tag) continue;
+    if (base(tag) === "zh") tag = /-hant\b/i.test(tag) || (!/-hans\b/i.test(tag) && /-(tw|hk|mo)\b/i.test(tag)) ? "zh-TW" : "zh-CN";
     const found =
       LANGUAGES.find((l) => l.code.toLowerCase() === tag.toLowerCase()) ?? LANGUAGES.find((l) => base(l.code) === base(tag));
     if (found) return found.code;

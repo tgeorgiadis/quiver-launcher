@@ -33,8 +33,8 @@ such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](h
 - **Play it your way.** Add any app to Steam or the desktop, and run Windows builds on Linux with Wine or Proton.
 - **Sign in to sync** (optional). Sign in with GitHub or Discord to keep your library and playlists the same on every
   device.
-- **In your language.** English, Português (Brasil), Español (Latinoamérica), Deutsch, Français, Русский, Italiano
-  and 한국어.
+- **In your language.** English, Português (Brasil), Español (Latinoamérica), Deutsch, Français, Русский, Italiano,
+  한국어, 简体中文 and 繁體中文.
 
 ## Download
 
