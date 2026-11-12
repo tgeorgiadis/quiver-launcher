@@ -9,6 +9,12 @@ describe("pick", () => {
   it("goes down the list to one it has", () => expect(pick(["ja-JP", "pt"])).toBe("pt-BR"));
   it("falls back to English", () => expect(pick(["ja-JP", undefined])).toBe("en"));
   it("keeps English first when it's wanted first", () => expect(pick(["en-US", "pt-BR"])).toBe("en"));
+  it("gives Traditional Chinese where it's written", () => {
+    for (const tag of ["zh-TW", "zh-HK", "zh-MO", "zh-Hant", "zh-Hant-HK"]) expect(pick([tag])).toBe("zh-TW");
+  });
+  it("gives Simplified Chinese elsewhere", () => {
+    for (const tag of ["zh", "zh-CN", "zh-SG", "zh-Hans", "zh-Hans-HK"]) expect(pick([tag])).toBe("zh-CN");
+  });
 });
 
 describe("parsePo", () => {
