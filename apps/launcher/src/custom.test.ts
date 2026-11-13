@@ -5,14 +5,23 @@ import { changesFrom, joinAccount } from "./sync";
 import { bestGameArt, folderNameFor, freeFolder } from "./custom";
 
 test("a pasted repository is found on GitHub or GitLab, from any page of it", () => {
-  expect(parseRepository("owner/name")).toEqual({ provider: "github", repository: "owner/name" });
-  expect(parseRepository("https://github.com/Owner/Name/releases/tag/v1")).toEqual({ provider: "github", repository: "Owner/Name" });
-  expect(parseRepository("github.com/owner/name.git")).toEqual({ provider: "github", repository: "owner/name" });
-  expect(parseRepository("https://gitlab.com/group/sub/project/-/releases")).toEqual({ provider: "gitlab", repository: "group/sub/project" });
-  expect(parseRepository("gitlab.com/group/project.git/")).toEqual({ provider: "gitlab", repository: "group/project" });
+  expect(parseRepository("owner/name")).toEqual({ provider: "github", host: "github.com", repository: "owner/name" });
+  expect(parseRepository("https://github.com/Owner/Name/releases/tag/v1")).toEqual({ provider: "github", host: "github.com", repository: "Owner/Name" });
+  expect(parseRepository("github.com/owner/name.git")).toEqual({ provider: "github", host: "github.com", repository: "owner/name" });
+  expect(parseRepository("https://gitlab.com/group/sub/project/-/releases")).toEqual({ provider: "gitlab", host: "gitlab.com", repository: "group/sub/project" });
+  expect(parseRepository("gitlab.com/group/project.git/")).toEqual({ provider: "gitlab", host: "gitlab.com", repository: "group/project" });
   expect(parseRepository("gitlab.com/project")).toBeNull();
   expect(parseRepository("gitlab.com/group/..")).toBeNull();
   expect(parseRepository("not a repository")).toBeNull();
+});
+
+test("Gitea, Forgejo, Bitbucket and an unknown forge are found from their addresses", () => {
+  expect(parseRepository("https://codeberg.org/forgejo/forgejo")).toEqual({ provider: "gitea", host: "codeberg.org", repository: "forgejo/forgejo" });
+  expect(parseRepository("git.ryujinx.app/Ryubing/Ryubing/releases")).toEqual({ provider: "gitea", host: "git.ryujinx.app", repository: "Ryubing/Ryubing" });
+  expect(parseRepository("https://bitbucket.org/workspace/project/downloads")).toEqual({ provider: "bitbucket", host: "bitbucket.org", repository: "workspace/project" });
+  expect(parseRepository("git.example.com/group/sub/project")).toEqual({ provider: "unknown", host: "git.example.com", repository: "group/sub/project" });
+  expect(parseRepository("git.example.com/group/sub/project", "gitlab")).toEqual({ provider: "gitlab", host: "git.example.com", repository: "group/sub/project" });
+  expect(parseRepository("https://example.com/feed.json", "feed")).toEqual({ provider: "feed", host: "example.com", repository: "feed.json" });
 });
 
 test("apps on this computer only stay out of the account", () => {

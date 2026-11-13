@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn } from "@quiverlauncher/api";
+import { defaultHost, ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
@@ -621,10 +621,17 @@ export const stillWaiting = (releasedAt: number | undefined, now = Date.now()) =
 const LOOKUP_TIMEOUT = 30_000;
 /** The release a player gets: the newest that isn't a pre-release, else the newest. */
 const latestOf = (releases: Release[]) => releases.find((r) => !r.prerelease) ?? releases[0];
-/** A custom app's repository from its key, for one not in the library; GitHub and GitLab don't mind its lower case. */
+/** A custom app's repository from its key, for one not in the library. */
 const fromKey = (id: string): CustomApp => {
-  const repository = id.slice(id.indexOf(":") + 1);
-  return { provider: id.startsWith("gitlab:") ? "gitlab" : "github", repository, name: repository.split("/").at(-1)! };
+  const at = id.indexOf(":");
+  const provider = at > 0 ? id.slice(0, at) : "github";
+  const rest = at > 0 ? id.slice(at + 1) : id;
+  const first = rest.split("/")[0];
+  const known = defaultHost(provider);
+  const hasHost = first.includes(".") || first.includes(":") || first.toLowerCase() === "localhost";
+  const host = hasHost ? first : known;
+  const repository = hasHost ? rest.slice(first.length + 1) : rest;
+  return { provider, ...(host && host !== known ? { host } : {}), repository, name: repository.split("/").at(-1)! };
 };
 
 /**
@@ -2025,7 +2032,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const repository = parseRepository(input);
     if (!repository) return { error: t`Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address.` };
     // Already added: its page.
-    const key = customKey(repository.provider, repository.repository);
+    const key = customKey(repository.provider, repository.repository, repository.host);
     if (library.some((i) => i.id === key) && catalog[key]) return { listed: [catalog[key]] };
     try {
       const listed = await entriesOf(appsOfRepository(await catalogStatuses().catch((): ReleaseStatus[] => []), repository));
@@ -2069,7 +2076,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   /** Adds a custom app for a repository; the caller installs it. */
   function addCustom(custom: CustomApp, latest?: Release, art?: GameArt) {
-    const entry = customEntry(customKey(custom.provider, custom.repository), custom, latest, art);
+    const entry = customEntry(customKey(custom.provider, custom.repository, custom.host), custom, latest, art);
     setCatalog((c) => ({ ...c, [entry.id]: entry }));
     add(entry, { custom, art });
     return entry;

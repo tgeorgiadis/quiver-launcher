@@ -8,16 +8,26 @@
  *   moved or deleted.
  */
 import { t } from "@lingui/core/macro";
-import type { Client, Entry, GameDetail, LibraryArt, Os, Release } from "@quiverlauncher/api";
+import { defaultHost, providerById, type Client, type Entry, type GameDetail, type LibraryArt, type Os, type Release, type RepositoryRef } from "@quiverlauncher/api";
 import type { CatalogEntry } from "./store";
 
-export type CustomApp = { provider: "github" | "gitlab"; repository: string; name: string; assetFilter?: string };
+export type CustomApp = RepositoryRef & { name: string; assetFilter?: string };
 export type LocalApp = { kind: "program"; path: string; name: string } | { kind: "folder"; folder: string; name: string };
 /** A game's artwork and consoles, matched by name, for an app the player added. */
 export type GameArt = { game: { id: string; slug: string; title: string }; artwork?: string; libraryArt?: LibraryArt; consoles: string[] };
 
-export const customKey = (provider: CustomApp["provider"], repository: string) => `${provider}:${repository.toLowerCase()}`;
-export const isCustom = (id: string) => /^(github|gitlab):/.test(id);
+/** A custom app's library key: provider, its host when it isn't the default, and the repository. */
+export const customKey = (provider: string, repository: string, host?: string) => {
+  const where = host && host !== defaultHost(provider) ? `${host}/` : "";
+  return `${provider}:${where}${repository}`.toLowerCase();
+};
+/** Whether an id names an app the player added from a repository. */
+export const isCustom = (id: string) => {
+  const at = id.indexOf(":");
+  if (at <= 0) return false;
+  const provider = id.slice(0, at);
+  return provider !== "local" && Boolean(providerById(provider));
+};
 export const isLocal = (id: string) => id.startsWith("local:");
 /** Added by the player: no catalog page, reviews or checked releases. */
 export const isOwn = (id: string) => isCustom(id) || isLocal(id);
@@ -55,8 +65,8 @@ export const withGame = (entry: CatalogEntry, art: GameArt | null): CatalogEntry
   withArt({ ...entry, games: [], consoles: undefined, artwork: undefined, libraryArt: undefined }, art ?? undefined);
 
 /** The catalog's apps for a repository: one repository can ship several, each with an entry of its own (a port of two games). */
-export const appsOfRepository = <T extends { provider: string; repository?: string }>(all: T[], { provider, repository }: Pick<CustomApp, "provider" | "repository">) =>
-  all.filter((s) => s.repository && `${s.provider}:${s.repository}`.toLowerCase() === `${provider}:${repository}`.toLowerCase());
+export const appsOfRepository = <T extends { provider: string; host?: string; repository?: string }>(all: T[], ref: Pick<CustomApp, "provider" | "host" | "repository">) =>
+  all.filter((s) => s.repository && customKey(s.provider, s.repository, s.host) === customKey(ref.provider, ref.repository, ref.host));
 
 const stub = (id: string, name: string, description: string): CatalogEntry => ({
   id,
@@ -78,7 +88,7 @@ const stub = (id: string, name: string, description: string): CatalogEntry => ({
 
 export function customEntry(id: string, app: CustomApp, latest?: Release, art?: GameArt): CatalogEntry {
   const oses = [...new Set(latest?.assets.map((a) => a.os) ?? [])] as Os[];
-  const site = `${app.provider}.com/${app.repository}`;
+  const site = `${app.host ?? defaultHost(app.provider) ?? app.provider}/${app.repository}`;
   const entry: CatalogEntry = {
     ...stub(id, app.name, t`Added from ${site}. Quiver hasn't checked this app.`),
     launcher: { folderName: app.repository.split("/").at(-1)!, filesToAdd: [], releaseAssetFilter: app.assetFilter },
