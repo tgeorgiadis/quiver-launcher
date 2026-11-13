@@ -12,8 +12,16 @@ import { ApiError, createGitlab, type RateLimit } from "@quiverlauncher/api";
 import { native } from "./native";
 import { useLauncher } from "./store";
 
-/** GitLab's page for a new token, with its name and the scope it needs filled in. */
-export const CREATE_TOKEN_URL = "https://gitlab.com/-/user_settings/personal_access_tokens?name=Quiver+Launcher&scopes=read_api";
+/** GitLab's page for a new token, with its name and the scope it needs filled in, on the GitLab the launcher asks. */
+export function createTokenUrl(api: string) {
+  let origin = "https://gitlab.com";
+  try {
+    origin = new URL(api).origin;
+  } catch {
+    // Not an address: gitlab.com's page, then.
+  }
+  return `${origin}/-/user_settings/personal_access_tokens?name=Quiver+Launcher&scopes=read_api`;
+}
 
 export function GitlabTokenSetting() {
   const { config, gitlabToken, saveGitlabToken, gitlab } = useLauncher();
@@ -23,7 +31,7 @@ export function GitlabTokenSetting() {
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [checking, setChecking] = useState(false);
   const [guide, setGuide] = useState(false);
-  // Asking GitLab how many requests are left doesn't use one up.
+  // Asking GitLab how many requests are left uses one up, so only when this shows or the token changes.
   useEffect(() => {
     let live = true;
     gitlab.rateLimit().then(
@@ -87,13 +95,13 @@ export function GitlabTokenSetting() {
           {checking ? t`Checking…` : t`Save token`}
         </button>
         {saved && (
-          <button onClick={() => void save("")}>
+          <button disabled={checking} onClick={() => void save("")}>
             <Trans>Remove token</Trans>
           </button>
         )}
       </div>
       <div className="row">
-        <button onClick={() => void native.openUrl(CREATE_TOKEN_URL)}>
+        <button onClick={() => void native.openUrl(createTokenUrl(config.gitlabApi))}>
           <Trans>Create a token on GitLab</Trans>
         </button>
         <button aria-expanded={guide} onClick={() => setGuide(!guide)}>

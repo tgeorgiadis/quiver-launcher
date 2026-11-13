@@ -116,7 +116,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         convex: std::env::var("QUIVER_CONVEX").unwrap_or_else(|_| "https://convex.quiverlauncher.com".into()),
         account_api: std::env::var("QUIVER_ACCOUNT_API").ok(),
         github_api: std::env::var("QUIVER_GITHUB_API").unwrap_or_else(|_| "https://api.github.com".into()),
-        gitlab_api: std::env::var("QUIVER_GITLAB_API").unwrap_or_else(|_| "https://gitlab.com/api/v4".into()),
+        gitlab_api: gitlab_api(),
         return_to: browser::RETURN_TO,
         os: OS,
         arch: ARCH,
@@ -1287,22 +1287,41 @@ fn secret_set(data: State<Data>, key: String, value: Option<String>) -> Result<(
 /// What GitLab says about the player's request limit. A page can't read GitLab's
 /// rate-limit headers (GitLab doesn't expose them to pages), so the Rust side
 /// asks instead: `/user` with a token, which also checks it, or a public project
-/// list without one.
+/// list without one. It also says when a refused request may be tried again.
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct GitlabLimit {
     status: u16,
     limit: Option<u64>,
     remaining: Option<u64>,
     reset: Option<u64>,
+    retry_after: Option<u64>,
+}
+
+/// GitLab's API, for custom apps (overridden in end-to-end tests).
+fn gitlab_api() -> String {
+    std::env::var("QUIVER_GITLAB_API").unwrap_or_else(|_| "https://gitlab.com/api/v4".into())
+}
+
+/// Whether `url` is on GitLab's API, the only place the player's GitLab token may go.
+fn on_gitlab_api(url: &str, api: &str) -> bool {
+    url.strip_prefix(api.trim_end_matches('/')).is_some_and(|rest| rest.starts_with('/'))
 }
 
 #[tauri::command]
 async fn gitlab_limit(url: String, token: Option<String>) -> Result<GitlabLimit, String> {
-    let mut request = reqwest::Client::builder()
-        .user_agent("QuiverLauncher/4")
-        .build()
-        .map_err(|e| e.to_string())?
-        .get(&url);
+    if !on_gitlab_api(&url, &gitlab_api()) {
+        return Err("Only GitLab's API can be asked about its limit.".into());
+    }
+    static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+    let client = match CLIENT.get() {
+        Some(client) => client,
+        None => {
+            let client = reqwest::Client::builder().user_agent("QuiverLauncher/4").build().map_err(|e| e.to_string())?;
+            CLIENT.get_or_init(|| client)
+        }
+    };
+    let mut request = client.get(&url);
     if let Some(token) = token.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
         request = request.header("PRIVATE-TOKEN", token);
     }
@@ -1314,7 +1333,23 @@ async fn gitlab_limit(url: String, token: Option<String>) -> Result<GitlabLimit,
         limit: header("ratelimit-limit"),
         remaining: header("ratelimit-remaining"),
         reset: header("ratelimit-reset"),
+        retry_after: header("retry-after"),
     })
+}
+
+#[cfg(test)]
+mod gitlab_limit_tests {
+    use super::on_gitlab_api;
+
+    #[test]
+    fn the_token_only_goes_to_gitlabs_api() {
+        let api = "https://gitlab.com/api/v4";
+        assert!(on_gitlab_api("https://gitlab.com/api/v4/user", api));
+        assert!(on_gitlab_api("https://gitlab.com/api/v4/projects?per_page=1", "https://gitlab.com/api/v4/"));
+        assert!(!on_gitlab_api("https://gitlab.com/api/v4.evil.test/user", api));
+        assert!(!on_gitlab_api("https://evil.test/user", api));
+        assert!(!on_gitlab_api("https://gitlab.com/api/v4", api));
+    }
 }
 
 /// Opens a GitHub or Discord sign-in page and waits for it to come back,

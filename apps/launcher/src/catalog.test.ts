@@ -348,6 +348,31 @@ test("the Rust side reads GitLab's limit, since the page can't see its headers",
   expect(await createGitlab("https://gl.test", "glpat-x", async () => ({ status: 200 })).rateLimit()).toBeNull();
 });
 
+test("when GitLab refuses releases, the Rust side says whether it's the limit, since the page can't see why", async () => {
+  const reset = Date.UTC(2026, 9, 21, 9, 30) / 1000;
+  const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const usedUp = async () => ({ status: 429, limit: 500, remaining: 0, reset });
+  // The page sees only the status: GitLab doesn't expose its rate-limit headers.
+  vi.stubGlobal("fetch", async () => new Response("", { status: 429 }));
+  await expect(createGitlab("https://gl.test", undefined, usedUp).releases("o/r")).rejects.toThrow(`GitLab's limit of requests from this network is used up until ${at}.`);
+  // A refusal without CORS headers is a failed fetch to the page.
+  vi.stubGlobal("fetch", async () => {
+    throw new TypeError("Failed to fetch");
+  });
+  await expect(createGitlab("https://gl.test", "glpat-x", usedUp).releases("o/r")).rejects.toThrow(`Your GitLab token's limit of requests is used up until ${at}.`);
+  await expect(createGitlab("https://gl.test", undefined, async () => ({ status: 429, retryAfter: 90 })).releases("o/r")).rejects.toThrow("Try again in 2 min.");
+  // Offline, or not the limit: the page's own error stands.
+  await expect(createGitlab("https://gl.test", undefined, async () => ({ status: 200, limit: 500, remaining: 499, reset })).releases("o/r")).rejects.toThrow(TypeError);
+  await expect(
+    createGitlab("https://gl.test", undefined, async () => {
+      throw "Couldn't reach GitLab.";
+    }).releases("o/r"),
+  ).rejects.toThrow(TypeError);
+  // A private project's 403 isn't the limit.
+  vi.stubGlobal("fetch", async () => new Response("", { status: 403 }));
+  await expect(createGitlab("https://gl.test", undefined, async () => ({ status: 200, limit: 500, remaining: 499, reset })).releases("o/r")).rejects.toThrow("GitLab answered 403. Try again later.");
+});
+
 test("says once when neither address answers, and not when the other one does", async () => {
   const lost: unknown[] = [];
   const fell: unknown[] = [];
