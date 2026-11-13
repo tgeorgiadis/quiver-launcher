@@ -519,7 +519,7 @@ function ReleaseCard({
                     )}
                   </>
                 );
-                // One this computer runs installs, as the player chose it; any other opens on GitHub or GitLab.
+                // One this computer runs installs, as the player chose it; any other opens on its host.
                 return install && runsHere(a) ? (
                   <button type="button" className="download" key={a.id} onClick={() => install(a.filename)}>
                     {body}
@@ -1166,7 +1166,7 @@ export function Versions({
       const pulled = (list: Version[]) => withdrawnAsBlocked(list, (v) => v.release.version, catalog[entry.id]?.withdrawn);
       if (custom) return setVersions(versionList([], [], await upstream()));
       // The site's history marks every release of the repository itself, at the
-      // one address Cloudflare keeps for every launcher. GitHub or GitLab only
+      // one address Cloudflare keeps for every launcher. The host only
       // adds the newest few, which the site may not have seen yet: GitHub
       // allows a network only 60 requests an hour, so the list doesn't wait on it.
       const [checked, history, newest] = await Promise.all([
@@ -1176,7 +1176,7 @@ export function Versions({
         upstream(3).catch((): Release[] => []),
       ]);
       if (history) return setVersions(pulled(versionList(checked, unverifiedIn(history), newest)));
-      // A site that doesn't list the history yet: the releases it knows, and the rest from GitHub or GitLab.
+      // A site that doesn't list the history yet: the releases it knows, and the rest from the host.
       const [unverified, others] = await Promise.all([client.unverifiedReleases(entry.slug).catch(missing), upstream()]);
       setVersions(pulled(versionList(checked, unverified, others)));
     } catch (e) {

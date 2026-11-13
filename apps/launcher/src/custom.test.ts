@@ -35,6 +35,16 @@ test("apps from a host the account doesn't know stay on this computer", () => {
     pending: { added: true },
   };
   expect(changesFrom([item], "me")).toEqual([]);
+
+  const selfHosted: LibraryItem = {
+    id: "gitlab:git.example.com/group/project",
+    slug: "",
+    addedAt: 1,
+    custom: { provider: "gitlab", host: "git.example.com", repository: "group/project", name: "Project" },
+    account: "me",
+    pending: { added: true },
+  };
+  expect(changesFrom([selfHosted], "me")).toEqual([]);
 });
 
 test("apps on this computer only stay out of the account", () => {

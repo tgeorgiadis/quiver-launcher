@@ -1,5 +1,5 @@
 /**
- * Adding an app the catalog doesn't list: a GitHub or GitLab repository, a
+ * Adding an app the catalog doesn't list: a repository on any supported host, a
  * program already on this computer, or a folder to fill. Each can take the
  * artwork and consoles of the game it plays, matched by its name.
  */
@@ -10,6 +10,7 @@ import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
 import { defaultHost, providerChoices, type Entry, type GameMatch } from "@quiverlauncher/api";
+import { syncableCustom } from "./sync";
 import { Artwork, fullDate } from "@quiverlauncher/ui";
 import { useLauncher, type GameArt, type RepositoryPreview } from "./store";
 import { native } from "./native";
@@ -179,7 +180,7 @@ function FromRepository({ onBack, onDone }: Done) {
         {" · "}
         <Trans>Quiver hasn't checked this app.</Trans>
       </p>
-      {preview.app.provider !== "github" && preview.app.provider !== "gitlab" && (
+      {!syncableCustom(preview.app) && (
         <p className="muted">
           <Trans>This app stays on this computer: account sync doesn't support this kind of host yet.</Trans>
         </p>

@@ -67,8 +67,8 @@ pub async fn provider_http(request: ProviderRequest) -> Result<ProviderResponse,
                 .join(location)
                 .map_err(|_| "The repository host redirected to an invalid address.")?;
             let next = validate_url(next).await?;
-            // A token belongs to its host: never carry it to another one.
-            if next.host_str() != current.host_str() {
+            // A token belongs to its host and port: never carry it to another one.
+            if next.origin() != current.origin() {
                 headers.remove(reqwest::header::AUTHORIZATION);
                 headers.remove("private-token");
             }

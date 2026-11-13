@@ -1,6 +1,6 @@
 /**
  * Apps the player adds themselves, which the catalog doesn't list.
- * - Custom apps: a GitHub or GitLab repository. They show and install like
+ * - Custom apps: a repository on any supported host. They show and install like
  *   catalog apps (unchecked), from a stand-in entry built from the repository
  *   and its latest release, and sync with the account.
  * - Local apps: a program already on this computer, or a folder in the apps

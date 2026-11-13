@@ -65,8 +65,8 @@ the system trusts.
 
 ## Account sync
 
-The account stores GitHub and GitLab apps. Apps added from other hosts stay on the computer that added them; the
-add-app dialog says so.
+The account stores apps from github.com and gitlab.com. Apps from a self-hosted GitHub or GitLab, and from every other
+host, stay on the computer that added them; the add-app dialog says so.
 
 ## Release feed format
 

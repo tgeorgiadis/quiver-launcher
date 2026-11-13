@@ -84,8 +84,13 @@ export function applyServer(local: LibraryItem[], server: ServerItem[], account:
   return [...items.values()];
 }
 
-/** Whether the account can store an app from this host: it knows GitHub and GitLab; others stay on this computer. */
-export const syncableCustom = (custom: Pick<CustomApp, "provider">) => custom.provider === "github" || custom.provider === "gitlab";
+/**
+ * Whether the account can store an app from this host. It knows github.com and
+ * gitlab.com; a self-hosted GitHub or GitLab, and every other host, stays on
+ * this computer until the account stores a host with an app.
+ */
+export const syncableCustom = (custom: Pick<CustomApp, "provider" | "host">) =>
+  (custom.provider === "github" || custom.provider === "gitlab") && !custom.host;
 
 /** What still has to reach the account. */
 export function changesFrom(local: LibraryItem[], account: string): Change[] {

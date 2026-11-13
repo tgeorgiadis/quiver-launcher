@@ -264,7 +264,7 @@ type Launcher = {
   remove: (id: string) => Promise<void>;
   /** Deletes the app's files (to the trash), keeping it in the library to get again. */
   uninstall: (id: string) => Promise<void>;
-  /** A GitHub or GitLab repository: the catalog's app when it lists it, else what adding it would install. */
+  /** A repository from any supported host: the catalog's app when it lists it, else what adding it would install. */
   lookUpRepository: (input: string, provider?: string) => Promise<{ error: string } | { listed: Entry[] } | { preview: RepositoryPreview }>;
   /** The catalog's apps for an app the player added from its repository, once the catalog lists it; several when the repository ships several. */
   listedAs: (id: string) => Promise<Entry[]>;
@@ -887,7 +887,9 @@ export const locatable = (id: string, install: Install | undefined, job: Job | u
  * entry of its own (a port of two games); else the one for its repository.
  */
 export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined {
-  return (old.catalogId && ids.get(`id:${old.catalogId}`)) || (old.repository && ids.get(`${old.provider}:${old.repository}`.toLowerCase())) || undefined;
+  const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
+  const byRepository = ref ? ids.get(customKey(ref.provider, ref.repository, ref.host)) : undefined;
+  return (old.catalogId && ids.get(`id:${old.catalogId}`)) || byRepository || undefined;
 }
 
 /**
@@ -2046,7 +2048,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   async function catalogRepositories() {
     const ids = new Map<string, { id: string; slug: string }>();
     for (const s of await catalogStatuses()) {
-      if (s.repository) ids.set(`${s.provider}:${s.repository}`.toLowerCase(), s);
+      if (s.repository) ids.set(customKey(s.provider, s.repository, s.host), s);
       // And by its id, as Quiver Launcher 3 kept it (importOld), under a key no provider has.
       ids.set(`id:${s.id}`, s);
     }
@@ -2444,7 +2446,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     /**
      * Adds the 3.x apps, keeping their installs: the catalog's as the catalog has them (found by repository, or by
-     * the entry 3.x knew), any other from GitHub or GitLab as a custom app. Returns the names of those it couldn't:
+     * the entry 3.x knew), any other from a supported host as a custom app. Returns the names of those it couldn't:
      * ones 3.x didn't say where they're from. The player's tag filters come over as playlists.
      */
     async importOld({ apps, filters = [] }, onProgress) {
