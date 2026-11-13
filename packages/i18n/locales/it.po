@@ -348,6 +348,10 @@ msgstr "{name} (questo computer)"
 msgid "{name} {version} has more than one file for your computer."
 msgstr "{name} {version} ha più di un file per il tuo computer."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} already has {installed}, the newest release it can update to."
+msgstr "{name} ha già {installed}, la versione più recente a cui può aggiornarsi."
+
 #: ../ui/src/index.tsx
 msgid "{name} artwork"
 msgstr "Immagine di {name}"

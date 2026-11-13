@@ -73,9 +73,10 @@ export type CatalogEntry = Entry & {
    * The newest release an install here can update to that's still in its 48-hour wait (Quiver hasn't verified it yet),
    * and that Quiver hasn't blocked. `of` says what it was looked up for (`earlyKey`); none found, no `release`.
    * `now`: Newest right away (`Settings.appUpdates`) is on, so it's the app's update; without it, only what the
-   * player can update to early by asking (`earlyOffer`).
+   * player can update to early by asking (`earlyOffer`). `pre`: looked up with the app's pre-releases; one looked up
+   * the other way isn't the app's any more (`withEarlyFor`), and is looked up again.
    */
-  early?: { of: string; release?: { version: string; releasedAt: number }; now?: true };
+  early?: { of: string; release?: { version: string; releasedAt: number }; now?: true; pre?: true };
   /**
    * The site's `verified` (its newest main release), while `verified` is the newest pre-release because the player
    * chose pre-releases for this app (`withPrereleases`). Only in the store's `catalog`; never kept.
@@ -701,6 +702,16 @@ export function withPrereleases(entry: CatalogEntry, wants: boolean): CatalogEnt
   return wants && main.verifiedPrerelease ? { ...main, verified: main.verifiedPrerelease, verifiedMain: main.verified } : main;
 }
 
+/**
+ * The entry without what was looked up early (`CatalogEntry.early`) for the other choice of pre-releases than the
+ * app's now, so it's looked up again: on main releases, a pre-release is never the app's update.
+ */
+export function withEarlyFor(entry: CatalogEntry, wants: boolean): CatalogEntry {
+  if (!entry.early || Boolean(entry.early.pre) === wants) return entry;
+  const { early: _, ...rest } = entry;
+  return rest;
+}
+
 /** Entries as they're kept: each the site's own. The same object when none had the player's choice in it. */
 function keptAsSent(catalog: Record<string, CatalogEntry>) {
   if (!Object.values(catalog).some((e) => e.verifiedMain)) return catalog;
@@ -749,10 +760,18 @@ export const earlyKey = (entry: Pick<Entry, "lastReleaseVersion" | "verified"> |
 export function earlyRelease(entry: CatalogEntry | undefined, install: Install | undefined) {
   const found = entry?.early;
   const release = found?.release;
-  if (!release || !install || found.of !== earlyKey(entry, install)) return undefined;
-  if (entry?.withdrawn?.some((w) => bare(w.version) === bare(release.version))) return undefined;
+  if (!release || !install || found.of !== earlyKey(entry, install) || !stillEarly(entry!, release)) return undefined;
   return newerThan(release, install) ? release : undefined;
 }
+
+/**
+ * Whether a release looked up early (`CatalogEntry.early`) is still one: not withdrawn since, nor verified since, as a
+ * main release or a pre-release. A verified one is offered as any verified release is, or not at all: a pre-release to
+ * an app on main releases, say. `early` is only looked up again once a newer release comes.
+ */
+const stillEarly = (entry: CatalogEntry, release: { version: string }) =>
+  !entry.withdrawn?.some((w) => bare(w.version) === bare(release.version)) &&
+  ![entry.verified, entry.verifiedMain, entry.verifiedPrerelease].some((v) => v && bare(v.version) === bare(release.version));
 
 /**
  * The newest release upstream that a card says isn't offered yet: one newer than the verified release. None once
@@ -775,7 +794,7 @@ function earlyToGet(entry: CatalogEntry | undefined) {
   const found = entry?.early;
   const release = found?.release;
   if (!release || found.of !== earlyKey(entry, undefined)) return undefined;
-  return entry?.withdrawn?.some((w) => bare(w.version) === bare(release.version)) ? undefined : release;
+  return stillEarly(entry!, release) ? release : undefined;
 }
 
 /** With Newest right away, that release as the one Install takes. */
@@ -1299,14 +1318,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   usePersist("catalog", rawCatalog);
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
-  // Each app's verified release as the player chose: the newest pre-release for an app that gets them.
+  // Each app's verified release as the player chose: the newest pre-release for an app that gets them. What was looked
+  // up early for the other choice is left out, and looked up again.
   const prereleasesOn = Boolean(settings.prereleases);
   const catalog = useMemo(() => {
     let shown = rawCatalog;
     for (const [id, entry] of Object.entries(rawCatalog)) {
-      if (!entry.verifiedPrerelease || !wantsPrereleases({ prereleases: prereleasesOn }, installs[id])) continue;
+      const wants = wantsPrereleases({ prereleases: prereleasesOn }, installs[id]);
+      const now = withEarlyFor(entry.verifiedPrerelease && wants ? withPrereleases(entry, true) : entry, wants);
+      if (now === entry) continue;
       if (shown === rawCatalog) shown = { ...rawCatalog };
-      shown[id] = withPrereleases(entry, true);
+      shown[id] = now;
     }
     return shown;
   }, [rawCatalog, installs, prereleasesOn]);
@@ -1573,7 +1595,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // An app not installed yet, too: what Install takes with Newest right away, or Install latest offers.
       const of = !isCustom(item.id) && earlyKey(entry, install);
       if (!entry || !of || entry.early?.of === of) continue;
-      const asked = `${item.id}@${of}`;
+      // Pre-releases or not, as the release history is read for them (`earlyHere`).
+      const pre = prereleasesFor(item.id);
+      const asked = `${item.id}@${of}${pre ? ":pre" : ""}`;
       if (lookingEarly.current.has(asked)) continue;
       lookingEarly.current.add(asked);
       client
@@ -1581,7 +1605,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         .then(({ items }) => {
           const found = earlyHere(entry, items, install);
           const release = found && { version: found.version, releasedAt: found.releasedAt };
-          setCatalog((c) => (c[item.id] ? { ...c, [item.id]: { ...c[item.id], early: { of, ...(release ? { release } : {}), ...(newestRightAway ? { now: true as const } : {}) } } } : c));
+          const early = { of, ...(release ? { release } : {}), ...(newestRightAway ? { now: true as const } : {}), ...(pre ? { pre: true as const } : {}) };
+          setCatalog((c) => (c[item.id] ? { ...c, [item.id]: { ...c[item.id], early } } : c));
         })
         // Offline, or a site without the history: only verified updates show, and it's asked again when something next changes.
         // (The setting changing meanwhile is put right by the next pass, above.)
@@ -1729,9 +1754,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // since is never taken. No answer, or a site without the history: the verified one, as ever.
       let early: HistoryRelease | undefined;
       if ((newestRightAway || options.early) && !chosen && !custom) {
-        const history = await client.releaseHistory(entry.slug, 100).then((page) => page.items, () => []);
-        const found = earlyHere(entry, history, was, options.platform);
+        const history = await client.releaseHistory(entry.slug, 100).then((page) => page.items, () => undefined);
+        const found = history && earlyHere(entry, history, was, options.platform);
         if (found && (!here || found.releasedAt > here.releasedAt) && (!was || newerThan(found, was))) early = found;
+        // What the card offers was looked up once, for the newest release upstream, and may be out of date since: one
+        // blocked, or a pre-release on main releases. What was just read puts it right, so it isn't offered again.
+        const of = history && !options.platform && earlyKey(catalog[entry.id] ?? entry, was);
+        if (of) {
+          const release = found && { version: found.version, releasedAt: found.releasedAt };
+          const pre = prereleasesFor(entry.id);
+          const saved = { of, ...(release ? { release } : {}), ...(newestRightAway ? { now: true as const } : {}), ...(pre ? { pre: true as const } : {}) };
+          setCatalog((c) => (c[entry.id] ? { ...c, [entry.id]: { ...c[entry.id], early: saved } } : c));
+        }
       }
       // With Newest right away it installs without asking: by itself whatever VirusTotal says, as the player chose not
       // to wait, and when the player asks for it, unless VirusTotal hasn't cleared it. Waiting 48 hours, the player who
@@ -1766,6 +1800,18 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         }
       }
       if (!release) throw new Problem(custom ? msg`This repository has no releases yet.` : msg`This app has no approved release yet.`);
+      // An update that comes to the version installed, or an older one, has nothing to do: never the same files put
+      // back, nor an older release, by a button or an automatic update that said a newer one. Putting them back is for
+      // Reinstall, of a file that differs; going back, for the player's own choice of version.
+      if (was && !chosen && !options.platform && !was.differs && !newerThan(release, was)) {
+        setJobs(({ [entry.id]: _, ...rest }) => rest);
+        if (!auto) {
+          const name = entry.projectName;
+          const installed = versionLabel(was.version);
+          setNotice(t`${name} already has ${installed}, the newest release it can update to.`);
+        }
+        return;
+      }
       version = release.version;
       const settings = release.installationOverride ?? entry.launcher;
       // The file the player picked on the app's Releases tab: that one, unless it isn't the kind installed.

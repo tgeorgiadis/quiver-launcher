@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, wantsPrereleases, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -473,6 +473,27 @@ describe("Newest right away: an update Quiver hasn't verified yet", () => {
     expect(hasUpdate(found(newest), { ...install, updates: "pinned" as const })).toBe(false);
     expect(hasUpdate(found(newest), { ...install, declined: "1.3.0" })).toBe(false);
     expect(skipped(found(newest), { ...install, skip: "v1.3.0" })).toBe(true);
+  });
+
+  it("isn't one any more once Quiver verified it, as a main release or a pre-release", () => {
+    // 1.3.0 verified as a pre-release since it was looked up: an app on main releases has no update.
+    const pre = { ...found(newest), verifiedPrerelease: { ...newest, prerelease: true } } as unknown as Entry;
+    expect(updateFor(pre, install)).toBeUndefined();
+    expect(hasUpdate(pre, install)).toBe(false);
+    expect(earlyOffer({ ...waiting(newest), verifiedPrerelease: newest } as unknown as Entry, install)).toBeUndefined();
+    expect(earlyGet({ ...listed, early: { of: earlyKey(listed, undefined)!, release: newest, now: true }, verifiedPrerelease: newest } as unknown as Entry)).toBeUndefined();
+    // Verified as its newest main release: the verified update, as any.
+    expect(earlyRelease({ ...found(newest), verified: { ...newest, prerelease: false, pinned: true } }, install)).toBeUndefined();
+  });
+
+  it("is looked up again once the app's choice of pre-releases changes", () => {
+    const main = found(newest);
+    expect(withEarlyFor(main, false)).toBe(main);
+    expect(withEarlyFor(main, true).early).toBeUndefined();
+    const withPre = { ...main, early: { ...main.early, pre: true as const } };
+    expect(withEarlyFor(withPre, true)).toBe(withPre);
+    expect(withEarlyFor(withPre, false).early).toBeUndefined();
+    expect(withEarlyFor(listed, true)).toBe(listed);
   });
 });
 

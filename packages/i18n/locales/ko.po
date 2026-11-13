@@ -348,6 +348,10 @@ msgstr "{name} (이 컴퓨터)"
 msgid "{name} {version} has more than one file for your computer."
 msgstr "{name} {version}에는 이 컴퓨터용 파일이 여러 개 있어요."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} already has {installed}, the newest release it can update to."
+msgstr "{name}에는 이미 업데이트할 수 있는 가장 최신 버전인 {installed}이(가) 있어요."
+
 #: ../ui/src/index.tsx
 msgid "{name} artwork"
 msgstr "{name} 아트워크"

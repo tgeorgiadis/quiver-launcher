@@ -348,6 +348,10 @@ msgstr "{name}（此电脑）"
 msgid "{name} {version} has more than one file for your computer."
 msgstr "{name} {version} 有多个适用于你电脑的文件。"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "{name} already has {installed}, the newest release it can update to."
+msgstr "{name} 已是 {installed}，这是它能更新到的最新版本。"
+
 #: ../ui/src/index.tsx
 msgid "{name} artwork"
 msgstr "{name} 插画"
