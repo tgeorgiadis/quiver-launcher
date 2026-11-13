@@ -1959,7 +1959,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (!custom) {
           void client.downloadProblem(entry, { version: release.version, file, problem: error }).catch(() => {});
           const fits = (r: Release) => bestAssets(r.assets, config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
-          instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, from, fits);
+          instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, was, fits);
         }
       }
       fail(entry.id, problem, true, instead);
