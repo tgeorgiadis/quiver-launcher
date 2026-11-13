@@ -1346,8 +1346,8 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .move-confirm .row { margin-top: 2px; }
 .move-confirm .row > button:only-child { flex: none; min-width: 200px; }
 .settings-pane > .view-options, .settings-section > .view-options { max-width: 380px; }
-.github-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
-.github-token ol { padding-left: 20px; display: grid; gap: 4px; }
+.github-token input, .gitlab-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
+.github-token ol, .gitlab-token ol { padding-left: 20px; display: grid; gap: 4px; }
 
 /*
  * Library cards as the player chose (view.ts): a Medium card's size, times the

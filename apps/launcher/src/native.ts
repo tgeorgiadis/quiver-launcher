@@ -2,7 +2,7 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
-import type { ModSettings, ModSource, Os, SetupFile } from "@quiverlauncher/api";
+import type { GitlabLimit, ModSettings, ModSource, Os, SetupFile } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
 
 /** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
@@ -240,6 +240,8 @@ export const native = {
   uninstall: (folder: string, dir?: string) => invoke<void>("uninstall", { folder, dir }),
   secretGet: (key: string) => invoke<string | null>("secret_get", { key }),
   secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),
+  /** GitLab's request limit, read by the Rust side: the page can't see GitLab's rate-limit headers. */
+  gitlabLimit: (url: string, token: string | null) => invoke<GitlabLimit>("gitlab_limit", { url, token }),
   /** Opens a sign-in page in the browser; resolves once it returns to the launcher. */
   browserSignIn: (url: string) => invoke<{ code: string } | { error: string }>("browser_sign_in", { url }),
   /** Stops waiting for the sign-in: browserSignIn then resolves to the error "cancelled". Starting another does this too. */

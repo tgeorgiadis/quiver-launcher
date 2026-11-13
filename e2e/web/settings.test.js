@@ -156,6 +156,32 @@ test("a controller rebinds a control with its own buttons", async () => {
   await s.until(async () => (await cells()).join() === "A,B");
 });
 
+test("Advanced Settings takes a GitLab token, keeps it in the keychain, and shows what it allows", async () => {
+  const s2 = await openApp({ state: installed });
+  const { page: p } = s2;
+  try {
+    await p.locator(".topbar button[aria-label='Settings']").click();
+    await p.locator('.settings-nav [data-section="advanced"]').click();
+    const setting = p.locator('section[aria-label="GitLab token"]');
+    await setting.waitFor();
+    // Without one, the mock allows fewer requests, and says how many are left.
+    await setting.getByText(/499 of 500 requests left/).waitFor();
+    await setting.locator('input[type="password"]').fill("glpat-test");
+    await setting.getByRole("button", { name: "Save token" }).click();
+    await setting.getByText("Saved. Requests to GitLab use your token now.").waitFor();
+    // The token was kept in the keychain, not in settings.json.
+    assert.deepEqual(
+      await p.evaluate(() => window.__calls.find((c) => c.cmd === "secret_set")?.args),
+      { key: "gitlabToken", value: "glpat-test" },
+    );
+    // It went with the request that checked it, and the mock's higher limit shows.
+    assert.ok(s2.api.gitlabRequests().some((r) => r.path === "/gitlab/user" && r.token === "glpat-test"));
+    await setting.getByText(/1,999 of 2,000 requests left/).waitFor();
+  } finally {
+    await s2.close();
+  }
+});
+
 test("A on a dropdown on a page opens its options, and B closes them without going back a page", async () => {
   assert.equal(await open('button[aria-label="Settings"]'), "page: Settings");
   await open('nav[aria-label="Settings sections"] button', { text: "General" });

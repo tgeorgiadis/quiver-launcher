@@ -295,6 +295,10 @@ msgstr "{left, plural, one {显示它} other {显示它们}}"
 msgid "{left} of {most} requests left this hour, until {until}."
 msgstr "本小时还剩 {left}/{most} 次请求，截止时间：{until}。"
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "{left} of {most} requests left this minute."
+msgstr "本分钟还剩 {left}/{most} 次请求。"
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{mb} MB"
 msgstr "{mb} MB"
@@ -1079,6 +1083,10 @@ msgstr "支持此功能的应用会将存档和设置保存在各自的文件夹
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "你从 GitHub 添加的应用会直接从 GitHub 获取版本。此网络每小时允许 60 次请求；使用令牌时为 5,000 次。目录中的应用无需令牌。"
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Apps you add from GitLab get their releases from GitLab itself, which allows fewer requests from this network without a token. Apps from the catalog don't need one."
+msgstr "你从 GitLab 添加的应用会直接从 GitLab 获取版本。不使用令牌时，GitLab 允许此网络发送的请求更少。目录中的应用无需令牌。"
+
 #. Get is the label of the button that installs an app
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
@@ -1383,6 +1391,7 @@ msgid "Checking your copy…"
 msgstr "正在检查你的副本 →"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
 msgstr "正在检查 →"
@@ -1513,8 +1522,14 @@ msgstr "选择其他 →"
 msgid "Choose Create a token on GitHub, and sign in to GitHub."
 msgstr "选择“在 GitHub 上创建令牌”，然后登录 GitHub。"
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Choose Create a token on GitLab, and sign in to GitLab."
+msgstr "选择“在 GitLab 上创建令牌”，然后登录 GitLab。"
+
 #. Generate token is the name of GitHub's button, as GitHub shows it in English
+#. Generate token is the name of GitLab's button, as GitLab shows it in English
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "选择“生成令牌”，复制令牌并粘贴到上方，然后选择“保存令牌”。"
 
@@ -1559,6 +1574,7 @@ msgid "Choose this folder"
 msgstr "选择此文件夹"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose when it expires."
 msgstr "选择过期时间。"
 
@@ -1707,6 +1723,7 @@ msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "无法连接 quiverlauncher.com。请检查网络连接，然后重试。"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Couldn't save the token. Try again."
 msgstr "无法保存令牌。请重试。"
 
@@ -1752,6 +1769,10 @@ msgstr "崩溃、性能不佳、控制或功能失效，或者我不得不进行
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Create a token on GitHub"
 msgstr "在 GitHub 上创建令牌"
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Create a token on GitLab"
+msgstr "在 GitLab 上创建令牌"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Create account"
@@ -2169,6 +2190,14 @@ msgstr "GitHub 不接受该令牌，因此未保存。请检查是否已完整�
 msgid "GitHub token"
 msgstr "GitHub 令牌"
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "GitLab didn't accept that token, so it wasn't saved. Check that you copied all of it."
+msgstr "GitLab 不接受该令牌，因此未保存。请检查是否已完整复制。"
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "GitLab token"
+msgstr "GitLab 令牌"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "返回"
@@ -2290,6 +2319,7 @@ msgid "Hide the other files"
 msgstr "隐藏其他文件"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Hide the steps"
 msgstr "隐藏步骤"
 
@@ -2320,6 +2350,7 @@ msgid "How should apps update?"
 msgstr "应用应如何更新？"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "How to make one"
 msgstr "如何创建"
 
@@ -2722,6 +2753,7 @@ msgid "Keep Quiver open until it's done. Each app's old copy is deleted only onc
 msgstr "保持 Quiver 打开，直到操作完成。只有在新副本通过检查后，才会删除每个应用的旧副本。"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "请妥善保管令牌。令牌过期后，请创建新令牌并在此处保存。"
 
@@ -2800,6 +2832,10 @@ msgstr "布局"
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "所有权限范围都不要勾选：公开版本无需任何权限。"
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Leave the read_api scope ticked: public releases need nothing more."
+msgstr "保持勾选 read_api 范围：公开版本不需要更多权限。"
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx
@@ -4155,11 +4191,14 @@ msgid "Remove tag {tag}"
 msgstr "移除标签 {tag}"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Remove token"
 msgstr "移除令牌"
 
 #. The GitHub token was removed
+#. The GitLab token was removed
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Removed."
 msgstr "已移除。"
 
@@ -4282,12 +4321,17 @@ msgid "Save as playlist"
 msgstr "保存为播放列表"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Save token"
 msgstr "保存令牌"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
 msgstr "已保存。现在，向 GitHub 发送请求时会使用你的令牌。"
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Saved. Requests to GitLab use your token now."
+msgstr "已保存。现在，向 GitLab 发送请求时会使用你的令牌。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Saving…"

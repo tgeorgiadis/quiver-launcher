@@ -295,6 +295,10 @@ msgstr "{left, plural, one {L'afficher} other {Les afficher}}"
 msgid "{left} of {most} requests left this hour, until {until}."
 msgstr "{left} requêtes sur {most} restantes pour cette heure, jusqu'à {until}."
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "{left} of {most} requests left this minute."
+msgstr "{left} requêtes sur {most} restantes pour cette minute."
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{mb} MB"
 msgstr "{mb} Mo"
@@ -1079,6 +1083,10 @@ msgstr "Les apps compatibles gardent leurs sauvegardes et leurs réglages dans l
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "Les apps que vous ajoutez depuis GitHub récupèrent leurs versions sur GitHub même, qui autorise 60 requêtes par heure depuis ce réseau, ou 5 000 avec un jeton. Les apps du catalogue n'en ont pas besoin."
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Apps you add from GitLab get their releases from GitLab itself, which allows fewer requests from this network without a token. Apps from the catalog don't need one."
+msgstr "Les apps que vous ajoutez depuis GitLab récupèrent leurs versions sur GitLab même, qui autorise moins de requêtes depuis ce réseau sans jeton. Les apps du catalogue n'en ont pas besoin."
+
 #. Get is the label of the button that installs an app
 #: ../../apps/launcher/src/library.tsx
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
@@ -1383,6 +1391,7 @@ msgid "Checking your copy…"
 msgstr "Vérification de ta copie…"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
 msgstr "Vérification…"
@@ -1513,8 +1522,14 @@ msgstr "Choisir un autre…"
 msgid "Choose Create a token on GitHub, and sign in to GitHub."
 msgstr "Choisissez « Créer un jeton sur GitHub », puis connectez-vous à GitHub."
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Choose Create a token on GitLab, and sign in to GitLab."
+msgstr "Choisissez « Créer un jeton sur GitLab », puis connectez-vous à GitLab."
+
 #. Generate token is the name of GitHub's button, as GitHub shows it in English
+#. Generate token is the name of GitLab's button, as GitLab shows it in English
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Choisissez « Generate token », copiez le jeton, collez-le ci-dessus et choisissez « Enregistrer le jeton »."
 
@@ -1559,6 +1574,7 @@ msgid "Choose this folder"
 msgstr "Choisir ce dossier"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose when it expires."
 msgstr "Choisissez quand il expire."
 
@@ -1707,6 +1723,7 @@ msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "Impossible de joindre quiverlauncher.com. Vérifiez votre connexion et réessayez."
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Couldn't save the token. Try again."
 msgstr "Impossible d'enregistrer le jeton. Réessayez."
 
@@ -1752,6 +1769,10 @@ msgstr "Plantages, mauvaises performances, commandes ou fonctionnalités défail
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Create a token on GitHub"
 msgstr "Créer un jeton sur GitHub"
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Create a token on GitLab"
+msgstr "Créer un jeton sur GitLab"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Create account"
@@ -2169,6 +2190,14 @@ msgstr "GitHub n'a pas accepté ce jeton, il n'a donc pas été enregistré. Vé
 msgid "GitHub token"
 msgstr "Jeton GitHub"
 
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "GitLab didn't accept that token, so it wasn't saved. Check that you copied all of it."
+msgstr "GitLab n'a pas accepté ce jeton, il n'a donc pas été enregistré. Vérifiez que vous l'avez copié en entier."
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "GitLab token"
+msgstr "Jeton GitLab"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "Retour"
@@ -2290,6 +2319,7 @@ msgid "Hide the other files"
 msgstr "Masquer les autres fichiers"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Hide the steps"
 msgstr "Masquer les étapes"
 
@@ -2320,6 +2350,7 @@ msgid "How should apps update?"
 msgstr "Comment les apps doivent-elles se mettre à jour ?"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "How to make one"
 msgstr "Comment en créer un"
 
@@ -2722,6 +2753,7 @@ msgid "Keep Quiver open until it's done. Each app's old copy is deleted only onc
 msgstr "Gardez Quiver ouvert jusqu’à la fin. L’ancienne copie de chaque app n’est supprimée qu’une fois la nouvelle vérifiée."
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "Gardez ce jeton privé. Quand il expire, créez-en un nouveau et enregistrez-le ici."
 
@@ -2800,6 +2832,10 @@ msgstr "Disposition"
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "Ne cochez aucune autorisation : les versions publiques n'en ont pas besoin."
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Leave the read_api scope ticked: public releases need nothing more."
+msgstr "Laissez l'autorisation read_api cochée : les versions publiques n'ont besoin de rien de plus."
 
 #. Button: back from TV mode to the usual launcher
 #: ../../apps/launcher/src/App.tsx
@@ -4155,11 +4191,14 @@ msgid "Remove tag {tag}"
 msgstr "Retirer le tag {tag}"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Remove token"
 msgstr "Supprimer le jeton"
 
 #. The GitHub token was removed
+#. The GitLab token was removed
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Removed."
 msgstr "Supprimé."
 
@@ -4282,12 +4321,17 @@ msgid "Save as playlist"
 msgstr "Enregistrer comme playlist"
 
 #: ../../apps/launcher/src/github-token.tsx
+#: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Save token"
 msgstr "Enregistrer le jeton"
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
 msgstr "Enregistré. Les requêtes vers GitHub utilisent désormais votre jeton."
+
+#: ../../apps/launcher/src/gitlab-token.tsx
+msgid "Saved. Requests to GitLab use your token now."
+msgstr "Enregistré. Les requêtes vers GitLab utilisent désormais votre jeton."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Saving…"
