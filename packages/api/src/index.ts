@@ -2,6 +2,7 @@
  * The quiverlauncher.com catalog API (https://api.quiverlauncher.com/api/v1),
  * typed after the site's public DTOs. Unknown fields are ignored.
  */
+import { ApiError } from "./errors";
 export type Os = "windows" | "linux" | "macos" | "android" | "ios" | "unknown";
 export type Architecture = "x64" | "x86" | "arm64" | "arm" | "universal" | "unknown";
 export type ProjectType = "port" | "tool" | "emulator" | "game";
@@ -379,7 +380,6 @@ export type Readme = { markdown: string; rawBase?: string; htmlBase?: string };
  */
 export type DownloadProblem = { version: string; file: string; problem: "missing" | "mismatch" };
 
-import { ApiError } from "./errors";
 export { ApiError } from "./errors";
 
 export const DEFAULT_API = "https://api.quiverlauncher.com/api/v1";
