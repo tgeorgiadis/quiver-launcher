@@ -2482,11 +2482,6 @@ msgstr "要在 {release} 发布未满 48 小时前安装吗？"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
-msgid "Install {release} before its virus scan finishes?"
-msgstr "要在 {release} 的病毒扫描完成前安装吗？"
-
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/detail.tsx
 msgid "Install {release} before Quiver offers it?"
 msgstr "要在 Quiver 提供 {release} 之前安装吗？"
 

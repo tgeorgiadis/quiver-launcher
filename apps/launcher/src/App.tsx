@@ -2409,9 +2409,7 @@ function UnverifiedPrompt() {
         ? t`Update to ${release} before its 48 hours are up?`
         : t`Install ${release} before its 48 hours are up?`
       : scanned
-        ? scan?.verdict === "pending"
-          ? t`Install ${release} before its virus scan finishes?`
-          : t`Install ${release} with a virus scan warning?`
+        ? t`Install ${release} with a virus scan warning?`
         : t`Install ${release} before Quiver offers it?`;
   const scanLine = scan && (
     <p className="scan-line">
