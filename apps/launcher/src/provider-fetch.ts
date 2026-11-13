@@ -21,5 +21,7 @@ export const providerFetch: typeof fetch = async (input, init) => {
   }
   const headers = Object.fromEntries(new Headers(init?.headers).entries());
   const response = await native.providerHttp(url, headers);
-  return new Response(response.body, { status: response.status, headers: response.headers });
+  // 204 and 205 may not carry a body.
+  const body = response.status === 204 || response.status === 205 ? null : response.body;
+  return new Response(body, { status: response.status, headers: response.headers });
 };
