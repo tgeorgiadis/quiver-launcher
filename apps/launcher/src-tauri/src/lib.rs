@@ -590,6 +590,8 @@ fn add_proton(data: &Data, name: &str, folder: &str, target: &shortcut::Target, 
     let mut shortcut = steam::Shortcut::new(name, target, icon);
     shortcut.shortcut_path = launcher.desktop().to_string_lossy().into_owned();
     shortcut.art = art;
+    // Steam reads the grid folder as it loads, so artwork added now shows after a restart; the shortcut itself is already there.
+    let art_note = if shortcut.art.is_empty() { "" } else { " Artwork will appear after restarting Steam." };
     if !steam::running() {
         steam::apply(&shortcut)?;
         return Ok(format!("{name} is in Steam. It's set to run with Proton. Start Steam to see it."));
@@ -611,7 +613,7 @@ fn add_proton(data: &Data, name: &str, folder: &str, target: &shortcut::Target, 
             let _ = steam::place_art(&user, id, &shortcut.art);
         }
     }
-    Ok(format!("{name} is in Steam. It's set to run with Proton."))
+    Ok(format!("{name} is in Steam. It's set to run with Proton.{art_note}"))
 }
 
 /// Adds a native Linux shortcut: a `.desktop` naming the game's own program, so
@@ -622,6 +624,8 @@ fn add_proton(data: &Data, name: &str, folder: &str, target: &shortcut::Target, 
 fn add_native(data: &Data, name: &str, folder: &str, target: &shortcut::Target, icon: Option<&Path>, art: Vec<(String, PathBuf)>) -> Result<String, String> {
     let launcher = steam::Launcher::write(&data.0, folder, name, target, icon)?;
     let shortcut = launcher.shortcut(name, target, icon, art);
+    // Steam reads the grid folder as it loads, so artwork added now shows after a restart; the shortcut itself is already there.
+    let art_note = if shortcut.art.is_empty() { "" } else { " Artwork will appear after restarting Steam." };
     if !steam::running() {
         steam::apply(&shortcut)?;
         return Ok(format!("{name} is in Steam. Start Steam to see it."));
@@ -643,7 +647,7 @@ fn add_native(data: &Data, name: &str, folder: &str, target: &shortcut::Target, 
             let _ = steam::place_art(&user, id, &shortcut.art);
         }
     }
-    Ok(format!("{name} is in Steam."))
+    Ok(format!("{name} is in Steam.{art_note}"))
 }
 
 /// The app ids to name a live add's artwork for. Steam assigns a shortcut's id
