@@ -2,7 +2,7 @@ import { ApiError } from "../errors";
 import { inferPlatform } from "../platform";
 import type { RateLimit, Readme, Release } from "../index";
 import { refusal } from "./refusal";
-import type { ProviderContext, RepositoryProvider, RepositoryRef } from "./types";
+import type { RepositoryProvider, RepositoryRef } from "./types";
 
 /** Without a token GitHub allows a network 60 requests an hour (a token, 5,000). */
 const githubError = (response: Response, token: boolean) => refusal(response, token, "GitHub", "x-ratelimit");

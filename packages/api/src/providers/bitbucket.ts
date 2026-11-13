@@ -1,8 +1,8 @@
 import { ApiError } from "../errors";
 import { inferPlatform } from "../platform";
-import type { Readme, Release } from "../index";
+import type { Release } from "../index";
 import { refusal } from "./refusal";
-import type { RepositoryProvider, RepositoryRef } from "./types";
+import type { RepositoryProvider } from "./types";
 
 type RawDownload = { name: string; size?: number; created_on?: string; links?: { self?: { href?: string } } };
 type RawPage = { values?: RawDownload[]; next?: string };
@@ -100,9 +100,6 @@ export const bitbucketProvider: RepositoryProvider = {
   },
 };
 
-function hostOf(ref: RepositoryRef): string {
-  return ref.host ?? "bitbucket.org";
-}
 
 function authOf(token?: string): Record<string, string> {
   return token?.trim() ? { Authorization: `Basic ${btoa(token.trim())}` } : {};

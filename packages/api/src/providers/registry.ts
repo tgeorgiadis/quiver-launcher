@@ -1,4 +1,3 @@
-import type { RateLimit, Readme, Release } from "../index";
 import { bitbucketProvider } from "./bitbucket";
 import { feedProvider } from "./feed";
 import { giteaProvider } from "./gitea";

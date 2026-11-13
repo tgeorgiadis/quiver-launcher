@@ -1,6 +1,6 @@
 import { ApiError } from "../errors";
 import { inferPlatform } from "../platform";
-import type { RateLimit, Readme, Release } from "../index";
+import type { Release } from "../index";
 import { refusal } from "./refusal";
 import type { RepositoryProvider, RepositoryRef } from "./types";
 
