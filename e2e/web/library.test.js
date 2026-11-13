@@ -51,6 +51,9 @@ test("up and down go by way of Search and Play, wherever they start across the s
   assert.equal(await focusedSelector(app), "card");
   await reach.press(app, "DPadUp");
   assert.equal(await focusedSelector(app), "search");
+  // Up from Search, on its row under the tabs and tools: the sort, not the tab over it.
+  await reach.press(app, "DPadUp");
+  assert.equal(await app.execute(() => document.activeElement?.getAttribute("aria-label")), "Sort");
   // From the far end of the top bar, down: Play too, not past it, or whatever's under that button.
   await reach.pressOn(app, ".topbar button[aria-label='Settings']", "DPadDown");
   const notices = await app.execute(() => document.querySelectorAll(".banner-stack button").length);

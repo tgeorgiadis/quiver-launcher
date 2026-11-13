@@ -1,8 +1,8 @@
 /**
  * The first start's setup: a few questions in turn, in place of a banner
  * for each. The language, a Quiver Launcher 3 library to import, where
- * apps install, where the player keeps their game copies, usage data, and
- * signing in, each answered or skipped, and
+ * apps install, where the player keeps their game copies, how apps update,
+ * usage data, and signing in, each answered or skipped, and
  * Settings has them all after. Only on a computer's first start; Skip setup
  * leaves what wasn't answered to the banners that ask it otherwise.
  */
@@ -14,10 +14,11 @@ import { useAccount } from "./account";
 import { AppsFolder, LanguageSetting } from "./settings-page";
 import { OldLibraryStep } from "./old-library";
 import { GameCopySettings } from "./own-copy-settings";
+import { AppUpdatesSetting } from "./app-updates";
 import { TelemetrySetting, useTelemetrySwitch } from "./telemetry-ui";
 import { track, trackScreen } from "./telemetry";
 
-type Step = "welcome" | "v3" | "apps" | "copies" | "usage" | "account";
+type Step = "welcome" | "v3" | "apps" | "copies" | "updates" | "usage" | "account";
 
 /** Whether a start shows the setup: the first on this computer, until it's done. */
 export const showsSetup = (settings: Pick<Settings, "launched" | "setupDone">) => !settings.launched && !settings.setupDone;
@@ -28,7 +29,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   const { available } = useTelemetrySwitch();
   const phone = config.os === "android" || config.os === "ios";
   // Quiver Launcher 3, an apps folder and game copies are a computer's; usage data only where it's sent.
-  const steps = (["welcome", !phone && "v3", !phone && "apps", !phone && "copies", available && "usage", "account"] as const).filter(Boolean) as Step[];
+  const steps = (["welcome", !phone && "v3", !phone && "apps", !phone && "copies", "updates", available && "usage", "account"] as const).filter(Boolean) as Step[];
   const [at, setAt] = useState(0);
   const step = steps[Math.min(at, steps.length - 1)];
   const [offering, setOffering] = useState(false);
@@ -40,11 +41,11 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   // Each step starts on what answers it, so a controller's A goes on.
   useEffect(() => {
     const body = dialog.current;
-    (body?.querySelector<HTMLElement>(".setup-step button.primary, .setup-step .add-choice") ?? body?.querySelector<HTMLElement>(".setup-next"))?.focus();
+    (body?.querySelector<HTMLElement>('.setup-step button.primary, .setup-step .add-choice[aria-checked="true"], .setup-step .add-choice:not([role="radio"])') ?? body?.querySelector<HTMLElement>(".setup-next"))?.focus();
   }, [step]);
   /** Leaving a step answers it: its banner has nothing more to ask. */
   const answered = (s: Step): Partial<Settings> =>
-    s === "v3" ? { oldLibraryNoticeSeen: true } : s === "usage" ? { telemetryNoticeSeen: true } : s === "copies" ? { copyFoldersAsked: true } : {};
+    s === "v3" ? { oldLibraryNoticeSeen: true } : s === "usage" ? { telemetryNoticeSeen: true } : s === "copies" ? { copyFoldersAsked: true } : s === "updates" ? { appUpdatesAsked: true } : {};
   // From the settings as they are by then: an import that finishes on a step saves the apps it hid.
   const finish = (skipped: boolean) => {
     setSettings((s) => ({ ...s, ...(skipped ? {} : answered(step)), setupDone: true }));
@@ -76,6 +77,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
     v3: offering ? t`Bring your apps over from Quiver Launcher 3?` : t`Coming from Quiver Launcher 3?`,
     apps: t`Where apps install`,
     copies: t`Where are your games?`,
+    updates: t`How should apps update?`,
     usage: t`Usage data`,
     account: t`Sign in to sync your library`,
   };
@@ -108,6 +110,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
             )}
             {step === "apps" && <AppsStep brought={brought} />}
             {step === "copies" && <CopiesStep />}
+            {step === "updates" && <AppUpdatesSetting inSetup />}
             {step === "usage" && <TelemetrySetting />}
             {step === "account" && <AccountStep onSignIn={onSignIn} />}
           </div>

@@ -5,14 +5,14 @@
  * overrides); names, artwork and files always come from the catalog. The
  * last catalog data seen is cached so the library shows instantly offline.
  */
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
-import { cameAfter, fromSite, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
+import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
@@ -69,6 +69,18 @@ export type CatalogEntry = Entry & {
    * `of` says which verified release and build it was looked up for (`forHereKey`); none found, no `release`.
    */
   forHere?: { of: string; release?: { version: string; releasedAt: number } };
+  /**
+   * The newest release an install here can update to that's still in its 48-hour wait (Quiver hasn't verified it yet),
+   * and that Quiver hasn't blocked. `of` says what it was looked up for (`earlyKey`); none found, no `release`.
+   * `now`: Newest right away (`Settings.appUpdates`) is on, so it's the app's update; without it, only what the
+   * player can update to early by asking (`earlyOffer`).
+   */
+  early?: { of: string; release?: { version: string; releasedAt: number }; now?: true };
+  /**
+   * The site's `verified` (its newest main release), while `verified` is the newest pre-release because the player
+   * chose pre-releases for this app (`withPrereleases`). Only in the store's `catalog`; never kept.
+   */
+  verifiedMain?: Verified;
 };
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
@@ -91,6 +103,8 @@ export type Install = {
   playTime?: number;
   /** Install new releases without asking, or stay on this one (only ever the player's own choice). Unset: offer them. */
   updates?: "auto" | "pinned";
+  /** Whether this app gets pre-releases, whatever the player's default (`Settings.prereleases`). Unset: the default. */
+  prereleases?: "include" | "main";
   /** A verified version Auto Update leaves alone: the one the player went back from by picking an older release. */
   skip?: string;
   /** A release the player said to skip: not offered or installed by itself, until a newer one comes. */
@@ -158,11 +172,18 @@ export type Asking = {
   scan?: ReleaseScan;
   /** When it's verified by itself, if nothing changes. */
   checkEndsAt?: number;
+  /**
+   * An update taken before Quiver offers it, of an app that has a release it does offer: `asked`, the player waits
+   * 48 hours for updates and asked for this one early; `scan`, they get updates right away, and VirusTotal hasn't
+   * cleared this one.
+   */
+  early?: "asked" | "scan";
   resolve: (install: boolean) => void;
 };
 /** How an install goes, as `get` takes it; `app`, a custom app's repository not in the library yet; `auto`, Auto Update's. */
 /** `to`: the folder a new install goes in, in a folder of its own; the default apps folder when absent. */
-type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os; to?: string };
+/** `early`: the newest release still in its 48-hour wait, which the player asked for: it asks first. */
+type InstallOptions = { app?: CustomApp; pin?: boolean; unverified?: boolean; blocked?: string; auto?: boolean; asset?: string; platform?: Os; to?: string; early?: boolean };
 
 type Launcher = {
   config: Config;
@@ -258,6 +279,8 @@ type Launcher = {
   /** Adds an app the player picked out, without downloading it, and says so: its card in Browse looks no different. */
   addToLibrary: (entry: Entry) => void;
   setUpdates: (id: string, updates: Install["updates"]) => void;
+  /** Sets whether an installed app gets pre-releases; undefined goes back to the player's default. */
+  setPrereleases: (id: string, prereleases: Install["prereleases"]) => void;
   /** Stops offering this release of an app; a newer one is offered as usual. */
   declineUpdate: (id: string, version: string) => void;
   /** Sets how an installed app starts; nothing set goes back to the launcher's choice. */
@@ -332,7 +355,7 @@ type Launcher = {
 };
 
 /** What Get installs with: `to`, the folder a new install goes in; the default apps folder when absent. */
-export type GetOptions = { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os; to?: string };
+export type GetOptions = { pin?: boolean; unverified?: boolean; blocked?: string; asset?: string; platform?: Os; to?: string; early?: boolean };
 
 /** An app whose folder the player is choosing, with what it was going to install. */
 export type Placing = { entry: Entry; release?: Release; options?: GetOptions };
@@ -586,6 +609,12 @@ const LauncherNow = createContext<{ readonly current: Launcher } | null>(null);
  */
 export const useLauncherNow = () => useContext(LauncherNow)!;
 
+/** How long an automatic update leaves a release VirusTotal is still scanning before it looks again. */
+const SCAN_WAIT = 15 * 60_000;
+/** How long a release waits before Quiver offers it: the time there is to withdraw a harmful one. */
+export const RELEASE_WAIT = 48 * 3_600_000;
+/** Whether a release came out so lately that its 48-hour wait is why Quiver doesn't offer it yet. */
+export const stillWaiting = (releasedAt: number | undefined, now = Date.now()) => releasedAt !== undefined && now - releasedAt < RELEASE_WAIT;
 /** How long looking up a repository may take before it gives up. */
 const LOOKUP_TIMEOUT = 30_000;
 /** The release a player gets: the newest that isn't a pre-release, else the newest. */
@@ -636,6 +665,38 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
  */
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
+/** Whether an app gets pre-releases: its own choice, else the player's default. */
+export const wantsPrereleases = (settings: Pick<Settings, "prereleases">, install: Pick<Install, "prereleases"> | undefined) =>
+  install?.prereleases ? install.prereleases === "include" : Boolean(settings.prereleases);
+
+/** The app's newest verified main release, whatever the player chose; a pre-release only for a project with nothing else. */
+export const mainRelease = (entry: CatalogEntry) => entry.verifiedMain ?? entry.verified;
+
+/** A project that only publishes pre-releases: every player gets its newest. */
+export const onlyPrereleases = (entry: CatalogEntry) => Boolean(mainRelease(entry)?.prerelease);
+
+/** The entry as the site sent it, without the player's pre-release choice. */
+export function withMainRelease(entry: CatalogEntry): CatalogEntry {
+  if (!entry.verifiedMain) return entry;
+  const { verifiedMain, ...rest } = entry;
+  return { ...rest, verified: verifiedMain };
+}
+
+/**
+ * The entry for a player who chose pre-releases for it: its newest verified pre-release, when it's newer than its main
+ * release, is the release it updates to. Every reader of `verified` then follows the choice.
+ */
+export function withPrereleases(entry: CatalogEntry, wants: boolean): CatalogEntry {
+  const main = withMainRelease(entry);
+  return wants && main.verifiedPrerelease ? { ...main, verified: main.verifiedPrerelease, verifiedMain: main.verified } : main;
+}
+
+/** Entries as they're kept: each the site's own. The same object when none had the player's choice in it. */
+function keptAsSent(catalog: Record<string, CatalogEntry>) {
+  if (!Object.values(catalog).some((e) => e.verifiedMain)) return catalog;
+  return Object.fromEntries(Object.entries(catalog).map(([id, e]) => [id, withMainRelease(e)]));
+}
+
 /** "v1.2" and "1.2" are the same release. */
 const bare = (version: string) => version.trim().replace(/^v/i, "");
 
@@ -661,10 +722,78 @@ export const mayUpdate = (entry: CatalogEntry | undefined, install: Install | un
   Boolean(entry?.verified && install && !install.local && !pulledVerified(entry) && newerThan(entry.verified, install));
 
 /**
+ * What `early` was looked up for: the newest release upstream, and the kind of build installed (this computer's own,
+ * for an app not installed yet). None when there's nothing to look up: the newest is the one installed, or the
+ * verified one, which updates as it always has.
+ */
+export const earlyKey = (entry: Pick<Entry, "lastReleaseVersion" | "verified"> | undefined, install: Install | undefined) => {
+  const newest = entry?.lastReleaseVersion;
+  if (!newest || install?.local || (install && bare(newest) === bare(install.version)) || (entry.verified && bare(newest) === bare(entry.verified.version))) return undefined;
+  return `${bare(newest)}:${install?.wine ? "windows" : "own"}:${install?.installer === "msi" ? "msi" : "files"}`;
+};
+
+/**
+ * The release still in its 48-hour wait that this install could update to, whichever way apps update. None once it's
+ * withdrawn, and none until `early` is looked up, as for `forHere`.
+ */
+export function earlyRelease(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const found = entry?.early;
+  const release = found?.release;
+  if (!release || !install || found.of !== earlyKey(entry, install)) return undefined;
+  if (entry?.withdrawn?.some((w) => bare(w.version) === bare(release.version))) return undefined;
+  return newerThan(release, install) ? release : undefined;
+}
+
+/**
+ * The newest release upstream that a card says isn't offered yet: one newer than the verified release. None once
+ * `early` was looked up for an install and found no release this computer can take (only another system's build, or
+ * an updater's files), as that one is never offered here, however long the wait.
+ */
+export function notOfferedYet(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const newest = entry?.lastReleaseVersion;
+  const verified = entry?.verified;
+  if (!newest || !verified || bare(newest) === bare(verified.version) || (entry.lastReleaseAt ?? 0) <= (verified.releasedAt ?? 0)) return undefined;
+  const of = earlyKey(entry, install);
+  return of && entry.early?.of === of && !entry.early.release ? undefined : newest;
+}
+
+/**
+ * For an app that isn't installed yet, the release ahead of the verified one that this computer could install: the
+ * newest with a file for it. None until `early` is looked up, or once it's withdrawn.
+ */
+function earlyToGet(entry: CatalogEntry | undefined) {
+  const found = entry?.early;
+  const release = found?.release;
+  if (!release || found.of !== earlyKey(entry, undefined)) return undefined;
+  return entry?.withdrawn?.some((w) => bare(w.version) === bare(release.version)) ? undefined : release;
+}
+
+/** With Newest right away, that release as the one Install takes. */
+export const earlyGet = (entry: CatalogEntry | undefined) => (entry?.early?.now ? earlyToGet(entry) : undefined);
+
+/** Waiting 48 hours, that release as what the player can install in the verified one's place, by asking: Install latest. */
+export const earlyGetOffer = (entry: CatalogEntry | undefined, install: Install | undefined) => (install || entry?.early?.now ? undefined : earlyToGet(entry));
+
+/** With Newest right away, the release this computer takes ahead of the verified one: an install's update, or what Install gets. */
+export const earlyHereFor = (entry: CatalogEntry | undefined, install: Install | undefined) => (install ? earlyUpdate(entry, install) : earlyGet(entry));
+
+/** With Newest right away, that release as the app's update. */
+export const earlyUpdate = (entry: CatalogEntry | undefined, install: Install | undefined) => (entry?.early?.now ? earlyRelease(entry, install) : undefined);
+
+/**
+ * Waiting 48 hours, that release as what the player can update this one app to early, by asking: never offered by
+ * itself, and not for an app pinned to its version.
+ */
+export const earlyOffer = (entry: CatalogEntry | undefined, install: Install | undefined) =>
+  entry?.early?.now || install?.updates === "pinned" ? undefined : earlyRelease(entry, install);
+
+/**
  * The release this install could update to, whatever the player chose to do about it. None until `forHere` is looked
  * up: a false update is worse than one that shows a moment late, as installing it could replace what works.
  */
 export function updateFor(entry: CatalogEntry | undefined, install: Install | undefined) {
+  const early = earlyUpdate(entry, install);
+  if (early) return early;
   if (!mayUpdate(entry, install)) return undefined;
   const found = entry!.forHere;
   if (found?.of !== forHereKey(entry!.verified!, install!)) return undefined;
@@ -942,6 +1071,15 @@ export type Settings = {
   oldInstallsChecked?: boolean;
   /** The first start's setup (setup.tsx) was finished or skipped. */
   setupDone?: boolean;
+  /**
+   * Which releases apps update to (app-updates.tsx): unset, only the ones Quiver verified; "newest", the newest it
+   * hasn't blocked, as soon as it's out, without asking.
+   */
+  appUpdates?: "newest";
+  /** Asked once which: in the setup, or by the banner for a player set up before it. */
+  appUpdatesAsked?: boolean;
+  /** Apps get pre-releases too, unless an app says otherwise (`Install.prereleases`). Unset: main releases only. */
+  prereleases?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
   previewUpdates?: boolean;
   /** Announcements dismissed here, by id (announcements.ts). */
@@ -1057,7 +1195,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const account = useAccount();
   const [allItems, setLibrary] = useState(saved.library);
   const [installs, setInstalls] = useState(saved.installs);
-  const [catalog, setCatalog] = useState(saved.catalog);
+  // As the site sent them; `catalog`, below, has each player's pre-release choice in it.
+  const [rawCatalog, setRawCatalog] = useState(() => keptAsSent(saved.catalog));
+  // What's written back may be from `catalog`: kept as the site sent it.
+  const setCatalog: Dispatch<SetStateAction<Record<string, CatalogEntry>>> = useCallback(
+    (next) => setRawCatalog((c) => keptAsSent(typeof next === "function" ? next(c) : next)),
+    [],
+  );
   const [jobs, setJobs] = useState<Record<string, Job>>({});
   const [appMoves, setAppMoves] = useState<Record<string, AppMove>>({});
   // The apps moving and installing this moment, kept as they change rather than as of a render: one mustn't start
@@ -1140,9 +1284,22 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   usePersist("library", allItems);
   usePersist("installs", installs);
-  usePersist("catalog", catalog);
+  usePersist("catalog", rawCatalog);
   const [settings, setSettings] = useState(saved.settings);
   usePersist("settings", settings);
+  // Each app's verified release as the player chose: the newest pre-release for an app that gets them.
+  const prereleasesOn = Boolean(settings.prereleases);
+  const catalog = useMemo(() => {
+    let shown = rawCatalog;
+    for (const [id, entry] of Object.entries(rawCatalog)) {
+      if (!entry.verifiedPrerelease || !wantsPrereleases({ prereleases: prereleasesOn }, installs[id])) continue;
+      if (shown === rawCatalog) shown = { ...rawCatalog };
+      shown[id] = withPrereleases(entry, true);
+    }
+    return shown;
+  }, [rawCatalog, installs, prereleasesOn]);
+  /** Whether this app gets pre-releases: what's asked of the site's releases for it. */
+  const prereleasesFor = (id: string) => wantsPrereleases(settings, installs[id]);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
   // What usage data reads later on, as it stands by then.
@@ -1241,13 +1398,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       if (custom) {
         releasesOf(custom).then(
-          (releases) => setCatalog((c) => ({ ...c, [item.id]: { ...customEntry(item.id, custom, latestOf(releases), art), forHere: c[item.id]?.forHere } })),
+          (releases) => setCatalog((c) => ({ ...c, [item.id]: { ...customEntry(item.id, custom, latestOf(releases), art), forHere: c[item.id]?.forHere, early: c[item.id]?.early } })),
           () => setCatalog((c) => (c[item.id] ? c : { ...c, [item.id]: customEntry(item.id, custom, undefined, art) })),
         );
         continue;
       }
       client.app(item.slug).then(
-        (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn, forHere: c[item.id]?.forHere } })),
+        (d) => setCatalog((c) => ({ ...c, [item.id]: { ...d.entry, withdrawn: d.withdrawn, forHere: c[item.id]?.forHere, early: c[item.id]?.early } })),
         () => {},
       );
     }
@@ -1353,7 +1510,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (entry.forHere?.of === of || lookingUp.current.has(asked)) continue;
       lookingUp.current.add(asked);
       const custom = isCustom(item.id) ? (item.custom ?? fromKey(item.id)) : null;
-      (custom ? releasesOf(custom) : client.releases(entry.slug, 100).then((p) => p.items))
+      (custom ? releasesOf(custom) : client.releases(entry.slug, 100, null, prereleasesFor(item.id)).then((p) => p.items))
         .then((list) => {
           const found = releaseHere(entry, list, Boolean(custom), install);
           const release = found && { version: found.version, releasedAt: found.releasedAt };
@@ -1364,6 +1521,62 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         .finally(() => lookingUp.current.delete(asked));
     }
   }, [catalog, installs, library, client]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * The release an install (or a new one) here takes ahead of the verified one, with Newest right away or when the
+   * player asks to update early: the newest in
+   * the site's history that isn't blocked or withdrawn and has a file for this computer, when Quiver hasn't verified
+   * it yet. None when that newest is verified. Only releases the site has seen, so its files are checked against what
+   * Quiver saw of them.
+   */
+  const earlyHere = (entry: Entry, history: HistoryRelease[], was?: Install, platform?: Os) => {
+    // On main releases, a project's pre-releases aren't updates, unless it publishes nothing else.
+    const known = catalog[entry.id] ?? entry;
+    const mainOnly = !prereleasesFor(entry.id) && Boolean(mainRelease(known)) && !onlyPrereleases(known);
+    const open = withdrawnAsBlocked(history, (r) => r.version, catalog[entry.id]?.withdrawn).filter((r) => r.state !== "blocked" && r.assets.length > 0 && !(mainOnly && r.prerelease));
+    const here = releaseHere(entry, open.map(fromSite), false, was, platform);
+    const found = here && open.find((r) => r.releaseId === here.id);
+    return found?.state === "unverified" ? found : undefined;
+  };
+
+  // Which release still in its 48-hour wait each install could update to, asked once for each newest release
+  // upstream. With Newest right away it's the app's update (`now`); otherwise only what the player can ask for.
+  const newestRightAway = settings.appUpdates === "newest";
+  const lookingEarly = useRef(new Set<string>());
+  useEffect(() => {
+    // The setting changed: what was looked up stays, and is the update or isn't.
+    if (Object.values(catalog).some((e) => e.early && Boolean(e.early.now) !== newestRightAway))
+      setCatalog((c) =>
+        Object.fromEntries(
+          Object.entries(c).map(([id, e]) => {
+            if (!e.early) return [id, e];
+            const { now: _, ...early } = e.early;
+            return [id, { ...e, early: newestRightAway ? { ...early, now: true as const } : early }];
+          }),
+        ),
+      );
+    for (const item of library) {
+      const entry = catalog[item.id];
+      const install = installs[item.id];
+      // An app not installed yet, too: what Install takes with Newest right away, or Install latest offers.
+      const of = !isCustom(item.id) && earlyKey(entry, install);
+      if (!entry || !of || entry.early?.of === of) continue;
+      const asked = `${item.id}@${of}`;
+      if (lookingEarly.current.has(asked)) continue;
+      lookingEarly.current.add(asked);
+      client
+        .releaseHistory(entry.slug, 100)
+        .then(({ items }) => {
+          const found = earlyHere(entry, items, install);
+          const release = found && { version: found.version, releasedAt: found.releasedAt };
+          setCatalog((c) => (c[item.id] ? { ...c, [item.id]: { ...c[item.id], early: { of, ...(release ? { release } : {}), ...(newestRightAway ? { now: true as const } : {}) } } } : c));
+        })
+        // Offline, or a site without the history: only verified updates show, and it's asked again when something next changes.
+        // (The setting changing meanwhile is put right by the next pass, above.)
+        .catch(() => {})
+        .finally(() => lookingEarly.current.delete(asked));
+    }
+  }, [catalog, installs, library, client, newestRightAway]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // An app installed unverified turns verified once the site verifies that
   // version, if it's the same file; otherwise the player hears it differs. A
@@ -1377,7 +1590,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!install.unverified || install.differs || !entry?.verified || bare(entry.verified.version) !== bare(install.version) || (compared.current.get(key) ?? 0) > Date.now()) continue;
       compared.current.set(key, Infinity);
       client
-        .releases(entry.slug, 5)
+        .releases(entry.slug, 5, null, true)
         .then(({ items }) => {
           const release = items.find((r) => bare(r.version) === bare(install.version));
           if (!release) return;
@@ -1494,11 +1707,34 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         ? undefined
         : custom
           ? await releasesOf(custom)
-          : (await client.releases(entry.slug, 100).catch(() => {
+          : (await client.releases(entry.slug, 100, null, prereleasesFor(entry.id)).catch(() => {
               throw noAnswer();
             })).items;
       const here = listed && releaseHere(entry, listed, Boolean(custom), was, options.platform);
-      let release = chosen ?? here ?? (custom ? latestOf(listed!) : listed![0]);
+      // Newest right away, or the player asked to update early: the newest release still in its 48-hour wait, when
+      // it's newer than the verified one and than what's installed. Read from the site again here, so one blocked
+      // since is never taken. No answer, or a site without the history: the verified one, as ever.
+      let early: HistoryRelease | undefined;
+      if ((newestRightAway || options.early) && !chosen && !custom) {
+        const history = await client.releaseHistory(entry.slug, 100).then((page) => page.items, () => []);
+        const found = earlyHere(entry, history, was, options.platform);
+        if (found && (!here || found.releasedAt > here.releasedAt) && (!was || newerThan(found, was))) early = found;
+      }
+      // With Newest right away it installs without asking, unless VirusTotal hasn't cleared it; waiting 48 hours, the
+      // player who asked for it is always asked, as for any unverified release. An automatic update takes the
+      // verified one meanwhile, or waits when there's none newer.
+      if (early && (!newestRightAway || scanAsks(early.scan))) {
+        if (auto) {
+          if (!here || !was || !newerThan(here, was)) {
+            waiting.current.set(`${entry.id}@${bare(early.version)}`, early.scan?.verdict === "pending" ? Date.now() + SCAN_WAIT : (early.checkEndsAt ?? Infinity));
+            setJobs(({ [entry.id]: _, ...rest }) => rest);
+            return;
+          }
+          early = undefined;
+        } else if (!(await ask({ entry, version: early.version, reasons: early.reasons, scan: early.scan, checkEndsAt: early.checkEndsAt, early: newestRightAway ? "scan" : "asked" }))) return stop("unverified_prompt");
+      }
+      if (early) unverified = true;
+      let release = chosen ?? (early ? fromSite(early) : here) ?? (custom ? latestOf(listed!) : listed![0]);
       // An update with no release for the build installed: never another system's file in its place.
       const stray = Boolean(was && listed?.length && !here);
       // No verified release: its newest that isn't blocked, once the player says so, as Quiver Launcher 3 offers it.
@@ -1660,7 +1896,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (!custom) {
           void client.downloadProblem(entry, { version: release.version, file, problem: error }).catch(() => {});
           const fits = (r: Release) => bestAssets(r.assets, config.os, config.arch, (r.installationOverride ?? entry.launcher).releaseAssetFilter, kind).length > 0;
-          instead = insteadOf((await client.releases(entry.slug).catch(() => null))?.items ?? [], release.version, from, fits);
+          instead = insteadOf((await client.releases(entry.slug, 5, null, prereleasesFor(entry.id)).catch(() => null))?.items ?? [], release.version, from, fits);
         }
       }
       fail(entry.id, problem, true, instead);
@@ -1825,6 +2061,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setNotice(t`${name} is in your library.`);
     },
     setUpdates: (id, updates) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], updates } } : i)),
+    setPrereleases: (id, prereleases) =>
+      setInstalls((i) => {
+        if (!i[id]) return i;
+        const { prereleases: _, ...install } = i[id];
+        return { ...i, [id]: prereleases ? { ...install, prereleases } : install };
+      }),
     declineUpdate: (id, version) => setInstalls((i) => (i[id] ? { ...i, [id]: { ...i[id], declined: version } } : i)),
     setLaunch: (id, launch) =>
       setInstalls((i) => {
@@ -1979,7 +2221,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (settings.askWhereToInstall && desktop && !installs[entry.id] && !options?.to && !isLocal(entry.id)) return askPlace(entry, release, options);
       setCatalog((c) => ({ ...c, [entry.id]: { ...c[entry.id], ...entry } }));
       add(entry);
-      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform, to: options?.to });
+      await installEntry(entry, release, { pin: options?.pin, unverified: options?.unverified || Boolean(options?.blocked), blocked: options?.blocked, asset: options?.asset, platform: options?.platform, to: options?.to, early: options?.early });
     },
     async play(id, executable, withoutCopy) {
       const install = installs[id];
@@ -2029,7 +2271,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       try {
         const release = custom
           ? (await releasesOf(custom)).find(same)
-          : ((await client.releases(entry.slug, 100)).items.find(same) ??
+          : ((await client.releases(entry.slug, 100, null, true)).items.find(same) ??
             (install.unverified ? (await client.unverifiedReleases(entry.slug).catch(() => [])).filter(same).map(fromSite)[0] : undefined));
         const version = versionLabel(install.version);
         if (!release) throw new Problem(msg`${version} can't be installed again: its release isn't available any more.`);
@@ -2115,7 +2357,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (it.kind === "catalog") {
           const { detail } = it;
           entry = detail.entry;
-          setCatalog((c) => ({ ...c, [detail.entry.id]: { ...detail.entry, withdrawn: detail.withdrawn, forHere: c[detail.entry.id]?.forHere } }));
+          setCatalog((c) => ({ ...c, [detail.entry.id]: { ...detail.entry, withdrawn: detail.withdrawn, forHere: c[detail.entry.id]?.forHere, early: c[detail.entry.id]?.early } }));
           add(entry);
         } else entry = addCustom(it.custom, it.latest, it.art);
         const install = adoptedInstall(old, entry, config.os);

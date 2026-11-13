@@ -19,8 +19,10 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | Change version / Choose a version | 버전 변경 / 버전 선택 | |
 | pinned | 고정됨 | |
 | withdrawn | 철회됨 | |
-| verified / unverified / blocked (a release) | 검증됨 / 미검증 / 차단됨 | |
+| available / not offered / blocked (a release) | 사용 가능 / 제공 안 함 / 차단됨 | |
 | preview release | 미리 보기 버전 | |
+| pre-release | 사전 출시 | a release its developer marked as one: an early or experimental build |
+| main release | 정식 버전 | a release not marked as a pre-release; never "stable" |
 | play time / recently played | 플레이 시간 / 최근 플레이 | |
 | controller / keyboard | 컨트롤러 / 키보드 | |
 | Settings | 설정 | |

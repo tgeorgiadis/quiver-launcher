@@ -22,6 +22,7 @@ import { ControlSettings } from "./controls";
 import { WindowsRunnerSetting } from "./launch-options";
 import { PortableDefaultSetting } from "./app-files";
 import { UpdateSettings } from "./update";
+import { AppUpdatesSetting } from "./app-updates";
 import { GithubTokenSetting } from "./github-token";
 import { GitlabTokenSetting } from "./gitlab-token";
 import { TelemetrySetting } from "./telemetry-ui";
@@ -133,7 +134,10 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (
-              <UpdateSettings />
+              <>
+                <AppUpdatesSetting />
+                <UpdateSettings />
+              </>
             ) : (
               <>
                 <GithubTokenSetting />

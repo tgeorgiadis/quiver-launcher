@@ -20,10 +20,11 @@ such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](h
 
 - **A catalog to browse.** Search the [quiverlauncher.com](https://quiverlauncher.com) catalog by console, platform
   and type, and see what other players said about how each app runs.
-- **Verified downloads.** Quiver records the checksum of each catalog app's release files when they come out. Every
-  download is compared with it, and a file that changed since is refused. Automatic updates only install releases
-  Quiver has verified. This checks that you get the file the developer published; it can't promise that the file
-  itself is safe.
+- **Checked downloads, and a 48-hour wait.** Quiver records the checksum of each catalog app's release files when
+  they come out. Every download is compared with it, and a file that changed since is refused. Updates are offered
+  once a release has been out for 48 hours, which leaves time to withdraw a harmful one; you can update an app early
+  yourself, or choose to get every update right away. This checks that you get the file the developer published; it
+  can't promise that the file itself is safe.
 - **Your library, your way.** Sort and filter by console, make playlists, and share them or follow other people's.
   Add any GitHub or GitLab repository, a program already on your computer, or a folder you fill yourself.
 - **Made for the couch.** TV mode turns Quiver into a full-screen launcher for a controller. It comes on by itself in
@@ -32,8 +33,8 @@ such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](h
 - **Play it your way.** Add any app to Steam or the desktop, and run Windows builds on Linux with Wine or Proton.
 - **Sign in to sync** (optional). Sign in with GitHub or Discord to keep your library and playlists the same on every
   device.
-- **In your language.** English, Português (Brasil), Español (Latinoamérica), Deutsch, Français, Русский, Italiano
-  and 한국어.
+- **In your language.** English, Português (Brasil), Español (Latinoamérica), Deutsch, Français, Русский, Italiano,
+  한국어, 简体中文 and 繁體中文.
 
 ## Download
 

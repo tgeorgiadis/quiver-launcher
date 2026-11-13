@@ -75,6 +75,8 @@ struct Config {
     user: Option<String>,
     /// Under gamescope, as a Steam Deck's Game Mode runs it: TV mode comes on by itself (tv.tsx).
     game_mode: bool,
+    /// An X11 desktop on Linux, where the page moves the window itself (`x11_session`).
+    x11: bool,
     /// Steam's on-screen keyboard can be asked for (keyboard.rs): what a controller types with, so TV mode offers its
     /// search here.
     steam_keyboard: bool,
@@ -124,6 +126,7 @@ fn config(app: tauri::AppHandle, data: State<Data>) -> Config {
         home: std::env::var(if OS == "windows" { "USERPROFILE" } else { "HOME" }).ok().filter(|h| !h.is_empty()),
         user: std::env::var("USERNAME").or_else(|_| std::env::var("USER")).ok().filter(|u| !u.is_empty()),
         game_mode: keyboard::game_mode(|name| std::env::var(name).ok()),
+        x11: OS == "linux" && x11_session(|name| std::env::var(name).ok()),
         steam_keyboard: cfg!(target_os = "linux") && keyboard::offered(|name| std::env::var(name).ok()),
         steam_runs_us: steam_runs_us(),
         os_version: device::os_version(),
@@ -432,7 +435,7 @@ fn start(
     command.args(&args).envs(env).current_dir(&target.dir);
     let spawned: std::io::Result<Waiting> = sandbox::check(&program)
         .and_then(|_| {
-            sandbox::host(command)
+            sandbox::game(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
                 .stdin(std::process::Stdio::null())
                 .stdout(std::process::Stdio::null())
@@ -1453,6 +1456,59 @@ fn set_theme(window: tauri::WebviewWindow, theme: Option<String>) -> Result<(), 
     Ok(())
 }
 
+/// The window's place and size in the screen's pixels, and the smallest it goes, for resizing it from the page's edges
+/// (`ResizeEdges` in window-bar.tsx).
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WindowRect {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    min_width: u32,
+    min_height: u32,
+}
+
+#[tauri::command]
+fn window_rect(window: tauri::WebviewWindow) -> Result<WindowRect, String> {
+    let position = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.inner_size().map_err(|e| e.to_string())?;
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let config = window.config().app.windows.first();
+    let min = |v: Option<f64>| (v.unwrap_or(0.0) * scale).round() as u32;
+    Ok(WindowRect {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+        min_width: min(config.and_then(|c| c.min_width)),
+        min_height: min(config.and_then(|c| c.min_height)),
+    })
+}
+
+/// Puts the window at a place and size together, as an edge of the page is pulled. Linux's Chromium window has no
+/// resize borders of its own, and the window manager can't take over the pointer to resize it on X11.
+#[tauri::command]
+fn set_window_rect(window: tauri::WebviewWindow, x: i32, y: i32, width: u32, height: u32) -> Result<(), String> {
+    window.set_size(tauri::PhysicalSize::new(width, height)).map_err(|e| e.to_string())?;
+    window.set_position(tauri::PhysicalPosition::new(x, y)).map_err(|e| e.to_string())
+}
+
+/// Puts the window somewhere, as the top bar is dragged on an X11 desktop (`moveWindow` in window-bar.tsx).
+#[tauri::command]
+fn set_window_position(window: tauri::WebviewWindow, x: i32, y: i32) -> Result<(), String> {
+    window.set_position(tauri::PhysicalPosition::new(x, y)).map_err(|e| e.to_string())
+}
+
+/// The desktop is X11, not Wayland. There a window manager moves a window by taking the pointer, and it can't: the
+/// press that started the drag gave the pointer to Chromium's own connection to the X server, which only Chromium can
+/// let go of (Tauri lets go on its own connection, to no effect). Wayland's compositors move the window themselves.
+fn x11_session(var: impl Fn(&str) -> Option<String>) -> bool {
+    let wayland = var("XDG_SESSION_TYPE").is_some_and(|v| v.trim().eq_ignore_ascii_case("wayland"))
+        || var("WAYLAND_DISPLAY").is_some_and(|v| !v.trim().is_empty());
+    !wayland
+}
+
 #[tauri::command]
 fn find_v3_library() -> Option<v3::Library> {
     v3::find()
@@ -1711,6 +1767,9 @@ pub fn run() {
             set_fullscreen,
             set_system_title_bar,
             set_theme,
+            window_rect,
+            set_window_rect,
+            set_window_position,
             create_shortcut,
             add_to_steam,
             open_url,

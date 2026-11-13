@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -28,14 +28,14 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
-import { isLocal, isOwn } from "./custom";
+import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
 import { AddApp, ChangeGame, LinkToCatalog } from "./own";
 import { ModsButton } from "./mods";
 import { MediaTab } from "./media";
 import { PlayStats } from "./library-sidebar";
 import { useTopBarFit } from "./top-bar-fit";
-import { WindowControls, moveWindow, useWindowButtons } from "./window-bar";
+import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
@@ -46,12 +46,13 @@ import { closesOutside } from "./overlay";
 import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
 import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
+import { AppUpdatesNotice } from "./app-updates";
 
 type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true } | { readme: true };
-type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "copies" };
+type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "copies" | "updates" };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
@@ -185,7 +186,8 @@ export function App() {
   useTopBarFit(topBar);
   return (
     <div className={tv ? "shell tv-mode" : "shell"}>
-      <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? moveWindow : undefined}>
+      {resizeEdges(config.os, buttons, maximized) && <ResizeEdges />}
+      <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? (e) => moveWindow(e, movesByPage(config.x11, maximized)) : undefined}>
         {/* As on the website; it goes to the library. For a mouse: the Library tab beside it does the same for the d-pad and Tab. */}
         <button className="brand" tabIndex={-1} aria-label={t`Quiver Launcher: go to your library`} onClick={() => switchTab("library")}>
           <img src="/quiver-icon-96.png" alt="" width="34" height="34" />
@@ -299,6 +301,8 @@ export function App() {
             />
             {/* Once, for a player set up before Game copies: where their ROMs and disc images are. */}
             <GameCopiesNotice onOpen={() => open({ kind: "settings", section: "copies" })} />
+            {/* Once, for a player set up before there was a choice: how apps update. */}
+            <AppUpdatesNotice onOpen={() => open({ kind: "settings", section: "updates" })} />
             {/* Across the window under the top bar in the Sidebar layout, edge to edge. */}
             <AnnouncementBanner edge={!strip} onOpen={() => setAnnouncementsOpen(true)} onOpenApp={openApp} />
           </div>
@@ -621,24 +625,9 @@ function BrowsePage({
   const typed = search.trim();
   return (
     <>
-      {/* As the library's: the search, then sort, Filters and Submit an app, all one height. */}
+      {/* The search in the row's middle, as large as the library's; sort, Filters and Submit an app at its end. */}
+      <div className="browse-head">
       <div className="browse-bar">
-        <label className="search browse-search">
-          <Search size={15} />
-          <input
-            // Not on a phone, where the focus brings up the keyboard over the page each time Browse opens.
-            autoFocus={config.os !== "android" && config.os !== "ios"}
-            aria-label={t`Search the catalog`}
-            placeholder={t`Search ports, games and tools`}
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-          />
-          {search && (
-            <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => onSearch("")}>
-              <X size={13} />
-            </button>
-          )}
-        </label>
         <div className="browse-tools page-tools">
           <span className="quiet-select">
             <select
@@ -678,6 +667,26 @@ function BrowsePage({
             <PackagePlus size={15} aria-hidden="true" /> <span><Trans>Submit an app</Trans></span>
           </button>
         </div>
+        {/* The search on a row of its own under the tools, centred and larger, as the library's. */}
+        <div className="search-row">
+          <label className="search browse-search">
+            <Search size={17} />
+            <input
+              // Not on a phone, where the focus brings up the keyboard over the page each time Browse opens.
+              autoFocus={config.os !== "android" && config.os !== "ios"}
+              aria-label={t`Search the catalog`}
+              placeholder={t`Search ports, games and tools`}
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+            />
+            {search && (
+              <button type="button" className="search-clear" aria-label={t`Clear search`} onClick={() => onSearch("")}>
+                <X size={14} />
+              </button>
+            )}
+          </label>
+        </div>
+      </div>
       </div>
       {/*
         Filters: pills to pick from while open; the ones that differ from the defaults stay, each removable, while it's
@@ -1059,7 +1068,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
               <ShieldX size={14} />
             </span>
           ) : (
-            <span className="unverified-mark" role="img" aria-label={t`${version} is unverified`} title={t`${version} is unverified`}>
+            <span className="unverified-mark" role="img" aria-label={t`${version} was installed before Quiver offered it`} title={t`${version} was installed before Quiver offered it`}>
               <ShieldAlert size={14} />
             </span>
           ))}
@@ -1247,6 +1256,10 @@ function AppPage({
   const known = catalog[entry.id] ?? entry;
   const update = updateFor(known, install);
   const updateVersion = versionLabel(update?.version);
+  // Waiting 48 hours for updates: the newest release, which the player can take early for this app.
+  // Not installed: the same release, to install in the offered one's place.
+  const early = jobs[entry.id] ? undefined : (earlyOffer(known, install) ?? (canGet(known, config.os) ? earlyGetOffer(known, install) : undefined));
+  const earlyVersion = versionLabel(early?.version);
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
   const blockedWhy = install?.blocked ?? "";
@@ -1305,6 +1318,7 @@ function AppPage({
           </button>
         )}
         {item && <UpdatesChoice id={item.id} />}
+        {item && <PrereleasesChoice id={item.id} />}
       </div>
       {item && (
         <div className="panel-group">
@@ -1384,8 +1398,8 @@ function AppPage({
                     {isOwn(entry.id)
                       ? t`${verifiedVersion} · not checked by Quiver`
                       : entry.verified.pinned
-                        ? t`${verifiedVersion} · verified`
-                        : t`${verifiedVersion} · files can't be verified`}
+                        ? verifiedVersion
+                        : t`${verifiedVersion} · downloads can't be checked`}
                   </span>
                 )}
                 {install && !install.local && (
@@ -1397,7 +1411,7 @@ function AppPage({
                   (install.blocked ? (
                     <ReleaseBadge state="blocked" title={t`Quiver blocked it: ${blockedWhy}`} />
                   ) : (
-                    <ReleaseBadge state="unverified" title={t`Installed before Quiver verified it`} />
+                    <ReleaseBadge state="unverified" title={t`Installed before Quiver offered it`} />
                   ))}
               </div>
             )}
@@ -1481,7 +1495,7 @@ function AppPage({
                 </span>
                 {entry.verified && bare(entry.verified.version) !== bare(install.version) && (
                   <button type="button" className="link-button" onClick={() => get(entry)}>
-                    <Trans>Install the verified {verifiedVersion}</Trans>
+                    <Trans>Install {verifiedVersion} instead</Trans>
                   </button>
                 )}
               </p>
@@ -1490,10 +1504,10 @@ function AppPage({
               <p className="release-pinned-line differs" role="alert">
                 <ShieldAlert size={14} aria-hidden="true" />
                 <span>
-                  <Trans>The verified {installedVersion} isn&apos;t the file you installed.</Trans>
+                  <Trans>The {installedVersion} Quiver offers isn&apos;t the file you installed.</Trans>
                 </span>
                 <button type="button" className="link-button" onClick={() => get(entry)}>
-                  <Trans>Install the verified {installedVersion}</Trans>
+                  <Trans>Reinstall {installedVersion}</Trans>
                 </button>
               </p>
             )}
@@ -1520,6 +1534,20 @@ function AppPage({
                 </span>
                 <button type="button" className="link-button" onClick={() => declineUpdate(entry.id, update.version)}>
                   <Trans>Skip this update</Trans>
+                </button>
+              </p>
+            )}
+            {early && (
+              <p className="release-pinned-line">
+                <span>
+                  {stillWaiting(early.releasedAt) ? (
+                    <Trans>{earlyVersion} is less than 48 hours old, so Quiver Launcher isn't offering it yet.</Trans>
+                  ) : (
+                    <Trans>{earlyVersion} is out, but Quiver Launcher isn't offering it yet.</Trans>
+                  )}
+                </span>
+                <button type="button" className="link-button" onClick={() => void get(known, undefined, { early: true })}>
+                  {install ? <Trans>Update early…</Trans> : <Trans>Install latest…</Trans>}
                 </button>
               </p>
             )}
@@ -1672,6 +1700,31 @@ function UpdatesChoice({ id }: { id: string }) {
         <option value="ask">{t({ message: "Offer them", comment: "Updates: offer new releases to install" })}</option>
         {auto && <option value="auto">{t`Install automatically`}</option>}
         <option value="pinned">{t`Always stay on ${installedVersion}`}</option>
+      </select>
+    </label>
+  );
+}
+
+/**
+ * Whether an installed app gets pre-releases, whatever the player's default (Settings, Updates). A version it's set to
+ * stay on wins over either.
+ */
+function PrereleasesChoice({ id }: { id: string }) {
+  const { installs, settings, setPrereleases } = useLauncher();
+  const install = installs[id];
+  if (!install || install.local || isCustom(id)) return null;
+  const byDefault = settings.prereleases
+    ? t({ message: "Use my default (include pre-releases)", comment: "Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases" })
+    : t({ message: "Use my default (main releases only)", comment: "Which releases an app gets: whatever Settings, Updates says, which is main releases only" });
+  return (
+    <label className="panel-field">
+      <span className="field-label">
+        <Trans comment="Which of an app's releases it gets: main releases only, or pre-releases too">Releases</Trans>
+      </span>
+      <select value={install.prereleases ?? "default"} onChange={(e) => setPrereleases(id, e.target.value === "default" ? undefined : (e.target.value as "include" | "main"))}>
+        <option value="default">{byDefault}</option>
+        <option value="main">{t({ message: "Main releases only", comment: "Which releases an app gets: only the ones its developer didn't mark as pre-releases" })}</option>
+        <option value="include">{t({ message: "Include pre-releases", comment: "Which releases an app gets: pre-releases too" })}</option>
       </select>
     </label>
   );
@@ -2333,9 +2386,9 @@ function ChooseFile() {
  * first, and where a controller starts.
  */
 function UnverifiedPrompt() {
-  const { asking } = useLauncher();
+  const { asking, installs } = useLauncher();
   if (!asking) return null;
-  const { entry, file, reasons, scan, checkEndsAt, resolve } = asking;
+  const { entry, file, reasons, scan, checkEndsAt, early, resolve } = asking;
   // Put in the sentences below by name.
   const release = versionLabel(asking.version);
   const app = entry.projectName;
@@ -2343,21 +2396,50 @@ function UnverifiedPrompt() {
   const unchecked = file?.why === "unchecked";
   const waits = checkEndsAt !== undefined;
   const hours = waits ? hoursFrom(checkEndsAt) : 0;
-  const title = unchecked ? t`Install a file Quiver didn't check?` : t`Install ${release} before it's verified?`;
+  // Newest right away, where only its scan makes it ask: that's the question, not that it isn't offered.
+  const scanned = !file && early === "scan";
+  const title = unchecked
+    ? t`Install a file Quiver didn't check?`
+    : early === "asked" && waits
+      ? installs[asking.entry.id]
+        ? t`Update to ${release} before its 48 hours are up?`
+        : t`Install ${release} before its 48 hours are up?`
+      : scanned
+        ? scan?.verdict === "pending"
+          ? t`Install ${release} before its virus scan finishes?`
+          : t`Install ${release} with a virus scan warning?`
+        : t`Install ${release} before Quiver offers it?`;
+  const scanLine = scan && (
+    <p className="scan-line">
+      VirusTotal: {scanText(scan)}{" "}
+      {scan.url && (
+        <a href={scan.url} target="_blank" rel="noreferrer">
+          <Trans>See the report</Trans>
+        </a>
+      )}
+    </p>
+  );
   return (
     // Each question its own: the next one in turn starts afresh, its first button focused.
-    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked ? title : t`Install a release before it's verified`} onClose={() => resolve(false)}>
+    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked || scanned ? title : t`Install a release before Quiver offers it`} onClose={() => resolve(false)}>
       <div className="detail-body unverified-prompt">
         <h2>
           <ShieldAlert size={18} /> {title}
         </h2>
         <p>
           {!file
-            ? `${t`${app} has no verified release yet.`} ${t`Quiver hasn't verified this release. It installs the files Quiver saw when it came out, and refuses any that changed since.`}`
+            ? early === "asked" && waits
+              ? // They chose to wait for updates: what that wait is for, and that this skips it.
+                t`${release} is less than 48 hours old. You've chosen to wait 48 hours for updates, so that if a release turns out to be malicious, Quiver has time to withdraw it before it reaches you. Installing it now skips that wait.`
+              : scanned
+                ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
+                : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
             : unchecked
               ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
-              : t`${name} changed after Quiver verified ${release}, and Quiver hasn't verified the new file yet. It installs the file Quiver saw, and refuses one that changed since.`}
+              : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
         </p>
+        {/* Asked because of its scan: the scan first, as what the sentence above leads to. */}
+        {scanned && scanLine}
         {reasons.length > 0 && (
           <ul className="unverified-reasons">
             {reasons.map((r) => (
@@ -2365,20 +2447,11 @@ function UnverifiedPrompt() {
             ))}
           </ul>
         )}
-        {scan && (
-          <p className="scan-line">
-            VirusTotal: {scanText(scan)}{" "}
-            {scan.url && (
-              <a href={scan.url} target="_blank" rel="noreferrer">
-                <Trans>See the report</Trans>
-              </a>
-            )}
-          </p>
-        )}
+        {!scanned && scanLine}
         {waits && (
           <p className="wait-line">
             <ShieldCheck size={14} aria-hidden="true" />{" "}
-            {plural(hours, { one: "If you wait, it's verified in about # hour.", other: "If you wait, it's verified in about # hours." })}
+            {plural(hours, { one: "If you wait, its 48 hours are up in about # hour.", other: "If you wait, its 48 hours are up in about # hours." })}
           </p>
         )}
         <div className="row">
