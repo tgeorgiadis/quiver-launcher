@@ -214,6 +214,19 @@ impl Launcher {
     pub fn write_proton(data: &Path, folder: &str, name: &str, target: &crate::shortcut::Target, icon: Option<&Path>) -> Result<Launcher, String> {
         let dir = data.join("steam");
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        // Steam only keeps a shortcut's program when it can be executed, so a
+        // game whose archive never marked it runnable is made so here, whether
+        // it was installed before or after Quiver started doing it (install.rs).
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(meta) = std::fs::metadata(&target.exe) {
+                let mode = meta.permissions().mode();
+                if mode & 0o111 == 0 {
+                    let _ = std::fs::set_permissions(&target.exe, std::fs::Permissions::from_mode(mode | 0o755));
+                }
+            }
+        }
         let shortcut = Shortcut::new(name, target, icon);
         let desktop = dir.join(format!("{folder}.desktop"));
         std::fs::write(&desktop, proton_desktop(&shortcut, &target.dir, icon)).map_err(|e| e.to_string())?;
@@ -722,6 +735,29 @@ mod tests {
         let launcher = Launcher::write_proton(dir.path(), "G", "G", &target("DXVK_HUD=1 %command% -w"), None).unwrap();
         let desktop = std::fs::read_to_string(launcher.desktop()).unwrap();
         assert!(desktop.contains("Exec=\"/games/G/game.exe\" DXVK_HUD=1 %command% -w\n"), "{desktop}");
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn a_steam_proton_shortcut_makes_the_game_runnable_for_steam() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let exe = dir.path().join("Game.exe");
+        std::fs::write(&exe, b"MZ").unwrap();
+        std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let target = crate::shortcut::Target {
+            exe: exe.clone(),
+            program: "/protons/GE/proton".into(),
+            args: vec![],
+            env: vec![],
+            dir: dir.path().to_path_buf(),
+            extract_appimage: false,
+            steam_proton: true,
+            options: Default::default(),
+        };
+        // Steam stores the desktop's program as the shortcut only when it can run it.
+        Launcher::write_proton(dir.path(), "G", "G", &target, None).unwrap();
+        assert_eq!(std::fs::metadata(&exe).unwrap().permissions().mode() & 0o111, 0o111, "Steam can run it");
     }
 
     #[test]
