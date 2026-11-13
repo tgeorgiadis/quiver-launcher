@@ -7,10 +7,13 @@
 //! itself, at once: `steam://addnonsteamgame/<path>` (add_now), which is what
 //! a Steam Deck's own Add to Steam uses. The path is a small `.desktop` naming
 //! the app; a shortcut made that way survives Steam's exit, because Steam is
-//! the one that wrote it. The desktop runs a script that starts the app
-//! (Launcher::write), except for a Windows game Steam itself runs with Proton:
-//! there the desktop names the game (Launcher::write_proton), so Steam stores
-//! the game as the program and applies a compat tool to it. Where the live add
+//! the one that wrote it. The desktop names the app's own program
+//! (Launcher::write), so Steam stores it as the shortcut's program and starts
+//! it in the game's folder; a game that needs environment variables is named
+//! through a script instead, since an `Exec` Steam reads can't carry them. A
+//! Windows game Steam itself runs with Proton is named the same way
+//! (Launcher::write_proton), so Steam stores the game and applies a compat tool
+//! to it. Where the live add
 //! isn't available (Windows, or a Steam without the handler), the write still
 //! waits in a separate copy of the launcher (`--add-to-steam <file>`) until
 //! Steam closes.
@@ -118,12 +121,18 @@ pub struct Shortcut {
     pub icon: String,
     /// Run with Proton (a Windows game on Linux).
     pub proton: bool,
-    /// Downloaded artwork: grid file suffix ("", "p", "_hero", "_logo") to a PNG.
+    /// Downloaded artwork: grid file suffix ("", "p", "_hero", "_logo", "_icon") to a PNG.
     pub art: Vec<(String, PathBuf)>,
 }
 
 fn quoted(path: &Path) -> String {
     format!("\"{}\"", path.to_string_lossy())
+}
+
+/// A program's arguments as Steam stores a desktop's launch options: each quoted.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn options_of(args: &[String]) -> String {
+    args.iter().map(|a| format!("\"{a}\"")).collect::<Vec<_>>().join(" ")
 }
 
 impl Shortcut {
@@ -163,11 +172,12 @@ impl Shortcut {
     }
 }
 
-/// A Linux shortcut's wrapper: a `.desktop` naming the app, running a script
-/// that starts it. Steam reads the desktop's `Name` (the exact title) and runs
-/// its `Exec`; the script carries the folder, environment and whole command.
-/// A game Steam runs with its own Proton instead names the game in the desktop,
-/// so Steam stores the game as the program and sets a compat tool for it.
+/// A Linux shortcut's launcher: a `.desktop` naming the app, which Steam reads
+/// for the shortcut's `Name` and program. A native game's own program is named
+/// directly, so Steam stores the program and starts it in the game's folder;
+/// a game that needs environment variables is named through a script instead.
+/// A game Steam runs with its own Proton names the game the same way, so Steam
+/// stores it and sets a compat tool for it.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub struct Launcher {
     desktop: PathBuf,
@@ -175,14 +185,40 @@ pub struct Launcher {
     exe: String,
     /// The script a wrapper runs; none when Steam runs the game itself.
     script: Option<PathBuf>,
+    /// What Steam stores as the shortcut's launch options: whatever follows
+    /// the program in the desktop's `Exec`.
+    launch_options: String,
 }
 
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 impl Launcher {
-    /// Writes the script and its `.desktop` under `data/steam`, returning them.
+    /// Writes the launcher's `.desktop` under `data/steam`, returning it. A
+    /// native game's own program is named in the `Exec`, so Steam stores the
+    /// game as the shortcut's program and starts it in the game's folder. When
+    /// the app needs environment variables — which an `Exec` Steam parses can't
+    /// carry, since it would take `env` for the program — a script carries them
+    /// instead and the desktop runs that.
     pub fn write(data: &Path, folder: &str, name: &str, target: &crate::shortcut::Target, icon: Option<&Path>) -> Result<Launcher, String> {
         let dir = data.join("steam");
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let desktop = dir.join(format!("{folder}.desktop"));
+        let (program, args, env) = target.command();
+        if env.is_empty() {
+            // The desktop names the game itself: Steam reads its Exec's first
+            // word as the program and the rest as the launch options.
+            let runs = crate::shortcut::Target {
+                exe: program.clone(),
+                program: program.clone(),
+                args: args.clone(),
+                env: Vec::new(),
+                dir: target.dir.clone(),
+                extract_appimage: false,
+                steam_proton: false,
+                options: Default::default(),
+            };
+            std::fs::write(&desktop, crate::shortcut::desktop_entry(&runs, name, icon)).map_err(|e| e.to_string())?;
+            return Ok(Launcher { desktop, exe: quoted(&program), script: None, launch_options: options_of(&args) });
+        }
         let script = dir.join(format!("{folder}.sh"));
         std::fs::write(&script, script_text(target, name)).map_err(|e| e.to_string())?;
         #[cfg(unix)]
@@ -202,9 +238,8 @@ impl Launcher {
             steam_proton: false,
             options: Default::default(),
         };
-        let desktop = dir.join(format!("{folder}.desktop"));
         std::fs::write(&desktop, crate::shortcut::desktop_entry(&runs, name, icon)).map_err(|e| e.to_string())?;
-        Ok(Launcher { desktop, exe: quoted(&script), script: Some(script) })
+        Ok(Launcher { desktop, exe: quoted(&script), script: Some(script), launch_options: String::new() })
     }
 
     /// Writes a `.desktop` naming the game itself, under `data/steam`: Steam
@@ -230,7 +265,7 @@ impl Launcher {
         let shortcut = Shortcut::new(name, target, icon);
         let desktop = dir.join(format!("{folder}.desktop"));
         std::fs::write(&desktop, proton_desktop(&shortcut, &target.dir, icon)).map_err(|e| e.to_string())?;
-        Ok(Launcher { desktop, exe: shortcut.exe, script: None })
+        Ok(Launcher { desktop, exe: shortcut.exe, script: None, launch_options: shortcut.launch_options })
     }
 
     pub fn desktop(&self) -> &Path {
@@ -238,7 +273,7 @@ impl Launcher {
     }
 
     /// What Steam stores as the shortcut's program: the quoted script or game.
-    fn exe(&self) -> String {
+    pub fn exe(&self) -> String {
         self.exe.clone()
     }
 
@@ -280,7 +315,7 @@ impl Launcher {
             name: name.into(),
             exe: self.exe(),
             start_dir: quoted(&target.dir),
-            launch_options: String::new(),
+            launch_options: self.launch_options.clone(),
             shortcut_path: self.desktop.to_string_lossy().into_owned(),
             icon: icon.map(|p| p.to_string_lossy().into_owned()).unwrap_or_default(),
             proton: false,
@@ -538,24 +573,41 @@ pub fn place_art(user: &Path, id: u32, art: &[(String, PathBuf)]) -> Result<(), 
     Ok(())
 }
 
+/// The app id of the first shortcut in Steam's file that `pick` accepts.
+fn id_where(user: &Path, pick: impl Fn(&[(String, Vdf)]) -> bool) -> Option<u32> {
+    let bytes = std::fs::read(user.join("config/shortcuts.vdf")).ok()?;
+    let root = parse(&bytes)?;
+    let (_, Vdf::Map(list)) = root.iter().find(|(k, _)| k.eq_ignore_ascii_case("shortcuts"))? else { return None };
+    list.iter().find_map(|(_, v)| match v {
+        Vdf::Map(m) if pick(m) => m.iter().find_map(|(k, v)| match (k.to_ascii_lowercase().as_str(), v) {
+            ("appid", Vdf::Int(id)) => Some(*id),
+            _ => None,
+        }),
+        _ => None,
+    })
+}
+
 /// The app id Steam already gave this launcher's shortcut, if it's there: a
 /// live add shouldn't be asked for twice.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub fn existing_id(launcher: &Launcher) -> Option<u32> {
     let (user, _) = account().ok()?;
-    let bytes = std::fs::read(user.join("config/shortcuts.vdf")).ok()?;
-    let root = parse(&bytes)?;
-    let (_, Vdf::Map(list)) = root.iter().find(|(k, _)| k.eq_ignore_ascii_case("shortcuts"))? else { return None };
     let path = launcher.desktop.to_string_lossy().into_owned();
-    let ours = |m: &[(String, Vdf)]| {
+    id_where(&user, |m| {
         m.iter().any(|(k, v)| k.eq_ignore_ascii_case("ShortcutPath") && matches!(v, Vdf::Str(p) if *p == path))
-    };
-    list.iter().find_map(|(_, v)| match v {
-        Vdf::Map(m) if ours(m) => m.iter().find_map(|(k, v)| match (k.to_ascii_lowercase().as_str(), v) {
-            ("appid", Vdf::Int(id)) => Some(*id),
-            _ => None,
-        }),
-        _ => None,
+    })
+}
+
+/// The app id Steam gave a shortcut it added itself, found by the name and
+/// program it stored. Steam assigns the id when it adds a shortcut, and it
+/// need not be the CRC of the program and name, so it's read back rather than
+/// guessed: the artwork must be named for the id Steam chose.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub fn id_of(name: &str, exe: &str) -> Option<u32> {
+    let (user, _) = account().ok()?;
+    id_where(&user, |m| {
+        let get = |key: &str| m.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v);
+        matches!(get("appname"), Some(Vdf::Str(n)) if n == name) && matches!(get("exe"), Some(Vdf::Str(e)) if e == exe)
     })
 }
 
@@ -704,6 +756,31 @@ mod tests {
         assert!(desktop.contains("Name=G\n"), "{desktop}");
         assert!(desktop.contains("Exec=\"") && desktop.contains("G.sh"), "{desktop}");
         assert!(desktop.contains("Path=/games/G\n"), "{desktop}");
+    }
+
+    #[test]
+    fn a_native_shortcut_names_the_game_in_the_desktop() {
+        let target = crate::shortcut::Target {
+            exe: "/games/G/Game".into(),
+            program: "/games/G/Game".into(),
+            args: vec!["--fullscreen".into()],
+            env: vec![],
+            dir: "/games/G".into(),
+            extract_appimage: false,
+            steam_proton: false,
+            options: Default::default(),
+        };
+        let dir = tempfile::tempdir().unwrap();
+        let launcher = Launcher::write(dir.path(), "G", "G", &target, None).unwrap();
+        // Steam stores the game itself, so it starts it in the game's folder.
+        assert_eq!(launcher.exe(), "\"/games/G/Game\"");
+        let desktop = std::fs::read_to_string(launcher.desktop()).unwrap();
+        assert!(desktop.contains("Exec=\"/games/G/Game\" \"--fullscreen\"\n"), "{desktop}");
+        assert!(!desktop.contains(".sh"), "{desktop}");
+        // Written directly, the program and the arguments are what Steam would
+        // read from the desktop's Exec.
+        let s = launcher.shortcut("G", &target, None, vec![]);
+        assert_eq!((s.exe.as_str(), s.launch_options.as_str()), ("\"/games/G/Game\"", "\"--fullscreen\""));
     }
 
     #[test]

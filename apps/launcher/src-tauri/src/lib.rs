@@ -540,7 +540,7 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
     let icon = shortcut_icon(&data, &request).await;
     let folder = install::plain_name(&request.folder)?;
     let mut art: Vec<(String, PathBuf)> = Vec::new();
-    let pictures = [("", &request.art.header), ("p", &request.art.capsule), ("_hero", &request.art.hero), ("_logo", &request.art.logo)];
+    let pictures = [("", &request.art.header), ("p", &request.art.capsule), ("_hero", &request.art.hero), ("_logo", &request.art.logo), ("_icon", &request.art.icon)];
     for (suffix, url) in pictures {
         let Some(url) = url else { continue };
         let path = data.0.join("steam-art").join(format!("{folder}{suffix}.png"));
@@ -550,16 +550,17 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
             }
         }
     }
-    // On Linux a shortcut runs a wrapper — a script named by a .desktop — so Steam
-    // keeps the exact title and the game keeps its environment. A Windows game
-    // Steam itself runs with Proton is the exception: there the .desktop names the
-    // game, so Steam keeps its Proton and the player's launch options.
+    // On Linux a `.desktop` names the app's own program, so Steam stores it as
+    // the shortcut's program and starts it in the game's folder (a game that
+    // needs environment variables is named through a script instead). A Windows
+    // game Steam itself runs with Proton is named the same way, so Steam keeps
+    // its Proton and the player's launch options.
     #[cfg(target_os = "linux")]
     {
         if target.steam_proton {
             return add_proton(&data, &request.name, folder, &target, icon.as_deref(), art);
         }
-        return add_wrapped(&data, &request.name, folder, &target, icon.as_deref(), art);
+        return add_native(&data, &request.name, folder, &target, icon.as_deref(), art);
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -597,7 +598,7 @@ fn add_proton(data: &Data, name: &str, folder: &str, target: &shortcut::Target, 
     let ids = match steam::existing_id(&launcher) {
         Some(id) => vec![id],
         None => match steam::add_now(launcher.desktop()) {
-            Ok(()) => launcher.app_ids(name),
+            Ok(()) => steam_ids(&launcher, name),
             // Steam wouldn't take it now: a waiting copy adds it once Steam closes.
             Err(_) => {
                 queue_steam(data, folder, &shortcut)?;
@@ -613,10 +614,12 @@ fn add_proton(data: &Data, name: &str, folder: &str, target: &shortcut::Target, 
     Ok(format!("{name} is in Steam. It's set to run with Proton."))
 }
 
-/// Adds a Linux shortcut through a wrapper: at once through the running Steam,
-/// which writes it itself, or written directly once Steam closes. Linux only.
+/// Adds a native Linux shortcut: a `.desktop` naming the game's own program, so
+/// Steam stores the program and starts it in the game's folder. Added at once
+/// through the running Steam, which writes it itself, or written directly once
+/// Steam closes. Linux only.
 #[cfg(target_os = "linux")]
-fn add_wrapped(data: &Data, name: &str, folder: &str, target: &shortcut::Target, icon: Option<&Path>, art: Vec<(String, PathBuf)>) -> Result<String, String> {
+fn add_native(data: &Data, name: &str, folder: &str, target: &shortcut::Target, icon: Option<&Path>, art: Vec<(String, PathBuf)>) -> Result<String, String> {
     let launcher = steam::Launcher::write(&data.0, folder, name, target, icon)?;
     let shortcut = launcher.shortcut(name, target, icon, art);
     if !steam::running() {
@@ -627,7 +630,7 @@ fn add_wrapped(data: &Data, name: &str, folder: &str, target: &shortcut::Target,
     let ids = match steam::existing_id(&launcher) {
         Some(id) => vec![id],
         None => match steam::add_now(launcher.desktop()) {
-            Ok(()) => launcher.app_ids(name),
+            Ok(()) => steam_ids(&launcher, name),
             // Steam wouldn't take it now: a waiting copy adds it once Steam closes.
             Err(_) => {
                 queue_steam(data, folder, &shortcut)?;
@@ -641,6 +644,22 @@ fn add_wrapped(data: &Data, name: &str, folder: &str, target: &shortcut::Target,
         }
     }
     Ok(format!("{name} is in Steam."))
+}
+
+/// The app ids to name a live add's artwork for. Steam assigns a shortcut's id
+/// itself when it adds one, and it need not be the CRC of the program and name,
+/// so its own write of shortcuts.vdf is read back, for a few seconds, and the
+/// id it chose is used. Without one in time, the ids the shortcut might get are
+/// guessed instead, so the artwork lands whichever way Steam wrote it.
+#[cfg(target_os = "linux")]
+fn steam_ids(launcher: &steam::Launcher, name: &str) -> Vec<u32> {
+    for _ in 0..16 {
+        if let Some(id) = steam::existing_id(launcher).or_else(|| steam::id_of(name, &launcher.exe())) {
+            return vec![id];
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+    launcher.app_ids(name)
 }
 
 /// Leaves a shortcut for a separate copy of the launcher to add once Steam closes.
