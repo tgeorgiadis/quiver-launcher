@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, wantsPrereleases, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -328,6 +328,44 @@ describe("an update for this computer", () => {
     const pinned = { ...install, updates: "pinned" as const };
     expect(hasUpdate(found(windows), pinned)).toBe(false);
     expect(updateFor(found(windows), pinned)).toEqual(windows);
+  });
+});
+
+describe("pre-releases", () => {
+  const main = { version: "v1.2.0", releasedAt: 20, prerelease: false, pinned: true };
+  const beta = { version: "v1.3.0-beta.1", releasedAt: 30, prerelease: true, pinned: true };
+  const listed = { verified: main, verifiedPrerelease: beta } as unknown as Entry;
+  const install = { version: "v1.2.0", releasedAt: 20, folder: "Port", executables: [] };
+
+  it("are each app's own choice, else the player's default, which is main releases", () => {
+    expect(wantsPrereleases({}, {})).toBe(false);
+    expect(wantsPrereleases({ prereleases: true }, undefined)).toBe(true);
+    expect(wantsPrereleases({ prereleases: true }, { prereleases: "main" })).toBe(false);
+    expect(wantsPrereleases({}, { prereleases: "include" })).toBe(true);
+  });
+
+  it("make the newest pre-release the app's update for a player who chose them", () => {
+    const chosen = withPrereleases(listed, true);
+    expect(chosen.verified).toEqual(beta);
+    expect(mayUpdate(chosen, install)).toBe(true);
+    expect(mainRelease(chosen)).toEqual(main);
+    // Without the choice, there's nothing newer than what's installed.
+    expect(mayUpdate(withPrereleases(listed, false), install)).toBe(false);
+  });
+
+  it("come off again as the entry is kept, and aren't applied twice", () => {
+    const chosen = withPrereleases(listed, true);
+    expect(withMainRelease(chosen)).toEqual(listed);
+    expect(withPrereleases(chosen, true)).toEqual(chosen);
+    expect(withPrereleases(chosen, false)).toEqual(listed);
+  });
+
+  it("are every player's for a project that only publishes them", () => {
+    const nightly = { verified: beta } as unknown as Entry;
+    expect(onlyPrereleases(nightly)).toBe(true);
+    expect(onlyPrereleases(listed)).toBe(false);
+    expect(onlyPrereleases(withPrereleases(listed, true))).toBe(false);
+    expect(withPrereleases(nightly, true)).toEqual(nightly);
   });
 });
 

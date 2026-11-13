@@ -14,7 +14,7 @@ import { ApiError, type AiUse, type Asset, type Checking, type Client, type Deta
 import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
-import { earlyHereFor, pulledVerified, useLauncher, type Install, type Settings } from "./store";
+import { earlyHereFor, onlyPrereleases, pulledVerified, useLauncher, type Install, type Settings } from "./store";
 import { launchCopies } from "./own-copy";
 import { bare, changesUpTo, saidOf, scanAsks, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
@@ -74,6 +74,18 @@ export function useListed(entry: Entry): Entry[] {
     return () => void (live = false);
   }, [entry.id, custom]); // eslint-disable-line react-hooks/exhaustive-deps
   return listed;
+}
+
+/** A release its developer marked as a pre-release, with what that means on hover. */
+export function PrereleaseTag() {
+  return (
+    <span
+      className="prerelease-tag"
+      title={t`An early or experimental build the developer marked as a pre-release. It may change how things work or leave out some systems.`}
+    >
+      <Trans comment="A release its developer marked as a pre-release: an early or experimental build">Pre-release</Trans>
+    </span>
+  );
 }
 
 /** The releases the site approved, newest first: 5, then 10 more at a time. */
@@ -363,9 +375,7 @@ function ReleaseCard({
           <strong>
             {release.version}
             {release.prerelease && (
-              <span className="prerelease-tag">
-                <Trans comment="A release its developer marked as not yet stable">Pre-release</Trans>
-              </span>
+              <PrereleaseTag />
             )}
           </strong>
           <small className="muted">
@@ -632,12 +642,9 @@ export function ReleasesTab({
           </span>
         </p>
       )}
-      {newestVerified?.prerelease && (
+      {onlyPrereleases(catalog[entry.id] ?? entry) && (
         <div className="prerelease-notice" role="note">
-          <Trans>
-            <strong>The newest available release is a pre-release build.</strong> The project hasn&apos;t published a newer stable release with downloads, so Quiver
-            Launcher installs this one. Expect bugs and unfinished features.
-          </Trans>
+          <Trans>This project only publishes pre-releases, so Quiver Launcher offers its newest one.</Trans>
         </div>
       )}
       {releases === undefined ? (
@@ -1153,7 +1160,8 @@ export function Versions({
       // adds the newest few, which the site may not have seen yet: GitHub
       // allows a network only 60 requests an hour, so the list doesn't wait on it.
       const [checked, history, newest] = await Promise.all([
-        client.releases(entry.slug, 100).then((p) => p.items),
+        // Every verified release, pre-releases too: the player picks.
+        client.releases(entry.slug, 100, null, true).then((p) => p.items),
         client.releaseHistory(entry.slug, 100).then((p) => p.items, missing),
         upstream(3).catch((): Release[] => []),
       ]);
@@ -1417,9 +1425,7 @@ export function Versions({
                 <span className="version-date muted">
                   {release.releasedAt ? <span>{fullDate(release.releasedAt)}</span> : null}
                   {release.prerelease && (
-              <span className="prerelease-tag">
-                <Trans comment="A release its developer marked as not yet stable">Pre-release</Trans>
-              </span>
+              <PrereleaseTag />
             )}
                   {elsewhere.length > 0 && (
                     <span className="other-system-tag">

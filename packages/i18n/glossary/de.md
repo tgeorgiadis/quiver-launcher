@@ -21,6 +21,8 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | withdrawn | zurückgezogen | |
 | available / not offered / blocked (a release) | verfügbar / nicht angeboten / gesperrt | |
 | preview release | Vorschauversion | |
+| pre-release | Vorschauversion | a release its developer marked as one: an early or experimental build |
+| main release | Hauptversion | a release not marked as a pre-release; never "stable" |
 | play time / recently played | Spielzeit / zuletzt gespielt | |
 | controller / keyboard | Controller / Tastatur | |
 | Settings | Einstellungen | |

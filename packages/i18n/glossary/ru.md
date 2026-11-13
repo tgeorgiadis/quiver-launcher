@@ -22,6 +22,8 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | withdrawn | отозвана | |
 | available / not offered / blocked (a release) | доступна / не предлагается / заблокирована | |
 | preview release | предварительная версия | |
+| pre-release | Предварительная версия | a release its developer marked as one: an early or experimental build |
+| main release | основная версия | a release not marked as a pre-release; never "stable" |
 | play time / recently played | время в игре / недавно сыгранные | |
 | controller / keyboard | контроллер / клавиатура | |
 | Settings | Настройки | |

@@ -110,7 +110,10 @@ export type Entry = {
   lastReleaseAt?: number;
   lastReleaseVersion?: string;
   aiLevel?: "none" | "assisted" | "generated";
+  /** The newest approved main release; a pre-release only for a project that publishes nothing else. */
   verified?: Verified;
+  /** The newest approved pre-release, when it's newer than `verified`: for players who chose pre-releases. */
+  verifiedPrerelease?: Verified;
   developer?: { key: string; name: string };
 };
 
@@ -409,8 +412,11 @@ export type Client = {
   /** Null when the site has no README for the app. */
   readme(slug: string): Promise<Readme | null>;
   releaseStatus(cursor?: string | null): Promise<Page<ReleaseStatus>>;
-  /** Approved releases, newest first: the first is what a player gets. */
-  releases(slug: string, limit?: number, cursor?: string | null): Promise<Page<Release>>;
+  /**
+   * Approved releases, newest first: the first is what a player gets. Pre-releases newer than the newest main release
+   * are left out unless `prereleases` asks for them (a project with no main release lists them either way).
+   */
+  releases(slug: string, limit?: number, cursor?: string | null, prereleases?: boolean): Promise<Page<Release>>;
   /** Releases Quiver hasn't verified for the app, newest first. A 404 ApiError from a site that doesn't list them yet. */
   unverifiedReleases(slug: string): Promise<UnverifiedRelease[]>;
   /** Every release of the app's repository, newest first, each with its state. A 404 ApiError from a site that doesn't list them yet. */
@@ -533,8 +539,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     readme: (slug: string) => get<Readme>(`${app(slug)}/readme`).catch(notFound<Readme>),
     releaseStatus: (cursor?: string | null) =>
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
-    releases: (slug: string, limit = 5, cursor?: string | null) =>
-      get<Page<Release>>(`${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    releases: (slug: string, limit = 5, cursor?: string | null, prereleases?: boolean) =>
+      get<Page<Release>>(
+        `${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}${prereleases ? "&prereleases=include" : ""}`,
+      ),
     unverifiedReleases: (slug: string) => get<{ items: UnverifiedRelease[] }>(`${app(slug)}/unverified-releases`).then((r) => r.items),
     releaseHistory: (slug: string, limit = 10, cursor?: string | null) =>
       get<Page<HistoryRelease>>(`${app(slug)}/release-history?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
