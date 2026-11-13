@@ -79,6 +79,8 @@ export type Config = {
   /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
   package?: string;
 };
+/** A repository host's answer, fetched by the Rust side for hosts that don't send CORS headers. */
+export type ProviderHttpResponse = { status: number; headers: Record<string, string>; body: string };
 export type Progress = {
   id: string;
   phase: "downloading" | "installing";
@@ -242,6 +244,8 @@ export const native = {
   secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),
   /** GitLab's request limit, read by the Rust side: the page can't see GitLab's rate-limit headers. */
   gitlabLimit: (url: string, token: string | null) => invoke<GitlabLimit>("gitlab_limit", { url, token }),
+  /** A repository host's API answer, fetched by Rust for a host that doesn't send CORS headers. */
+  providerHttp: (url: string, headers: Record<string, string>) => invoke<ProviderHttpResponse>("provider_http", { request: { url, headers } }),
   /** Opens a sign-in page in the browser; resolves once it returns to the launcher. */
   browserSignIn: (url: string) => invoke<{ code: string } | { error: string }>("browser_sign_in", { url }),
   /** Stops waiting for the sign-in: browserSignIn then resolves to the error "cancelled". Starting another does this too. */

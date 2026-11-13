@@ -2,6 +2,7 @@
  * The quiverlauncher.com catalog API (https://api.quiverlauncher.com/api/v1),
  * typed after the site's public DTOs. Unknown fields are ignored.
  */
+import { ApiError } from "./errors";
 export type Os = "windows" | "linux" | "macos" | "android" | "ios" | "unknown";
 export type Architecture = "x64" | "x86" | "arm64" | "arm" | "universal" | "unknown";
 export type ProjectType = "port" | "tool" | "emulator" | "game";
@@ -266,7 +267,7 @@ export type HistoryRelease = {
 
 export type Detail = {
   entry: Entry;
-  project: { name: string; description: string; repository?: string; provider: string; website?: string; author?: string; aiUse?: AiUse };
+  project: { name: string; description: string; repository?: string; provider: string; host?: string; website?: string; author?: string; aiUse?: AiUse };
   withdrawn: Withdrawn[];
   checking?: Checking;
   /** YouTube videos for the app's Media tab, in the order staff set. Missing from a site that has none yet. */
@@ -291,7 +292,7 @@ export type SharedList = {
   name: string;
   description?: string;
   owner: { name: string; avatar?: string };
-  items: ({ kind: "entry"; entry: Entry } | { kind: "custom"; custom: { provider: "github" | "gitlab"; repository: string; name: string }; url: string })[];
+  items: ({ kind: "entry"; entry: Entry } | { kind: "custom"; custom: { provider: string; host?: string; repository: string; name: string }; url: string })[];
   /** Apps on it that left the catalog. */
   unavailable: number;
   createdAt: number;
@@ -341,7 +342,7 @@ export type Announcement = {
   editedAt?: number;
 };
 
-export type ReleaseStatus = { id: string; slug: string; provider: string; repository?: string };
+export type ReleaseStatus = { id: string; slug: string; provider: string; host?: string; repository?: string };
 
 export type Page<T> = { items: T[]; nextCursor: string | null; isDone: boolean };
 
@@ -379,11 +380,7 @@ export type Readme = { markdown: string; rawBase?: string; htmlBase?: string };
  */
 export type DownloadProblem = { version: string; file: string; problem: "missing" | "mismatch" };
 
-export class ApiError extends Error {
-  constructor(readonly status: number, message: string) {
-    super(message);
-  }
-}
+export { ApiError } from "./errors";
 
 export const DEFAULT_API = "https://api.quiverlauncher.com/api/v1";
 /**
@@ -572,271 +569,45 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
 }
 
 /** Which computer a release file is for, from its name. */
-export function inferPlatform(filename: string): { os: Os; architecture: Architecture } {
-  const s = filename.toLowerCase();
-  const os: Os = /windows|(?<!dar)win(?:32|64)|(?:^|[^a-z])win(?:[^a-z]|$)|\.exe$|\.msi$/.test(s)
-    ? "windows"
-    : /linux|appimage|flatpak|steamdeck|\.deb$|\.rpm$/.test(s)
-      ? "linux"
-      : /macos|darwin|osx|(?:^|[^a-z])mac(?:[^a-z]|$)|\.dmg$/.test(s)
-        ? "macos"
-        : /android|\.apk$/.test(s)
-          ? "android"
-          : /(?:^|[^a-z])ios(?:[^a-z]|$)|iphone|ipados|\.ipa$/.test(s)
-            ? "ios"
-            : "unknown";
-  // "win64" and "linux64" name the architecture too; "darwin64" isn't Windows.
-  const architecture: Architecture = /aarch64|arm64/.test(s)
-    ? "arm64"
-    : /x86[_-]64|amd64|x64|(?<!dar)win(?:dows)?[ _.-]?64|linux[ _.-]?64|(?:^|[^a-z0-9])64[ _-]?bit/.test(s)
-      ? "x64"
-      : /i[3-6]86|ia32|x86|(?<!dar)win(?:dows)?[ _.-]?32|linux[ _.-]?32|(?:^|[^a-z0-9])32[ _-]?bit/.test(s)
-        ? "x86"
-        : /universal/.test(s)
-          ? "universal"
-          : // "arm" only as its own word or armv7/armhf/armel, so "harmony" doesn't count.
-            /(?:^|[^a-z])arm(?:v\d|hf|el|[^a-z]|$)/.test(s)
-            ? "arm"
-            : "unknown";
-  return { os, architecture };
-}
+export { inferPlatform } from "./platform";
 
-/** "owner/repo" from a GitHub address or the bare name; null if it isn't one. */
-export function githubRepository(input: string): string | null {
-  const m = input.trim().match(/^(?:https:\/\/github\.com\/)?([a-z0-9_][a-z0-9_.-]*)\/([a-z0-9_][a-z0-9_.-]*?)(?:\.git)?\/?$/i);
-  return m && m[2] !== ".." ? `${m[1]}/${m[2]}` : null;
-}
-
-/**
- * A repository from what a player pastes: a github.com or gitlab.com address
- * (any page of it), or "owner/name" for GitHub. Null if it isn't one.
- */
-export function parseRepository(input: string): { provider: "github" | "gitlab"; repository: string } | null {
-  const text = input.trim().replace(/^(?:https?:\/\/)?(?:www\.)?/i, "");
-  const lab = text.match(/^gitlab\.com\/(.+?)(?:\/-\/.*)?\/?$/i);
-  if (lab) {
-    const path = lab[1].replace(/\.git$/i, "");
-    const parts = path.split("/");
-    const ok = parts.length >= 2 && parts.every((p) => /^[a-z0-9_][a-z0-9_.-]*$/i.test(p) && p !== "..");
-    return ok ? { provider: "gitlab", repository: path } : null;
-  }
-  const hub = text.match(/^github\.com\/([^/]+)\/([^/?#]+)/i);
-  const repository = githubRepository(hub ? `${hub[1]}/${hub[2]}` : text);
-  return repository ? { provider: "github", repository } : null;
-}
-
-/**
- * Why GitHub or GitLab refused, worded for players. Without a token each allows
- * a network fewer requests, and its answer says when that starts again, in
- * `ratelimit-*` headers (GitHub's are prefixed `x-`).
- */
-function refusal(response: Response, token: boolean, name: "GitHub" | "GitLab", prefix: "x-ratelimit" | "ratelimit"): ApiError {
-  const { status, headers } = response;
-  if (status === 401 && token) return new ApiError(status, `${name} didn't accept your ${name} token. Change or remove it in Settings.`);
-  if (status === 403 || status === 429) {
-    const reset = Number(headers.get(`${prefix}-reset`));
-    if (headers.get(`${prefix}-remaining`) === "0" && reset > 0) {
-      const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-      return new ApiError(
-        status,
-        token
-          ? `Your ${name} token's limit of requests is used up until ${at}. Try again then.`
-          : `${name}'s limit of requests from this network is used up until ${at}. Try again then, or add a ${name} token in Settings to raise the limit.`,
-      );
-    }
-    const wait = Number(headers.get("retry-after"));
-    if (wait > 0) return new ApiError(status, `${name} is limiting requests from this network. Try again in ${Math.ceil(wait / 60)} min.`);
-  }
-  return new ApiError(status, `${name} answered ${status}. Try again later.`);
-}
-
-/** Without a token GitHub allows a network 60 requests an hour (a token, 5,000). */
-const githubError = (response: Response, token: boolean) => refusal(response, token, "GitHub", "x-ratelimit");
-
-/** How many requests GitHub allows an hour, how many are left, and when it starts again. */
+/** How many requests a host allows an hour, how many are left, and when it starts again. */
 export type RateLimit = { limit: number; remaining: number; resetAt: number };
 
-/**
- * Releases straight from GitHub, for custom apps the catalog doesn't list.
- * Nobody has checked these; GitHub's own SHA-256 digest still guards the
- * download when it has one. With the player's token, GitHub counts requests
- * against it rather than the network.
- */
-type RawRelease = {
-  tag_name: string;
-  draft: boolean;
-  prerelease: boolean;
-  published_at: string;
-  body?: string;
-  assets: { id: number; name: string; browser_download_url: string; size: number; digest?: string }[];
-};
-
-const fromGithub = (r: RawRelease): Release => ({
-  id: r.tag_name,
-  version: r.tag_name,
-  releasedAt: Date.parse(r.published_at) || 0,
-  prerelease: r.prerelease,
-  notes: r.body,
-  assets: r.assets.map((a) => ({
-    id: String(a.id),
-    url: a.browser_download_url,
-    filename: a.name,
-    ...inferPlatform(a.name),
-    format: a.name.split(".").pop() ?? "unknown",
-    size: a.size,
-    ...(/^sha256:[0-9a-f]{64}$/i.test(a.digest ?? "") ? { checksum: a.digest!.toLowerCase() } : {}),
-  })),
-});
-
-export function createGithub(base = "https://api.github.com", token?: string) {
-  const auth: Record<string, string> = token?.trim() ? { Authorization: `Bearer ${token.trim()}` } : {};
-  const fail = (response: Response) => githubError(response, Boolean(auth.Authorization));
-  return {
-    /**
-     * Every release, newest first, except drafts; up to `count` of them, stable
-     * ones first. When those are all pre-releases and there are more, the
-     * repository's latest release is added in front, so a run of betas doesn't
-     * hide the stable release players should get.
-     */
-    async releases(repository: string, count = 10): Promise<Release[]> {
-      const headers = { Accept: "application/vnd.github+json", ...auth };
-      const response = await fetch(`${base}/repos/${repository}/releases?per_page=${count}`, { headers });
-      if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitHub.");
-      if (!response.ok) throw fail(response);
-      const raw: RawRelease[] = await response.json();
-      if (raw.length >= count && raw.every((r) => r.prerelease || r.draft)) {
-        // A 404 when the repository has no stable release at all.
-        const latest = await fetch(`${base}/repos/${repository}/releases/latest`, { headers });
-        if (latest.ok) raw.unshift(await latest.json());
-      }
-      return raw
-        .filter((r) => !r.draft && r.tag_name)
-        // Stable releases first: the first one is what a player gets.
-        .sort((a, b) => Number(a.prerelease) - Number(b.prerelease))
-        .map(fromGithub);
-    },
-    /** The repository's README, or null when it has none. */
-    async readme(repository: string): Promise<Readme | null> {
-      const response = await fetch(`${base}/repos/${repository}/readme`, { headers: { Accept: "application/vnd.github.raw", ...auth } });
-      if (response.status === 404) return null;
-      if (!response.ok) throw fail(response);
-      return {
-        markdown: await response.text(),
-        rawBase: `https://raw.githubusercontent.com/${repository}/HEAD/`,
-        htmlBase: `https://github.com/${repository}/blob/HEAD/`,
-      };
-    },
-    /** The hourly limit, for the token if there is one; asking doesn't count against it. A 401 ApiError when GitHub refuses the token. */
-    async rateLimit(): Promise<RateLimit> {
-      const response = await fetch(`${base}/rate_limit`, { headers: { Accept: "application/vnd.github+json", ...auth } });
-      if (!response.ok) throw fail(response);
-      const { resources } = (await response.json()) as { resources: { core: { limit: number; remaining: number; reset: number } } };
-      return { limit: resources.core.limit, remaining: resources.core.remaining, resetAt: resources.core.reset * 1000 };
-    },
-  };
-}
-
-export type Github = ReturnType<typeof createGithub>;
-
-/** Without a token GitLab allows a network 500 requests a minute on gitlab.com (a token, 2,000). */
-const gitlabError = (response: Response, token: boolean) => refusal(response, token, "GitLab", "ratelimit");
-
-/**
- * What GitLab's answer says about the request limit, as the Rust side reads it.
- * The browser can't see GitLab's rate-limit headers (GitLab doesn't expose
- * them to pages), so the launcher asks the Rust side, which can.
- */
-export type GitlabLimit = { status: number; limit?: number | null; remaining?: number | null; reset?: number | null; retryAfter?: number | null };
-/** Reads a GitLab URL's status and rate-limit headers, the Rust side's way. */
-export type GitlabLimitReader = (url: string, token: string | null) => Promise<GitlabLimit>;
-
-/**
- * Releases on GitLab, for catalog apps hosted there. GitLab gives no checksums.
- * With the player's token, GitLab counts requests against it rather than the
- * network.
- */
-export function createGitlab(base = "https://gitlab.com/api/v4", token?: string, readLimit?: GitlabLimitReader) {
-  const auth: Record<string, string> = token?.trim() ? { "PRIVATE-TOKEN": token.trim() } : {};
-  const fail = (response: Response) => gitlabError(response, Boolean(auth["PRIVATE-TOKEN"]));
-  // `/user` checks a token; a project list is public, so it still answers without one.
-  const limitUrl = `${base}/${auth["PRIVATE-TOKEN"] ? "user" : "projects?per_page=1"}`;
-  /** GitLab's answer to `limitUrl` as the Rust side read it, headers and all. */
-  const readByRust = async (reader: GitlabLimitReader) => {
-    const { status, limit, remaining, reset, retryAfter } = await reader(limitUrl, auth["PRIVATE-TOKEN"] ?? null);
-    const headers = new Headers();
-    if (limit != null) headers.set("ratelimit-limit", String(limit));
-    if (remaining != null) headers.set("ratelimit-remaining", String(remaining));
-    if (reset != null) headers.set("ratelimit-reset", String(reset));
-    if (retryAfter != null) headers.set("retry-after", String(retryAfter));
-    return new Response(null, { status, headers });
-  };
-  /**
-   * When the page can't tell why GitLab refused (it can't see the rate-limit
-   * headers, and a refusal may come without CORS headers at all), the Rust side
-   * asks again: its answer when GitLab is limiting requests, otherwise null.
-   */
-  const limited = async (): Promise<Response | null> => {
-    if (!readLimit) return null;
-    const response = await readByRust(readLimit).catch(() => null);
-    return response && (response.status === 403 || response.status === 429) ? response : null;
-  };
-  return {
-    async releases(repository: string, count = 30): Promise<Release[]> {
-      let response: Response;
-      try {
-        response = await fetch(`${base}/projects/${encodeURIComponent(repository)}/releases?per_page=${count}`, { headers: auth });
-      } catch (e) {
-        const refused = await limited();
-        if (refused) throw fail(refused);
-        throw e;
-      }
-      if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitLab.");
-      if (response.status === 403 || response.status === 429) throw fail((await limited()) ?? response);
-      if (!response.ok) throw fail(response);
-      type Raw = {
-        tag_name: string;
-        released_at: string;
-        upcoming_release?: boolean;
-        description?: string;
-        assets?: { links?: { id: number; name: string; url: string; direct_asset_url?: string; filepath?: string }[] };
-      };
-      const raw: Raw[] = await response.json();
-      return raw.map((r) => ({
-        id: r.tag_name,
-        version: r.tag_name,
-        releasedAt: Date.parse(r.released_at) || 0,
-        prerelease: Boolean(r.upcoming_release),
-        notes: r.description,
-        assets: (r.assets?.links ?? []).map((a) => {
-          // A link's name is its title ("Windows build"); the file's own name is in its path.
-          const last = (s?: string) => (s ? decodeURIComponent(s.split(/[?#]/)[0].split("/").pop() ?? "") : "");
-          const filename = [last(a.filepath), last(a.direct_asset_url), last(a.url)].find((f) => /\.[a-z0-9]{1,8}$/i.test(f)) ?? a.name;
-          return {
-            id: String(a.id),
-            url: a.direct_asset_url ?? a.url,
-            filename,
-            ...inferPlatform(`${filename} ${a.name}`),
-            format: filename.split(".").pop() ?? "unknown",
-          };
-        }),
-      }));
-    },
-    /**
-     * How many requests GitLab allows, how many are left, and when it starts
-     * again. Null when GitLab doesn't say, as some instances don't. Asking
-     * with a token checks it: a 401 ApiError when GitLab refuses it. Unlike
-     * GitHub's, asking counts as one request.
-     */
-    async rateLimit(): Promise<RateLimit | null> {
-      // The browser can't read GitLab's rate-limit headers, so the Rust side does when it can.
-      const response = readLimit ? await readByRust(readLimit) : await fetch(limitUrl, { headers: auth });
-      if (!response.ok) throw fail(response);
-      const limit = Number(response.headers.get("ratelimit-limit"));
-      const remaining = Number(response.headers.get("ratelimit-remaining"));
-      const resetAt = Number(response.headers.get("ratelimit-reset")) * 1000;
-      return limit > 0 && remaining >= 0 && resetAt > 0 ? { limit, remaining, resetAt } : null;
-    },
-  };
-}
-
-export type Gitlab = ReturnType<typeof createGitlab>;
+/** The repository hosts, and the ways to name one. */
+export {
+  GITEA_HOSTS,
+  PROVIDERS,
+  bitbucketProvider,
+  bitbucketVersion,
+  createGithub,
+  createGitlab,
+  createProviders,
+  defaultHost,
+  detectProvider,
+  feedProvider,
+  giteaProvider,
+  githubProvider,
+  githubRepository,
+  gitlabProvider,
+  hostOf,
+  parseRepository,
+  providerById,
+  providerChoices,
+  providerFor,
+  providerForHost,
+  toRef,
+} from "./providers";
+export type {
+  Github,
+  Gitlab,
+  GitlabLimit,
+  GitlabLimitReader,
+  ParsedRepository,
+  ProviderAuth,
+  ProviderContext,
+  Providers,
+  ProviderTokenHelp,
+  RepositoryProvider,
+  RepositoryRef,
+} from "./providers";

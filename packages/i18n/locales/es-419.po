@@ -1091,6 +1091,10 @@ msgstr "Apps que Quiver descarga y actualiza, del catálogo o de un repositorio"
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
 msgstr "Las apps compatibles guardan sus partidas y ajustes en su propia carpeta. Las apps que ya instalaste no cambian."
 
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Apps you add from a self-hosted forge, Codeberg, Bitbucket or a release feed use the token you save for that host. A token is kept in this computer's keychain and sent only to the host it belongs to."
+msgstr ""
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "Las apps que agregas desde GitHub obtienen sus versiones del propio GitHub, que permite a esta red 60 solicitudes por hora, o 5,000 con un token. Las apps del catálogo no lo necesitan."
@@ -1404,6 +1408,7 @@ msgstr "Revisando tu copia…"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
 msgstr "Comprobando…"
@@ -1736,6 +1741,7 @@ msgstr "No se pudo conectar con quiverlauncher.com. Revisa tu conexión e intent
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Couldn't save the token. Try again."
 msgstr "No se pudo guardar el token. Intenta de nuevo."
 
@@ -1777,6 +1783,10 @@ msgstr "Dirección de la portada"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Crashes, poor performance, broken controls or features, or I had to do extra setup this page didn't mention."
 msgstr "Cierres inesperados, mal rendimiento, controles o funciones que no sirven, o tuve que hacer pasos adicionales que esta página no mencionaba."
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Create a token"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Create a token on GitHub"
@@ -1843,6 +1853,10 @@ msgstr "Acceso directo en el escritorio"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Details"
 msgstr "Detalles"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Detect it"
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Developer says: {says}"
@@ -2026,12 +2040,12 @@ msgid "Emulator"
 msgstr "Emulador"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address."
-msgstr "Ingresa un repositorio de GitHub o GitLab: propietario/nombre, o su dirección de github.com o gitlab.com."
-
-#: ../../apps/launcher/src/store.tsx
 msgid "Enter a name for its folder."
 msgstr "Escribe un nombre para su carpeta."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Enter a repository: owner/name, or its address on a forge."
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Every console"
@@ -2147,8 +2161,8 @@ msgid "Found in {folder}"
 msgstr "Encontrada en {folder}"
 
 #: ../../apps/launcher/src/own.tsx
-msgid "From GitHub or GitLab"
-msgstr "Desde GitHub o GitLab"
+msgid "From a git repository"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
@@ -2193,6 +2207,10 @@ msgstr "Obtener Quiver Launcher"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Getting ready…"
 msgstr "Preparando…"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "git.example.com"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2344,6 +2362,10 @@ msgstr "Ocultarlas"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
 msgstr "Ocultar tu opinión sobre {name}"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Host"
+msgstr ""
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "How apps update"
@@ -3674,6 +3696,10 @@ msgstr "Otros archivos"
 msgid "Other platforms"
 msgstr "Otras plataformas"
 
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Other repository tokens"
+msgstr ""
+
 #. Over the list of an app's versions, under Get's own button for its newest
 #: ../../apps/launcher/src/detail.tsx
 msgid "Other versions"
@@ -3693,8 +3719,8 @@ msgid "Overview"
 msgstr "Resumen"
 
 #: ../../apps/launcher/src/own.tsx
-msgid "owner/name, or a github.com or gitlab.com address"
-msgstr "propietario/nombre, o una dirección de github.com o gitlab.com"
+msgid "owner/name, or a repository address (github.com, gitlab.com, codeberg.org, …)"
+msgstr ""
 
 #. Controller hint: what the triggers do in a library in another order, jump a screen at a time
 #: ../../apps/launcher/src/spatial.ts
@@ -3981,6 +4007,10 @@ msgstr "Quiver no pudo abrir tu biblioteca"
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
 msgstr "Quiver no pudo mostrar esa imagen. Puede que se haya movido o eliminado."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver couldn't tell what kind of forge {host} is. Choose its kind and try again."
+msgstr ""
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver no encontró ninguna en tus carpetas de juegos."
@@ -4154,6 +4184,10 @@ msgstr "Refrescar"
 msgid "Reinstall {installedVersion}"
 msgstr "Reinstalar {installedVersion}"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Release feed"
+msgstr ""
+
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
 #: ../../apps/launcher/src/App.tsx
@@ -4204,6 +4238,7 @@ msgstr "Quitar etiqueta {tag}"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Remove token"
 msgstr "Quitar token"
 
@@ -4211,6 +4246,7 @@ msgstr "Quitar token"
 #. The GitLab token was removed
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Removed."
 msgstr "Quitado."
 
@@ -4334,8 +4370,17 @@ msgstr "Guardar como playlist"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Save token"
 msgstr "Guardar token"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Saved."
+msgstr ""
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Saved. Requests to {clean} use your token now."
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
@@ -4346,6 +4391,7 @@ msgid "Saved. Requests to GitLab use your token now."
 msgstr "Guardado. Las solicitudes a GitLab ahora usan tu token."
 
 #: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Saving…"
 msgstr "Guardando…"
 
@@ -4954,6 +5000,10 @@ msgid "Thanks! A maintainer will take a look."
 msgstr "¡Gracias! Un mantenedor lo revisará."
 
 #: ../../apps/launcher/src/store.tsx
+msgid "That address isn't a repository on {host}."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
 msgid "That folder doesn't have an installed app in it."
 msgstr "Esa carpeta no tiene ninguna app instalada."
 
@@ -5119,6 +5169,10 @@ msgstr "Puede que esta app guarde sus partidas en esta carpeta. Se eliminarán j
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "Puede que esta app deje de encontrar sus partidas y ajustes, porque los buscará en otro lugar. No se elimina nada."
 
+#: ../../apps/launcher/src/own.tsx
+msgid "This app stays on this computer: account sync doesn't support this kind of host yet."
+msgstr ""
+
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be moved."
 msgstr "La carpeta de esta app no se puede mover."
@@ -5191,6 +5245,14 @@ msgstr "hoy"
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Today"
 msgstr "Hoy"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Token"
+msgstr ""
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Token for {host}"
+msgstr ""
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Too many attempts. Wait a moment and try again."
@@ -5534,13 +5596,10 @@ msgstr "Muy ancha, de unos 1920×620. Detrás de la página de la app y en Segui
 msgid "View {version} on {host}"
 msgstr "Ver {version} en {host}"
 
+#. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
-msgid "View on GitHub"
-msgstr "Ver en GitHub"
-
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "View on GitLab"
-msgstr "Ver en GitLab"
+msgid "View on {0}"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5666,6 +5725,10 @@ msgstr "Dónde se instalan las apps"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where are your games?"
 msgstr "¿Dónde están tus juegos?"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Where it's hosted"
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"

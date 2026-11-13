@@ -10,7 +10,7 @@
 [![Join the community on Discord](https://img.shields.io/badge/Join_the_community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/5XRThpWHGk)
 [![Support Quiver on Patreon](https://img.shields.io/badge/Support_on_Patreon-B8394A?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/c/quiverlauncher)
 
-**One place to find, install, update and play the games and apps people release on GitHub and GitLab**,
+**One place to find, install, update and play the games and apps people release on GitHub, GitLab and other forges**,
 such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](https://quiverlauncher.com), press
 **Get**, and Quiver downloads it, checks it and installs it. Then it keeps it up to date.
 
@@ -26,13 +26,17 @@ such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](h
   yourself, or choose to get every update right away. This checks that you get the file the developer published; it
   can't promise that the file itself is safe.
 - **Your library, your way.** Sort and filter by console, make playlists, and share them or follow other people's.
-  Add any GitHub or GitLab repository, a program already on your computer, or a folder you fill yourself.
+  Add any GitHub, GitLab, Gitea/Forgejo, Bitbucket or release-feed repository, a program already on your computer, or a
+  folder you fill yourself.
 - **Made for the couch.** TV mode turns Quiver into a full-screen launcher for a controller. It comes on by itself in
   the Steam Deck's Game Mode.
 - **Mods.** Browse, install and update mods from Thunderstore and GameBanana for the apps that support them.
 - **Play it your way.** Add any app to Steam or the desktop, and run Windows builds on Linux with Wine or Proton.
 - **Sign in to sync** (optional). Sign in with GitHub or Discord to keep your library and playlists the same on every
   device.
+- **Release hosts, your way.** GitHub and GitLab work as before, and so do Gitea/Forgejo (including Codeberg), Bitbucket,
+  self-hosted GitLab, GitHub Enterprise and any host with a JSON release feed. See
+  [docs/providers.md](docs/providers.md) for tokens, checksums and self-hosting notes.
 - **In your language.** English, Português (Brasil), Español (Latinoamérica), Deutsch, Français, Русский, Italiano,
   한국어, 简体中文 and 繁體中文.
 
