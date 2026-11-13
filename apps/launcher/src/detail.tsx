@@ -268,7 +268,7 @@ function Clipped({ height, opened = false, children }: { height: number; opened?
   );
 }
 
-/** The project's README: the site's copy, else straight from GitHub. Asked for (`asked`), it's shown whole, scrolled to, with the focus to read on from. */
+/** The project's README: the site's copy, else straight from its host. Asked for (`asked`), it's shown whole, scrolled to, with the focus to read on from. */
 export function Readme({ entry, source, asked }: { entry: Entry; source: Source | null | undefined; asked?: boolean }) {
   const { client, providers } = useLauncher();
   const [readme, setReadme] = useState<ReadmeText | null | undefined>();
@@ -370,7 +370,7 @@ function ReleaseCard({
   said?: Said;
   /** Installs this release, asking first as Change version does: `asset`, the file the player chose. Unset when it can't install now. */
   onInstall?: (asset?: string) => void;
-  /** Whether this computer can install a file: those it can install it in place of opening it on GitHub. */
+  /** Whether this computer can install a file: those it can install it in place of opening it on its host. */
   runsHere: (asset: Asset) => boolean;
 }) {
   const { state, scan, withdrawn, version } = release;
@@ -601,7 +601,7 @@ export function ReleasesTab({
 }) {
   const [toggled, setToggled] = useState<Set<string>>(new Set());
   const { items } = history;
-  const { client, installs, jobs, catalog, config, settings } = useLauncher();
+  const { client, installs, jobs, catalog, config, settings, library } = useLauncher();
   const install = installs[entry.id];
   // A release the player chose to install, with the file they chose, in Change version's dialog for its questions.
   const [chosen, setChosen] = useState<{ version: string; asset?: string } | null>(null);
@@ -619,7 +619,8 @@ export function ReleasesTab({
     );
     return () => void (live = false);
   }, [client, entry.slug]);
-  const host = providerName(detail?.project.provider ?? "github", detail?.project.host);
+  const custom = library.find((i) => i.id === entry.id)?.custom;
+  const host = custom ? providerName(custom.provider, custom.host) : providerName(detail?.project.provider ?? "github", detail?.project.host);
   // A withdrawn release is blocked, whatever the site still says of it.
   const releases = items && withdrawnAsBlocked<HistoryRelease & { withdrawn?: Withdrawn }>(items, (r) => r.version, detail?.withdrawn);
   const newestVerified = releases?.find((r) => r.state === "verified");
@@ -1167,7 +1168,7 @@ export function Versions({
       if (custom) return setVersions(versionList([], [], await upstream()));
       // The site's history marks every release of the repository itself, at the
       // one address Cloudflare keeps for every launcher. The host only
-      // adds the newest few, which the site may not have seen yet: GitHub
+      // adds the newest few, which the site may not have seen yet: the host
       // allows a network only 60 requests an hour, so the list doesn't wait on it.
       const [checked, history, newest] = await Promise.all([
         // Every verified release, pre-releases too: the player picks.
@@ -1419,7 +1420,7 @@ export function Versions({
           const unavailable = !custom && state !== "verified" && release.assets.length === 0;
           const why =
             custom || state !== "blocked" ? "" : [...(version.withdrawn ? [t({ message: "Withdrawn:", comment: "Before why a release was withdrawn" })] : []), ...reasons, ...(unavailable ? [t`Quiver won't install it.`] : [])].join(" ");
-          // "No files" for one with nothing to install, though not for one Quiver hasn't seen, whose files GitHub lists.
+          // "No files" for one with nothing to install, though not for one Quiver hasn't seen, whose files the host lists.
           const badge = version.known ? badgeState({ state, assets: release.assets }) : state;
           // Files for other systems only: still the player's to install, as the site can mark a file wrongly, but it says so.
           const elsewhere = otherSystems(release.assets, config.os, config.arch);

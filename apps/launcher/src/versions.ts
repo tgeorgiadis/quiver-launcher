@@ -137,7 +137,7 @@ export const newestUnblocked = <T extends { state: ReleaseState; assets: Asset[]
  * `changed` upstream since its release was verified, and isn't verified yet
  * itself (`unverifiedChecksum`); or Quiver checked the release's other files
  * but has no checksum for this one (`unchecked`). Undefined for a verified
- * file, and for a release with no checksums at all (GitLab), which installs
+ * file, and for a release with no checksums at all (GitLab, Gitea/Forgejo, Bitbucket), which installs
  * as it always has.
  */
 export function unverifiedFile(asset: Asset, release: Pick<Release, "assets">): "changed" | "unchecked" | undefined {
@@ -152,7 +152,7 @@ export const sameChecksum = (a: string, b: string) => a.toLowerCase() === b.toLo
 /**
  * Whether the file installed before Quiver verified it (its checksum) is one
  * its release is verified with now: `verified` when it is, or when there's
- * nothing to tell by (no checksum kept, or none listed, as on GitLab);
+ * nothing to tell by (no checksum kept, or none listed, as on GitLab, Gitea/Forgejo or Bitbucket);
  * `waiting` when it's a file of the release still in its own wait, or the
  * release has a file Quiver has no checksum for, which it may be; `differs`
  * when it's none of them.
