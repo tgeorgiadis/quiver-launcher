@@ -1063,6 +1063,14 @@ msgstr "遊戲庫中的應用程式也會顯示在這裡。"
 msgid "Apps in your library shown"
 msgstr "已顯示的遊戲庫應用程式"
 
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Apps install each new release as soon as it's out, without asking. Apps installed with a Windows installer still ask, as their setup needs you."
+msgstr "應用程式會在新版本釋出後立即安裝，不會詢問。用 Windows 安裝程式安裝的應用程式仍會詢問，因為它們的安裝需要你操作。"
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Apps install each new release once its 48 hours are up, without asking. Apps installed with a Windows installer still ask, as their setup needs you."
+msgstr "應用程式會在新版本釋出滿 48 小時後安裝，不會詢問。用 Windows 安裝程式安裝的應用程式仍會詢問，因為它們的安裝需要你操作。"
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Apps installed here always show."
 msgstr "安裝在此處的應用程式始終會顯示。"
@@ -1964,8 +1972,8 @@ msgid "Each app can include pre-releases or not, whatever this says, from its ow
 msgstr "無論這裡如何設定，每個應用程式都可以在自己的設定中選擇是否包含預釋出版本。"
 
 #: ../../apps/launcher/src/app-updates.tsx
-msgid "Each app's own setting still says whether it updates by itself, asks first, or stays on its version."
-msgstr "每個應用程式自身的設定仍決定它是自動更新、先詢問，還是保留當前版本。"
+msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
+msgstr "無論這裡如何設定，每個應用程式都可以在自己的設定中選擇自動更新、先詢問或保留在目前版本。"
 
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
@@ -2551,6 +2559,11 @@ msgstr "安裝 Windows 版本（Wine）"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Install to…"
 msgstr "安裝到 →"
+
+#. Setting: apps install their updates by themselves, without asking
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Install updates automatically"
+msgstr "自動安裝更新"
 
 #. A mod that's installed
 #. Filter by whether an app is installed
@@ -5462,10 +5475,20 @@ msgstr "使用遊戲控制器瀏覽 Quiver"
 msgid "Use my default (include pre-releases)"
 msgstr "使用我的預設設定（包含預釋出版本）"
 
+#. How an app updates: whatever Settings, Updates says, which is to install them automatically
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (install automatically)"
+msgstr "使用我的預設設定（自動安裝）"
+
 #. Which releases an app gets: whatever Settings, Updates says, which is main releases only
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my default (main releases only)"
 msgstr "使用我的預設設定（僅正式版本）"
+
+#. How an app updates: whatever Settings, Updates says, which is to offer new releases to install
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (offer them)"
+msgstr "使用我的預設設定（提供它們）"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Use no more than 100 characters."

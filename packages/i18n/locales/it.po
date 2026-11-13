@@ -1063,6 +1063,14 @@ msgstr "Qui compaiono anche le app della tua libreria."
 msgid "Apps in your library shown"
 msgstr "App della tua libreria mostrate"
 
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Apps install each new release as soon as it's out, without asking. Apps installed with a Windows installer still ask, as their setup needs you."
+msgstr "Le app installano ogni nuova versione appena esce, senza chiedere. Le app installate con un programma di installazione di Windows chiedono comunque, perché la loro installazione ha bisogno di te."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Apps install each new release once its 48 hours are up, without asking. Apps installed with a Windows installer still ask, as their setup needs you."
+msgstr "Le app installano ogni nuova versione allo scadere delle sue 48 ore, senza chiedere. Le app installate con un programma di installazione di Windows chiedono comunque, perché la loro installazione ha bisogno di te."
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Apps installed here always show."
 msgstr "Le app installate qui sono sempre mostrate."
@@ -1964,8 +1972,8 @@ msgid "Each app can include pre-releases or not, whatever this says, from its ow
 msgstr "Ogni app può includere le anteprime o no dalle proprie impostazioni, qualunque cosa dica questa."
 
 #: ../../apps/launcher/src/app-updates.tsx
-msgid "Each app's own setting still says whether it updates by itself, asks first, or stays on its version."
-msgstr "L'impostazione di ogni app continua a stabilire se si aggiorna da sola, chiede prima o resta alla sua versione."
+msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
+msgstr "Ogni app può aggiornarsi da sola, chiedere prima o restare sulla sua versione dalle proprie impostazioni, qualunque cosa dica questa."
 
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
@@ -2551,6 +2559,11 @@ msgstr "Installa la versione Windows (Wine)"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Install to…"
 msgstr "Installa in…"
+
+#. Setting: apps install their updates by themselves, without asking
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Install updates automatically"
+msgstr "Installa gli aggiornamenti automaticamente"
 
 #. A mod that's installed
 #. Filter by whether an app is installed
@@ -5462,10 +5475,20 @@ msgstr "Usa i controller per muoverti in Quiver"
 msgid "Use my default (include pre-releases)"
 msgstr "Usa la mia impostazione predefinita (includi anteprime)"
 
+#. How an app updates: whatever Settings, Updates says, which is to install them automatically
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (install automatically)"
+msgstr "Usa la mia impostazione predefinita (installa automaticamente)"
+
 #. Which releases an app gets: whatever Settings, Updates says, which is main releases only
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my default (main releases only)"
 msgstr "Usa la mia impostazione predefinita (solo versioni principali)"
+
+#. How an app updates: whatever Settings, Updates says, which is to offer new releases to install
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (offer them)"
+msgstr "Usa la mia impostazione predefinita (proponili)"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Use no more than 100 characters."

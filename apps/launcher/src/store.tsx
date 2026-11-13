@@ -101,8 +101,11 @@ export type Install = {
   installedAt?: number;
   /** How long the player has played it, in seconds: each session the launcher started, until the app closed. */
   playTime?: number;
-  /** Install new releases without asking, or stay on this one (only ever the player's own choice). Unset: offer them. */
-  updates?: "auto" | "pinned";
+  /**
+   * Install new releases without asking, offer them, or stay on this one, whatever the player's default
+   * (`Settings.autoUpdates`). Unset: the default. Staying on a version is only ever the player's own choice.
+   */
+  updates?: "auto" | "ask" | "pinned";
   /** Whether this app gets pre-releases, whatever the player's default (`Settings.prereleases`). Unset: the default. */
   prereleases?: "include" | "main";
   /** A verified version Auto Update leaves alone: the one the player went back from by picking an older release. */
@@ -665,6 +668,15 @@ export const catalogOs = (os: Os) => (os === "linux" ? undefined : os);
  */
 export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Boolean(entry.verified || entry.lastReleaseVersion);
 
+/**
+ * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. A
+ * Windows installer's setup waits for the player, so it never updates by itself either way.
+ */
+export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Pick<Install, "updates" | "installer"> | undefined): "auto" | "pinned" | undefined => {
+  const updates = install?.updates ?? (settings.autoUpdates ? "auto" : undefined);
+  return updates === "ask" || (updates === "auto" && install?.installer) ? undefined : updates;
+};
+
 /** Whether an app gets pre-releases: its own choice, else the player's default. */
 export const wantsPrereleases = (settings: Pick<Settings, "prereleases">, install: Pick<Install, "prereleases"> | undefined) =>
   install?.prereleases ? install.prereleases === "include" : Boolean(settings.prereleases);
@@ -1078,6 +1090,8 @@ export type Settings = {
   appUpdates?: "newest";
   /** Asked once which: in the setup, or by the banner for a player set up before it. */
   appUpdatesAsked?: boolean;
+  /** Apps install their updates by themselves, unless an app says otherwise (`Install.updates`). Unset: they offer them. */
+  autoUpdates?: boolean;
   /** Apps get pre-releases too, unless an app says otherwise (`Install.prereleases`). Unset: main releases only. */
   prereleases?: boolean;
   /** Offer preview releases of Quiver Launcher too. */
@@ -1316,7 +1330,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const { library, installs, catalog, settings } = forUsage.current;
       track("library_loaded", librarySummary(library, installs, catalog, settings, telemetryChoice().signedIn));
       // Not marked as counted with nothing to count yet: a first start's apps are counted once it has some.
-      const apps = appsOnComputer(library, installs, catalog);
+      const apps = appsOnComputer(library, installs, catalog, settings);
       if (apps.length && appsDueToday(new Date())) apps.forEach((app) => track("app_on_computer", app));
     }, USAGE_COUNTED_AFTER_MS);
     return () => {
@@ -1479,10 +1493,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const install = installs[item.id];
       const update = updateFor(entry, install);
       const waits = update && (waiting.current.get(`${item.id}@${bare(update.version)}`) ?? 0) > Date.now();
-      if (entry && install?.updates === "auto" && !install.installer && !jobs[item.id] && hasUpdate(entry, install) && !skipped(entry, install) && !waits)
+      if (entry && updatesOf(settings, install) === "auto" && !jobs[item.id] && hasUpdate(entry, install) && !skipped(entry, install) && !waits)
         void installEntry(entry, undefined, { auto: true });
     }
-  }, [catalog]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [catalog, settings.autoUpdates]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** The newest of an app's releases this computer can install: for an install, of the build it has. */
   const releaseHere = (entry: Entry, list: Release[], custom: boolean, was?: Install, platform?: Os) => {
@@ -1673,6 +1687,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   async function installNow(entry: Entry, chosen: Release | undefined, options: InstallOptions) {
     const { app, pin = false, blocked, auto = false } = options;
+    const updatesByItself = updatesOf(settings, installs[entry.id]) === "auto";
     // The player's own files are never downloaded over.
     if (isLocal(entry.id) || installs[entry.id]?.local) return;
     setJobs((j) => ({ ...j, [entry.id]: { id: entry.id, phase: "downloading", received: 0, total: null } }));
@@ -1872,7 +1887,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
-      if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && installs[entry.id]?.updates === "auto", verified: !unverified, blocked: Boolean(blocked), format });
+      if (from) track("app_updated", { ...ref, from, to: release.version, auto: !chosen && updatesByItself, verified: !unverified, blocked: Boolean(blocked), format });
       else track("app_installed", { ...ref, version: release.version, verified: !unverified, blocked: Boolean(blocked), format });
     } catch (error) {
       // A Windows installer's setup the player closed is cancelled too.

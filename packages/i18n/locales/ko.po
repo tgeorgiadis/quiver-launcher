@@ -1063,6 +1063,14 @@ msgstr "라이브러리에 있는 앱도 여기에 표시돼요."
 msgid "Apps in your library shown"
 msgstr "라이브러리에 있는 앱 표시 중"
 
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Apps install each new release as soon as it's out, without asking. Apps installed with a Windows installer still ask, as their setup needs you."
+msgstr "앱이 새 버전이 나오자마자 묻지 않고 설치해요. Windows 설치 프로그램으로 설치한 앱은 설치 과정에 직접 참여해야 해서 계속 물어봐요."
+
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Apps install each new release once its 48 hours are up, without asking. Apps installed with a Windows installer still ask, as their setup needs you."
+msgstr "앱이 새 버전의 48시간이 지나면 묻지 않고 설치해요. Windows 설치 프로그램으로 설치한 앱은 설치 과정에 직접 참여해야 해서 계속 물어봐요."
+
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Apps installed here always show."
 msgstr "여기에 설치된 앱은 항상 표시돼요."
@@ -1964,8 +1972,8 @@ msgid "Each app can include pre-releases or not, whatever this says, from its ow
 msgstr "이 설정과 관계없이 앱마다 자체 설정에서 사전 출시를 포함할지 정할 수 있어요."
 
 #: ../../apps/launcher/src/app-updates.tsx
-msgid "Each app's own setting still says whether it updates by itself, asks first, or stays on its version."
-msgstr "앱이 스스로 업데이트할지, 먼저 물어볼지, 지금 버전에 머물지는 여전히 각 앱의 설정을 따라요."
+msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
+msgstr "이 설정과 관계없이 앱마다 자체 설정에서 스스로 업데이트할지, 먼저 물어볼지, 지금 버전을 유지할지 정할 수 있어요."
 
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
@@ -2551,6 +2559,11 @@ msgstr "Windows 버전 설치 (Wine)"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Install to…"
 msgstr "설치 위치…"
+
+#. Setting: apps install their updates by themselves, without asking
+#: ../../apps/launcher/src/app-updates.tsx
+msgid "Install updates automatically"
+msgstr "업데이트 자동으로 설치"
 
 #. A mod that's installed
 #. Filter by whether an app is installed
@@ -5462,10 +5475,20 @@ msgstr "컨트롤러로 Quiver 탐색"
 msgid "Use my default (include pre-releases)"
 msgstr "내 기본값 사용(사전 출시 포함)"
 
+#. How an app updates: whatever Settings, Updates says, which is to install them automatically
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (install automatically)"
+msgstr "내 기본값 사용(자동으로 설치)"
+
 #. Which releases an app gets: whatever Settings, Updates says, which is main releases only
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my default (main releases only)"
 msgstr "내 기본값 사용(정식 버전만)"
+
+#. How an app updates: whatever Settings, Updates says, which is to offer new releases to install
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my default (offer them)"
+msgstr "내 기본값 사용(알려 주기)"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Use no more than 100 characters."

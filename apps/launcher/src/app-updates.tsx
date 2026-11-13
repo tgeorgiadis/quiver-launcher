@@ -61,13 +61,43 @@ export function AppUpdatesSetting({ inSetup = false }: { inSetup?: boolean }) {
           t`Updates install as soon as they come out, without asking first. If one turns out to be harmful, you may already have it before Quiver can withdraw it. Quiver still stops releases it has blocked.`,
         )}
       </div>
-      {!inSetup && (
-        <p className="muted">
-          <Trans>Each app's own setting still says whether it updates by itself, asks first, or stays on its version.</Trans>
-        </p>
-      )}
+      {!inSetup && <AutoUpdatesSetting />}
       {!inSetup && <PrereleasesSetting />}
     </section>
+  );
+}
+
+/** Whether apps install their updates by themselves by default; each app can say otherwise in its own settings. */
+function AutoUpdatesSetting() {
+  const { settings, setSettings } = useLauncher();
+  return (
+    <div className="prereleases-setting">
+      <label className="toggle">
+        <input
+          type="checkbox"
+          checked={Boolean(settings.autoUpdates)}
+          onChange={(e) => {
+            const on = e.target.checked;
+            setSettings((s) => {
+              const { autoUpdates: _, ...rest } = s;
+              return on ? { ...rest, autoUpdates: true } : rest;
+            });
+            track("app_auto_updates_set", { on });
+          }}
+        />
+        <Trans comment="Setting: apps install their updates by themselves, without asking">Install updates automatically</Trans>
+      </label>
+      <p className="muted">
+        {appUpdatesMode(settings) === "newest" ? (
+          <Trans>Apps install each new release as soon as it's out, without asking. Apps installed with a Windows installer still ask, as their setup needs you.</Trans>
+        ) : (
+          <Trans>Apps install each new release once its 48 hours are up, without asking. Apps installed with a Windows installer still ask, as their setup needs you.</Trans>
+        )}
+      </p>
+      <p className="muted">
+        <Trans>Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings.</Trans>
+      </p>
+    </div>
   );
 }
 
