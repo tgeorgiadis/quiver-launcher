@@ -18,6 +18,7 @@ mod move_journal;
 mod msi;
 mod own_copy;
 mod picker;
+mod provider_http;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
 mod secrets;
@@ -1794,6 +1795,7 @@ pub fn run() {
             secret_get,
             secret_set,
             gitlab_limit,
+            provider_http::provider_http,
             browser_sign_in,
             browser_sign_in_cancel,
             log_error,

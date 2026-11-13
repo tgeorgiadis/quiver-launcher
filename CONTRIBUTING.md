@@ -77,7 +77,7 @@ corporate version of this agreement. Open an issue and we'll sort it out before 
 | Path            | What it is                                                                 |
 | --------------- | -------------------------------------------------------------------------- |
 | `apps/launcher` | The Tauri app: React UI in `src`, Rust core in `src-tauri`                  |
-| `packages/api`  | Typed client for the catalog API (`https://api.quiverlauncher.com/api/v1`) |
+| `packages/api`  | Typed client for the catalog API (`https://api.quiverlauncher.com/api/v1`) and the repository providers in `src/providers/` |
 | `packages/ui`   | Catalog components and styles shared with quiverlauncher.com               |
 | `e2e`           | The web side against a mock catalog, and the real app against the real one |
 

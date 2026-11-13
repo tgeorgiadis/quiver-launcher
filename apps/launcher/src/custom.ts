@@ -31,6 +31,21 @@ export const isCustom = (id: string) => {
 export const isLocal = (id: string) => id.startsWith("local:");
 /** Added by the player: no catalog page, reviews or checked releases. */
 export const isOwn = (id: string) => isCustom(id) || isLocal(id);
+/** A custom app's repository from its key, for one not in the library. */
+export const fromKey = (id: string): CustomApp => {
+  const at = id.indexOf(":");
+  const provider = at > 0 ? id.slice(0, at) : "github";
+  const rest = at > 0 ? id.slice(at + 1) : id;
+  const first = rest.split("/")[0];
+  const known = defaultHost(provider);
+  // A Gitea key without a host is from before hosts were kept: Codeberg is the one it meant.
+  const fallback = provider === "gitea" ? "codeberg.org" : undefined;
+  const hasHost = first.includes(".") || first.includes(":") || first.toLowerCase() === "localhost";
+  const host = hasHost ? first : known ?? fallback;
+  const repository = hasHost ? rest.slice(first.length + 1) : rest;
+  return { provider, ...(host && (host !== known || !known) ? { host } : {}), repository, name: repository.split("/").at(-1)! };
+};
+
 export const localKey = () => `local:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
 /** The games an app's name matches, best first. File names drop apostrophes ("Marios Tennis"): without a match, the words without a final s. */

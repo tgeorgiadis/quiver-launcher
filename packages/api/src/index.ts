@@ -266,7 +266,7 @@ export type HistoryRelease = {
 
 export type Detail = {
   entry: Entry;
-  project: { name: string; description: string; repository?: string; provider: string; website?: string; author?: string; aiUse?: AiUse };
+  project: { name: string; description: string; repository?: string; provider: string; host?: string; website?: string; author?: string; aiUse?: AiUse };
   withdrawn: Withdrawn[];
   checking?: Checking;
   /** YouTube videos for the app's Media tab, in the order staff set. Missing from a site that has none yet. */
@@ -291,7 +291,7 @@ export type SharedList = {
   name: string;
   description?: string;
   owner: { name: string; avatar?: string };
-  items: ({ kind: "entry"; entry: Entry } | { kind: "custom"; custom: { provider: "github" | "gitlab"; repository: string; name: string }; url: string })[];
+  items: ({ kind: "entry"; entry: Entry } | { kind: "custom"; custom: { provider: string; host?: string; repository: string; name: string }; url: string })[];
   /** Apps on it that left the catalog. */
   unavailable: number;
   createdAt: number;
@@ -341,7 +341,7 @@ export type Announcement = {
   editedAt?: number;
 };
 
-export type ReleaseStatus = { id: string; slug: string; provider: string; repository?: string };
+export type ReleaseStatus = { id: string; slug: string; provider: string; host?: string; repository?: string };
 
 export type Page<T> = { items: T[]; nextCursor: string | null; isDone: boolean };
 

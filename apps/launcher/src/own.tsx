@@ -9,7 +9,7 @@ import { msg, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
-import type { Entry, GameMatch } from "@quiverlauncher/api";
+import { defaultHost, providerChoices, type Entry, type GameMatch } from "@quiverlauncher/api";
 import { Artwork, fullDate } from "@quiverlauncher/ui";
 import { useLauncher, type GameArt, type RepositoryPreview } from "./store";
 import { native } from "./native";
@@ -61,7 +61,7 @@ function Choose({ onPick }: { onPick: (step: Step) => void }) {
       <p className="muted">
         <Trans>For an app the catalog doesn't have. It's yours alone; to add one for everyone, suggest it on quiverlauncher.com.</Trans>
       </p>
-      {option("repository", <GitBranch size={22} />, t`From GitHub or GitLab`, t`Installs from the repository's releases, and updates like other apps.`)}
+      {option("repository", <GitBranch size={22} />, t`From a git repository`, t`Installs from the repository's releases, and updates like other apps.`)}
       {option("program", <MonitorPlay size={22} />, t`A program on this computer`, t`Starts it where it is. Nothing is downloaded, moved or deleted.`)}
       {option("folder", <FolderPlus size={22} />, t`A folder you fill yourself`, t`Makes a folder in your apps folder to put the app in.`)}
     </>
@@ -84,6 +84,7 @@ type Done = { onBack: () => void; onDone: (entry: Entry) => void };
 function FromRepository({ onBack, onDone }: Done) {
   const { lookUpRepository, addCustomApp } = useLauncher();
   const [input, setInput] = useState("");
+  const [forge, setForge] = useState("auto");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<RepositoryPreview | null>(null);
@@ -122,7 +123,7 @@ function FromRepository({ onBack, onDone }: Done) {
           e.preventDefault();
           setBusy(true);
           setError(null);
-          lookUpRepository(input).then((r) => {
+          lookUpRepository(input, forge === "auto" ? undefined : forge).then((r) => {
             if (!live.current) return;
             setBusy(false);
             if ("error" in r) return setError(r.error);
@@ -134,8 +135,20 @@ function FromRepository({ onBack, onDone }: Done) {
           });
         }}
       >
-        <Heading title={t`From GitHub or GitLab`} onBack={onBack} />
-        <input autoFocus aria-label={t`Repository`} placeholder={t`owner/name, or a github.com or gitlab.com address`} value={input} onChange={(e) => setInput(e.target.value)} />
+        <Heading title={t`From a git repository`} onBack={onBack} />
+        <input autoFocus aria-label={t`Repository`} placeholder={t`owner/name, or a repository address (github.com, gitlab.com, codeberg.org, …)`} value={input} onChange={(e) => setInput(e.target.value)} />
+        <label className="field">
+          <Trans>Where it&apos;s hosted</Trans>
+          <select value={forge} onChange={(e) => setForge(e.target.value)}>
+            <option value="auto">{t`Detect it`}</option>
+            {providerChoices.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+            <option value="feed">{t`Release feed`}</option>
+          </select>
+        </label>
         {error && <p className="job-error">{error}</p>}
         <button className="primary" disabled={busy || !input.trim()}>
           {busy ? t`Looking it up…` : t`Look it up`}
@@ -156,7 +169,7 @@ function FromRepository({ onBack, onDone }: Done) {
         onDone(addCustomApp({ ...preview.app, name: name.trim(), ...(assetFilter ? { assetFilter } : {}) }, latest, art ?? undefined));
       }}
     >
-      <Heading title={`${preview.app.provider === "gitlab" ? "gitlab.com" : "github.com"}/${preview.app.repository}`} onBack={onBack} />
+      <Heading title={`${preview.app.host ?? defaultHost(preview.app.provider) ?? preview.app.provider}/${preview.app.repository}`} onBack={onBack} />
       <label className="field">
         <Trans comment="The app's name, a form field">Name</Trans>
         <input aria-label={t({ message: "Name", comment: "The app's name, a form field" })} maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
@@ -166,6 +179,11 @@ function FromRepository({ onBack, onDone }: Done) {
         {" · "}
         <Trans>Quiver hasn't checked this app.</Trans>
       </p>
+      {preview.app.provider !== "github" && preview.app.provider !== "gitlab" && (
+        <p className="muted">
+          <Trans>This app stays on this computer: account sync doesn't support this kind of host yet.</Trans>
+        </p>
+      )}
       {latest && files.length === 0 && (
         <p className="job-error">
           <Trans>None of this release's files are for this computer.</Trans>

@@ -1091,6 +1091,10 @@ msgstr "Quiver 從目錄或程式碼儲存庫下載並更新的應用程式"
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
 msgstr "支援此功能的應用程式會將存檔和設定儲存在各自的資料夾中。你已經安裝的應用程式不會改變。"
 
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Apps you add from a self-hosted forge, Codeberg, Bitbucket or a release feed use the token you save for that host. A token is kept in this computer's keychain and sent only to the host it belongs to."
+msgstr ""
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "你從 GitHub 新增的應用程式會直接從 GitHub 獲取版本。此網路每小時允許 60 次請求；使用權杖時為 5,000 次。目錄中的應用程式無需權杖。"
@@ -1404,6 +1408,7 @@ msgstr "正在檢查你的副本 →"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
 msgstr "正在檢查 →"
@@ -1736,6 +1741,7 @@ msgstr "無法連線 quiverlauncher.com。請檢查網路連線，然後重試�
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Couldn't save the token. Try again."
 msgstr "無法儲存權杖。請重試。"
 
@@ -1777,6 +1783,10 @@ msgstr "封面地址"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Crashes, poor performance, broken controls or features, or I had to do extra setup this page didn't mention."
 msgstr "崩潰、效能不佳、控制或功能失效，或者我不得不進行此頁面未提及的額外設定。"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Create a token"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Create a token on GitHub"
@@ -1843,6 +1853,10 @@ msgstr "桌面快捷方式"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Details"
 msgstr "詳細資訊"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Detect it"
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Developer says: {says}"
@@ -2026,12 +2040,12 @@ msgid "Emulator"
 msgstr "模擬器"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address."
-msgstr "輸入 GitHub 或 GitLab 程式碼儲存庫：owner/name，或其 github.com、gitlab.com 地址。"
-
-#: ../../apps/launcher/src/store.tsx
 msgid "Enter a name for its folder."
 msgstr "為其資料夾輸入名稱。"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Enter a repository: owner/name, or its address on a forge."
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Every console"
@@ -2147,8 +2161,8 @@ msgid "Found in {folder}"
 msgstr "在 {folder} 中找到"
 
 #: ../../apps/launcher/src/own.tsx
-msgid "From GitHub or GitLab"
-msgstr "來自 GitHub 或 GitLab"
+msgid "From a git repository"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
@@ -2193,6 +2207,10 @@ msgstr "獲取 Quiver Launcher"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Getting ready…"
 msgstr "正在準備 →"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "git.example.com"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2344,6 +2362,10 @@ msgstr "隱藏它們"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
 msgstr "隱藏你對 {name} 的反饋"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Host"
+msgstr ""
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "How apps update"
@@ -3674,6 +3696,10 @@ msgstr "其他檔案"
 msgid "Other platforms"
 msgstr "其他平臺"
 
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Other repository tokens"
+msgstr ""
+
 #. Over the list of an app's versions, under Get's own button for its newest
 #: ../../apps/launcher/src/detail.tsx
 msgid "Other versions"
@@ -3693,8 +3719,8 @@ msgid "Overview"
 msgstr "概覽"
 
 #: ../../apps/launcher/src/own.tsx
-msgid "owner/name, or a github.com or gitlab.com address"
-msgstr "owner/name，或 github.com、gitlab.com 地址"
+msgid "owner/name, or a repository address (github.com, gitlab.com, codeberg.org, …)"
+msgstr ""
 
 #. Controller hint: what the triggers do in a library in another order, jump a screen at a time
 #: ../../apps/launcher/src/spatial.ts
@@ -3981,6 +4007,10 @@ msgstr "Quiver 無法開啟你的遊戲庫"
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
 msgstr "Quiver 無法顯示此圖片。它可能已被移動或刪除。"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver couldn't tell what kind of forge {host} is. Choose its kind and try again."
+msgstr ""
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver 在你的遊戲資料夾中沒有找到。"
@@ -4154,6 +4184,10 @@ msgstr "重新整理"
 msgid "Reinstall {installedVersion}"
 msgstr "重新安裝 {installedVersion}"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Release feed"
+msgstr ""
+
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
 #: ../../apps/launcher/src/App.tsx
@@ -4204,6 +4238,7 @@ msgstr "移除標籤 {tag}"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Remove token"
 msgstr "移除權杖"
 
@@ -4211,6 +4246,7 @@ msgstr "移除權杖"
 #. The GitLab token was removed
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Removed."
 msgstr "已移除。"
 
@@ -4334,8 +4370,17 @@ msgstr "儲存為播放清單"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Save token"
 msgstr "儲存權杖"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Saved."
+msgstr ""
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Saved. Requests to {clean} use your token now."
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
@@ -4346,6 +4391,7 @@ msgid "Saved. Requests to GitLab use your token now."
 msgstr "已儲存。現在，向 GitLab 傳送請求時會使用你的權杖。"
 
 #: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Saving…"
 msgstr "正在儲存 →"
 
@@ -4954,6 +5000,10 @@ msgid "Thanks! A maintainer will take a look."
 msgstr "謝謝！維護者會檢視此問題。"
 
 #: ../../apps/launcher/src/store.tsx
+msgid "That address isn't a repository on {host}."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
 msgid "That folder doesn't have an installed app in it."
 msgstr "該資料夾中沒有已安裝的應用程式。"
 
@@ -5119,6 +5169,10 @@ msgstr "此應用程式可能會將存檔儲存在此資料夾中。解除安裝
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "此應用程式可能會無法找到存檔和設定，因為它會在其他位置查詢。不會刪除任何內容。"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "This app stays on this computer: account sync doesn't support this kind of host yet."
+msgstr ""
+
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be moved."
 msgstr "無法移動此應用程式的資料夾。"
@@ -5191,6 +5245,14 @@ msgstr "今天"
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Today"
 msgstr "今天"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Token"
+msgstr ""
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Token for {host}"
+msgstr ""
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Too many attempts. Wait a moment and try again."
@@ -5534,13 +5596,10 @@ msgstr "超寬，約 1920 × 620。顯示在應用程式頁面和“繼續遊玩
 msgid "View {version} on {host}"
 msgstr "在 {host} 上檢視 {version}"
 
+#. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
-msgid "View on GitHub"
-msgstr "在 GitHub 上檢視"
-
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "View on GitLab"
-msgstr "在 GitLab 上檢視"
+msgid "View on {0}"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5666,6 +5725,10 @@ msgstr "應用程式安裝位置"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where are your games?"
 msgstr "你的遊戲在哪裡？"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Where it's hosted"
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"

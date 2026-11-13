@@ -16,10 +16,15 @@ type RawRelease = {
   assets?: { id: number; name: string; size?: number; browser_download_url: string }[];
 };
 
+const time = (value?: string): number => {
+  const at = Date.parse(value ?? "") || 0;
+  return at > 0 ? at : 0;
+};
+
 const fromGitea = (r: RawRelease): Release => ({
   id: r.tag_name,
   version: r.tag_name,
-  releasedAt: Date.parse(r.published_at ?? "") || Date.parse(r.created_at ?? "") || 0,
+  releasedAt: time(r.published_at) || time(r.created_at),
   prerelease: Boolean(r.prerelease),
   notes: r.body,
   assets: (r.assets ?? []).map((a) => ({
@@ -78,7 +83,7 @@ export const giteaProvider: RepositoryProvider = {
     return raw
       .filter((r) => !r.draft && r.tag_name)
       // Stable releases first: the first one is what a player gets.
-      .sort((a, b) => Number(Boolean(b.prerelease)) - Number(Boolean(a.prerelease)))
+      .sort((a, b) => Number(Boolean(a.prerelease)) - Number(Boolean(b.prerelease)))
       .slice(0, count)
       .map(fromGitea);
   },
@@ -132,7 +137,8 @@ export const giteaProvider: RepositoryProvider = {
 };
 
 function hostOf(ref: RepositoryRef): string {
-  return ref.host ?? "codeberg.org";
+  if (!ref.host) throw new Error("A Gitea repository needs its host.");
+  return ref.host;
 }
 
 function authOf(token?: string): Record<string, string> {

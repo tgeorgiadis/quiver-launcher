@@ -5,12 +5,12 @@
  */
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
+import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, GitBranch, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { FaSteam } from "react-icons/fa6";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
-import { ApiError, type AiUse, type Asset, type Checking, type Client, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, providerFor, type AiUse, type Asset, type Checking, type Client, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type RepositoryRef, type Withdrawn } from "@quiverlauncher/api";
 import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
@@ -19,16 +19,23 @@ import { launchCopies } from "./own-copy";
 import { bare, changesUpTo, saidOf, scanAsks, unverifiedFile, unverifiedIn, versionLabel, versionList, withdrawnAsBlocked, type Said, type Version } from "./versions";
 import { native, type ShortcutRequest } from "./native";
 import { hasBuildFor, otherSystems, releaseFor, runsHere } from "./assets";
-import { isCustom, isLocal } from "./custom";
+import { fromKey, isCustom, isLocal } from "./custom";
 import { Dialog, PlaylistChoices } from "./library";
 import { haloMoved } from "./spatial";
 
-export type Source = { provider: "github" | "gitlab"; repository: string; url: string };
+export type Source = RepositoryRef & { url: string };
 
-const sourceOf = (provider: string, repository?: string): Source | null =>
-  repository && (provider === "github" || provider === "gitlab")
-    ? { provider, repository, url: `https://${provider}.com/${repository}` }
-    : null;
+/** What a source's host is called on screen. */
+export const providerName = (provider: string, host?: string) =>
+  provider === "github" ? "GitHub" : provider === "gitlab" ? "GitLab" : provider === "gitea" ? "Gitea / Forgejo" : provider === "bitbucket" ? "Bitbucket" : host ?? provider;
+
+const sourceOf = (provider: string, repository?: string, host?: string): Source | null => {
+  // A Gitea or Forgejo repository can be on any host: without one, there's nothing to link to.
+  if (!repository || (provider === "gitea" && !host)) return null;
+  const ref: RepositoryRef = { provider, ...(host ? { host } : {}), repository };
+  const found = providerFor(ref);
+  return found ? { ...ref, url: found.webUrl(ref) } : null;
+};
 
 /**
  * The app's page on the site, and where its code lives. Each is undefined
@@ -49,12 +56,15 @@ export function useAppDetail(entry: Entry): { source: Source | null | undefined;
     return () => void (live = false);
   }, [client, entry.slug, own]);
   const source = custom
-    ? sourceOf(custom.provider, custom.repository)
+    ? sourceOf(custom.provider, custom.repository, custom.host)
     : isCustom(entry.id)
-      ? sourceOf(entry.id.slice(0, entry.id.indexOf(":")), entry.id.slice(entry.id.indexOf(":") + 1))
+      ? (() => {
+          const app = fromKey(entry.id);
+          return sourceOf(app.provider, app.repository, app.host);
+        })()
       : detail === undefined
         ? undefined
-        : detail && sourceOf(detail.project.provider, detail.project.repository);
+        : detail && sourceOf(detail.project.provider, detail.project.repository, detail.project.host);
   return { source, detail };
 }
 
@@ -182,7 +192,8 @@ export type ReleaseHistory = ReturnType<typeof useReleaseHistory>;
 
 /** A project's repository: its host's mark (named for a screen reader), then its path, onto another line only after a slash. */
 export function RepositoryLink({ source }: { source: Source }) {
-  const [host, Mark] = source.provider === "github" ? ["GitHub", Github] : ["GitLab", Gitlab];
+  const host = providerName(source.provider, source.host);
+  const Mark = source.provider === "github" ? Github : source.provider === "gitlab" ? Gitlab : GitBranch;
   const parts = source.repository.split("/");
   return (
     <a className="repo-link" href={source.url} title={`${host}: ${source.repository}`} aria-label={`${host}: ${source.repository}`}>
@@ -259,7 +270,7 @@ function Clipped({ height, opened = false, children }: { height: number; opened?
 
 /** The project's README: the site's copy, else straight from GitHub. Asked for (`asked`), it's shown whole, scrolled to, with the focus to read on from. */
 export function Readme({ entry, source, asked }: { entry: Entry; source: Source | null | undefined; asked?: boolean }) {
-  const { client, github } = useLauncher();
+  const { client, providers } = useLauncher();
   const [readme, setReadme] = useState<ReadmeText | null | undefined>();
   const start = useRef<HTMLSpanElement>(null);
   const arrived = readme !== undefined;
@@ -272,7 +283,7 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
   useEffect(() => {
     if (source === undefined || isLocal(entry.id)) return;
     let live = true;
-    const upstream = () => (source?.provider === "github" ? github.readme(source.repository) : Promise.resolve(null));
+    const upstream = () => (source ? providers.readme(source) : Promise.resolve(null));
     (isCustom(entry.id) ? upstream() : client.readme(entry.slug).then((r) => r ?? upstream()))
       .catch(() => upstream())
       .then(
@@ -280,7 +291,7 @@ export function Readme({ entry, source, asked }: { entry: Entry; source: Source 
         () => live && setReadme(null),
       );
     return () => void (live = false);
-  }, [client, github, entry.id, entry.slug, source]);
+  }, [client, providers, entry.id, entry.slug, source]);
   // No README: what the catalog says about it, as on the website.
   if (readme === null && entry.description.trim() && !isLocal(entry.id))
     return (
@@ -608,7 +619,7 @@ export function ReleasesTab({
     );
     return () => void (live = false);
   }, [client, entry.slug]);
-  const host = detail?.project.provider === "gitlab" ? "GitLab" : "GitHub";
+  const host = providerName(detail?.project.provider ?? "github", detail?.project.host);
   // A withdrawn release is blocked, whatever the site still says of it.
   const releases = items && withdrawnAsBlocked<HistoryRelease & { withdrawn?: Withdrawn }>(items, (r) => r.version, detail?.withdrawn);
   const newestVerified = releases?.find((r) => r.state === "verified");
@@ -1110,7 +1121,7 @@ export function Versions({
   /** Its dialog over a floating panel that stays open under it (Dialog's `over`). */
   over?: boolean;
 }) {
-  const { client, github, gitlab, installs, get, jobs, setUpdates, catalog, config, settings } = useLauncher();
+  const { client, providers, installs, get, jobs, setUpdates, catalog, config, settings } = useLauncher();
   // On Linux, an app with a build for each: Windows' runs through Wine, which plays some apps better.
   const builds: Os[] = getting && config.os === "linux" && entry.supportedOS.includes("linux") && entry.supportedOS.includes("windows") ? ["linux", "windows"] : [];
   const [platform, setPlatform] = useState<Os | undefined>(builds[0]);
@@ -1145,8 +1156,7 @@ export function Versions({
   if (source === undefined || jobs[entry.id]) return null;
   async function load() {
     setVersions("loading");
-    const upstream = async (count = 50) =>
-      !source ? [] : source.provider === "github" ? github.releases(source.repository, count) : gitlab.releases(source.repository, count);
+    const upstream = async (count = 50) => (!source ? [] : providers.releases(source, count));
     const missing = (e: unknown) => {
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
@@ -1249,7 +1259,7 @@ export function Versions({
   if (asking) {
     const close = () => (asking.version === started ? onClose?.() : setAsking(null));
     const { version, pin } = asking;
-    const host = source?.provider === "gitlab" ? "GitLab" : "GitHub";
+    const host = providerName(source?.provider ?? "github", source?.host);
     const waits = version.checkEndsAt !== undefined;
     const hours = waits ? hoursFrom(version.checkEndsAt!) : 0;
     const release = version.release.version;

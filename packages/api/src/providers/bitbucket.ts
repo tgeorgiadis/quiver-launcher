@@ -34,7 +34,9 @@ export const bitbucketProvider: RepositoryProvider = {
     const headers = { Accept: "application/json", ...authOf(ctx.token) };
     const fail = (response: Response) => bitbucketError(response, Boolean(ctx.token?.trim()));
     const downloads: RawDownload[] = [];
-    let next: string | undefined = `${API}/repositories/${encodeURIComponent(ref.repository)}/downloads?pagelen=100`;
+    const [workspace = "", slug = ""] = ref.repository.split("/");
+    const repository = `${API}/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(slug)}`;
+    let next: string | undefined = `${repository}/downloads?pagelen=100`;
     while (next) {
       const response = await ctx.fetch(next, { headers });
       if (response.status === 404) throw new ApiError(404, "That repository wasn't found on Bitbucket.");
@@ -51,7 +53,7 @@ export const bitbucketProvider: RepositoryProvider = {
     }
     return [...byVersion.entries()]
       .map(([version, files]): Release => {
-        const releasedAt = Math.max(...files.map((f) => Date.parse(f.created_on ?? "") || 0));
+        const releasedAt = Math.max(...files.map((f) => Math.max(0, Date.parse(f.created_on ?? "") || 0)));
         return {
           id: version,
           version,
@@ -73,8 +75,12 @@ export const bitbucketProvider: RepositoryProvider = {
   async readme(ref, ctx) {
     const headers = { Accept: "text/plain", ...authOf(ctx.token) };
     const fail = (response: Response) => bitbucketError(response, Boolean(ctx.token?.trim()));
+    const [workspace = "", slug = ""] = ref.repository.split("/");
     for (const file of ["README.md", "README.rst", "README", "README.txt", "readme.md"]) {
-      const response = await ctx.fetch(`${API}/repositories/${encodeURIComponent(ref.repository)}/src/HEAD/${encodeURIComponent(file)}`, { headers });
+      const response = await ctx.fetch(
+        `${API}/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(slug)}/src/HEAD/${encodeURIComponent(file)}`,
+        { headers },
+      );
       if (response.ok) {
         return {
           markdown: await response.text(),

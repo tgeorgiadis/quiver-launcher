@@ -135,13 +135,16 @@ export function parseRepository(input: string, forced?: string): ParsedRepositor
     if (slash <= 0) return null;
     const host = withHost.slice(0, slash).toLowerCase();
     const repository = withHost.slice(slash + 1).replace(/^\/+/, "");
-    return host && repository ? { provider: "feed", host, repository } : null;
+    // A feed is a file on a host, not a bare "owner/repo".
+    return host.includes(".") && repository ? { provider: "feed", host, repository } : null;
   }
   const text = clean(input);
   if (!text) return null;
   const slash = text.indexOf("/");
   const first = slash < 0 ? text : text.slice(0, slash);
-  const hasHost = slash > 0 && isHost(first);
+  // A bare "owner.name/repo" is a GitHub owner, not a host: a host needs a known name, a port,
+  // localhost, or the owner/repository path after it.
+  const hasHost = slash > 0 && (knownHosts.has(first.toLowerCase()) || (isHost(first) && text.split("/").length >= 3));
   const host = (hasHost ? first : forced ? defaultHost(forced) : githubProvider.defaultHost)?.toLowerCase();
   if (!host) return null;
   const rawPath = hasHost ? text.slice(slash + 1) : text;

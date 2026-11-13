@@ -12,6 +12,7 @@ test("a pasted repository is found on GitHub or GitLab, from any page of it", ()
   expect(parseRepository("gitlab.com/group/project.git/")).toEqual({ provider: "gitlab", host: "gitlab.com", repository: "group/project" });
   expect(parseRepository("gitlab.com/project")).toBeNull();
   expect(parseRepository("gitlab.com/group/..")).toBeNull();
+  expect(parseRepository("some.owner/repo")).toEqual({ provider: "github", host: "github.com", repository: "some.owner/repo" });
   expect(parseRepository("not a repository")).toBeNull();
 });
 
@@ -22,6 +23,18 @@ test("Gitea, Forgejo, Bitbucket and an unknown forge are found from their addres
   expect(parseRepository("git.example.com/group/sub/project")).toEqual({ provider: "unknown", host: "git.example.com", repository: "group/sub/project" });
   expect(parseRepository("git.example.com/group/sub/project", "gitlab")).toEqual({ provider: "gitlab", host: "git.example.com", repository: "group/sub/project" });
   expect(parseRepository("https://example.com/feed.json", "feed")).toEqual({ provider: "feed", host: "example.com", repository: "feed.json" });
+});
+
+test("apps from a host the account doesn't know stay on this computer", () => {
+  const item: LibraryItem = {
+    id: "gitea:codeberg.org/o/r",
+    slug: "",
+    addedAt: 1,
+    custom: { provider: "gitea", host: "codeberg.org", repository: "o/r", name: "R" },
+    account: "me",
+    pending: { added: true },
+  };
+  expect(changesFrom([item], "me")).toEqual([]);
 });
 
 test("apps on this computer only stay out of the account", () => {

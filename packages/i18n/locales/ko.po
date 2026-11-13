@@ -1091,6 +1091,10 @@ msgstr "Quiver가 카탈로그나 저장소에서 다운로드하고 업데이�
 msgid "Apps that support it keep their saves and settings in their own folder. Apps you've already installed don't change."
 msgstr "지원하는 앱은 저장 데이터와 설정을 자체 폴더에 보관합니다. 이미 설치한 앱은 바뀌지 않습니다."
 
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Apps you add from a self-hosted forge, Codeberg, Bitbucket or a release feed use the token you save for that host. A token is kept in this computer's keychain and sent only to the host it belongs to."
+msgstr ""
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Apps you add from GitHub get their releases from GitHub itself, which allows this network 60 requests an hour, or 5,000 with a token. Apps from the catalog don't need one."
 msgstr "GitHub에서 추가한 앱은 GitHub에서 직접 버전을 가져와요. GitHub는 이 네트워크에 시간당 60회, 토큰이 있으면 5,000회까지 요청을 허용해요. 카탈로그의 앱에는 토큰이 필요 없어요."
@@ -1404,6 +1408,7 @@ msgstr "사본 확인 중…"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Checking…"
 msgstr "확인 중…"
@@ -1736,6 +1741,7 @@ msgstr "quiverlauncher.com에 연결할 수 없어요. 연결 상태를 확인�
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Couldn't save the token. Try again."
 msgstr "토큰을 저장하지 못했어요. 다시 시도하세요."
 
@@ -1777,6 +1783,10 @@ msgstr "커버 주소"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Crashes, poor performance, broken controls or features, or I had to do extra setup this page didn't mention."
 msgstr "충돌, 낮은 성능, 작동하지 않는 조작이나 기능이 있었거나, 이 페이지에 없는 추가 설정이 필요했어요."
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Create a token"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Create a token on GitHub"
@@ -1843,6 +1853,10 @@ msgstr "바탕 화면 바로 가기"
 #: ../../apps/launcher/src/spatial.ts
 msgid "Details"
 msgstr "세부 정보"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Detect it"
+msgstr ""
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Developer says: {says}"
@@ -2026,12 +2040,12 @@ msgid "Emulator"
 msgstr "에뮬레이터"
 
 #: ../../apps/launcher/src/store.tsx
-msgid "Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address."
-msgstr "GitHub 또는 GitLab 저장소를 입력하세요: owner/name 형식이나 github.com 또는 gitlab.com 주소."
-
-#: ../../apps/launcher/src/store.tsx
 msgid "Enter a name for its folder."
 msgstr "폴더 이름을 입력해 주세요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Enter a repository: owner/name, or its address on a forge."
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Every console"
@@ -2147,8 +2161,8 @@ msgid "Found in {folder}"
 msgstr "{folder}에서 찾았어요"
 
 #: ../../apps/launcher/src/own.tsx
-msgid "From GitHub or GitLab"
-msgstr "GitHub 또는 GitLab에서"
+msgid "From a git repository"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
@@ -2193,6 +2207,10 @@ msgstr "Quiver Launcher 받기"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Getting ready…"
 msgstr "준비 중…"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "git.example.com"
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "GitHub didn't accept that token, so it wasn't saved. Check that you copied all of it."
@@ -2344,6 +2362,10 @@ msgstr "숨기기"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide your feedback for {name}"
 msgstr "{name} 피드백 숨기기"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Host"
+msgstr ""
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "How apps update"
@@ -3674,6 +3696,10 @@ msgstr "기타 파일"
 msgid "Other platforms"
 msgstr "기타 플랫폼"
 
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Other repository tokens"
+msgstr ""
+
 #. Over the list of an app's versions, under Get's own button for its newest
 #: ../../apps/launcher/src/detail.tsx
 msgid "Other versions"
@@ -3693,8 +3719,8 @@ msgid "Overview"
 msgstr "개요"
 
 #: ../../apps/launcher/src/own.tsx
-msgid "owner/name, or a github.com or gitlab.com address"
-msgstr "소유자/이름 또는 github.com이나 gitlab.com 주소"
+msgid "owner/name, or a repository address (github.com, gitlab.com, codeberg.org, …)"
+msgstr ""
 
 #. Controller hint: what the triggers do in a library in another order, jump a screen at a time
 #: ../../apps/launcher/src/spatial.ts
@@ -3981,6 +4007,10 @@ msgstr "Quiver가 라이브러리를 열지 못했어요"
 msgid "Quiver couldn't show that picture. It may have been moved or deleted."
 msgstr "Quiver에서 이 이미지를 표시할 수 없습니다. 파일이 이동되었거나 삭제되었을 수 있습니다."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Quiver couldn't tell what kind of forge {host} is. Choose its kind and try again."
+msgstr ""
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver가 게임 폴더에서 찾지 못했습니다."
@@ -4154,6 +4184,10 @@ msgstr "새로 고침"
 msgid "Reinstall {installedVersion}"
 msgstr "{installedVersion} 다시 설치"
 
+#: ../../apps/launcher/src/own.tsx
+msgid "Release feed"
+msgstr ""
+
 #. Tab of an app's page
 #. Which of an app's releases it gets: main releases only, or pre-releases too
 #: ../../apps/launcher/src/App.tsx
@@ -4204,6 +4238,7 @@ msgstr "태그 {tag} 삭제"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Remove token"
 msgstr "토큰 삭제"
 
@@ -4211,6 +4246,7 @@ msgstr "토큰 삭제"
 #. The GitLab token was removed
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Removed."
 msgstr "삭제했어요."
 
@@ -4334,8 +4370,17 @@ msgstr "재생 목록으로 저장"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Save token"
 msgstr "토큰 저장"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Saved."
+msgstr ""
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Saved. Requests to {clean} use your token now."
+msgstr ""
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Saved. Requests to GitHub use your token now."
@@ -4346,6 +4391,7 @@ msgid "Saved. Requests to GitLab use your token now."
 msgstr "저장했어요. 이제 GitLab 요청에 토큰을 사용해요."
 
 #: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/repository-tokens.tsx
 msgid "Saving…"
 msgstr "저장하는 중…"
 
@@ -4954,6 +5000,10 @@ msgid "Thanks! A maintainer will take a look."
 msgstr "감사해요! 관리자가 확인할 거예요."
 
 #: ../../apps/launcher/src/store.tsx
+msgid "That address isn't a repository on {host}."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
 msgid "That folder doesn't have an installed app in it."
 msgstr "그 폴더에 설치된 앱이 없어요."
 
@@ -5119,6 +5169,10 @@ msgstr "이 앱은 저장 데이터를 이 폴더에 보관할 수 있습니다.
 msgid "This app may stop finding its saves and settings, because it will look for them in a different place. Nothing is deleted."
 msgstr "이 앱이 다른 위치를 찾게 되어 저장 데이터와 설정을 찾지 못할 수 있습니다. 삭제되는 것은 없습니다."
 
+#: ../../apps/launcher/src/own.tsx
+msgid "This app stays on this computer: account sync doesn't support this kind of host yet."
+msgstr ""
+
 #: ../../apps/launcher/src/store.tsx
 msgid "This app's folder can't be moved."
 msgstr "이 앱의 폴더는 옮길 수 없어요."
@@ -5191,6 +5245,14 @@ msgstr "오늘"
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Today"
 msgstr "오늘"
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Token"
+msgstr ""
+
+#: ../../apps/launcher/src/repository-tokens.tsx
+msgid "Token for {host}"
+msgstr ""
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Too many attempts. Wait a moment and try again."
@@ -5534,13 +5596,10 @@ msgstr "매우 넓은 형식, 약 1920×620. 앱 페이지 뒤와 이어서 플�
 msgid "View {version} on {host}"
 msgstr "{host}에서 {version} 보기"
 
+#. placeholder {0}: providerName(source.provider, source.host)
 #: ../../apps/launcher/src/card-menu.tsx
-msgid "View on GitHub"
-msgstr "GitHub에서 보기"
-
-#: ../../apps/launcher/src/card-menu.tsx
-msgid "View on GitLab"
-msgstr "GitLab에서 보기"
+msgid "View on {0}"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5666,6 +5725,10 @@ msgstr "앱 설치 위치"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where are your games?"
 msgstr "게임은 어디에 있나요?"
+
+#: ../../apps/launcher/src/own.tsx
+msgid "Where it's hosted"
+msgstr ""
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"

@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { msg, plural, t } from "@lingui/core/macro";
-import { defaultHost, ApiError, createClient, createGithub, createGitlab, githubRepository, parseRepository, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn } from "@quiverlauncher/api";
+import { defaultHost, ApiError, createClient, createGithub, createGitlab, createProviders, githubRepository, parseRepository, providerForHost, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
 import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
@@ -16,17 +16,18 @@ import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocke
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, type Collection } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, syncableCustom, type Collection } from "./sync";
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
-import { appsOfRepository, bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { appsOfRepository, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { artFiles, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
+import { providerFetch } from "./provider-fetch";
 
 /** The language the launcher shows in: the one picked in Settings, or else the system's nearest. */
 export const languageOf = (settings: Settings): Language => settings.language ?? pick(navigator.languages);
@@ -200,6 +201,12 @@ type Launcher = {
   gitlabToken?: string;
   saveGitlabToken: (token: string | undefined) => Promise<void>;
   gitlab: Gitlab;
+  /** The player's tokens, by repository host. */
+  tokens: Record<string, string>;
+  /** Saves a token for a host; none removes it. */
+  saveToken: (host: string, token: string | undefined) => Promise<void>;
+  /** The release hosts, with those tokens, for the apps the player added. */
+  providers: Providers;
   /** The catalog's consoles, and their names by id. */
   consoles: Console[];
   consoleNames: Record<string, string>;
@@ -258,7 +265,7 @@ type Launcher = {
   /** Deletes the app's files (to the trash), keeping it in the library to get again. */
   uninstall: (id: string) => Promise<void>;
   /** A GitHub or GitLab repository: the catalog's app when it lists it, else what adding it would install. */
-  lookUpRepository: (input: string) => Promise<{ error: string } | { listed: Entry[] } | { preview: RepositoryPreview }>;
+  lookUpRepository: (input: string, provider?: string) => Promise<{ error: string } | { listed: Entry[] } | { preview: RepositoryPreview }>;
   /** The catalog's apps for an app the player added from its repository, once the catalog lists it; several when the repository ships several. */
   listedAs: (id: string) => Promise<Entry[]>;
   /** Repositories the player added that the catalog lists an app of now, that isn't in the library yet. */
@@ -621,19 +628,6 @@ export const stillWaiting = (releasedAt: number | undefined, now = Date.now()) =
 const LOOKUP_TIMEOUT = 30_000;
 /** The release a player gets: the newest that isn't a pre-release, else the newest. */
 const latestOf = (releases: Release[]) => releases.find((r) => !r.prerelease) ?? releases[0];
-/** A custom app's repository from its key, for one not in the library. */
-const fromKey = (id: string): CustomApp => {
-  const at = id.indexOf(":");
-  const provider = at > 0 ? id.slice(0, at) : "github";
-  const rest = at > 0 ? id.slice(at + 1) : id;
-  const first = rest.split("/")[0];
-  const known = defaultHost(provider);
-  const hasHost = first.includes(".") || first.includes(":") || first.toLowerCase() === "localhost";
-  const host = hasHost ? first : known;
-  const repository = hasHost ? rest.slice(first.length + 1) : rest;
-  return { provider, ...(host && host !== known ? { host } : {}), repository, name: repository.split("/").at(-1)! };
-};
-
 /**
  * Whether the player can rename an app's folder: one Quiver keeps in the apps
  * folder. Not a 3.x install or a program left where it is, and not a Windows
@@ -907,13 +901,22 @@ export function keptInstall(now: Install | undefined, adopted: Install): Install
   return now.dir === adopted.dir && adopted.inApps && !now.inApps ? { ...now, inApps: true } : now;
 }
 
+/** A 3.x app's repository: GitHub, GitLab, or the Codeberg that 3.x added. */
+export const v3Ref = (provider: string, repository: string): RepositoryRef | null => {
+  if (provider === "gitlab") return { provider: "gitlab", repository };
+  if (provider === "codeberg") return { provider: "gitea", host: "codeberg.org", repository };
+  if (provider === "github" && githubRepository(repository)) return { provider: "github", repository };
+  return null;
+};
+
 /** The installs 3.x has for apps in the library that have none here, by app. */
 export function looseInstalls(apps: OldApp[], ids: Map<string, { id: string }>, library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, Entry>, os: Os) {
   const loose: Record<string, Install> = {};
   const has = (id: string | undefined): id is string => Boolean(id && library.some((i) => i.id === id && !i.removed));
   for (const old of apps) {
     // A catalog app that couldn't be read when it came over is in the library as a custom one.
-    const custom = old.repository && (old.provider === "github" || old.provider === "gitlab") ? customKey(old.provider, old.repository) : undefined;
+    const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
+    const custom = ref ? customKey(ref.provider, ref.repository, ref.host) : undefined;
     const id = [catalogMatch(old, ids)?.id, custom].find(has);
     if (!id || loose[id] || installs[id] || !catalog[id]) continue;
     const install = adoptedInstall(old, catalog[id], os);
@@ -1126,25 +1129,45 @@ export type Settings = {
   githubToken?: string;
 };
 
-/** The player's GitHub token, for GitHub's higher limit: in the keychain (secret_set), sent only to GitHub's API, never synced. */
+/** The player's repository tokens, by host: in the keychain (secret_set), sent only to their host, never synced. */
+const REPOSITORY_TOKENS = "repositoryTokens";
+/** Where earlier versions kept the GitHub and GitLab tokens; they move into the map above on start. */
 const GITHUB_TOKEN = "githubToken";
-
-/** The GitHub token from the keychain, moving one an earlier version left in settings.json there first. */
-async function githubToken(settings: Settings | null): Promise<string | undefined> {
-  if (settings?.githubToken) {
-    await native.secretSet(GITHUB_TOKEN, settings.githubToken);
-    delete settings.githubToken;
-    await native.writeState("settings", settings);
-  }
-  return (await native.secretGet(GITHUB_TOKEN)) ?? undefined;
-}
-
-/** The player's GitLab token, for GitLab's higher limit: in the keychain (secret_set), sent only to GitLab's API, never synced. */
 const GITLAB_TOKEN = "gitlabToken";
 
-/** The GitLab token from the keychain. */
-async function gitlabToken(): Promise<string | undefined> {
-  return (await native.secretGet(GITLAB_TOKEN)) ?? undefined;
+/** The tokens from the keychain, moving earlier versions' GitHub and GitLab tokens there first. */
+async function repositoryTokens(settings: Settings | null): Promise<Record<string, string>> {
+  const raw = await native.secretGet(REPOSITORY_TOKENS).catch(() => null);
+  let tokens: Record<string, string> = {};
+  try {
+    tokens = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    tokens = {};
+  }
+  const [github, gitlab] = await Promise.all([
+    native.secretGet(GITHUB_TOKEN).catch(() => null),
+    native.secretGet(GITLAB_TOKEN).catch(() => null),
+  ]);
+  if (github && !tokens["github.com"]) tokens["github.com"] = github;
+  if (gitlab && !tokens["gitlab.com"]) tokens["gitlab.com"] = gitlab;
+  const moved = Boolean(settings?.githubToken);
+  if (settings?.githubToken) {
+    tokens["github.com"] = settings.githubToken;
+    delete settings.githubToken;
+    await native.writeState("settings", settings).catch(() => {});
+  }
+  if (github || gitlab || moved) {
+    const saved = await native.secretSet(REPOSITORY_TOKENS, JSON.stringify(tokens)).then(
+      () => true,
+      () => false,
+    );
+    // The map has them now; the old keys would only be a second copy. Only removed once the map is safely saved.
+    if (saved) {
+      if (github) await native.secretSet(GITHUB_TOKEN, null).catch(() => {});
+      if (gitlab) await native.secretSet(GITLAB_TOKEN, null).catch(() => {});
+    }
+  }
+  return tokens;
 }
 
 /** An app as usage data names it: a catalog app by its slug; one the player added only by where it's from. */
@@ -1168,6 +1191,8 @@ type Saved = {
   collections: Collection[];
   githubToken?: string;
   gitlabToken?: string;
+  /** The player's tokens, by repository host. */
+  tokens: Record<string, string>;
 };
 
 /** What usage data says about this copy of the launcher, and takes out of what it sends. */
@@ -1211,9 +1236,9 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         // The language picked here before anything shows, not the system's for a moment first.
         await activate(languageOf(settings ?? {})).catch(() => {});
         // Without them GitHub and GitLab still answer, at their lower limits.
-        const [token, labToken] = await Promise.all([githubToken(settings).catch(() => undefined), gitlabToken().catch(() => undefined)]);
+        const tokens = await repositoryTokens(settings).catch(() => ({}) as Record<string, string>);
         if (settings?.scale) settings.scale = nearestInterfaceSize(settings.scale);
-        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token, gitlabToken: labToken });
+        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], tokens, githubToken: tokens["github.com"], gitlabToken: tokens["gitlab.com"] });
       });
     }).catch((e) => setBroken(e instanceof Error ? e : new Error(String(e))));
   }, []);
@@ -1276,11 +1301,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e), error: failureKind(e) }),
         onUnreachable: (e) => track("catalog_load_failed", { reason: reasonOf(e), error: failureKind(e) }),
       }), [config.api]);
+  const [tokens, setTokens] = useState(saved.tokens);
+  const tokensNow = useRef(tokens);
+  tokensNow.current = tokens;
+  const providers = useMemo(() => createProviders({ tokens, fetch: providerFetch }), [tokens]);
   const [gitlabToken, setGitlabToken] = useState(saved.gitlabToken);
   const gitlab = useMemo(() => createGitlab(config.gitlabApi, gitlabToken, native.gitlabLimit), [config.gitlabApi, gitlabToken]);
   /** A custom app's releases, newest first. */
-  const releasesOf = (app: Pick<CustomApp, "provider" | "repository">) =>
-    app.provider === "gitlab" ? gitlab.releases(app.repository) : github.releases(app.repository);
+  const releasesOf = (app: Pick<CustomApp, "provider" | "host" | "repository">) => providers.releases(app);
   const [consoles, setConsoles] = useState<Console[]>([]);
   useEffect(() => void client.facets().then((f) => setConsoles(f.consoles), () => {}), [client]);
   const consoleNames = useMemo(() => Object.fromEntries(consoles.map((c) => [c.id, c.name])), [consoles]);
@@ -1449,7 +1477,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         () => {},
       );
     }
-  }, [library, client, github, gitlab, round]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [library, client, github, gitlab, providers, round]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Signed in: fold the account's library in, live.
   const userId = account.user?.id;
@@ -1474,7 +1502,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const changes = userId ? changesFrom(allItems, userId) : [];
     if (!userId || !changes.length || pushing.current) return;
     pushing.current = true;
-    const sent = new Set(allItems.filter((i) => i.pending && i.account === userId));
+    const sent = new Set(allItems.filter((i) => i.pending && i.account === userId && (!i.custom || syncableCustom(i.custom))));
     (async () => {
       // Refused changes come back; they can't succeed by retrying, so they count as done too.
       for (let i = 0; i < changes.length; i += 100) await account.save(changes.slice(i, i + 100));
@@ -1979,10 +2007,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   function add(entry: Entry, own: Pick<LibraryItem, "custom" | "local" | "art"> = {}) {
     setLibrary((l) => {
       const mine = l.find((i) => i.id === entry.id);
-      const added = { pending: { ...mine?.pending, added: true }, account: userId ?? mine?.account, removed: undefined };
+      // The account knows GitHub and GitLab: an app from another host stays on this computer.
+      const syncable = !own.custom || syncableCustom(own.custom);
+      const added = syncable ? { pending: { ...mine?.pending, added: true }, account: userId ?? mine?.account, removed: undefined } : { removed: undefined };
       if (mine) return mine.removed ? l.map((i) => (i === mine ? { ...i, ...added } : i)) : l;
       // A local app stays on this computer, out of the account.
-      return [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now(), ...own, ...(userId && !own.local ? added : {}) }];
+      return [...l, { id: entry.id, slug: entry.slug, addedAt: Date.now(), ...own, ...(userId && !own.local && syncable ? added : {}) }];
     });
   }
 
@@ -2028,9 +2058,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     (await Promise.all(statuses.map((s) => client.app(s.slug).catch(() => null)))).flatMap((detail) => (detail ? [detail.entry] : []));
 
   /** The catalog's apps for a repository, or a preview of its latest release. */
-  async function lookUpRepository(input: string): ReturnType<Launcher["lookUpRepository"]> {
-    const repository = parseRepository(input);
-    if (!repository) return { error: t`Enter a GitHub or GitLab repository: owner/name, or its github.com or gitlab.com address.` };
+  async function lookUpRepository(input: string, chosen?: string): ReturnType<Launcher["lookUpRepository"]> {
+    let parsed = parseRepository(input, chosen);
+    if (!parsed) return { error: t`Enter a repository: owner/name, or its address on a forge.` };
+    if (parsed.provider === "unknown") {
+      const host = parsed.host;
+      const detected = await providers.detect(host).catch(() => null);
+      if (!detected) return { error: t`Quiver couldn't tell what kind of forge ${host} is. Choose its kind and try again.` };
+      parsed = parseRepository(input, detected);
+      if (!parsed) return { error: t`That address isn't a repository on ${host}.` };
+    }
+    const repository = toRef(parsed);
     // Already added: its page.
     const key = customKey(repository.provider, repository.repository, repository.host);
     if (library.some((i) => i.id === key) && catalog[key]) return { listed: [catalog[key]] };
@@ -2082,21 +2120,30 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return entry;
   }
 
+  /** Saves a token for a host; none removes it. */
+  async function saveToken(host: string, token: string | undefined) {
+    const next = { ...tokensNow.current };
+    if (token?.trim()) next[host] = token.trim();
+    else delete next[host];
+    await native.secretSet(REPOSITORY_TOKENS, JSON.stringify(next));
+    tokensNow.current = next;
+    setTokens(next);
+    if (host === "github.com") setGithubToken(next[host]);
+    if (host === "gitlab.com") setGitlabToken(next[host]);
+  }
+
   const value: Launcher = {
     config,
     client,
     github,
     githubToken,
-    saveGithubToken: async (token) => {
-      await native.secretSet(GITHUB_TOKEN, token ?? null);
-      setGithubToken(token);
-    },
+    saveGithubToken: async (token) => saveToken("github.com", token),
     gitlab,
     gitlabToken,
-    saveGitlabToken: async (token) => {
-      await native.secretSet(GITLAB_TOKEN, token ?? null);
-      setGitlabToken(token);
-    },
+    saveGitlabToken: async (token) => saveToken("gitlab.com", token),
+    tokens,
+    saveToken,
+    providers,
     consoles,
     consoleNames,
     collections,
@@ -2408,11 +2455,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const match = catalogMatch(old, ids);
         const detail = match && (await client.app(match.slug).catch(() => null));
         if (detail) return { kind: "catalog" as const, detail };
-        if (!old.repository || !((old.provider === "github" && githubRepository(old.repository)) || old.provider === "gitlab")) return null;
+        const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
+        if (!ref) return null;
         // Not in the catalog: a custom app, with its game's artwork and consoles as adding one picks them. A
         // repository whose releases can't be read now (gone, or GitHub's hourly limit) still comes over, installs
         // and all: its releases are read when its page is opened.
-        const custom: CustomApp = { provider: old.provider, repository: old.repository, name: old.name };
+        const custom: CustomApp = { ...ref, name: old.name };
         const [releases, art] = await Promise.all([releasesOf(custom).catch(() => null), bestGameArt(client, old.name).catch(() => undefined)]);
         return { kind: "custom" as const, custom, latest: releases ? latestOf(releases) : undefined, art };
       }, () => onProgress?.(++done));

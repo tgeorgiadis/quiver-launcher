@@ -25,6 +25,7 @@ import { UpdateSettings } from "./update";
 import { AppUpdatesSetting } from "./app-updates";
 import { GithubTokenSetting } from "./github-token";
 import { GitlabTokenSetting } from "./gitlab-token";
+import { RepositoryTokens } from "./repository-tokens";
 import { TelemetrySetting } from "./telemetry-ui";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
@@ -142,6 +143,7 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
               <>
                 <GithubTokenSetting />
                 <GitlabTokenSetting />
+                <RepositoryTokens />
               </>
             )}
           </div>

@@ -1,4 +1,5 @@
 import { ApiError } from "../errors";
+import { inferPlatform } from "../platform";
 import type { Architecture, Os, Release } from "../index";
 import type { RepositoryProvider, RepositoryRef } from "./types";
 
@@ -37,7 +38,13 @@ export const feedProvider: RepositoryProvider = {
     return feed.releases
       .filter((r) => r && typeof r.version === "string" && Array.isArray(r.assets))
       .map((r): Release => {
-        const releasedAt = typeof r.releasedAt === "number" ? r.releasedAt : Date.parse(r.releasedAt ?? "") || 0;
+        // A number under a billion is Unix seconds; larger ones are already milliseconds.
+        const releasedAt =
+          typeof r.releasedAt === "number"
+            ? r.releasedAt < 1_000_000_000_000
+              ? r.releasedAt * 1000
+              : r.releasedAt
+            : Date.parse(r.releasedAt ?? "") || 0;
         return {
           id: r.version,
           version: r.version,
@@ -46,16 +53,19 @@ export const feedProvider: RepositoryProvider = {
           notes: r.notes,
           assets: r.assets
             .filter((a) => a && typeof a.name === "string" && typeof a.url === "string")
-            .map((a, i) => ({
-              id: String(i),
-              url: a.url,
-              filename: a.name,
-              os: a.os ?? "unknown",
-              architecture: a.architecture ?? "unknown",
-              format: a.format ?? a.name.split(".").pop() ?? "unknown",
-              ...(a.size ? { size: a.size } : {}),
-              ...(/^[0-9a-f]{64}$/i.test(a.sha256 ?? "") ? { checksum: `sha256:${a.sha256!.toLowerCase()}` } : {}),
-            })),
+            .map((a, i) => {
+              const inferred = inferPlatform(a.name);
+              return {
+                id: String(i),
+                url: a.url,
+                filename: a.name,
+                os: a.os ?? inferred.os,
+                architecture: a.architecture ?? inferred.architecture,
+                format: a.format ?? a.name.split(".").pop() ?? "unknown",
+                ...(a.size ? { size: a.size } : {}),
+                ...(/^[0-9a-f]{64}$/i.test(a.sha256 ?? "") ? { checksum: `sha256:${a.sha256!.toLowerCase()}` } : {}),
+              };
+            }),
         };
       })
       .filter((r) => r.assets.length > 0)

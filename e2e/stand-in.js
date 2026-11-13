@@ -92,6 +92,15 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
         retryAfter: header("retry-after"),
       };
     },
+    // A repository host's API answer, as the real Rust side fetches it for a host without CORS.
+    provider_http: async ({ request }) => {
+      const response = await fetch(request.url, { headers: request.headers });
+      const headers = {};
+      response.headers.forEach((value, name) => {
+        if (/^(content-type|etag|last-modified|link|retry-after|x-ratelimit-|ratelimit-)/i.test(name)) headers[name] = value;
+      });
+      return { status: response.status, headers, body: await response.text() };
+    },
     // The player's own copy of a game (own-copy-setup.tsx): none found, and one set up stays where it was put.
     find_copies: () => files.foundCopies ?? [],
     copy_present: () => true,
