@@ -141,11 +141,16 @@ test("an app with no verified release offers its newest that isn't blocked and s
   expect(newestUnblocked(pulled)?.version).toBe("1.0");
 });
 
-test("a broken download offers the newest other verified release with a file for this computer, never the one installed", () => {
+test("a broken download offers the newest other verified release with a file for this computer, never the one installed or an older one", () => {
   const releases = [release("1.3", 4), release("1.2", 3), release("1.1", 2)];
   const any = () => true;
   expect(insteadOf(releases, "v1.3", undefined, any)?.version).toBe("1.2");
-  expect(insteadOf(releases, "1.3", "v1.2", any)?.version).toBe("1.1");
+  // An update from 1.2 that failed: nothing older in its place (1.1 would take the app back).
+  expect(insteadOf(releases, "1.3", { version: "v1.2", releasedAt: 3 }, any)).toBeUndefined();
+  // From 1.1, 1.2 is still newer.
+  expect(insteadOf(releases, "1.3", { version: "v1.1", releasedAt: 2 }, any)?.version).toBe("1.2");
+  // Installed without a date: by version number.
+  expect(insteadOf(releases, "1.3", { version: "1.2" }, any)).toBeUndefined();
   expect(insteadOf(releases, "1.3", undefined, (r) => r.version !== "1.2")?.version).toBe("1.1");
   expect(insteadOf(releases.slice(0, 1), "1.3", undefined, any)).toBeUndefined();
 });

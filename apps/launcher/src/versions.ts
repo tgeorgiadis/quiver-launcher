@@ -166,11 +166,12 @@ export function installedFile(checksum: string | undefined, release: Pick<Releas
 
 /**
  * What a broken download offers instead: the newest other release of the
- * site's verified ones, not the one that failed or the one installed, that
- * has a file for this computer (`fits`).
+ * site's verified ones, not the one that failed, that has a file for this
+ * computer (`fits`). For an update, only one newer than what's installed: a
+ * button in place of an update never takes the app back to an older release.
  */
-export const insteadOf = (releases: Release[], failed: string, installed: string | undefined, fits: (release: Release) => boolean) =>
-  releases.find((r) => bare(r.version) !== bare(failed) && (installed === undefined || bare(r.version) !== bare(installed)) && fits(r));
+export const insteadOf = (releases: Release[], failed: string, installed: { version: string; releasedAt?: number } | undefined, fits: (release: Release) => boolean) =>
+  releases.find((r) => bare(r.version) !== bare(failed) && (!installed || (bare(r.version) !== bare(installed.version) && cameAfter(r, installed))) && fits(r));
 
 /** How many players said a version runs well, has issues, or is broken. */
 export type Said = { runs: number; issues: number; broken: number };
