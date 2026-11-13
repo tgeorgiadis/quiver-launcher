@@ -4,7 +4,7 @@
  * the name of an app the player added.
  */
 import { isCustom, isLocal } from "./custom";
-import { hasUpdate, languageOf, tvModeOn, type CatalogEntry, type Install, type LibraryItem, type Settings } from "./store";
+import { hasUpdate, languageOf, updatesOf, tvModeOn, type CatalogEntry, type Install, type LibraryItem, type Settings } from "./store";
 import type { Config } from "./native";
 
 /** More than this and they'd outrun what usage data holds while it can't send yet; the ones played last go. */
@@ -35,7 +35,7 @@ export function settingsSummary(settings: Settings, config: Pick<Config, "gameMo
 }
 
 /** How big the library is and how its apps are kept up to date. */
-export function librarySummary(library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, CatalogEntry>, settings: Pick<Settings, "hidden">, signedIn: boolean) {
+export function librarySummary(library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, CatalogEntry>, settings: Pick<Settings, "hidden" | "autoUpdates">, signedIn: boolean) {
   const installed = library.filter((item) => installs[item.id]);
   return {
     apps: library.length,
@@ -44,7 +44,7 @@ export function librarySummary(library: LibraryItem[], installs: Record<string, 
     custom_apps: library.filter((item) => isCustom(item.id)).length,
     local_apps: library.filter((item) => isLocal(item.id)).length,
     updates_available: installed.filter((item) => hasUpdate(catalog[item.id], installs[item.id])).length,
-    auto_update: installed.filter((item) => installs[item.id].updates === "auto").length,
+    auto_update: installed.filter((item) => updatesOf(settings, installs[item.id]) === "auto").length,
     pinned: installed.filter((item) => installs[item.id].updates === "pinned").length,
     hidden: settings.hidden?.length ?? 0,
     signed_in: signedIn,
@@ -52,7 +52,7 @@ export function librarySummary(library: LibraryItem[], installs: Record<string, 
 }
 
 /** Each catalog app installed here and its version, the ones played last first; apps the player added aren't named at all. */
-export function appsOnComputer(library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, CatalogEntry>) {
+export function appsOnComputer(library: LibraryItem[], installs: Record<string, Install>, catalog: Record<string, CatalogEntry>, settings: Pick<Settings, "autoUpdates"> = {}) {
   return library
     .filter((item) => installs[item.id] && item.slug && !isCustom(item.id) && !isLocal(item.id))
     .sort((a, b) => (installs[b.id].lastPlayed ?? 0) - (installs[a.id].lastPlayed ?? 0))
@@ -60,7 +60,7 @@ export function appsOnComputer(library: LibraryItem[], installs: Record<string, 
     .map((item) => ({
       slug: item.slug,
       version: installs[item.id].version,
-      updates: installs[item.id].updates ?? "notify",
+      updates: updatesOf(settings, installs[item.id]) ?? "notify",
       update_available: hasUpdate(catalog[item.id], installs[item.id]),
     }));
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, wantsPrereleases, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, wantsPrereleases, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -342,6 +342,17 @@ describe("pre-releases", () => {
     expect(wantsPrereleases({ prereleases: true }, undefined)).toBe(true);
     expect(wantsPrereleases({ prereleases: true }, { prereleases: "main" })).toBe(false);
     expect(wantsPrereleases({}, { prereleases: "include" })).toBe(true);
+  });
+
+  it("update as each app chose, else as the player's default, which is to offer them; an installer's never by itself", () => {
+    expect(updatesOf({}, {})).toBeUndefined();
+    expect(updatesOf({ autoUpdates: true }, {})).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, undefined)).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, { updates: "ask" })).toBeUndefined();
+    expect(updatesOf({ autoUpdates: true }, { updates: "pinned" })).toBe("pinned");
+    expect(updatesOf({}, { updates: "auto" })).toBe("auto");
+    expect(updatesOf({ autoUpdates: true }, { installer: "msi" })).toBeUndefined();
+    expect(updatesOf({}, { updates: "auto", installer: "msi" })).toBeUndefined();
   });
 
   it("make the newest pre-release the app's update for a player who chose them", () => {

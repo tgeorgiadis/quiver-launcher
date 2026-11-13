@@ -53,6 +53,13 @@ test("only catalog apps installed here are named, with their versions", () => {
   expect(appsOnComputer(library, installs, none)).toEqual([{ slug: "a", version: "v2.1", updates: "auto", update_available: false }]);
 });
 
+test("apps left to the player's default count as updating the way it says", () => {
+  const library = [item("a"), item("b"), item("c")];
+  const installs = { a: install(), b: install({ updates: "ask" }), c: install({ updates: "pinned" }) };
+  expect(librarySummary(library, installs, none, { autoUpdates: true }, false)).toMatchObject({ auto_update: 1, pinned: 1 });
+  expect(appsOnComputer(library, installs, none, { autoUpdates: true }).map((app) => app.updates)).toEqual(["auto", "notify", "pinned"]);
+});
+
 test("too many apps to count leaves out those played longest ago", () => {
   const library = Array.from({ length: MOST_APPS_SENT + 5 }, (_, i) => item(`app${i}`));
   const installs = Object.fromEntries(library.map((a, i) => [a.id, install({ lastPlayed: i })]));

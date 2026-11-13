@@ -6,7 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, useLauncher, type AppMove } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -1168,7 +1168,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1561,7 +1561,7 @@ function AppPage({
                 </button>
               </p>
             )}
-            {install && !install.local && install.updates === "auto" && skipped(known, install) && (
+            {install && !install.local && updatesOf(settings, install) === "auto" && skipped(known, install) && (
               <p className="release-pinned-line">
                 <span>
                   <Trans>Auto Update won&apos;t put {updateVersion} back. It installs the next new release.</Trans>
@@ -1678,25 +1678,29 @@ function ReinstallButton({ id }: { id: string }) {
 }
 
 /**
- * How an installed app updates on this computer. A local app has no releases
- * to update from; a Windows installer's setup waits for the player, so it
- * never updates by itself.
+ * How an installed app updates on this computer, whatever the player's default (Settings, Updates). A local app has
+ * no releases to update from; a Windows installer's setup waits for the player, so it never updates by itself.
  */
 function UpdatesChoice({ id }: { id: string }) {
-  const { installs, setUpdates } = useLauncher();
+  const { installs, settings, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
   const auto = !install.installer;
   const installedVersion = versionLabel(install.version);
+  const byDefault =
+    settings.autoUpdates && auto
+      ? t({ message: "Use my default (install automatically)", comment: "How an app updates: whatever Settings, Updates says, which is to install them automatically" })
+      : t({ message: "Use my default (offer them)", comment: "How an app updates: whatever Settings, Updates says, which is to offer new releases to install" });
   return (
     <label className="panel-field">
       <span className="field-label">
         <Trans comment="How an installed app gets new releases">Updates</Trans>
       </span>
       <select
-        value={install.updates === "auto" && !auto ? "ask" : (install.updates ?? "ask")}
-        onChange={(e) => setUpdates(id, e.target.value === "ask" ? undefined : (e.target.value as "auto" | "pinned"))}
+        value={install.updates === "auto" && !auto ? "ask" : (install.updates ?? "default")}
+        onChange={(e) => setUpdates(id, e.target.value === "default" ? undefined : (e.target.value as "auto" | "ask" | "pinned"))}
       >
+        <option value="default">{byDefault}</option>
         <option value="ask">{t({ message: "Offer them", comment: "Updates: offer new releases to install" })}</option>
         {auto && <option value="auto">{t`Install automatically`}</option>}
         <option value="pinned">{t`Always stay on ${installedVersion}`}</option>
