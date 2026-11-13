@@ -2478,11 +2478,6 @@ msgstr "Installare {release} prima che passino le sue 48 ore?"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
-msgid "Install {release} before its virus scan finishes?"
-msgstr "Installare {release} prima che finisca la scansione antivirus?"
-
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/detail.tsx
 msgid "Install {release} before Quiver offers it?"
 msgstr "Installare {release} prima che Quiver la proponga?"
 

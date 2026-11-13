@@ -1260,9 +1260,7 @@ export function Versions({
     const scanned = version.known && rightAway && Boolean(early && bare(early) === bare(release));
     const chose = version.known && !rightAway && waits;
     const title = scanned
-      ? version.scan?.verdict === "pending"
-        ? t`Install ${release} before its virus scan finishes?`
-        : t`Install ${release} with a virus scan warning?`
+      ? t`Install ${release} with a virus scan warning?`
       : chose
         ? t`Install ${release} before its 48 hours are up?`
         : t`Install ${release} before Quiver offers it?`;

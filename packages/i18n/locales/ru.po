@@ -2478,11 +2478,6 @@ msgstr "Установить {release} до истечения её 48 часо�
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
-msgid "Install {release} before its virus scan finishes?"
-msgstr "Установить {release} до окончания антивирусной проверки?"
-
-#: ../../apps/launcher/src/App.tsx
-#: ../../apps/launcher/src/detail.tsx
 msgid "Install {release} before Quiver offers it?"
 msgstr "Установить {release} до того, как Quiver её предложит?"
 

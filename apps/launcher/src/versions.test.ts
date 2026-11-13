@@ -180,11 +180,11 @@ test("the way off a withdrawn release says Downgrade when it goes back to an old
   expect(wayOffLabel({ version: "0.9.0" }, { version: "0.10.0" })).toBe("Install v0.10.0");
 });
 
-test("Newest right away asks first of a release VirusTotal hasn't cleared: warned of, flagged, or still being scanned", () => {
+test("Newest right away asks first of a release VirusTotal warned of or flagged, not one still being scanned", () => {
   expect(scanAsks(undefined)).toBe(false);
   expect(scanAsks({ verdict: "clean" })).toBe(false);
   expect(scanAsks({ verdict: "missing" })).toBe(false);
-  expect(scanAsks({ verdict: "pending" })).toBe(true);
+  expect(scanAsks({ verdict: "pending" })).toBe(false);
   expect(scanAsks({ verdict: "warning", engines: "1 of 70 engines" })).toBe(true);
   expect(scanAsks({ verdict: "flagged", engines: "9 of 70 engines" })).toBe(true);
 });

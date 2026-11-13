@@ -177,8 +177,8 @@ export type Asking = {
   checkEndsAt?: number;
   /**
    * An update taken before Quiver offers it, of an app that has a release it does offer: `asked`, the player waits
-   * 48 hours for updates and asked for this one early; `scan`, they get updates right away, and VirusTotal hasn't
-   * cleared this one.
+   * 48 hours for updates and asked for this one early; `scan`, they get updates right away, and VirusTotal
+   * warned of or flagged this one.
    */
   early?: "asked" | "scan";
   resolve: (install: boolean) => void;
@@ -1734,9 +1734,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (found && (!here || found.releasedAt > here.releasedAt) && (!was || newerThan(found, was))) early = found;
       }
       // With Newest right away it installs without asking: by itself whatever VirusTotal says, as the player chose not
-      // to wait, and when the player asks for it, unless VirusTotal hasn't cleared it. Waiting 48 hours, the player who
-      // asked for it is always asked, as for any unverified release. An automatic update takes the verified one
-      // meanwhile, or waits when there's none newer.
+      // to wait, and when the player asks for it, unless VirusTotal warned of or flagged it (not while it's still
+      // scanning). Waiting 48 hours, the player who asked for it is always asked, as for any unverified release. An
+      // automatic update takes the verified one meanwhile, or waits when there's none newer.
       if (early && (!newestRightAway || (!auto && scanAsks(early.scan)))) {
         if (auto) {
           if (!here || !was || !newerThan(here, was)) {
