@@ -55,7 +55,7 @@ test("several consoles go as consoles and makers, several platforms as platforms
 });
 
 test("an app, its README and releases; a missing app is a 404 and a missing README null", async () => {
-  const detail = { entry: { id: "a" }, project: { name: "A", description: "", provider: "github", repository: "o/a" }, withdrawn: [] };
+  const detail = { entry: { id: "a", games: [] }, project: { name: "A", description: "", provider: "github", repository: "o/a" }, withdrawn: [] };
   const { client } = fakeApi({
     "/apps/a": detail,
     "/apps/a/readme": { markdown: "# A", rawBase: "r/", htmlBase: "h/" },
@@ -66,6 +66,14 @@ test("an app, its README and releases; a missing app is a 404 and a missing READ
   expect(await client.releases("a", 100)).toEqual({ items: [{ id: "r1" }], nextCursor: null, isDone: true });
   await expect(client.app("gone")).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 404);
   expect(await client.readme("gone")).toBeNull();
+});
+
+test("an app with no slug, or an answer with no app in it, is a 404: /apps/ answers with the catalog's first page", async () => {
+  const { client, asked } = fakeApi({ "/apps/": { items: [{ id: "a" }], nextCursor: null, isDone: true }, "/apps/odd": { items: [] } });
+  const notFound = (e: unknown) => e instanceof ApiError && e.status === 404;
+  await expect(client.app("")).rejects.toSatisfy(notFound);
+  await expect(client.app("odd")).rejects.toSatisfy(notFound);
+  expect(asked).toEqual(["/apps/odd"]);
 });
 
 test("what players said, 12 at a time", async () => {

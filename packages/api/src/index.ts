@@ -534,7 +534,14 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       if (q.cursor) params.set("cursor", q.cursor);
       return get<Page<Entry>>(`/apps?${params}`);
     },
-    app: (slug: string) => get<Detail>(app(slug)),
+    // No slug would ask for /apps/, which answers with the catalog's first page rather than a 404; an answer with no
+    // entry in it (that page, or anything else) isn't the app either.
+    app: async (slug: string) => {
+      if (!slug) throw new ApiError(404, "App not found");
+      const detail = await get<Detail>(app(slug));
+      if (!Array.isArray(detail?.entry?.games)) throw new ApiError(404, "App not found");
+      return detail;
+    },
     facets: () => get<Facets>("/facets"),
     readme: (slug: string) => get<Readme>(`${app(slug)}/readme`).catch(notFound<Readme>),
     releaseStatus: (cursor?: string | null) =>

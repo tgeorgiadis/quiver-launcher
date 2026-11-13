@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -722,5 +722,18 @@ describe("grouping new apps by console", () => {
     expect(unsortedApps(installs, "D:/Games", catalog)).toEqual([
       { id: "plain", folder: "sm64", to: "D:/Games" },
     ]);
+  });
+});
+
+describe("usableCatalog", () => {
+  const whole = { id: "a", games: [], tags: [] } as unknown as Entry;
+  it("keeps the same object when every entry is whole", () => {
+    const saved = { a: whole };
+    expect(usableCatalog(saved)).toBe(saved);
+  });
+  it("drops an entry saved from an answer with no app in it, so it's asked for again", () => {
+    // What beta.4 saved for an app with no slug: the page's withdrawn and what was looked up, and nothing else.
+    const broken = { withdrawn: undefined, forHere: { of: "1.0:own:files" } } as unknown as Entry;
+    expect(usableCatalog({ a: whole, b: broken, c: null as unknown as Entry })).toEqual({ a: whole });
   });
 });
