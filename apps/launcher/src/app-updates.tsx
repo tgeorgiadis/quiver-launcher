@@ -3,7 +3,8 @@
  * the newest right away. Worded by the wait, which is what Quiver can promise: not every release is scanned or tried.
  * The setup asks, Settings → Updates has it after, and a banner asks a player set up before there was a choice.
  * Either way a release Quiver blocked or withdrew is never an update; waiting, the player can still update one app
- * early by asking, and right away, a release VirusTotal hasn't cleared asks first (store.tsx `earlyHere`).
+ * early by asking, and right away, a release VirusTotal hasn't cleared asks first when the player installs it, though
+ * an automatic update takes it without asking (store.tsx `installNow`).
  */
 import { Rocket, ShieldCheck, Zap } from "lucide-react";
 import type { ReactNode } from "react";

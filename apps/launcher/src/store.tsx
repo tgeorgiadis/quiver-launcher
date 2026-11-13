@@ -612,8 +612,6 @@ const LauncherNow = createContext<{ readonly current: Launcher } | null>(null);
  */
 export const useLauncherNow = () => useContext(LauncherNow)!;
 
-/** How long an automatic update leaves a release VirusTotal is still scanning before it looks again. */
-const SCAN_WAIT = 15 * 60_000;
 /** How long a release waits before Quiver offers it: the time there is to withdraw a harmful one. */
 export const RELEASE_WAIT = 48 * 3_600_000;
 /** Whether a release came out so lately that its 48-hour wait is why Quiver doesn't offer it yet. */
@@ -1735,13 +1733,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const found = earlyHere(entry, history, was, options.platform);
         if (found && (!here || found.releasedAt > here.releasedAt) && (!was || newerThan(found, was))) early = found;
       }
-      // With Newest right away it installs without asking, unless VirusTotal hasn't cleared it; waiting 48 hours, the
-      // player who asked for it is always asked, as for any unverified release. An automatic update takes the
-      // verified one meanwhile, or waits when there's none newer.
-      if (early && (!newestRightAway || scanAsks(early.scan))) {
+      // With Newest right away it installs without asking: by itself whatever VirusTotal says, as the player chose not
+      // to wait, and when the player asks for it, unless VirusTotal hasn't cleared it. Waiting 48 hours, the player who
+      // asked for it is always asked, as for any unverified release. An automatic update takes the verified one
+      // meanwhile, or waits when there's none newer.
+      if (early && (!newestRightAway || (!auto && scanAsks(early.scan)))) {
         if (auto) {
           if (!here || !was || !newerThan(here, was)) {
-            waiting.current.set(`${entry.id}@${bare(early.version)}`, early.scan?.verdict === "pending" ? Date.now() + SCAN_WAIT : (early.checkEndsAt ?? Infinity));
+            waiting.current.set(`${entry.id}@${bare(early.version)}`, early.checkEndsAt ?? Infinity);
             setJobs(({ [entry.id]: _, ...rest }) => rest);
             return;
           }
@@ -1816,9 +1815,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         pick = assetFilterFor(picked.filename, choices.map((a) => a.filename));
       }
       // A file of a verified release that isn't verified itself asks first, as an unverified release does. An
-      // automatic update waits instead: until the site says it's verified by itself, else till the launcher starts again.
+      // automatic update takes one that changed with Newest right away, as it would an unverified release, since it's
+      // still checked against what Quiver saw of it; never one Quiver has no checksum for. Otherwise it waits: until
+      // the site says it's verified by itself, else till the launcher starts again.
       const why = !custom && !unverified ? unverifiedFile(asset, release) : undefined;
-      if (why) {
+      if (why === "changed" && auto && newestRightAway) unverified = true;
+      else if (why) {
         if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
         if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop("unverified_prompt");
         unverified = true;
