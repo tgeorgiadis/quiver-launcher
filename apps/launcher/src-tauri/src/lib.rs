@@ -551,25 +551,66 @@ async fn add_to_steam(app: tauri::AppHandle, request: shortcut::ShortcutRequest)
         }
     }
     // On Linux a shortcut runs a wrapper — a script named by a .desktop — so Steam
-    // keeps the exact title and the game keeps its environment. Steam's own Proton
-    // is the one case that can't: it would run the script as a Windows program.
+    // keeps the exact title and the game keeps its environment. A Windows game
+    // Steam itself runs with Proton is the exception: there the .desktop names the
+    // game, so Steam keeps its Proton and the player's launch options.
     #[cfg(target_os = "linux")]
-    if !target.steam_proton {
+    {
+        if target.steam_proton {
+            return add_proton(&data, &request.name, folder, &target, icon.as_deref(), art);
+        }
         return add_wrapped(&data, &request.name, folder, &target, icon.as_deref(), art);
     }
-    let mut shortcut = steam::Shortcut::new(&request.name, &target, icon.as_deref());
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut shortcut = steam::Shortcut::new(&request.name, &target, icon.as_deref());
+        shortcut.art = art;
+        let proton = if shortcut.proton { " It's set to run with Proton." } else { "" };
+        if !steam::running() {
+            steam::apply(&shortcut)?;
+            return Ok(format!("{} is in Steam.{proton} Start Steam to see it.", request.name));
+        }
+        // Steam overwrites its shortcuts as it closes, so a waiting copy writes them after.
+        if steam_runs_us() {
+            return Err("Steam is running Quiver, so it can't add games now. Switch to Desktop Mode (or close Steam) and add it from there.".into());
+        }
+        queue_steam(&data, folder, &shortcut)?;
+        Ok(format!("{} will be added to Steam when Steam closes.{proton} Restart Steam to see it.", request.name))
+    }
+}
+
+/// Adds a Windows game Steam runs with its own Proton: a `.desktop` naming the
+/// game, so Steam stores the game as the program and applies a compat tool. It
+/// is added at once through the running Steam, or written directly once Steam
+/// closes. Linux only.
+#[cfg(target_os = "linux")]
+fn add_proton(data: &Data, name: &str, folder: &str, target: &shortcut::Target, icon: Option<&Path>, art: Vec<(String, PathBuf)>) -> Result<String, String> {
+    let launcher = steam::Launcher::write_proton(&data.0, folder, name, target, icon)?;
+    let mut shortcut = steam::Shortcut::new(name, target, icon);
+    shortcut.shortcut_path = launcher.desktop().to_string_lossy().into_owned();
     shortcut.art = art;
-    let proton = if shortcut.proton { " It's set to run with Proton." } else { "" };
     if !steam::running() {
         steam::apply(&shortcut)?;
-        return Ok(format!("{} is in Steam.{proton} Start Steam to see it.", request.name));
+        return Ok(format!("{name} is in Steam. It's set to run with Proton. Start Steam to see it."));
     }
-    // Steam overwrites its shortcuts as it closes, so a waiting copy writes them after.
-    if steam_runs_us() {
-        return Err("Steam is running Quiver, so it can't add games now. Switch to Desktop Mode (or close Steam) and add it from there.".into());
+    // Steam is running: it adds the shortcut itself, at once, and its own write is what lasts.
+    let ids = match steam::existing_id(&launcher) {
+        Some(id) => vec![id],
+        None => match steam::add_now(launcher.desktop()) {
+            Ok(()) => launcher.app_ids(name),
+            // Steam wouldn't take it now: a waiting copy adds it once Steam closes.
+            Err(_) => {
+                queue_steam(data, folder, &shortcut)?;
+                return Ok(format!("{name} will be added to Steam when Steam closes. Restart Steam to see it."));
+            }
+        },
+    };
+    if let Ok((user, _)) = steam::account() {
+        for id in ids {
+            let _ = steam::place_art(&user, id, &shortcut.art);
+        }
     }
-    queue_steam(&data, folder, &shortcut)?;
-    Ok(format!("{} will be added to Steam when Steam closes.{proton} Restart Steam to see it.", request.name))
+    Ok(format!("{name} is in Steam. It's set to run with Proton."))
 }
 
 /// Adds a Linux shortcut through a wrapper: at once through the running Steam,
