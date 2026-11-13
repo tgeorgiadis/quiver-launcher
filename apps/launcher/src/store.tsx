@@ -1125,7 +1125,7 @@ export type Settings = {
   previewUpdates?: boolean;
   /** Announcements dismissed here, by id (announcements.ts). */
   dismissedAnnouncements?: string[];
-  /** Where earlier versions kept the player's GitHub token, as plain text; it moves to the keychain on start (`GITHUB_TOKEN`). */
+  /** Where earlier versions kept the player's GitHub token, as plain text; it moves to the keychain's token map on start. */
   githubToken?: string;
 };
 

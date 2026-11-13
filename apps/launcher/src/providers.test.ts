@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { bitbucketProvider, bitbucketVersion, createProviders, detectProvider, feedProvider, giteaProvider, parseRepository, toRef } from "@quiverlauncher/api";
+import { bitbucketProvider, bitbucketVersion, createProviders, detectProvider, feedProvider, giteaProvider, githubProvider, gitlabProvider, parseRepository, toRef } from "@quiverlauncher/api";
 import { customKey, fromKey } from "./custom";
 
 type Answer = { status?: number; json?: unknown; text?: string; headers?: Record<string, string> };
@@ -128,6 +128,35 @@ test("an unknown host is named by what answers its API", async () => {
 
   const neither = fakeFetch({});
   expect(await detectProvider("unknown.example", neither.fetch)).toBeNull();
+});
+
+test("self-hosted GitHub Enterprise and GitLab use their own API bases", async () => {
+  expect(githubProvider.apiBase("github.example.com")).toBe("https://github.example.com/api/v3");
+  expect(gitlabProvider.apiBase("gitlab.example.com")).toBe("https://gitlab.example.com/api/v4");
+  expect(githubProvider.webUrl({ provider: "github", host: "github.example.com", repository: "o/r" })).toBe("https://github.example.com/o/r");
+  expect(gitlabProvider.webUrl({ provider: "gitlab", host: "gitlab.example.com", repository: "g/p" })).toBe("https://gitlab.example.com/g/p");
+  expect(parseRepository("https://gitlab.example.com/group/sub/project/-/releases", "gitlab")).toEqual({
+    provider: "gitlab",
+    host: "gitlab.example.com",
+    repository: "group/sub/project",
+  });
+
+  const readme = fakeFetch({ "https://github.example.com/api/v3/repos/o/r/readme": { text: "# R" } });
+  expect(await githubProvider.readme!({ provider: "github", host: "github.example.com", repository: "o/r" }, { fetch: readme.fetch })).toEqual({
+    markdown: "# R",
+    rawBase: "https://github.example.com/o/r/raw/HEAD/",
+    htmlBase: "https://github.example.com/o/r/blob/HEAD/",
+  });
+
+  const hub = fakeFetch({
+    "https://github.example.com/api/v3/repos/o/r/releases?per_page=10": {
+      json: [{ tag_name: "v1", draft: false, prerelease: false, published_at: "2026-01-01T00:00:00Z", assets: [] }],
+    },
+  });
+  expect((await githubProvider.releases({ provider: "github", host: "github.example.com", repository: "o/r" }, { fetch: hub.fetch }, 10))[0].version).toBe("v1");
+
+  const lab = fakeFetch({ "https://gitlab.example.com/api/v4/projects/group%2Fproject/releases?per_page=30": { json: [] } });
+  expect(await gitlabProvider.releases({ provider: "gitlab", host: "gitlab.example.com", repository: "group/project" }, { fetch: lab.fetch })).toEqual([]);
 });
 
 test("a parsed ref leaves a default host out, so library keys keep their shape", () => {

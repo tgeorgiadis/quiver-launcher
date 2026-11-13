@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { providerForHost } from "@quiverlauncher/api";
+import { defaultHost, providerById, providerForHost } from "@quiverlauncher/api";
 import { native } from "./native";
 import { useLauncher } from "./store";
 
@@ -80,12 +80,14 @@ export function RepositoryTokens() {
 }
 
 function HostToken({ host }: { host: string }) {
-  const { tokens, saveToken } = useLauncher();
+  const { tokens, saveToken, library } = useLauncher();
   const saved = tokens[host] ?? "";
   const [draft, setDraft] = useState(saved);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const provider = providerForHost(host);
+  // A host the player already added an app from knows its provider; otherwise, a known host does.
+  const added = library.find((i) => i.custom && (i.custom.host ?? defaultHost(i.custom.provider)) === host)?.custom?.provider;
+  const provider = providerForHost(host) ?? (added ? providerById(added) : undefined);
   const help = provider?.token;
 
   async function save(token: string) {

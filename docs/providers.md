@@ -19,6 +19,10 @@ Codeberg (`codeberg.org`), Gitea's own instance (`gitea.com`), Ryubing (`git.ryu
 (`git.eden-emu.dev`) are known by name. Any other Gitea/Forgejo host is detected by asking
 `https://<host>/api/v1/version`.
 
+Gogs and other forges that copied GitHub's API can use **Gitea / Forgejo**: their releases are read from
+`/api/v1/repos/<owner>/<repo>/releases`. A host that doesn't answer `/api/v1/version` isn't detected, so pick
+**Gitea / Forgejo** yourself.
+
 ## Adding a repository
 
 1. Add an app and choose **From a git repository**.

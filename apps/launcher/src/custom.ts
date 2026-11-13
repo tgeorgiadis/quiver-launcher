@@ -106,7 +106,11 @@ export function customEntry(id: string, app: CustomApp, latest?: Release, art?: 
   const site = `${app.host ?? defaultHost(app.provider) ?? app.provider}/${app.repository}`;
   const entry: CatalogEntry = {
     ...stub(id, app.name, t`Added from ${site}. Quiver hasn't checked this app.`),
-    launcher: { folderName: app.repository.split("/").at(-1)!, filesToAdd: [], releaseAssetFilter: app.assetFilter },
+    launcher: {
+      folderName: app.provider === "feed" ? folderNameFor(app.name) : app.repository.split("/").at(-1)!,
+      filesToAdd: [],
+      releaseAssetFilter: app.assetFilter,
+    },
     supportedOS: oses.length ? oses : ["unknown"],
     ...(latest
       ? {

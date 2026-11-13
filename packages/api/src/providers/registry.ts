@@ -209,7 +209,7 @@ export async function detectProvider(host: string, fetchImpl: typeof globalThis.
     detected.set(key, "github");
     return "github";
   }
-  detected.set(key, null);
+  // A host that couldn't be named is asked again next time: it may be offline now.
   return null;
 }
 
