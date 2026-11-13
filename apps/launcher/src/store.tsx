@@ -712,6 +712,17 @@ export function withEarlyFor(entry: CatalogEntry, wants: boolean): CatalogEntry 
   return rest;
 }
 
+/**
+ * The saved entries that are whole. 4.0.0-beta.4 could save an app's page with no entry in it (an app with no slug
+ * asked for /apps/, which answers with the catalog's first page): one with no games or tags left the library unable to
+ * show. Without it, the app's entry is asked for again, or made again for an app the player added.
+ */
+export function usableCatalog(catalog: Record<string, CatalogEntry>) {
+  const whole = (e: CatalogEntry | null | undefined) => Boolean(e?.id && Array.isArray(e.games) && Array.isArray(e.tags));
+  if (Object.values(catalog).every(whole)) return catalog;
+  return Object.fromEntries(Object.entries(catalog).filter(([, e]) => whole(e)));
+}
+
 /** Entries as they're kept: each the site's own. The same object when none had the player's choice in it. */
 function keptAsSent(catalog: Record<string, CatalogEntry>) {
   if (!Object.values(catalog).some((e) => e.verifiedMain)) return catalog;
@@ -1206,7 +1217,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         // Without them GitHub and GitLab still answer, at their lower limits.
         const [token, labToken] = await Promise.all([githubToken(settings).catch(() => undefined), gitlabToken().catch(() => undefined)]);
         if (settings?.scale) settings.scale = nearestInterfaceSize(settings.scale);
-        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: catalog ?? {}, settings: settings ?? {}, collections: collections ?? [], githubToken: token, gitlabToken: labToken });
+        setSaved({ config, library: library ?? [], installs: installs ?? {}, catalog: usableCatalog(catalog ?? {}), settings: settings ?? {}, collections: collections ?? [], githubToken: token, gitlabToken: labToken });
       });
     }).catch((e) => setBroken(e instanceof Error ? e : new Error(String(e))));
   }, []);
