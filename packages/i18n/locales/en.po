@@ -1832,6 +1832,11 @@ msgstr "Desktop shortcut"
 msgid "Details"
 msgstr "Details"
 
+#. Tag on a reply from the app's verified developer
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Developer"
+msgstr "Developer"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Developer says: {says}"
 msgstr "Developer says: {says}"
@@ -2086,6 +2091,11 @@ msgstr "Finish your feedback"
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Fit the window"
 msgstr "Fit the window"
+
+#. placeholder {0}: list.filter((r) => r.fixed).length
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Fixed in an update ({0})"
+msgstr "Fixed in an update ({0})"
 
 #. What VirusTotal said of a release's files, after “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
@@ -2698,6 +2708,10 @@ msgstr "It wouldn't install, open, or start."
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "It's here now."
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Its author says it's still broken after the last fix."
+msgstr "Its author says it's still broken after the last fix."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -4079,6 +4093,10 @@ msgid "Quiver's catalog lists this app now, and checks its releases. Switching k
 msgstr "Quiver's catalog lists this app now, and checks its releases. Switching keeps its files, play time and your settings."
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "Quiver's maintainers trust this creator"
+msgstr "Quiver's maintainers trust this creator"
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "Read more"
 msgstr "Read more"
 
@@ -4402,6 +4420,11 @@ msgstr "Search your library"
 #: ../../apps/launcher/src/library.tsx
 msgid "Sections"
 msgstr "Sections"
+
+#. placeholder {0}: profile.name
+#: ../../apps/launcher/src/detail.tsx
+msgid "See {0} on quiverlauncher.com"
+msgstr "See {0} on quiverlauncher.com"
 
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4990,6 +5013,15 @@ msgstr "the {date} version"
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "The {installedVersion} Quiver offers isn't the file you installed."
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "The developer proved they make this app"
+msgstr "The developer proved they make this app"
+
+#. placeholder {0}: review.fixed.version
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The developer says {0} fixed this."
+msgstr "The developer says {0} fixed this."
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "The file with your library is damaged."
@@ -5212,6 +5244,10 @@ msgstr "Top rated"
 #: ../../apps/launcher/src/media.tsx
 msgid "Trailer"
 msgstr "Trailer"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Trusted creator"
+msgstr "Trusted creator"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -5490,6 +5526,10 @@ msgstr "Use this folder"
 #: ../../apps/launcher/src/App.tsx
 msgid "Username"
 msgstr "Username"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Verified"
+msgstr "Verified"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Version {checkingVersion} is <0/>"
