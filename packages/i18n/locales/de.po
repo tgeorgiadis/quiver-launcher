@@ -4844,8 +4844,8 @@ msgid "Staying on {installedLabel}"
 msgstr "Bleibt bei {installedLabel}"
 
 #: ../../apps/launcher/src/detail.tsx
-msgid "Steam is running Quiver, so it can't add games now. Start Quiver outside Steam, in Desktop Mode, and add it from there."
-msgstr "Steam führt Quiver aus und kann deshalb gerade keine Spiele hinzufügen. Starte Quiver außerhalb von Steam im Desktop-Modus und füge es dort hinzu."
+msgid "Steam is running Quiver, so it can't add games now. Close Steam and start Quiver on its own, then add it from there."
+msgstr ""
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Step {n} of {total}"

@@ -368,8 +368,8 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   if (install && shortcutsOn(config.os))
     manage.push(
       { text: t`Desktop shortcut`, act: () => void shortcut(native.createShortcut) },
-      // Steam running Quiver can't take a shortcut (lib.rs): greyed, saying why, rather than failing once it's pressed.
-      config.steamRunsUs ? { text: t`Add to Steam`, act: () => {}, disabled: true, note: steamRunsUsNote() } : { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) },
+      // Steam running Quiver can't take a shortcut on Windows (lib.rs): greyed, saying why, rather than failing once it's pressed. On Linux it can.
+      config.steamRunsUs && config.os !== "linux" ? { text: t`Add to Steam`, act: () => {}, disabled: true, note: steamRunsUsNote() } : { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) },
     );
   if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
   // Every release, verified or not, as the app's page has them: the player's own files have none.
