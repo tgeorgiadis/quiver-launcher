@@ -4,7 +4,7 @@
  * signing in comes first).
  */
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, CircleCheck, CircleX, MessageSquare, Pencil, TriangleAlert } from "lucide-react";
+import { BadgeCheck, ChevronDown, CircleCheck, CircleX, MessageSquare, Pencil, TriangleAlert } from "lucide-react";
 import { msg, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
@@ -257,7 +257,25 @@ export function FeedbackTab({
           <span className="spinner" />
         </div>
       ) : (
-        list.map((review) => (
+        <>
+          {list.filter((r) => !r.fixed).map(card)}
+          {list.some((r) => r.fixed) && (
+            <details className="fixed-reviews">
+              <summary>{t`Fixed in an update (${list.filter((r) => r.fixed).length})`}</summary>
+              {list.filter((r) => r.fixed).map(card)}
+            </details>
+          )}
+        </>
+      )}
+      {next && (
+        <button type="button" className="button secondary" onClick={() => load(next)}>
+          <Trans>Load more</Trans>
+        </button>
+      )}
+    </section>
+  );
+  function card(review: Feedback) {
+    return (
           // A stop of its own, for a controller's d-pad (and Tab) to read down the list, which has no buttons.
           <article key={review.id} className="review panel" tabIndex={0}>
             <div className="review-header">
@@ -280,16 +298,35 @@ export function FeedbackTab({
               <ResultBadge result={review.result} />
             </div>
             {review.body && <p className="review-body">{review.body}</p>}
+            {review.fixed && (
+              <p className="fixed-note">
+                <CircleCheck size={13} aria-hidden /> {t`The developer says ${review.fixed.version} fixed this.`}
+              </p>
+            )}
+            {!review.fixed && review.disputed && (
+              <p className="fixed-note disputed">
+                <TriangleAlert size={13} aria-hidden /> <Trans>Its author says it's still broken after the last fix.</Trans>
+              </p>
+            )}
+            {!!review.replies?.length && (
+              <div className="review-replies">
+                {review.replies.map((reply) => (
+                  <div key={reply.id} className="review-reply">
+                    <div className="review-reply-head">
+                      <strong>{reply.author}</strong>
+                      <span className="developer-tag">
+                        <BadgeCheck size={11} aria-hidden /> <Trans comment="Tag on a reply from the app's verified developer">Developer</Trans>
+                      </span>
+                      <small>{fullDate(reply.createdAt)}</small>
+                    </div>
+                    <p>{reply.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </article>
-        ))
-      )}
-      {next && (
-        <button type="button" className="button secondary" onClick={() => load(next)}>
-          <Trans>Load more</Trans>
-        </button>
-      )}
-    </section>
-  );
+    );
+  }
 }
 
 // Put in the language when shown, as RESULTS are.

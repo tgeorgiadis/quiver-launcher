@@ -324,6 +324,38 @@ export type Feedback = {
   /** Only on the player's own, while others can't see it. */
   underReview?: boolean;
   moderatorHidden?: boolean;
+  /** Public answers from the app's verified developer: shown with a Developer tag. Missing from older sites. */
+  replies?: FeedbackReply[];
+  /** The developer says a released update fixed it: shown folded away, and it no longer counts toward the rating. */
+  fixed?: { version: string; at: number };
+  /** Its author said it's still broken after the developer's fix. */
+  disputed?: boolean;
+};
+
+/** A developer's answer to feedback on their app. */
+export type FeedbackReply = {
+  id: string;
+  userId: string;
+  author: string;
+  avatar?: string;
+  badge: "developer";
+  body: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+/** A developer's public profile (/developers/{key} on the site). */
+export type DeveloperProfile = {
+  key: string;
+  name: string;
+  bio?: string;
+  avatar?: string;
+  links: { label: string; url: string }[];
+  /** Quiver's maintainers marked them a trusted creator. */
+  trusted?: { at: number; note?: string };
+  followers: number;
+  /** Someone proved they develop these apps. */
+  verified: boolean;
 };
 
 /** An app in the release status feed: enough to match a repository to its catalog entry. */
@@ -362,6 +394,10 @@ export type AppQuery = {
   ai?: "no-generated" | "no-ai";
   /** Only apps with Easy setup: their game files found and put in place by the launcher. */
   setup?: "easy";
+  /** Only this developer's apps (an app's `developer.key`). */
+  developer?: string;
+  /** Leaves out these developers' apps (keys); the site takes at most 50. Ignored with `developer`. */
+  hideDevelopers?: string[];
   cursor?: string | null;
   limit?: number;
 };
@@ -423,6 +459,8 @@ export type Client = {
   releaseHistory(slug: string, limit?: number, cursor?: string | null): Promise<Page<HistoryRelease>>;
   /** What players said, newest first. */
   reviews(slug: string, cursor?: string | null, limit?: number): Promise<Page<Feedback>>;
+  /** A developer's profile; null when there's none, or the site has no profiles yet. */
+  developer(key: string): Promise<DeveloperProfile | null>;
   /** Up to four original games whose titles match a search of 2 or more characters; none from a site without game search. */
   matchingGames(search: string): Promise<GameMatch[]>;
   /** Null when there's no such game. */
@@ -531,6 +569,8 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       if (q.sort) params.set("sort", q.sort);
       if (q.ai) params.set("ai", q.ai);
       if (q.setup) params.set("setup", q.setup);
+      if (q.developer) params.set("developer", q.developer);
+      else if (q.hideDevelopers?.length) params.set("hideDevelopers", q.hideDevelopers.slice(0, 50).join(","));
       if (q.cursor) params.set("cursor", q.cursor);
       return get<Page<Entry>>(`/apps?${params}`);
     },
@@ -555,6 +595,7 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
       get<Page<HistoryRelease>>(`${app(slug)}/release-history?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     reviews: (slug: string, cursor?: string | null, limit = 12) =>
       get<Page<Feedback>>(`${app(slug)}/reviews?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    developer: (key: string) => get<DeveloperProfile>(`/developers/${encodeURIComponent(key)}`).catch(notFound<DeveloperProfile>),
     async matchingGames(search: string) {
       const text = search.trim().slice(0, 200);
       if (text.length < 2) return [];

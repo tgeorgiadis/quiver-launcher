@@ -867,6 +867,22 @@ button.download { width: 100%; text-align: left; }
 .review-author > div { display: flex; flex-direction: column; font-size: 12px; }
 .review-author small { color: var(--text-4); font-size: 10px; }
 .review-body { white-space: pre-wrap; margin: 22px 0 0; font-size: 13px; color: var(--text-3); overflow-wrap: anywhere; }
+/* Developers' answers, and feedback a developer says an update fixed (feedback.tsx). */
+.developer-tag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); font-size: 10px; font-weight: 600; }
+.review-replies { margin: 14px 0 0 14px; padding-left: 12px; border-left: 2px solid color-mix(in srgb, var(--green) 45%, transparent); }
+.review-reply + .review-reply { margin-top: 10px; }
+.review-reply-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.review-reply-head small { color: var(--text-4); font-size: 10px; }
+.review-reply p { white-space: pre-wrap; margin: 6px 0 0; font-size: 13px; color: var(--text-3); overflow-wrap: anywhere; }
+.fixed-note { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: 12px; color: var(--green); }
+.fixed-note.disputed { color: var(--caution); }
+.fixed-reviews > summary { cursor: pointer; margin: 4px 0 14px; color: var(--text-4); font-size: 13px; }
+.developer-badges { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 6px; vertical-align: 1px; }
+.trusted-badge, .verified-developer-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.trusted-badge { background: color-mix(in srgb, var(--caution) 16%, transparent); color: var(--caution); }
+.verified-developer-badge { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.developer-link { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.project-details dd .trusted-badge, .project-details dd .verified-developer-badge { margin-left: 6px; vertical-align: 1px; }
 
 .review-editor { padding: 23px; margin: 0 0 20px; }
 .review-editor h3 { font-size: 16px; }

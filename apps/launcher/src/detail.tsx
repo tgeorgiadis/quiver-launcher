@@ -5,12 +5,12 @@
  */
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Ban, Check, ChevronDown, ChevronRight, CircleX, Download, ExternalLink, Github, Gitlab, History, Monitor, Package, Pin, ShieldAlert, ShieldCheck, ShieldX, ThumbsUp, TriangleAlert, X } from "lucide-react";
 import { FaSteam } from "react-icons/fa6";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
-import { ApiError, type AiUse, type Asset, type Checking, type Client, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
+import { ApiError, type AiUse, type Asset, type Checking, type Client, type DeveloperProfile, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type Withdrawn } from "@quiverlauncher/api";
 import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
@@ -902,7 +902,42 @@ function AiEvidence({ ai }: { ai: AiUse }) {
   );
 }
 
-/** Who made it, where it runs, its latest release and its AI use, as on the website's Project details. */
+/**
+ * Who made it: a link to their profile on the website, with the badges it gives them (Trusted creator, Verified
+ * developer). An older site, or an app the player added, has no profile, and the name is plain.
+ */
+function DeveloperLink({ developer, name, own }: { developer: { key: string; name: string }; name: string; own: boolean }) {
+  const { client } = useLauncher();
+  const [profile, setProfile] = useState<DeveloperProfile | null>();
+  useEffect(() => {
+    if (own) return;
+    let live = true;
+    client.developer(developer.key).then(
+      (p) => live && setProfile(p),
+      () => live && setProfile(null),
+    );
+    return () => void (live = false);
+  }, [client, developer.key, own]);
+  if (!profile) return <>{name}</>;
+  return (
+    <>
+      <a className="developer-link" href={`https://quiverlauncher.com/developers/${encodeURIComponent(developer.key)}`} title={t`See ${profile.name} on quiverlauncher.com`}>
+        {name}
+      </a>
+      {profile.trusted && (
+        <span className="trusted-badge" title={t`Quiver's maintainers trust this creator`}>
+          <ShieldCheck size={12} aria-hidden="true" /> <Trans>Trusted creator</Trans>
+        </span>
+      )}
+      {!profile.trusted && profile.verified && (
+        <span className="verified-developer-badge" title={t`The developer proved they make this app`}>
+          <BadgeCheck size={12} aria-hidden="true" /> <Trans>Verified</Trans>
+        </span>
+      )}
+    </>
+  );
+}
+
 /**
  * The app's facts at the top of its page's Overview: who made it, where it runs and its repository, its latest
  * release and its use of AI. It folds away to a line, and stays folded for every app once the player folds it.
@@ -932,7 +967,9 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
               <dt>
                 <Trans>Made by</Trans>
               </dt>
-              <dd>{detail?.project.author || developer.name}</dd>
+              <dd>
+                <DeveloperLink developer={developer} name={detail?.project.author || developer.name} own={!detail} />
+              </dd>
             </div>
           )}
           <div>

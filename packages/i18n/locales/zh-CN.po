@@ -1844,6 +1844,11 @@ msgstr "桌面快捷方式"
 msgid "Details"
 msgstr "详细信息"
 
+#. Tag on a reply from the app's verified developer
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Developer"
+msgstr "开发者"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Developer says: {says}"
 msgstr "开发者表示：{says}"
@@ -2098,6 +2103,11 @@ msgstr "完成你的反馈"
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Fit the window"
 msgstr "适应窗口"
+
+#. placeholder {0}: list.filter((r) => r.fixed).length
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Fixed in an update ({0})"
+msgstr "已在更新中修复（{0}）"
 
 #. What VirusTotal said of a release's files, after “VirusTotal:”
 #: ../../apps/launcher/src/detail.tsx
@@ -2710,6 +2720,10 @@ msgstr "无法安装、打开或启动。"
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "它现在已在这里。"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Its author says it's still broken after the last fix."
+msgstr "作者表示上次修复后问题依旧。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Its files go to the trash, and it leaves your library."
@@ -4091,6 +4105,10 @@ msgid "Quiver's catalog lists this app now, and checks its releases. Switching k
 msgstr "Quiver 的目录现在已列出此应用，并会检查其版本。切换来源会保留文件、游玩时间和你的设置。"
 
 #: ../../apps/launcher/src/detail.tsx
+msgid "Quiver's maintainers trust this creator"
+msgstr "Quiver 维护者信任此创作者"
+
+#: ../../apps/launcher/src/detail.tsx
 msgid "Read more"
 msgstr "了解详情"
 
@@ -4414,6 +4432,11 @@ msgstr "搜索你的游戏库"
 #: ../../apps/launcher/src/library.tsx
 msgid "Sections"
 msgstr "分区"
+
+#. placeholder {0}: profile.name
+#: ../../apps/launcher/src/detail.tsx
+msgid "See {0} on quiverlauncher.com"
+msgstr "在 quiverlauncher.com 上查看 {0}"
 
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -5002,6 +5025,15 @@ msgstr "{date} 版本"
 msgid "The {installedVersion} Quiver offers isn't the file you installed."
 msgstr "Quiver 提供的 {installedVersion} 并非你安装的文件。"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "The developer proved they make this app"
+msgstr "开发者已证明自己是此应用的作者"
+
+#. placeholder {0}: review.fixed.version
+#: ../../apps/launcher/src/feedback.tsx
+msgid "The developer says {0} fixed this."
+msgstr "开发者表示 {0} 已修复此问题。"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "你的游戏库文件已损坏。"
@@ -5224,6 +5256,10 @@ msgstr "评分最高"
 #: ../../apps/launcher/src/media.tsx
 msgid "Trailer"
 msgstr "预告片"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Trusted creator"
+msgstr "受信任的创作者"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
@@ -5512,6 +5548,10 @@ msgstr "使用此文件夹"
 #: ../../apps/launcher/src/App.tsx
 msgid "Username"
 msgstr "用户名"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Verified"
+msgstr "已验证"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Version {checkingVersion} is <0/>"
