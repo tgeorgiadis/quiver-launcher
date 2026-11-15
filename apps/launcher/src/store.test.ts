@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -777,5 +777,20 @@ describe("withOldPictures", () => {
   it("leaves an app with all of them as it is", () => {
     const had = item({ pictures: { icon: "file:mine.png" } });
     expect(withOldPictures(had, { icon: "file:icon-1.png" })).toBe(had);
+  });
+});
+
+describe("renamable", () => {
+  const base = { version: "1.0", folder: "ArmyOfTwo", executables: [] };
+  it("is an app at the top of the apps folder, or in its console's folder there", () => {
+    expect(renamable(base)).toBe(true);
+    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\ArmyOfTwo", inApps: true, group: "Xbox 360" })).toBe(true);
+  });
+  it("isn't a folder kept where it is, a program, or a Windows installer's", () => {
+    expect(renamable(undefined)).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Games\\ArmyOfTwo" })).toBe(false);
+    expect(renamable({ ...base, dir: "D:\\Old\\Apps\\ArmyOfTwo", inApps: true })).toBe(false);
+    expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(false);
+    expect(renamable({ ...base, installer: "msi" })).toBe(false);
   });
 });

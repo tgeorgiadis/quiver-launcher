@@ -647,10 +647,12 @@ const fromKey = (id: string): CustomApp => {
 
 /**
  * Whether the player can rename an app's folder: one Quiver keeps in the apps
- * folder. Not a 3.x install or a program left where it is, and not a Windows
- * installer's, whose files are wherever its setup put them.
+ * folder, at its top or in its console's folder there (Group by console). Not a
+ * 3.x install or a program left where it is, and not a Windows installer's,
+ * whose files are wherever its setup put them.
  */
-export const renamable = (install: Install | undefined) => Boolean(install && !install.dir && install.installer !== "msi");
+export const renamable = (install: Install | undefined) =>
+  Boolean(install && (!install.dir || (install.group && !install.program && baseName(install.dir) === install.folder)) && install.installer !== "msi");
 
 /** The empty file that has many apps keep their saves and settings in their own folder. */
 export const PORTABLE_FILE = "portable.txt";
@@ -2589,11 +2591,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       if (!name.trim()) throw new Problem(msg`Enter a name for its folder.`);
       const folder = folderNameFor(name);
       if (folder === install.folder) return folder;
-      // One folder, one app, as installing keeps it.
-      const taken = Object.entries(installs).some(([other, i]) => other !== id && !i.dir && i.folder.toLowerCase() === folder.toLowerCase());
+      // One folder, one app, as installing keeps it: none other in the same folder by that name.
+      const from = placeOf(install, config.appsDir);
+      const to = joinPath(parentOf(from), folder);
+      const taken = Object.entries(installs).some(([other, i]) => other !== id && samePath(placeOf(i, config.appsDir), to));
       if (taken) throw new Problem(msg`Another app in your library uses a folder named ${folder}. Choose another name.`);
-      await native.renameAppFolder(id, install.folder, folder);
-      setInstalls((i) => ({ ...i, [id]: { ...withCopiesIn(i[id], joinPath(config.appsDir, install.folder), joinPath(config.appsDir, folder)), folder } }));
+      await native.renameAppFolder(id, install.folder, folder, install.dir);
+      setInstalls((i) => ({ ...i, [id]: { ...withCopiesIn(i[id], from, to), folder, ...(i[id].dir ? { dir: to } : {}) } }));
       // A folder the player fills keeps its name in the library too, which its page shows.
       const item = library.find((i) => i.id === id);
       if (item?.local?.kind === "folder") {
