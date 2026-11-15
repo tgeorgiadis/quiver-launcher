@@ -676,6 +676,34 @@ msgstr "+ Neue Playlist…"
 msgid "+ New tag…"
 msgstr "+ Neuer Tag…"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Easy setup</0> for apps in the catalog: you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>Einfache Einrichtung</0> für Apps im Katalog: Du lieferst nur dein ROM oder Disc-Image, das Quiver in den von dir eingerichteten Ordnern findet"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Language support:</0> ten languages to choose from"
+msgstr "<0>Sprachunterstützung:</0> zehn Sprachen zur Auswahl"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Playlists</0> you can share, and other people's to follow"
+msgstr "<0>Playlists</0>, die du teilen kannst, und die anderer, denen du folgen kannst"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
+msgstr "<0>Anmelden</0> mit demselben Konto wie auf der Website, um deine Bibliothek (Apps und Playlists) zu synchronisieren, Feedback zu geben und Probleme zu melden, ohne Quiver zu verlassen"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
+msgstr "<0>Einfacherer Schutz:</0> Hol dir Updates sofort oder warte 48 Stunden, falls ein Release schädlich ist. So hat das Quiver-Team Zeit, es zurückzuziehen"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>TV mode:</0> a full-screen launcher for a controller"
+msgstr "<0>TV-Modus:</0> ein Vollbild-Launcher für den Controller"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgstr "<0>Zwei Bibliotheksansichten:</0> Seitenleiste, inspiriert von Steam, und Raster, mit vielen Optionen für Box-Art, Cover, Icons und was jede App zeigt"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "Die Adresse eines Covers folgt deinem Konto. Die anderen Bilder und alle aus einer Datei bleiben auf diesem Computer."
@@ -3980,10 +4008,6 @@ msgstr "Playlists und Tags"
 msgid "Playlists for this app"
 msgstr "Playlists für diese App"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Playlists you can share, and other people's to follow"
-msgstr "Playlists, die du teilen kannst, und die anderer, denen du folgen kannst"
-
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4877,10 +4901,6 @@ msgstr "Melde dich an, um zu teilen, wie es bei dir läuft."
 msgid "Sign in to sync your library"
 msgstr "Melde dich an, um deine Bibliothek zu synchronisieren"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Sign in to sync your library across your devices"
-msgstr "Melde dich an, um deine Bibliothek auf all deinen Geräten zu synchronisieren"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "Abmelden"
@@ -5437,10 +5457,6 @@ msgstr "Ausschalten"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "TV-Modus"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "TV mode: a full-screen launcher for a controller"
-msgstr "TV-Modus: ein Vollbild-Launcher für den Controller"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6026,10 +6042,6 @@ msgstr "Dein Feedback wartet auf die Prüfung durch einen Moderator, bevor ander
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "Dein Feedback ist noch nicht geteilt. Was du geschrieben hast, ist noch da."
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "Your language: Quiver comes in ten"
-msgstr "Deine Sprache: Quiver gibt es in zehn"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"

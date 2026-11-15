@@ -676,6 +676,34 @@ msgstr "+ 新建播放列表 →"
 msgid "+ New tag…"
 msgstr "+ 新建标签 →"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Easy setup</0> for apps in the catalog: you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>轻松设置</0>：目录中的应用只需提供你的 ROM 或光盘镜像，Quiver 会在你设置的文件夹中找到它"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Language support:</0> ten languages to choose from"
+msgstr "<0>语言支持：</0>十种语言可选"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Playlists</0> you can share, and other people's to follow"
+msgstr "<0>播放列表</0>可以分享，也可以关注别人的"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
+msgstr "使用与网站相同的账户<0>登录</0>，即可同步游戏库（应用和播放列表），并直接在 Quiver 中提交反馈和报告问题"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
+msgstr "<0>更简单的保护：</0>立即获取更新，或等待 48 小时以防某个版本有害，让 Quiver 团队有时间撤回它"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>TV mode:</0> a full-screen launcher for a controller"
+msgstr "<0>电视模式：</0>用手柄操作的全屏启动器"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgstr "<0>两种游戏库视图：</0>受 Steam 启发的侧边栏，以及网格，提供多种选项来显示盒装封面、封面、图标和每个应用显示的内容"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "封面图片的地址与你的帐户绑定。其他图片以及从文件添加的图片仅保存在此电脑上。"
@@ -3980,10 +4008,6 @@ msgstr "播放列表和标签"
 msgid "Playlists for this app"
 msgstr "此应用的播放列表"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Playlists you can share, and other people's to follow"
-msgstr "可以分享的播放列表，也可以关注别人的"
-
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4877,10 +4901,6 @@ msgstr "登录以分享你的运行体验。"
 msgid "Sign in to sync your library"
 msgstr "登录以同步你的游戏库"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Sign in to sync your library across your devices"
-msgstr "登录后可在你的所有设备间同步游戏库"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "退出登录"
@@ -5437,10 +5457,6 @@ msgstr "关闭"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "电视模式"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "TV mode: a full-screen launcher for a controller"
-msgstr "电视模式：用手柄操作的全屏启动器"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6026,10 +6042,6 @@ msgstr "你的反馈正在等待版主审核，审核通过后其他人才能看
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "你的反馈尚未共享。你写下的内容仍保留在这里。"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "Your language: Quiver comes in ten"
-msgstr "你的语言：Quiver 支持十种语言"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"

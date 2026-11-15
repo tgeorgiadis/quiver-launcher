@@ -647,6 +647,9 @@ main.app-main { padding: 0 0 40px; }
 .old-library-brings li { display: flex; align-items: flex-start; gap: 6px; }
 .old-library-brings svg { flex: none; margin-top: 2px; color: var(--accent); }
 .old-library-brings li.muted svg { color: var(--muted); }
+/* The welcome's list of what's new (setup.tsx): each line's lead is strong, and a long line wraps under its own text. */
+.setup-extras { gap: 6px; }
+.setup-extras strong { color: var(--strong); }
 .old-library-apps { display: grid; gap: 6px; max-height: 220px; overflow: auto; margin: 0; padding: 0; list-style: none; }
 /* An import's progress (old-library.tsx), as a download's bar, with a turning ring while it goes. */
 /* Across the banner's row; in the setup's column it's a download's height, as anywhere else. */

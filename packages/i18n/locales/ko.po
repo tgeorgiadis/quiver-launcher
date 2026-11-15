@@ -676,6 +676,34 @@ msgstr "+ 새 재생 목록…"
 msgid "+ New tag…"
 msgstr "+ 새 태그…"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Easy setup</0> for apps in the catalog: you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>간편 설정</0>: 카탈로그의 앱은 ROM이나 디스크 이미지만 준비하면 돼요. Quiver가 설정해 둔 폴더에서 찾아 줘요"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Language support:</0> ten languages to choose from"
+msgstr "<0>언어 지원:</0> 열 가지 언어 중에서 선택"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Playlists</0> you can share, and other people's to follow"
+msgstr "<0>재생 목록</0>을 공유하고, 다른 사람의 재생 목록을 팔로우"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
+msgstr "웹사이트와 같은 계정으로 <0>로그인</0>하면 라이브러리(앱과 재생 목록)를 동기화하고, Quiver 안에서 바로 의견을 보내고 문제를 신고할 수 있어요"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
+msgstr "<0>더 간단한 보호:</0> 업데이트를 바로 받거나, 릴리스가 해로울 경우에 대비해 48시간 기다릴 수 있어요. 그동안 Quiver 팀이 릴리스를 철회할 수 있어요"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>TV mode:</0> a full-screen launcher for a controller"
+msgstr "<0>TV 모드:</0> 컨트롤러로 쓰는 전체 화면 런처"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgstr "<0>두 가지 라이브러리 보기:</0> Steam에서 영감을 받은 사이드바, 그리고 박스 아트, 커버, 아이콘과 앱마다 표시할 내용을 다양하게 고를 수 있는 격자"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "커버 주소는 계정을 따라갑니다. 다른 이미지와 파일에서 가져온 이미지는 이 컴퓨터에만 남습니다."
@@ -3980,10 +4008,6 @@ msgstr "재생 목록 및 태그"
 msgid "Playlists for this app"
 msgstr "이 앱의 재생 목록"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Playlists you can share, and other people's to follow"
-msgstr "공유할 수 있는 재생 목록, 그리고 다른 사람의 재생 목록 팔로우"
-
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4877,10 +4901,6 @@ msgstr "로그인하고 실행 후기를 공유해 주세요."
 msgid "Sign in to sync your library"
 msgstr "로그인하고 라이브러리 동기화하기"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Sign in to sync your library across your devices"
-msgstr "로그인하면 모든 기기에서 라이브러리가 동기화돼요"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "로그아웃"
@@ -5437,10 +5457,6 @@ msgstr "끄기"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "TV 모드"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "TV mode: a full-screen launcher for a controller"
-msgstr "TV 모드: 컨트롤러로 쓰는 전체 화면 런처"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6026,10 +6042,6 @@ msgstr "다른 사람이 볼 수 있도록 피드백이 관리자 검토를 기�
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "피드백이 아직 공유되지 않았어요. 작성한 내용은 그대로 남아 있어요."
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "Your language: Quiver comes in ten"
-msgstr "언어: Quiver는 열 가지 언어를 지원해요"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"

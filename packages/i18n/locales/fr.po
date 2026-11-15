@@ -676,6 +676,34 @@ msgstr "+ Nouvelle playlist…"
 msgid "+ New tag…"
 msgstr "+ Nouveau tag…"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Easy setup</0> for apps in the catalog: you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>Configuration facile</0> pour les apps du catalogue : vous fournissez seulement votre ROM ou image disque, que Quiver trouve dans les dossiers que vous avez indiqués"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Language support:</0> ten languages to choose from"
+msgstr "<0>Prise en charge des langues :</0> dix langues au choix"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Playlists</0> you can share, and other people's to follow"
+msgstr "<0>Des playlists</0> à partager, et celles des autres à suivre"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
+msgstr "<0>Connectez-vous</0> avec le même compte que sur le site web pour synchroniser votre bibliothèque (apps et playlists), donner votre avis et signaler des problèmes sans quitter Quiver"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
+msgstr "<0>Une protection plus simple :</0> recevez les mises à jour tout de suite, ou attendez 48 heures au cas où une version serait nuisible, ce qui laisse à l'équipe Quiver le temps de la retirer"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>TV mode:</0> a full-screen launcher for a controller"
+msgstr "<0>Mode TV :</0> un launcher plein écran pour la manette"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgstr "<0>Deux vues de la bibliothèque :</0> Barre latérale, inspirée de Steam, et Grille, avec de nombreuses options pour les jaquettes, les couvertures, les icônes et ce que chaque app affiche"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "L'adresse d'une couverture suit ton compte. Les autres images, et celles qui viennent d'un fichier, restent sur cet ordinateur."
@@ -3980,10 +4008,6 @@ msgstr "Playlists et tags"
 msgid "Playlists for this app"
 msgstr "Playlists de cette app"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Playlists you can share, and other people's to follow"
-msgstr "Des playlists à partager, et celles des autres à suivre"
-
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4877,10 +4901,6 @@ msgstr "Connectez-vous pour dire comment ça tourne chez vous."
 msgid "Sign in to sync your library"
 msgstr "Connectez-vous pour synchroniser votre bibliothèque"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Sign in to sync your library across your devices"
-msgstr "Connectez-vous pour synchroniser votre bibliothèque sur tous vos appareils"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "Se déconnecter"
@@ -5437,10 +5457,6 @@ msgstr "Désactiver"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "Mode TV"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "TV mode: a full-screen launcher for a controller"
-msgstr "Mode TV : un launcher plein écran pour la manette"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6026,10 +6042,6 @@ msgstr "Votre avis attend la validation d'un modérateur avant que les autres pu
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "Votre avis n'est pas encore partagé. Ce que vous avez écrit est toujours là."
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "Your language: Quiver comes in ten"
-msgstr "Votre langue : Quiver en parle dix"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"

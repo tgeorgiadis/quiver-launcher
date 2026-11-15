@@ -149,20 +149,37 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
  */
 function Welcome() {
   const extras = [
-    t`TV mode: a full-screen launcher for a controller`,
-    t`Playlists you can share, and other people's to follow`,
-    t`Sign in to sync your library across your devices`,
-    t`Your language: Quiver comes in ten`,
+    <Trans>
+      <strong>Sign in</strong> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver
+    </Trans>,
+    <Trans>
+      <strong>Easy setup</strong> for apps in the catalog: you only provide your ROM or disc image, which Quiver finds in the folders you set up
+    </Trans>,
+    <Trans>
+      <strong>Simpler protection:</strong> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it
+    </Trans>,
+    <Trans>
+      <strong>Two library views:</strong> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows
+    </Trans>,
+    <Trans>
+      <strong>TV mode:</strong> a full-screen launcher for a controller
+    </Trans>,
+    <Trans>
+      <strong>Playlists</strong> you can share, and other people's to follow
+    </Trans>,
+    <Trans>
+      <strong>Language support:</strong> ten languages to choose from
+    </Trans>,
   ];
   return (
     <>
       <p>
         <Trans>Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:</Trans>
       </p>
-      <ul className="old-library-brings" aria-label={t`New in Quiver Launcher 4`}>
-        {extras.map((extra) => (
-          <li key={extra}>
-            <Check size={15} aria-hidden="true" /> {extra}
+      <ul className="old-library-brings setup-extras" aria-label={t`New in Quiver Launcher 4`}>
+        {extras.map((extra, i) => (
+          <li key={i}>
+            <Check size={15} aria-hidden="true" /> <span>{extra}</span>
           </li>
         ))}
       </ul>

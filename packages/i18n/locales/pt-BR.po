@@ -676,6 +676,34 @@ msgstr "+ Nova playlist…"
 msgid "+ New tag…"
 msgstr "+ Nova tag…"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Easy setup</0> for apps in the catalog: you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>Configuração fácil</0> para os apps do catálogo: você só fornece sua ROM ou imagem de disco, que o Quiver encontra nas pastas que você configurou"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Language support:</0> ten languages to choose from"
+msgstr "<0>Suporte a idiomas:</0> dez idiomas para escolher"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Playlists</0> you can share, and other people's to follow"
+msgstr "<0>Playlists</0> que você pode compartilhar, e as de outras pessoas para seguir"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
+msgstr "<0>Entre</0> com a mesma conta do site para sincronizar sua biblioteca (apps e playlists), enviar feedback e relatar problemas sem sair do Quiver"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
+msgstr "<0>Proteção mais simples:</0> receba as atualizações na hora, ou espere 48 horas caso uma versão seja prejudicial, o que dá tempo para a equipe do Quiver retirá-la"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>TV mode:</0> a full-screen launcher for a controller"
+msgstr "<0>Modo TV:</0> um launcher em tela cheia para o controle"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgstr "<0>Duas visualizações da biblioteca:</0> Barra lateral, inspirada no Steam, e Grade, com várias opções de box art, capas, ícones e o que cada app mostra"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
 msgstr "O endereço de uma capa acompanha sua conta. As outras imagens, e as que vêm de um arquivo, ficam neste computador."
@@ -3980,10 +4008,6 @@ msgstr "Playlists e tags"
 msgid "Playlists for this app"
 msgstr "Playlists deste app"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Playlists you can share, and other people's to follow"
-msgstr "Playlists que você pode compartilhar, e as de outras pessoas para seguir"
-
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4877,10 +4901,6 @@ msgstr "Entre para contar como ele roda para você."
 msgid "Sign in to sync your library"
 msgstr "Entre para sincronizar sua biblioteca"
 
-#: ../../apps/launcher/src/setup.tsx
-msgid "Sign in to sync your library across your devices"
-msgstr "Entre para sincronizar sua biblioteca em todos os seus dispositivos"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "Sair"
@@ -5437,10 +5457,6 @@ msgstr "Desativar"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "Modo TV"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "TV mode: a full-screen launcher for a controller"
-msgstr "Modo TV: um launcher em tela cheia para o controle"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6026,10 +6042,6 @@ msgstr "Seu feedback está aguardando a revisão de um moderador antes que outro
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "Seu feedback ainda não foi compartilhado. O que você escreveu continua aqui."
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "Your language: Quiver comes in ten"
-msgstr "Seu idioma: o Quiver está em dez"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"
