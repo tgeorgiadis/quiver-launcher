@@ -1006,6 +1006,14 @@ msgstr "Любой, у кого есть ссылка, увидит его на 
 msgid "App"
 msgstr "Приложение"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "App details"
+msgstr "О приложении"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "APP DETAILS"
+msgstr "О ПРИЛОЖЕНИИ"
+
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "App page"
 msgstr "Страница приложения"
@@ -3907,14 +3915,6 @@ msgstr "Предыдущая вкладка"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Program"
 msgstr "Программа"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Project details"
-msgstr "О проекте"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "PROJECT DETAILS"
-msgstr "О ПРОЕКТЕ"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx

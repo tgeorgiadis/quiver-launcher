@@ -1006,6 +1006,14 @@ msgstr "링크가 있는 누구나 quiverlauncher.com에서 보고 자신의 라
 msgid "App"
 msgstr "앱"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "App details"
+msgstr "앱 세부 정보"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "APP DETAILS"
+msgstr "앱 세부 정보"
+
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "App page"
 msgstr "앱 페이지"
@@ -3907,14 +3915,6 @@ msgstr "이전 탭"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Program"
 msgstr "프로그램"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Project details"
-msgstr "프로젝트 세부 정보"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "PROJECT DETAILS"
-msgstr "프로젝트 세부 정보"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx

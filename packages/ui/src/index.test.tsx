@@ -27,7 +27,11 @@ const DAY = 24 * 60 * 60 * 1000;
 describe("tagLabel", () => {
   it("title-cases plain tags", () => {
     expect(tagLabel("harbour masters")).toBe("Harbour Masters");
-    expect(tagLabel("decomp")).toBe("Decomp");
+    expect(tagLabel("recomp")).toBe("Recomp");
+  });
+  it("calls a decomp the source port a player installs", () => {
+    expect(tagLabel("decomp")).toBe("Source port");
+    expect(tagLabel("decompilation")).toBe("Source port");
   });
   it("keeps short joining words lowercase except at the start", () => {
     expect(tagLabel("plants vs zombies")).toBe("Plants vs Zombies");
