@@ -928,8 +928,8 @@ msgid "All done: your Quiver Launcher 3 apps are in your library."
 msgstr "All done: your Quiver Launcher 3 apps are in your library."
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
-msgstr "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
+msgid "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver 4, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
+msgstr "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver 4, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
@@ -3658,8 +3658,8 @@ msgid "Nothing is downloading."
 msgstr "Nothing is downloading."
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver, you can move them into Quiver's apps folder in Settings › Apps folder."
-msgstr "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."

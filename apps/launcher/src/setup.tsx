@@ -157,7 +157,7 @@ function AppsStep({ brought }: { brought: boolean }) {
         <p role="status">
           {kept ? (
             <Trans>
-              All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder.
+              All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver 4, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder.
             </Trans>
           ) : (
             <Trans>All done: your Quiver Launcher 3 apps are in your library.</Trans>

@@ -63,7 +63,7 @@ tags you gave them, your hidden apps, the pictures you chose and your tag filter
 choose the folder you unzipped it to. You can do this later too, in **Settings › Library**.
 
 Nothing is moved, copied or deleted: anything already installed stays where Quiver Launcher 3 put it and plays from
-there. So keep your Quiver Launcher 3 folder for now, as deleting it would delete those apps. Once you've tried Quiver,
+there. So keep your Quiver Launcher 3 folder for now, as deleting it would delete those apps. Once you've tried Quiver 4,
 **Settings › Apps folder** shows that folder with **Move into default**, which moves its apps into Quiver's own apps
 folder. After that, you can delete the old one.
 

@@ -928,8 +928,8 @@ msgid "All done: your Quiver Launcher 3 apps are in your library."
 msgstr "完成：你在 Quiver Launcher 3 中的應用程式已加入你的遊戲庫。"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
-msgstr "完成：你在 Quiver Launcher 3 中的應用程式已加入你的遊戲庫。已安裝的應用程式仍從下方的 Quiver Launcher 3 資料夾執行，所以暫時請保留它。試用 Quiver 之後，點選「移至預設位置」即可把它們移到 Quiver 的應用程式資料夾，在這裡或在 設定 › 應用程式資料夾 中都可以。"
+msgid "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver 4, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
+msgstr "完成：你在 Quiver Launcher 3 中的應用程式已加入你的遊戲庫。已安裝的應用程式仍從下方的 Quiver Launcher 3 資料夾執行，所以暫時請保留它。試用 Quiver 4 之後，點選「移至預設位置」即可把它們移到 Quiver 的應用程式資料夾，在這裡或在 設定 › 應用程式資料夾 中都可以。"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
@@ -3658,8 +3658,8 @@ msgid "Nothing is downloading."
 msgstr "沒有正在下載的內容。"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver, you can move them into Quiver's apps folder in Settings › Apps folder."
-msgstr "不會移動或複製任何內容：已安裝的應用程式留在 Quiver Launcher 3 放置它們的位置，並從那裡執行。暫時請保留你的 Quiver Launcher 3 資料夾，刪除它會連同這些應用程式一起刪除。試用 Quiver 之後，你可以在 設定 › 應用程式資料夾 中把它們移到 Quiver 的應用程式資料夾。"
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "不會移動或複製任何內容：已安裝的應用程式留在 Quiver Launcher 3 放置它們的位置，並從那裡執行。暫時請保留你的 Quiver Launcher 3 資料夾，刪除它會連同這些應用程式一起刪除。試用 Quiver 4 之後，你可以在 設定 › 應用程式資料夾 中把它們移到 Quiver 的應用程式資料夾。"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."

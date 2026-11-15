@@ -928,8 +928,8 @@ msgid "All done: your Quiver Launcher 3 apps are in your library."
 msgstr "완료: Quiver Launcher 3의 앱이 라이브러리에 들어왔어요."
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
-msgstr "완료: Quiver Launcher 3의 앱이 라이브러리에 들어왔어요. 설치된 앱은 아래에 있는 Quiver Launcher 3 폴더에서 계속 실행되니 당분간 그 폴더를 지우지 마세요. Quiver를 써 본 뒤 기본 폴더로 옮기기를 누르면 Quiver의 앱 폴더로 옮겨져요. 여기나 설정 › 앱 폴더에서 할 수 있어요."
+msgid "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver 4, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
+msgstr "완료: Quiver Launcher 3의 앱이 라이브러리에 들어왔어요. 설치된 앱은 아래에 있는 Quiver Launcher 3 폴더에서 계속 실행되니 당분간 그 폴더를 지우지 마세요. Quiver 4를 써 본 뒤 기본 폴더로 옮기기를 누르면 Quiver의 앱 폴더로 옮겨져요. 여기나 설정 › 앱 폴더에서 할 수 있어요."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
@@ -3658,8 +3658,8 @@ msgid "Nothing is downloading."
 msgstr "다운로드 중인 항목이 없어요."
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver, you can move them into Quiver's apps folder in Settings › Apps folder."
-msgstr "아무것도 옮기거나 복사하지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. Quiver Launcher 3 폴더를 지우면 앱도 함께 지워지니 당분간 그대로 두세요. Quiver를 써 본 뒤 설정 › 앱 폴더에서 Quiver의 앱 폴더로 옮길 수 있어요."
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "아무것도 옮기거나 복사하지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. Quiver Launcher 3 폴더를 지우면 앱도 함께 지워지니 당분간 그대로 두세요. Quiver 4를 써 본 뒤 설정 › 앱 폴더에서 Quiver의 앱 폴더로 옮길 수 있어요."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."
