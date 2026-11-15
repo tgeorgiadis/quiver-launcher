@@ -5102,6 +5102,10 @@ msgid "Stop sharing"
 msgstr "停止共享"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Submit a correction for a release file's platform"
+msgstr "提交版本文件平台的更正"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Submit an app"
 msgstr "提交应用"
 

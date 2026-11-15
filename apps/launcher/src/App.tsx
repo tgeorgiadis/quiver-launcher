@@ -2476,7 +2476,10 @@ function SuggestPlatform({ choice, files }: { choice: Choice; files: Asset[] }) 
     );
   };
   return (
-    <div className="suggest-platform">
+    <div className="suggest-platform" role="group" aria-labelledby="suggest-platform-title">
+      <h3 id="suggest-platform-title">
+        <Trans>Submit a correction for a release file's platform</Trans>
+      </h3>
       <label className="field">
         <Trans>File</Trans>
         <select value={file} onChange={(e) => setFile(e.target.value)}>

@@ -5102,6 +5102,10 @@ msgid "Stop sharing"
 msgstr "Interrompi condivisione"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Submit a correction for a release file's platform"
+msgstr "Invia una correzione sulla piattaforma di un file della release"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Submit an app"
 msgstr "Invia un'app"
 
