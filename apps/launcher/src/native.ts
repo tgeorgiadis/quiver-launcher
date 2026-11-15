@@ -325,7 +325,8 @@ export const native = {
   /** Makes a folder in the apps folder (or finds it), opens it, and resolves to its name. */
   createAppFolder: (name: string) => invoke<string>("create_app_folder", { name }),
   /** Renames an installed app's folder in the apps folder (and its Proton prefix); fails while the launcher has it running. */
-  renameAppFolder: (id: string, from: string, to: string) => invoke<void>("rename_app_folder", { id, from, to }),
+  /** `dir`: the folder's own path, for one not at the top of the apps folder (in its console's folder). */
+  renameAppFolder: (id: string, from: string, to: string, dir?: string) => invoke<void>("rename_app_folder", { id, from, to, dir: dir ?? null }),
   /** Those of `names` that are files in an installed app's folder. */
   appFiles: (folder: string, dir: string | undefined, names: string[]) => invoke<string[]>("app_files", { folder, dir, names }),
   /** Adds empty files to an installed app's folder and takes others away; returns those that stayed because they weren't empty. */
