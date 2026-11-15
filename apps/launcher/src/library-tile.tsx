@@ -106,9 +106,10 @@ function TileTags({ entry, ports, details, consoleNames }: { entry?: Entry; port
 }
 
 /**
- * Under the names, what players said, when it was last updated and the version installed here (with the update
- * there is to it, in the update mark's colour), a line each, those picked; blank lines on a game's card with more than
- * one port, and for the version, on an app not installed.
+ * Under the names, what players said, when it was last updated, and the version installed here with the update there
+ * is to it on a line of its own under that (in the update mark's colour), as Quiver Launcher 3 had them; those picked.
+ * Blank lines keep their place, so a row's cards line up: on a game's card with more than one port, and for the
+ * version, on an app not installed or with no update. Each scrolls when it's too long for the card.
  */
 function TileLines({ entry, details, version, update }: { entry?: Entry; details: readonly LibraryDetail[]; version?: string; update?: string }) {
   const installedLabel = version ? versionLabel(version) : "";
@@ -119,17 +120,10 @@ function TileLines({ entry, details, version, update }: { entry?: Entry; details
       {details.includes("updated") && <span className="tile-line">{entry && <ReleaseAge entry={entry} />}</span>}
       {details.includes("version") && (
         <span className="tile-line tile-version">
-          {entry && version && <Trans comment="Under an app's name on its library card: the version installed on this computer">Installed {installedLabel}</Trans>}
-          {entry && version && update && (
-            <>
-              {" · "}
-              <span className="tile-version-update">
-                <Trans>Available {availableLabel}</Trans>
-              </span>
-            </>
-          )}
+          {entry && version && <ScrollingText text={t({ message: `Installed ${installedLabel}`, comment: "Under an app's name on its library card: the version installed on this computer" })} />}
         </span>
       )}
+      {details.includes("update") && <span className="tile-line tile-version-update">{entry && version && update && <ScrollingText text={t`Available ${availableLabel}`} />}</span>}
     </>
   );
 }
@@ -338,7 +332,8 @@ const Tile = memo(function Tile({
                   </span>
                 )}
                 {/* On the available version with a newer one not offered yet: that line says it all, without the same number twice. */}
-                {available && !(hasAvailable && newer) && (
+                {/* An update there is: said under the name already, when the cards show updates there. */}
+                {available && !(hasAvailable && newer) && !(names && details.includes("update") && install && update && !busy && !upToDate) && (
                   // The version there is to have: in the update mark's blue, so it stands out from what's installed. Up to date: in green.
                   <span className={upToDate ? "tile-current" : "tile-newer"}>
                     {upToDate ? <Trans comment="On an app's card: the installed version is the newest there is">Up to date</Trans> : <Trans>Available {availableLabel}</Trans>}

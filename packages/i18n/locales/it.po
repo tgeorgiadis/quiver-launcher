@@ -5404,7 +5404,9 @@ msgstr "Aggiorna tutto ({updateCount})"
 msgid "Update and restart"
 msgstr "Aggiorna e riavvia"
 
+#. Library card detail: the newer version there is to update to, on a line under the name
 #: ../../apps/launcher/src/library-sidebar.tsx
+#: ../../apps/launcher/src/library-view.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/mods.tsx
 msgid "Update available"
