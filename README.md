@@ -11,7 +11,7 @@
 [![Support Quiver on Patreon](https://img.shields.io/badge/Support_on_Patreon-B8394A?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/c/quiverlauncher)
 
 **One place to find, install, update and play the games and apps people release on GitHub and GitLab**,
-such as PC ports, recompilations and fan projects. Browse the [Quiver catalog](https://quiverlauncher.com), press
+such as modern ports (source ports and recompilations) and fan projects. Browse the [Quiver catalog](https://quiverlauncher.com), press
 **Get**, and Quiver downloads it, checks it and installs it. Then it keeps it up to date.
 
 <img width="2559" height="1366" alt="quiver-launcher-screenshot" src="https://github.com/user-attachments/assets/4cae3f54-0e41-43a3-9925-1adbbf81071e" />

@@ -4208,7 +4208,7 @@ msgstr "O Quiver Launcher encontrou um problema"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as modern ports (source ports and recompilations) and fan projects."
-msgstr ""
+msgstr "O Quiver Launcher é um lugar só para encontrar, instalar, atualizar e jogar os jogos e apps que as pessoas publicam no GitHub e no GitLab, como ports modernos (source ports e recompilações) e projetos de fãs."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
