@@ -41,6 +41,9 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     // Every apps folder is there, with room to spare.
     apps_folder_states: ({ paths }) => paths.map(() => ({ exists: true, free: 500e9 })),
     move_app: ({ to, folder }) => ({ dir: [to, folder].join("\\"), left: null }),
+    // A move of apps into an apps folder: there's room, and every one of them gets there.
+    apps_folder_refusal: () => null,
+    move_apps_folder: ({ to, apps }) => ({ appsDir: to, inside: apps.map((a) => a.id), left: [], failed: [] }),
     read_state: ({ name }) => files[name] ?? null,
     write_state: ({ name, value }) => void (files[name] = value),
     // Damaged files, if `state` says so (stateProblems), or the Rust side not answering (stateFailure).

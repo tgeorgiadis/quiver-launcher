@@ -1,7 +1,7 @@
 /**
  * The first start's setup: a few questions in turn, in place of a banner
- * for each. The language, a Quiver Launcher 3 library to import, where
- * apps install, where the player keeps their game copies, how apps update,
+ * for each. The language, where apps install, a Quiver Launcher 3 library
+ * to import (and whether its apps move there), where the player keeps their game copies, how apps update,
  * usage data, and signing in, each answered or skipped, and
  * Settings has them all after. Only on a computer's first start; Skip setup
  * leaves what wasn't answered to the banners that ask it otherwise.
@@ -11,14 +11,14 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useLauncher, type Settings } from "./store";
 import { useAccount } from "./account";
-import { AppsFolder, LanguageSetting } from "./settings-page";
-import { OldLibraryStep } from "./old-library";
+import { AppsFolder, LanguageSetting, MoveOldApps } from "./settings-page";
+import { notImported, OldLibraryStep } from "./old-library";
 import { GameCopySettings } from "./own-copy-settings";
 import { AppUpdatesSetting } from "./app-updates";
 import { TelemetrySetting, useTelemetrySwitch } from "./telemetry-ui";
 import { track, trackScreen } from "./telemetry";
 
-type Step = "welcome" | "v3" | "apps" | "copies" | "updates" | "usage" | "account";
+type Step = "welcome" | "apps" | "v3" | "copies" | "updates" | "usage" | "account";
 
 /** Whether a start shows the setup: the first on this computer, until it's done. */
 export const showsSetup = (settings: Pick<Settings, "launched" | "setupDone">) => !settings.launched && !settings.setupDone;
@@ -29,11 +29,14 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   const { available } = useTelemetrySwitch();
   const phone = config.os === "android" || config.os === "ios";
   // Quiver Launcher 3, an apps folder and game copies are a computer's; usage data only where it's sent.
-  const steps = (["welcome", !phone && "v3", !phone && "apps", !phone && "copies", "updates", available && "usage", "account"] as const).filter(Boolean) as Step[];
+  // Where apps install comes before Quiver Launcher 3, whose apps can then move there.
+  const steps = (["welcome", !phone && "apps", !phone && "v3", !phone && "copies", "updates", available && "usage", "account"] as const).filter(Boolean) as Step[];
   const [at, setAt] = useState(0);
   const step = steps[Math.min(at, steps.length - 1)];
   const [offering, setOffering] = useState(false);
-  const [brought, setBrought] = useState(false);
+  // A Quiver Launcher 3 library that came over on this run: the names of the apps that couldn't, and its installs' folders.
+  const [imported, setImported] = useState<{ missing: string[]; dirs: string[] } | null>(null);
+  const brought = Boolean(imported);
   // An import under way: the setup's own buttons wait for it.
   const [busy, setBusy] = useState(false);
   const dialog = useRef<HTMLElement>(null);
@@ -42,7 +45,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   useEffect(() => {
     const body = dialog.current;
     (body?.querySelector<HTMLElement>('.setup-step button.primary, .setup-step .add-choice[aria-checked="true"], .setup-step .add-choice:not([role="radio"])') ?? body?.querySelector<HTMLElement>(".setup-next"))?.focus();
-  }, [step]);
+  }, [step, brought]);
   /** Leaving a step answers it: its banner has nothing more to ask. */
   const answered = (s: Step): Partial<Settings> =>
     s === "v3" ? { oldLibraryNoticeSeen: true } : s === "usage" ? { telemetryNoticeSeen: true } : s === "copies" ? { copyFoldersAsked: true } : s === "updates" ? { appUpdatesAsked: true } : {};
@@ -74,7 +77,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   });
   const titles: Record<Step, string> = {
     welcome: t`Welcome to Quiver Launcher!`,
-    v3: offering ? t`Bring your apps over from Quiver Launcher 3?` : t`Coming from Quiver Launcher 3?`,
+    v3: imported ? t`Your Quiver Launcher 3 apps are in your library` : offering ? t`Bring your apps over from Quiver Launcher 3?` : t`Coming from Quiver Launcher 3?`,
     apps: t`Where apps install`,
     copies: t`Where are your games?`,
     updates: t`How should apps update?`,
@@ -95,20 +98,26 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
           <h2>{titles[step]}</h2>
           <div className="setup-step" key={step}>
             {step === "welcome" && <Welcome />}
-            {step === "v3" && (
+            {step === "v3" && imported && (
+              <>
+                {imported.missing.length > 0 && <p role="status">{notImported(imported.missing)}</p>}
+                <MoveOldApps dirs={imported.dirs} onBusy={setBusy} onKeep={() => onward.current()} />
+              </>
+            )}
+            {step === "v3" && !imported && (
               <OldLibraryStep
                 onOffer={setOffering}
                 onBusy={setBusy}
-                onImported={(missing) => {
-                  setBrought(true);
-                  // Here, not by the step's onBusy: moving on now takes the step away before it would say so.
+                onImported={(missing, dirs) => {
+                  // The step stays, to say what came and offer to move its installs. Here, not by the step's onBusy,
+                  // which goes with the step.
+                  setImported({ missing, dirs });
+                  setOffering(false);
                   setBusy(false);
-                  // All of them came: on to the next step, which says so. Otherwise the step stays, to say which didn't.
-                  if (!missing.length) onward.current();
                 }}
               />
             )}
-            {step === "apps" && <AppsStep brought={brought} />}
+            {step === "apps" && <AppsStep />}
             {step === "copies" && <CopiesStep />}
             {step === "updates" && <AppUpdatesSetting inSetup />}
             {step === "usage" && <TelemetrySetting />}
@@ -144,30 +153,14 @@ function Welcome() {
   );
 }
 
-/**
- * Where apps install. After a Quiver Launcher 3 import, it says where those apps are now: still in 3.x's folders,
- * listed here as kept from before, to keep until the player moves them in, which is for once they've tried Quiver.
- */
-function AppsStep({ brought }: { brought: boolean }) {
-  const { movableApps } = useLauncher();
-  const kept = brought && movableApps().elsewhere.length > 0;
+/** Where apps install: the one folder, with a way to change it. The rest of Settings' apps folders waits there. */
+function AppsStep() {
   return (
     <>
-      {brought && (
-        <p role="status">
-          {kept ? (
-            <Trans>
-              All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver 4, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder.
-            </Trans>
-          ) : (
-            <Trans>All done: your Quiver Launcher 3 apps are in your library.</Trans>
-          )}
-        </p>
-      )}
       <p className="muted">
         <Trans>New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card.</Trans>
       </p>
-      <AppsFolder />
+      <AppsFolder inSetup />
     </>
   );
 }

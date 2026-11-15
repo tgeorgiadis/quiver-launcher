@@ -4,7 +4,7 @@
  * the first start's setup. Installed apps aren't moved or copied: they're
  * played from where 3.x put them.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArchiveRestore, Check, FolderInput, LoaderCircle, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
@@ -37,7 +37,7 @@ function useImport(onDone?: (missing: string[]) => void) {
   return { state, start, reset: () => setState("idle") };
 }
 
-const notImported = (missing: string[]) => {
+export const notImported = (missing: string[]) => {
   const names = missing.join(", ");
   return t`Done. Your apps are in your library, except these, as Quiver Launcher 3 doesn't know where they come from: ${names}.`;
 };
@@ -118,10 +118,12 @@ function movedHint(library: V3Library) {
  * What happens to the files: nothing moves, so the Quiver Launcher 3 folder is kept until the player moves its apps
  * into Quiver's own apps folder, in Settings once they've tried Quiver (AppsFolder's Move into default).
  */
-function KeepNote({ library }: { library: V3Library }) {
+function KeepNote({ library, inSetup }: { library: V3Library; inSetup?: boolean }) {
   return (
     <p className="muted old-library-keep">
-      {installedIn(library)
+      {installedIn(library) && inSetup
+        ? t`Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver 4's folder now or later.`
+        : installedIn(library)
         ? t`Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder.`
         : t`Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is.`}
     </p>
@@ -338,11 +340,27 @@ export function FindOldLibrary() {
  * found them, if the player asks; then importing it. `onOffer` says whether a
  * library waits to be imported, so the setup's own Next reads Not now,
  * `onBusy` whether it's being imported, which the setup's buttons wait for,
- * and `onImported` the names of the apps that couldn't come, once it's done.
+ * and `onImported` the names of the apps that couldn't come, once it's done:
+ * the setup then shows what came and offers to move its installs (MoveOldApps).
  */
-export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offering: boolean) => void; onBusy: (busy: boolean) => void; onImported: (missing: string[]) => void }) {
+export function OldLibraryStep({
+  onOffer,
+  onBusy,
+  onImported,
+}: {
+  onOffer: (offering: boolean) => void;
+  onBusy: (busy: boolean) => void;
+  /** With the folders of the installs that came, which the setup offers to move. */
+  onImported: (missing: string[], dirs: string[]) => void;
+}) {
   const { oldLibrary } = useLauncher();
-  const { state, start } = useImport(onImported);
+  // The library being imported, for what it had installed once it's in.
+  const importing_ = useRef<V3Library | null>(null);
+  const { state, start: startImport } = useImport((missing) => onImported(missing, (importing_.current?.apps ?? []).flatMap((a) => (a.dir && a.inApps ? [a.dir] : []))));
+  const start = (library: V3Library) => {
+    importing_.current = library;
+    startImport(library);
+  };
   // One the player pointed at from here.
   const [picked, setPicked] = useState<V3Library | null>(null);
   const [listed, setListed] = useState(false);
@@ -394,7 +412,7 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
       <p>{t`Quiver found your Quiver Launcher 3 library. This comes over:`}</p>
       <Brings library={library} />
       {hint && <p className="muted">{hint}</p>}
-      <KeepNote library={library} />
+      <KeepNote library={library} inSetup />
       <button className="link-button old-library-list" aria-expanded={listed} onClick={() => setListed(!listed)}>
         <Trans>See which apps</Trans>
       </button>

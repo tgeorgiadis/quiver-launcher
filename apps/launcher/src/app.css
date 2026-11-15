@@ -619,7 +619,19 @@ main.app-main { padding: 0 0 40px; }
 .file-picker-list button span { min-width: 0; overflow-wrap: anywhere; }
 .file-picker-list li.muted { padding: 9px 12px; }
 /* The first start's setup (setup.tsx): a step at a time, Skip setup to the left of Back and Next. */
-.detail.choose.setup { width: min(560px, 100%); }
+.detail.choose.setup { width: min(680px, 100%); }
+/* Moving a Quiver Launcher 3 library's apps (settings-page.tsx's MoveOldApps): its folder, an arrow, and Quiver's; one over the other in a narrow window. */
+.old-library-move { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.old-library-move > svg { color: var(--muted); }
+.old-library-place { display: grid; gap: 2px; align-content: start; height: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.old-library-place[data-to] { border-color: var(--accent); }
+.old-library-place strong { color: var(--strong); }
+.old-library-place small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.old-library-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 620px) {
+  .old-library-move, .old-library-choices { grid-template-columns: minmax(0, 1fr); }
+  .old-library-move > svg { justify-self: center; transform: rotate(90deg); }
+}
 .setup .setup-count { margin-bottom: -6px; font-size: 12px; }
 .setup .setup-step { display: flex; flex-direction: column; gap: 12px; }
 .setup .setup-nav { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 8px; }

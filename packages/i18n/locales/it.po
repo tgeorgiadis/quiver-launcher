@@ -64,6 +64,7 @@ msgstr "{0, plural, one {Questa non è stata spostata. È ancora dov’era, con 
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, one {Mostra di nuovo # app} other {Mostra di nuovo tutte le # app}}"
 
+#. placeholder {0}: space(free)
 #. placeholder {0}: space(state.free)
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0} free"
@@ -145,6 +146,10 @@ msgstr "{count, plural, one {# app, non ancora installata. Se l'hai già install
 msgid "{count, plural, one {# app, not installed yet} other {# apps, none installed yet}}"
 msgstr "{count, plural, one {# app, non ancora installata} other {# app, nessuna ancora installata}}"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {# app} other {# apps}}"
+msgstr "{count, plural, one {# app} other {# app}}"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, one {# app} other {# app}}, {installed, plural, one {# già installata.} other {# già installate.}}"
@@ -182,6 +187,10 @@ msgstr "{count, plural, one {Quiver Launcher 3 ha già installato # app della tu
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"
 msgstr "{count, plural, one {Usala} other {Usale}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {Your # installed app is still in Quiver Launcher 3's folder, and plays from there.} other {Your # installed apps are still in Quiver Launcher 3's folder, and play from there.}}"
+msgstr "{count, plural, one {La tua # app installata è ancora nella cartella di Quiver Launcher 3 e si avvia da lì.} other {Le tue # app installate sono ancora nella cartella di Quiver Launcher 3 e si avviano da lì.}}"
 
 #. A mod's newer version: v1.3 is out
 #: ../../apps/launcher/src/mods.tsx
@@ -875,6 +884,10 @@ msgstr "Aggiunta: {done} di {total}…"
 msgid "Adding apps"
 msgstr "Aggiunta delle app"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver 4's folder now or later."
+msgstr "Aggiungerle non sposta nulla: le app installate restano dove le ha messe Quiver Launcher 3 e si avviano da lì. Al passaggio successivo scegli se spostarle nella cartella di Quiver 4 ora o più tardi."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Advanced"
 msgstr "Avanzate"
@@ -922,14 +935,6 @@ msgstr "Tutte le app"
 #: ../../apps/launcher/src/library.tsx
 msgid "All consoles"
 msgstr "Tutte le console"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "All done: your Quiver Launcher 3 apps are in your library."
-msgstr "Fatto: le tue app di Quiver Launcher 3 sono nella tua libreria."
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver 4, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder."
-msgstr "Fatto: le tue app di Quiver Launcher 3 sono nella tua libreria. Quelle installate si avviano ancora dalla cartella di Quiver Launcher 3, qui sotto, quindi tienila per ora. Quando avrai provato Quiver 4, Sposta nella predefinita le porta nella cartella delle app di Quiver, qui o in Impostazioni › Cartella delle app."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
@@ -1958,6 +1963,10 @@ msgstr "Non si avvia"
 msgid "Don't allow"
 msgstr "Non consentire"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder."
+msgstr "Non eliminare ancora la cartella di Quiver Launcher 3. Spostale quando vuoi in Impostazioni › Cartella delle app."
+
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2860,6 +2869,10 @@ msgstr "Tieni Quiver aperto finché non ha finito. La vecchia copia di ogni app 
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "Tieni il token privato. Quando scade, creane uno nuovo e salvalo qui."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Keep them there for now"
+msgstr "Lasciale lì per ora"
+
 #. Adding this file to an app's folder has the app keep its saves there
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
@@ -3238,6 +3251,10 @@ msgstr "Sposta le app nella cartella predefinita"
 msgid "Move into default"
 msgstr "Sposta nella predefinita"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Move them now"
+msgstr "Spostale ora"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Move to…"
@@ -3251,6 +3268,10 @@ msgstr "Spostate {0} di {n, plural, one {# app} other {# app}}."
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
 msgstr "{n, plural, one {# app spostata} other {# app spostate}} nelle cartelle delle console."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder."
+msgstr "{n, plural, one {# app spostata} other {# app spostate}} nella cartella delle app di Quiver. Dopo aver verificato che funzionano, puoi eliminare la cartella di Quiver Launcher 3."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
@@ -4025,6 +4046,10 @@ msgstr "Azione rapida"
 msgid "Quit"
 msgstr "Esci"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver 4's apps folder"
+msgstr "Cartella delle app di Quiver 4"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
 msgstr "Quiver ha bloccato {installedVersion}: {blockedWhy}"
@@ -4124,6 +4149,10 @@ msgstr "È uscito Quiver Launcher {version}."
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 3's folder"
+msgstr "Cartella di Quiver Launcher 3"
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"
@@ -4463,6 +4492,10 @@ msgstr "Salvato. Ora le richieste a GitHub usano il tuo token."
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Saved. Requests to GitLab use your token now."
 msgstr "Salvato. Ora le richieste a GitLab usano il tuo token."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Saves and settings come too. After that, you can delete your Quiver Launcher 3 folder."
+msgstr "Arrivano anche salvataggi e impostazioni. Dopo, puoi eliminare la cartella di Quiver Launcher 3."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Saving…"
@@ -5818,6 +5851,10 @@ msgstr "Dove vengono installate le app"
 msgid "Where are your games?"
 msgstr "Dove sono i tuoi giochi?"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Where your Quiver Launcher 3 apps are, and Quiver's apps folder"
+msgstr "Dove si trovano le tue app di Quiver Launcher 3, e la cartella delle app di Quiver"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"
 msgstr "Quale app?"
@@ -5983,6 +6020,10 @@ msgstr "La tua attività"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Your problem report"
 msgstr "La tua segnalazione"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your Quiver Launcher 3 apps are in your library"
+msgstr "Le tue app di Quiver Launcher 3 sono nella tua libreria"
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx

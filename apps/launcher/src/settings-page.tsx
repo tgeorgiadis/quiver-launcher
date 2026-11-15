@@ -5,7 +5,7 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ChevronRight, Disc3, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Clock, Disc3, FolderInput, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
@@ -455,6 +455,43 @@ function MusicSetting() {
   );
 }
 
+/** What a move came to: how many moved, then any that couldn't (still where they were) and any old files left behind. */
+type MoveOutcome = { text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] };
+function MoveMessage({ message }: { message: MoveOutcome }) {
+  return (
+        <div className={message.error ? "job-error" : "muted"} role="status">
+          <p>{message.text}</p>
+          {message.failed?.length ? (
+            <>
+              <p>
+                {plural(message.failed.length, {
+                  one: "This one couldn't move. It's still where it was, with all its files, and plays from there:",
+                  other: "These couldn't move. They're still where they were, with all their files, and play from there:",
+                })}
+              </p>
+              <ul className="apps-left">
+                {message.failed.map((f) => (
+                  <li key={f.folder}>
+                    <strong>{f.folder}</strong>: {f.why}.
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {message.left?.length ? (
+            <>
+              <p>{t`These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:`}</p>
+              <ul className="apps-left">
+                {message.left.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
+  );
+}
+
 /**
  * The apps folders: the default, which new apps install in, and each other
  * one the player's apps are kept in (Quiver Launcher 3's, or the one before a
@@ -464,7 +501,7 @@ function MusicSetting() {
  * and a bar shows how many have moved, and how far a copy to another drive
  * has got.
  */
-export function AppsFolder() {
+export function AppsFolder({ inSetup }: { inSetup?: boolean } = {}) {
   const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, unsortedApps, moveApp } = useLauncher();
   const [asking, setAsking] = useState<{ to: string } | null>(null);
   // Moving the apps along is the player's choice; keeping them where they are is instant and first.
@@ -475,7 +512,7 @@ export function AppsFolder() {
   const [moving, setMoving] = useState<AppsMoving | null>(null);
   // Measuring the apps against the drive's free space takes a while for many: said while it does, with nothing to press.
   const [checking, setChecking] = useState(false);
-  const [message, setMessage] = useState<{ text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] } | null>(null);
+  const [message, setMessage] = useState<MoveOutcome | null>(null);
   const [states, setStates] = useState<Record<string, { exists: boolean; free?: number | null }>>({});
   const busy = Object.values(jobs).some((j) => !("error" in j));
   const { placed } = movableApps();
@@ -597,7 +634,7 @@ export function AppsFolder() {
   return (
     <section className="settings-section apps-folder" aria-label={t`Apps folders`}>
       {/* Where each app goes is the desktop's: on a phone the system keeps apps where it does. */}
-      {desktop && (
+      {desktop && !inSetup && (
         <>
           <label className="toggle">
             <input type="checkbox" checked={Boolean(settings.askWhereToInstall)} onChange={(e) => setSettings({ ...settings, askWhereToInstall: e.target.checked || undefined })} />
@@ -609,14 +646,14 @@ export function AppsFolder() {
           </label>
         </>
       )}
-      {desktop && settings.groupByConsole && (
+      {desktop && !inSetup && settings.groupByConsole && (
         <p className="muted">
           <Trans>
             In the default apps folder, ports go in Ports, in a folder for their console (Ports{slash}N64, say), and those for more than one console in Ports{slash}Multi-console. Emulators, tools and standalone games get folders of their own beside it. Apps you put in another folder go exactly there, and apps already installed stay where they are until you move them.
           </Trans>
         </p>
       )}
-      {desktop && settings.groupByConsole && (unsorted.length > 0 || sorting) && (
+      {desktop && !inSetup && settings.groupByConsole && (unsorted.length > 0 || sorting) && (
         <div className="row">
           {sorting ? (
             <p className="muted" role="status">
@@ -632,7 +669,7 @@ export function AppsFolder() {
         </div>
       )}
       <ul className="apps-folders">
-        {folders.map((f) => {
+        {(inSetup ? [home] : folders).map((f) => {
           const state = states[f.path];
           return (
             <li key={f.path} className="apps-folder-row" data-default={f.default || undefined}>
@@ -730,39 +767,116 @@ export function AppsFolder() {
           <p className="muted">{t`Quiver is measuring the apps and the free space on the drive. This can take a moment.`}</p>
         </div>
       ) : null}
-      {message && (
-        <div className={message.error ? "job-error" : "muted"} role="status">
-          <p>{message.text}</p>
-          {message.failed?.length ? (
-            <>
-              <p>
-                {plural(message.failed.length, {
-                  one: "This one couldn't move. It's still where it was, with all its files, and plays from there:",
-                  other: "These couldn't move. They're still where they were, with all their files, and play from there:",
-                })}
-              </p>
-              <ul className="apps-left">
-                {message.failed.map((f) => (
-                  <li key={f.folder}>
-                    <strong>{f.folder}</strong>: {f.why}.
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          {message.left?.length ? (
-            <>
-              <p>{t`These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:`}</p>
-              <ul className="apps-left">
-                {message.left.map((p) => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
-            </>
-          ) : null}
+      {message && <MoveMessage message={message} />}
+    </section>
+  );
+}
+
+/**
+ * The setup's choice once a Quiver Launcher 3 library is in (setup.tsx): its apps folder on one side, Quiver's on the
+ * other, and whether its apps move across now or stay there for now, which `onKeep` goes on from. `dirs` are the
+ * library's installs; `onBusy` says a move is under way, which the setup's buttons wait for. Nothing to choose, and
+ * nothing shown, when none of them is in an apps folder.
+ */
+export function MoveOldApps({ dirs, onBusy, onKeep }: { dirs: string[]; onBusy: (busy: boolean) => void; onKeep: () => void }) {
+  const { config, jobs, appsFolders, moveApps } = useLauncher();
+  const [checking, setChecking] = useState(false);
+  const [moving, setMoving] = useState<AppsMoving | null>(null);
+  const [outcome, setOutcome] = useState<MoveOutcome | null>(null);
+  const [free, setFree] = useState<number | null>(null);
+  const dir = config.appsDir;
+  const from = appsFolders()
+    .slice(1)
+    .filter((f) => f.apps.some((a) => a.dir !== undefined && dirs.includes(a.dir)));
+  const count = from.reduce((n, f) => n + f.apps.length, 0);
+  const downloading = Object.values(jobs).some((j) => !("error" in j));
+  useEffect(() => {
+    const off = native.onAppsMoving((m) => m.total > 0 && setMoving(m));
+    return () => void off.then((stop) => stop());
+  }, []);
+  useEffect(() => {
+    let live = true;
+    native.appsFolderStates([dir]).then((found) => live && setFree(found?.[0]?.free ?? null), () => {});
+    return () => void (live = false);
+  }, [dir, moving]);
+  const move = async () => {
+    setOutcome(null);
+    setChecking(true);
+    onBusy(true);
+    const refused = await native.appsFolderRefusal(dir, from.flatMap((f) => f.apps)).catch((e) => String(e));
+    setChecking(false);
+    if (refused) {
+      onBusy(false);
+      return setOutcome({ text: refused, error: true });
+    }
+    const n = count;
+    setMoving({ done: 0, total: n, folder: "", copied: 0, size: 0 });
+    moveApps(dir, { inside: false, from: from.map((f) => f.path) })
+      .then(
+        ({ left, failed }) =>
+          setOutcome(
+            failed.length
+              ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
+              : {
+                  text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder.`,
+                  left,
+                },
+          ),
+        (e) => setOutcome({ text: String(e), error: true }),
+      )
+      .finally(() => {
+        setMoving(null);
+        onBusy(false);
+      });
+  };
+  if (moving)
+    return (
+      <>
+        <MovingApps moving={moving} />
+        <p className="muted">{t`Desktop and Steam shortcuts you made point at the old folder, so make them again after.`}</p>
+      </>
+    );
+  if (!count) return outcome ? <MoveMessage message={outcome} /> : null;
+  return (
+    <>
+      <p>{plural(count, { one: "Your # installed app is still in Quiver Launcher 3's folder, and plays from there.", other: "Your # installed apps are still in Quiver Launcher 3's folder, and play from there." })}</p>
+      <div className="old-library-move" role="group" aria-label={t`Where your Quiver Launcher 3 apps are, and Quiver's apps folder`}>
+        <div className="old-library-place">
+          <strong>{t`Quiver Launcher 3's folder`}</strong>
+          <span>{plural(count, { one: "# app", other: "# apps" })}</span>
+          {from.map((f) => (
+            <small key={f.path}>{f.path}</small>
+          ))}
+        </div>
+        <ArrowRight size={22} aria-hidden="true" />
+        <div className="old-library-place" data-to>
+          <strong>{t`Quiver 4's apps folder`}</strong>
+          <span>{free != null ? t`${space(free)} free` : t`New apps install here.`}</span>
+          <small>{dir}</small>
+        </div>
+      </div>
+      {outcome && <MoveMessage message={outcome} />}
+      {checking ? (
+        <p className="muted" role="status">{t`Checking there's room…`}</p>
+      ) : (
+        <div className="old-library-choices">
+          <button className="add-choice" disabled={downloading} title={downloading ? t`Wait for downloads to finish first` : undefined} onClick={() => void move()}>
+            <FolderInput size={22} aria-hidden="true" />
+            <span>
+              <strong>{t`Move them now`}</strong>
+              <small>{t`Saves and settings come too. After that, you can delete your Quiver Launcher 3 folder.`}</small>
+            </span>
+          </button>
+          <button className="add-choice" onClick={onKeep}>
+            <Clock size={22} aria-hidden="true" />
+            <span>
+              <strong>{t`Keep them there for now`}</strong>
+              <small>{t`Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder.`}</small>
+            </span>
+          </button>
         </div>
       )}
-    </section>
+    </>
   );
 }
 
