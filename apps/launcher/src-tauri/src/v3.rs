@@ -299,7 +299,7 @@ pub fn existing(dir: &Path) -> Option<Existing> {
 }
 
 /// The kinds of picture 3.x's Add Custom Image kept, which Quiver can read too (custom_art.rs).
-const PICTURES: [&str; 5] = ["png", "jpg", "jpeg", "gif", "webp"];
+const PICTURES: [&str; 6] = ["png", "jpg", "jpeg", "gif", "webp", "ico"];
 
 /// The picture 3.x showed for an app: the file the player chose for it, which 3.x kept in its cache folder as
 /// `<folder name>_custom.<kind>` (GameInfo.SetCustomIcon), or which an entry can name itself; else the address its

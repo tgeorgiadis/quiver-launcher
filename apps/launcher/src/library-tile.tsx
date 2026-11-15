@@ -106,11 +106,13 @@ function TileTags({ entry, ports, details, consoleNames }: { entry?: Entry; port
 }
 
 /**
- * Under the names, what players said, when it was last updated and the version installed here, a line each, those
- * picked; blank lines on a game's card with more than one port, and for the version, on an app not installed.
+ * Under the names, what players said, when it was last updated and the version installed here (with the update
+ * there is to it, in the update mark's colour), a line each, those picked; blank lines on a game's card with more than
+ * one port, and for the version, on an app not installed.
  */
-function TileLines({ entry, details, version }: { entry?: Entry; details: readonly LibraryDetail[]; version?: string }) {
+function TileLines({ entry, details, version, update }: { entry?: Entry; details: readonly LibraryDetail[]; version?: string; update?: string }) {
   const installedLabel = version ? versionLabel(version) : "";
+  const availableLabel = update ? versionLabel(update) : "";
   return (
     <>
       {details.includes("rating") && <span className="tile-line">{entry && <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />}</span>}
@@ -118,6 +120,14 @@ function TileLines({ entry, details, version }: { entry?: Entry; details: readon
       {details.includes("version") && (
         <span className="tile-line tile-version">
           {entry && version && <Trans comment="Under an app's name on its library card: the version installed on this computer">Installed {installedLabel}</Trans>}
+          {entry && version && update && (
+            <>
+              {" · "}
+              <span className="tile-version-update">
+                <Trans>Available {availableLabel}</Trans>
+              </span>
+            </>
+          )}
         </span>
       )}
     </>
@@ -285,7 +295,7 @@ const Tile = memo(function Tile({
                   <ScrollingText text={small} />
                 </span>
               )}
-              <TileLines entry={entry} details={details} version={install?.version} />
+              <TileLines entry={entry} details={details} version={install?.version} update={update && !busy ? updateTo : undefined} />
             </>
           ) : (
             <>
@@ -580,8 +590,10 @@ export function GameTile(props: GameTileProps) {
   const state = ports.map((p, i) => `${p.id} ${copies[i]} ${installs[p.id]?.lastPlayed ?? ""} ${installs[p.id]?.version ?? ""} ${props.inLibrary(p.id)}`).join("|");
   // The version installed, under the name: of its one port.
   const version = ports.length === 1 ? installs[ports[0].id]?.version : undefined;
+  const one = ports.length === 1 ? ports[0] : undefined;
+  const update = one && installs[one.id] && !jobs[one.id] && hasUpdate(catalog[one.id] ?? one, installs[one.id]) ? updateFor(catalog[one.id] ?? one, installs[one.id])?.version : undefined;
   const installed = ports.some((p) => Boolean(installs[p.id]));
-  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} version={version} state={state} consoleNames={consoleNames} />;
+  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} version={version} update={update} state={state} consoleNames={consoleNames} />;
 }
 
 const Game = memo(
@@ -603,8 +615,9 @@ const Game = memo(
     busy,
     installed,
     version,
+    update,
     consoleNames,
-  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; version?: string; state: string; consoleNames: Record<string, string> }) {
+  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; version?: string; update?: string; state: string; consoleNames: Record<string, string> }) {
     const now = useLauncherNow();
     const article = useRef<HTMLElement>(null);
     const first = ports[0];
@@ -665,7 +678,7 @@ const Game = memo(
                         <ScrollingText text={small} />
                       </span>
                     )}
-                    <TileLines entry={one} details={details} version={version} />
+                    <TileLines entry={one} details={details} version={version} update={update} />
                   </>
                 ) : (
                   <Mark copy={copy} marks={marks} gettable={gettable} />
@@ -720,6 +733,8 @@ const Game = memo(
     a.ready === b.ready &&
     a.busy === b.busy &&
     a.installed === b.installed &&
+    a.version === b.version &&
+    a.update === b.update &&
     a.stack.game.id === b.stack.game.id &&
     a.stack.game.title === b.stack.game.title &&
     a.stack.ports.length === b.stack.ports.length &&
