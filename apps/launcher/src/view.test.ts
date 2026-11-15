@@ -96,3 +96,7 @@ test("a library card can show the version installed, kept after when it was last
   expect(viewOf({ details: ["version", "updated", "subtitle"] }).details).toEqual(["subtitle", "updated", "version"]);
   expect(savedView({ ...DEFAULT_VIEW, details: ["version"] })).toEqual({ details: ["version"] });
 });
+
+test("the update there is to the installed version is a detail of its own, after the version", () => {
+  expect(viewOf({ details: ["update", "version"] }).details).toEqual(["version", "update"]);
+});

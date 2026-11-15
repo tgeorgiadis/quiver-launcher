@@ -411,6 +411,7 @@ function DetailChoice<D extends string>({ options, value, onChange, names }: { o
 const LIBRARY_DETAIL_NAMES: Partial<Record<LibraryDetail, MessageDescriptor>> = {
   subtitle: msg({ message: "Name underneath", comment: "Library card detail: the other name (the app's or the game's) under the large one" }),
   version: msg({ message: "Installed version", comment: "Library card detail: the version installed on this computer, always shown under the name" }),
+  update: msg({ message: "Update available", comment: "Library card detail: the newer version there is to update to, on a line under the name" }),
 };
 const LOOK_ICONS: Record<CardLook, ReactNode> = { box: <RectangleVertical size={15} aria-hidden="true" />, wide: <RectangleHorizontal size={15} aria-hidden="true" /> };
 
