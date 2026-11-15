@@ -677,8 +677,8 @@ msgid "+ New tag…"
 msgstr "+ 新建標籤 →"
 
 #: ../../apps/launcher/src/setup.tsx
-msgid "<0>Easy setup</0> for some apps in the catalog, not all of them: for those, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
-msgstr "目錄中的部分應用程式（並非全部）支援<0>輕鬆設定</0>：對這些應用程式，你只需提供 ROM 或光碟映像，Quiver 會在你設定的資料夾中找到它"
+msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>輕鬆設定：</0>對於支援此功能的應用程式，你只需提供 ROM 或光碟映像，Quiver 會在你設定的資料夾中找到它"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "<0>Language support:</0> ten languages to choose from"
