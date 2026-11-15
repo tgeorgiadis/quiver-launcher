@@ -174,7 +174,7 @@ function Welcome() {
   return (
     <>
       <p>
-        <Trans>Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as PC ports, recompilations and fan projects.</Trans>
+        <Trans>Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as modern ports (source ports and recompilations) and fan projects.</Trans>
       </p>
       <p>
         <Trans>Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:</Trans>
