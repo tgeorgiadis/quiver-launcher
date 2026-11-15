@@ -118,7 +118,7 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
                 }}
               />
             )}
-            {step === "apps" && <AppsStep />}
+            {step === "apps" && <AppsStep onBusy={setBusy} />}
             {step === "copies" && <CopiesStep />}
             {step === "updates" && <AppUpdatesSetting inSetup />}
             {step === "usage" && <TelemetrySetting />}
@@ -195,13 +195,13 @@ function Welcome() {
 }
 
 /** Where apps install: the one folder, with a way to change it. The rest of Settings' apps folders waits there. */
-function AppsStep() {
+function AppsStep({ onBusy }: { onBusy: (busy: boolean) => void }) {
   return (
     <>
       <p className="muted">
         <Trans>New apps install here. Pick another drive or folder if this one is short of space, such as a Steam Deck's microSD card.</Trans>
       </p>
-      <AppsFolder inSetup />
+      <AppsFolder inSetup onBusy={onBusy} />
     </>
   );
 }

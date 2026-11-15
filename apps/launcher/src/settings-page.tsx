@@ -501,7 +501,7 @@ function MoveMessage({ message }: { message: MoveOutcome }) {
  * and a bar shows how many have moved, and how far a copy to another drive
  * has got.
  */
-export function AppsFolder({ inSetup }: { inSetup?: boolean } = {}) {
+export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (busy: boolean) => void } = {}) {
   const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, unsortedApps, moveApp } = useLauncher();
   const [asking, setAsking] = useState<{ to: string } | null>(null);
   // Moving the apps along is the player's choice; keeping them where they are is instant and first.
@@ -552,6 +552,9 @@ export function AppsFolder({ inSetup }: { inSetup?: boolean } = {}) {
   // Sorting the apps already installed into console folders: how many of how many have moved.
   const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
   const idle = !asking && !bringing && !moving && !checking && !sorting;
+  // A move under way, or the check before it: the setup's own buttons wait for it.
+  const working = Boolean(moving || checking || sorting);
+  useEffect(() => onBusy?.(working), [working]); // eslint-disable-line react-hooks/exhaustive-deps
   const waitTitle = busy ? t`Wait for downloads to finish first` : undefined;
   const pick = async () => {
     setMessage(null);
@@ -919,7 +922,8 @@ function MovingApps({ moving }: { moving: AppsMoving }) {
   const percent = Math.floor(part * 100);
   return (
     <div className="apps-moving" role="status">
-      <div className="progress" aria-label={t`Moving apps`} aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} role="progressbar">
+      {/* Until the first app is on its way the bar moves by itself, so getting ready doesn't look like nothing. */}
+      <div className={folder || done ? "progress" : "progress waiting"} aria-label={t`Moving apps`} aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} role="progressbar">
         <div className="bar" style={{ width: `${width}%` }} />
         <span>{t`${done} of ${total} apps moved`}</span>
       </div>
