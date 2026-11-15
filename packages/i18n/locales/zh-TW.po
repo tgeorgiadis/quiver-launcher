@@ -1736,6 +1736,10 @@ msgstr "選擇平臺"
 msgid "Choose a program (.exe) that starts the app."
 msgstr "選擇一個用於啟動應用程式的程式（.exe）。"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose a release"
+msgstr "選擇版本"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Choose a topic (optional)"
 msgstr "選擇主題（可選）"
@@ -1835,6 +1839,10 @@ msgstr "選擇用於啟動應用程式的程式。"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose the program…"
 msgstr "選擇程式 →"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Choose the release you tried, or Not sure."
+msgstr "選擇你嘗試的版本，或選擇「不確定」。"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Choose this folder"
@@ -5365,6 +5373,10 @@ msgstr "分享你使用 {name} 的執行體驗"
 msgid "Say how it ran for you"
 msgstr "分享你的執行體驗"
 
+#: ../../apps/launcher/src/feedback.tsx
+msgid "Say what went wrong, so the developer and other players can make sense of it."
+msgstr "說明出了什麼問題，方便開發者和其他玩家理解。"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "Say what's wrong or missing."
 msgstr "說明問題或缺少的內容。"
@@ -6955,6 +6967,10 @@ msgstr "玩家的評價"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "What players say"
 msgstr "玩家評價"
+
+#: ../../apps/launcher/src/feedback.tsx
+msgid "What went wrong, and when? What did you try to fix it?"
+msgstr "出了什麼問題？在什麼時候？你嘗試過怎樣解決？"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
