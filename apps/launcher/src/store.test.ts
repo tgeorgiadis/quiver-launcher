@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, retagged, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -762,5 +762,20 @@ describe("retagged", () => {
     const [a, b] = retagged([item("a", ["gog"]), item("b", ["GOG", "mine"])], "gog");
     expect(a.overrides?.tags).toBeUndefined();
     expect(b.overrides?.tags).toEqual(["mine"]);
+  });
+});
+
+describe("withOldPictures", () => {
+  const item = (overrides?: LibraryItem["overrides"]): LibraryItem => ({ id: "a", slug: "a", addedAt: 0, overrides });
+  it("fills each kind of picture the app has none of the player's for", () => {
+    const old = { icon: "file:icon-1.png", box: "file:box-1.jpg", cover: "file:cover-1.jpg" };
+    expect(withOldPictures(item(), old).overrides?.pictures).toEqual(old);
+    expect(withOldPictures(item({ pictures: { icon: "file:mine.png" } }), old).overrides?.pictures).toEqual({ ...old, icon: "file:mine.png" });
+    // A cover from the account's address counts as the player's.
+    expect(withOldPictures(item({ cover: "https://x.test/c.png" }), { cover: "file:cover-1.jpg" }).overrides?.pictures).toBeUndefined();
+  });
+  it("leaves an app with all of them as it is", () => {
+    const had = item({ pictures: { icon: "file:mine.png" } });
+    expect(withOldPictures(had, { icon: "file:icon-1.png" })).toBe(had);
   });
 });

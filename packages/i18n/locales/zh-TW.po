@@ -4204,6 +4204,10 @@ msgstr "Quiver Launcher {version} 已釋出。"
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Quiver Launcher 3 had one image for each app. Quiver Launcher 4 has a few kinds, each shown in different places. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to."
+msgstr "Quiver Launcher 3 每個應用程式只有一張圖片。Quiver Launcher 4 有幾種，各自顯示在不同的地方。你的圖片比較像圖示、封面還是封面圖？選擇要把自訂圖片加到哪些卡片顯示中。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3 的資料夾"
@@ -5019,8 +5023,8 @@ msgid "Source"
 msgstr "來源"
 
 #: ../../apps/launcher/src/custom-art.tsx
-msgid "Square. The app's page, the Icon view and its shortcuts."
-msgstr "方形。應用程式頁面、圖示檢視及其快捷方式。"
+msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
+msgstr "方形，約 512×512。應用程式頁面、圖示檢視及其快捷方式。"
 
 #. Project type
 #: ../../apps/launcher/src/App.tsx
@@ -6082,6 +6086,14 @@ msgstr "你的副本位於 {name} 讀取的位置。"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy: {0}"
 msgstr "你的副本：{0}"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your custom images from Quiver Launcher 3"
+msgstr "你在 Quiver Launcher 3 中的自訂圖片"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your custom images won't come over. You can still give any app pictures later, from Change name or artwork on its page."
+msgstr "你的自訂圖片不會被帶過來。之後仍可在應用程式頁面的「更改名稱或插畫」中為任何應用程式加上圖片。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"

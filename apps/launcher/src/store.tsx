@@ -21,7 +21,7 @@ import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
 import { appsOfRepository, bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
-import { artFile, artFiles, isArtAddress, type Pictures } from "./custom-art";
+import { artFile, artFiles, isArtAddress, type ArtSlot, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
@@ -237,8 +237,11 @@ type Launcher = {
   setUpCopy: (asking: { id: string; fileId?: string; play?: boolean } | null) => void;
   /** The Quiver Launcher 3 library the launcher found by itself, until a library is brought over; undefined while it looks. */
   oldLibrary: V3Library | null | undefined;
-  /** Imports a Quiver Launcher 3 library's apps and tag filters, saying how many apps are done as it goes; resolves to the names of those it couldn't. */
-  importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void) => Promise<string[]>;
+  /**
+   * Imports a Quiver Launcher 3 library's apps and tag filters, and its pictures as each kind in `slots` (the icon
+   * unless said), saying how many apps are done as it goes; resolves to the names of those it couldn't.
+   */
+  importOld: (library: Pick<V3Library, "apps" | "filters">, onProgress?: (done: number) => void, slots?: readonly ArtSlot[]) => Promise<string[]>;
   /** The Quiver Launcher 3 library in a folder the player picked, its installs in `apps` if given: null when there isn't one. */
   findOld: (path: string, apps?: string[]) => Promise<V3Library | null>;
   /** Installs of Quiver Launcher 3's for apps in the library that show as not installed here, once found: a library brought over before Quiver could see them. */
@@ -988,6 +991,14 @@ export function bringsAlong({ apps, filters }: Pick<V3Library, "apps" | "filters
     pictures: coming.filter((a) => a.icon && !isArtAddress(a.icon)).length,
     left: apps.length - coming.length,
   };
+}
+
+/** An app with the pictures it had in 3.x, in each place that has none of the player's here; the same app when none is new. */
+export function withOldPictures(item: LibraryItem, pictures: Pictures): LibraryItem {
+  const have = item.overrides?.pictures ?? {};
+  // A cover from an address is the account's cover, which the player may have set.
+  const unset = Object.entries(pictures).filter(([slot]) => !have[slot as ArtSlot] && !(slot === "cover" && item.overrides?.cover));
+  return unset.length ? { ...item, overrides: { ...item.overrides, pictures: { ...have, ...Object.fromEntries(unset) } } } : item;
 }
 
 /**
@@ -2465,7 +2476,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
      * the entry 3.x knew), any other from GitHub or GitLab as a custom app. Returns the names of those it couldn't:
      * ones 3.x didn't say where they're from. The player's tag filters come over as playlists.
      */
-    async importOld({ apps, filters = [] }, onProgress) {
+    async importOld({ apps, filters = [] }, onProgress, slots = ["icon"]) {
       const ids = await catalogRepositories();
       let done = 0;
       // Each asks the site, or its repository's host, so several at a time; then they're added in the library's order.
@@ -2519,20 +2530,19 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           }),
         );
       if (hidden.length) setSettings((s) => ({ ...s, hidden: [...new Set([...(s.hidden ?? []), ...hidden])] }));
-      // Their pictures, as the app's icon (which a card without a cover shows in the Cover view too), unless it has one
-      // of the player's here already. A file is copied in, as picking it does; one that can't be read is left out.
-      const icons = new Map(
-        (await Promise.all(pictures.map(async ([id, icon]) => [id, isArtAddress(icon) ? icon : await native.importArtwork(icon, "icon").then(artFile, () => undefined)] as const))).filter(
-          (p): p is readonly [string, string] => Boolean(p[1]),
+      // Their pictures, as each kind of picture the player chose for them (OldPictures), where the app has none of the
+      // player's here already. A file is copied in for each, sized for it, as picking one does; one that can't be read
+      // is left out.
+      const kept = new Map<string, Pictures>();
+      await Promise.all(
+        pictures.flatMap(([id, picture]) =>
+          slots.map(async (slot) => {
+            const value = isArtAddress(picture) ? picture : await native.importArtwork(picture, slot).then(artFile, () => undefined);
+            if (value) kept.set(id, { ...kept.get(id), [slot]: value });
+          }),
         ),
       );
-      if (icons.size)
-        setLibrary((l) =>
-          l.map((i) => {
-            const icon = icons.get(i.id);
-            return !icon || i.overrides?.pictures?.icon ? i : { ...i, overrides: { ...i.overrides, pictures: { ...i.overrides?.pictures, icon } } };
-          }),
-        );
+      if (kept.size) setLibrary((l) => l.map((i) => (kept.has(i.id) ? withOldPictures(i, kept.get(i.id)!) : i)));
       // Their tag filters, as playlists; one named as a playlist here already leaves that one as it is.
       const names = new Set(collections.map((c) => c.name.toLowerCase()));
       const playlists = importedPlaylists(filters, imported).filter((p) => !names.has(p.name.toLowerCase()) && names.add(p.name.toLowerCase()));

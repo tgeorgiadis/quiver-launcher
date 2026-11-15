@@ -10,6 +10,8 @@ import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { bringsAlong, useLauncher } from "./store";
 import { native, type V3Library } from "./native";
+import { DEFAULT_OLD_PICTURE_SLOTS, OldPictures, hasOldPictures } from "./old-pictures";
+import type { ArtSlot } from "./custom-art";
 
 type Progress = { done: number; total: number };
 /** Importing a library's apps: idle, under way (how many are done), or done with the names of the apps that couldn't come. */
@@ -21,12 +23,14 @@ const importing = (state: Import): state is Progress => typeof state === "object
 function useImport(onDone?: (missing: string[]) => void) {
   const { importOld, setSettings } = useLauncher();
   const [state, setState] = useState<Import>("idle");
+  // Where its pictures go (old-pictures.tsx).
+  const [slots, setSlots] = useState<readonly ArtSlot[]>(DEFAULT_OLD_PICTURE_SLOTS);
   const start = (library: V3Library) => {
     const total = library.apps.length;
     setState({ done: 0, total });
     // A library came over: the first run's banner has nothing more to ask.
     setSettings((s) => ({ ...s, oldLibraryNoticeSeen: true }));
-    importOld(library, (done) => setState({ done, total })).then(
+    importOld(library, (done) => setState({ done, total }), slots).then(
       (missing) => {
         setState(missing);
         onDone?.(missing);
@@ -34,7 +38,10 @@ function useImport(onDone?: (missing: string[]) => void) {
       () => setState("idle"),
     );
   };
-  return { state, start, reset: () => setState("idle") };
+  /** The choice of where its pictures go, for a library that has any. */
+  const pictures = (library: V3Library, compact?: boolean) =>
+    hasOldPictures(library) && !importing(state) ? <OldPictures library={library} value={slots} onChange={setSlots} compact={compact} /> : null;
+  return { state, start, reset: () => setState("idle"), pictures };
 }
 
 export const notImported = (missing: string[]) => {
@@ -193,7 +200,7 @@ function ChooseFolder({ library, onClick }: { library: V3Library; onClick: () =>
  */
 export function OldLibrary({ onDone }: { onDone: () => void }) {
   const { oldLibrary, oldInstalls, answerOldInstalls, config, settings, setSettings } = useLauncher();
-  const { state, start, reset } = useImport(() => onDone());
+  const { state, start, reset, pictures } = useImport(() => onDone());
   // One the player pointed at from here.
   const [picked, setPicked] = useState<V3Library | null>(null);
   const library = picked ?? oldLibrary;
@@ -250,6 +257,7 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
         {offer(library)}
         {problem && <span className="old-library-folder">{problem}</span>}
       </p>
+      {pictures(library, true)}
       {importing(state) ? (
         <Importing {...state} />
       ) : (
@@ -274,7 +282,7 @@ export function OldLibrary({ onDone }: { onDone: () => void }) {
  */
 export function FindOldLibrary() {
   const { oldLibrary } = useLauncher();
-  const { state, start, reset } = useImport();
+  const { state, start, reset, pictures } = useImport();
   const [library, setLibrary] = useState<V3Library | null>(null);
   const { choose, problem } = useFolderChoice(
     library,
@@ -311,6 +319,7 @@ export function FindOldLibrary() {
           <Brings library={library} />
           {movedHint(library) && <p className="muted">{movedHint(library)}</p>}
           <KeepNote library={library} />
+          {pictures(library)}
           {importing(state) ? (
             <Importing {...state} />
           ) : (
@@ -356,7 +365,7 @@ export function OldLibraryStep({
   const { oldLibrary } = useLauncher();
   // The library being imported, for what it had installed once it's in.
   const importing_ = useRef<V3Library | null>(null);
-  const { state, start: startImport } = useImport((missing) => onImported(missing, (importing_.current?.apps ?? []).flatMap((a) => (a.dir && a.inApps ? [a.dir] : []))));
+  const { state, start: startImport, pictures } = useImport((missing) => onImported(missing, (importing_.current?.apps ?? []).flatMap((a) => (a.dir && a.inApps ? [a.dir] : []))));
   const start = (library: V3Library) => {
     importing_.current = library;
     startImport(library);
@@ -413,6 +422,7 @@ export function OldLibraryStep({
       <Brings library={library} />
       {hint && <p className="muted">{hint}</p>}
       <KeepNote library={library} inSetup />
+      {pictures(library)}
       <button className="link-button old-library-list" aria-expanded={listed} onClick={() => setListed(!listed)}>
         <Trans>See which apps</Trans>
       </button>

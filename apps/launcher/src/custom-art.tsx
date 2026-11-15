@@ -58,9 +58,15 @@ const SLOTS: { slot: ArtSlot; label: MessageDescriptor; address: MessageDescript
   { slot: "box", label: msg`Box art`, address: msg`Box art address`, hint: msg`Portrait, about 600×900. The library's cards and TV mode.`, shape: "2 / 3", catalog: (e) => e.libraryArt?.capsule },
   { slot: "cover", label: msg`Cover`, address: msg`Cover address`, hint: msg`Wide, about 920×430. The Cover view, and anywhere there's no box art.`, shape: "920 / 430", catalog: (e) => e.libraryArt?.header },
   { slot: "banner", label: msg`Banner`, address: msg`Banner address`, hint: msg`Very wide, about 1920×620. Behind the app's page and Continue playing.`, shape: "1920 / 620", catalog: (e) => e.libraryArt?.hero },
-  { slot: "icon", label: msg`Icon`, address: msg`Icon address`, hint: msg`Square. The app's page, the Icon view and its shortcuts.`, shape: "1", catalog: (e) => e.artwork },
+  { slot: "icon", label: msg`Icon`, address: msg`Icon address`, hint: msg`Square, about 512×512. The app's page, the Icon view and its shortcuts.`, shape: "1", catalog: (e) => e.artwork },
   { slot: "logo", label: msg`Logo`, address: msg`Logo address`, hint: msg`A transparent PNG. For its Steam shortcut.`, shape: "16 / 9", catalog: (e) => e.libraryArt?.logo },
 ];
+
+/** A kind of picture's name, where it shows and how big it is, and its shape (a CSS aspect ratio), for a choice of where a picture goes. */
+export function slotWords(slot: ArtSlot) {
+  const field = SLOTS.find((f) => f.slot === slot)!;
+  return { label: i18n._(field.label), hint: i18n._(field.hint), shape: field.shape };
+}
 
 /** What the form holds for a picture: an address being typed, or a file's name with FILE before it. */
 export type ArtValues = Record<ArtSlot, string>;

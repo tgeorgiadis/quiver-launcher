@@ -4204,6 +4204,10 @@ msgstr "O Quiver Launcher {version} está disponível."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Quiver Launcher 3 had one image for each app. Quiver Launcher 4 has a few kinds, each shown in different places. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to."
+msgstr "O Quiver Launcher 3 tinha uma imagem por app. O Quiver Launcher 4 tem vários tipos, cada um mostrado em lugares diferentes. As suas pareciam mais ícones, capas ou arte da caixa? Escolha em quais exibições de cards suas imagens personalizadas devem ser adicionadas."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Pasta do Quiver Launcher 3"
@@ -5019,8 +5023,8 @@ msgid "Source"
 msgstr "Código-fonte"
 
 #: ../../apps/launcher/src/custom-art.tsx
-msgid "Square. The app's page, the Icon view and its shortcuts."
-msgstr "Quadrada. A página do app, a visualização de ícones e os atalhos."
+msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
+msgstr "Quadrada, cerca de 512×512. A página do app, a visualização de ícones e os atalhos."
 
 #. Project type
 #: ../../apps/launcher/src/App.tsx
@@ -6082,6 +6086,14 @@ msgstr "Sua cópia está onde {name} lê."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copy: {0}"
 msgstr "Sua cópia: {0}"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your custom images from Quiver Launcher 3"
+msgstr "Suas imagens personalizadas do Quiver Launcher 3"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your custom images won't come over. You can still give any app pictures later, from Change name or artwork on its page."
+msgstr "Suas imagens personalizadas não serão trazidas. Você ainda pode dar imagens a qualquer app depois, em Mudar nome ou arte na página dele."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"
