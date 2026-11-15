@@ -291,6 +291,12 @@ fn free_name(folder: &str, to: &Path, claimed: &[String]) -> String {
     std::iter::once(folder.to_string()).chain((2..).map(|i| format!("{folder} {i}"))).find(|n| !taken(n)).unwrap()
 }
 
+/// The name an app kept elsewhere has on disk: its folder's own name (the player may have renamed it), else the
+/// name the launcher knows it by.
+fn own_name(app: &App, dir: &Path) -> String {
+    dir.file_name().and_then(|n| n.to_str()).filter(|n| crate::install::plain_name(n).is_ok()).map_or_else(|| app.folder.clone(), str::to_string)
+}
+
 /// Moves the installed apps into `to` and makes it the apps folder: those in
 /// the apps folder (`from`), and those kept somewhere else, such as Quiver
 /// Launcher 3's, which come in beside them. `moved` hears each app's new
@@ -318,9 +324,9 @@ pub fn move_apps(data: &Path, from: &Path, to: &Path, apps: &[App], progress: im
         if plan.iter().any(|(_, planned, _)| same(planned, &dir)) {
             continue;
         }
-        // The apps folder's own keep their names, which nothing in `to` has (`refuse`); one kept elsewhere gets a
-        // free one.
-        let name = if app.dir.is_none() { app.folder.clone() } else { free_name(&app.folder, &place(app, to), &claimed) };
+        // The apps folder's own keep their names, which nothing in `to` has (`refuse`). One kept elsewhere keeps the
+        // name its folder has there, which the player may have chosen, with a number after it if that's taken.
+        let name = if app.dir.is_none() { app.folder.clone() } else { free_name(&own_name(app, &dir), &place(app, to), &claimed) };
         claimed.push(name.clone());
         plan.push((app, dir, name));
     }
@@ -686,7 +692,7 @@ mod tests {
         fs::create_dir_all(&to).unwrap();
         let moved = std::cell::RefCell::new(vec![]);
         let done = move_apps(data.path(), &to, &to, &[kept("a", "YuGiOhRecomp", &shared), kept("b", "YuGiOh", &shared)], |_| {}, |m| moved.borrow_mut().push(m.id)).unwrap();
-        assert_eq!(fs::read_to_string(to.join("YuGiOhRecomp/save.dat")).unwrap(), "saved");
+        assert_eq!(fs::read_to_string(to.join("YuGiOh/save.dat")).unwrap(), "saved");
         assert!(done.failed.is_empty(), "{:?}", done.failed);
         assert_eq!(moved.into_inner(), ["a"]);
     }
@@ -697,7 +703,7 @@ mod tests {
         let v3 = tempfile::tempdir().unwrap();
         let from = current(data.path());
         fs::create_dir_all(from.join("sm64")).unwrap();
-        // 3.x named its folders its own way; one's name is taken by an app already here.
+        // 3.x named its folders its own way, and they keep those names; one's name is taken by an app already here.
         fs::create_dir_all(v3.path().join("Apps/Zelda64Recomp/saves")).unwrap();
         fs::write(v3.path().join("Apps/Zelda64Recomp/saves/file1.sav"), "link").unwrap();
         fs::create_dir_all(v3.path().join("Apps/SM64")).unwrap();
@@ -706,13 +712,45 @@ mod tests {
         let apps = [app("a", "sm64"), kept("z", "zelda", &v3.path().join("Apps/Zelda64Recomp")), kept("m", "sm64", &v3.path().join("Apps/SM64")), kept("gone", "x", &v3.path().join("Apps/Gone"))];
         let steps = std::cell::RefCell::new(vec![]);
         let done = move_apps(data.path(), &from, &to, &apps, |m| steps.borrow_mut().push((m.done, m.total)), |_| {}).unwrap();
-        assert_eq!(fs::read_to_string(to.join("zelda/saves/file1.sav")).unwrap(), "link");
-        assert_eq!(fs::read_to_string(to.join("sm64 2/game.exe")).unwrap(), "mario");
+        assert_eq!(fs::read_to_string(to.join("Zelda64Recomp/saves/file1.sav")).unwrap(), "link");
+        assert_eq!(fs::read_to_string(to.join("SM64 2/game.exe")).unwrap(), "mario");
         assert!(to.join("sm64").is_dir());
         assert!(!v3.path().join("Apps/Zelda64Recomp").exists() && !v3.path().join("Apps/SM64").exists());
-        // The one under another name keeps its own folder (`dir`).
-        assert_eq!(done.inside, ["a", "z"]);
+        // Those under another name than the launcher's keep their own folder (`dir`).
+        assert_eq!(done.inside, ["a"]);
         assert_eq!(steps.into_inner().last(), Some(&(3, 3)));
+    }
+
+    #[test]
+    fn an_app_kept_elsewhere_keeps_the_folder_name_the_player_gave_it() {
+        let data = tempfile::tempdir().unwrap();
+        let other = tempfile::tempdir().unwrap();
+        let from = current(data.path());
+        fs::create_dir_all(&from).unwrap();
+        // Renamed by the player from the launcher's own name for it.
+        let renamed = other.path().join("Apps/AnimalCrossing-Tester");
+        fs::create_dir_all(&renamed).unwrap();
+        fs::write(renamed.join("save.dat"), "town").unwrap();
+        // Two more renamed alike, whose name is taken in the new folder, and by each other.
+        fs::create_dir_all(other.path().join("Apps/Mine")).unwrap();
+        fs::create_dir_all(other.path().join("More/Mine")).unwrap();
+        let to = data.path().join("Games");
+        fs::create_dir_all(to.join("Mine")).unwrap();
+        let apps = [
+            kept("ac", "AnimalCrossing-AnimalCrossingPCPort", &renamed),
+            kept("m1", "Game1", &other.path().join("Apps/Mine")),
+            kept("m2", "Game2", &other.path().join("More/Mine")),
+        ];
+        let moved = std::cell::RefCell::new(vec![]);
+        let done = move_apps(data.path(), &from, &to, &apps, |_| {}, |m| moved.borrow_mut().push((m.id, m.dir))).unwrap();
+        assert!(done.failed.is_empty(), "{:?}", done.failed);
+        assert_eq!(fs::read_to_string(to.join("AnimalCrossing-Tester/save.dat")).unwrap(), "town");
+        assert!(!to.join("AnimalCrossing-AnimalCrossingPCPort").exists());
+        assert!(to.join("Mine 2").is_dir() && to.join("Mine 3").is_dir());
+        let at = |p: &str| to.join(p).to_string_lossy().into_owned();
+        assert_eq!(moved.into_inner(), [("ac".into(), at("AnimalCrossing-Tester")), ("m1".into(), at("Mine 2")), ("m2".into(), at("Mine 3"))]);
+        // Under a name other than the launcher's, each keeps its own folder (`dir`).
+        assert!(done.inside.is_empty());
     }
 
     #[test]
@@ -722,14 +760,14 @@ mod tests {
         let from = current(data.path());
         fs::create_dir_all(&from).unwrap();
         fs::create_dir_all(v3.path().join("Game")).unwrap();
-        let apps = [kept("g", "game", &v3.path().join("Game"))];
+        let apps = [kept("g", "Game", &v3.path().join("Game"))];
         assert!(refuse(&from, &from, &[]).is_some());
         assert!(refuse(&from, &from, &apps).is_none());
         let done = move_apps(data.path(), &from, &from, &apps, |_| {}, |_| {}).unwrap();
-        assert!(from.join("game").is_dir() && !v3.path().join("Game").exists());
+        assert!(from.join("Game").is_dir() && !v3.path().join("Game").exists());
         assert_eq!(done.inside, ["g"]);
         // Once there, there's nothing left to bring.
-        assert!(refuse(&from, &from, &[kept("g", "game", &from.join("game"))]).is_some());
+        assert!(refuse(&from, &from, &[kept("g", "Game", &from.join("Game"))]).is_some());
     }
 
     #[test]
