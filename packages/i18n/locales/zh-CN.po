@@ -2167,6 +2167,10 @@ msgstr "超宽"
 msgid "Featured"
 msgstr "精选"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "File"
+msgstr "文件"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "文件名，例如 config.ini"
@@ -2793,6 +2797,11 @@ msgstr "从代码仓库的版本中安装，并像其他应用一样更新。"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Interface size"
 msgstr "界面大小"
+
+#. Which download?: the system a release file is the build for, to tell the maintainers
+#: ../../apps/launcher/src/App.tsx
+msgid "Is for"
+msgstr "适用于"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
@@ -4675,6 +4684,8 @@ msgid "Select"
 msgstr "选择"
 
 #. Button: send a correction to the maintainers
+#. Sends the maintainers which system a release file is for
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/correction.tsx
 msgid "Send"
 msgstr "发送"
@@ -4690,6 +4701,10 @@ msgstr "正在发送 →"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
 msgstr "报告会包含你的帐户名称、此启动器的版本和你的系统信息，以便维护者进行检查。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sent. A maintainer will take a look."
+msgstr "已发送。维护者会查看。"
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -4923,6 +4938,10 @@ msgid "Sign in to sync your library"
 msgstr "登录以同步你的游戏库"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Sign in to tell the maintainers which file is for which system."
+msgstr "登录后即可告诉维护者哪个文件适用于哪个系统。"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "退出登录"
 
@@ -5148,6 +5167,10 @@ msgstr "告诉 Quiver 你把 {consoleName} 游戏存放在哪里，Quiver 会为
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Tell Quiver where you keep your game copies, and it finds this one and the next ones for you."
 msgstr "告诉 Quiver 你把游戏副本存放在哪里，Quiver 会为你查找此副本以及之后的副本。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Tell the maintainers which file is for which system"
+msgstr "告诉维护者哪个文件适用于哪个系统"
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx

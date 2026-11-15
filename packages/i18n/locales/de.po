@@ -2167,6 +2167,10 @@ msgstr "Sehr breit"
 msgid "Featured"
 msgstr "Empfohlen"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "File"
+msgstr "Datei"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "Dateiname, z. B. config.ini"
@@ -2793,6 +2797,11 @@ msgstr "Installiert aus den Versionen des Repositorys und wird wie andere Apps a
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Interface size"
 msgstr "Oberflächengröße"
+
+#. Which download?: the system a release file is the build for, to tell the maintainers
+#: ../../apps/launcher/src/App.tsx
+msgid "Is for"
+msgstr "Ist für"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
@@ -4675,6 +4684,8 @@ msgid "Select"
 msgstr "Auswählen"
 
 #. Button: send a correction to the maintainers
+#. Sends the maintainers which system a release file is for
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/correction.tsx
 msgid "Send"
 msgstr "Senden"
@@ -4690,6 +4701,10 @@ msgstr "Wird gesendet…"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
 msgstr "Wird mit deinem Kontonamen, der Version dieses Launchers und deinem System gesendet, damit Maintainer es prüfen können."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sent. A maintainer will take a look."
+msgstr "Gesendet. Ein Maintainer sieht es sich an."
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -4923,6 +4938,10 @@ msgid "Sign in to sync your library"
 msgstr "Melde dich an, um deine Bibliothek zu synchronisieren"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Sign in to tell the maintainers which file is for which system."
+msgstr "Melde dich an, um den Maintainern zu sagen, welche Datei für welches System ist."
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "Abmelden"
 
@@ -5148,6 +5167,10 @@ msgstr "Sag Quiver, wo du deine {consoleName}-Spiele aufbewahrst, dann findet es
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Tell Quiver where you keep your game copies, and it finds this one and the next ones for you."
 msgstr "Sag Quiver, wo du deine Spielkopien aufbewahrst, dann findet es diese und die nächsten für dich."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Tell the maintainers which file is for which system"
+msgstr "Den Maintainern sagen, welche Datei für welches System ist"
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx

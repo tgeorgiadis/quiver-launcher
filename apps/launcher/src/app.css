@@ -162,6 +162,10 @@ button.danger { color: var(--danger); }
 .choices button small { color: var(--muted); font-size: 12px; font-weight: 400; overflow-wrap: anywhere; }
 .choose .show-all { align-self: flex-start; padding: 4px 0; border: 0; background: none; color: var(--link); font-size: 13px; }
 .choose .show-all:hover { text-decoration: underline; }
+.choose .suggest-platform { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: end; }
+.choose .suggest-platform .field { display: grid; gap: 4px; min-width: 0; font-size: 12px; color: var(--muted); }
+.choose .suggest-platform select { min-width: 0; }
+.choose .suggest-platform .job-error { grid-column: 1 / -1; margin: 0; }
 .banner {
   display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 14px 16px;
   border: 1px solid #0ea5e955; border-radius: 9px; background: #0ea5e914; font-size: 14px;
