@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
-import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
+import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -2350,8 +2350,27 @@ function AddFilesPrompt() {
 function ChooseFile() {
   const { choice } = useLauncher();
   if (!choice) return null;
+  // Its own state for each choice, so Show all files starts closed every time.
+  return <ChooseFileDialog key={`${choice.entry.id}@${choice.version}`} choice={choice} />;
+}
+
+function ChooseFileDialog({ choice }: { choice: Choice }) {
+  const [showAll, setShowAll] = useState(false);
   const name = choice.entry.projectName;
   const version = versionLabel(choice.version);
+  // The release's other files this computer can install, whatever system the site says they're for.
+  const offered = new Set(choice.assets.map((a) => a.id));
+  const rest = choice.all.filter((a) => !offered.has(a.id));
+  // What the site says each is for, with its name under it.
+  const labelled = (a: Asset) => (
+    <span>
+      <strong>
+        {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)}
+        {a.architecture !== "unknown" ? ` · ${a.architecture}` : ""}
+      </strong>
+      <small>{a.filename}</small>
+    </span>
+  );
   return (
     <div className="overlay">
       <section className="detail choose" role="dialog" aria-label={t`Choose a download`}>
@@ -2367,20 +2386,29 @@ function ChooseFile() {
           <div className="choices">
             {choice.assets.map((a) => (
               <button key={a.id} onClick={() => choice.resolve(a)}>
-                {/* What the site says each is for, as the app's release files show it. */}
-                {choice.unmatched ? (
-                  <span>
-                    <strong>
-                      {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
-                    </strong>
-                    <small>{a.filename}</small>
-                  </span>
-                ) : (
-                  a.filename
-                )}
+                {choice.unmatched ? labelled(a) : a.filename}
               </button>
             ))}
           </div>
+          {rest.length > 0 &&
+            (showAll ? (
+              <>
+                <p className="muted">
+                  <Trans>The release's other files. They may not run on your computer.</Trans>
+                </p>
+                <div className="choices">
+                  {rest.map((a) => (
+                    <button key={a.id} onClick={() => choice.resolve(a)}>
+                      {labelled(a)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <button type="button" className="show-all" aria-expanded={false} onClick={() => setShowAll(true)}>
+                <Trans>Show all files</Trans>
+              </button>
+            ))}
           <button onClick={() => choice.resolve(null)}>
             <Trans>Cancel</Trans>
           </button>

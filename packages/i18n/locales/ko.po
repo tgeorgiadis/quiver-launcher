@@ -4775,6 +4775,10 @@ msgstr "다시 표시"
 msgid "Show all apps"
 msgstr "모든 앱 보기"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Show all files"
+msgstr "모든 파일 보기"
+
 #. Above a box for each platform (Windows, macOS, Linux, Android): the library lists apps for the ones ticked
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show apps for"
@@ -5275,6 +5279,10 @@ msgstr "프로그램 자체"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "플레이에서 제공하는 프로그램은 앱 메뉴의 플레이할 프로그램에 있어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's other files. They may not run on your computer."
+msgstr "이 릴리스의 다른 파일이에요. 이 컴퓨터에서 실행되지 않을 수도 있어요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The saves and settings come over too."

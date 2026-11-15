@@ -4775,6 +4775,10 @@ msgstr "Mostrar de novo"
 msgid "Show all apps"
 msgstr "Mostrar todos os apps"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Show all files"
+msgstr "Mostrar todos os arquivos"
+
 #. Above a box for each platform (Windows, macOS, Linux, Android): the library lists apps for the ones ticked
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show apps for"
@@ -5275,6 +5279,10 @@ msgstr "O próprio programa"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Os programas que Jogar oferece ficam em Jogar com, no menu do app."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's other files. They may not run on your computer."
+msgstr "Os outros arquivos da versão. Eles podem não funcionar no seu computador."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The saves and settings come over too."

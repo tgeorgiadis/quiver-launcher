@@ -4775,6 +4775,10 @@ msgstr "再次显示"
 msgid "Show all apps"
 msgstr "显示所有应用"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Show all files"
+msgstr "显示所有文件"
+
 #. Above a box for each platform (Windows, macOS, Linux, Android): the library lists apps for the ones ticked
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show apps for"
@@ -5275,6 +5279,10 @@ msgstr "程序本身"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "在应用菜单的“使用以下方式游玩”中，可以找到“游玩”提供的程序。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's other files. They may not run on your computer."
+msgstr "此版本的其他文件。它们可能无法在你的电脑上运行。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The saves and settings come over too."

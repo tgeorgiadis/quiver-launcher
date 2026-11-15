@@ -158,8 +158,11 @@ export type Job = Progress | { error: string; download?: true; instead?: Release
 /** A download that finished since the launcher started: Downloads lists it under Recently finished. */
 export type Finished = { id: string; version: string; update: boolean; at: number };
 /** Several files suit this computer: the player picks one. */
-/** `unmatched`: none of the files is marked for this computer, so these are all the release's. */
-export type Choice = { entry: Entry; version: string; assets: Asset[]; unmatched?: boolean; resolve: (asset: Asset | null) => void };
+/**
+ * `unmatched`: none of the files is marked for this computer, so these are all the release's, or the ones the site
+ * didn't put on any platform. `all`: every file of the release this computer can install, for Show all files.
+ */
+export type Choice = { entry: Entry; version: string; assets: Asset[]; all: Asset[]; unmatched?: boolean; resolve: (asset: Asset | null) => void };
 /** Deleting an app's files, waiting on the player's yes: `remove` takes it out of the library too, and `then` runs after. */
 export type Confirming = { entry: Entry; remove?: boolean; then?: () => void };
 /**
@@ -1872,9 +1875,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
             : msg`This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way.`,
         );
-      // None marked for this computer: the player picks from the files there are, as they may know which runs.
-      const unmatched = !asset;
-      if (unmatched && !stray) [asset, ...others] = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
+      // Every file of the release this computer can install, of the kind installed: Show all files lists them.
+      const all = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
+      // None marked for this computer: the player picks from the files there are, as they may know which runs. Files
+      // the site put on no platform aren't marked for it either (a PS5 or Switch build can be one), so several of them
+      // ask the same way, not as files for this computer.
+      const unmatched = !asset || (others.length > 0 && asset.os === "unknown");
+      if (!asset && !stray) [asset, ...others] = all;
       if (!asset) {
         if (auto) return waitForPlayer();
         throw new Problem(msg`This release has no download for your computer.`);
@@ -1890,11 +1897,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       else if (others.length || missed || unmatched) {
         if (auto) return waitForPlayer();
         const choices = [asset, ...others];
-        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
+        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, all, unmatched, resolve }));
         setChoice(null);
         if (!picked) return stop("file_choice");
         asset = picked;
-        pick = assetFilterFor(picked.filename, choices.map((a) => a.filename));
+        // Told apart from every file it could have been, as Show all files may have offered any of them.
+        const files = [...new Set([...choices, ...all].map((a) => a.filename))];
+        pick = assetFilterFor(picked.filename, files);
       }
       // A file of a verified release that isn't verified itself asks first, as an unverified release does. An
       // automatic update takes one that changed with Newest right away, as it would an unverified release, since it's

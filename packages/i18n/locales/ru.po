@@ -4775,6 +4775,10 @@ msgstr "Показать снова"
 msgid "Show all apps"
 msgstr "Показать все приложения"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Show all files"
+msgstr "Показать все файлы"
+
 #. Above a box for each platform (Windows, macOS, Linux, Android): the library lists apps for the ones ticked
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show apps for"
@@ -5275,6 +5279,10 @@ msgstr "Сама программа"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Программы, которые предлагает «Играть», находятся в пункте «Запустить через» меню приложения."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's other files. They may not run on your computer."
+msgstr "Другие файлы этого релиза. Они могут не работать на вашем компьютере."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The saves and settings come over too."
