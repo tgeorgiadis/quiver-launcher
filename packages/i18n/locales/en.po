@@ -4152,8 +4152,8 @@ msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver didn't find one in your game folders."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked. It downloads as the developer published it, checked against the file Quiver saw."
-msgstr "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked. It downloads as the developer published it, checked against the file Quiver saw."
+msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked."
+msgstr "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer a release of {app} yet."

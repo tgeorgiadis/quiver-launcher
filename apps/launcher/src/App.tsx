@@ -2485,7 +2485,7 @@ function UnverifiedPrompt() {
                 ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
                 : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
             : unapproved
-              ? t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked. It downloads as the developer published it, checked against the file Quiver saw.`
+              ? t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
               : unchecked
                 ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
                 : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
