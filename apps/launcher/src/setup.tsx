@@ -153,7 +153,7 @@ function Welcome() {
       <strong>Sign in</strong> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver
     </Trans>,
     <Trans>
-      <strong>Easy setup</strong> for apps in the catalog: you only provide your ROM or disc image, which Quiver finds in the folders you set up
+      <strong>Easy setup</strong> for some apps in the catalog, not all of them: for those, you only provide your ROM or disc image, which Quiver finds in the folders you set up
     </Trans>,
     <Trans>
       <strong>Simpler protection:</strong> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it
