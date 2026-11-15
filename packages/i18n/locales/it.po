@@ -4206,6 +4206,10 @@ msgstr "Quiver Launcher non propone questa versione di sua iniziativa. Per insta
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher ha riscontrato un problema"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as PC ports, recompilations and fan projects."
+msgstr "Quiver Launcher è un unico posto per trovare, installare, aggiornare e giocare i giochi e le app pubblicati su GitHub e GitLab, come port per PC, ricompilazioni e progetti dei fan."
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver Launcher isn't offering this release as an update yet."

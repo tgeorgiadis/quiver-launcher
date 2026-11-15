@@ -4206,6 +4206,10 @@ msgstr "Quiver Launcher 不會自動提供此版本。安裝其中一個檔案�
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher 遇到問題"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as PC ports, recompilations and fan projects."
+msgstr "Quiver Launcher 讓你在一個地方尋找、安裝、更新和遊玩人們發布在 GitHub 和 GitLab 上的遊戲和應用程式，例如 PC 移植版、重新編譯版和粉絲專案。"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Quiver Launcher isn't offering this release as an update yet."
