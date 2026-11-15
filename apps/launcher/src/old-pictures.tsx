@@ -55,10 +55,10 @@ export function OldPictures({ library, value, onChange, compact }: { library: V3
   return (
     <fieldset className={`old-pictures${compact ? " compact" : ""}`}>
       <legend>
-        <Trans>Your pictures from Quiver Launcher 3</Trans>
+        <Trans>Your custom images from Quiver Launcher 3</Trans>
       </legend>
       <p className="muted">
-        <Trans>Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in its own places. Were yours more like icons, covers or box art? Choose any to use them as.</Trans>
+        <Trans>Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in their own card display modes. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to.</Trans>
       </p>
       <div className="old-pictures-choices">
         {OLD_PICTURE_SLOTS.map((slot) => {
@@ -82,7 +82,7 @@ export function OldPictures({ library, value, onChange, compact }: { library: V3
           );
         })}
       </div>
-      {value.length === 0 && <p className="muted small">{t`Your pictures won't come over. You can still give any app pictures later, from Change name or artwork on its page.`}</p>}
+      {value.length === 0 && <p className="muted small">{t`Your custom images won't come over. You can still give any app pictures later, from Change name or artwork on its page.`}</p>}
     </fieldset>
   );
 }

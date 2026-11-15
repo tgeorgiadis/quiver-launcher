@@ -4205,8 +4205,8 @@ msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
 #: ../../apps/launcher/src/old-pictures.tsx
-msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in its own places. Were yours more like icons, covers or box art? Choose any to use them as."
-msgstr "Quiver Launcher 3 aveva un'immagine per ogni app. Quiver Launcher 4 ne ha diversi tipi, ognuno mostrato nei propri punti. Le tue erano più icone, copertine o copertine della confezione? Scegli quanti tipi vuoi per usarle."
+msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in their own card display modes. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to."
+msgstr "Quiver Launcher 3 aveva un'immagine per ogni app. Quiver Launcher 4 ne ha diversi tipi, ognuno nella propria modalità di visualizzazione delle schede. Le tue erano più icone, copertine o copertine della confezione? Scegli a quali visualizzazioni delle schede aggiungere le tue immagini personalizzate."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
@@ -6087,6 +6087,14 @@ msgstr "La tua copia è dove {name} la legge."
 msgid "Your copy: {0}"
 msgstr "La tua copia: {0}"
 
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your custom images from Quiver Launcher 3"
+msgstr "Le tue immagini personalizzate da Quiver Launcher 3"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your custom images won't come over. You can still give any app pictures later, from Change name or artwork on its page."
+msgstr "Le tue immagini personalizzate non verranno portate. Puoi comunque dare immagini a qualsiasi app più tardi, da Cambia nome o immagini nella sua pagina."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your experience helps the next person"
 msgstr "La tua esperienza aiuta chi viene dopo"
@@ -6111,14 +6119,6 @@ msgstr "La tua libreria è vuota"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "La tua libreria si sincronizza tra i tuoi dispositivi e puoi recensire le app. Tutto funziona anche senza account."
-
-#: ../../apps/launcher/src/old-pictures.tsx
-msgid "Your pictures from Quiver Launcher 3"
-msgstr "Le tue immagini da Quiver Launcher 3"
-
-#: ../../apps/launcher/src/old-pictures.tsx
-msgid "Your pictures won't come over. You can still give any app pictures later, from Change name or artwork on its page."
-msgstr "Le tue immagini non verranno portate. Puoi comunque dare immagini a qualsiasi app più tardi, da Cambia nome o immagini nella sua pagina."
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"

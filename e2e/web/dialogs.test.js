@@ -187,7 +187,7 @@ test("the first start's Quiver Launcher 3 step says what comes over, then offers
     assert.match(brings, /1 app can't come over/);
     assert.match(await setup.locator(".old-library-keep").innerText(), /Adding them moves nothing/);
     // Where its pictures go: the icon, as before, and any other kind the player picks too.
-    const pictures = setup.getByRole("group", { name: "Your pictures from Quiver Launcher 3" });
+    const pictures = setup.getByRole("group", { name: "Your custom images from Quiver Launcher 3" });
     assert.equal(await pictures.getByRole("checkbox", { name: /^Icon/ }).isChecked(), true);
     assert.equal(await pictures.getByRole("checkbox", { name: /^Cover/ }).isChecked(), false);
     await pictures.getByRole("checkbox", { name: /^Box art/ }).check();
