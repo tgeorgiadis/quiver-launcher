@@ -957,7 +957,8 @@ export function retagged(library: LibraryItem[], from: string, to?: string): Lib
 /**
  * What a 3.x library brings along besides its apps, as far as it can say before the catalog is asked: the apps
  * with tags of the player's own (those 3.x didn't have from the catalog, or any on an app the catalog doesn't
- * know), its tag filters and its hidden apps. Only apps it knows where they come from come over.
+ * know), its tag filters, its hidden apps and the pictures the player chose (Add Custom Image). Only apps it knows
+ * where they come from come over: `left` counts the others.
  */
 export function bringsAlong({ apps, filters }: Pick<V3Library, "apps" | "filters">) {
   const coming = apps.filter((a) => a.repository || a.catalogId);
@@ -967,7 +968,13 @@ export function bringsAlong({ apps, filters }: Pick<V3Library, "apps" | "filters
     const catalogs = new Set((a.catalogTags ?? []).map((t) => t.toLowerCase()));
     return (a.tags ?? []).some((t) => !catalogs.has(t.toLowerCase()));
   };
-  return { tagged: coming.filter(own).length, filters: filters?.length ?? 0, hidden: coming.filter((a) => a.hidden).length };
+  return {
+    tagged: coming.filter(own).length,
+    filters: filters?.length ?? 0,
+    hidden: coming.filter((a) => a.hidden).length,
+    pictures: coming.filter((a) => a.icon && !isArtAddress(a.icon)).length,
+    left: apps.length - coming.length,
+  };
 }
 
 /**

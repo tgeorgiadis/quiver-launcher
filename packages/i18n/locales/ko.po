@@ -22,6 +22,11 @@ msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}
 msgid "{0, plural, one {# app} other {# apps}}"
 msgstr "{0, plural, other {앱 #개}}"
 
+#. placeholder {0}: library.apps.length
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
+msgstr "{0, plural, other {이미 다른 곳에 설치했다면 Quiver에 그 폴더를 알려 주세요.}}"
+
 #. placeholder {0}: bringing.apps.length
 #. placeholder {1}: bringing.path
 #. placeholder {2}: bringing.path
@@ -59,6 +64,7 @@ msgstr "{0, plural, other {이 앱은 옮기지 못했어요. 모든 파일과 �
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, other {앱 #개 모두 숨김 해제}}"
 
+#. placeholder {0}: space(free)
 #. placeholder {0}: space(state.free)
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0} free"
@@ -129,12 +135,28 @@ msgid "{count, plural, one {# app, already installed.} other {# apps, all alread
 msgstr "{count, plural, other {앱 #개, 모두 이미 설치되어 있어요.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app, already installed} other {# apps, all already installed}}"
+msgstr "{count, plural, other {앱 #개, 모두 설치됨}}"
+
+#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, not installed yet. If you already installed it somewhere else, show Quiver the folder.} other {# apps, none installed yet. If you already installed them somewhere else, show Quiver the folder.}}"
 msgstr "{count, plural, other {앱 #개, 아직 설치된 앱이 없어요. 다른 곳에 이미 설치했다면 Quiver에 폴더를 알려 주세요.}}"
 
 #: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app, not installed yet} other {# apps, none installed yet}}"
+msgstr "{count, plural, other {앱 #개, 아직 설치되지 않음}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {# app} other {# apps}}"
+msgstr "{count, plural, other {앱 #개}}"
+
+#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개는 이미 설치되어 있어요.}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
+msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개 설치됨}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
@@ -165,6 +187,10 @@ msgstr "{count, plural, other {Quiver Launcher 3이 라이브러리의 앱 #개�
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"
 msgstr "{count, plural, other {사용}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {Your # installed app is still in Quiver Launcher 3's folder, and plays from there.} other {Your # installed apps are still in Quiver Launcher 3's folder, and play from there.}}"
+msgstr "{count, plural, other {설치된 앱 #개가 아직 Quiver Launcher 3 폴더에 있고 거기서 실행돼요.}}"
 
 #. A mod's newer version: v1.3 is out
 #: ../../apps/launcher/src/mods.tsx
@@ -226,10 +252,18 @@ msgstr "개발자가 {listed}에서 {file}을(를) 삭제했어요."
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, other {파일 #개}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
+msgstr "{filters, plural, other {태그 필터 #개, 재생 목록으로}}"
+
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "{have} 설치됨"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
+msgstr "{hidden, plural, other {숨긴 앱 #개, 계속 숨김}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
@@ -278,6 +312,10 @@ msgstr "{kept, plural, other {다른 앱 폴더의 앱 #개도 포함}}"
 #: ../../apps/launcher/src/media.tsx
 msgid "{kindName} video"
 msgstr "{kindName} 영상"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{left, plural, one {# app can't come over, as Quiver Launcher 3 doesn't know where it comes from} other {# apps can't come over, as Quiver Launcher 3 doesn't know where they come from}}"
+msgstr "{left, plural, other {앱 #개는 가져올 수 없어요. Quiver Launcher 3가 출처를 모르기 때문이에요}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{left, plural, one {# app here is already in your library.} other {# apps here are already in your library.}}"
@@ -459,6 +497,10 @@ msgstr "{out}이(가) 나왔어요. 지금 버전: {have}."
 msgid "{picked, plural, one {# app picked for it.} other {# apps picked for it.}}"
 msgstr "{picked, plural, other {앱 #개가 선택되어 있어요.}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{pictures, plural, one {# picture you chose for an app} other {# pictures you chose for your apps}}"
+msgstr "{pictures, plural, other {앱에 직접 고른 그림 #개}}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{placed, plural, one {# app in a folder you chose for it stays where it is.} other {# apps in folders you chose for them stay where they are.}}"
 msgstr "{placed, plural, other {직접 고른 폴더에 있는 앱 #개는 그대로 있어요.}}"
@@ -527,6 +569,10 @@ msgstr "{speed}×"
 #: ../../apps/launcher/src/detail.tsx
 msgid "{systems} only"
 msgstr "{systems} 전용"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{tagged, plural, one {The tags you gave # app} other {The tags you gave # apps}}"
+msgstr "{tagged, plural, other {앱 #개에 붙인 태그}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -629,6 +675,34 @@ msgstr "+ 새 재생 목록…"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "+ New tag…"
 msgstr "+ 새 태그…"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>간편 설정:</0> 이 기능을 지원하는 앱은 ROM이나 디스크 이미지만 준비하면 Quiver가 설정한 폴더에서 찾아 줍니다"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Language support:</0> ten languages to choose from"
+msgstr "<0>언어 지원:</0> 열 가지 언어 중에서 선택"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Playlists</0> you can share, and other people's to follow"
+msgstr "<0>재생 목록</0>을 공유하고, 다른 사람의 재생 목록을 팔로우"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
+msgstr "웹사이트와 같은 계정으로 <0>로그인</0>하면 라이브러리(앱과 재생 목록)를 동기화하고, Quiver 안에서 바로 의견을 보내고 문제를 신고할 수 있어요"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
+msgstr "<0>더 간단한 보호:</0> 업데이트를 바로 받거나, 릴리스가 해로울 경우에 대비해 48시간 기다릴 수 있어요. 그동안 Quiver 팀이 릴리스를 철회할 수 있어요"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>TV mode:</0> a full-screen launcher for a controller"
+msgstr "<0>TV 모드:</0> 컨트롤러로 쓰는 전체 화면 런처"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgstr "<0>두 가지 라이브러리 보기:</0> Steam에서 영감을 받은 사이드바, 그리고 박스 아트, 커버, 아이콘과 앱마다 표시할 내용을 다양하게 고를 수 있는 격자"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
@@ -838,6 +912,10 @@ msgstr "{total}개 중 {done}개 추가하는 중…"
 msgid "Adding apps"
 msgstr "앱 추가 중"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver Launcher 4's folder now or later."
+msgstr "추가해도 아무것도 옮기지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. 다음 단계에서 지금 Quiver Launcher 4 폴더로 옮길지 나중에 옮길지 선택해요."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Advanced"
 msgstr "고급"
@@ -885,10 +963,6 @@ msgstr "모든 앱"
 #: ../../apps/launcher/src/library.tsx
 msgid "All consoles"
 msgstr "모든 콘솔"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "All done: your Quiver Launcher 3 apps are in your library, and they stay where they are."
-msgstr "완료했어요. Quiver Launcher 3의 앱이 라이브러리에 들어왔고, 그 자리에 그대로 있어요."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
@@ -996,6 +1070,10 @@ msgstr "모든 출처"
 #: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "모든 태그"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Any that were installed play from where Quiver Launcher 3 put them: keep that folder until you move them, in Settings › Apps folder."
+msgstr "설치되어 있던 앱은 Quiver Launcher 3가 둔 곳에서 실행돼요. 설정 › 앱 폴더에서 옮기기 전까지 그 폴더를 지우지 마세요."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Anyone with the link can see it on quiverlauncher.com and add it to their library. Changes you make here reach them when you update it."
@@ -1913,6 +1991,10 @@ msgstr "실행 안 됨"
 msgid "Don't allow"
 msgstr "허용 안 함"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder."
+msgstr "Quiver Launcher 3 폴더는 아직 지우지 마세요. 설정 › 앱 폴더에서 언제든 옮길 수 있어요."
+
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2169,6 +2251,11 @@ msgstr "비밀번호를 잊으셨나요?"
 msgid "Forward"
 msgstr "앞으로"
 
+#. placeholder {0}: library.folder
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Found in {0}. This comes over:"
+msgstr "{0}에서 찾았어요. 가져오는 항목:"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "{folder}에서 찾았어요"
@@ -2176,6 +2263,10 @@ msgstr "{folder}에서 찾았어요"
 #: ../../apps/launcher/src/own.tsx
 msgid "From GitHub or GitLab"
 msgstr "GitHub 또는 GitLab에서"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "From Quiver Launcher 3. Keep this folder until you move its apps."
+msgstr "Quiver Launcher 3에서 가져옴. 앱을 옮기기 전까지 이 폴더를 지우지 마세요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
@@ -2719,6 +2810,10 @@ msgstr "Quiver 계정과 연결되지 않습니다."
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "게임이 읽는 위치에 더 이상 없어요. 다시 설정하세요."
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "It looks and works differently in places, so give it a go with an open mind."
+msgstr "모양과 쓰는 방법이 달라진 곳이 있으니, 열린 마음으로 한번 써 보세요."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "실행됐지만 문제가 있었어요"
@@ -2805,6 +2900,10 @@ msgstr "끝날 때까지 Quiver를 열어 두세요. 각 앱의 이전 사본은
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "토큰은 비공개로 보관하세요. 만료되면 새로 만들어 여기에 저장하세요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Keep them there for now"
+msgstr "당분간 그대로 두기"
 
 #. Adding this file to an app's folder has the app keep its saves there
 #: ../../apps/launcher/src/app-files.tsx
@@ -3184,6 +3283,10 @@ msgstr "앱을 기본 폴더로 옮기기"
 msgid "Move into default"
 msgstr "기본 폴더로 옮기기"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Move them now"
+msgstr "지금 옮기기"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Move to…"
@@ -3197,6 +3300,10 @@ msgstr "{n, plural, other {앱 #개}} 중 {0}개를 옮겼어요."
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
 msgstr "앱 {n, plural, other {#개}}를 콘솔 폴더로 옮겼어요."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder."
+msgstr "{n, plural, other {앱 #개}}를 Quiver의 앱 폴더로 옮겼어요. 잘 실행되는지 확인한 뒤 Quiver Launcher 3 폴더를 지워도 돼요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
@@ -3335,6 +3442,10 @@ msgstr "새 앱은 {to}에 설치돼요."
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "New badge"
 msgstr "신규 배지"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "New in Quiver Launcher 4"
+msgstr "Quiver Launcher 4의 새로운 기능"
 
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
@@ -3602,6 +3713,14 @@ msgstr "이 재생 목록이 비어 있어요."
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Nothing is downloading."
 msgstr "다운로드 중인 항목이 없어요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver Launcher 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "아무것도 옮기거나 복사하지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. Quiver Launcher 3 폴더를 지우면 앱도 함께 지워지니 당분간 그대로 두세요. Quiver Launcher 4를 써 본 뒤 설정 › 앱 폴더에서 Quiver의 앱 폴더로 옮길 수 있어요."
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."
+msgstr "아무것도 옮기거나 복사하거나 지우지 않으며, Quiver Launcher 3 폴더는 그대로 남아요."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Nothing matches that search and those filters."
@@ -4027,6 +4146,10 @@ msgstr "Quiver가 게임 폴더에서 찾지 못했습니다."
 msgid "Quiver doesn't offer a release of {app} yet."
 msgstr "Quiver가 아직 {app}의 버전을 제공하지 않아요."
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Quiver found your Quiver Launcher 3 library. This comes over:"
+msgstr "Quiver Launcher 3 라이브러리를 찾았어요. 가져오는 항목:"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver has no list of good copies for {name} to check this one against."
 msgstr "{name}의 정상 사본 목록이 없어서 이 사본을 확인할 수 없어요."
@@ -4059,6 +4182,18 @@ msgstr "Quiver Launcher {version}이(가) 나왔어요."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 3's folder"
+msgstr "Quiver Launcher 3 폴더"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4는 처음부터 새로 만들었어요. Quiver Launcher 3가 하던 일을 모두 할 수 있도록 노력했고, 몇 가지를 더했어요:"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 4's folder"
+msgstr "Quiver Launcher 4의 앱 폴더"
+
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"
 msgstr "Quiver Launcher가 이 버전을 알아서 제공하지 않아요"
@@ -4070,6 +4205,10 @@ msgstr "Quiver Launcher가 이 버전을 알아서 제공하지 않아요. 파�
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher에 문제가 생겼어요"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as modern ports (source ports and recompilations) and fan projects."
+msgstr "Quiver Launcher는 모던 포트(소스 포트와 리컴파일), 팬 프로젝트처럼 GitHub와 GitLab에 공개된 게임과 앱을 한곳에서 찾고, 설치하고, 업데이트하고, 플레이하는 런처예요."
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -4398,6 +4537,10 @@ msgstr "저장했어요. 이제 GitHub 요청에 토큰을 사용해요."
 msgid "Saved. Requests to GitLab use your token now."
 msgstr "저장했어요. 이제 GitLab 요청에 토큰을 사용해요."
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Saves and settings come too. After that, you can delete your Quiver Launcher 3 folder."
+msgstr "세이브와 설정도 함께 옮겨져요. 그 뒤에는 Quiver Launcher 3 폴더를 지워도 돼요."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Saving…"
 msgstr "저장하는 중…"
@@ -4702,8 +4845,8 @@ msgid "Show password"
 msgstr "비밀번호 표시"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps will appear here. Anything already installed stays where it is, so nothing needs to download again."
-msgstr "Quiver Launcher 3 폴더 위치를 알려 주시면 앱이 여기에 나타나요. 이미 설치된 앱은 그 자리에 그대로 있으므로 다시 다운로드할 필요가 없어요."
+msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps come over with the tags you gave them, your hidden apps, the pictures you chose and your tag filters. Anything already installed plays from where it is, so nothing downloads again, and nothing is moved or deleted."
+msgstr "Quiver Launcher 3 폴더가 어디 있는지 알려 주면 앱과 함께 앱에 붙인 태그, 숨긴 앱, 직접 고른 그림, 태그 필터도 가져와요. 이미 설치된 앱은 지금 있는 곳에서 실행되니 다시 다운로드할 필요가 없고, 아무것도 옮기거나 지우지 않아요."
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Show the full description"
@@ -5106,8 +5249,8 @@ msgid "The first start's questions, in turn: the language, adding apps from Quiv
 msgstr "처음 시작할 때의 질문을 차례로 다시 해요: 언어, Quiver Launcher 3에서 앱 추가, 앱 설치 위치, 사용 데이터, 로그인."
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "The folder with Quiver Launcher 3's program in it."
-msgstr "Quiver Launcher 3 프로그램이 들어 있는 폴더예요."
+msgid "The folder with Quiver Launcher 3's program in it. For a portable copy, that's the folder you unzipped it to."
+msgstr "Quiver Launcher 3 프로그램이 들어 있는 폴더예요. 포터블 버전이라면 압축을 푼 폴더예요."
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "The game asks for it when it starts. Quiver can check yours first."
@@ -5697,6 +5840,10 @@ msgstr "지금 새 계정이 많이 만들어지고 있어요. 몇 분 후에 �
 msgid "Welcome to Quiver Launcher!"
 msgstr "Quiver Launcher에 오신 것을 환영해요!"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "What comes over"
+msgstr "가져오는 항목"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What players said"
 msgstr "플레이어 평가"
@@ -5747,6 +5894,10 @@ msgstr "앱 설치 위치"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where are your games?"
 msgstr "게임은 어디에 있나요?"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Where your Quiver Launcher 3 apps are, and Quiver's apps folder"
+msgstr "Quiver Launcher 3의 앱이 있는 곳과 Quiver의 앱 폴더"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"
@@ -5913,6 +6064,10 @@ msgstr "내 플레이"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Your problem report"
 msgstr "내 문제 신고"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your Quiver Launcher 3 apps are in your library"
+msgstr "Quiver Launcher 3의 앱이 라이브러리에 들어왔어요"
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx

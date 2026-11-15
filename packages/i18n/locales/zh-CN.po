@@ -22,6 +22,11 @@ msgstr "{0, plural, one {其他平台还有 # 个应用未显示。} other {其�
 msgid "{0, plural, one {# app} other {# apps}}"
 msgstr "{0, plural, one {# 个应用} other {# 个应用}}"
 
+#. placeholder {0}: library.apps.length
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
+msgstr "{0, plural, other {如果你已经把它们装在别处，请把那个文件夹告诉 Quiver。}}"
+
 #. placeholder {0}: bringing.apps.length
 #. placeholder {1}: bringing.path
 #. placeholder {2}: bringing.path
@@ -59,6 +64,7 @@ msgstr "{0, plural, one {无法移动此应用。它仍在原处，所有文件�
 msgid "{0, plural, one {Unhide # app} other {Unhide all # apps}}"
 msgstr "{0, plural, one {取消隐藏 # 个应用} other {取消隐藏全部 # 个应用}}"
 
+#. placeholder {0}: space(free)
 #. placeholder {0}: space(state.free)
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0} free"
@@ -129,12 +135,28 @@ msgid "{count, plural, one {# app, already installed.} other {# apps, all alread
 msgstr "{count, plural, one {# 个应用已安装。} other {# 个应用均已安装。}}"
 
 #: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app, already installed} other {# apps, all already installed}}"
+msgstr "{count, plural, other {# 个应用，均已安装}}"
+
+#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app, not installed yet. If you already installed it somewhere else, show Quiver the folder.} other {# apps, none installed yet. If you already installed them somewhere else, show Quiver the folder.}}"
 msgstr "{count, plural, one {# 个应用尚未安装。如果你已在其他位置安装，请向 Quiver 指定其文件夹。} other {# 个应用均尚未安装。如果你已在其他位置安装，请向 Quiver 指定它们的文件夹。}}"
 
 #: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app, not installed yet} other {# apps, none installed yet}}"
+msgstr "{count, plural, other {# 个应用，尚未安装}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {# app} other {# apps}}"
+msgstr "{count, plural, other {# 个应用}}"
+
+#: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed.} other {# already installed.}}"
 msgstr "{count, plural, one {# 个应用} other {# 个应用}}，{installed, plural, one {其中 # 个已安装。} other {其中 # 个已安装。}}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
+msgstr "{count, plural, other {# 个应用}}，{installed, plural, other {# 个已安装}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
@@ -165,6 +187,10 @@ msgstr "{count, plural, one {Quiver Launcher 3 已在你的游戏库中安装了
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Use it} other {Use them}}"
 msgstr "{count, plural, one {使用它} other {使用它们}}"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{count, plural, one {Your # installed app is still in Quiver Launcher 3's folder, and plays from there.} other {Your # installed apps are still in Quiver Launcher 3's folder, and play from there.}}"
+msgstr "{count, plural, other {你已安装的 # 个应用仍在 Quiver Launcher 3 的文件夹中，并从那里运行。}}"
 
 #. A mod's newer version: v1.3 is out
 #: ../../apps/launcher/src/mods.tsx
@@ -226,10 +252,18 @@ msgstr "开发者已从 {listed} 中移除 {file}。"
 msgid "{files, plural, one {# file} other {# files}}"
 msgstr "{files, plural, one {# 个文件} other {# 个文件}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{filters, plural, one {# tag filter, as a playlist} other {# tag filters, as playlists}}"
+msgstr "{filters, plural, other {# 个标签筛选器，作为播放列表}}"
+
 #. A mod's version on this computer: v1.2 installed
 #: ../../apps/launcher/src/mods.tsx
 msgid "{have} installed"
 msgstr "已安装 {have} 个"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{hidden, plural, one {# app you hid, kept hidden} other {# apps you hid, kept hidden}}"
+msgstr "{hidden, plural, other {# 个你隐藏的应用，保持隐藏}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{hiddenLeft, plural, one {# app here is hidden.} other {# apps here are hidden.}}"
@@ -278,6 +312,10 @@ msgstr "{kept, plural, one {从你的其他应用文件夹中包括 # 个应用}
 #: ../../apps/launcher/src/media.tsx
 msgid "{kindName} video"
 msgstr "{kindName} 视频"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{left, plural, one {# app can't come over, as Quiver Launcher 3 doesn't know where it comes from} other {# apps can't come over, as Quiver Launcher 3 doesn't know where they come from}}"
+msgstr "{left, plural, other {# 个应用无法迁移，因为 Quiver Launcher 3 不知道它们的来源}}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "{left, plural, one {# app here is already in your library.} other {# apps here are already in your library.}}"
@@ -459,6 +497,10 @@ msgstr "{out} 已发布。你拥有的是 {have}。"
 msgid "{picked, plural, one {# app picked for it.} other {# apps picked for it.}}"
 msgstr "{picked, plural, one {已为其选中 # 个应用。} other {已为其选中 # 个应用。}}"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{pictures, plural, one {# picture you chose for an app} other {# pictures you chose for your apps}}"
+msgstr "{pictures, plural, other {你为应用选择的 # 张图片}}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{placed, plural, one {# app in a folder you chose for it stays where it is.} other {# apps in folders you chose for them stay where they are.}}"
 msgstr "{placed, plural, one {你为它选择的文件夹中的 # 个应用会保留在原处。} other {你为它们选择的文件夹中的 # 个应用会保留在原处。}}"
@@ -527,6 +569,10 @@ msgstr "{speed}/秒"
 #: ../../apps/launcher/src/detail.tsx
 msgid "{systems} only"
 msgstr "仅限 {systems}"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "{tagged, plural, one {The tags you gave # app} other {The tags you gave # apps}}"
+msgstr "{tagged, plural, other {你给 # 个应用加的标签}}"
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -629,6 +675,34 @@ msgstr "+ 新建播放列表 →"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "+ New tag…"
 msgstr "+ 新建标签 →"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Easy setup:</0> for apps that support it, you only provide your ROM or disc image, which Quiver finds in the folders you set up"
+msgstr "<0>轻松设置：</0>对于支持此功能的应用，你只需提供 ROM 或光盘镜像，Quiver 会在你设置的文件夹中找到它"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Language support:</0> ten languages to choose from"
+msgstr "<0>语言支持：</0>十种语言可选"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Playlists</0> you can share, and other people's to follow"
+msgstr "<0>播放列表</0>可以分享，也可以关注别人的"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Sign in</0> with the same account as the website, to sync your library (apps and playlists), share feedback and report issues without leaving Quiver"
+msgstr "使用与网站相同的账户<0>登录</0>，即可同步游戏库（应用和播放列表），并直接在 Quiver 中提交反馈和报告问题"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Simpler protection:</0> get updates right away, or wait 48 hours in case a release is harmful, which gives the Quiver team time to withdraw it"
+msgstr "<0>更简单的保护：</0>立即获取更新，或等待 48 小时以防某个版本有害，让 Quiver 团队有时间撤回它"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>TV mode:</0> a full-screen launcher for a controller"
+msgstr "<0>电视模式：</0>用手柄操作的全屏启动器"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "<0>Two library views:</0> Sidebar, inspired by Steam, and Grid, with a range of options for box art, covers, icons and what each app shows"
+msgstr "<0>两种游戏库视图：</0>受 Steam 启发的侧边栏，以及网格，提供多种选项来显示盒装封面、封面、图标和每个应用显示的内容"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A cover's address follows your account. The other pictures, and any from a file, stay on this computer."
@@ -838,6 +912,10 @@ msgstr "正在添加 {done}/{total} →"
 msgid "Adding apps"
 msgstr "正在添加应用"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver Launcher 4's folder now or later."
+msgstr "添加不会移动任何内容：已安装的应用留在 Quiver Launcher 3 放置它们的位置，并从那里运行。下一步你可以选择现在还是以后把它们移到 Quiver Launcher 4 的文件夹。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Advanced"
 msgstr "高级"
@@ -885,10 +963,6 @@ msgstr "所有应用"
 #: ../../apps/launcher/src/library.tsx
 msgid "All consoles"
 msgstr "所有主机"
-
-#: ../../apps/launcher/src/setup.tsx
-msgid "All done: your Quiver Launcher 3 apps are in your library, and they stay where they are."
-msgstr "全部完成：你的 Quiver Launcher 3 应用已在游戏库中，并且仍保留在原处。"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
@@ -996,6 +1070,10 @@ msgstr "任意来源"
 #: ../../apps/launcher/src/library.tsx
 msgid "Any tag"
 msgstr "任意标签"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Any that were installed play from where Quiver Launcher 3 put them: keep that folder until you move them, in Settings › Apps folder."
+msgstr "已安装的应用会从 Quiver Launcher 3 放置它们的位置运行：在 设置 › 应用文件夹 中移动它们之前，请保留那个文件夹。"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Anyone with the link can see it on quiverlauncher.com and add it to their library. Changes you make here reach them when you update it."
@@ -1913,6 +1991,10 @@ msgstr "无法运行"
 msgid "Don't allow"
 msgstr "不允许"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder."
+msgstr "暂时不要删除你的 Quiver Launcher 3 文件夹。随时可以在 设置 › 应用文件夹 中移动它们。"
+
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2169,6 +2251,11 @@ msgstr "忘记密码？"
 msgid "Forward"
 msgstr "前进"
 
+#. placeholder {0}: library.folder
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Found in {0}. This comes over:"
+msgstr "在 {0} 中找到。以下内容会迁移过来："
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "在 {folder} 中找到"
@@ -2176,6 +2263,10 @@ msgstr "在 {folder} 中找到"
 #: ../../apps/launcher/src/own.tsx
 msgid "From GitHub or GitLab"
 msgstr "来自 GitHub 或 GitLab"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "From Quiver Launcher 3. Keep this folder until you move its apps."
+msgstr "来自 Quiver Launcher 3。移动其中的应用之前，请保留此文件夹。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
@@ -2719,6 +2810,10 @@ msgstr "此信息不会关联到你的 Quiver 帐户。"
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "它已不在游戏读取的位置。请重新设置。"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "It looks and works differently in places, so give it a go with an open mind."
+msgstr "有些地方的外观和用法不一样了，请带着开放的心态试一试。"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "它可以运行，但我遇到了一些问题"
@@ -2805,6 +2900,10 @@ msgstr "保持 Quiver 打开，直到操作完成。只有在新副本通过检�
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Keep the token private. When it expires, make a new one and save it here."
 msgstr "请妥善保管令牌。令牌过期后，请创建新令牌并在此处保存。"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Keep them there for now"
+msgstr "暂时留在原处"
 
 #. Adding this file to an app's folder has the app keep its saves there
 #: ../../apps/launcher/src/app-files.tsx
@@ -3184,6 +3283,10 @@ msgstr "将应用移至默认文件夹"
 msgid "Move into default"
 msgstr "移至默认位置"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Move them now"
+msgstr "现在移动"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Move to…"
@@ -3197,6 +3300,10 @@ msgstr "已移动 {0}/{n, plural, one {# 个应用} other {# 个应用}}。"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}} into console folders."
 msgstr "已将 {n, plural, one {# 个应用} other {# 个应用}} 移至对应的主机文件夹。"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Moved {n, plural, one {# app} other {# apps}} into Quiver's apps folder. Once you've checked they run, you can delete your Quiver Launcher 3 folder."
+msgstr "已将 {n, plural, other {# 个应用}}移到 Quiver 的应用文件夹。确认它们能运行后，就可以删除你的 Quiver Launcher 3 文件夹。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Moved {n, plural, one {# app} other {# apps}}."
@@ -3335,6 +3442,10 @@ msgstr "新应用会安装到 {to}。"
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "New badge"
 msgstr "新内容徽标"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "New in Quiver Launcher 4"
+msgstr "Quiver Launcher 4 的新功能"
 
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
@@ -3602,6 +3713,14 @@ msgstr "此播放列表中没有内容。"
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Nothing is downloading."
 msgstr "没有正在下载的内容。"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver Launcher 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "不会移动或复制任何内容：已安装的应用留在 Quiver Launcher 3 放置它们的位置，并从那里运行。暂时请保留你的 Quiver Launcher 3 文件夹，删除它会连同这些应用一起删除。试用 Quiver Launcher 4 之后，你可以在 设置 › 应用文件夹 中把它们移到 Quiver 的应用文件夹。"
+
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."
+msgstr "不会移动、复制或删除任何内容，你的 Quiver Launcher 3 文件夹保持原样。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Nothing matches that search and those filters."
@@ -4027,6 +4146,10 @@ msgstr "Quiver 在你的游戏文件夹中没有找到。"
 msgid "Quiver doesn't offer a release of {app} yet."
 msgstr "Quiver 尚未提供 {app} 的版本。"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "Quiver found your Quiver Launcher 3 library. This comes over:"
+msgstr "Quiver 找到了你的 Quiver Launcher 3 游戏库。以下内容会迁移过来："
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver has no list of good copies for {name} to check this one against."
 msgstr "Quiver 没有 {name} 的已知正常副本列表可用于比对。"
@@ -4059,6 +4182,18 @@ msgstr "Quiver Launcher {version} 已发布。"
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 3's folder"
+msgstr "Quiver Launcher 3 的文件夹"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4 是从头重新打造的。我尽力让它能做到 Quiver Launcher 3 能做的一切，并增加了一些新功能："
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 4's folder"
+msgstr "Quiver Launcher 4 的应用文件夹"
+
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"
 msgstr "Quiver Launcher 不会自动提供此版本"
@@ -4070,6 +4205,10 @@ msgstr "Quiver Launcher 不会自动提供此版本。安装其中一个文件�
 #: ../../apps/launcher/src/main.tsx
 msgid "Quiver Launcher hit a problem"
 msgstr "Quiver Launcher 遇到问题"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher is one place to find, install, update and play the games and apps people release on GitHub and GitLab, such as modern ports (source ports and recompilations) and fan projects."
+msgstr "Quiver Launcher 让你在一个地方查找、安装、更新和游玩人们发布在 GitHub 和 GitLab 上的游戏和应用，例如现代移植版（源码移植和重编译）和粉丝项目。"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
@@ -4398,6 +4537,10 @@ msgstr "已保存。现在，向 GitHub 发送请求时会使用你的令牌。"
 msgid "Saved. Requests to GitLab use your token now."
 msgstr "已保存。现在，向 GitLab 发送请求时会使用你的令牌。"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Saves and settings come too. After that, you can delete your Quiver Launcher 3 folder."
+msgstr "存档和设置也会一起移动。之后你就可以删除 Quiver Launcher 3 文件夹。"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Saving…"
 msgstr "正在保存 →"
@@ -4702,8 +4845,8 @@ msgid "Show password"
 msgstr "显示密码"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps will appear here. Anything already installed stays where it is, so nothing needs to download again."
-msgstr "向 Quiver 指定你的 Quiver Launcher 3 文件夹位置，你的应用就会显示在这里。已安装的内容会保留在原处，无需重新下载任何内容。"
+msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps come over with the tags you gave them, your hidden apps, the pictures you chose and your tag filters. Anything already installed plays from where it is, so nothing downloads again, and nothing is moved or deleted."
+msgstr "告诉 Quiver 你的 Quiver Launcher 3 文件夹在哪里，你的应用就会连同你加的标签、隐藏的应用、选择的图片和标签筛选器一起迁移过来。已安装的内容从原位置运行，无需重新下载，也不会移动或删除任何内容。"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Show the full description"
@@ -5106,8 +5249,8 @@ msgid "The first start's questions, in turn: the language, adding apps from Quiv
 msgstr "首次启动时会依次询问：语言、是否从 Quiver Launcher 3 添加应用、应用的安装位置、使用情况数据，以及是否登录。"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "The folder with Quiver Launcher 3's program in it."
-msgstr "包含 Quiver Launcher 3 程序的文件夹。"
+msgid "The folder with Quiver Launcher 3's program in it. For a portable copy, that's the folder you unzipped it to."
+msgstr "包含 Quiver Launcher 3 程序的文件夹。如果是便携版，就是你解压它的文件夹。"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "The game asks for it when it starts. Quiver can check yours first."
@@ -5697,6 +5840,10 @@ msgstr "目前新帐户注册量较大。请几分钟后重试。"
 msgid "Welcome to Quiver Launcher!"
 msgstr "欢迎使用 Quiver Launcher！"
 
+#: ../../apps/launcher/src/old-library.tsx
+msgid "What comes over"
+msgstr "迁移的内容"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What players said"
 msgstr "玩家的评价"
@@ -5747,6 +5894,10 @@ msgstr "应用安装位置"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Where are your games?"
 msgstr "你的游戏在哪里？"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Where your Quiver Launcher 3 apps are, and Quiver's apps folder"
+msgstr "你的 Quiver Launcher 3 应用所在位置，以及 Quiver 的应用文件夹"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Which app?"
@@ -5913,6 +6064,10 @@ msgstr "你的游玩记录"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Your problem report"
 msgstr "你提交的问题报告"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your Quiver Launcher 3 apps are in your library"
+msgstr "你在 Quiver Launcher 3 中的应用已加入游戏库"
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx

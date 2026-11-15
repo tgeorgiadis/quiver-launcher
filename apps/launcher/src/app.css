@@ -619,13 +619,39 @@ main.app-main { padding: 0 0 40px; }
 .file-picker-list button span { min-width: 0; overflow-wrap: anywhere; }
 .file-picker-list li.muted { padding: 9px 12px; }
 /* The first start's setup (setup.tsx): a step at a time, Skip setup to the left of Back and Next. */
-.detail.choose.setup { width: min(560px, 100%); }
+.detail.choose.setup { width: min(680px, 100%); }
+/* Moving a Quiver Launcher 3 library's apps (settings-page.tsx's MoveOldApps): its folder, an arrow, and Quiver's; one over the other in a narrow window. */
+.old-library-move { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: 12px; }
+.old-library-arrow { align-self: center; color: var(--muted); }
+/* Places, not buttons: filled and unbordered, each with a folder, amber for the old one and the accent for Quiver's. */
+.old-library-place { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 10px; background: var(--field); }
+.old-library-place > svg { flex: none; color: var(--caution); }
+.old-library-place[data-to] > svg { color: var(--accent); }
+.old-library-place > div { display: grid; gap: 2px; min-width: 0; }
+.old-library-place strong { color: var(--strong); }
+.old-library-place small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+/* The choices, under a line that sets them off from the two places. */
+.old-library-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
+@media (max-width: 620px) {
+  .old-library-move, .old-library-choices { grid-template-columns: minmax(0, 1fr); }
+  .old-library-arrow { justify-self: center; transform: rotate(90deg); }
+}
 .setup .setup-count { margin-bottom: -6px; font-size: 12px; }
 .setup .setup-step { display: flex; flex-direction: column; gap: 12px; }
 .setup .setup-nav { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .setup .setup-nav .setup-skip { margin-right: auto; padding-inline: 0; background: none; box-shadow: none; color: var(--muted); font-weight: 400; }
 .setup .setup-nav .setup-skip:hover { color: var(--strong); }
 .setup .settings-section { padding-top: 0; border-top: 0; }
+/* What a Quiver Launcher 3 library brings (old-library.tsx): a line each, ticked, and what can't come, crossed. */
+.old-library-brings { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.old-library-brings li { display: flex; align-items: flex-start; gap: 6px; }
+.old-library-brings svg { flex: none; margin-top: 2px; color: var(--accent); }
+.old-library-brings li.muted svg { color: var(--muted); }
+/* The welcome's list of what's new (setup.tsx): each line's lead is strong, and a long line wraps under its own text. */
+.setup-extras { gap: 6px; }
+.setup-extras strong { color: var(--strong); }
+/* The welcome's own questions, under a line that sets them off from the word on what's new. */
+.setup .setup-questions { margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
 .old-library-apps { display: grid; gap: 6px; max-height: 220px; overflow: auto; margin: 0; padding: 0; list-style: none; }
 /* An import's progress (old-library.tsx), as a download's bar, with a turning ring while it goes. */
 /* Across the banner's row; in the setup's column it's a download's height, as anywhere else. */

@@ -41,6 +41,9 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     // Every apps folder is there, with room to spare.
     apps_folder_states: ({ paths }) => paths.map(() => ({ exists: true, free: 500e9 })),
     move_app: ({ to, folder }) => ({ dir: [to, folder].join("\\"), left: null }),
+    // A move of apps into an apps folder: there's room, and every one of them gets there.
+    apps_folder_refusal: () => null,
+    move_apps_folder: ({ to, apps }) => ({ appsDir: to, inside: apps.map((a) => a.id), left: [], failed: [] }),
     read_state: ({ name }) => files[name] ?? null,
     write_state: ({ name, value }) => void (files[name] = value),
     // Damaged files, if `state` says so (stateProblems), or the Rust side not answering (stateFailure).
@@ -49,7 +52,9 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       return files.stateProblems ?? [];
     },
     list_snapshots: () => [],
-    find_v3_library: () => null,
+    // A Quiver Launcher 3 library found by itself, and its apps folders, if `state` says so (v3Library, v3AppsFolders).
+    find_v3_library: () => files.v3Library ?? null,
+    v3_apps_folders: () => files.v3AppsFolders ?? [],
     controllers: () => [],
     list_protons: () => [],
     automatic_runner: () => null,
