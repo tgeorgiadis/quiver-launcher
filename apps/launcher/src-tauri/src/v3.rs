@@ -310,7 +310,7 @@ fn icon(dir: &Path, app: &Value) -> Option<String> {
     let kept = || {
         let stem = format!("{}_custom", field(app, "folderName")?);
         // 3.x's cache is beside its program: a Windows copy's is in its `current` folder.
-        [dir.join("Cache/CustomIcons"), dir.join("current/Cache/CustomIcons"), dir.join("CustomIcons")]
+        [dir.join("Cache").join("CustomIcons"), dir.join("current").join("Cache").join("CustomIcons"), dir.join("CustomIcons")]
             .iter()
             .flat_map(|d| std::fs::read_dir(d).into_iter().flatten().flatten().map(|e| e.path()))
             .find(|p| picture(p) && p.file_stem().and_then(|s| s.to_str()).is_some_and(|s| s.eq_ignore_ascii_case(&stem)))
@@ -763,8 +763,9 @@ mod tests {
             { "Name": "Plain Port", "Repository": "quiver/plain-port", "FolderName": "PlainPort", "appIconUrl": "http://example.com/plain.png" },
         ] });
         library(root.path(), &apps.to_string());
-        let kept = root.path().join("Cache/CustomIcons/TestPort_custom.PNG");
-        folder(&root.path().join("Cache/CustomIcons"), &[("TestPort_custom.PNG", ""), ("TestPort_custom.txt", "")]);
+        let icons = root.path().join("Cache").join("CustomIcons");
+        let kept = icons.join("TestPort_custom.PNG");
+        folder(&icons, &[("TestPort_custom.PNG", ""), ("TestPort_custom.txt", "")]);
         let apps = apps_in(root.path());
         assert_eq!(apps[0].icon.as_deref(), Some(kept.to_string_lossy().as_ref()));
         assert_eq!(apps[1].icon.as_deref(), Some("https://example.com/other.png"));
