@@ -3,17 +3,23 @@ import type { Entry } from "@quiverlauncher/api";
 
 type Way = Pick<Entry, "name" | "recommended" | "reportIssues" | "reportBroken" | "lastReleaseAt">;
 
+/** How many players said how an app runs. */
+export const reportCount = (w: Pick<Way, "recommended" | "reportIssues" | "reportBroken">) => w.recommended + w.reportIssues + w.reportBroken;
+
 /**
- * Best ways to play a game first, as on the website's game page: the share of
- * players saying it runs well (issues count half), smoothed so one report
- * doesn't outrank many. Ties go to more feedback, a newer release, the name.
+ * How well players say an app runs, from 0 to 1: the share saying it runs well (issues count half), smoothed so one
+ * report doesn't outrank many.
+ */
+export const feedbackScore = (w: Pick<Way, "recommended" | "reportIssues" | "reportBroken">) => (w.recommended + w.reportIssues / 2 + 1) / (reportCount(w) + 2);
+
+/**
+ * Best ways to play a game first, as on the website's game page, by `feedbackScore`. Ties go to more feedback, a newer
+ * release, the name.
  */
 export function byPlayerFeedback(a: Way, b: Way) {
-  const total = (w: Way) => w.recommended + w.reportIssues + w.reportBroken;
-  const score = (w: Way) => (w.recommended + w.reportIssues / 2 + 1) / (total(w) + 2);
   return (
-    score(b) - score(a) ||
-    total(b) - total(a) ||
+    feedbackScore(b) - feedbackScore(a) ||
+    reportCount(b) - reportCount(a) ||
     (b.lastReleaseAt ?? 0) - (a.lastReleaseAt ?? 0) ||
     a.name.localeCompare(b.name)
   );

@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: zh-TW\n"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "\"Runs well\" is the share of players who said it runs well for them."
+msgstr "「執行良好」是表示執行良好的玩家所占的比例。"
+
 #. Beside Launch options: the player changed them
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "(changed)"
@@ -110,6 +114,7 @@ msgstr "{app} 的資料夾現已重新命名為 {renamed}。"
 
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/ways-to-play.tsx
 msgid "{apps, plural, one {# way to play} other {# ways to play}}"
 msgstr "{apps, plural, one {# 種遊玩方式} other {# 種遊玩方式}}"
 
@@ -545,6 +550,11 @@ msgstr "{runs, plural, one {# 個執行良好} other {# 個執行良好}}"
 msgid "{runs, plural, one {# runs well} other {# runs well}}"
 msgstr "{runs, plural, one {# 個執行良好} other {# 個執行良好}}"
 
+#. The share of players who said an app runs well, on a list of a game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "{share}% run well"
+msgstr "{share}% 執行良好"
+
 #. A file's size in gigabytes
 #: ../../apps/launcher/src/downloads.ts
 msgid "{size} GB"
@@ -577,6 +587,10 @@ msgstr "{tagged, plural, other {你為 # 個應用程式加上的標籤}}"
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
 msgstr "{total, plural, one {# 位玩家} other {# 位玩家}}"
+
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "{total, plural, one {# report} other {# reports}}"
+msgstr "{total, plural, one {# 則回報} other {# 則回報}}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{total, plural, one {From the newest player feedback: # player tested this version} other {From the newest player feedback: # players tested this version}}"
@@ -1297,6 +1311,7 @@ msgid "Be the first to say how it went."
 msgstr "來第一個分享你的體驗吧。"
 
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Best first, by player feedback"
 msgstr "按玩家反饋從優到劣排序"
 
@@ -2697,6 +2712,12 @@ msgstr "自動安裝更新"
 msgid "Installed"
 msgstr "已安裝"
 
+#. On an app this computer has installed, in a list of a game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgctxt "badge"
+msgid "Installed"
+msgstr "已安裝"
+
 #. The version installed, then a version
 #. This release is the one on this computer
 #. This version is the one on this computer
@@ -3591,6 +3612,10 @@ msgstr "未找到版本"
 msgid "No releases found."
 msgstr "未找到版本。"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "No reports yet"
+msgstr "尚無回報"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
 msgstr "還沒有人分享體驗。來做第一個吧。"
@@ -3642,6 +3667,10 @@ msgstr "尚未檢查"
 #: ../ui/src/index.tsx
 msgid "Not confirmed yet"
 msgstr "尚未確認"
+
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "Not for this computer"
+msgstr "不適用於這台電腦"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found. Is its drive connected?"
@@ -3700,6 +3729,7 @@ msgstr "暫不提供 → 等待維護者處理"
 msgid "Not played yet"
 msgstr "尚未遊玩"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
 #: ../ui/src/index.tsx
 msgid "Not rated yet"
 msgstr "尚未評分"
@@ -4673,6 +4703,10 @@ msgstr "檢視下載"
 msgid "See it in the catalog"
 msgstr "在目錄中檢視"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "See the game's page"
+msgstr "查看遊戲頁面"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "See the report"
@@ -5462,6 +5496,10 @@ msgstr "今天"
 msgid "Today"
 msgstr "今天"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "Too few reports"
+msgstr "回報太少"
+
 #: ../../apps/launcher/src/account.tsx
 msgid "Too many attempts. Wait a moment and try again."
 msgstr "嘗試次數過多。請稍等片刻，然後重試。"
@@ -5481,6 +5519,12 @@ msgstr "頂部"
 #. Sort order for mods
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
+msgid "Top rated"
+msgstr "評分最高"
+
+#. On the one app players rate best of a game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgctxt "badge"
 msgid "Top rated"
 msgstr "評分最高"
 
@@ -5885,6 +5929,7 @@ msgid "Ways to play"
 msgstr "遊玩方式"
 
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Ways to play {title}"
 msgstr "遊玩《{title}》的方式"
 
@@ -6027,6 +6072,11 @@ msgstr "你跳過了 {updateVersion}。Quiver Launcher 會提供下一個新版�
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."
 msgstr "你已全部更新到最新。"
+
+#. On the app whose page is open, in a list of the game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "You're here"
+msgstr "目前頁面"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "You're signed in as {name}."
