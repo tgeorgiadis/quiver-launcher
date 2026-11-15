@@ -126,7 +126,8 @@ test("the library's sidebar rows line up: one icon size and one name column", as
   };
   const s2 = await openApp({ state: { ...mixed, settings: { library: { layout: "sidebar" } } }, height: 700 });
   try {
-    await s2.page.locator(".sidebar-row").first().waitFor();
+    // Both rows: the catalog app's shows once the catalog has loaded, a moment after the player's own.
+    await s2.page.locator(".sidebar-row").nth(1).waitFor();
     const rows = await s2.page.evaluate(() =>
       [...document.querySelectorAll(".sidebar-row")].map((row) => {
         const icon = row.querySelector(".sidebar-icon")?.getBoundingClientRect();

@@ -1006,6 +1006,14 @@ msgstr "任何拥有链接的人都可以在 quiverlauncher.com 上查看它，�
 msgid "App"
 msgstr "应用"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "App details"
+msgstr "应用详细信息"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "APP DETAILS"
+msgstr "应用详细信息"
+
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "App page"
 msgstr "应用页面"
@@ -3907,14 +3915,6 @@ msgstr "上一个标签页"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Program"
 msgstr "程序"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Project details"
-msgstr "项目详细信息"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "PROJECT DETAILS"
-msgstr "项目详细信息"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx

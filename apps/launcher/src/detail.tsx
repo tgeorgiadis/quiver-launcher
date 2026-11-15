@@ -955,9 +955,9 @@ export function ProjectDetails({ entry, detail, source }: { entry: Entry; detail
   const ai = detail?.project.aiUse;
   const [evidence, setEvidence] = useState(false);
   return (
-    <section className="panel content-panel project-details" data-open={open || undefined} aria-label={t`Project details`}>
+    <section className="panel content-panel project-details" data-open={open || undefined} aria-label={t`App details`}>
       <button type="button" className="eyebrow project-details-toggle" aria-expanded={open} onClick={() => setSettings({ ...settings, projectDetailsClosed: open || undefined })}>
-        <Trans>PROJECT DETAILS</Trans>
+        <Trans>APP DETAILS</Trans>
         <ChevronDown size={16} aria-hidden="true" />
       </button>
       {open && (

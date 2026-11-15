@@ -173,6 +173,8 @@ const SPECIAL: Record<string, string> = {
   x360: "X360", xmen: "X-Men", yugioh: "Yu-Gi-Oh!", pokemon: "Pokémon", initiald: "Initial D", naomi2: "NAOMI 2",
   gbarecomp: "GBARecomp", psxrecomp: "PSXRecomp", rexglue: "ReXGlue", einhander: "Einhänder", dantes: "Dante's",
   soulcalibur: "SoulCalibur", "co-op": "Co-op",
+  // What a player installs is the source port; a decomp is the code it's built from.
+  decomp: "Source port", decompilation: "Source port",
 };
 const SMALL = new Set(["a", "an", "and", "in", "of", "on", "the", "to", "vs"]);
 

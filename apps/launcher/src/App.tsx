@@ -233,7 +233,7 @@ export function App() {
         )}
         <AnnouncementsButton onOpen={() => setAnnouncementsOpen(true)} />
         <DownloadsButton open={top?.kind === "downloads"} onOpen={openDownloads} />
-        <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
+        <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} title={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
           <SettingsIcon size={19} />
         </button>
         <WindowControls buttons={buttons} maximized={maximized} />

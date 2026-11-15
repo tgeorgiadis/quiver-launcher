@@ -2093,6 +2093,15 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .settings-pane h2 { font-size: 22px; }
 /* A setting's select, its label above it: no wider than its longest choice needs. */
 .settings-pane .ql-field { max-width: 320px; }
+/* A setting of the pane's own is a row: its name on the left, its control on the right, a line between it and the next. */
+.settings-pane > :is(.toggle, .ql-field), .settings-section > :is(.toggle, .ql-field) {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px;
+  max-width: none; padding-top: 12px; border-top: 1px solid var(--line); color: var(--fg); font-size: 14px;
+}
+.settings-pane > :is(.toggle, .ql-field):is(:first-child, h2 + *), .settings-section > :is(.toggle, .ql-field):first-child { padding-top: 0; border-top: 0; }
+.settings-pane > .toggle, .settings-section > .toggle { flex-direction: row-reverse; flex-wrap: nowrap; }
+.settings-pane > .ql-field > :is(select, input), .settings-section > .ql-field > :is(select, input) { flex: 0 1 220px; width: auto; }
+.settings-pane > .ql-field > :is(.ql-field-hint, .ql-field-error), .settings-section > .ql-field > :is(.ql-field-hint, .ql-field-error) { flex-basis: 100%; }
 /* The pane's heading is the section's, so its first part needs no line of its own. */
 .settings-pane > :is(:first-child, h2 + *):is(.settings-section, .controls) { padding-top: 0; border-top: 0; }
 .settings-pane :is(.settings-section, .controls) > button { justify-self: start; }

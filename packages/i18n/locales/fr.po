@@ -1006,6 +1006,14 @@ msgstr "Toute personne disposant du lien peut la voir sur quiverlauncher.com et 
 msgid "App"
 msgstr "App"
 
+#: ../../apps/launcher/src/detail.tsx
+msgid "App details"
+msgstr "Détails de l'app"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "APP DETAILS"
+msgstr "DÉTAILS DE L'APP"
+
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "App page"
 msgstr "Page de l'app"
@@ -3907,14 +3915,6 @@ msgstr "Onglet précédent"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "Program"
 msgstr "Programme"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "Project details"
-msgstr "Détails du projet"
-
-#: ../../apps/launcher/src/detail.tsx
-msgid "PROJECT DETAILS"
-msgstr "DÉTAILS DU PROJET"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
