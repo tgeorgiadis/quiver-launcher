@@ -23,8 +23,12 @@ export const isLocal = (id: string) => id.startsWith("local:");
 export const isOwn = (id: string) => isCustom(id) || isLocal(id);
 export const localKey = () => `local:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
-/** The games an app's name matches, best first. File names drop apostrophes ("Marios Tennis"): without a match, the words without a final s. */
-export function gamesNamed(client: Client, name: string) {
+/**
+ * The games an app's name matches, best first. A year after it, as players name their apps ("Folklore (2007)"), isn't
+ * part of the game's name. File names drop apostrophes ("Marios Tennis"): without a match, the words without a final s.
+ */
+export function gamesNamed(client: Client, named: string) {
+  const name = named.replace(/\s*[([]\s*(19|20)\d\d\s*[)\]]\s*$/, "").trim() || named;
   const loose = name.replace(/\b(\w{3,})s\b/gi, "$1");
   return client.matchingGames(name).then((found) => (found.length || loose === name ? found : client.matchingGames(loose)));
 }

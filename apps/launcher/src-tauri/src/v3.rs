@@ -31,6 +31,9 @@ pub struct OldApp {
     /// The player hid it in 3.x's library.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     hidden: bool,
+    /// Its picture in 3.x: the file the player chose for it (Add Custom Image), else the https address its entry had.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<String>,
     /// 3.x says it's installed in a folder that's gone, and it wasn't found anywhere else.
     #[serde(skip)]
     lost: bool,
@@ -295,6 +298,27 @@ pub fn existing(dir: &Path) -> Option<Existing> {
     Some(Existing { version: own.unwrap_or(version), program })
 }
 
+/// The kinds of picture 3.x's Add Custom Image kept, which Quiver can read too (custom_art.rs).
+const PICTURES: [&str; 6] = ["png", "jpg", "jpeg", "gif", "webp", "ico"];
+
+/// The picture 3.x showed for an app: the file the player chose for it, which 3.x kept in its cache folder as
+/// `<folder name>_custom.<kind>` (GameInfo.SetCustomIcon), or which an entry can name itself; else the address its
+/// entry had (appIconUrl, or gameIconUrl before that), when it's https.
+fn icon(dir: &Path, app: &Value) -> Option<String> {
+    let picture = |p: &Path| p.is_file() && p.extension().and_then(|e| e.to_str()).is_some_and(|e| PICTURES.contains(&e.to_ascii_lowercase().as_str()));
+    let named = ["customIconPath", "customIcon"].iter().filter_map(|k| field(app, k)).map(|p| resolve(dir, p)).find(|p| picture(p));
+    let kept = || {
+        let stem = format!("{}_custom", field(app, "folderName")?);
+        // 3.x's cache is beside its program: a Windows copy's is in its `current` folder.
+        [dir.join("Cache").join("CustomIcons"), dir.join("current").join("Cache").join("CustomIcons"), dir.join("CustomIcons")]
+            .iter()
+            .flat_map(|d| std::fs::read_dir(d).into_iter().flatten().flatten().map(|e| e.path()))
+            .find(|p| picture(p) && p.file_stem().and_then(|s| s.to_str()).is_some_and(|s| s.eq_ignore_ascii_case(&stem)))
+    };
+    let address = || ["appIconUrl", "gameIconUrl"].iter().filter_map(|k| field(app, k)).map(str::trim).find(|a| a.starts_with("https://") && !a.contains(char::is_whitespace)).map(str::to_string);
+    named.or_else(kept).map(|p| p.to_string_lossy().into_owned()).or_else(address)
+}
+
 /// Whether two paths name one folder, however they're written.
 fn same_folder(a: &Path, b: &Path) -> bool {
     a == b || a.canonicalize().ok().zip(b.canonicalize().ok()).is_some_and(|(a, b)| a == b)
@@ -323,6 +347,8 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
             let install = own.into_iter().chain(named).find_map(|d| installed(&d).map(|(version, program)| (d, version, program)));
             let lost = gone && install.is_none();
             let in_apps = install.as_ref().is_some_and(|(d, ..)| d.parent().is_some_and(|p| folders.iter().any(|f| same_folder(p, f))));
+            // Before `dir` is the install's, from here on.
+            let picture = icon(dir, app);
             let (dir, version, program) = match install {
                 Some((d, version, program)) => (Some(d.to_string_lossy().into()), Some(version), program),
                 None => (None, None, None),
@@ -342,6 +368,7 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
                 tags: texts(set.or_else(|| get(app, "tags"))),
                 catalog_tags: texts(get(app, "catalog").and_then(|c| get(c, "tags"))),
                 hidden,
+                icon: picture,
                 lost,
                 name,
                 repository: repository.map(str::to_string),
@@ -725,6 +752,25 @@ mod tests {
             find_in(root.path(), &[]).unwrap().filters,
             [filter("Recomps", &["recomp", "n64"], false, &[], false), filter("Finished", &["n64", "done"], true, &["broken", "wip"], true)]
         );
+    }
+
+    #[test]
+    fn brings_the_picture_the_player_chose_else_the_address_the_entry_had() {
+        let root = tempfile::tempdir().unwrap();
+        let apps = serde_json::json!({ "Apps": [
+            { "Name": "Test Port", "Repository": "quiver/test-port", "FolderName": "TestPort", "AppIconUrl": "https://example.com/port.png" },
+            { "Name": "Other Port", "Repository": "quiver/other-port", "FolderName": "OtherPort", "appIconUrl": "https://example.com/other.png" },
+            { "Name": "Plain Port", "Repository": "quiver/plain-port", "FolderName": "PlainPort", "appIconUrl": "http://example.com/plain.png" },
+        ] });
+        library(root.path(), &apps.to_string());
+        let icons = root.path().join("Cache").join("CustomIcons");
+        let kept = icons.join("TestPort_custom.PNG");
+        folder(&icons, &[("TestPort_custom.PNG", ""), ("TestPort_custom.txt", "")]);
+        let apps = apps_in(root.path());
+        assert_eq!(apps[0].icon.as_deref(), Some(kept.to_string_lossy().as_ref()));
+        assert_eq!(apps[1].icon.as_deref(), Some("https://example.com/other.png"));
+        // Only an https address: the page shows no other.
+        assert_eq!(apps[2].icon, None);
     }
 
     #[test]

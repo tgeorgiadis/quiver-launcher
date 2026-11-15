@@ -337,6 +337,7 @@ msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, one {還有 # 個} other {還有 # 個}}"
 
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "{n, plural, one {# app} other {# apps}}"
 msgstr "{n, plural, one {# 個應用程式} other {# 個應用程式}}"
 
@@ -1308,6 +1309,7 @@ msgstr "無法新增：Quiver Launcher 不知道它的來源"
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Cancel"
 msgstr "取消"
 
@@ -1821,14 +1823,21 @@ msgstr "深色"
 msgid "Default"
 msgstr "預設"
 
+#. Button: confirm deleting one of the player's tags from all their apps
+#. Button: delete one of the player's tags from all their apps
 #. Deletes a playlist
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Delete"
 msgstr "刪除"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Delete (stops sharing it)"
 msgstr "刪除（停止共享）"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Delete {tag}"
+msgstr "刪除 {tag}"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Description"
@@ -2604,6 +2613,7 @@ msgctxt "tab"
 msgid "Installed"
 msgstr "已安裝"
 
+#. Under an app's name on its library card: the version installed on this computer
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Installed {installedLabel}"
 msgstr "已安裝 {installedLabel}"
@@ -2642,6 +2652,11 @@ msgstr "僅已安裝"
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed or not"
 msgstr "已安裝或未安裝"
+
+#. Library card detail: the version installed on this computer, always shown under the name
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Installed version"
+msgstr "已安裝版本"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed, not in your library"
@@ -3040,6 +3055,11 @@ msgstr "在你的應用程式資料夾中建立一個資料夾，用於存放該
 msgid "Manage"
 msgstr "管理"
 
+#. Menu item: rename or delete the player's tags, in Settings
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Manage tags…"
+msgstr "管理標籤…"
+
 #. Filter by whether Quiver downloads and updates an app, or the player looks after it
 #: ../../apps/launcher/src/library.tsx
 msgid "Managed by"
@@ -3330,6 +3350,10 @@ msgstr "目錄中的最新內容"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "New installs"
 msgstr "新安裝"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "New name for {tag}"
+msgstr "{tag} 的新名稱"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4199,6 +4223,10 @@ msgstr "重新載入"
 msgid "Remove"
 msgstr "移除"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Remove “{tag}” from {count}?"
+msgstr "要從 {count} 移除「{tag}」嗎？"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Remove {name}"
 msgstr "移除 {name}"
@@ -4240,14 +4268,20 @@ msgstr "從遊戲庫中移除後，其檔案仍會保留在原處。"
 msgid "Removing…"
 msgstr "正在移除 →"
 
+#. Button: rename one of the player's tags
 #. Renames an app's folder
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Rename"
 msgstr "重新命名"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename {app}'s folder"
 msgstr "重新命名 {app} 的資料夾"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Rename {tag}"
+msgstr "重新命名 {tag}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename folder"
@@ -4343,6 +4377,7 @@ msgstr "與系統相同"
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Save"
 msgstr "儲存"
 
@@ -5106,6 +5141,10 @@ msgstr "存檔和設定也會一併遷移。"
 msgid "The shared playlist is up to date."
 msgstr "共享播放清單已是最新版本。"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
+msgstr "你為應用程式加上的標籤，包括從 Quiver Launcher 3 帶過來的。重新命名或刪除標籤，會改動所有帶有它的應用程式。目錄本身的標籤不受影響。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "主題"
@@ -5764,6 +5803,10 @@ msgstr "你已安裝此版本。如果你願意承擔風險，可以繼續使用
 msgid "You have the newest version."
 msgstr "你已擁有最新版本。"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "You haven't tagged any apps yet. Add tags from an app's menu, under Tags."
+msgstr "你還沒有為任何應用程式加上標籤。可在應用程式選單的「標籤」中新增。"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "You reported a problem on {sent}. A maintainer will take a look."
 msgstr "你在 {sent} 報告了問題。維護者會檢視。"
@@ -5870,6 +5913,7 @@ msgid "Your problem report"
 msgstr "你提交的問題報告"
 
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "你的標籤"
 

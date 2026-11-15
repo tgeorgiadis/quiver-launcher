@@ -337,6 +337,7 @@ msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, other {외 #개}}"
 
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "{n, plural, one {# app} other {# apps}}"
 msgstr "{n, plural, other {앱 #개}}"
 
@@ -1308,6 +1309,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Cancel"
 msgstr "취소"
 
@@ -1821,14 +1823,21 @@ msgstr "어둡게"
 msgid "Default"
 msgstr "기본"
 
+#. Button: confirm deleting one of the player's tags from all their apps
+#. Button: delete one of the player's tags from all their apps
 #. Deletes a playlist
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Delete"
 msgstr "삭제"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Delete (stops sharing it)"
 msgstr "삭제(공유 중지)"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Delete {tag}"
+msgstr "{tag} 삭제"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Description"
@@ -2604,6 +2613,7 @@ msgctxt "tab"
 msgid "Installed"
 msgstr "설치됨"
 
+#. Under an app's name on its library card: the version installed on this computer
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Installed {installedLabel}"
 msgstr "{installedLabel} 설치됨"
@@ -2642,6 +2652,11 @@ msgstr "설치된 앱만"
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed or not"
 msgstr "설치 여부 무관"
+
+#. Library card detail: the version installed on this computer, always shown under the name
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Installed version"
+msgstr "설치된 버전"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed, not in your library"
@@ -3040,6 +3055,11 @@ msgstr "앱 폴더 안에 앱을 넣을 폴더를 만들어요."
 msgid "Manage"
 msgstr "관리"
 
+#. Menu item: rename or delete the player's tags, in Settings
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Manage tags…"
+msgstr "태그 관리…"
+
 #. Filter by whether Quiver downloads and updates an app, or the player looks after it
 #: ../../apps/launcher/src/library.tsx
 msgid "Managed by"
@@ -3330,6 +3350,10 @@ msgstr "카탈로그 신규"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "New installs"
 msgstr "새 설치"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "New name for {tag}"
+msgstr "{tag}의 새 이름"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4199,6 +4223,10 @@ msgstr "다시 불러오기"
 msgid "Remove"
 msgstr "삭제"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Remove “{tag}” from {count}?"
+msgstr "{count}에서 “{tag}” 태그를 제거할까요?"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Remove {name}"
 msgstr "{name} 제거"
@@ -4240,14 +4268,20 @@ msgstr "라이브러리에서 삭제해도 파일은 그대로 남아요."
 msgid "Removing…"
 msgstr "삭제하는 중…"
 
+#. Button: rename one of the player's tags
 #. Renames an app's folder
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Rename"
 msgstr "이름 바꾸기"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename {app}'s folder"
 msgstr "{app} 폴더 이름 바꾸기"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Rename {tag}"
+msgstr "{tag} 이름 바꾸기"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename folder"
@@ -4343,6 +4377,7 @@ msgstr "시스템 설정과 동일"
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Save"
 msgstr "저장"
 
@@ -5106,6 +5141,10 @@ msgstr "저장 데이터와 설정도 함께 옮겨져요."
 msgid "The shared playlist is up to date."
 msgstr "공유 재생 목록이 최신 상태예요."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
+msgstr "앱에 붙인 태그입니다. Quiver Launcher 3에서 가져온 태그도 포함됩니다. 이름을 바꾸거나 삭제하면 그 태그가 있는 모든 앱에 적용됩니다. 카탈로그의 태그는 바뀌지 않습니다."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "테마"
@@ -5764,6 +5803,10 @@ msgstr "설치되어 있어요. 위험을 감수하겠다면 계속 사용할 �
 msgid "You have the newest version."
 msgstr "최신 버전을 사용 중이에요."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "You haven't tagged any apps yet. Add tags from an app's menu, under Tags."
+msgstr "아직 태그를 붙인 앱이 없습니다. 앱 메뉴의 태그에서 추가하세요."
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "You reported a problem on {sent}. A maintainer will take a look."
 msgstr "{sent}에 문제를 신고했습니다. 관리자가 확인할 예정입니다."
@@ -5870,6 +5913,7 @@ msgid "Your problem report"
 msgstr "내 문제 신고"
 
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "내 태그"
 

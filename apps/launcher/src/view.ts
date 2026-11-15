@@ -37,24 +37,29 @@ export type LibraryView = {
   /** The grid has a card for each game, its ports picked from it (group.ts), not one for each app. */
   byGame: boolean;
   /** What the grid's cards show with their names, as Browse's can (browse-cards.ts): the line under the name, at first. */
-  details: readonly CardDetail[];
+  details: readonly LibraryDetail[];
 };
 
-/** The details a library card can show: Browse's, but New and Easy setup, which are about getting an app. */
-export const LIBRARY_DETAILS = CARD_DETAILS.filter((d) => d !== "new" && d !== "setup");
+/** A detail a library card can show: Browse's, and the version installed here, which only the library knows. */
+export type LibraryDetail = CardDetail | "version";
+/**
+ * The details a library card can show: Browse's, but New and Easy setup, which are about getting an app; and the
+ * version installed, under when it was last updated, which then isn't said again over the card.
+ */
+export const LIBRARY_DETAILS: readonly LibraryDetail[] = CARD_DETAILS.filter((d) => d !== "new" && d !== "setup").flatMap((d): LibraryDetail[] => (d === "updated" ? [d, "version"] : [d]));
 /**
  * The same choice of details as one list each time it's read, so the cards (memo) aren't all drawn again with each
  * change to the launcher for a list that's equal but new.
  */
-const detailLists = new Map<string, readonly CardDetail[]>();
-function detailsOf(saved: unknown): readonly CardDetail[] {
+const detailLists = new Map<string, readonly LibraryDetail[]>();
+function detailsOf(saved: unknown): readonly LibraryDetail[] {
   if (!Array.isArray(saved)) return DEFAULT_VIEW.details;
   const details = LIBRARY_DETAILS.filter((d) => saved.includes(d));
   const key = details.join(" ");
   if (!detailLists.has(key)) detailLists.set(key, details);
   return detailLists.get(key)!;
 }
-const sameDetails = (a: readonly CardDetail[], b: readonly CardDetail[]) => a.length === b.length && a.every((d) => b.includes(d));
+const sameDetails = (a: readonly LibraryDetail[], b: readonly LibraryDetail[]) => a.length === b.length && a.every((d) => b.includes(d));
 
 /**
  * A shelf of box art, medium, with names: unlike Browse's wide catalog cards.

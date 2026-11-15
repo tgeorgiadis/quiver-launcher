@@ -15,6 +15,7 @@ import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { canGet, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
+import { manageTags } from "./tag-settings";
 import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
@@ -581,6 +582,12 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
             />
+            {allTags.length > 0 && (
+              <>
+                <hr />
+                {item({ text: t({ message: "Manage tags…", comment: "Menu item: rename or delete the player's tags, in Settings" }), act: manageTags }, true)}
+              </>
+            )}
           </>,
         )}
       {opens("manage", t({ message: "Manage", comment: "Menu item opening an app's folder, shortcuts and uninstalling" }))}

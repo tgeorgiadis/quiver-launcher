@@ -91,3 +91,8 @@ test("a card scale stays on the slider: its ends at most, on a step", () => {
   expect(cardScaleOf(NaN)).toBe(1);
   expect([0.6, 0.85, 0.9, 1.1, 1.15, 1.6].map(sizeOf)).toEqual(["small", "small", "medium", "medium", "large", "large"]);
 });
+
+test("a library card can show the version installed, kept after when it was last updated", () => {
+  expect(viewOf({ details: ["version", "updated", "subtitle"] }).details).toEqual(["subtitle", "updated", "version"]);
+  expect(savedView({ ...DEFAULT_VIEW, details: ["version"] })).toEqual({ details: ["version"] });
+});

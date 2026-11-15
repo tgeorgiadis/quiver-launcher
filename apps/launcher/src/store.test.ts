@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, retagged, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -735,5 +735,23 @@ describe("usableCatalog", () => {
     // What beta.4 saved for an app with no slug: the page's withdrawn and what was looked up, and nothing else.
     const broken = { withdrawn: undefined, forHere: { of: "1.0:own:files" } } as unknown as Entry;
     expect(usableCatalog({ a: whole, b: broken, c: null as unknown as Entry })).toEqual({ a: whole });
+  });
+});
+
+describe("retagged", () => {
+  const item = (id: string, tags?: string[], account?: string): LibraryItem => ({ id, slug: id, addedAt: 0, overrides: tags ? { tags } : undefined, account });
+  it("renames a tag on every app that has it, whatever its case, once on an app with the new name already", () => {
+    const library = [item("a", ["PS3", "mine"], "u1"), item("b", ["ps3", "ps 3"]), item("c", ["other"])];
+    const [a, b, c] = retagged(library, "ps3", " ps 3 ");
+    expect(a.overrides?.tags).toEqual(["ps 3", "mine"]);
+    expect(a.pending?.tags).toBe(true);
+    expect(b.overrides?.tags).toEqual(["ps 3"]);
+    expect(b.pending).toBeUndefined();
+    expect(c).toBe(library[2]);
+  });
+  it("takes a tag off them all without a new name", () => {
+    const [a, b] = retagged([item("a", ["gog"]), item("b", ["GOG", "mine"])], "gog");
+    expect(a.overrides?.tags).toBeUndefined();
+    expect(b.overrides?.tags).toEqual(["mine"]);
   });
 });
