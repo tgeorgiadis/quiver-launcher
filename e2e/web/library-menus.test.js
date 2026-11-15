@@ -57,8 +57,8 @@ for (const mode of ["the usual library", "TV mode"]) {
   });
 }
 
-test("where Steam is running Quiver, Add to Steam is greyed out, saying why", async () => {
-  const s2 = await openApp({ state: installed, config: { steamRunsUs: true } });
+test("on Windows, where Steam is running Quiver, Add to Steam is greyed out, saying why", async () => {
+  const s2 = await openApp({ state: installed, config: { steamRunsUs: true, os: "windows" } });
   try {
     const a = s2.app;
     await s2.page.locator("article[data-slug]").first().waitFor();
@@ -69,6 +69,23 @@ test("where Steam is running Quiver, Add to Steam is greyed out, saying why", as
     const item = s2.page.locator('.game-submenu [role="menuitem"]', { hasText: "Add to Steam" });
     assert.equal(await item.isDisabled(), true);
     await s2.page.locator(".game-submenu .game-menu-note", { hasText: "Steam is running Quiver" }).waitFor();
+  } finally {
+    await s2.close();
+  }
+});
+
+test("on Linux, Steam running Quiver doesn't grey out Add to Steam: it can add games at once", async () => {
+  const s2 = await openApp({ state: installed, config: { steamRunsUs: true, os: "linux" } });
+  try {
+    const a = s2.app;
+    await s2.page.locator("article[data-slug]").first().waitFor();
+    await reach.install(a);
+    await reach.pressOn(a, ".library-tile .card-open", "North");
+    await a.execute(() => [...document.querySelectorAll('[role="menu"] [role="menuitem"]')].find((b) => b.innerText.includes("Manage")).focus());
+    await reach.press(a, "DPadRight");
+    const item = s2.page.locator('.game-submenu [role="menuitem"]', { hasText: "Add to Steam" });
+    assert.equal(await item.isDisabled(), false);
+    assert.equal(await s2.page.locator(".game-submenu .game-menu-note").count(), 0, "no note: it can add games now");
   } finally {
     await s2.close();
   }

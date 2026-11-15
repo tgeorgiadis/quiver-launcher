@@ -436,7 +436,8 @@ pub(crate) fn extract(file: &Path, name: &str, out: &Path) -> Result<(), String>
 /// A tar can mark a folder 0644, which locks it ("Access denied"), and a 7z
 /// keeps no Unix permissions at all, so a Linux build's program comes out
 /// unable to run. Folders get rwx and files rw for their owner; an AppImage,
-/// a script or a Linux binary (ELF) that runs for no one becomes runnable.
+/// a script, a Linux binary (ELF) or a Windows program that runs for no one
+/// becomes runnable.
 #[cfg(unix)]
 fn open_up(dir: &Path) {
     use std::os::unix::fs::PermissionsExt;
@@ -463,11 +464,14 @@ fn open_up(dir: &Path) {
     }
 }
 
-/// An AppImage, a script or a Linux binary, by its name or its first bytes.
+/// An AppImage, a script, a Linux binary or a Windows program, by its name or
+/// its first bytes. A Windows program runs through Wine or Proton, which don't
+/// need the bit themselves, but Steam only treats a shortcut's program as one
+/// to run when it can be executed, so a game added to Steam does.
 #[cfg(unix)]
 fn is_program(path: &Path) -> bool {
     let name = path.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
-    if [".appimage", ".x86_64", ".sh"].iter().any(|e| name.ends_with(e)) {
+    if [".appimage", ".x86_64", ".sh", ".exe", ".bat", ".cmd"].iter().any(|e| name.ends_with(e)) {
         return true;
     }
     let mut head = [0u8; 4];
@@ -1195,7 +1199,8 @@ mod tests {
     #[test]
     fn a_locked_folder_or_a_program_that_cant_run_is_opened_up() {
         use std::os::unix::fs::PermissionsExt;
-        // A folder marked 0644 and a Linux binary and its data marked 0644, as the Uncharted port's tar had.
+        // A folder marked 0644 and a Linux binary, a Windows program and their
+        // data marked 0644, as the Uncharted port's tar and a game's zip had.
         let mut tar = tar::Builder::new(Vec::new());
         let mut folder = tar::Header::new_gnu();
         folder.set_entry_type(tar::EntryType::Directory);
@@ -1203,7 +1208,7 @@ mod tests {
         folder.set_mode(0o644);
         folder.set_cksum();
         tar.append_data(&mut folder, "analysis/", io::empty()).unwrap();
-        for (path, body) in [("analysis/game", &b"\x7fELF\x02\x01"[..]), ("analysis/level.dat", &b"level"[..])] {
+        for (path, body) in [("analysis/game", &b"\x7fELF\x02\x01"[..]), ("analysis/Game.exe", &b"MZ\x90\x00"[..]), ("analysis/level.dat", &b"level"[..])] {
             let mut header = tar::Header::new_gnu();
             header.set_size(body.len() as u64);
             header.set_mode(0o644);
@@ -1218,6 +1223,7 @@ mod tests {
         let mode = |p: &str| fs::metadata(out.join(p)).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode("analysis") & 0o700, 0o700, "the folder can be entered");
         assert_eq!(mode("analysis/game"), 0o755, "the binary runs");
+        assert_eq!(mode("analysis/Game.exe"), 0o755, "Steam can run the Windows program");
         assert_eq!(mode("analysis/level.dat"), 0o644, "data stays data");
     }
 
