@@ -186,7 +186,7 @@ function Welcome() {
       <p>
         <Trans>It looks and works differently in places, so give it a go with an open mind.</Trans>
       </p>
-      <p className="muted">
+      <p className="muted setup-questions">
         <Trans>A few quick questions to get you started. You can change any of these later in Settings.</Trans>
       </p>
       <LanguageSetting />
