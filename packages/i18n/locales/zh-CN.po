@@ -2782,6 +2782,10 @@ msgstr "此信息不会关联到你的 Quiver 帐户。"
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "它已不在游戏读取的位置。请重新设置。"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "It looks and works differently in places, so give it a go with an open mind."
+msgstr "有些地方的外观和用法不一样了，请带着开放的心态试一试。"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "它可以运行，但我遇到了一些问题"
@@ -3411,6 +3415,10 @@ msgstr "新应用会安装到 {to}。"
 msgid "New badge"
 msgstr "新内容徽标"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "New in Quiver Launcher 4"
+msgstr "Quiver Launcher 4 的新功能"
+
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
 msgid "New in the catalog"
@@ -3972,6 +3980,10 @@ msgstr "播放列表和标签"
 msgid "Playlists for this app"
 msgstr "此应用的播放列表"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Playlists you can share, and other people's to follow"
+msgstr "可以分享的播放列表，也可以关注别人的"
+
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4149,6 +4161,10 @@ msgstr "Quiver Launcher 3"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3 的文件夹"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4 是从头重新打造的。我尽力让它能做到 Quiver Launcher 3 能做的一切，并增加了一些新功能："
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
@@ -4861,6 +4877,10 @@ msgstr "登录以分享你的运行体验。"
 msgid "Sign in to sync your library"
 msgstr "登录以同步你的游戏库"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Sign in to sync your library across your devices"
+msgstr "登录后可在你的所有设备间同步游戏库"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "退出登录"
@@ -5417,6 +5437,10 @@ msgstr "关闭"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "电视模式"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "TV mode: a full-screen launcher for a controller"
+msgstr "电视模式：用手柄操作的全屏启动器"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6002,6 +6026,10 @@ msgstr "你的反馈正在等待版主审核，审核通过后其他人才能看
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "你的反馈尚未共享。你写下的内容仍保留在这里。"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your language: Quiver comes in ten"
+msgstr "你的语言：Quiver 支持十种语言"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"

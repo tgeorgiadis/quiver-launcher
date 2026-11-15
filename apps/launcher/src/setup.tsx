@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { Check } from "lucide-react";
 import { useLauncher, type Settings } from "./store";
 import { useAccount } from "./account";
 import { AppsFolder, LanguageSetting, MoveOldApps } from "./settings-page";
@@ -142,10 +143,33 @@ export function Setup({ onClose, onSignIn }: { onClose: (brought: boolean) => vo
   );
 }
 
+/**
+ * The first step: a word from Quiver's developer on what Quiver Launcher 4 is to someone who knows 3 (rebuilt, the
+ * same things and some more, worth an open mind), then what the setup is, and the language.
+ */
 function Welcome() {
+  const extras = [
+    t`TV mode: a full-screen launcher for a controller`,
+    t`Playlists you can share, and other people's to follow`,
+    t`Sign in to sync your library across your devices`,
+    t`Your language: Quiver comes in ten`,
+  ];
   return (
     <>
       <p>
+        <Trans>Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:</Trans>
+      </p>
+      <ul className="old-library-brings" aria-label={t`New in Quiver Launcher 4`}>
+        {extras.map((extra) => (
+          <li key={extra}>
+            <Check size={15} aria-hidden="true" /> {extra}
+          </li>
+        ))}
+      </ul>
+      <p>
+        <Trans>It looks and works differently in places, so give it a go with an open mind.</Trans>
+      </p>
+      <p className="muted">
         <Trans>A few quick questions to get you started. You can change any of these later in Settings.</Trans>
       </p>
       <LanguageSetting />

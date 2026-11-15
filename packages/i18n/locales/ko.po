@@ -2782,6 +2782,10 @@ msgstr "Quiver 계정과 연결되지 않습니다."
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "게임이 읽는 위치에 더 이상 없어요. 다시 설정하세요."
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "It looks and works differently in places, so give it a go with an open mind."
+msgstr "모양과 쓰는 방법이 달라진 곳이 있으니, 열린 마음으로 한번 써 보세요."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "실행됐지만 문제가 있었어요"
@@ -3411,6 +3415,10 @@ msgstr "새 앱은 {to}에 설치돼요."
 msgid "New badge"
 msgstr "신규 배지"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "New in Quiver Launcher 4"
+msgstr "Quiver Launcher 4의 새로운 기능"
+
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
 msgid "New in the catalog"
@@ -3972,6 +3980,10 @@ msgstr "재생 목록 및 태그"
 msgid "Playlists for this app"
 msgstr "이 앱의 재생 목록"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Playlists you can share, and other people's to follow"
+msgstr "공유할 수 있는 재생 목록, 그리고 다른 사람의 재생 목록 팔로우"
+
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4149,6 +4161,10 @@ msgstr "Quiver Launcher 3"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3 폴더"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4는 처음부터 새로 만들었어요. Quiver Launcher 3가 하던 일을 모두 할 수 있도록 노력했고, 몇 가지를 더했어요:"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
@@ -4861,6 +4877,10 @@ msgstr "로그인하고 실행 후기를 공유해 주세요."
 msgid "Sign in to sync your library"
 msgstr "로그인하고 라이브러리 동기화하기"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Sign in to sync your library across your devices"
+msgstr "로그인하면 모든 기기에서 라이브러리가 동기화돼요"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "로그아웃"
@@ -5417,6 +5437,10 @@ msgstr "끄기"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "TV 모드"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "TV mode: a full-screen launcher for a controller"
+msgstr "TV 모드: 컨트롤러로 쓰는 전체 화면 런처"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6002,6 +6026,10 @@ msgstr "다른 사람이 볼 수 있도록 피드백이 관리자 검토를 기�
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "피드백이 아직 공유되지 않았어요. 작성한 내용은 그대로 남아 있어요."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your language: Quiver comes in ten"
+msgstr "언어: Quiver는 열 가지 언어를 지원해요"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"

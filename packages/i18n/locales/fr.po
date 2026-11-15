@@ -2782,6 +2782,10 @@ msgstr "Elles ne sont pas liées à votre compte Quiver."
 msgid "It isn't where the game reads it any more. Set it up again."
 msgstr "Elle n'est plus là où le jeu la lit. Configure-la à nouveau."
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "It looks and works differently in places, so give it a go with an open mind."
+msgstr "Par endroits, il a une autre allure et fonctionne autrement : essayez-le avec l'esprit ouvert."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "Ça a fonctionné, mais avec des problèmes"
@@ -3411,6 +3415,10 @@ msgstr "Les nouvelles apps s’installent dans {to}."
 msgid "New badge"
 msgstr "Badge Nouveau"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "New in Quiver Launcher 4"
+msgstr "Nouveautés de Quiver Launcher 4"
+
 #. A shelf on the catalog's front page: apps added lately
 #: ../ui/src/discover.tsx
 msgid "New in the catalog"
@@ -3972,6 +3980,10 @@ msgstr "Playlists et tags"
 msgid "Playlists for this app"
 msgstr "Playlists de cette app"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Playlists you can share, and other people's to follow"
+msgstr "Des playlists à partager, et celles des autres à suivre"
+
 #. A kind of project: a game brought to other platforms
 #. Project type: a game ported to another platform
 #: ../../apps/launcher/src/App.tsx
@@ -4149,6 +4161,10 @@ msgstr "Quiver Launcher 3"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Dossier de Quiver Launcher 3"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Quiver Launcher 4 has been rebuilt from the ground up. I've tried to make sure it does everything Quiver Launcher 3 did, with some extras:"
+msgstr "Quiver Launcher 4 a été entièrement reconstruit. J'ai fait en sorte qu'il fasse tout ce que faisait Quiver Launcher 3, avec quelques extras :"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 4's folder"
@@ -4861,6 +4877,10 @@ msgstr "Connectez-vous pour dire comment ça tourne chez vous."
 msgid "Sign in to sync your library"
 msgstr "Connectez-vous pour synchroniser votre bibliothèque"
 
+#: ../../apps/launcher/src/setup.tsx
+msgid "Sign in to sync your library across your devices"
+msgstr "Connectez-vous pour synchroniser votre bibliothèque sur tous vos appareils"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "Se déconnecter"
@@ -5417,6 +5437,10 @@ msgstr "Désactiver"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "TV mode"
 msgstr "Mode TV"
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "TV mode: a full-screen launcher for a controller"
+msgstr "Mode TV : un launcher plein écran pour la manette"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "TV mode: for a controller, the couch and a Steam Deck"
@@ -6002,6 +6026,10 @@ msgstr "Votre avis attend la validation d'un modérateur avant que les autres pu
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Your feedback isn't shared yet. What you wrote is still here."
 msgstr "Votre avis n'est pas encore partagé. Ce que vous avez écrit est toujours là."
+
+#: ../../apps/launcher/src/setup.tsx
+msgid "Your language: Quiver comes in ten"
+msgstr "Votre langue : Quiver en parle dix"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Your library is empty"
