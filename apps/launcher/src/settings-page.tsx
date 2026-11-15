@@ -5,7 +5,7 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ChevronRight, Clock, Disc3, FolderInput, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Clock, Disc3, Folder, FolderInput, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
@@ -842,17 +842,23 @@ export function MoveOldApps({ dirs, onBusy, onKeep }: { dirs: string[]; onBusy: 
       <p>{plural(count, { one: "Your # installed app is still in Quiver Launcher 3's folder, and plays from there.", other: "Your # installed apps are still in Quiver Launcher 3's folder, and play from there." })}</p>
       <div className="old-library-move" role="group" aria-label={t`Where your Quiver Launcher 3 apps are, and Quiver's apps folder`}>
         <div className="old-library-place">
-          <strong>{t`Quiver Launcher 3's folder`}</strong>
-          <span>{plural(count, { one: "# app", other: "# apps" })}</span>
-          {from.map((f) => (
-            <small key={f.path}>{f.path}</small>
-          ))}
+          <Folder size={28} aria-hidden="true" />
+          <div>
+            <strong>{t`Quiver Launcher 3's folder`}</strong>
+            <span>{plural(count, { one: "# app", other: "# apps" })}</span>
+            {from.map((f) => (
+              <small key={f.path}>{f.path}</small>
+            ))}
+          </div>
         </div>
-        <ArrowRight size={22} aria-hidden="true" />
+        <ArrowRight className="old-library-arrow" size={22} aria-hidden="true" />
         <div className="old-library-place" data-to>
-          <strong>{t`Quiver 4's apps folder`}</strong>
-          <span>{free != null ? t`${space(free)} free` : t`New apps install here.`}</span>
-          <small>{dir}</small>
+          <FolderOpen size={28} aria-hidden="true" />
+          <div>
+            <strong>{t`Quiver 4's apps folder`}</strong>
+            <span>{free != null ? t`${space(free)} free` : t`New apps install here.`}</span>
+            <small>{dir}</small>
+          </div>
         </div>
       </div>
       {outcome && <MoveMessage message={outcome} />}
