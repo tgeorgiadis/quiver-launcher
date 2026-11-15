@@ -163,7 +163,7 @@ const SPARE: u64 = 512 << 20;
 /// original whole.
 fn short_of_space(copying: &[PathBuf], to: &Path, free: Option<u64>) -> Option<String> {
     let free = free?;
-    let needed = copying.iter().filter_map(|dir| size_of(dir).ok()).sum::<u64>();
+    let needed = sizes_of(copying);
     if needed == 0 || needed + SPARE <= free {
         return None;
     }
@@ -474,15 +474,44 @@ fn move_by_copy(old: &Path, new: &Path, retired: &Path, progress: impl Fn(u64, u
     Ok(())
 }
 
+/// The bytes in several folders' files, leaving out any that can't be read. A library's worth of apps is hundreds of
+/// thousands of files, so a few folders are measured at a time: the wait is the drive's, not the processor's.
+fn sizes_of(dirs: &[PathBuf]) -> u64 {
+    use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+    let (next, total) = (AtomicUsize::new(0), AtomicU64::new(0));
+    std::thread::scope(|scope| {
+        for _ in 0..dirs.len().min(8) {
+            scope.spawn(|| {
+                while let Some(dir) = dirs.get(next.fetch_add(1, Ordering::Relaxed)) {
+                    total.fetch_add(size_of(dir).unwrap_or(0), Ordering::Relaxed);
+                }
+            });
+        }
+    });
+    total.into_inner()
+}
+
 /// The bytes in a folder's files. A link copied as a link (on Unix) adds none, as copying it counts none.
 fn size_of(dir: &Path) -> io::Result<u64> {
     let mut size = 0;
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
-        let meta = followed(&entry.path(), entry.file_type()?)?;
+        let meta = listed(&entry)?;
         size += if meta.is_dir() { size_of(&entry.path())? } else if meta.file_type().is_symlink() { 0 } else { meta.len() };
     }
     Ok(size)
+}
+
+/// An entry's details for measuring it, as a copy of it ends up (a link's own on Unix, where the copy is a link too,
+/// else what it points at), from the folder's listing where that has them: Windows reads them with the names, so
+/// measuring a folder doesn't open each of its files. A file still being written can read a little short there,
+/// which a measure can stand and a check of a copy can't (`followed`).
+fn listed(entry: &fs::DirEntry) -> io::Result<fs::Metadata> {
+    if entry.file_type()?.is_symlink() && cfg!(not(unix)) {
+        fs::metadata(entry.path())
+    } else {
+        entry.metadata()
+    }
 }
 
 /// An entry's details as a copy of it ends up: a link's own on Unix, where the copy is a link too, else what it points at.
@@ -718,6 +747,8 @@ mod tests {
         assert!(same_files(&old, &copy));
         assert_eq!(reports.into_inner().iter().sum::<u64>(), (3 << 20) + 3);
         assert_eq!(size_of(&old).unwrap(), (3 << 20) + 3);
+        // Several at once come to the same, and one that isn't there adds nothing.
+        assert_eq!(sizes_of(&[old.clone(), old.clone(), old.join("missing")]), 2 * ((3 << 20) + 3));
         #[cfg(unix)]
         assert_eq!(fs::read_link(copy.join("link")).unwrap(), Path::new("data/save.dat"));
         // A file short, missing or extra: not the same.
