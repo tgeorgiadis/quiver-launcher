@@ -347,6 +347,8 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
             let install = own.into_iter().chain(named).find_map(|d| installed(&d).map(|(version, program)| (d, version, program)));
             let lost = gone && install.is_none();
             let in_apps = install.as_ref().is_some_and(|(d, ..)| d.parent().is_some_and(|p| folders.iter().any(|f| same_folder(p, f))));
+            // Before `dir` is the install's, from here on.
+            let picture = icon(dir, app);
             let (dir, version, program) = match install {
                 Some((d, version, program)) => (Some(d.to_string_lossy().into()), Some(version), program),
                 None => (None, None, None),
@@ -366,7 +368,7 @@ fn read_library(dir: &Path, apps: &[PathBuf], settings: &Value) -> Vec<OldApp> {
                 tags: texts(set.or_else(|| get(app, "tags"))),
                 catalog_tags: texts(get(app, "catalog").and_then(|c| get(c, "tags"))),
                 hidden,
-                icon: icon(dir, app),
+                icon: picture,
                 lost,
                 name,
                 repository: repository.map(str::to_string),
