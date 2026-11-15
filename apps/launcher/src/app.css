@@ -1775,6 +1775,29 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
  * Its buttons one over another (Play over Update to its version), in a column as wide on every line and whatever it
  * holds, so Get turning into a download's progress doesn't move the list about; a download's bar and its × side by side.
  */
+/* Ways to play, beside "Based on" on an app's page (ways-to-play.tsx): a pill that stands out from the muted row, and its list. */
+.app-hero .ways-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; line-height: 1.4; cursor: pointer; }
+.app-hero .ways-pill:hover, .app-hero .ways-pill:focus-visible { background: color-mix(in srgb, var(--accent) 24%, transparent); color: var(--strong); }
+.app-hero .ways-pill[aria-expanded="true"] { background: var(--accent); color: var(--on-accent); }
+.app-hero .ways-pill[aria-expanded="true"] .ways-chevron { transform: rotate(180deg); }
+.menu.ways-panel { width: 560px; padding: 8px; }
+.way-row[data-current] { background: var(--field); }
+.way-row[data-top] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); background: var(--accent-soft); }
+.way-row .port-open { gap: 12px; }
+.way-row .port-open .card-art { width: 44px; height: 44px; }
+.way-row .port-open > .platform-icons { flex: none; margin-left: auto; padding-right: 6px; color: var(--muted); }
+.way-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.way-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.way-tag { flex: none; padding: 1px 7px; border: 1px solid transparent; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 1.4; }
+.way-tag.positive { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.way-tag.caution { background: color-mix(in srgb, var(--caution) 16%, transparent); color: var(--caution); }
+.way-tag.negative { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+.way-tag.muted { background: var(--field); color: var(--muted); }
+.way-tag.top { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.way-tag.here { border-color: var(--line-strong); color: var(--text-2); }
+.way-tag.installed { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.ways-group { padding: 10px 8px 4px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.ways-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 6px; padding: 10px 8px 4px; border-top: 1px solid var(--line); font-size: 12px; }
 .port-action { flex: none; width: 168px; }
 .port-action .row { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 4px; }
 .port-action .row.progress-row { flex-direction: row; align-items: center; gap: 4px; }

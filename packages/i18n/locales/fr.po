@@ -7,6 +7,10 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: fr\n"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "\"Runs well\" is the share of players who said it runs well for them."
+msgstr "« Tourne bien » est la part des joueurs qui ont dit que ça tourne bien chez eux."
+
 #. Beside Launch options: the player changed them
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "(changed)"
@@ -110,6 +114,7 @@ msgstr "Le dossier de {app} s'appelle maintenant {renamed}."
 
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/ways-to-play.tsx
 msgid "{apps, plural, one {# way to play} other {# ways to play}}"
 msgstr "{apps, plural, one {# façon de jouer} other {# façons de jouer}}"
 
@@ -545,6 +550,11 @@ msgstr "{runs, plural, one {# fonctionne bien} other {# fonctionnent bien}}"
 msgid "{runs, plural, one {# runs well} other {# runs well}}"
 msgstr "{runs, plural, one {# fonctionne bien} other {# fonctionnent bien}}"
 
+#. The share of players who said an app runs well, on a list of a game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "{share}% run well"
+msgstr "{share} % tourne bien"
+
 #. A file's size in gigabytes
 #: ../../apps/launcher/src/downloads.ts
 msgid "{size} GB"
@@ -577,6 +587,10 @@ msgstr "{tagged, plural, one {Les tags que vous avez donnés à # app} other {Le
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
 msgstr "{total, plural, one {# joueur} other {# joueurs}}"
+
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "{total, plural, one {# report} other {# reports}}"
+msgstr "{total, plural, one {# avis} other {# avis}}"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "{total, plural, one {From the newest player feedback: # player tested this version} other {From the newest player feedback: # players tested this version}}"
@@ -1297,6 +1311,7 @@ msgid "Be the first to say how it went."
 msgstr "Soyez le premier à dire comment ça s'est passé."
 
 #: ../../apps/launcher/src/game.tsx
+#: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Best first, by player feedback"
 msgstr "Les meilleurs d'abord, selon l'avis des joueurs"
 
@@ -2697,6 +2712,12 @@ msgstr "Installer les mises à jour automatiquement"
 msgid "Installed"
 msgstr "Installé"
 
+#. On an app this computer has installed, in a list of a game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgctxt "badge"
+msgid "Installed"
+msgstr "Installé"
+
 #. The version installed, then a version
 #. This release is the one on this computer
 #. This version is the one on this computer
@@ -3591,6 +3612,10 @@ msgstr "Aucune version trouvée"
 msgid "No releases found."
 msgstr "Aucune version trouvée."
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "No reports yet"
+msgstr "Pas encore d’avis"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Nobody has said yet. Be the first."
 msgstr "Personne n'a encore donné son avis. Soyez le premier."
@@ -3642,6 +3667,10 @@ msgstr "Pas encore vérifié"
 #: ../ui/src/index.tsx
 msgid "Not confirmed yet"
 msgstr "Pas encore confirmé"
+
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "Not for this computer"
+msgstr "Pas pour cet ordinateur"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Not found. Is its drive connected?"
@@ -3700,6 +3729,7 @@ msgstr "pas encore proposée · en attente d'un mainteneur"
 msgid "Not played yet"
 msgstr "Pas encore joué"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
 #: ../ui/src/index.tsx
 msgid "Not rated yet"
 msgstr "Pas encore noté"
@@ -4673,6 +4703,10 @@ msgstr "Voir les téléchargements"
 msgid "See it in the catalog"
 msgstr "Voir dans le catalogue"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "See the game's page"
+msgstr "Voir la page du jeu"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "See the report"
@@ -5462,6 +5496,10 @@ msgstr "aujourd'hui"
 msgid "Today"
 msgstr "Aujourd'hui"
 
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "Too few reports"
+msgstr "Trop peu d’avis"
+
 #: ../../apps/launcher/src/account.tsx
 msgid "Too many attempts. Wait a moment and try again."
 msgstr "Trop de tentatives. Patientez un instant et réessayez."
@@ -5483,6 +5521,12 @@ msgstr "Haut"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Top rated"
 msgstr "Les mieux notés"
+
+#. On the one app players rate best of a game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgctxt "badge"
+msgid "Top rated"
+msgstr "La mieux notée"
 
 #. On a featured app's slide: it's among the apps players rated best
 #: ../ui/src/discover.tsx
@@ -5885,6 +5929,7 @@ msgid "Ways to play"
 msgstr "Façons de jouer"
 
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/ways-to-play.tsx
 msgid "Ways to play {title}"
 msgstr "Façons de jouer à {title}"
 
@@ -6027,6 +6072,11 @@ msgstr "Vous avez ignoré {updateVersion}. Quiver Launcher proposera la prochain
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "You're all caught up."
 msgstr "Vous êtes à jour."
+
+#. On the app whose page is open, in a list of the game's apps
+#: ../../apps/launcher/src/ways-to-play.tsx
+msgid "You're here"
+msgstr "Vous êtes ici"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "You're signed in as {name}."

@@ -21,6 +21,7 @@ import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
 import { CorrectionStatusPanel, ReportProblem } from "./correction";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
+import { WaysToPlay } from "./ways-to-play";
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
 import { FORWARD, pageArea, toTop } from "./spatial";
@@ -1387,6 +1388,8 @@ function AppPage({
                     </button>
                   ))}
                   {entry.basedOn && <span className="based-on-version">{gameVersionLabel(entry.basedOn, consoleNames)}</span>}
+                  {/* The other apps that play its game, best first: which is best is easy to miss on the game's page alone. */}
+                  {site && <WaysToPlay entry={entry} onOpenApp={onOpenApp} onOpenGame={onOpenGame} />}
                 </div>
               )}
               {entry.description && <p className="app-tagline">{entry.description}</p>}
