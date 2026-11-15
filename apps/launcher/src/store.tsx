@@ -1137,6 +1137,10 @@ export type Settings = {
   padOff?: boolean;
   /** No hints along the bottom for what a controller's buttons do. */
   padHintsOff?: boolean;
+  /** Holding Start + Select doesn't close the game being played (src-tauri/src/tv/session.rs). */
+  closeComboOff?: boolean;
+  /** Linux: holding Select while a game runs doesn't make the right stick a mouse pointer (src-tauri/src/tv/pointer.rs). */
+  selectPointerOff?: boolean;
   /** The library in sections by original console: what groupBy "console" was before there were other sections. */
   byConsole?: boolean;
   /** The library in sections (group.ts); unset is one piece. */
@@ -1456,6 +1460,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     document.addEventListener("visibilitychange", check);
     return () => document.removeEventListener("visibilitychange", check);
   }, [config.os]);
+  // Start + Select closes the game being played, and on Linux Select is a mouse pointer during one (gamepad.rs),
+  // in either mode, unless the player turned them off.
+  useEffect(() => void native.closeCombo(!settings.closeComboOff).catch(() => {}), [settings.closeComboOff]);
+  useEffect(() => void native.selectPointer(!settings.selectPointerOff).catch(() => {}), [settings.selectPointerOff]);
   const tv = tvModeOn(settings, config);
   // Again as the window changes: TV mode's going full screen, or the launcher moving to another screen.
   useEffect(() => {

@@ -1874,6 +1874,10 @@ msgstr "Schließen"
 msgid "Close {title}"
 msgstr "{title} schließen"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
+msgstr "Spiel beenden, indem du Start + Select eine Sekunde lang hältst, für Spiele, die sich nicht beenden lassen"
+
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Close a game with Start + Select"
 msgstr "Spiel mit Start + Select beenden"
@@ -6664,6 +6668,10 @@ msgstr "Welches Programm startet es?"
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Which tab it's in. Automatic follows the catalog."
 msgstr "In welchem Tab es steht. „Automatisch“ folgt dem Katalog."
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls"
+msgstr "Halte Select, während ein Spiel läuft, für einen Mauszeiger: Rechter Stick bewegt ihn, RT klickt, LT rechtsklickt, linker Stick scrollt"
 
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "While a game runs, hold Select: right stick moves the pointer, RT clicks, LT right-clicks, left stick scrolls"

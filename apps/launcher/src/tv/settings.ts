@@ -22,10 +22,6 @@ export type TvSettings = {
   monitor: string | null;
   reduceMotion: boolean;
   afterGet: AfterGet;
-  /** Holding Start + Select for a second closes the game being played (src-tauri/src/tv/session.rs). */
-  closeGameCombo: boolean;
-  /** Linux: while a game runs, holding Select makes the right stick a mouse pointer (src-tauri/src/tv/pointer.rs). */
-  pointerWithSelect: boolean;
 };
 
 export const DEFAULT_SETTINGS: TvSettings = {
@@ -37,8 +33,6 @@ export const DEFAULT_SETTINGS: TvSettings = {
   monitor: null,
   reduceMotion: false,
   afterGet: "stay",
-  closeGameCombo: true,
-  pointerWithSelect: true,
 };
 
 type Raw = Record<string, unknown>;
@@ -59,8 +53,6 @@ export function tvSettings(raw: unknown): TvSettings {
     monitor: typeof s.monitor === "string" && s.monitor ? s.monitor : null,
     reduceMotion: bool(s.reduceMotion, d.reduceMotion),
     afterGet: oneOf(s.afterGet, ["stay", "library"], d.afterGet),
-    closeGameCombo: bool(s.closeGameCombo, d.closeGameCombo),
-    pointerWithSelect: bool(s.pointerWithSelect, d.pointerWithSelect),
   };
 }
 

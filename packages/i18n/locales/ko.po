@@ -1874,6 +1874,10 @@ msgstr "닫기"
 msgid "Close {title}"
 msgstr "{title} 닫기"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
+msgstr "Start + Select를 1초간 누르고 있으면 게임 닫기 (종료 방법이 없는 게임용)"
+
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Close a game with Start + Select"
 msgstr "Start + Select로 게임 닫기"
@@ -6664,6 +6668,10 @@ msgstr "어떤 프로그램으로 시작할까요?"
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Which tab it's in. Automatic follows the catalog."
 msgstr "어느 탭에 둘지 정해요. 자동은 카탈로그를 따라요."
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls"
+msgstr "게임 중 Select를 누르고 있으면 마우스 포인터: 오른쪽 스틱으로 이동, RT로 클릭, LT로 오른쪽 클릭, 왼쪽 스틱으로 스크롤"
 
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "While a game runs, hold Select: right stick moves the pointer, RT clicks, LT right-clicks, left stick scrolls"

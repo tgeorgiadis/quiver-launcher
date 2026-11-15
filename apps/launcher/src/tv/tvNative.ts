@@ -8,10 +8,6 @@ export const tvNative = {
   focus: () => invoke<boolean>("tv_focus"),
   /** A smaller copy (PNG) of a web picture far bigger than it's shown (art/fitted.ts). */
   fitArt: (url: string) => invoke<ArrayBuffer>("tv_fit_art", { url }),
-  /** Whether holding Start + Select closes the game being played. */
-  closeCombo: (on: boolean) => invoke<void>("tv_close_combo", { on }),
-  /** Linux: whether holding Select makes the right stick a mouse pointer while a game runs. */
-  pointer: (on: boolean) => invoke<void>("tv_pointer", { on }),
   /** Fullscreen on this monitor (or stay where it is); resolves to the monitor used. */
   useMonitor: (name: string | null) => invoke<string | null>("tv_use_monitor", { name }),
   monitors: () => invoke<string[]>("tv_monitors"),

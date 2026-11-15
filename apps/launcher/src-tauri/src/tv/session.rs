@@ -33,7 +33,7 @@ const POLL: Duration = Duration::from_secs(2);
 
 /// The game being played: its session, process (unknown for one Windows started), folder and start (Unix seconds).
 static PLAYING: Mutex<Option<(u64, Option<u32>, PathBuf, u64)>> = Mutex::new(None);
-/// TV mode's setting "Close a game with Start + Select".
+/// The launcher's setting "Close a game with Start + Select" (Settings → Controls, and TV mode's Settings).
 pub static CLOSE_COMBO: AtomicBool = AtomicBool::new(true);
 /// How long a game has to quit when asked, before it's forced.
 const GRACE: Duration = Duration::from_secs(3);
@@ -233,11 +233,11 @@ fn plain(line: &str) -> String {
     out.trim().to_string()
 }
 
-/// TV mode's setting "Mouse pointer with Select" (pointer.rs, Linux).
+/// The launcher's setting "Mouse pointer with Select" (pointer.rs, Linux).
 pub static POINTER: AtomicBool = AtomicBool::new(true);
 
 #[tauri::command]
-pub fn tv_pointer(on: bool) {
+pub fn select_pointer(on: bool) {
     POINTER.store(on, Ordering::Relaxed);
 }
 
@@ -251,9 +251,9 @@ pub fn watching() -> bool {
     playing() && (CLOSE_COMBO.load(Ordering::Relaxed) || (cfg!(target_os = "linux") && POINTER.load(Ordering::Relaxed)))
 }
 
-/// TV mode's setting: whether holding Start + Select closes the game being played.
+/// The launcher's setting: whether holding Start + Select closes the game being played.
 #[tauri::command]
-pub fn tv_close_combo(on: bool) {
+pub fn close_combo(on: bool) {
     CLOSE_COMBO.store(on, Ordering::Relaxed);
 }
 

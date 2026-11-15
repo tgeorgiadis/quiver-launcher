@@ -252,8 +252,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
       label: t`Close a game with Start + Select`,
       detail: t`Hold both for a second while a game runs, for games with no way to quit`,
       options: onOffOptions,
-      value: s.closeGameCombo,
-      set: set("closeGameCombo"),
+      value: !launcher.settings.closeComboOff,
+      set: (value) => launcher.setSettings((settings) => ({ ...settings, closeComboOff: !value })),
     },
     ...(bridge.config.os === "linux"
       ? [
@@ -262,8 +262,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
             label: t`Mouse pointer with Select`,
             detail: t`While a game runs, hold Select: right stick moves the pointer, RT clicks, LT right-clicks, left stick scrolls`,
             options: onOffOptions,
-            value: s.pointerWithSelect,
-            set: set("pointerWithSelect"),
+            value: !launcher.settings.selectPointerOff,
+            set: (value: unknown) => launcher.setSettings((settings) => ({ ...settings, selectPointerOff: !value })),
           },
         ]
       : []),

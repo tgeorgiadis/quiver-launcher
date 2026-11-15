@@ -156,6 +156,25 @@ test("a controller rebinds a control with its own buttons", async () => {
   await s.until(async () => (await cells()).join() === "A,B");
 });
 
+test("Settings turns off closing a game with Start + Select, in either mode", async () => {
+  const s2 = await openApp({ state: installed });
+  const { page: p } = s2;
+  const last = () => p.evaluate(() => window.__calls.filter((c) => c.cmd === "close_combo").at(-1)?.args);
+  try {
+    // On from the start, without TV mode.
+    await s2.until(async () => (await last())?.on === true);
+    await p.locator(".topbar button[aria-label='Settings']").click();
+    await p.locator(".settings-nav button", { hasText: "Controllers" }).first().click();
+    const toggle = p.locator(".controls label.toggle", { hasText: "Start + Select" }).locator("input");
+    assert.equal(await toggle.isChecked(), true);
+    await toggle.uncheck();
+    await s2.until(async () => (await last())?.on === false);
+    assert.equal(await p.evaluate(() => window.__calls.filter((c) => c.cmd === "write_state" && c.args.name === "settings").at(-1)?.args.value.closeComboOff), true);
+  } finally {
+    await s2.close();
+  }
+});
+
 test("Advanced Settings takes a GitLab token, keeps it in the keychain, and shows what it allows", async () => {
   const s2 = await openApp({ state: installed });
   const { page: p } = s2;

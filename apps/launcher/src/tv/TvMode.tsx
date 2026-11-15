@@ -62,12 +62,6 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
   const gate = useMemo(() => new InputGate(new RepeatFilter((e) => router.dispatch(e))), [router]);
   const consoles = useMemo(() => new ConsoleCatalog(launcher.consoles), [launcher.consoles]);
 
-  // Start + Select closes the game being played (gamepad.rs), unless the player turned it off.
-  const closeCombo = settings.closeGameCombo;
-  useEffect(() => void tvNative.closeCombo(closeCombo).catch(() => {}), [closeCombo]);
-  const pointerWithSelect = settings.pointerWithSelect;
-  useEffect(() => void tvNative.pointer(pointerWithSelect).catch(() => {}), [pointerWithSelect]);
-
   // Keys and controllers only reach the window in front: take it.
   useEffect(() => {
     void tvNative.focus().catch(() => {});

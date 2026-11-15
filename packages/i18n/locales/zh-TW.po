@@ -1874,6 +1874,10 @@ msgstr "關閉"
 msgid "Close {title}"
 msgstr "關閉 {title}"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
+msgstr "同時按住 Start + Select 一秒關閉遊戲；適用於無法自行結束的遊戲"
+
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Close a game with Start + Select"
 msgstr "用 Start + Select 關閉遊戲"
@@ -6664,6 +6668,10 @@ msgstr "要用哪個程式啟動？"
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Which tab it's in. Automatic follows the catalog."
 msgstr "它所在的標籤頁。「自動」會依照目錄。"
+
+#: ../../apps/launcher/src/controls.tsx
+msgid "While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls"
+msgstr "遊戲執行時按住 Select 顯示滑鼠指標：右搖桿移動指標，RT 點擊，LT 按右鍵，左搖桿捲動"
 
 #: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "While a game runs, hold Select: right stick moves the pointer, RT clicks, LT right-clicks, left stick scrolls"

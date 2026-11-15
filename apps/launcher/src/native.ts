@@ -220,6 +220,10 @@ export type PadLabels = {
 };
 
 export const native = {
+  /** Whether holding Start + Select closes the game being played. */
+  closeCombo: (on: boolean) => invoke<void>("close_combo", { on }),
+  /** Linux: whether holding Select makes the right stick a mouse pointer while a game runs. */
+  selectPointer: (on: boolean) => invoke<void>("select_pointer", { on }),
   config: () => invoke<Config>("config"),
   readState: <T>(name: StateFile) => invoke<T | null>("read_state", { name }),
   writeState: (name: StateFile, value: unknown) => invoke<void>("write_state", { name, value }),

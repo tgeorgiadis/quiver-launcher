@@ -7,7 +7,7 @@ import { useLauncher } from "./store";
 import { ACTIONS, ACTION_NAMES, DEFAULT_KEYS, DEFAULT_PAD, assign, captureNext, confirmBackSwapped, label, swapConfirmBack, withDefaults, type Action } from "./spatial";
 
 export function ControlSettings() {
-  const { settings, setSettings } = useLauncher();
+  const { settings, setSettings, config } = useLauncher();
   const pads = usePads();
   // A controller's buttons as the one used last labels them (✕ ○ on a PlayStation pad).
   const labels = usePadLabels();
@@ -72,6 +72,17 @@ export function ControlSettings() {
           Swap {south} and {east}: Confirm on {east}, Back on {south}
         </Trans>
       </label>
+      {/* While a game runs, in front of Quiver: whether or not controllers move around Quiver itself. */}
+      <label className="toggle">
+        <input type="checkbox" checked={!settings.closeComboOff} onChange={(e) => setSettings({ ...settings, closeComboOff: !e.target.checked })} />
+        <Trans>Close a game by holding Start + Select for a second, for games with no way to quit</Trans>
+      </label>
+      {config.os === "linux" && (
+        <label className="toggle">
+          <input type="checkbox" checked={!settings.selectPointerOff} onChange={(e) => setSettings({ ...settings, selectPointerOff: !e.target.checked })} />
+          <Trans>While a game runs, hold Select for a mouse pointer: the right stick moves it, RT clicks, LT right-clicks, the left stick scrolls</Trans>
+        </label>
+      )}
       <p className="muted">
         {listening ? t`Press what you want to use, or Esc to cancel.` : t`Pick a binding, then press the key or button to use for it.`}
       </p>
