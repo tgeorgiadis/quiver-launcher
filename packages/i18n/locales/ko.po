@@ -4205,8 +4205,8 @@ msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
 #: ../../apps/launcher/src/old-pictures.tsx
-msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in their own card display modes. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to."
-msgstr "Quiver Launcher 3에는 앱마다 이미지가 하나였습니다. Quiver Launcher 4에는 여러 종류가 있고, 각각 자신의 카드 표시 방식에서 보입니다. 내 이미지는 아이콘, 커버, 박스 아트 중 무엇에 가까웠나요? 맞춤 이미지를 추가할 카드 표시 방식을 고르세요."
+msgid "Quiver Launcher 3 had one image for each app. Quiver Launcher 4 has a few kinds, each shown in different places. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to."
+msgstr "Quiver Launcher 3에는 앱마다 이미지가 하나였습니다. Quiver Launcher 4에는 여러 종류가 있고, 각각 다른 곳에 표시됩니다. 내 이미지는 아이콘, 커버, 박스 아트 중 무엇에 가까웠나요? 맞춤 이미지를 추가할 카드 표시 방식을 고르세요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"

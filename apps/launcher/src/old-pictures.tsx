@@ -58,7 +58,7 @@ export function OldPictures({ library, value, onChange, compact }: { library: V3
         <Trans>Your custom images from Quiver Launcher 3</Trans>
       </legend>
       <p className="muted">
-        <Trans>Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in their own card display modes. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to.</Trans>
+        <Trans>Quiver Launcher 3 had one image for each app. Quiver Launcher 4 has a few kinds, each shown in different places. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to.</Trans>
       </p>
       <div className="old-pictures-choices">
         {OLD_PICTURE_SLOTS.map((slot) => {

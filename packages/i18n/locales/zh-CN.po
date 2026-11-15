@@ -4205,8 +4205,8 @@ msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
 #: ../../apps/launcher/src/old-pictures.tsx
-msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in their own card display modes. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to."
-msgstr "Quiver Launcher 3 每个应用只有一张图片。Quiver Launcher 4 有几种，各自用于自己的卡片显示模式。你的图片更像图标、封面还是封面图？选择要把自定义图片加到哪些卡片显示中。"
+msgid "Quiver Launcher 3 had one image for each app. Quiver Launcher 4 has a few kinds, each shown in different places. Were yours more like icons, covers or box art? Choose what card displays your custom images should be added to."
+msgstr "Quiver Launcher 3 每个应用只有一张图片。Quiver Launcher 4 有几种，各自显示在不同的地方。你的图片更像图标、封面还是封面图？选择要把自定义图片加到哪些卡片显示中。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
