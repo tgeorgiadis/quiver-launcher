@@ -4204,6 +4204,10 @@ msgstr "Quiver Launcher {version}이(가) 나왔어요."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in its own places. Were yours more like icons, covers or box art? Choose any to use them as."
+msgstr "Quiver Launcher 3에는 앱마다 이미지가 하나였습니다. Quiver Launcher 4에는 여러 종류가 있고, 각각 다른 곳에 표시됩니다. 내 이미지는 아이콘, 커버, 박스 아트 중 무엇에 가까웠나요? 사용할 종류를 원하는 만큼 고르세요."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3 폴더"
@@ -5019,8 +5023,8 @@ msgid "Source"
 msgstr "소스"
 
 #: ../../apps/launcher/src/custom-art.tsx
-msgid "Square. The app's page, the Icon view and its shortcuts."
-msgstr "정사각형. 앱 페이지, 아이콘 보기, 바로 가기에 쓰입니다."
+msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
+msgstr "정사각형, 약 512×512. 앱 페이지, 아이콘 보기, 바로 가기에 쓰입니다."
 
 #. Project type
 #: ../../apps/launcher/src/App.tsx
@@ -6107,6 +6111,14 @@ msgstr "라이브러리가 비어 있어요"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "라이브러리가 모든 기기에서 동기화되고, 앱 리뷰도 남길 수 있어요. 계정이 없어도 모든 기능을 쓸 수 있어요."
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures from Quiver Launcher 3"
+msgstr "Quiver Launcher 3의 내 이미지"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures won't come over. You can still give any app pictures later, from Change name or artwork on its page."
+msgstr "이미지는 가져오지 않습니다. 나중에 앱 페이지의 이름 또는 아트워크 변경에서 언제든 이미지를 넣을 수 있습니다."
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"

@@ -69,6 +69,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       if (files.artworkProblem) throw files.artworkProblem;
       return files.pickArtwork ? `${slot}-1.png` : null;
     },
+    // A picture brought over from Quiver Launcher 3: the copy's name, for its kind.
+    import_artwork: ({ slot }) => `${slot}-v3.png`,
     read_background: ({ path }) => {
       if (path.includes("missing")) throw new Error("os error 2");
       const png = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAFklEQVR4nGP8z8DAwMDAxMDAwMAAAAwuAQ8pwYnLAAAAAElFTkSuQmCC";

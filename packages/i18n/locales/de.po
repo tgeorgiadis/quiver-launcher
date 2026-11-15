@@ -4204,6 +4204,10 @@ msgstr "Quiver Launcher {version} ist da."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in its own places. Were yours more like icons, covers or box art? Choose any to use them as."
+msgstr "Quiver Launcher 3 hatte ein Bild pro App. Quiver Launcher 4 hat mehrere Arten, jede an eigenen Stellen. Waren deine eher Icons, Cover oder Box-Art? Wähle beliebig viele, als die sie verwendet werden."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Ordner von Quiver Launcher 3"
@@ -5019,8 +5023,8 @@ msgid "Source"
 msgstr "Quellcode"
 
 #: ../../apps/launcher/src/custom-art.tsx
-msgid "Square. The app's page, the Icon view and its shortcuts."
-msgstr "Quadratisch. Die Seite der App, die Icon-Ansicht und ihre Verknüpfungen."
+msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
+msgstr "Quadratisch, etwa 512×512. Die Seite der App, die Icon-Ansicht und ihre Verknüpfungen."
 
 #. Project type
 #: ../../apps/launcher/src/App.tsx
@@ -6107,6 +6111,14 @@ msgstr "Deine Bibliothek ist leer"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "Deine Bibliothek wird zwischen deinen Geräten synchronisiert, und du kannst Apps bewerten. Alles funktioniert auch ohne Konto."
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures from Quiver Launcher 3"
+msgstr "Deine Bilder aus Quiver Launcher 3"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures won't come over. You can still give any app pictures later, from Change name or artwork on its page."
+msgstr "Deine Bilder werden nicht übernommen. Du kannst jeder App später noch Bilder geben, über „Name oder Artwork ändern“ auf ihrer Seite."
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"

@@ -2320,3 +2320,24 @@ body:has(.tv-mode) .account-menu-name { display: block; }
 .project-details dd.easy-setup {
   margin-top: 6px;
 }
+
+/* Where Quiver Launcher 3's pictures go (old-pictures.tsx): a box for each kind, with one of the player's pictures in its shape. */
+.old-pictures { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.old-pictures legend { padding: 0; margin-bottom: 4px; color: var(--strong); font-weight: 600; }
+.old-pictures p { margin: 0; }
+.old-pictures-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.old-picture { position: relative; display: grid; grid-template-rows: auto 1fr; gap: 8px; padding: 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--field); cursor: pointer; }
+.old-picture[data-on] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.old-picture input { position: absolute; top: 10px; left: 10px; margin: 0; z-index: 1; }
+.old-picture-frame { display: flex; align-items: center; justify-content: center; height: 110px; }
+.old-picture-shape { display: block; height: 100%; max-width: 100%; overflow: hidden; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--panel); }
+.old-picture[data-slot="cover"] .old-picture-shape { width: 100%; height: auto; }
+.old-picture-shape img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.old-picture-words { display: grid; gap: 2px; min-width: 0; }
+.old-picture-words strong { color: var(--strong); font-size: 13.5px; }
+.old-picture-words small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+@media (max-width: 560px) { .old-pictures-choices { grid-template-columns: minmax(0, 1fr); } }
+/* In the library's banner: the boxes alone, on a line of their own under its question. */
+.banner .old-pictures { flex: 1 1 100%; order: 1; }
+.old-pictures.compact .old-picture { grid-template-rows: auto; padding: 8px 10px 8px 34px; }
+.old-pictures.compact .old-picture input { top: 11px; }

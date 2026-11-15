@@ -4204,6 +4204,10 @@ msgstr "Quiver Launcher {version} est disponible."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in its own places. Were yours more like icons, covers or box art? Choose any to use them as."
+msgstr "Quiver Launcher 3 avait une image par app. Quiver Launcher 4 en a plusieurs sortes, chacune affichée à ses propres endroits. Les vôtres ressemblaient-elles plutôt à des icônes, des couvertures ou des jaquettes ? Choisissez autant de sortes que vous voulez pour les utiliser."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Dossier de Quiver Launcher 3"
@@ -5019,8 +5023,8 @@ msgid "Source"
 msgstr "Code source"
 
 #: ../../apps/launcher/src/custom-art.tsx
-msgid "Square. The app's page, the Icon view and its shortcuts."
-msgstr "Carrée. La page de l'app, la vue Icônes et ses raccourcis."
+msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
+msgstr "Carrée, environ 512×512. La page de l'app, la vue Icônes et ses raccourcis."
 
 #. Project type
 #: ../../apps/launcher/src/App.tsx
@@ -6107,6 +6111,14 @@ msgstr "Votre bibliothèque est vide"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "Votre bibliothèque se synchronise entre vos appareils, et vous pouvez donner votre avis sur les apps. Tout fonctionne aussi sans compte."
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures from Quiver Launcher 3"
+msgstr "Vos images de Quiver Launcher 3"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures won't come over. You can still give any app pictures later, from Change name or artwork on its page."
+msgstr "Vos images ne seront pas reprises. Vous pourrez toujours donner des images à une app plus tard, avec Changer le nom ou l'illustration sur sa page."
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"

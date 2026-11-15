@@ -4204,6 +4204,10 @@ msgstr "Quiver Launcher {version} is out."
 msgid "Quiver Launcher 3"
 msgstr "Quiver Launcher 3"
 
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in its own places. Were yours more like icons, covers or box art? Choose any to use them as."
+msgstr "Quiver Launcher 3 had one picture for each app. Quiver Launcher 4 has a few kinds, each shown in its own places. Were yours more like icons, covers or box art? Choose any to use them as."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3's folder"
@@ -5019,8 +5023,8 @@ msgid "Source"
 msgstr "Source"
 
 #: ../../apps/launcher/src/custom-art.tsx
-msgid "Square. The app's page, the Icon view and its shortcuts."
-msgstr "Square. The app's page, the Icon view and its shortcuts."
+msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
+msgstr "Square, about 512×512. The app's page, the Icon view and its shortcuts."
 
 #. Project type
 #: ../../apps/launcher/src/App.tsx
@@ -6107,6 +6111,14 @@ msgstr "Your library is empty"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your library syncs across your devices, and you can review apps. Everything works without an account too."
 msgstr "Your library syncs across your devices, and you can review apps. Everything works without an account too."
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures from Quiver Launcher 3"
+msgstr "Your pictures from Quiver Launcher 3"
+
+#: ../../apps/launcher/src/old-pictures.tsx
+msgid "Your pictures won't come over. You can still give any app pictures later, from Change name or artwork on its page."
+msgstr "Your pictures won't come over. You can still give any app pictures later, from Change name or artwork on its page."
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Your play"
