@@ -113,7 +113,8 @@ main { padding: 28px var(--gutter) 48px; }
 .search input { flex: 1; border: 0; outline: 0; background: none; }
 .search input::placeholder { color: var(--text-2); opacity: 0.8; }
 .toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
-button.primary, .row button, .more button, .choices button, .choose button, .settings-pane button {
+/* Not the shared controls (@quiverlauncher/ui's controls.css), which bring their own look. */
+button.primary, .row button:where(:not(.ql-button)), .more button, .choices button, .choose button, .settings-pane button:where(:not(.ql-button)) {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 7px 14px; border-radius: 7px; background: var(--field); font-weight: 500; font-size: 13px;
 }
@@ -249,7 +250,7 @@ p.job-error { color: var(--danger); font-size: 13px; }
 .add-repo { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .add-repo input { min-width: 260px; } .add-repo p { flex-basis: 100%; }
 .options { margin: 12px 0; align-items: center; }
 .filters { gap: 10px; margin-top: -8px; }
-.toolbar select, .detail-body select, .app-page select, .settings-pane select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.toolbar select, .detail-body select, .app-page select, .settings-pane select:where(:not(.ql-field > *)) { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
 .playlists { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .playlists button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; }
 .playlists button.active, .playlists button:hover { color: var(--strong); border-color: var(--accent); background: var(--accent-soft); }
@@ -1333,7 +1334,7 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 .view-options .toggle { color: var(--text-2); }
 .view-options .toggle:has(input:disabled) { opacity: 0.55; }
 .settings-section { display: grid; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
-.settings-section h3 { font-size: 15px; }
+.settings-section h3 { font-size: 16px; }
 /* Moving the apps folder (settings-page.tsx): the panel asking, the move's bar, and old copies left behind. */
 /* The apps folders, one row each: path and what's in it on the left, its actions on the right. */
 .apps-folders { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
@@ -1356,11 +1357,9 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 @keyframes progress-sweep { from { left: -30%; } to { left: 100%; } }
 @media (prefers-reduced-motion: reduce) { .progress.waiting .bar { animation: none; left: 0; width: 100%; opacity: 0.5; } }
 .apps-left { margin: 4px 0 0; padding-left: 18px; font-size: 12px; overflow-wrap: anywhere; }
-.move-confirm { display: grid; gap: 12px; max-width: 620px; padding: 16px 18px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
-.move-confirm h4 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+/* A panel (the shared one), outlined in the accent while it waits for an answer. */
+.move-confirm { max-width: 620px; border-color: var(--accent); }
 .move-notes { display: grid; gap: 6px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.45; }
-.move-confirm .row { margin-top: 2px; }
-.move-confirm .row > button:only-child { flex: none; min-width: 200px; }
 .settings-pane > .view-options, .settings-section > .view-options { max-width: 380px; }
 .github-token input, .gitlab-token input { max-width: 380px; min-height: 38px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--input-bg); font-size: 13.5px; }
 .github-token ol, .gitlab-token ol { padding-left: 20px; display: grid; gap: 4px; }
@@ -2092,6 +2091,8 @@ main > div:not([hidden]) > .library-split > .library-pane { padding-bottom: var(
 .settings-page[data-side-by-side] .settings-pane { padding-bottom: 40px; }
 .settings-pane { flex: 1; min-width: 0; max-width: 680px; display: grid; align-content: start; gap: 14px; }
 .settings-pane h2 { font-size: 22px; }
+/* A setting's select, its label above it: no wider than its longest choice needs. */
+.settings-pane .ql-field { max-width: 320px; }
 /* The pane's heading is the section's, so its first part needs no line of its own. */
 .settings-pane > :is(:first-child, h2 + *):is(.settings-section, .controls) { padding-top: 0; border-top: 0; }
 .settings-pane :is(.settings-section, .controls) > button { justify-self: start; }

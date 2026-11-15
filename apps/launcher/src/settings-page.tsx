@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronRight, Disc3, FolderOpen, Gamepad2, Library, Monitor,
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
+import { Button, Field, Panel } from "@quiverlauncher/ui/controls";
 import type { MessageDescriptor } from "@lingui/core";
 import { folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
@@ -228,8 +229,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
         />
         <Trans>Full screen</Trans>
       </label>
-      <label>
-        <Trans comment="Setting: the launcher's larger, full-screen look for a controller">TV mode</Trans>{" "}
+      <Field label={<Trans comment="Setting: the launcher's larger, full-screen look for a controller">TV mode</Trans>}>
         <select
           value={settings.tvMode ?? "auto"}
           onChange={(e) => setSettings({ ...settings, tvMode: e.target.value === "auto" ? undefined : (e.target.value as "on" | "off") })}
@@ -238,7 +238,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
           <option value="on">{t({ message: "Always", comment: "TV mode setting" })}</option>
           <option value="off">{t({ message: "Off", comment: "TV mode setting" })}</option>
         </select>
-      </label>
+      </Field>
       {(config.os === "windows" || config.os === "linux") && (
         <label className="toggle">
           <input
@@ -253,8 +253,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
         </label>
       )}
       {config.os === "windows" && <TraySettings />}
-      <label>
-        <Trans>Interface size</Trans>{" "}
+      <Field label={<Trans>Interface size</Trans>}>
         <select value={settings.scale ?? 1} onChange={(e) => setSettings({ ...settings, scale: Number(e.target.value) })}>
           {INTERFACE_SIZES.map((size) => (
             <option key={size} value={size}>
@@ -262,9 +261,8 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
             </option>
           ))}
         </select>
-      </label>
-      <label>
-        <Trans>Mouse wheel speed</Trans>{" "}
+      </Field>
+      <Field label={<Trans>Mouse wheel speed</Trans>}>
         <select value={settings.scrollSpeed ?? 1} onChange={(e) => setSettings({ ...settings, scrollSpeed: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })}>
           {WHEEL_SPEEDS.map((speed) => (
             <option key={speed} value={speed}>
@@ -272,13 +270,12 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
             </option>
           ))}
         </select>
-      </label>
+      </Field>
       <label className="toggle">
         <input type="checkbox" checked={!settings.smoothScrollOff} onChange={(e) => setSettings({ ...settings, smoothScrollOff: e.target.checked ? undefined : true })} />
         <Trans comment="Setting: the mouse wheel and a controller's steps ease the page there, rather than jumping">Smooth scrolling</Trans>
       </label>
-      <label>
-        <Trans>Theme</Trans>{" "}
+      <Field label={<Trans>Theme</Trans>}>
         <select
           value={settings.theme ?? "system"}
           onChange={(e) => setSettings({ ...settings, theme: e.target.value === "system" ? undefined : (e.target.value as Theme) })}
@@ -287,7 +284,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
           <option value="light">{t({ message: "Light", comment: "Theme" })}</option>
           <option value="dark">{t({ message: "Dark", comment: "Theme" })}</option>
         </select>
-      </label>
+      </Field>
       <LanguageSetting />
       {config.os !== "android" && config.os !== "ios" && <MusicSetting />}
       {onComputer(config.os) && (
@@ -298,9 +295,9 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
       )}
       <TelemetrySetting />
       <div className="settings-section">
-        <button onClick={onRunSetup}>
+        <Button onClick={onRunSetup}>
           <Trans>Run setup again</Trans>
-        </button>
+        </Button>
         <p className="muted">
           <Trans>The first start's questions, in turn: the language, adding apps from Quiver Launcher 3, where apps install, usage data and signing in.</Trans>
         </p>
@@ -313,8 +310,7 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
 export function LanguageSetting() {
   const { settings, setSettings } = useLauncher();
   return (
-    <label>
-      <Trans>Language</Trans>{" "}
+    <Field label={<Trans>Language</Trans>}>
       <select
         value={settings.language ?? "system"}
         onChange={(e) => setSettings({ ...settings, language: e.target.value === "system" ? undefined : (e.target.value as Language) })}
@@ -327,7 +323,7 @@ export function LanguageSetting() {
           </option>
         ))}
       </select>
-    </label>
+    </Field>
   );
 }
 
@@ -391,19 +387,18 @@ function BackgroundSetting() {
         </div>
       )}
       <div className="music-buttons">
-        <button onClick={() => void choose()}>{picture ? <Trans>Change…</Trans> : <Trans>Choose a picture…</Trans>}</button>
+        <Button onClick={() => void choose()}>{picture ? <Trans>Change…</Trans> : <Trans>Choose a picture…</Trans>}</Button>
         {picture && (
-          <button onClick={() => setSettings({ ...settings, libraryBackground: undefined })}>
+          <Button onClick={() => setSettings({ ...settings, libraryBackground: undefined })}>
             <Trans comment="Button: no background music, or no background picture">Remove</Trans>
-          </button>
+          </Button>
         )}
       </div>
       {picture && (
-        <label>
-          <Trans comment="How strongly the library's background picture shows">Opacity</Trans>{" "}
+        <Field label={<Trans comment="How strongly the library's background picture shows">Opacity</Trans>}>
           {/* Past 60%, a bright picture is too strong for the library's words over it. */}
           <input type="range" min={10} max={60} step={5} value={Math.round(opacity * 100)} onChange={(e) => setSettings({ ...settings, libraryBackgroundOpacity: Number(e.target.value) / 100 })} />
-        </label>
+        </Field>
       )}
       {picture && (url === null || (url && broken === url)) && (
         <p className="job-error" role="status">
@@ -437,18 +432,17 @@ function MusicSetting() {
       </h3>
       <p className="muted">{name ?? <Trans>Play a music file of your own while Quiver is open. It fades out while you play.</Trans>}</p>
       <div className="music-buttons">
-        <button onClick={() => void choose()}>{music ? <Trans>Change…</Trans> : <Trans>Choose music…</Trans>}</button>
+        <Button onClick={() => void choose()}>{music ? <Trans>Change…</Trans> : <Trans>Choose music…</Trans>}</Button>
         {music && (
-          <button onClick={() => setSettings({ ...settings, music: undefined })}>
+          <Button onClick={() => setSettings({ ...settings, music: undefined })}>
             <Trans comment="Button: no background music, or no background picture">Remove</Trans>
-          </button>
+          </Button>
         )}
       </div>
       {music && (
-        <label>
-          <Trans comment="Background music's volume">Volume</Trans>{" "}
+        <Field label={<Trans comment="Background music's volume">Volume</Trans>}>
           <input type="range" min={0} max={100} step={5} value={volume} onChange={(e) => setSettings({ ...settings, musicVolume: Number(e.target.value) / 100 })} />
-        </label>
+        </Field>
       )}
       {problem && (
         <p className="job-error" role="status">
@@ -620,9 +614,9 @@ export function AppsFolder() {
               </Trans>
             </p>
           ) : (
-            <button disabled={!idle || busy} title={waitTitle} onClick={() => void sort()}>
+            <Button disabled={!idle || busy} title={waitTitle} onClick={() => void sort()}>
               {plural(unsorted.length, { one: "Move # installed app into its console folder", other: "Move # installed apps into their console folders" })}
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -643,21 +637,21 @@ export function AppsFolder() {
               </div>
               {idle && (
                 <div className="row">
-                  <button onClick={() => open(f.path)} disabled={state ? !state.exists : false}>
+                  <Button onClick={() => open(f.path)} disabled={state ? !state.exists : false}>
                     <Trans>Open</Trans>
-                  </button>
+                  </Button>
                   {f.default ? (
-                    <button disabled={busy} title={waitTitle} onClick={() => void pick()}>
+                    <Button disabled={busy} title={waitTitle} onClick={() => void pick()}>
                       <Trans>Change…</Trans>
-                    </button>
+                    </Button>
                   ) : (
                     <>
-                      <button className="primary" disabled={busy || state?.exists === false} title={waitTitle} onClick={() => setBringing(f)}>
+                      <Button disabled={busy || state?.exists === false} title={waitTitle} onClick={() => setBringing(f)}>
                         <Trans>Move into default</Trans>
-                      </button>
-                      <button disabled={busy || state?.exists === false} title={waitTitle} onClick={() => useFolder(f.path)}>
+                      </Button>
+                      <Button disabled={busy || state?.exists === false} title={waitTitle} onClick={() => useFolder(f.path)}>
                         <Trans>Make default</Trans>
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -667,8 +661,7 @@ export function AppsFolder() {
         })}
       </ul>
       {asking ? (
-        <div className="confirm move-confirm" role="group" aria-label={t`Change the default apps folder`}>
-          <h4>{t`Install new apps in ${asking.to} from now on?`}</h4>
+        <Panel className="move-confirm" role="group" aria-label={t`Change the default apps folder`} heading="h4" title={t`Install new apps in ${asking.to} from now on?`}>
           {count > 0 && (
             <div className="move-choice" role="radiogroup">
               <label className="toggle">
@@ -688,30 +681,33 @@ export function AppsFolder() {
             </label>
           )}
           {!keep && <MoveNotes placed={placed} />}
-          <div className="row">
-            <button className="primary" onClick={() => (keep || !count ? useFolder(asking.to) : void checkThenMove(asking.to, true, bring ? others : []))}>
+          <div className="ql-actions">
+            <Button onClick={() => setAsking(null)}>
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button variant="main" onClick={() => (keep || !count ? useFolder(asking.to) : void checkThenMove(asking.to, true, bring ? others : []))}>
               {keep || !count ? t`Use this folder` : t`Move apps`}
-            </button>
-            <button onClick={() => setAsking(null)}>
-              <Trans>Cancel</Trans>
-            </button>
+            </Button>
           </div>
-        </div>
+        </Panel>
       ) : bringing ? (
-        <div className="confirm move-confirm" role="group" aria-label={t`Move apps into the default folder`}>
-          <h4>
-            {plural(bringing.apps.length, { one: `Move # app from ${bringing.path} into ${dir}?`, other: `Move # apps from ${bringing.path} into ${dir}?` })}
-          </h4>
+        <Panel
+          className="move-confirm"
+          role="group"
+          aria-label={t`Move apps into the default folder`}
+          heading="h4"
+          title={plural(bringing.apps.length, { one: `Move # app from ${bringing.path} into ${dir}?`, other: `Move # apps from ${bringing.path} into ${dir}?` })}
+        >
           <MoveNotes placed={placed} />
-          <div className="row">
-            <button className="primary" onClick={() => void checkThenMove(dir, false, [bringing])}>
-              <Trans>Move apps</Trans>
-            </button>
-            <button onClick={() => setBringing(null)}>
+          <div className="ql-actions">
+            <Button onClick={() => setBringing(null)}>
               <Trans>Cancel</Trans>
-            </button>
+            </Button>
+            <Button variant="main" onClick={() => void checkThenMove(dir, false, [bringing])}>
+              <Trans>Move apps</Trans>
+            </Button>
           </div>
-        </div>
+        </Panel>
       ) : moving ? (
         <MovingApps moving={moving} />
       ) : checking ? (
