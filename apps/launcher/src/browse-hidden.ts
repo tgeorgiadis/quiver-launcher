@@ -5,6 +5,7 @@
  * Each by its slug too, to ask the site for them alone in Only hidden apps.
  */
 import type { AppQuery, Entry } from "@quiverlauncher/api";
+import { hasEasySetup } from "@quiverlauncher/ui";
 
 export type HiddenApp = { id: string; slug: string };
 
@@ -15,13 +16,21 @@ export const toggleHidden = (hidden: readonly HiddenApp[] | undefined, { id, slu
 const words = (text: string) => text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
 /** Only hidden apps' own search and filters, there being no catalog page to ask: as the site's, every typed word starts a word of the name. */
-export function hiddenMatches(entry: Entry, search: string, { projectTypes, console, ai }: Pick<AppQuery, "projectTypes" | "console" | "ai">) {
+export function hiddenMatches(
+  entry: Entry,
+  search: string,
+  { projectTypes, consoles, ai, setup }: Pick<AppQuery, "projectTypes" | "consoles" | "ai" | "setup">,
+  /** Each console's maker, for "maker:Nintendo". */
+  makers: Record<string, string> = {},
+) {
   const name = words(entry.projectName);
+  const has = (want: string) => (want.startsWith("maker:") ? Boolean(entry.consoles?.some((id) => makers[id] === want.slice(6))) : Boolean(entry.consoles?.includes(want)));
   return (
     words(search).every((typed) => name.some((word) => word.startsWith(typed))) &&
     (!projectTypes?.length || projectTypes.includes(entry.projectType)) &&
-    (!console || Boolean(entry.consoles?.includes(console))) &&
-    (ai === "no-ai" ? !entry.aiLevel || entry.aiLevel === "none" : ai !== "no-generated" || entry.aiLevel !== "generated")
+    (!consoles?.length || consoles.some(has)) &&
+    (ai === "no-ai" ? !entry.aiLevel || entry.aiLevel === "none" : ai !== "no-generated" || entry.aiLevel !== "generated") &&
+    (!setup || hasEasySetup(entry))
   );
 }
 

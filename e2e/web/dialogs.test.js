@@ -135,7 +135,7 @@ test("the first start's setup: each step all reached by the d-pad, the focus on 
     assert.equal(await step(), "Welcome to Quiver Launcher!");
     // Usage data is a step only in a build that sends it (VITE_USAGE_DATA), which CI's web job isn't.
     const total = Number(await setup.execute(() => document.querySelector(".setup-count")?.innerText.match(/(\d+)\s*$/)?.[1]));
-    const titles = ["Welcome to Quiver Launcher!", "Coming from Quiver Launcher 3?", "Where apps install", "Usage data", "Sign in to sync your library"].filter((t) => total === 5 || t !== "Usage data");
+    const titles = ["Welcome to Quiver Launcher!", "Where apps install", "Coming from Quiver Launcher 3?", "Where are your games?", "How should apps update?", "Usage data", "Sign in to sync your library"].filter((t) => total === 7 || t !== "Usage data");
     assert.equal(titles.length, total);
     for (const [i, title] of titles.entries()) {
       await goesTo(title);
@@ -152,6 +152,57 @@ test("the first start's setup: each step all reached by the d-pad, the focus on 
     assert.doesNotMatch(await reach.pressOn(setup, ".setup-next", "South"), /^not reached/);
     for (let i = 0; i < 30 && (await step()) !== null; i++) await pause(100);
     assert.equal(await step(), null, "Start using Quiver closes it");
+  } finally {
+    await first.close();
+  }
+});
+
+test("the first start's Quiver Launcher 3 step says what comes over, then offers to move its installs into Quiver's folder", async () => {
+  const root = "/home/player/Downloads/QuiverLauncher3";
+  const v3Library = {
+    folder: root,
+    apps: [
+      { name: "Test Port", provider: "github", repository: "quiver/test-port", dir: `${root}/Apps/TestPort`, version: "1.0.0", inApps: true, tags: ["mine"], icon: `${root}/Cache/CustomIcons/TestPort_custom.png` },
+      { name: "Other Port", provider: "github", repository: "quiver/other-port", hidden: true },
+      { name: "Mystery", provider: "github" },
+    ],
+    filters: [{ name: "Mine", tags: ["mine"], all: false, exclude: [], excludeAll: false }],
+  };
+  const first = await openApp({ state: { settings: { setupDone: false }, v3Library } });
+  try {
+    const { page } = first;
+    const setup = page.getByRole("dialog", { name: "Set up Quiver Launcher" });
+    await setup.getByRole("button", { name: "Next" }).click();
+    // Where apps install comes first, with the one folder: the rest of Settings' apps folders isn't here.
+    await setup.getByRole("heading", { name: "Where apps install" }).waitFor();
+    assert.equal(await setup.getByText("Ask where to install each app").count(), 0);
+    await setup.getByRole("button", { name: "Next" }).click();
+    await setup.getByRole("heading", { name: "Bring your apps over from Quiver Launcher 3?" }).waitFor();
+    const brings = await setup.getByRole("list", { name: "What comes over" }).innerText();
+    assert.match(brings, /3 apps, 1 already installed/);
+    assert.match(brings, /The tags you gave 1 app/);
+    assert.match(brings, /1 app you hid, kept hidden/);
+    assert.match(brings, /1 picture you chose for an app/);
+    assert.match(brings, /1 tag filter, as a playlist/);
+    assert.match(brings, /1 app can't come over/);
+    assert.match(await setup.locator(".old-library-keep").innerText(), /Adding them moves nothing/);
+    // Where its pictures go: the icon, as before, and any other kind the player picks too.
+    const pictures = setup.getByRole("group", { name: "Your custom images from Quiver Launcher 3" });
+    assert.equal(await pictures.getByRole("checkbox", { name: /^Icon/ }).isChecked(), true);
+    assert.equal(await pictures.getByRole("checkbox", { name: /^Cover/ }).isChecked(), false);
+    await pictures.getByRole("checkbox", { name: /^Box art/ }).check();
+    await pictures.locator("img").first().waitFor();
+    // Once it's in, the step stays: its folder and Quiver's, and the choice to move now or keep them there.
+    await setup.getByRole("button", { name: "Add 3 apps" }).click();
+    await setup.getByRole("heading", { name: "Your Quiver Launcher 3 apps are in your library" }).waitFor();
+    const places = await setup.getByRole("group", { name: "Where your Quiver Launcher 3 apps are, and Quiver's apps folder" }).innerText();
+    assert.match(places, /1 app/);
+    assert.match(places, /QuiverLauncher3\/Apps/);
+    assert.match(places, /\/home\/player\/Games\/Quiver/);
+    await setup.getByRole("button", { name: /Keep them there for now/ }).waitFor();
+    await setup.getByRole("button", { name: /Move them now/ }).click();
+    await setup.getByText(/Moved 1 app into Quiver's apps folder/).waitFor();
+    assert.deepEqual(first.errors, []);
   } finally {
     await first.close();
   }

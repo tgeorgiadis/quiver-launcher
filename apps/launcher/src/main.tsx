@@ -6,6 +6,7 @@ import { Trans } from "@lingui/react/macro";
 import { activate, i18n, pick } from "@quiverlauncher/i18n";
 import "@quiverlauncher/ui/fonts.css";
 import "./base.css";
+import "@quiverlauncher/ui/controls.css";
 import "@quiverlauncher/ui/catalog.css";
 import "./app.css";
 import { App } from "./App";

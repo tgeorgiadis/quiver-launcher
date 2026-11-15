@@ -33,6 +33,8 @@ beforeEach(async () => {
   await page.unroute(FEED);
   await page.reload();
   await page.locator(".topbar").waitFor();
+  // A reload stops what the page before was still fetching, which WebKit reports as errors: the last test's, not this one's.
+  s.errors.length = 0;
 });
 
 after(async () => {

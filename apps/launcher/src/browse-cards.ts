@@ -6,12 +6,12 @@
 import { msg } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import type { Entry } from "@quiverlauncher/api";
-import { CARD_DETAILS, type CardDetail, type CardLook } from "@quiverlauncher/ui";
+import { CARD_DETAILS, hasEasySetup, type CardDetail, type CardLook } from "@quiverlauncher/ui";
 
 export type BrowseCards = { look: CardLook; details: CardDetail[] };
 
-/** Box art, with every detail but New: its kinds, and both what players said and when it was updated. */
-export const DEFAULT_BROWSE_CARDS: BrowseCards = { look: "box", details: ["subtitle", "kinds", "rating", "updated", "platforms", "ai"] };
+/** Box art, with every detail but New: its kinds, both what players said and when it was updated, and Easy setup. */
+export const DEFAULT_BROWSE_CARDS: BrowseCards = { look: "box", details: ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup"] };
 
 // The choices' names put in the language when shown (i18n._), not here, where the module loads before any is picked.
 export const CARD_LOOKS: [CardLook, MessageDescriptor][] = [
@@ -25,6 +25,7 @@ export const DETAIL_NAMES: Record<CardDetail, MessageDescriptor> = {
   updated: msg({ message: "Last updated", comment: "Browse card detail: when the app's latest release came out" }),
   platforms: msg({ message: "Platforms", comment: "Browse card detail: icons for Windows, Linux, macOS, Android" }),
   ai: msg({ message: "AI label", comment: "Browse card detail: AI-assisted or Mostly AI" }),
+  setup: msg({ message: "Easy setup", comment: "Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place" }),
   new: msg({ message: "New badge", comment: "Browse card detail: a badge on apps added to the catalog lately" }),
 };
 
@@ -43,6 +44,7 @@ export function sampleEntry(entries: readonly Entry[]): Entry | undefined {
       e.lastReleaseAt,
       e.supportedOS.length,
       e.aiLevel && e.aiLevel !== "none",
+      hasEasySetup(e),
     ].filter(Boolean).length;
   return entries.reduce<Entry | undefined>((best, e) => (!best || has(e) > has(best) ? e : best), undefined);
 }

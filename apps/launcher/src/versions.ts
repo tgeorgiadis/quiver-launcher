@@ -66,6 +66,7 @@ export const fromSite = (u: UnverifiedRelease | HistoryRelease): Release => ({
   releasedAt: u.releasedAt,
   prerelease: u.prerelease,
   assets: u.assets,
+  ...(u.otherAssets?.length ? { otherAssets: u.otherAssets } : {}),
   ...(u.installationOverride ? { installationOverride: u.installationOverride } : {}),
 });
 
@@ -118,6 +119,13 @@ export function withdrawnAsBlocked<T extends { state: ReleaseState; reasons: str
 }
 
 /**
+ * Whether a release Quiver hasn't verified asks the player before it installs even with Newest right away
+ * (`Settings.appUpdates`): VirusTotal warned of a file or flagged it. Clean, still scanning, or with nothing to
+ * scan, it doesn't.
+ */
+export const scanAsks = (scan: ReleaseScan | undefined) => scan?.verdict === "warning" || scan?.verdict === "flagged";
+
+/**
  * What an app with no verified release offers in its place, after a warning,
  * as Quiver Launcher 3 does: its newest release that isn't blocked and still
  * has files. Undefined when there's none.
@@ -159,11 +167,12 @@ export function installedFile(checksum: string | undefined, release: Pick<Releas
 
 /**
  * What a broken download offers instead: the newest other release of the
- * site's verified ones, not the one that failed or the one installed, that
- * has a file for this computer (`fits`).
+ * site's verified ones, not the one that failed, that has a file for this
+ * computer (`fits`). For an update, only one newer than what's installed: a
+ * button in place of an update never takes the app back to an older release.
  */
-export const insteadOf = (releases: Release[], failed: string, installed: string | undefined, fits: (release: Release) => boolean) =>
-  releases.find((r) => bare(r.version) !== bare(failed) && (installed === undefined || bare(r.version) !== bare(installed)) && fits(r));
+export const insteadOf = (releases: Release[], failed: string, installed: { version: string; releasedAt?: number } | undefined, fits: (release: Release) => boolean) =>
+  releases.find((r) => bare(r.version) !== bare(failed) && (!installed || (bare(r.version) !== bare(installed.version) && cameAfter(r, installed))) && fits(r));
 
 /** How many players said a version runs well, has issues, or is broken. */
 export type Said = { runs: number; issues: number; broken: number };

@@ -7,8 +7,9 @@
  * Passed to Playwright's addInitScript, so it can use nothing from outside itself but its argument.
  */
 export function standInForRust({ api, state = {}, config: more = {}, maximized = false }) {
-  // The first start's setup (setup.tsx) is taken as done, unless a test's settings say `setupDone: false`.
-  const files = { library: [], installs: {}, catalog: {}, collections: [], ...state, settings: { setupDone: true, ...state.settings } };
+  // The first start's setup (setup.tsx) is taken as done, unless a test's settings say `setupDone: false`; how apps
+  // update (app-updates.tsx) as answered, so its banner isn't over every test.
+  const files = { library: [], installs: {}, catalog: {}, collections: [], ...state, settings: { setupDone: true, appUpdatesAsked: true, ...state.settings } };
   const config = {
     api,
     // Nothing listens at either: no account, and no usage data sent anywhere.
@@ -37,6 +38,12 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
   const answers = {
     open_url: ({ url }) => void window.__opened.push(url),
     config: () => config,
+    // Every apps folder is there, with room to spare.
+    apps_folder_states: ({ paths }) => paths.map(() => ({ exists: true, free: 500e9 })),
+    move_app: ({ to, folder }) => ({ dir: [to, folder].join("\\"), left: null }),
+    // A move of apps into an apps folder: there's room, and every one of them gets there.
+    apps_folder_refusal: () => null,
+    move_apps_folder: ({ to, apps }) => ({ appsDir: to, inside: apps.map((a) => a.id), left: [], failed: [] }),
     read_state: ({ name }) => files[name] ?? null,
     write_state: ({ name, value }) => void (files[name] = value),
     // Damaged files, if `state` says so (stateProblems), or the Rust side not answering (stateFailure).
@@ -45,7 +52,9 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       return files.stateProblems ?? [];
     },
     list_snapshots: () => [],
-    find_v3_library: () => null,
+    // A Quiver Launcher 3 library found by itself, and its apps folders, if `state` says so (v3Library, v3AppsFolders).
+    find_v3_library: () => files.v3Library ?? null,
+    v3_apps_folders: () => files.v3AppsFolders ?? [],
     controllers: () => [],
     list_protons: () => [],
     automatic_runner: () => null,
@@ -60,6 +69,8 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       if (files.artworkProblem) throw files.artworkProblem;
       return files.pickArtwork ? `${slot}-1.png` : null;
     },
+    // A picture brought over from Quiver Launcher 3: the copy's name, for its kind.
+    import_artwork: ({ slot }) => `${slot}-v3.png`,
     read_background: ({ path }) => {
       if (path.includes("missing")) throw new Error("os error 2");
       const png = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAFklEQVR4nGP8z8DAwMDAxMDAwMAAAAwuAQ8pwYnLAAAAAElFTkSuQmCC";
@@ -73,6 +84,24 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       window.__installs.delete(id);
     },
     secret_get: () => null,
+    // GitLab's request limit, as the real Rust side reads it: the page can't see these headers itself.
+    gitlab_limit: async ({ url, token }) => {
+      const response = await fetch(url, { headers: token ? { "PRIVATE-TOKEN": token } : {} });
+      const header = (name) => {
+        const value = response.headers.get(name);
+        return value == null ? null : Number(value);
+      };
+      return {
+        status: response.status,
+        limit: header("ratelimit-limit"),
+        remaining: header("ratelimit-remaining"),
+        reset: header("ratelimit-reset"),
+        retryAfter: header("retry-after"),
+      };
+    },
+    // The player's own copy of a game (own-copy-setup.tsx): none found, and one set up stays where it was put.
+    find_copies: () => files.foundCopies ?? [],
+    copy_present: () => true,
     "plugin:event|listen": ({ event, handler }) => {
       const id = ++next;
       if (!listeners.has(event)) listeners.set(event, new Map());

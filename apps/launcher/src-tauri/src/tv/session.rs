@@ -31,8 +31,8 @@ static LATEST: AtomicU64 = AtomicU64::new(0);
 const STUB_TIME: Duration = Duration::from_secs(10);
 const POLL: Duration = Duration::from_secs(2);
 
-/// The game being played: its session, process, folder and start (Unix seconds).
-static PLAYING: Mutex<Option<(u64, u32, PathBuf, u64)>> = Mutex::new(None);
+/// The game being played: its session, process (unknown for one Windows started), folder and start (Unix seconds).
+static PLAYING: Mutex<Option<(u64, Option<u32>, PathBuf, u64)>> = Mutex::new(None);
 /// TV mode's setting "Close a game with Start + Select".
 pub static CLOSE_COMBO: AtomicBool = AtomicBool::new(true);
 /// How long a game has to quit when asked, before it's forced.
@@ -72,18 +72,31 @@ struct Failure {
     rom: Option<super::romneed::RomNeed>,
 }
 
-/// Called with each game the launcher starts; `ended` is told how long it ran, a launcher's hand-over included.
-pub fn track(app: &AppHandle, mut child: Child, dir: PathBuf, id: Option<String>, folder: String, log: GameLog, ended: impl FnOnce(u64) + Send + 'static) {
+/// A game the launcher started: its process, or one Windows started for it (with administrator rights, elevate.rs),
+/// which can only be waited on.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub enum Started {
+    Child(Child),
+    Elsewhere(crate::Waiting),
+}
+
+/// Called with each game the launcher starts; `ended` is told how long it ran, a launcher's hand-over included, or
+/// nothing when it couldn't be waited on.
+pub fn track(app: &AppHandle, game: Started, dir: PathBuf, id: Option<String>, folder: String, log: GameLog, ended: impl FnOnce(Option<u64>) + Send + 'static) {
     let session = LATEST.fetch_add(1, Ordering::SeqCst) + 1;
     // A second early, as process start times are in whole seconds.
     let since = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs()).saturating_sub(1);
-    *PLAYING.lock().unwrap() = Some((session, child.id(), dir.clone(), since));
+    let root = match &game {
+        Started::Child(child) => Some(child.id()),
+        Started::Elsewhere(_) => None,
+    };
+    *PLAYING.lock().unwrap() = Some((session, root, dir.clone(), since));
     if let Some(id) = &id {
         let _ = app.emit("app-started", id);
     }
     #[cfg(windows)]
     {
-        let (root, dir) = (child.id(), dir.clone());
+        let dir = dir.clone();
         let _ = std::thread::Builder::new().name("game-to-front".into()).spawn(move || super::front::bring_forward(root, dir, since));
     }
     let app = app.clone();
@@ -91,7 +104,11 @@ pub fn track(app: &AppHandle, mut child: Child, dir: PathBuf, id: Option<String>
         .name("tv-session".into())
         .spawn(move || {
             let started = Instant::now();
-            let status = child.wait().ok();
+            let status = match game {
+                Started::Child(mut child) => child.wait().ok(),
+                // Windows started it: whether it ended, not how.
+                Started::Elsewhere(wait) => wait().then(ExitStatus::default),
+            };
             let quick = started.elapsed() < STUB_TIME;
             let mut handed_over = false;
             if quick {
@@ -113,9 +130,7 @@ pub fn track(app: &AppHandle, mut child: Child, dir: PathBuf, id: Option<String>
             if LATEST.load(Ordering::SeqCst) == session {
                 PLAYING.lock().unwrap().take_if(|(s, _, _, _)| *s == session);
             }
-            if status.is_some() {
-                ended(started.elapsed().as_secs());
-            }
+            ended(status.map(|_| started.elapsed().as_secs()));
         })
         .ok();
 }
@@ -250,14 +265,15 @@ pub fn close_game(log: &Path) -> bool {
     std::thread::Builder::new()
         .name("tv-close-game".into())
         .spawn(move || {
-            let outcome = close_tree(Pid::from_u32(pid), &dir, since, GRACE);
+            let outcome = close_tree(pid.map(Pid::from_u32), &dir, since, GRACE);
+            let pid = pid.map_or("unknown".into(), |pid| pid.to_string());
             crate::append_log(&log, &format!("Closing the game (process {pid}, {}): {outcome}", dir.display()));
         })
         .is_ok()
 }
 
 /// Asks the game's processes to quit, then forces whichever are left after `grace`; says how it went.
-fn close_tree(root: Pid, dir: &Path, since: u64, grace: Duration) -> String {
+fn close_tree(root: Option<Pid>, dir: &Path, since: u64, grace: Duration) -> String {
     let mut system = System::new();
     let targets = game_processes(&mut system, root, dir, since);
     for pid in &targets {
@@ -284,10 +300,10 @@ fn close_tree(root: Pid, dir: &Path, since: u64, grace: Duration) -> String {
 }
 
 /// The game's process, everything it started, and anything of the game's (`of_game`).
-pub(super) fn game_processes(system: &mut System, root: Pid, dir: &Path, since: u64) -> Vec<Pid> {
+pub(super) fn game_processes(system: &mut System, root: Option<Pid>, dir: &Path, since: u64) -> Vec<Pid> {
     refresh_for_game(system);
     let me = Pid::from_u32(std::process::id());
-    let mut found = vec![root];
+    let mut found: Vec<Pid> = root.into_iter().collect();
     loop {
         let more: Vec<Pid> = system
             .processes()
@@ -395,9 +411,9 @@ mod tests {
         std::thread::sleep(Duration::from_millis(300));
         let mut system = System::new();
         let root = Pid::from_u32(game.id());
-        let started = game_processes(&mut system, root, Path::new("/no/such/folder"), u64::MAX);
+        let started = game_processes(&mut system, Some(root), Path::new("/no/such/folder"), u64::MAX);
         assert!(started.len() >= 2, "{started:?}");
-        let outcome = close_tree(root, Path::new("/no/such/folder"), u64::MAX, Duration::from_millis(500));
+        let outcome = close_tree(Some(root), Path::new("/no/such/folder"), u64::MAX, Duration::from_millis(500));
         assert!(outcome.contains(&format!("{} forced", started.len())), "{outcome}");
         assert!(game.wait().is_ok());
         system.refresh_processes(ProcessesToUpdate::All, true);

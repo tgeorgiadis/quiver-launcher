@@ -14,6 +14,44 @@ export type InstallSettings = {
   preferredExecutables?: Partial<Record<"windows" | "linux" | "macos", string[]>>;
   /** Where its mods go, and the Thunderstore communities and GameBanana games they come from. */
   mods?: ModSettings;
+  /** What the player brings of their own, such as their copy of the game, and how the app gets it. */
+  setupFiles?: SetupFile[];
+};
+
+/** A dump an app takes of the player's copy, as No-Intro, Redump or the app's own list gives it. */
+export type SetupDump = { algo: "sha1" | "sha256"; value: string; label?: string };
+/**
+ * Something the player provides for an app: their own copy of its game (a ROM, a disc image, or a folder of the
+ * game's files). The launcher checks it and gets it to the app: puts it at `destination` (under `root`), passes its
+ * path after `flag` or as an argument of its own (`positional`), or puts it in the environment variable `env`.
+ */
+export type SetupFile = {
+  id: string;
+  /** What to provide: "Super Mario 64 ROM". */
+  label: string;
+  /** Said when asking for it. */
+  prompt?: string;
+  /** Unset means it's needed to play. */
+  required?: boolean;
+  kind?: "file" | "folder";
+  /** Relative, with / between folders. */
+  destination?: string;
+  /** What `destination` is in: the app's folder (unset), or the system's folders for apps' data, settings and local data. */
+  root?: "app" | "data" | "config" | "localData";
+  /** "--iso"; ending in "=" joins it to the path. */
+  flag?: string;
+  /**
+   * Its path is an argument of its own, with no flag in front (`game.exe C:\roms\game.z64`), before any flags. A
+   * `flag` wins. Launchers from before it ignore it: they don't ask for the copy, and start the game as they did.
+   */
+  positional?: boolean;
+  env?: string;
+  /** For a folder: names it holds, to tell it's the right one. */
+  contains?: string[];
+  /** Without a dot. */
+  extensions?: string[];
+  /** Any one of them is a copy it takes. Empty: no dump is published, so any copy of the right kind is taken. */
+  accepted: SetupDump[];
 };
 
 /** A site to get mods from: "thunderstore" or "gamebanana" (the site keeps any it was given; the launcher skips ones it has no provider for). */
@@ -72,7 +110,10 @@ export type Entry = {
   lastReleaseAt?: number;
   lastReleaseVersion?: string;
   aiLevel?: "none" | "assisted" | "generated";
+  /** The newest approved main release; a pre-release only for a project that publishes nothing else. */
   verified?: Verified;
+  /** The newest approved pre-release, when it's newer than `verified`: for players who chose pre-releases. */
+  verifiedPrerelease?: Verified;
   developer?: { key: string; name: string };
 };
 
@@ -136,6 +177,12 @@ export type Release = {
   prerelease: boolean;
   notes?: string;
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
 };
 
@@ -196,6 +243,12 @@ export type UnverifiedRelease = {
   scan?: ReleaseScan;
   /** With the checksums pinned when Quiver first saw them (none from a site older than blocked installs, when blocked). */
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
   upstreamUrl?: string;
 };
@@ -219,6 +272,12 @@ export type HistoryRelease = {
   scan?: ReleaseScan;
   /** With the checksums Quiver pinned. */
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
   upstreamUrl?: string;
 };
@@ -283,6 +342,38 @@ export type Feedback = {
   /** Only on the player's own, while others can't see it. */
   underReview?: boolean;
   moderatorHidden?: boolean;
+  /** Public answers from the app's verified developer: shown with a Developer tag. Missing from older sites. */
+  replies?: FeedbackReply[];
+  /** The developer says a released update fixed it: shown folded away, and it no longer counts toward the rating. */
+  fixed?: { version: string; at: number };
+  /** Its author said it's still broken after the developer's fix. */
+  disputed?: boolean;
+};
+
+/** A developer's answer to feedback on their app. */
+export type FeedbackReply = {
+  id: string;
+  userId: string;
+  author: string;
+  avatar?: string;
+  badge: "developer";
+  body: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+/** A developer's public profile (/developers/{key} on the site). */
+export type DeveloperProfile = {
+  key: string;
+  name: string;
+  bio?: string;
+  avatar?: string;
+  links: { label: string; url: string }[];
+  /** Quiver's maintainers marked them a trusted creator. */
+  trusted?: { at: number; note?: string };
+  followers: number;
+  /** Someone proved they develop these apps. */
+  verified: boolean;
 };
 
 /** An app in the release status feed: enough to match a repository to its catalog entry. */
@@ -311,10 +402,20 @@ export type AppQuery = {
   projectType?: ProjectType;
   /** Apps of any of these kinds, such as a player's saved filters; replaces `projectType`. */
   projectTypes?: ProjectType[];
+  /** Apps for any of these platforms; replaces `os`. */
+  platforms?: Os[];
   /** A console id, or "maker:Nintendo" for every console a maker made. */
   console?: string;
+  /** Apps for any of these consoles (ids, or "maker:Nintendo"); replaces `console`. The site takes at most MAX_SYSTEMS. */
+  consoles?: string[];
   sort?: Sort;
   ai?: "no-generated" | "no-ai";
+  /** Only apps with Easy setup: their game files found and put in place by the launcher. */
+  setup?: "easy";
+  /** Only this developer's apps (an app's `developer.key`). */
+  developer?: string;
+  /** Leaves out these developers' apps (keys); the site takes at most 50. Ignored with `developer`. */
+  hideDevelopers?: string[];
   cursor?: string | null;
   limit?: number;
 };
@@ -365,14 +466,19 @@ export type Client = {
   /** Null when the site has no README for the app. */
   readme(slug: string): Promise<Readme | null>;
   releaseStatus(cursor?: string | null): Promise<Page<ReleaseStatus>>;
-  /** Approved releases, newest first: the first is what a player gets. */
-  releases(slug: string, limit?: number, cursor?: string | null): Promise<Page<Release>>;
+  /**
+   * Approved releases, newest first: the first is what a player gets. Pre-releases newer than the newest main release
+   * are left out unless `prereleases` asks for them (a project with no main release lists them either way).
+   */
+  releases(slug: string, limit?: number, cursor?: string | null, prereleases?: boolean): Promise<Page<Release>>;
   /** Releases Quiver hasn't verified for the app, newest first. A 404 ApiError from a site that doesn't list them yet. */
   unverifiedReleases(slug: string): Promise<UnverifiedRelease[]>;
   /** Every release of the app's repository, newest first, each with its state. A 404 ApiError from a site that doesn't list them yet. */
   releaseHistory(slug: string, limit?: number, cursor?: string | null): Promise<Page<HistoryRelease>>;
   /** What players said, newest first. */
   reviews(slug: string, cursor?: string | null, limit?: number): Promise<Page<Feedback>>;
+  /** A developer's profile; null when there's none, or the site has no profiles yet. */
+  developer(key: string): Promise<DeveloperProfile | null>;
   /** Up to four original games whose titles match a search of 2 or more characters; none from a site without game search. */
   matchingGames(search: string): Promise<GameMatch[]>;
   /** Null when there's no such game. */
@@ -463,29 +569,51 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     apps(q: AppQuery = {}) {
       const params = new URLSearchParams({ limit: String(q.limit ?? 48) });
       if (q.search?.trim()) params.set("search", q.search.trim());
-      if (q.os) params.set("os", q.os);
+      // One of each goes as the older single parameter, the same address (and cached page) as before.
+      const oses = q.platforms ?? (q.os ? [q.os] : []);
+      if (oses.length > 1) params.set("platforms", oses.join(","));
+      else if (oses[0]) params.set("os", oses[0]);
       const types = q.projectTypes ?? (q.projectType ? [q.projectType] : []);
       if (types.length > 1) params.set("projectTypes", types.join(","));
       else if (types[0]) params.set("projectType", types[0]);
-      if (q.console?.startsWith("maker:")) params.set("maker", q.console.slice(6));
-      else if (q.console) params.set("console", q.console);
+      const systems = q.consoles ?? (q.console ? [q.console] : []);
+      if (systems.length > 1) {
+        const ids = systems.filter((s) => !s.startsWith("maker:"));
+        const makers = systems.filter((s) => s.startsWith("maker:")).map((s) => s.slice(6));
+        if (ids.length) params.set("consoles", ids.join(","));
+        if (makers.length) params.set("makers", makers.join(","));
+      } else if (systems[0]?.startsWith("maker:")) params.set("maker", systems[0].slice(6));
+      else if (systems[0]) params.set("console", systems[0]);
       if (q.sort) params.set("sort", q.sort);
       if (q.ai) params.set("ai", q.ai);
+      if (q.setup) params.set("setup", q.setup);
+      if (q.developer) params.set("developer", q.developer);
+      else if (q.hideDevelopers?.length) params.set("hideDevelopers", q.hideDevelopers.slice(0, 50).join(","));
       if (q.cursor) params.set("cursor", q.cursor);
       return get<Page<Entry>>(`/apps?${params}`);
     },
-    app: (slug: string) => get<Detail>(app(slug)),
+    // No slug would ask for /apps/, which answers with the catalog's first page rather than a 404; an answer with no
+    // entry in it (that page, or anything else) isn't the app either.
+    app: async (slug: string) => {
+      if (!slug) throw new ApiError(404, "App not found");
+      const detail = await get<Detail>(app(slug));
+      if (!Array.isArray(detail?.entry?.games)) throw new ApiError(404, "App not found");
+      return detail;
+    },
     facets: () => get<Facets>("/facets"),
     readme: (slug: string) => get<Readme>(`${app(slug)}/readme`).catch(notFound<Readme>),
     releaseStatus: (cursor?: string | null) =>
       get<Page<ReleaseStatus>>(`/release-status?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
-    releases: (slug: string, limit = 5, cursor?: string | null) =>
-      get<Page<Release>>(`${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    releases: (slug: string, limit = 5, cursor?: string | null, prereleases?: boolean) =>
+      get<Page<Release>>(
+        `${app(slug)}/releases?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}${prereleases ? "&prereleases=include" : ""}`,
+      ),
     unverifiedReleases: (slug: string) => get<{ items: UnverifiedRelease[] }>(`${app(slug)}/unverified-releases`).then((r) => r.items),
     releaseHistory: (slug: string, limit = 10, cursor?: string | null) =>
       get<Page<HistoryRelease>>(`${app(slug)}/release-history?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     reviews: (slug: string, cursor?: string | null, limit = 12) =>
       get<Page<Feedback>>(`${app(slug)}/reviews?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
+    developer: (key: string) => get<DeveloperProfile>(`/developers/${encodeURIComponent(key)}`).catch(notFound<DeveloperProfile>),
     async matchingGames(search: string) {
       const text = search.trim().slice(0, 200);
       if (text.length < 2) return [];
@@ -564,29 +692,32 @@ export function parseRepository(input: string): { provider: "github" | "gitlab";
 }
 
 /**
- * Why GitHub refused, worded for players. Without a token GitHub allows a
- * network 60 requests an hour (a token, 5,000), and its answer says when
- * that starts again.
+ * Why GitHub or GitLab refused, worded for players. Without a token each allows
+ * a network fewer requests, and its answer says when that starts again, in
+ * `ratelimit-*` headers (GitHub's are prefixed `x-`).
  */
-function githubError(response: Response, token: boolean): ApiError {
+function refusal(response: Response, token: boolean, name: "GitHub" | "GitLab", prefix: "x-ratelimit" | "ratelimit"): ApiError {
   const { status, headers } = response;
-  if (status === 401 && token) return new ApiError(status, "GitHub didn't accept your GitHub token. Change or remove it in Settings.");
+  if (status === 401 && token) return new ApiError(status, `${name} didn't accept your ${name} token. Change or remove it in Settings.`);
   if (status === 403 || status === 429) {
-    const reset = Number(headers.get("x-ratelimit-reset"));
-    if (headers.get("x-ratelimit-remaining") === "0" && reset > 0) {
+    const reset = Number(headers.get(`${prefix}-reset`));
+    if (headers.get(`${prefix}-remaining`) === "0" && reset > 0) {
       const at = new Date(reset * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       return new ApiError(
         status,
         token
-          ? `Your GitHub token's limit of requests is used up until ${at}. Try again then.`
-          : `GitHub's limit of requests from this network is used up until ${at}. Try again then, or add a GitHub token in Settings to raise the limit.`,
+          ? `Your ${name} token's limit of requests is used up until ${at}. Try again then.`
+          : `${name}'s limit of requests from this network is used up until ${at}. Try again then, or add a ${name} token in Settings to raise the limit.`,
       );
     }
     const wait = Number(headers.get("retry-after"));
-    if (wait > 0) return new ApiError(status, `GitHub is limiting requests from this network. Try again in ${Math.ceil(wait / 60)} min.`);
+    if (wait > 0) return new ApiError(status, `${name} is limiting requests from this network. Try again in ${Math.ceil(wait / 60)} min.`);
   }
-  return new ApiError(status, `GitHub answered ${status}. Try again later.`);
+  return new ApiError(status, `${name} answered ${status}. Try again later.`);
 }
+
+/** Without a token GitHub allows a network 60 requests an hour (a token, 5,000). */
+const githubError = (response: Response, token: boolean) => refusal(response, token, "GitHub", "x-ratelimit");
 
 /** How many requests GitHub allows an hour, how many are left, and when it starts again. */
 export type RateLimit = { limit: number; remaining: number; resetAt: number };
@@ -673,13 +804,61 @@ export function createGithub(base = "https://api.github.com", token?: string) {
 
 export type Github = ReturnType<typeof createGithub>;
 
-/** Releases on GitLab, for catalog apps hosted there. GitLab gives no checksums. */
-export function createGitlab(base = "https://gitlab.com/api/v4") {
+/** Without a token GitLab allows a network 500 requests a minute on gitlab.com (a token, 2,000). */
+const gitlabError = (response: Response, token: boolean) => refusal(response, token, "GitLab", "ratelimit");
+
+/**
+ * What GitLab's answer says about the request limit, as the Rust side reads it.
+ * The browser can't see GitLab's rate-limit headers (GitLab doesn't expose
+ * them to pages), so the launcher asks the Rust side, which can.
+ */
+export type GitlabLimit = { status: number; limit?: number | null; remaining?: number | null; reset?: number | null; retryAfter?: number | null };
+/** Reads a GitLab URL's status and rate-limit headers, the Rust side's way. */
+export type GitlabLimitReader = (url: string, token: string | null) => Promise<GitlabLimit>;
+
+/**
+ * Releases on GitLab, for catalog apps hosted there. GitLab gives no checksums.
+ * With the player's token, GitLab counts requests against it rather than the
+ * network.
+ */
+export function createGitlab(base = "https://gitlab.com/api/v4", token?: string, readLimit?: GitlabLimitReader) {
+  const auth: Record<string, string> = token?.trim() ? { "PRIVATE-TOKEN": token.trim() } : {};
+  const fail = (response: Response) => gitlabError(response, Boolean(auth["PRIVATE-TOKEN"]));
+  // `/user` checks a token; a project list is public, so it still answers without one.
+  const limitUrl = `${base}/${auth["PRIVATE-TOKEN"] ? "user" : "projects?per_page=1"}`;
+  /** GitLab's answer to `limitUrl` as the Rust side read it, headers and all. */
+  const readByRust = async (reader: GitlabLimitReader) => {
+    const { status, limit, remaining, reset, retryAfter } = await reader(limitUrl, auth["PRIVATE-TOKEN"] ?? null);
+    const headers = new Headers();
+    if (limit != null) headers.set("ratelimit-limit", String(limit));
+    if (remaining != null) headers.set("ratelimit-remaining", String(remaining));
+    if (reset != null) headers.set("ratelimit-reset", String(reset));
+    if (retryAfter != null) headers.set("retry-after", String(retryAfter));
+    return new Response(null, { status, headers });
+  };
+  /**
+   * When the page can't tell why GitLab refused (it can't see the rate-limit
+   * headers, and a refusal may come without CORS headers at all), the Rust side
+   * asks again: its answer when GitLab is limiting requests, otherwise null.
+   */
+  const limited = async (): Promise<Response | null> => {
+    if (!readLimit) return null;
+    const response = await readByRust(readLimit).catch(() => null);
+    return response && (response.status === 403 || response.status === 429) ? response : null;
+  };
   return {
     async releases(repository: string, count = 30): Promise<Release[]> {
-      const response = await fetch(`${base}/projects/${encodeURIComponent(repository)}/releases?per_page=${count}`);
+      let response: Response;
+      try {
+        response = await fetch(`${base}/projects/${encodeURIComponent(repository)}/releases?per_page=${count}`, { headers: auth });
+      } catch (e) {
+        const refused = await limited();
+        if (refused) throw fail(refused);
+        throw e;
+      }
       if (response.status === 404) throw new ApiError(404, "That repository wasn't found on GitLab.");
-      if (!response.ok) throw new ApiError(response.status, `GitLab answered ${response.status}. Try again later.`);
+      if (response.status === 403 || response.status === 429) throw fail((await limited()) ?? response);
+      if (!response.ok) throw fail(response);
       type Raw = {
         tag_name: string;
         released_at: string;
@@ -708,5 +887,22 @@ export function createGitlab(base = "https://gitlab.com/api/v4") {
         }),
       }));
     },
+    /**
+     * How many requests GitLab allows, how many are left, and when it starts
+     * again. Null when GitLab doesn't say, as some instances don't. Asking
+     * with a token checks it: a 401 ApiError when GitLab refuses it. Unlike
+     * GitHub's, asking counts as one request.
+     */
+    async rateLimit(): Promise<RateLimit | null> {
+      // The browser can't read GitLab's rate-limit headers, so the Rust side does when it can.
+      const response = readLimit ? await readByRust(readLimit) : await fetch(limitUrl, { headers: auth });
+      if (!response.ok) throw fail(response);
+      const limit = Number(response.headers.get("ratelimit-limit"));
+      const remaining = Number(response.headers.get("ratelimit-remaining"));
+      const resetAt = Number(response.headers.get("ratelimit-reset")) * 1000;
+      return limit > 0 && remaining >= 0 && resetAt > 0 ? { limit, remaining, resetAt } : null;
+    },
   };
 }
+
+export type Gitlab = ReturnType<typeof createGitlab>;

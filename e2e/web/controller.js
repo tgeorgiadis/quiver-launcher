@@ -79,7 +79,7 @@ export const home = async () => {
 const BACK_TO_TOP = 'button[aria-label="Back to top"]';
 // The sidebar's edge is a pointer's (and Tab's): the d-pad goes past it, and View options set its width.
 const SIDEBAR_EDGE = ".sidebar-edge";
-// A card's only button (Get, Play), or Get and its arrow: X on the card presses Get, so the d-pad goes card to card
+// A card's only button (Add, Play), or Install and its arrow: X on the card presses it, so the d-pad goes card to card
 // past them. The arrow's choices are on the app's page too. A Browse card's menu (card-menu.tsx) is beside them, with
 // no button of its own.
 const CARD_MAIN = ".card-action > .primary:only-of-type, .card-action .get-split > .primary";

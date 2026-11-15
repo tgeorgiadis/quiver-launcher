@@ -20,7 +20,10 @@ export function useTelemetrySetup() {
     started = true;
     startTelemetry(telemetryContext(config));
     track("launcher_started", { first_run: !settings.launched });
-    track("settings_loaded", settingsSummary(settings, config, Boolean(githubToken), window.screen));
+    void native
+      .screen()
+      .catch(() => null)
+      .then((screen) => track("settings_loaded", settingsSummary(settings, config, Boolean(githubToken), screen)));
     if (!settings.launched) setSettings({ ...settings, launched: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Each kind of controller once per launch: its kind, as a controller's own name can be one the player gave it.

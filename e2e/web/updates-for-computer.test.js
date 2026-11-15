@@ -65,11 +65,11 @@ test("a Windows player on the newest Windows release has no update", async () =>
   }
 });
 
-test("Get on Windows installs the newest Windows release", async () => {
+test("Install on Windows installs the newest Windows release", async () => {
   const s = await open([LINUX, WINDOWS, OLDER], {});
   try {
     const items = await menu(s);
-    await items.filter({ hasText: "Get" }).first().click();
+    await items.filter({ hasText: "Install" }).first().click();
     assert.equal(await installedFile(s), "Port-0.5.0-Windows.zip");
     assert.equal(await s.page.locator(".choose").count(), 0);
   } finally {
@@ -77,13 +77,13 @@ test("Get on Windows installs the newest Windows release", async () => {
   }
 });
 
-test("Get's own choices name the release it installs on this computer", async () => {
+test("Install's own choices name the release it installs on this computer", async () => {
   const s = await open([LINUX, WINDOWS, OLDER], {});
   try {
     await s.page.locator("article[data-slug]").first().hover();
     await s.page.locator(".tile-get-more").first().click();
     const get = s.page.locator(".get-choices button.primary");
-    await get.filter({ hasText: "Get v0.5.0" }).waitFor();
+    await get.filter({ hasText: "Install v0.5.0" }).waitFor();
     // Linux's release says so, and can still be installed; Windows' say nothing.
     const row = (version) => s.page.locator(".versions li", { hasText: version });
     assert.equal(await row("0.5.0").locator(".other-system-tag").count(), 0);

@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { BasedOn, Entry, Game, GameDetail, GameMatch } from "@quiverlauncher/api";
-import { Artwork, EntryCard } from "@quiverlauncher/ui";
+import { Artwork, EntryCard, ScrollingText } from "@quiverlauncher/ui";
 import { useBrowseCards } from "./library-view";
 import { useLauncher } from "./store";
 import { byPlayerFeedback } from "./catalog";
@@ -55,10 +55,13 @@ export function GamesSection({ games, onOpen }: { games: GameMatch[]; onOpen: (g
               <button type="button" data-game={g.slug} onClick={() => onOpen(g)}>
                 <Artwork src={g.art} name={g.title} className="search-game-art cover-photo" />
                 <span>
-                  <strong>{g.title}</strong>
+                  {/* Versions of one game differ only at the end of a long title: it scrolls while hovered, as a card's does. */}
+                  <strong>
+                    <ScrollingText text={g.title} />
+                  </strong>
                   {matched && (
                     <small className="search-game-aka">
-                      <Trans>Also known as {matched}</Trans>
+                      <ScrollingText text={t`Also known as ${matched}`} />
                     </small>
                   )}
                   <small>{plural(apps, { one: "# way to play", other: "# ways to play" })} →</small>

@@ -10,7 +10,7 @@ before « : ; ! ? », and « » for quotes.
 | playlist | playlist | |
 | Browse | Parcourir | the catalog page |
 | catalog | catalogue | |
-| Get | Obtenir | the button that installs an app |
+| Add / Install | Ajouter / Installer | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Jouer / Jouer quand même | |
 | install / uninstall | installer / désinstaller | |
 | download | téléchargement / télécharger | Downloads page: Téléchargements |
@@ -19,8 +19,10 @@ before « : ; ! ? », and « » for quotes.
 | Change version / Choose a version | Changer de version / Choisir une version | |
 | pinned | épinglée | |
 | withdrawn | retirée | |
-| verified / unverified / blocked (a release) | vérifiée / non vérifiée / bloquée | |
+| available / not offered / blocked (a release) | disponible / non proposée / bloquée | |
 | preview release | version préliminaire | |
+| pre-release | Version préliminaire | a release its developer marked as one: an early or experimental build |
+| main release | version principale | a release not marked as a pre-release; never "stable" |
 | play time / recently played | temps de jeu / joués récemment | |
 | controller / keyboard | manette / clavier | |
 | Settings | Paramètres | |

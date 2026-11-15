@@ -1,46 +1,33 @@
-/* The launcher's palette (dark, and light under data-theme), base styles, and the
-   --ql-* colours @quiverlauncher/ui/catalog.css asks for, from this palette. */
+/* The colour roles (--bg, --panel, --accent and the rest) and the scales come from the shared tokens. Here: the
+   launcher's own extra colours (dark, and light under data-theme), base styles, and the --ql-* colours
+   @quiverlauncher/ui/catalog.css asks for, from this palette. */
+@import "@quiverlauncher/ui/tokens.css";
 :root {
   font-family: "Inter Variable", Inter, "Segoe UI", system-ui, sans-serif;
   color: var(--fg);
   background: var(--bg);
   line-height: 1.5;
   color-scheme: dark;
-  --bg: #090f17;
-  --fg: #e8eaee;
-  --strong: #fff;
   --text-2: #c7cbd2;
   --text-3: #a3a7ae;
   --text-4: #8c919a;
-  --muted: #8f959d;
-  --line: #292f38;
   --line-strong: #3a404a;
-  --accent: #38bdf8;
   --accent-hover: #7dd3fc;
   --accent-soft: #0ea5e91a;
-  --on-accent: #04121b;
-  --link: #7dd3fc;
-  --panel: #1a202a;
   --raised: #0f151e;
-  --field: #212831;
   --field-hover: #2b313a;
   /* Buttons on a tinted strip (a banner), and the picked one of a few choices: a step brighter than a field, to stand out. */
   --button: #30363f;
   --button-hover: #3b424b;
   --segment-on: #373e47;
   --input-bg: #0e141d;
-  --card: #141a23;
   --card-line: #262d36;
   --card-shadow: #0002;
-  --shadow: #0009;
   --overlay: #000a;
   --close-bg: #000a;
   --arrow-bg: #0002;
   --topbar: #131922ee;
-  --green: #8ac3a2;
-  --caution: #d7b56a;
   --unverified: #94a3b8;
-  --danger: #e38c87;
   --important: #b9a3f5;
   --warm: #f0b98d;
   --warm-text: #d9c3b3;
@@ -71,40 +58,25 @@
 /* Light: the same layout on paper white, with darker accents so text keeps its contrast. */
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f4f5f7;
-  --fg: #121821;
-  --strong: #0b0c0e;
   --text-2: #30363f;
   --text-3: #494f59;
   --text-4: #656a72;
-  --muted: #5b616b;
-  --line: #dcdee2;
   --line-strong: #c5c9d0;
-  --accent: #0284c7;
   --accent-hover: #0369a1;
   --accent-soft: #0284c71a;
-  --on-accent: #fff;
-  --link: #0369a1;
-  --panel: #fff;
   --raised: #fff;
-  --field: #e8eaee;
   --field-hover: #dcdfe5;
   --button: #fff;
   --button-hover: #f0f2f5;
   --segment-on: #fff;
   --input-bg: #fff;
-  --card: #fff;
   --card-line: #dcdee2;
   --card-shadow: #0f172a1f;
-  --shadow: #0f172a29;
   --overlay: #0f172a59;
   --close-bg: #ffffffd9;
   --arrow-bg: #ffffffb3;
   --topbar: #f4f5f7ee;
-  --green: #2e7d52;
-  --caution: #8a5d00;
   --unverified: #505d70;
-  --danger: #b93a30;
   --important: #6b4fbf;
   --warm: #a3501a;
   --warm-text: #6b4a33;
@@ -165,6 +137,9 @@ h1, h2, h3, p { margin: 0; }
   --ql-separator: var(--text-4);
   --ql-ai-chip-line: var(--line-strong);
   --ql-ai-chip-fg: var(--chip-muted);
+  --ql-easy-chip-line: color-mix(in srgb, var(--accent) 45%, transparent);
+  --ql-easy-chip-fg: var(--accent);
+  --ql-easy-chip-on-art: #7dd3fc;
   --ql-based-on-label: var(--text-4);
   --ql-chip-fg: var(--chip-fg);
   --ql-chip-bg: var(--chip-bg);

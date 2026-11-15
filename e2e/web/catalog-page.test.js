@@ -77,7 +77,7 @@ test("B closes an app page's feedback box, wherever the focus is, and only then 
   assert.equal(await back(), "main");
 });
 
-test("Get's versions: one scrollbar, and the focus box stays on the focus as the list comes and as Get's button widens", async () => {
+test("Install's versions: one scrollbar, and the focus box stays on the focus as the list comes and as Install's button widens", async () => {
   const off = () =>
     app.execute(() => {
       const [box, el] = [document.querySelector(".pad-halo"), document.activeElement].map((n) => n.getBoundingClientRect());
@@ -92,6 +92,9 @@ test("Get's versions: one scrollbar, and the focus box stays on the focus as the
   await home();
   await open("button", { text: "Browse" });
   assert.equal(await open('article[data-slug="test-remake"] .card-open'), "page: Test Remake");
+  // Add first: the arrow to Install's versions comes with Install.
+  await reach.pressOn(app, ".app-actions .primary", "South", { text: "Add" });
+  await s.until(() => app.execute(() => Boolean(document.querySelector(".app-actions .get-more"))));
   // The list a moment behind the dialog, which it then makes taller.
   let release;
   const held = new Promise((r) => (release = r));
@@ -132,12 +135,14 @@ test("Get's versions: one scrollbar, and the focus box stays on the focus as the
   await s.emit("pads", []);
 });
 
-test("Back on the Get button: the focus box takes in the glyph it gains as the versions close", async () => {
+test("Back on the Install button: the focus box takes in the glyph it gains as the versions close", async () => {
   await s.emit("pads", ["Test pad"]);
   await s.emit("pad-labels", { kind: "xbox", south: "A", east: "B", west: "X", north: "Y" });
   await home();
   await open("button", { text: "Browse" });
   assert.equal(await open('article[data-slug="test-remake"] .card-open'), "page: Test Remake");
+  await reach.pressOn(app, ".app-actions .primary", "South", { text: "Add" });
+  await s.until(() => app.execute(() => Boolean(document.querySelector(".app-actions .get-more"))));
   await reach.pressOn(app, ".app-actions .get-more", "South");
   await s.until(() => app.execute(() => Boolean(document.activeElement?.closest('[role="dialog"]'))));
   await reach.press(app, "East");

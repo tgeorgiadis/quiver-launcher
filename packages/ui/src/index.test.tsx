@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import {
   Artwork,
   EntryCard,
@@ -9,7 +9,9 @@ import {
   heroSources,
   EntryCardContent,
   ReleaseBadge,
+  badgeState,
   Score,
+  ScrollingText,
   isNew,
   isStale,
   platformList,
@@ -25,7 +27,11 @@ const DAY = 24 * 60 * 60 * 1000;
 describe("tagLabel", () => {
   it("title-cases plain tags", () => {
     expect(tagLabel("harbour masters")).toBe("Harbour Masters");
-    expect(tagLabel("decomp")).toBe("Decomp");
+    expect(tagLabel("recomp")).toBe("Recomp");
+  });
+  it("calls a decomp the source port a player installs", () => {
+    expect(tagLabel("decomp")).toBe("Source port");
+    expect(tagLabel("decompilation")).toBe("Source port");
   });
   it("keeps short joining words lowercase except at the start", () => {
     expect(tagLabel("plants vs zombies")).toBe("Plants vs Zombies");
@@ -155,6 +161,36 @@ const entry: CardEntry & { slug: string } = {
   libraryArt: { header: "header.png" },
 };
 
+describe("ScrollingText", () => {
+  it("scrolls a title that doesn't fit while the button it's in is hovered, with no card around it", () => {
+    vi.useFakeTimers();
+    const widths = { scrollWidth: 300, clientWidth: 200 };
+    for (const [name, value] of Object.entries(widths)) Object.defineProperty(HTMLElement.prototype, name, { configurable: true, get: () => value });
+    try {
+      const { container } = render(
+        <button>
+          <ScrollingText text="The Legend of Zelda: Ocarina of Time 3D" />
+        </button>,
+      );
+      // A card's name cut short says itself in full over its picture too, where a mouse more often is.
+      const card = render(<EntryCard entry={entry} />).container;
+      expect(card.querySelector(".card-cover")?.getAttribute("title")).toBe("Test Port");
+      const text = container.querySelector(".scrolling-text")!;
+      // The whole title on a mouse's tooltip too, cut off as it is.
+      expect(text.getAttribute("title")).toBe("The Legend of Zelda: Ocarina of Time 3D");
+      expect(text.classList.contains("overflows")).toBe(true);
+      fireEvent.pointerEnter(container.querySelector("button")!);
+      act(() => void vi.advanceTimersByTime(700));
+      expect(text.classList.contains("active")).toBe(true);
+      fireEvent.pointerLeave(container.querySelector("button")!);
+      expect(text.classList.contains("active")).toBe(false);
+    } finally {
+      for (const name of Object.keys(widths)) delete (HTMLElement.prototype as unknown as Record<string, unknown>)[name];
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("EntryCard", () => {
   it("shows the box art over the catalog's details, and opens it from its button", () => {
     let opened = 0;
@@ -173,9 +209,11 @@ describe("EntryCard", () => {
     expect(card.querySelector(".card-subtitle")?.textContent).toBe("Test Game");
     expect(card.querySelector(".card-bottom .score.positive")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
     expect(card.querySelector(".cover-strip .ai-chip")?.textContent).toBe("AI-assisted");
-    expect(card.querySelector(".cover-strip .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
+    expect(card.querySelector(".cover-platforms .platform-icons")?.getAttribute("aria-label")).toBe("Windows, Linux");
     // A shelf of the newest says New; a badge on every recent box was noise.
     expect(card.querySelector(".cover-badge")).toBeNull();
+    // Its name fits: no tooltip over the picture.
+    expect(card.querySelector(".card-cover")?.hasAttribute("title")).toBe(false);
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
     fireEvent.click(getByRole("button", { name: "Test Port" }));
     expect(opened).toBe(1);
@@ -203,6 +241,8 @@ describe("EntryCard", () => {
     expect(card.querySelector(".cover-badge")?.textContent).toBe("New");
     expect(card.querySelector(".artwork.cover-photo img")?.getAttribute("src")).toBe("header.png");
     expect(card.querySelector(".release-age.stale")?.textContent).toBe(" No release in 1 yr+");
+    // Its name fits: no tooltip over the picture.
+    expect(card.querySelector(".card-cover")?.hasAttribute("title")).toBe(false);
     expect(card.querySelector(".card-action")?.textContent).toBe("Get");
     fireEvent.click(getByRole("button", { name: "Test Port" }));
     expect(opened).toBe(1);
@@ -229,8 +269,18 @@ describe("EntryCard", () => {
     cleanup();
     const none = render(<EntryCard entry={entry} look={look} consoleNames={names} details={["rating"]} />).container;
     expect(none.querySelector(".card-title")?.textContent).toBe("Test Port");
-    expect(none.querySelector(".card-kind, .ai-chip, .platform-icons, .cover-strip, .card-subtitle, .based-on, .release-age, .cover-badge")).toBeNull();
+    expect(none.querySelector(".card-kind, .ai-chip, .platform-icons, .cover-strip, .cover-platforms, .card-subtitle, .based-on, .release-age, .cover-badge")).toBeNull();
     expect(none.querySelector(".card-bottom .score")?.textContent).toBe("Runs well · 3 run well, 1 with issues");
+  });
+
+  it.each(["box", "wide"] as const)("marks an app with Easy setup on a %s card, while that detail is on", (look) => {
+    const easy = { ...entry, launcher: { ...entry.launcher, setupFiles: [{ id: "rom", label: "Game ROM", accepted: [] }] } } as typeof entry;
+    const on = render(<EntryCard entry={easy} look={look} details={["setup"]} />).container;
+    expect(on.querySelector(".easy-chip")?.textContent).toBe("Easy setup");
+    cleanup();
+    expect(render(<EntryCard entry={easy} look={look} details={["ai"]} />).container.querySelector(".easy-chip")).toBeNull();
+    cleanup();
+    expect(render(<EntryCard entry={entry} look={look} details={["setup"]} />).container.querySelector(".easy-chip")).toBeNull();
   });
 
   it("shows a given badge in place of New, and leaves tags that aren't consoles to tagLabel", () => {
@@ -269,13 +319,20 @@ describe("ReleaseBadge", () => {
         <ReleaseBadge state="verified" />
         <ReleaseBadge state="unverified" />
         <ReleaseBadge state="blocked" label="Withdrawn" title="Pulled by a maintainer" />
+        <ReleaseBadge state={badgeState({ state: "unverified", assets: [] })} />
+        <ReleaseBadge state={badgeState({ state: "unverified", assets: [{}] })} />
+        <ReleaseBadge state={badgeState({ state: "blocked", assets: [] })} />
       </>,
     );
     const badges = [...container.querySelectorAll(".release-badge")];
     expect(badges.map((b) => [b.className, b.textContent])).toEqual([
-      ["release-badge verified", "Verified"],
-      ["release-badge unverified", "Unverified"],
+      ["release-badge verified", "Available"],
+      ["release-badge unverified", "Not offered"],
       ["release-badge blocked", "Withdrawn"],
+      // Nothing to install isn't a wait: it says so in place of "Not offered".
+      ["release-badge empty", "No files"],
+      ["release-badge unverified", "Not offered"],
+      ["release-badge blocked", "Blocked"],
     ]);
     expect(badges.every((b) => b.querySelector("svg[aria-hidden=true]"))).toBe(true);
     expect(badges[2].getAttribute("title")).toBe("Pulled by a maintainer");

@@ -196,7 +196,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   const ARGS = {
     "catalog:list": {
       paginationOpts: "page!", search: "string", os: OS, projectType: ["port", "tool", "emulator", "game"], projectTypes: "array", console: "string",
-      maker: BRANDS, sort: ["name", "updated", "added", "rating"], ai: ["no-generated", "no-ai"], developer: "string", hideDevelopers: "array",
+      maker: BRANDS, consoles: "array", makers: "array", platforms: "array", sort: ["name", "updated", "added", "rating"], ai: ["no-generated", "no-ai"], setup: ["easy"], developer: "string", hideDevelopers: "array",
     },
     "catalog:detail": { slug: "string!" },
     "catalog:readme": { slug: "string!" },
@@ -229,7 +229,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       // As URL parameters, so tests read the last listing's filters the same way as before.
       lastQuery = new URLSearchParams(Object.entries(a).filter(([k, v]) => k !== "paginationOpts" && v !== undefined).map(([k, v]) => [k, String(v)]));
       const search = (a.search ?? "").toLowerCase();
-      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)));
+      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.consoles || a.consoles.some((c) => e.consoles.includes(c))) && (!a.platforms || a.platforms.some((o) => e.supportedOS?.includes(o))) && (!a.setup || e.launcher?.setupFiles?.length));
       return page(items.map(withVersion), a.paginationOpts);
     },
     "catalog:detail": ({ slug }) => {
@@ -281,12 +281,17 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
               fetchedAt: 1,
             }
           : null,
-    "catalog:releases": ({ slug, paginationOpts }) => page(listedReleases[slug] ?? (entries.some((e) => e.slug === slug) ? [release(slug)] : []), paginationOpts),
+    // A release's files it doesn't offer (`otherAssets`) are only in its history, as on the site.
+    "catalog:releases": ({ slug, paginationOpts }) =>
+      page(listedReleases[slug]?.map(({ otherAssets: _, ...r }) => r) ?? (entries.some((e) => e.slug === slug) ? [release(slug)] : []), paginationOpts),
     // Test Port's releases the site hasn't verified: one being checked, one no maintainer looked at, one a maintainer stopped.
     "catalog:unverifiedReleases": ({ slug }) => unverifiedFor(slug),
     // Every release, newest first, each with its state.
     "catalog:releaseHistory": ({ slug, paginationOpts }) => {
       if (!entries.some((e) => e.slug === slug)) return page([], paginationOpts);
+      // The verified releases a test listed in place of the app's one, as they are.
+      if (listedReleases[slug])
+        return page(listedReleases[slug].map(({ id, ...r }) => ({ ...r, releaseId: id, notes: "", state: "verified", reasons: [] })), paginationOpts);
       const { id, assets, ...verified } = release(slug);
       const all = [
         { ...verified, releaseId: id, notes: "Fixes a crash on start.", state: "verified", reasons: [], assets },
@@ -436,6 +441,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   };
   const signedInPages = [];
   const githubRequests = [];
+  const gitlabRequests = [];
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
     if (url.pathname.startsWith("/account/")) return account.handle(req, res, url.pathname.slice(8));
@@ -463,8 +469,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       res.writeHead(204, headers);
       return res.end();
     }
-    const send = (body, status = 200) => {
-      res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+    const send = (body, status = 200, extra = {}) => {
+      res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", ...extra });
       res.end(JSON.stringify(body));
     };
     // GitHub's API answers the preflight a token's Authorization header needs, notes which requests carried a token,
@@ -480,6 +486,29 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         if (token === "Bearer bad-token") return send({ message: "Bad credentials" }, 401);
         return send({ resources: { core: { limit: token ? 5000 : 60, remaining: token ? 4999 : 59, reset: Math.floor(Date.now() / 1000) + 1800 } } });
       }
+    }
+    // GitLab's API answers the preflight a token's PRIVATE-TOKEN header needs, notes which requests carried a
+    // token, and says how many requests are left: fewer without a token, more with one, and none for a token it
+    // refuses. `/user` checks a token; a project list is public, so it answers without one. The headers are exposed
+    // to the page only because the stand-in reads them for `gitlab_limit`, as the Rust side does for real.
+    if (url.pathname.startsWith("/gitlab/")) {
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Allow-Headers": "private-token, accept" });
+        return res.end();
+      }
+      const token = req.headers["private-token"] ?? null;
+      gitlabRequests.push({ path: url.pathname, token });
+      const rate = {
+        "RateLimit-Limit": token ? "2000" : "500",
+        "RateLimit-Remaining": token ? "1999" : "499",
+        "RateLimit-Reset": String(Math.floor(Date.now() / 1000) + 60),
+        "Access-Control-Expose-Headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset",
+      };
+      if (url.pathname === "/gitlab/user") {
+        if (token === "bad-token") return send({ message: "401 Unauthorized" }, 401);
+        return send({ username: "someone" }, 200, rate);
+      }
+      if (url.pathname === "/gitlab/projects") return send([], 200, rate);
     }
     // GitHub's API: every release of a catalog app (one the site verified, one it didn't), and READMEs.
     // And its newest, out on GitHub before the site saw it.
@@ -641,7 +670,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       const given = (...names) => Object.fromEntries(names.flatMap((n) => (p.get(n) ? [[n, p.get(n)]] : [])));
       const route =
         resource === "apps" && !slug
-          ? ["catalog:list", { paginationOpts, ...given("search", "os", "projectType", "console", "maker", "sort", "ai"), ...(p.get("projectTypes") ? { projectTypes: p.get("projectTypes").split(",") } : {}) }]
+          ? ["catalog:list", { paginationOpts, ...given("search", "os", "projectType", "console", "maker", "sort", "ai", "setup"), ...Object.fromEntries(["projectTypes", "consoles", "makers", "platforms"].flatMap((n) => (p.get(n) ? [[n, p.get(n).split(",")]] : []))) }]
           : resource === "apps" && !child ? ["catalog:detail", { slug }]
           : resource === "apps" && child === "readme" ? ["catalog:readme", { slug }]
           : resource === "apps" && child === "releases" ? ["catalog:releases", { slug, paginationOpts }]
@@ -715,6 +744,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     github: `${base}/github`,
     /** Requests to GitHub's API, oldest first: { path, token }, the token null without one. */
     githubRequests: () => githubRequests,
+    /** Requests to GitLab's API, oldest first: { path, token }, the token null without one. */
+    gitlabRequests: () => gitlabRequests,
     gitlab: `${base}/gitlab`,
     thunderstore: `${base}/thunderstore`,
     gamebanana: `${base}/gamebanana`,
@@ -736,6 +767,10 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     /** The playlists an account has saved, as libraryCollections keeps them. */
     collections: account.collections,
     reviews: account.reviews,
+    /** Corrections sent, oldest first: { user, entryId, topic, body, source, client, status, createdAt }. */
+    corrections: account.corrections,
+    /** Marks a correction done or dismissed, with a reply, as a maintainer would; its author is told. */
+    resolveCorrection: account.resolveCorrection,
     /** Shared lists by slug. */
     lists: account.lists,
     /** The filters of the last catalog page asked for. */
@@ -796,6 +831,8 @@ function mockAccount(entries) {
   const users = new Map(); // name -> { id, password, items: Map(entryId -> item), collections: Map(key -> collection) }
   const tokens = new Map(); // token -> name
   const reviews = [];
+  // Corrections sent, oldest first, as corrections.submit keeps them: { user, entryId, topic, body, source, client }.
+  const corrections = [];
   const analyticsCalls = [];
   // One review per player and app, as reviews.list shows it; Test Port starts with two.
   const saved = new Map();
@@ -863,6 +900,8 @@ function mockAccount(entries) {
           // The filters saved on the website ("Save as my default").
           ...(user.catalogDefaults ? { catalogDefaults: user.catalogDefaults } : {}),
         },
+        // As corrections.unseen: decided since they last looked, newest first.
+        correctionNotices: corrections.filter((c) => c.user === name && c.unseen).reverse().map(own),
         items: [...user.items.values()].map((i) => ({ ...i, ...(i.entryId ? { slug: entries.find((e) => e.id === i.entryId).slug } : {}) })),
         // As libraryCollections.list: the shared list's slug when the collection is shared.
         collections: [...user.collections.values()].map((c) => {
@@ -926,6 +965,34 @@ function mockAccount(entries) {
       analyticsCalls.push({ user: name, enabled: body.enabled });
       return send(res, null);
     }
+    if (path === "/corrections") {
+      // As corrections.submit on the site checks it.
+      const text = String(body.body ?? "").trim();
+      const topics = ["quiver", "description", "downloads", "gameFiles", "games", "links", "other", "install", "launch", "setup"];
+      const refused = !entries.some((e) => e.id === body.entryId)
+        ? "App not found."
+        : body.topic !== undefined && !topics.includes(body.topic)
+          ? "ArgumentValidationError"
+          : text.length < 5
+            ? "Say what's wrong or missing."
+            : text.length > 1000
+              ? "Keep it to 1000 characters or fewer."
+              : corrections.filter((c) => c.user === name).length >= 5
+                ? "You've sent a lot of corrections recently. Try again in a little while."
+                : null;
+      if (refused) return send(res, { error: refused }, 400);
+      corrections.push({ ...body, body: text, id: `correction_${corrections.length + 1}`, user: name, status: "open", createdAt: Date.now() });
+      return send(res, null);
+    }
+    // As corrections.mineFor and markSeen.
+    if (path === "/corrections/own") {
+      const latest = corrections.filter((c) => c.user === name && c.entryId === body.entryId).at(-1);
+      return send(res, latest ? own(latest) : null);
+    }
+    if (path === "/corrections/seen") {
+      for (const c of corrections) if (c.user === name && body.ids.includes(c.id)) c.unseen = undefined;
+      return send(res, null);
+    }
     if (path === "/reviews/own") return send(res, saved.get(`${name}:${body.entryId}`) ?? null);
     if (path === "/reviews") {
       // As reviews.save on the site checks it.
@@ -953,6 +1020,20 @@ function mockAccount(entries) {
     }
     send(res, {}, 404);
   }
+  /** A correction as its author sees it (corrections.mine). */
+  const own = (c) => {
+    const entry = entries.find((e) => e.id === c.entryId);
+    return {
+      id: c.id, entryId: c.entryId, entryName: entry?.projectName ?? "Removed app", ...(entry ? { entrySlug: entry.slug } : {}),
+      ...(c.topic ? { topic: c.topic } : {}), body: c.body, status: c.status, ...(c.reply ? { reply: c.reply } : {}),
+      createdAt: c.createdAt, ...(c.resolvedAt ? { resolvedAt: c.resolvedAt } : {}), unseen: Boolean(c.unseen),
+    };
+  };
+  /** As a maintainer deciding one (corrections.resolve): its author is told. */
+  const resolveCorrection = (id, status, reply) => {
+    const c = corrections.find((c) => c.id === id);
+    Object.assign(c, { status, reply, resolvedAt: Date.now(), unseen: true });
+  };
   const feedback = (slug) =>
     [...saved.values()].filter((r) => r.entryId === entries.find((e) => e.slug === slug)?.id).sort((a, b) => b.createdAt - a.createdAt);
   const setAnalytics = (name, enabled) => {
@@ -964,5 +1045,5 @@ function mockAccount(entries) {
     if (user) user.catalogDefaults = defaults;
   };
   const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
-  return { handle, reviews, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
+  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
 }

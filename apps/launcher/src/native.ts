@@ -1,8 +1,8 @@
 /** The Rust side of the launcher (src-tauri/src/lib.rs). */
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { ModSettings, ModSource, Os } from "@quiverlauncher/api";
+import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
+import type { GitlabLimit, ModSettings, ModSource, Os, SetupFile } from "@quiverlauncher/api";
 import { noteFailure } from "./command-failures";
 
 /** Tauri's, remembering which command failed; the error is the same one, for those who check what it says. */
@@ -25,12 +25,16 @@ export type OldApp = {
   version?: string;
   /** The program a Windows installer (MSI) put on the computer, for an app 3.x installed that way. */
   program?: string;
+  /** Its copy is in one of 3.x's apps folders, not a folder the player chose for it alone. */
+  inApps?: boolean;
   /** Its tags as 3.x showed them, the catalog's among them. */
   tags?: string[];
   /** The catalog's tags when 3.x last followed its entry. */
   catalogTags?: string[];
   /** The player hid it in 3.x's library. */
   hidden?: boolean;
+  /** Its picture in 3.x: a file on this computer the player chose, or an https address. */
+  icon?: string;
 };
 /** A file or folder to ask for in the page's own browser (file-picker.tsx). */
 export type PickAsk = { id: number; folder: boolean; title: string; dir?: string | null; extensions: string[] };
@@ -64,6 +68,8 @@ export type Config = {
   user: string | null;
   /** Under gamescope, as a Steam Deck's Game Mode runs it: TV mode comes on by itself. Missing from an older build. */
   gameMode?: boolean;
+  /** An X11 desktop on Linux, where the page moves the window itself (window-bar.tsx). Missing from an older build. */
+  x11?: boolean;
   /** Steam's on-screen keyboard can be brought up for a text field (keyboard.rs). Missing from an older build. */
   steamKeyboard?: boolean;
   /** Steam is running Quiver, so Quiver can't add games to it now (lib.rs). Missing from an older build. */
@@ -90,6 +96,8 @@ export type InstallRequest = {
   checksum?: string;
   folder: string;
   dir?: string;
+  /** A new install goes in a folder of its own in here (one the player chose) instead of the apps folder. */
+  into?: string;
   filesToAdd: string[];
   version: string;
   /** The catalog's preferred programs, for finding the one a Windows installer installed. */
@@ -112,6 +120,12 @@ export type Installed = {
   restart: boolean;
 };
 
+/** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
+/** A window's place and size, in the screen's pixels. */
+export type Rect = { x: number; y: number; width: number; height: number };
+export type WindowRect = Rect & { minWidth: number; minHeight: number };
+export type DiscordGame ={ name: string; image?: string };
+
 /** How the player wants an app started, when the launcher's own choice isn't right. */
 export type LaunchOptions = {
   /** The program to start: inside the app's folder (relative), or anywhere for a program the player added. */
@@ -123,8 +137,29 @@ export type LaunchOptions = {
   command?: string;
   /** The programs Play starts, relative to the app's folder: with more than one, Play asks which. The launcher itself reads only `executable`. */
   programs?: string[];
+  /** The player's copies of the game that it's told about as an argument or environment variable (own-copy.ts); never saved. */
+  copies?: LaunchCopy[];
 };
+/** One of the player's copies, and how the game is told where it is: after `flag`, on its own (`positional`), or in `env`. */
+export type LaunchCopy = { flag?: string; positional?: boolean; env?: string; path: string };
+/** What checking the player's copy found (own_copy.rs). */
+export type CheckedCopy = {
+  ok: boolean;
+  /** It matched a dump the catalog lists, not just its kind of file. */
+  verified: boolean;
+  dump?: string | null;
+  problem?: string | null;
+  size: number;
+  sha1?: string | null;
+};
+/** How far checking or putting a copy in place has got. */
+export type CopyProgress = { id: string; step: "check" | "place"; done: number; total: number };
 export type Proton = { name: string; path: string };
+/** An installed app to move: its folder in the apps folder, or one kept elsewhere (`dir`), as Quiver Launcher 3's are. */
+/** `group`: the console folder it's in inside its apps folder ("N64"), which it keeps in the new one. */
+export type MovingApp = { id: string; folder: string; dir?: string; group?: string };
+/** How far a move has got: `done` of `total` apps, and `copied` of `size` bytes of `folder` while it copies to another drive. */
+export type AppsMoving = { done: number; total: number; folder: string; copied: number; size: number };
 /** What runs Windows programs on Linux, chosen in Settings for every app: unset, Automatic. */
 export type WindowsRunner = { kind: "wine" } | { kind: "proton"; path: string };
 
@@ -194,9 +229,11 @@ export const native = {
   startEmptyLibrary: () => invoke<void>("start_empty_library"),
   /** Fails with "cancelled" when the player stops it, "missing" when its file is gone (a 404), or "mismatch" when the download isn't the file its checksum names. */
   install: (request: InstallRequest) => invoke<Installed>("install", { request }),
-  /** Starts an app; `id` names it in `onAppClosed` once it closes. */
-  launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions) =>
-    invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch }),
+  /** Starts an app; `id` names it in `onAppClosed` once it closes. `presence` is what Discord shows the player playing while it runs. */
+  launch: (id: string | undefined, folder: string, dir: string | undefined, preferred: string[], wine: boolean, program?: string, launch?: LaunchOptions, presence?: DiscordGame) =>
+    invoke<void>("launch", { id, folder, dir, preferred, wine, program, launch, presence }),
+  /** Discord's Rich Presence on or off (discord.rs), with its words in the player's language. */
+  setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long. */
   onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
@@ -205,6 +242,8 @@ export const native = {
   uninstall: (folder: string, dir?: string) => invoke<void>("uninstall", { folder, dir }),
   secretGet: (key: string) => invoke<string | null>("secret_get", { key }),
   secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),
+  /** GitLab's request limit, read by the Rust side: the page can't see GitLab's rate-limit headers. */
+  gitlabLimit: (url: string, token: string | null) => invoke<GitlabLimit>("gitlab_limit", { url, token }),
   /** Opens a sign-in page in the browser; resolves once it returns to the launcher. */
   browserSignIn: (url: string) => invoke<{ code: string } | { error: string }>("browser_sign_in", { url }),
   /** Stops waiting for the sign-in: browserSignIn then resolves to the error "cancelled". Starting another does this too. */
@@ -222,7 +261,15 @@ export const native = {
   minimize: () => getCurrentWindow().minimize(),
   toggleMaximize: () => getCurrentWindow().toggleMaximize(),
   closeWindow: () => getCurrentWindow().close(),
+  /** The screen the window is on, in its own pixels, and the system's scale for it; null when it can't say. WebView2's `window.screen` is the window's size instead. */
+  screen: () =>
+    currentMonitor()
+      .then((m) => (m ? { width: m.size.width, height: m.size.height, scale: m.scaleFactor } : null)),
   startDragging: () => getCurrentWindow().startDragging(),
+  /** The window's place and size in the screen's pixels, and the smallest it can be. */
+  windowRect: () => invoke<WindowRect>("window_rect"),
+  setWindowRect: (r: Rect) => invoke<void>("set_window_rect", { ...r }),
+  setWindowPosition: (x: number, y: number) => invoke<void>("set_window_position", { x, y }),
   /** Whether the window fills the screen: maximized, or full screen. */
   windowState: async () => {
     const window = getCurrentWindow();
@@ -234,6 +281,8 @@ export const native = {
   setTheme: (theme: "light" | "dark" | null) => invoke<void>("set_theme", { theme }),
   logError: (message: string) => invoke<void>("log_error", { message }),
   findV3Library: () => invoke<V3Library | null>("find_v3_library"),
+  /** Every Quiver Launcher 3 apps folder on this computer: an app in one is in an apps folder, whichever library came over. */
+  v3AppsFolders: () => invoke<string[]>("v3_apps_folders"),
   /** The Quiver Launcher 3 library in a folder, or the folder around it; with `apps`, its installs in those Apps folders too. */
   findV3LibraryIn: (path: string, apps?: string[]) => invoke<V3Library | null>("find_v3_library_in", { path, apps }),
   /** The install in a folder the player says holds an app: null when it doesn't. */
@@ -248,6 +297,8 @@ export const native = {
   readBackground: (path: string) => invoke<ArrayBuffer>("read_background", { path }),
   /** Asks for a picture and keeps a copy sized for `slot`; the copy's name (custom-art.tsx), null if they cancel. */
   pickArtwork: (title: string, slot: string) => invoke<string | null>("pick_artwork", { title, slot }),
+  /** Keeps a copy of a picture on this computer for `slot`, as picking one does: one an app had in Quiver Launcher 3. */
+  importArtwork: (path: string, slot: string) => invoke<string>("import_artwork", { path, slot }),
   /** Deletes the kept pictures other than these. */
   keepArtwork: (files: string[]) => invoke<void>("keep_artwork", { files }),
   /** Asks for a folder on this computer, opening in `dir` when given; null when the player cancels. */
@@ -279,12 +330,32 @@ export const native = {
   appFiles: (folder: string, dir: string | undefined, names: string[]) => invoke<string[]>("app_files", { folder, dir, names }),
   /** Adds empty files to an installed app's folder and takes others away; returns those that stayed because they weren't empty. */
   setAppFiles: (id: string, folder: string, dir: string | undefined, add: string[], remove: string[]) => invoke<string[]>("set_app_files", { id, folder, dir, add, remove }),
-  /** Why the installed apps in `folders` can't move to `to`, or null. */
-  appsFolderRefusal: (to: string, folders: string[]) => invoke<string | null>("apps_folder_refusal", { to, folders }),
-  /** Moves the installed apps to `to`, which becomes the apps folder; resolves to it. */
-  moveAppsFolder: (to: string, folders: string[]) => invoke<string>("move_apps_folder", { to, folders }),
-  onAppsMoving: (handler: (m: { done: number; total: number; folder: string }) => void) =>
-    listen<{ done: number; total: number; folder: string }>("apps-moving", (e) => handler(e.payload)),
+  /** Why these installed apps can't move to `to`, or null. */
+  appsFolderRefusal: (to: string, apps: MovingApp[]) => invoke<string | null>("apps_folder_refusal", { to, apps }),
+  /**
+   * Moves the installed apps to `to`, which becomes the apps folder: those in it, and those kept elsewhere (with a
+   * `dir`), as Quiver Launcher 3's are. `inside`: the apps now there under their own folder's name; `left`: old copies
+   * that couldn't all be deleted.
+   */
+  moveAppsFolder: (to: string, apps: MovingApp[]) => invoke<{ appsDir: string; inside: string[]; left: string[]; failed: { folder: string; why: string }[] }>("move_apps_folder", { to, apps }),
+  /** Opens an apps folder (the default, or one an installed app is kept in) in the file manager. */
+  openAppsFolder: (path: string) => invoke<void>("open_apps_folder", { path }),
+  /** Whether each apps folder is there (a drive not plugged in isn't), and the bytes free on its drive. */
+  appsFolderStates: (paths: string[]) => invoke<{ exists: boolean; free?: number | null }[]>("apps_folder_states", { paths }),
+  /**
+   * Moves one app's folder into `to`, beside what's there: `dir`, its folder there; `left`, its old copy if that
+   * couldn't all be deleted.
+   */
+  /** `record`: how the app is recorded once there (in an apps folder, in a console folder), for a move the launcher closes during. */
+  moveApp: (id: string, folder: string, dir: string | undefined, to: string, record: { inApps: boolean; group?: string }) =>
+    invoke<{ dir: string; left?: string | null }>("move_app", { id, folder, dir, to, inApps: record.inApps, group: record.group ?? null }),
+  /** An old copy a move couldn't delete once the app was recorded in its new place. */
+  onMoveLeft: (handler: (path: string) => void) => listen<string>("app-move-left", (e) => handler(e.payload)),
+  /** How far an app's move has got, in bytes copied (when it's copied to another drive). */
+  onAppMoving: (handler: (m: { id: string; copied: number; size: number }) => void) => listen<{ id: string; copied: number; size: number }>("app-moving", (e) => handler(e.payload)),
+  onAppsMoving: (handler: (m: AppsMoving) => void) => listen<AppsMoving>("apps-moving", (e) => handler(e.payload)),
+  /** An app is in its new folder (`dir`), mid-move. */
+  onAppMoved: (handler: (m: { id: string; dir: string }) => void) => listen<{ id: string; dir: string }>("app-moved", (e) => handler(e.payload)),
   /** Asks for a program on this computer, looking in `dir` first; null when the player cancels. */
   pickProgram: (dir?: string) => invoke<string | null>("pick_program", { dir }),
   modPackages: (source: ModSource) => invoke<ModPackage[]>("mod_packages", { source }),
@@ -314,4 +385,16 @@ export const native = {
   onControllerLabels: (handler: (labels: PadLabels | null) => void) => listen<PadLabels | null>("pad-labels", (e) => handler(e.payload)),
   onPad: (handler: (p: { key: string; down: boolean }) => void) => listen<{ key: string; down: boolean }>("pad", (e) => handler(e.payload)),
   onProgress: (handler: (p: Progress) => void) => listen<Progress>("install-progress", (e) => handler(e.payload)),
+  /** Copies that could be the player's, in the places players keep them (own_copy.rs). */
+  /** `folders`: where the player keeps this game's console's copies, looked in first; what's found there is `mine`. */
+  findCopies: (file: SetupFile, folders: string[] = []) => invoke<{ path: string; size: number; mine?: boolean }[]>("find_copies", { file, folders }),
+  /** Asks for the player's copy: a file of the kinds it can be, or a folder. */
+  pickCopy: (file: SetupFile, dir?: string) => invoke<string | null>("pick_copy", { file, dir }),
+  checkCopy: (file: SetupFile, path: string) => invoke<CheckedCopy>("check_copy", { file, path }),
+  /** Puts a checked copy where the app reads it; where it went, or null when the app is told by flag or variable. */
+  placeCopy: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
+    invoke<string | null>("place_copy", { folder, dir, wine, file, path }),
+  copyPresent: (folder: string, dir: string | undefined, wine: boolean, file: SetupFile, path: string) =>
+    invoke<boolean>("copy_present", { folder, dir, wine, file, path }),
+  onCopyProgress: (handler: (p: CopyProgress) => void) => listen<CopyProgress>("copy-progress", (e) => handler(e.payload)),
 };

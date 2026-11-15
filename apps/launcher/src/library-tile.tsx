@@ -10,24 +10,25 @@
  * it and Play anyway. In TV mode, focus shows its buttons alone.
  *
  * And a game's card, for its ports in the library (group.ts): the game's name over the port to play, and a list of
- * every port with its button, from the card.
+ * every port with its button, from the card. Its menu is the app's its Play starts (or the first's), as an app's card
+ * has it; a controller's Options button lists the ports instead.
  */
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Layers, Pin, Play, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel, type CardDetail } from "@quiverlauncher/ui";
-import { canGet, hasUpdate, pulledVerified, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
+import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel } from "@quiverlauncher/ui";
+import { canGet, earlyGet, hasUpdate, notOfferedYet, pulledVerified, stillWaiting, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
-import { VersionsDialog, foldersOn } from "./detail";
+import { OverMenu, VersionsDialog, foldersOn } from "./detail";
 import { native, type Config } from "./native";
 import { CardArt, artSizes } from "./library-view";
 import { CopyStatus, PlaylistPicker, Popover } from "./library";
 import { CardMenu } from "./card-menu";
 import { gameVersionLabel } from "./game";
 import type { Stack } from "./group";
-import type { CardImage, CardSize, NameOrder } from "./view";
+import type { CardImage, CardSize, LibraryDetail, NameOrder } from "./view";
 
 /** The large name and the small one under it: the app's, and every game it's based on, as the catalog's cards list them. */
 export function namesOf(entry: Entry, order: NameOrder): [string, string | undefined] {
@@ -69,18 +70,28 @@ const ListedMark = () => (
 );
 
 /** The line under the name alone, as cards had before they could show more. */
-const NAME_ONLY: readonly CardDetail[] = ["subtitle"];
-const TAG_DETAILS: readonly CardDetail[] = ["kinds", "ai", "platforms"];
+const NAME_ONLY: readonly LibraryDetail[] = ["subtitle"];
+const TAG_DETAILS: readonly LibraryDetail[] = ["kinds", "ai", "platforms"];
 
 /**
  * Over the name, those of its tags (not its console), AI label and platforms picked (view.ts), as Browse's cards have
- * them. Its row is there on every card when any is picked, so the names line up along a row of cards; empty on a
- * game's card with more than one port (`entry` unset), which they'd differ between.
+ * them. Its row is there on every card when any is picked, so the names line up along a row of cards.
+ *
+ * On a game's card (`ports` set), the same for every game, however many ports it has: how each port plays it (a port's
+ * first tag, Recomp or Decomp, each once), not the series after it, which the game's name says already; every
+ * platform one of them is for; the AI label only with one port (`entry`), as ports differ in it.
  */
-function TileTags({ entry, details, consoleNames }: { entry?: Entry; details: readonly CardDetail[]; consoleNames: Record<string, string> }) {
+function TileTags({ entry, ports, details, consoleNames }: { entry?: Entry; ports?: readonly Entry[]; details: readonly LibraryDetail[]; consoleNames: Record<string, string> }) {
   if (!details.some((d) => TAG_DETAILS.includes(d))) return null;
-  const kinds = entry && details.includes("kinds") ? entry.tags.filter((tag) => !Object.hasOwn(consoleNames, tag)).slice(0, 2).map(tagLabel) : [];
-  const os = entry && details.includes("platforms") ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id)) : [];
+  const own = (e: Entry) => e.tags.filter((tag) => !Object.hasOwn(consoleNames, tag));
+  const kinds = !details.includes("kinds") ? [] : ports ? [...new Set(ports.flatMap((p) => own(p).slice(0, 1)))].slice(0, 3).map(tagLabel) : entry ? own(entry).slice(0, 2).map(tagLabel) : [];
+  const os = !details.includes("platforms")
+    ? []
+    : ports
+      ? Object.keys(OS_ICONS).filter((id) => ports.some((p) => (p.supportedOS as readonly string[]).includes(id)))
+      : entry
+        ? entry.supportedOS.filter((id) => Object.hasOwn(OS_ICONS, id))
+        : [];
   return (
     <span className="tile-tags">
       {kinds.length > 0 && (
@@ -94,12 +105,25 @@ function TileTags({ entry, details, consoleNames }: { entry?: Entry; details: re
   );
 }
 
-/** Under the names, what players said and when it was last updated, a line each, those picked; blank lines on a game's card with more than one port. */
-function TileLines({ entry, details }: { entry?: Entry; details: readonly CardDetail[] }) {
+/**
+ * Under the names, what players said, when it was last updated, and the version installed here with the update there
+ * is to it on a line of its own under that (in the update mark's colour), as Quiver Launcher 3 had them; those picked.
+ * Blank lines keep their place, so a row's cards line up: on a game's card with more than one port, and for the
+ * version, on an app not installed or with no update. Each scrolls when it's too long for the card.
+ */
+function TileLines({ entry, details, version, update }: { entry?: Entry; details: readonly LibraryDetail[]; version?: string; update?: string }) {
+  const installedLabel = version ? versionLabel(version) : "";
+  const availableLabel = update ? versionLabel(update) : "";
   return (
     <>
       {details.includes("rating") && <span className="tile-line">{entry && <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />}</span>}
       {details.includes("updated") && <span className="tile-line">{entry && <ReleaseAge entry={entry} />}</span>}
+      {details.includes("version") && (
+        <span className="tile-line tile-version">
+          {entry && version && <ScrollingText text={t({ message: `Installed ${installedLabel}`, comment: "Under an app's name on its library card: the version installed on this computer" })} />}
+        </span>
+      )}
+      {details.includes("update") && <span className="tile-line tile-version-update">{entry && version && update && <ScrollingText text={t`Available ${availableLabel}`} />}</span>}
     </>
   );
 }
@@ -114,7 +138,7 @@ type TileProps = {
   /** The marks for this computer's copy (view.ts). */
   marks: boolean;
   /** What it shows with its names (view.ts); unset, the line under the name alone. */
-  details?: readonly CardDetail[];
+  details?: readonly LibraryDetail[];
   /** In the player's library, not only installed here: its playlists and its menu. */
   inLibrary: boolean;
   /**
@@ -171,10 +195,7 @@ const Tile = memo(function Tile({
   // Under the app's name, its games and console, as Browse's cards have them.
   const small = nameOrder === "game" ? games : boxSubtitle(entry, (tag) => (Object.hasOwn(consoleNames, tag) ? consoleNames[tag] : undefined)) || undefined;
   const verified = latest.verified?.version;
-  const newer =
-    latest.lastReleaseVersion && verified && bare(latest.lastReleaseVersion) !== bare(verified) && (latest.lastReleaseAt ?? 0) > (latest.verified?.releasedAt ?? 0)
-      ? latest.lastReleaseVersion
-      : undefined;
+  const newest = notOfferedYet(latest, install);
   const wide = Boolean(entry.libraryArt?.header || entry.libraryArt?.capsule);
   const coverArt = coverOf(entry);
   // Box art and icons are the library's own pictures; a cover is the catalog card's, at about the size it shows.
@@ -201,15 +222,27 @@ const Tile = memo(function Tile({
   const play = () => void now.current.play(entry.id);
   // Plain names for the sentences below to put in place.
   const name = entry.projectName;
-  const verifiedLabel = versionLabel(verified);
-  const updateLabel = versionLabel(updateFor(latest, install)?.version);
+  const updateTo = updateFor(latest, install)?.version;
+  const updateLabel = versionLabel(updateTo);
+  // With Newest right away the newest release is the update itself: it's what's available, and nothing is held back.
+  // The same once it's the one installed, however apps update: there's none newer, so it's up to date and nothing to warn of.
+  const hasNewest = Boolean(newest && install && bare(install.version) === bare(newest));
+  // Not installed yet: the one Install takes.
+  const getsNewest = Boolean(newest && !install && bare(earlyGet(latest)?.version ?? "") === bare(newest));
+  const offeredEarly = hasNewest || getsNewest || Boolean(newest && updateTo && bare(updateTo) === bare(newest));
+  const newer = offeredEarly ? undefined : newest;
+  const available = offeredEarly ? newest : verified;
+  const availableLabel = versionLabel(available);
+  // The version installed is the one available, with none newer to mention: said once, not the number twice.
+  const hasAvailable = Boolean(install && available && bare(install.version) === bare(available));
+  const upToDate = hasAvailable && !newer;
   const installedLabel = install ? versionLabel(install.version) : "";
   const pulledLabel = pulled ? versionLabel(pulled.version) : "";
   const newerLabel = newer ? versionLabel(newer) : "";
   const getIt = (
     <button type="button" className="tile-play tile-get" onClick={() => get(entry)}>
       <Download size={24} />
-      <span className="tile-label">{t({ message: "Get", comment: "Button: download and install the app" })}</span>
+      <span className="tile-label">{t({ message: "Install", comment: "Button: download and install the app" })}</span>
     </button>
   );
   const others = (
@@ -224,6 +257,7 @@ const Tile = memo(function Tile({
       data-slug={entry.slug}
       data-letter={letter}
       data-copy={copy}
+      data-installed={Boolean(install)}
       data-busy={busy || undefined}
       data-withdrawn={pulled ? "" : undefined}
       data-round={round || undefined}
@@ -247,7 +281,7 @@ const Tile = memo(function Tile({
                   <ScrollingText text={small} />
                 </span>
               )}
-              <TileLines entry={entry} details={details} />
+              <TileLines entry={entry} details={details} version={install?.version} update={update && !busy ? updateTo : undefined} />
             </>
           ) : (
             <>
@@ -280,22 +314,26 @@ const Tile = memo(function Tile({
               <span className="card-status">
                 <CopyStatus entry={entry} inLibrary={inLibrary} />
               </span>
-              {install && (
+              {/* Said under the name already, when the cards show the version there. */}
+              {install && !(names && details.includes("version")) && (
                 <span>
                   <Trans>Installed {installedLabel}</Trans>
                 </span>
               )}
-              {verified && (
-                <span>
-                  <Trans>Verified {verifiedLabel}</Trans>
+              {/* On the available version with a newer one not offered yet: that line says it all, without the same number twice. */}
+              {/* An update there is: said under the name already, when the cards show updates there. */}
+              {available && !(hasAvailable && newer) && !(names && details.includes("update") && install && update && !busy && !upToDate) && (
+                // The version there is to have: in the update mark's blue, so it stands out from what's installed. Up to date: in green.
+                <span className={upToDate ? "tile-current" : "tile-newer"}>
+                  {upToDate ? <Trans comment="On an app's card: the installed version is the newest there is">Up to date</Trans> : <Trans>Available {availableLabel}</Trans>}
                 </span>
               )}
               {newer && (
                 <span className="tile-unverified">
-                  <Trans>{newerLabel} not verified yet</Trans>
+                  {stillWaiting(latest.lastReleaseAt) ? <Trans>{newerLabel} not offered yet: less than 48 hours old</Trans> : <Trans>{newerLabel} not offered yet</Trans>}
                 </span>
               )}
-              {install?.unverified && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`This version isn't verified`}</span>}
+              {install?.unverified && (install.blocked || !hasNewest) && <span className="tile-unverified">{install.blocked ? t`Quiver blocked this version` : t`Installed before Quiver offered it`}</span>}
               {pinned && (
                 <span>
                   <Trans>Staying on {installedLabel}</Trans>
@@ -388,7 +426,7 @@ const Tile = memo(function Tile({
                     <Trans>Update to {updateLabel}</Trans>
                   </span>
                   <span className="tile-label tile-label-short">
-                    <Trans context="button" comment="Button on a library card: update the app to its newest verified version">
+                    <Trans context="button" comment="Button on a library card: update the app to the newest version Quiver offers">
                       Update
                     </Trans>
                   </span>
@@ -396,7 +434,7 @@ const Tile = memo(function Tile({
               )}
             </>
           ) : gettable && noWayOff ? (
-            <button type="button" className="tile-play tile-get" title={t`Its newest verified version was withdrawn: choose a version`} onClick={() => setVersions(true)}>
+            <button type="button" className="tile-play tile-get" title={t`Its newest available version was withdrawn: choose a version`} onClick={() => setVersions(true)}>
               <History size={24} />
               <span className="tile-label">{t`Choose a version`}</span>
             </button>
@@ -479,7 +517,7 @@ function PortList({
   });
   const apps = ports.length;
   return (
-    <div className="port-list" ref={list} onFocus={(e) => (line.current = e.target.closest(".port-row")?.getAttribute("data-slug") ?? undefined)}>
+    <div className="port-list" ref={list} onFocus={(e) => list.current?.contains(e.target) && (line.current = e.target.closest(".port-row")?.getAttribute("data-slug") ?? undefined)}>
       <div className="port-head">
         <strong>{title}</strong>
         <span className="muted">{plural(apps, { one: "# way to play", other: "# ways to play" })}</span>
@@ -530,8 +568,13 @@ export function GameTile(props: GameTileProps) {
   const ready = ports.find((p, i) => installs[p.id] && copies[i] !== "withdrawn");
   // The port whose download, or failure, the card shows, as an app's own card does.
   const busy = ports.find((_, i) => copies[i] === "busy" || copies[i] === "failed");
-  const state = ports.map((p, i) => `${p.id} ${copies[i]} ${installs[p.id]?.lastPlayed ?? ""} ${props.inLibrary(p.id)}`).join("|");
-  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} state={state} consoleNames={consoleNames} />;
+  const state = ports.map((p, i) => `${p.id} ${copies[i]} ${installs[p.id]?.lastPlayed ?? ""} ${installs[p.id]?.version ?? ""} ${props.inLibrary(p.id)}`).join("|");
+  // The version installed, under the name: of its one port.
+  const version = ports.length === 1 ? installs[ports[0].id]?.version : undefined;
+  const one = ports.length === 1 ? ports[0] : undefined;
+  const update = one && installs[one.id] && !jobs[one.id] && hasUpdate(catalog[one.id] ?? one, installs[one.id]) ? updateFor(catalog[one.id] ?? one, installs[one.id])?.version : undefined;
+  const installed = ports.some((p) => Boolean(installs[p.id]));
+  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} version={version} update={update} state={state} consoleNames={consoleNames} />;
 }
 
 const Game = memo(
@@ -550,8 +593,11 @@ const Game = memo(
     gettable,
     ready,
     busy,
+    installed,
+    version,
+    update,
     consoleNames,
-  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; state: string; consoleNames: Record<string, string> }) {
+  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; version?: string; update?: string; state: string; consoleNames: Record<string, string> }) {
     const now = useLauncherNow();
     const article = useRef<HTMLElement>(null);
     const first = ports[0];
@@ -570,8 +616,14 @@ const Game = memo(
     const small = apps === 1 ? first.projectName : plural(apps, { one: "# way to play", other: "# ways to play" });
     const title = game.title;
     const name = ready?.projectName ?? "";
+    // The app its menu is for: the one Play starts, else the first; named over the menu where there are others.
+    const mine = ready ?? first;
+    const menu = inLibrary(mine.id);
+    const heading = apps > 1 ? mine.projectName : undefined;
+    const openMine = () => onOpen(mine);
+    const cardButton = () => article.current?.querySelector<HTMLElement>(".card-open");
     return (
-      <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined}>
+      <article ref={article} className="entry-card library-tile game-tile" data-game={game.slug} data-letter={letter} data-copy={copy} data-installed={installed} data-busy={busy ? "" : undefined} data-round={(!busy && Boolean(ready)) || undefined}>
         <Popover
           label={title}
           panelLabel={t`Ways to play ${title}`}
@@ -592,7 +644,7 @@ const Game = memo(
               <span className="card-body">
                 {names ? (
                   <>
-                    <TileTags entry={one} details={details} consoleNames={consoleNames} />
+                    <TileTags entry={one} ports={ports} details={details} consoleNames={consoleNames} />
                     <span className="tile-name">
                       <span className="card-title">
                         <ScrollingText text={title} />
@@ -604,7 +656,7 @@ const Game = memo(
                         <ScrollingText text={small} />
                       </span>
                     )}
-                    <TileLines entry={one} details={details} />
+                    <TileLines entry={one} details={details} version={version} update={update} />
                   </>
                 ) : (
                   <Mark copy={copy} marks={marks} gettable={gettable} />
@@ -614,19 +666,18 @@ const Game = memo(
           }
         >
           {(close) => (
-            <PortList
-              title={title}
-              ports={ports}
-              consoleNames={consoleNames}
-              inLibrary={inLibrary}
-              action={action}
-              onOpen={onOpen}
-              close={close}
-              card={() => article.current?.querySelector<HTMLElement>(".card-open")}
-            />
+            // A port's versions open over the list, which stays open under them.
+            <OverMenu.Provider value={true}>
+              <PortList title={title} ports={ports} consoleNames={consoleNames} inLibrary={inLibrary} action={action} onOpen={onOpen} close={close} card={cardButton} />
+            </OverMenu.Provider>
           )}
         </Popover>
         <div className="tile-overlay">
+          {menu && (
+            <div className="tile-icons">
+              <CardMenu entry={mine} onOpen={openMine} heading={heading} pad={false} />
+            </div>
+          )}
           {ready && (
             <div className="tile-facts">
               <span className="card-status">
@@ -659,6 +710,9 @@ const Game = memo(
     a.gettable === b.gettable &&
     a.ready === b.ready &&
     a.busy === b.busy &&
+    a.installed === b.installed &&
+    a.version === b.version &&
+    a.update === b.update &&
     a.stack.game.id === b.stack.game.id &&
     a.stack.game.title === b.stack.game.title &&
     a.stack.ports.length === b.stack.ports.length &&

@@ -10,7 +10,7 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | playlist | Playlist | |
 | Browse | Entdecken | the catalog page |
 | catalog | Katalog | |
-| Get | Holen | the button that installs an app |
+| Add / Install | Hinzufügen / Installieren | the buttons that put an app in the library, then install it |
 | Play / Play anyway | Spielen / Trotzdem spielen | |
 | install / uninstall | installieren / deinstallieren | |
 | download | Download / herunterladen | Downloads page: Downloads |
@@ -19,8 +19,10 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | Change version / Choose a version | Version ändern / Version wählen | |
 | pinned | festgehalten | |
 | withdrawn | zurückgezogen | |
-| verified / unverified / blocked (a release) | geprüft / ungeprüft / gesperrt | |
+| available / not offered / blocked (a release) | verfügbar / nicht angeboten / gesperrt | |
 | preview release | Vorschauversion | |
+| pre-release | Vorschauversion | a release its developer marked as one: an early or experimental build |
+| main release | Hauptversion | a release not marked as a pre-release; never "stable" |
 | play time / recently played | Spielzeit / zuletzt gespielt | |
 | controller / keyboard | Controller / Tastatur | |
 | Settings | Einstellungen | |

@@ -47,6 +47,33 @@ palette and light/dark themes. Define these, for example on `:root`:
 | `--ql-link`, `--ql-link-underline` | Markdown links |
 | `--ql-code-bg`, `--ql-pre-bg` | Inline code and code blocks |
 
+## Tokens and controls
+
+`tokens.css` holds the colour roles both apps share (`--bg`, `--panel`, `--card`, `--field`, `--line`, `--fg`,
+`--strong`, `--muted`, `--accent`, `--on-accent`, `--link`, `--green`, `--caution`, `--danger`), dark by default and
+light under `:root[data-theme="light"]`, with the scales: type (`--size-11` … `--size-38`), spacing (`--space-4` …
+`--space-48`), corners (`--radius-4` … `--radius-16`, `--radius-pill`) and the two shadows (`--shadow-menu`,
+`--shadow-dialog`). An app imports it first and gives the `--ql-*` variables above from it.
+
+`controls.css` and `@quiverlauncher/ui/controls` are the basic controls, built on those tokens:
+
+```tsx
+import { Button, Dialog, Field, Panel } from "@quiverlauncher/ui/controls";
+import "@quiverlauncher/ui/tokens.css";
+import "@quiverlauncher/ui/controls.css";
+
+<Panel title="Language">
+  <Field label="Shown in" hint="Quiver restarts to change it.">
+    <select>…</select>
+  </Field>
+  <Button variant="main" busy={saving} busyLabel="Saving…" onClick={save}>Save</Button>
+</Panel>
+```
+
+`Button` is `main` (one per view), `neutral` (the default), `text` or `danger`, and a link with `href`. `Dialog` asks
+one question, with the main button on the right. They have no words of their own: labels come from the app. A page
+without React uses the classes directly (`ql-button main`, `ql-panel`, `ql-panel-title`, `ql-actions`).
+
 ## Developing
 
 `pnpm --filter @quiverlauncher/ui test` runs its tests.

@@ -19,6 +19,64 @@ pub struct LaunchOptions {
     /// marks where the game goes, and without it everything is arguments.
     #[serde(default)]
     pub command: Option<String>,
+    /// The player's own copies of the game that it's given on the command line or in its environment, as the
+    /// catalog says (own_copy.rs): before the player's own launch options.
+    #[serde(default)]
+    pub copies: Vec<LaunchCopy>,
+}
+
+/// One copy of the game, and how the game is told where it is.
+#[derive(Deserialize, Default, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LaunchCopy {
+    /// Its path follows this flag ("--iso"), or joins it when it ends in "=" ("--iso=").
+    #[serde(default)]
+    pub flag: Option<String>,
+    /// Or its path is an argument of its own, with no flag, before the flags ("game /roms/game.z64"). A flag wins.
+    #[serde(default)]
+    pub positional: bool,
+    /// Or this environment variable holds it.
+    #[serde(default)]
+    pub env: Option<String>,
+    pub path: String,
+}
+
+/// Flags and variables the catalog may give a game a copy's path in; never ones the system, Wine or Quiver reads.
+fn flag_ok(flag: &str) -> bool {
+    let name = flag.trim_end_matches('=').trim_start_matches('-');
+    flag.starts_with('-') && flag.len() <= 43 && !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || "_.-".contains(c))
+}
+fn env_ok(name: &str) -> bool {
+    const RESERVED: [&str; 16] = ["PATH", "HOME", "USER", "SHELL", "TEMP", "TMP", "TMPDIR", "PWD", "LANG", "DISPLAY", "SYSTEMROOT", "WINDIR", "COMSPEC", "APPDATA", "LOCALAPPDATA", "USERPROFILE"];
+    const PREFIXES: [&str; 7] = ["XDG_", "LD_", "DYLD_", "WINE", "PROTON_", "STEAM_", "QUIVER_"];
+    name.len() >= 2
+        && name.len() <= 64
+        && name.starts_with(|c: char| c.is_ascii_uppercase())
+        && name.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+        && !RESERVED.contains(&name)
+        && !PREFIXES.iter().any(|p| name.starts_with(p))
+}
+
+/// The arguments and environment that give the game its copies. `windows`: it runs through Wine or Proton, which
+/// read a Linux path as `Z:` and backslashes. Copies passed on their own come first, so a game that reads its copy
+/// from its first argument finds it there.
+pub fn copy_words(copies: &[LaunchCopy], windows: bool) -> (Vec<String>, Vec<(String, String)>) {
+    let (mut bare, mut args, mut env) = (Vec::new(), Vec::new(), Vec::new());
+    for copy in copies {
+        let path = if windows && copy.path.starts_with('/') { format!("Z:{}", copy.path.replace('/', "\\")) } else { copy.path.clone() };
+        match copy.flag.as_deref() {
+            Some(flag) if flag_ok(flag) && flag.ends_with('=') => args.push(format!("{flag}{path}")),
+            Some(flag) if flag_ok(flag) => args.extend([flag.to_string(), path.clone()]),
+            // Never a path the game would read as a flag.
+            None if copy.positional && !path.is_empty() && !path.starts_with('-') => bare.push(path.clone()),
+            _ => {}
+        }
+        if let Some(name) = copy.env.as_deref().filter(|n| env_ok(n)) {
+            env.push((name.to_string(), path));
+        }
+    }
+    bare.extend(args);
+    (bare, env)
 }
 
 #[derive(Deserialize, Clone, PartialEq, Debug)]
@@ -205,6 +263,41 @@ mod tests {
         assert_eq!(parse("").unwrap(), Command::default());
         assert_eq!(split(r#"a\ b "" "c\"d""#).unwrap(), s(&["a b", "", "c\"d"]));
         assert!(parse("\"open").is_err());
+    }
+
+    #[test]
+    fn gives_the_game_its_copies() {
+        let copy = |flag: Option<&str>, env: Option<&str>, path: &str| LaunchCopy { flag: flag.map(String::from), env: env.map(String::from), path: path.into(), ..Default::default() };
+        let (args, env) = copy_words(
+            &[copy(Some("--iso"), None, "/games/disc.iso"), copy(Some("--root="), None, "/games/x"), copy(None, Some("GAME_DATA"), "/games/data")],
+            false,
+        );
+        assert_eq!(args, ["--iso", "/games/disc.iso", "--root=/games/x"]);
+        assert_eq!(env, [("GAME_DATA".to_string(), "/games/data".to_string())]);
+        // Through Wine or Proton, a Linux path is Z: and backslashes.
+        assert_eq!(copy_words(&[copy(Some("--iso"), None, "/home/deck/disc.iso")], true).0, ["--iso", "Z:\\home\\deck\\disc.iso"]);
+        // Never a flag that isn't one, or a variable the system or Quiver reads.
+        let (args, env) = copy_words(&[copy(Some("iso"), Some("LD_PRELOAD"), "/x"), copy(Some("--a b"), Some("PATH"), "/x")], false);
+        assert!(args.is_empty() && env.is_empty());
+    }
+
+    #[test]
+    fn gives_the_game_a_copy_on_its_own_first() {
+        let bare = |path: &str| LaunchCopy { positional: true, path: path.into(), ..Default::default() };
+        let flagged = LaunchCopy { flag: Some("--iso".into()), path: "/games/disc.iso".into(), ..Default::default() };
+        // "game.exe C:\roms\wdc.z64": the copy is the first argument, before any flag.
+        let (args, env) = copy_words(&[flagged.clone(), bare(r"C:\roms\wdc.z64")], false);
+        assert_eq!(args, ["C:\\roms\\wdc.z64", "--iso", "/games/disc.iso"]);
+        assert!(env.is_empty());
+        // Through Wine or Proton, a Linux path is Z: and backslashes, with spaces kept in the one argument.
+        assert_eq!(copy_words(&[bare("/home/deck/My Roms/wdc.z64")], true).0, ["Z:\\home\\deck\\My Roms\\wdc.z64"]);
+        // A flag wins, as it does in launchers from before `positional`.
+        assert_eq!(copy_words(&[LaunchCopy { positional: true, ..flagged }], false).0, ["--iso", "/games/disc.iso"]);
+        // Never a path the game would read as a flag, nor an empty one.
+        assert!(copy_words(&[bare("-rom"), bare("")], false).0.is_empty());
+        // What Play sends.
+        let sent: LaunchCopy = serde_json::from_str(r#"{"positional":true,"path":"/roms/wdc.z64"}"#).unwrap();
+        assert_eq!(sent, bare("/roms/wdc.z64"));
     }
 
     #[test]

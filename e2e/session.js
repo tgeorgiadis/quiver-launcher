@@ -32,8 +32,8 @@ for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => process.e
  * One running copy of the app. Pass `api` to share a mock catalog between
  * copies, and `data` to reopen a copy's data folder. Each copy takes ports no
  * other is using, so any number can run at once. The first start's setup
- * (setup.tsx) is taken as done, as the tests start from the library, unless
- * `setup`.
+ * (setup.tsx) is taken as done, and how apps update (app-updates.tsx) as
+ * answered, as the tests start from the library, unless `setup`.
  */
 export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(join(tmpdir(), "quiver-data-")), setup = false } = {}) {
   if (!setup) {
@@ -41,7 +41,7 @@ export async function launch({ env: extra = {}, api: shared, data = mkdtempSync(
     const file = join(data, "settings.json");
     const saved = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
     mkdirSync(data, { recursive: true });
-    writeFileSync(file, JSON.stringify({ ...saved, setupDone: true }));
+    writeFileSync(file, JSON.stringify({ appUpdatesAsked: true, ...saved, setupDone: true }));
   }
   const api = shared ?? (await startMockApi());
   const port = await freePort();
