@@ -1787,6 +1787,15 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .snapshots li { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .recovery p { max-width: 520px; }
 
+/* The player's tags in Settings: each with how many apps have it, and renaming or deleting it. */
+.tag-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-width: 520px; }
+.tag-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+.tag-list .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag-list .tag-name .muted { font-size: 12px; margin-left: 6px; }
+.tag-list .tag-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.tag-rename { display: flex; gap: 6px; flex: 1; }
+.tag-rename input { flex: 1; min-width: 0; }
+
 /* A playlist's icon on its tab (one of its apps'), and choosing it. */
 .playlist-icon { display: inline-grid; width: 18px; height: 18px; margin: -2px 7px -2px -5px; overflow: hidden; border-radius: 5px; flex-shrink: 0; }
 .playlist-icon .card-art, .icon-choice .card-art { width: 100%; height: 100%; }

@@ -33,6 +33,8 @@ export type OldApp = {
   catalogTags?: string[];
   /** The player hid it in 3.x's library. */
   hidden?: boolean;
+  /** Its picture in 3.x: a file on this computer the player chose, or an https address. */
+  icon?: string;
 };
 /** A file or folder to ask for in the page's own browser (file-picker.tsx). */
 export type PickAsk = { id: number; folder: boolean; title: string; dir?: string | null; extensions: string[] };
@@ -295,6 +297,8 @@ export const native = {
   readBackground: (path: string) => invoke<ArrayBuffer>("read_background", { path }),
   /** Asks for a picture and keeps a copy sized for `slot`; the copy's name (custom-art.tsx), null if they cancel. */
   pickArtwork: (title: string, slot: string) => invoke<string | null>("pick_artwork", { title, slot }),
+  /** Keeps a copy of a picture on this computer for `slot`, as picking one does: one an app had in Quiver Launcher 3. */
+  importArtwork: (path: string, slot: string) => invoke<string>("import_artwork", { path, slot }),
   /** Deletes the kept pictures other than these. */
   keepArtwork: (files: string[]) => invoke<void>("keep_artwork", { files }),
   /** Asks for a folder on this computer, opening in `dir` when given; null when the player cancels. */

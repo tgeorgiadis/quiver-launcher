@@ -773,6 +773,14 @@ async fn pick_artwork(app: tauri::AppHandle, window: tauri::WebviewWindow, title
     tauri::async_runtime::spawn_blocking(move || custom_art::import(&path, &data, &slot)).await.map_err(|e| e.to_string())?.map(Some)
 }
 
+/// Keeps a copy of a picture already on the computer, sized for `slot`: the one the player chose for an app in
+/// Quiver Launcher 3, brought over with it (v3.rs). Its copy's name (custom_art.rs).
+#[tauri::command]
+async fn import_artwork(app: tauri::AppHandle, path: String, slot: String) -> Result<String, String> {
+    let data = app.state::<Data>().0.clone();
+    tauri::async_runtime::spawn_blocking(move || custom_art::import(Path::new(&path), &data, &slot)).await.map_err(|e| e.to_string())?
+}
+
 /// Deletes the kept pictures other than `files`.
 #[tauri::command]
 fn keep_artwork(data: State<Data>, files: Vec<String>) {
@@ -1826,6 +1834,7 @@ pub fn run() {
             pick_background,
             read_background,
             pick_artwork,
+            import_artwork,
             keep_artwork,
             mod_packages,
             mod_files,

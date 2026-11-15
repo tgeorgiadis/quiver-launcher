@@ -51,3 +51,11 @@ test("an app brought over takes the best-matching game's artwork and consoles, t
   expect(searched).toEqual(["Marios Tennis", "Mario Tenni"]);
   expect(await bestGameArt(client, "Nothing")).toBeUndefined();
 });
+
+test("a year after an app's name isn't searched for as part of the game's", async () => {
+  const searched: string[] = [];
+  const client = { matchingGames: async (name: string) => (searched.push(name), []) } as unknown as Client;
+  await bestGameArt(client, "Folklore (2007)");
+  await bestGameArt(client, "(2007)");
+  expect(searched).toEqual(["Folklore", "(2007)"]);
+});

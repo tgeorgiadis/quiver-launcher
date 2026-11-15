@@ -18,7 +18,7 @@ import { ChevronDown, CloudDownload, Compass, Download, FolderOpen, History, Lay
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
-import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel, type CardDetail } from "@quiverlauncher/ui";
+import { AiChip, Artwork, OS_ICONS, PlatformIcons, ReleaseAge, Score, ScrollingText, boxSubtitle, cardSources, coverOf, tagLabel } from "@quiverlauncher/ui";
 import { canGet, earlyGet, hasUpdate, notOfferedYet, pulledVerified, stillWaiting, updateFor, useLauncher, useLauncherNow, type CatalogEntry, type Install, type Job } from "./store";
 import { bare, versionLabel, wayOffLabel } from "./versions";
 import { OverMenu, VersionsDialog, foldersOn } from "./detail";
@@ -28,7 +28,7 @@ import { CopyStatus, PlaylistPicker, Popover } from "./library";
 import { CardMenu, GameMenu } from "./card-menu";
 import { gameVersionLabel } from "./game";
 import type { Stack } from "./group";
-import type { CardImage, CardSize, NameOrder } from "./view";
+import type { CardImage, CardSize, LibraryDetail, NameOrder } from "./view";
 
 /** The large name and the small one under it: the app's, and every game it's based on, as the catalog's cards list them. */
 export function namesOf(entry: Entry, order: NameOrder): [string, string | undefined] {
@@ -70,8 +70,8 @@ const ListedMark = () => (
 );
 
 /** The line under the name alone, as cards had before they could show more. */
-const NAME_ONLY: readonly CardDetail[] = ["subtitle"];
-const TAG_DETAILS: readonly CardDetail[] = ["kinds", "ai", "platforms"];
+const NAME_ONLY: readonly LibraryDetail[] = ["subtitle"];
+const TAG_DETAILS: readonly LibraryDetail[] = ["kinds", "ai", "platforms"];
 
 /**
  * Over the name, those of its tags (not its console), AI label and platforms picked (view.ts), as Browse's cards have
@@ -81,7 +81,7 @@ const TAG_DETAILS: readonly CardDetail[] = ["kinds", "ai", "platforms"];
  * first tag, Recomp or Decomp, each once), not the series after it, which the game's name says already; every
  * platform one of them is for; the AI label only with one port (`entry`), as ports differ in it.
  */
-function TileTags({ entry, ports, details, consoleNames }: { entry?: Entry; ports?: readonly Entry[]; details: readonly CardDetail[]; consoleNames: Record<string, string> }) {
+function TileTags({ entry, ports, details, consoleNames }: { entry?: Entry; ports?: readonly Entry[]; details: readonly LibraryDetail[]; consoleNames: Record<string, string> }) {
   if (!details.some((d) => TAG_DETAILS.includes(d))) return null;
   const own = (e: Entry) => e.tags.filter((tag) => !Object.hasOwn(consoleNames, tag));
   const kinds = !details.includes("kinds") ? [] : ports ? [...new Set(ports.flatMap((p) => own(p).slice(0, 1)))].slice(0, 3).map(tagLabel) : entry ? own(entry).slice(0, 2).map(tagLabel) : [];
@@ -105,12 +105,21 @@ function TileTags({ entry, ports, details, consoleNames }: { entry?: Entry; port
   );
 }
 
-/** Under the names, what players said and when it was last updated, a line each, those picked; blank lines on a game's card with more than one port. */
-function TileLines({ entry, details }: { entry?: Entry; details: readonly CardDetail[] }) {
+/**
+ * Under the names, what players said, when it was last updated and the version installed here, a line each, those
+ * picked; blank lines on a game's card with more than one port, and for the version, on an app not installed.
+ */
+function TileLines({ entry, details, version }: { entry?: Entry; details: readonly LibraryDetail[]; version?: string }) {
+  const installedLabel = version ? versionLabel(version) : "";
   return (
     <>
       {details.includes("rating") && <span className="tile-line">{entry && <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />}</span>}
       {details.includes("updated") && <span className="tile-line">{entry && <ReleaseAge entry={entry} />}</span>}
+      {details.includes("version") && (
+        <span className="tile-line tile-version">
+          {entry && version && <Trans comment="Under an app's name on its library card: the version installed on this computer">Installed {installedLabel}</Trans>}
+        </span>
+      )}
     </>
   );
 }
@@ -125,7 +134,7 @@ type TileProps = {
   /** The marks for this computer's copy (view.ts). */
   marks: boolean;
   /** What it shows with its names (view.ts); unset, the line under the name alone. */
-  details?: readonly CardDetail[];
+  details?: readonly LibraryDetail[];
   /** In the player's library, not only installed here: its playlists and its menu. */
   inLibrary: boolean;
   /**
@@ -276,7 +285,7 @@ const Tile = memo(function Tile({
                   <ScrollingText text={small} />
                 </span>
               )}
-              <TileLines entry={entry} details={details} />
+              <TileLines entry={entry} details={details} version={install?.version} />
             </>
           ) : (
             <>
@@ -312,7 +321,8 @@ const Tile = memo(function Tile({
                 <span className="card-status">
                   <CopyStatus entry={entry} inLibrary={inLibrary} />
                 </span>
-                {install && (
+                {/* Said under the name already, when the cards show the version there. */}
+                {install && !(names && details.includes("version")) && (
                   <span>
                     <Trans>Installed {installedLabel}</Trans>
                   </span>
@@ -567,9 +577,11 @@ export function GameTile(props: GameTileProps) {
   const ready = ports.find((p, i) => installs[p.id] && copies[i] !== "withdrawn");
   // The port whose download, or failure, the card shows, as an app's own card does.
   const busy = ports.find((_, i) => copies[i] === "busy" || copies[i] === "failed");
-  const state = ports.map((p, i) => `${p.id} ${copies[i]} ${installs[p.id]?.lastPlayed ?? ""} ${props.inLibrary(p.id)}`).join("|");
+  const state = ports.map((p, i) => `${p.id} ${copies[i]} ${installs[p.id]?.lastPlayed ?? ""} ${installs[p.id]?.version ?? ""} ${props.inLibrary(p.id)}`).join("|");
+  // The version installed, under the name: of its one port.
+  const version = ports.length === 1 ? installs[ports[0].id]?.version : undefined;
   const installed = ports.some((p) => Boolean(installs[p.id]));
-  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} state={state} consoleNames={consoleNames} />;
+  return <Game {...props} copy={copy} gettable={gettable} ready={ready} busy={busy} installed={installed} version={version} state={state} consoleNames={consoleNames} />;
 }
 
 const Game = memo(
@@ -590,8 +602,9 @@ const Game = memo(
     ready,
     busy,
     installed,
+    version,
     consoleNames,
-  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; state: string; consoleNames: Record<string, string> }) {
+  }: GameTileProps & { copy: Copy; gettable: boolean; ready?: Entry; busy?: Entry; installed: boolean; version?: string; state: string; consoleNames: Record<string, string> }) {
     const now = useLauncherNow();
     const article = useRef<HTMLElement>(null);
     const first = ports[0];
@@ -652,7 +665,7 @@ const Game = memo(
                         <ScrollingText text={small} />
                       </span>
                     )}
-                    <TileLines entry={one} details={details} />
+                    <TileLines entry={one} details={details} version={version} />
                   </>
                 ) : (
                   <Mark copy={copy} marks={marks} gettable={gettable} />

@@ -37,6 +37,7 @@ import { PlayStats } from "./library-sidebar";
 import { useTopBarFit } from "./top-bar-fit";
 import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
+import { MANAGE_TAGS } from "./tag-settings";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { FilePicker } from "./file-picker";
@@ -52,7 +53,7 @@ type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true } | { readme: true };
-type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "copies" | "updates" };
+type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "library" | "copies" | "updates" };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
@@ -108,6 +109,12 @@ export function App() {
   const openGame = useCallback((game: GameLink) => open({ kind: "game", game }), [open]);
   const openDownloads = useCallback(() => open({ kind: "downloads" }), [open]);
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
+  // An app's Tags menu asks for the player's tags, in Settings' Library section (tag-settings.tsx).
+  useEffect(() => {
+    const manage = () => open({ kind: "settings", section: "library" });
+    window.addEventListener(MANAGE_TAGS, manage);
+    return () => window.removeEventListener(MANAGE_TAGS, manage);
+  }, [open]);
   // Read from the stack as shown, not in setStack's updater, which React can run twice.
   const shown = useRef<View[]>([]);
   const goBack = useCallback(() => {

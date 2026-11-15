@@ -337,6 +337,7 @@ msgid "{more, plural, one {and # more} other {and # more}}"
 msgstr "{more, plural, one {und # weitere} other {und # weitere}}"
 
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "{n, plural, one {# app} other {# apps}}"
 msgstr "{n, plural, one {# App} other {# Apps}}"
 
@@ -1308,6 +1309,7 @@ msgstr "Kann nicht hinzugefügt werden: Quiver Launcher 3 weiß nicht, woher sie
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -1821,14 +1823,21 @@ msgstr "Dunkel"
 msgid "Default"
 msgstr "Standard"
 
+#. Button: confirm deleting one of the player's tags from all their apps
+#. Button: delete one of the player's tags from all their apps
 #. Deletes a playlist
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Delete"
 msgstr "Löschen"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Delete (stops sharing it)"
 msgstr "Löschen (beendet das Teilen)"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Delete {tag}"
+msgstr "{tag} löschen"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Description"
@@ -2604,6 +2613,7 @@ msgctxt "tab"
 msgid "Installed"
 msgstr "Installiert"
 
+#. Under an app's name on its library card: the version installed on this computer
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Installed {installedLabel}"
 msgstr "Installiert: {installedLabel}"
@@ -2642,6 +2652,11 @@ msgstr "Nur installierte"
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed or not"
 msgstr "Installiert oder nicht"
+
+#. Library card detail: the version installed on this computer, always shown under the name
+#: ../../apps/launcher/src/library-view.tsx
+msgid "Installed version"
+msgstr "Installierte Version"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Installed, not in your library"
@@ -3040,6 +3055,11 @@ msgstr "Erstellt in deinem App-Ordner einen Ordner, in den du die App legst."
 msgid "Manage"
 msgstr "Verwalten"
 
+#. Menu item: rename or delete the player's tags, in Settings
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Manage tags…"
+msgstr "Tags verwalten…"
+
 #. Filter by whether Quiver downloads and updates an app, or the player looks after it
 #: ../../apps/launcher/src/library.tsx
 msgid "Managed by"
@@ -3330,6 +3350,10 @@ msgstr "Neu im Katalog"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "New installs"
 msgstr "Neue Installationen"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "New name for {tag}"
+msgstr "Neuer Name für {tag}"
 
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library.tsx
@@ -4199,6 +4223,10 @@ msgstr "Neu laden"
 msgid "Remove"
 msgstr "Entfernen"
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Remove “{tag}” from {count}?"
+msgstr "„{tag}“ von {count} entfernen?"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Remove {name}"
 msgstr "{name} entfernen"
@@ -4240,14 +4268,20 @@ msgstr "Wenn du sie aus deiner Bibliothek entfernst, bleiben ihre Dateien, wo si
 msgid "Removing…"
 msgstr "Wird entfernt…"
 
+#. Button: rename one of the player's tags
 #. Renames an app's folder
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Rename"
 msgstr "Umbenennen"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename {app}'s folder"
 msgstr "Ordner von {app} umbenennen"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Rename {tag}"
+msgstr "{tag} umbenennen"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename folder"
@@ -4343,6 +4377,7 @@ msgstr "Wie im System"
 #: ../../apps/launcher/src/launch-options.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Save"
 msgstr "Speichern"
 
@@ -5106,6 +5141,10 @@ msgstr "Spielstände und Einstellungen kommen mit."
 msgid "The shared playlist is up to date."
 msgstr "Die geteilte Playlist ist auf dem neuesten Stand."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
+msgstr "Die Tags, die du deinen Apps gegeben hast, auch die aus Quiver Launcher 3 übernommenen. Umbenennen oder Löschen ändert den Tag bei jeder App, die ihn hat. Die Tags des Katalogs bleiben unverändert."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "Design"
@@ -5764,6 +5803,10 @@ msgstr "Du hast sie installiert. Wenn du das Risiko akzeptierst, kannst du sie w
 msgid "You have the newest version."
 msgstr "Du hast die neueste Version."
 
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "You haven't tagged any apps yet. Add tags from an app's menu, under Tags."
+msgstr "Du hast noch keine Apps getaggt. Tags fügst du im Menü einer App unter Tags hinzu."
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "You reported a problem on {sent}. A maintainer will take a look."
 msgstr "Du hast am {sent} ein Problem gemeldet. Ein Maintainer sieht es sich an."
@@ -5870,6 +5913,7 @@ msgid "Your problem report"
 msgstr "Deine Problemmeldung"
 
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Your tags"
 msgstr "Deine Tags"
 

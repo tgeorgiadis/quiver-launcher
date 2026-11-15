@@ -19,6 +19,7 @@ import { DEFAULT_BACKGROUND_OPACITY, useBackgroundImage } from "./library-backgr
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
+import { TagSettings } from "./tag-settings";
 import { ControlSettings } from "./controls";
 import { WindowsRunnerSetting } from "./launch-options";
 import { PortableDefaultSetting } from "./app-files";
@@ -327,7 +328,7 @@ export function LanguageSetting() {
   );
 }
 
-/** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, importing a Quiver Launcher 3 one, and restoring a backup. */
+/** How the library looks, as in its View menu, and Browse's cards; which platforms' apps it shows, the player's tags, importing a Quiver Launcher 3 one, and restoring a backup. */
 function LibrarySettings() {
   const { config } = useLauncher();
   return (
@@ -346,6 +347,7 @@ function LibrarySettings() {
         </h3>
         <PlatformChoice />
       </section>
+      <TagSettings />
       <FindOldLibrary />
       <section className="settings-section" aria-label={t`Restore from backup`}>
         <h3>

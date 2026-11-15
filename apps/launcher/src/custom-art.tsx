@@ -20,6 +20,8 @@ export type Pictures = Partial<Record<ArtSlot, string>>;
 /** A picture kept in the launcher's data folder, by this before its file's name. */
 const FILE = "file:";
 const isFile = (value: string) => value.startsWith(FILE);
+/** A kept picture's value, from the name custom_art.rs gave its copy. */
+export const artFile = (name: string) => `${FILE}${name}`;
 
 /** The address to show a picture from. */
 const artSrc = (value: string) => (isFile(value) ? convertFileSrc(value.slice(FILE.length), "quiverart") : value);

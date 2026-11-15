@@ -21,7 +21,7 @@ import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
 import { appsOfRepository, bestGameArt, customEntry, customKey, folderNameFor, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
-import { artFiles, type Pictures } from "./custom-art";
+import { artFile, artFiles, isArtAddress, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
@@ -297,6 +297,8 @@ type Launcher = {
   customize: (id: string, overrides: { name?: string; cover?: string; pictures?: Pictures }) => void;
   /** The player's own tags on an app; hand-picked collections are tags. */
   setTags: (id: string, tags: string[]) => void;
+  /** Renames one of the player's tags on every app that has it; with no new name, takes it off them all. */
+  renameTag: (from: string, to?: string) => void;
   /** The consoles the player says an app is for, by id; undefined, or the catalog's own, shows the catalog's again. */
   setConsoles: (id: string, consoles?: string[]) => void;
   /** Saved library filters, in order. */
@@ -934,6 +936,22 @@ export function importedTags(old: OldApp, entry: Entry): string[] {
   const catalogs = new Set([...(old.catalogTags ?? []), ...entry.tags, ...(entry.consoles ?? [])].map((t) => t.toLowerCase()));
   const own = (old.tags ?? []).map((t) => t.trim().slice(0, 50)).filter((t) => t && !catalogs.has(t.toLowerCase()));
   return own.filter((t, i) => own.findIndex((o) => o.toLowerCase() === t.toLowerCase()) === i).slice(0, 20);
+}
+
+/**
+ * The library with one of the player's tags renamed on every app that has it, whatever its case, or taken off them
+ * all without `to`. An app that has the new name already keeps it once, and only the apps changed are new objects.
+ */
+export function retagged(library: LibraryItem[], from: string, to?: string): LibraryItem[] {
+  const old = from.toLowerCase();
+  const name = to?.trim().slice(0, 50);
+  return library.map((i) => {
+    const have = i.overrides?.tags ?? [];
+    if (!have.some((t) => t.toLowerCase() === old)) return i;
+    const renamed = have.map((t) => (t.toLowerCase() === old ? name : t)).filter((t): t is string => Boolean(t));
+    const tags = renamed.filter((t, n) => renamed.findIndex((o) => o.toLowerCase() === t.toLowerCase()) === n);
+    return { ...i, overrides: { ...i.overrides, tags: tags.length ? tags : undefined }, pending: i.account ? { ...i.pending, tags: true } : i.pending };
+  });
 }
 
 /**
@@ -2117,6 +2135,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     setTags: (id, tags) =>
       setLibrary((l) => l.map((i) => (i.id !== id ? i : { ...i, overrides: { ...i.overrides, tags: tags.length ? tags : undefined }, pending: i.account ? { ...i.pending, tags: true } : i.pending }))),
+    renameTag: (from, to) => setLibrary((l) => retagged(l, from, to)),
     setConsoles: (id, consoles) => {
       const theirs = catalog[id]?.consoles ?? [];
       const same = consoles && consoles.length === theirs.length && consoles.every((c) => theirs.includes(c));
@@ -2424,6 +2443,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const tags = new Map<string, string[]>();
       const hidden: string[] = [];
       const imported: ImportedApp[] = [];
+      // The pictures the player had for them, to keep a copy of once they're in: by app.
+      const pictures: [string, string][] = [];
       apps.forEach((old, i) => {
         const it = found[i];
         if (!it) return void missing.push(old.name);
@@ -2439,6 +2460,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const own = importedTags(old, entry);
         if (own.length) tags.set(entry.id, own);
         if (old.hidden) hidden.push(entry.id);
+        // One they chose themselves, for any app; an address, only for their own, as a catalog app's was the catalog's.
+        if (old.icon && (!isArtAddress(old.icon) || it.kind === "custom")) pictures.push([entry.id, old.icon]);
         const have = library.find((l) => l.id === entry.id)?.overrides?.tags ?? [];
         imported.push({ id: entry.id, old: old.tags ?? [], tags: [...entry.tags, ...have, ...own], platforms: entry.supportedOS });
       });
@@ -2454,6 +2477,20 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           }),
         );
       if (hidden.length) setSettings((s) => ({ ...s, hidden: [...new Set([...(s.hidden ?? []), ...hidden])] }));
+      // Their pictures, as the app's icon (which a card without a cover shows in the Cover view too), unless it has one
+      // of the player's here already. A file is copied in, as picking it does; one that can't be read is left out.
+      const icons = new Map(
+        (await Promise.all(pictures.map(async ([id, icon]) => [id, isArtAddress(icon) ? icon : await native.importArtwork(icon, "icon").then(artFile, () => undefined)] as const))).filter(
+          (p): p is readonly [string, string] => Boolean(p[1]),
+        ),
+      );
+      if (icons.size)
+        setLibrary((l) =>
+          l.map((i) => {
+            const icon = icons.get(i.id);
+            return !icon || i.overrides?.pictures?.icon ? i : { ...i, overrides: { ...i.overrides, pictures: { ...i.overrides?.pictures, icon } } };
+          }),
+        );
       // Their tag filters, as playlists; one named as a playlist here already leaves that one as it is.
       const names = new Set(collections.map((c) => c.name.toLowerCase()));
       const playlists = importedPlaylists(filters, imported).filter((p) => !names.has(p.name.toLowerCase()) && names.add(p.name.toLowerCase()));

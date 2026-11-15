@@ -15,7 +15,7 @@ import { CARD_LOOKS, DETAIL_NAMES, browseCardsOf, sampleEntry, savedBrowseCards,
 import { PLATFORMS, platformsOf, savedPlatforms, type Platform } from "./platforms";
 import { SIDEBAR_SIZES } from "./sidebar";
 import { GRID_GROUP_BYS, GROUP_BYS, gridGroupBy, isGroupBy, type GroupBy } from "./group";
-import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryView } from "./view";
+import { CARD_IMAGES, CARD_SCALE, LAYOUTS, LIBRARY_DETAILS, NAME_ORDERS, SIDEBAR_MIN_WIDTH, TV_VIEW, artFor, savedView, viewOf, type CardImage, type CardSize, type LibraryDetail, type LibraryView } from "./view";
 
 /** This computer's library view, and a way to change it. */
 export function useLibraryView() {
@@ -392,7 +392,7 @@ function CardSample() {
 }
 
 /** A box for each detail cards can show, in the library's View menu and Browse's; `names` in place of Browse's words for some. */
-function DetailChoice({ options, value, onChange, names }: { options: readonly CardDetail[]; value: readonly CardDetail[]; onChange: (details: CardDetail[]) => void; names?: Partial<Record<CardDetail, MessageDescriptor>> }) {
+function DetailChoice<D extends string>({ options, value, onChange, names }: { options: readonly D[]; value: readonly D[]; onChange: (details: D[]) => void; names?: Partial<Record<D, MessageDescriptor>> }) {
   return (
     <div className="view-choice">
       <span className="view-label">
@@ -401,15 +401,16 @@ function DetailChoice({ options, value, onChange, names }: { options: readonly C
       {options.map((detail) => (
         <label key={detail} className="toggle">
           <input type="checkbox" checked={value.includes(detail)} onChange={(e) => onChange(e.target.checked ? [...value, detail] : value.filter((d) => d !== detail))} />
-          {i18n._(names?.[detail] ?? DETAIL_NAMES[detail])}
+          {i18n._(names?.[detail] ?? DETAIL_NAMES[detail as unknown as CardDetail])}
         </label>
       ))}
     </div>
   );
 }
 /** A library card's line under its name is the other name, the app's or its game's, not always the game and console. */
-const LIBRARY_DETAIL_NAMES: Partial<Record<CardDetail, MessageDescriptor>> = {
+const LIBRARY_DETAIL_NAMES: Partial<Record<LibraryDetail, MessageDescriptor>> = {
   subtitle: msg({ message: "Name underneath", comment: "Library card detail: the other name (the app's or the game's) under the large one" }),
+  version: msg({ message: "Installed version", comment: "Library card detail: the version installed on this computer, always shown under the name" }),
 };
 const LOOK_ICONS: Record<CardLook, ReactNode> = { box: <RectangleVertical size={15} aria-hidden="true" />, wide: <RectangleHorizontal size={15} aria-hidden="true" /> };
 
