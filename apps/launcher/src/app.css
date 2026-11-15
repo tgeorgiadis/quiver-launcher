@@ -626,6 +626,11 @@ main.app-main { padding: 0 0 40px; }
 .setup .setup-nav .setup-skip { margin-right: auto; padding-inline: 0; background: none; box-shadow: none; color: var(--muted); font-weight: 400; }
 .setup .setup-nav .setup-skip:hover { color: var(--strong); }
 .setup .settings-section { padding-top: 0; border-top: 0; }
+/* What a Quiver Launcher 3 library brings (old-library.tsx): a line each, ticked, and what can't come, crossed. */
+.old-library-brings { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.old-library-brings li { display: flex; align-items: flex-start; gap: 6px; }
+.old-library-brings svg { flex: none; margin-top: 2px; color: var(--accent); }
+.old-library-brings li.muted svg { color: var(--muted); }
 .old-library-apps { display: grid; gap: 6px; max-height: 220px; overflow: auto; margin: 0; padding: 0; list-style: none; }
 /* An import's progress (old-library.tsx), as a download's bar, with a turning ring while it goes. */
 /* Across the banner's row; in the setup's column it's a download's height, as anywhere else. */

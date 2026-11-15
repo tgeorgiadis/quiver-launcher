@@ -49,7 +49,9 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
       return files.stateProblems ?? [];
     },
     list_snapshots: () => [],
-    find_v3_library: () => null,
+    // A Quiver Launcher 3 library found by itself, and its apps folders, if `state` says so (v3Library, v3AppsFolders).
+    find_v3_library: () => files.v3Library ?? null,
+    v3_apps_folders: () => files.v3AppsFolders ?? [],
     controllers: () => [],
     list_protons: () => [],
     automatic_runner: () => null,

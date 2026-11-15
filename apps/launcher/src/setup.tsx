@@ -144,12 +144,24 @@ function Welcome() {
   );
 }
 
+/**
+ * Where apps install. After a Quiver Launcher 3 import, it says where those apps are now: still in 3.x's folders,
+ * listed here as kept from before, to keep until the player moves them in, which is for once they've tried Quiver.
+ */
 function AppsStep({ brought }: { brought: boolean }) {
+  const { movableApps } = useLauncher();
+  const kept = brought && movableApps().elsewhere.length > 0;
   return (
     <>
       {brought && (
         <p role="status">
-          <Trans>All done: your Quiver Launcher 3 apps are in your library, and they stay where they are.</Trans>
+          {kept ? (
+            <Trans>
+              All done: your Quiver Launcher 3 apps are in your library. Installed ones still play from Quiver Launcher 3's folder, below, so keep it for now. Once you've tried Quiver, Move into default brings them into Quiver's apps folder, here or in Settings › Apps folder.
+            </Trans>
+          ) : (
+            <Trans>All done: your Quiver Launcher 3 apps are in your library.</Trans>
+          )}
         </p>
       )}
       <p className="muted">

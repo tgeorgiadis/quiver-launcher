@@ -242,8 +242,17 @@ describe("bringsAlong", () => {
       app({ repository: undefined, tags: ["mine"], hidden: true }),
     ];
     const filters = [{ name: "N64", tags: ["n64"], all: false, exclude: [], excludeAll: false }];
-    expect(bringsAlong({ apps, filters })).toEqual({ tagged: 2, filters: 1, hidden: 1 });
-    expect(bringsAlong({ apps: [app()] })).toEqual({ tagged: 0, filters: 0, hidden: 0 });
+    expect(bringsAlong({ apps, filters })).toEqual({ tagged: 2, filters: 1, hidden: 1, pictures: 0, left: 1 });
+    expect(bringsAlong({ apps: [app()] })).toEqual({ tagged: 0, filters: 0, hidden: 0, pictures: 0, left: 0 });
+  });
+
+  it("counts the pictures the player chose, not an entry's address, and only for apps that come over", () => {
+    const apps = [
+      app({ icon: "C:\\QL3\\Cache\\CustomIcons\\TestPort_custom.png" }),
+      app({ icon: "https://example.com/port.png" }),
+      app({ repository: undefined, icon: "/ql3/Cache/CustomIcons/Other_custom.png" }),
+    ];
+    expect(bringsAlong({ apps })).toMatchObject({ pictures: 1, left: 1 });
   });
 });
 

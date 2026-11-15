@@ -58,8 +58,14 @@ anywhere else isn't made by us.
 ## Coming from Quiver Launcher 3
 
 Your apps come with you, and nothing needs downloading again. On its first start, Quiver Launcher 4 asks where your
-Quiver Launcher 3 folder is (or finds it by itself) and adds your apps to your library. Anything already installed
-stays where it is and plays from there. You can do this later too, in **Settings**.
+Quiver Launcher 3 folder is (or finds it by itself), shows what it found and adds your apps to your library, with the
+tags you gave them, your hidden apps, the pictures you chose and your tag filters (as playlists). For a portable copy,
+choose the folder you unzipped it to. You can do this later too, in **Settings › Library**.
+
+Nothing is moved, copied or deleted: anything already installed stays where Quiver Launcher 3 put it and plays from
+there. So keep your Quiver Launcher 3 folder for now, as deleting it would delete those apps. Once you've tried Quiver,
+**Settings › Apps folder** shows that folder with **Move into default**, which moves its apps into Quiver's own apps
+folder. After that, you can delete the old one.
 
 Quiver Launcher 3 is still available on the [`v3` branch](https://github.com/tgeorgiadis/quiver-launcher/tree/v3)
 and its [releases](https://github.com/tgeorgiadis/quiver-launcher/releases?q=v3).

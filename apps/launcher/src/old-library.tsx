@@ -5,7 +5,7 @@
  * played from where 3.x put them.
  */
 import { useEffect, useState } from "react";
-import { ArchiveRestore, FolderInput, LoaderCircle } from "lucide-react";
+import { ArchiveRestore, Check, FolderInput, LoaderCircle, X } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { bringsAlong, useLauncher } from "./store";
@@ -68,6 +68,64 @@ function offer(library: V3Library) {
     (tagged > 0 || filters > 0 || hidden > 0) && t`Your tags, filters and hidden apps will be imported too.`,
   ];
   return parts.filter(Boolean).join(" ");
+}
+
+/**
+ * What comes over from a library, a line each, before it's imported: its apps and how many are installed, then each
+ * other thing it brings that it has, and the apps that can't come.
+ */
+function Brings({ library }: { library: V3Library }) {
+  const count = library.apps.length;
+  const installed = installedIn(library);
+  const { tagged, filters, hidden, pictures, left } = bringsAlong(library);
+  const lines = [
+    !installed
+      ? t`${plural(count, { one: "# app, not installed yet", other: "# apps, none installed yet" })}`
+      : installed === count
+        ? t`${plural(count, { one: "# app, already installed", other: "# apps, all already installed" })}`
+        : t`${plural(count, { one: "# app", other: "# apps" })}, ${plural(installed, { one: "# already installed", other: "# already installed" })}`,
+    tagged > 0 && t`${plural(tagged, { one: "The tags you gave # app", other: "The tags you gave # apps" })}`,
+    hidden > 0 && t`${plural(hidden, { one: "# app you hid, kept hidden", other: "# apps you hid, kept hidden" })}`,
+    pictures > 0 && t`${plural(pictures, { one: "# picture you chose for an app", other: "# pictures you chose for your apps" })}`,
+    filters > 0 && t`${plural(filters, { one: "# tag filter, as a playlist", other: "# tag filters, as playlists" })}`,
+  ].filter((l): l is string => Boolean(l));
+  return (
+    <ul className="old-library-brings" aria-label={t`What comes over`}>
+      {lines.map((line) => (
+        <li key={line}>
+          <Check size={15} aria-hidden="true" /> {line}
+        </li>
+      ))}
+      {left > 0 && (
+        <li className="muted">
+          <X size={15} aria-hidden="true" />{" "}
+          {t`${plural(left, { one: "# app can't come over, as Quiver Launcher 3 doesn't know where it comes from", other: "# apps can't come over, as Quiver Launcher 3 doesn't know where they come from" })}`}
+        </li>
+      )}
+    </ul>
+  );
+}
+
+/** Where some installs may be, when they look to have moved or none were found: the folder button finds them. */
+function movedHint(library: V3Library) {
+  const installed = installedIn(library);
+  const missing = library.apps.length - installed;
+  if (!installed) return t`${plural(library.apps.length, { one: "If you already installed it somewhere else, show Quiver the folder.", other: "If you already installed them somewhere else, show Quiver the folder." })}`;
+  return looksMoved(library) && t`${plural(missing, { one: "If you moved the other one, show Quiver the folder.", other: "If you moved the others, show Quiver the folder." })}`;
+}
+
+/**
+ * What happens to the files: nothing moves, so the Quiver Launcher 3 folder is kept until the player moves its apps
+ * into Quiver's own apps folder, in Settings once they've tried Quiver (AppsFolder's Move into default).
+ */
+function KeepNote({ library }: { library: V3Library }) {
+  return (
+    <p className="muted old-library-keep">
+      {installedIn(library)
+        ? t`Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver, you can move them into Quiver's apps folder in Settings › Apps folder.`
+        : t`Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is.`}
+    </p>
+  );
 }
 
 /** How far an import has got, as a download's bar shows it. */
@@ -233,7 +291,7 @@ export function FindOldLibrary() {
       {(!library || done) && (
         <>
           <p className="muted">
-            <Trans>Show Quiver where your Quiver Launcher 3 folder is, and your apps will appear here. Anything already installed stays where it is, so nothing needs to download again.</Trans>
+            <Trans>Show Quiver where your Quiver Launcher 3 folder is, and your apps come over with the tags you gave them, your hidden apps, the pictures you chose and your tag filters. Anything already installed plays from where it is, so nothing downloads again, and nothing is moved or deleted.</Trans>
           </p>
           <button onClick={choose}>
             <FolderInput size={15} aria-hidden="true" /> <Trans>Choose my Quiver Launcher 3 folder…</Trans>
@@ -247,7 +305,10 @@ export function FindOldLibrary() {
       )}
       {library && !done && (
         <>
-          <p role="status">{offer(library)}</p>
+          <p role="status">{t`Found in ${library.folder}. This comes over:`}</p>
+          <Brings library={library} />
+          {movedHint(library) && <p className="muted">{movedHint(library)}</p>}
+          <KeepNote library={library} />
           {importing(state) ? (
             <Importing {...state} />
           ) : (
@@ -262,7 +323,8 @@ export function FindOldLibrary() {
       )}
       {done && (
         <p className="muted" role="status">
-          {state.length ? notImported(state) : t`Your apps are in your library.`}
+          {state.length ? notImported(state) : t`Your apps are in your library.`}{" "}
+          {t`Any that were installed play from where Quiver Launcher 3 put them: keep that folder until you move them, in Settings › Apps folder.`}
         </p>
       )}
     </section>
@@ -304,7 +366,7 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
     return (
       <>
         <p>
-          <Trans>Show Quiver where your Quiver Launcher 3 folder is, and your apps will appear here. Anything already installed stays where it is, so nothing needs to download again.</Trans>
+          <Trans>Show Quiver where your Quiver Launcher 3 folder is, and your apps come over with the tags you gave them, your hidden apps, the pictures you chose and your tag filters. Anything already installed plays from where it is, so nothing downloads again, and nothing is moved or deleted.</Trans>
         </p>
         <button className="add-choice" onClick={choose}>
           <FolderInput size={22} aria-hidden="true" />
@@ -313,7 +375,7 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
               <Trans>Choose my Quiver Launcher 3 folder…</Trans>
             </strong>
             <small>
-              <Trans>The folder with Quiver Launcher 3's program in it.</Trans>
+              <Trans>The folder with Quiver Launcher 3's program in it. For a portable copy, that's the folder you unzipped it to.</Trans>
             </small>
           </span>
         </button>
@@ -326,9 +388,13 @@ export function OldLibraryStep({ onOffer, onBusy, onImported }: { onOffer: (offe
     );
   }
   const { folder, apps } = library;
+  const hint = movedHint(library);
   return (
     <>
-      <p>{offer(library)}</p>
+      <p>{t`Quiver found your Quiver Launcher 3 library. This comes over:`}</p>
+      <Brings library={library} />
+      {hint && <p className="muted">{hint}</p>}
+      <KeepNote library={library} />
       <button className="link-button old-library-list" aria-expanded={listed} onClick={() => setListed(!listed)}>
         <Trans>See which apps</Trans>
       </button>

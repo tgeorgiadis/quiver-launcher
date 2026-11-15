@@ -156,3 +156,31 @@ test("the first start's setup: each step all reached by the d-pad, the focus on 
     await first.close();
   }
 });
+
+test("the first start's Quiver Launcher 3 step says what comes over, and that nothing moves so its folder stays", async () => {
+  const v3Library = {
+    folder: "/home/player/Downloads/QuiverLauncher3",
+    apps: [
+      { name: "Test Port", provider: "github", repository: "quiver/test-port", dir: "/home/player/Downloads/QuiverLauncher3/Apps/TestPort", version: "1.0.0", inApps: true, tags: ["mine"], icon: "/home/player/Downloads/QuiverLauncher3/Cache/CustomIcons/TestPort_custom.png" },
+      { name: "Other Port", provider: "github", repository: "quiver/other-port", hidden: true },
+      { name: "Mystery", provider: "github" },
+    ],
+    filters: [{ name: "Mine", tags: ["mine"], all: false, exclude: [], excludeAll: false }],
+  };
+  const first = await openApp({ state: { settings: { setupDone: false }, v3Library } });
+  try {
+    const { page } = first;
+    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("heading", { name: "Bring your apps over from Quiver Launcher 3?" }).waitFor();
+    const brings = await page.getByRole("list", { name: "What comes over" }).innerText();
+    assert.match(brings, /3 apps, 1 already installed/);
+    assert.match(brings, /The tags you gave 1 app/);
+    assert.match(brings, /1 app you hid, kept hidden/);
+    assert.match(brings, /1 picture you chose for an app/);
+    assert.match(brings, /1 tag filter, as a playlist/);
+    assert.match(brings, /1 app can't come over/);
+    assert.match(await page.locator(".old-library-keep").innerText(), /Nothing is moved or copied.*Keep your Quiver Launcher 3 folder for now/s);
+  } finally {
+    await first.close();
+  }
+});

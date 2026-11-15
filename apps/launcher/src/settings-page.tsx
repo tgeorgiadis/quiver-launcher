@@ -500,6 +500,15 @@ export function AppsFolder() {
     return () => void (live = false);
   }, [paths, moving]);
   const desktop = config.os !== "android" && config.os !== "ios";
+  // Quiver Launcher 3's apps folders, which a row says it's from: the folder the player shouldn't delete yet.
+  const [v3Folders, setV3Folders] = useState<string[]>([]);
+  useEffect(() => {
+    if (!desktop || !others.length) return;
+    let live = true;
+    native.v3AppsFolders().then((found) => live && setV3Folders(found), () => {});
+    return () => void (live = false);
+  }, [desktop, others.length]);
+  const fromV3 = (path: string) => v3Folders.some((f) => samePath(f, path));
   // A path's separator as the player's system writes it, for the help on console folders.
   const slash = config.os === "windows" ? "\\" : "/";
   const unsorted = unsortedApps();
@@ -633,7 +642,7 @@ export function AppsFolder() {
                   {f.default && <span className="apps-folder-badge">{t`Default`}</span>}
                 </p>
                 <p className={state && !state.exists ? "job-error" : "muted"}>
-                  {f.default ? t`New apps install here.` : t`Kept here from before.`} {plural(f.apps.length, { one: "# app", other: "# apps" })}
+                  {f.default ? t`New apps install here.` : fromV3(f.path) ? t`From Quiver Launcher 3. Keep this folder until you move its apps.` : t`Kept here from before.`} {plural(f.apps.length, { one: "# app", other: "# apps" })}
                   {state && !state.exists ? ` · ${t`Not found. Is its drive connected?`}` : state?.free != null ? ` · ${t`${space(state.free)} free`}` : ""}
                 </p>
               </div>
