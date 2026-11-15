@@ -158,19 +158,32 @@ export type Job = Progress | { error: string; download?: true; instead?: Release
 /** A download that finished since the launcher started: Downloads lists it under Recently finished. */
 export type Finished = { id: string; version: string; update: boolean; at: number };
 /** Several files suit this computer: the player picks one. */
-/** `unmatched`: none of the files is marked for this computer, so these are all the release's. */
-export type Choice = { entry: Entry; version: string; assets: Asset[]; unmatched?: boolean; resolve: (asset: Asset | null) => void };
+/**
+ * `unmatched`: none of the files is marked for this computer, so these are all the release's, or the ones the site
+ * didn't put on any platform. `all`: every file of the release this computer can install, for Show all files, the
+ * ones a maintainer didn't tick too.
+ */
+export type Choice = {
+  entry: Entry;
+  version: string;
+  assets: Asset[];
+  all: Asset[];
+  /** Of `all`, the files a maintainer didn't tick, by id: picking one asks first. */
+  unapproved: string[];
+  unmatched?: boolean;
+  resolve: (asset: Asset | null) => void;
+};
 /** Deleting an app's files, waiting on the player's yes: `remove` takes it out of the library too, and `then` runs after. */
 export type Confirming = { entry: Entry; remove?: boolean; then?: () => void };
 /**
  * What Quiver hasn't verified, waiting on the player's yes before it installs (`resolve(true)`): the newest release of
  * an app with no verified one, or a file of a verified release that `changed` upstream since or that Quiver has no
- * checksum for (`unchecked`).
+ * checksum for (`unchecked`), or one a maintainer didn't tick for the app, picked from Show all files (`unapproved`).
  */
 export type Asking = {
   entry: Entry;
   version: string;
-  file?: { name: string; why: "changed" | "unchecked" };
+  file?: { name: string; why: "changed" | "unchecked" | "unapproved" };
   /** Why the release isn't verified, worded for players. */
   reasons: string[];
   scan?: ReleaseScan;
@@ -1722,6 +1735,15 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   }
 
   /**
+   * A release's files the site doesn't offer this app's players, from its history: what Show all files adds. None
+   * when it can't be read, or the site is older than them.
+   */
+  async function otherFilesOf(slug: string, version: string) {
+    const history = await client.releaseHistory(slug, 100).catch(() => undefined);
+    return history?.items.find((r) => bare(r.version) === bare(version))?.otherAssets ?? [];
+  }
+
+  /**
    * `app` is the custom app's repository, when it isn't in the library yet; `auto`, an update nobody asked for just
    * now, which doesn't ask: one whose file Quiver hasn't verified waits for it instead.
    */
@@ -1872,39 +1894,52 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
             ? msg`This release has no Windows installer (MSI) to update it with. Uninstall it, then get it again to install this release's download.`
             : msg`This release only comes as a Windows installer (MSI). Uninstall it, then get it again to install it that way.`,
         );
-      // None marked for this computer: the player picks from the files there are, as they may know which runs.
-      const unmatched = !asset;
-      if (unmatched && !stray) [asset, ...others] = installable(release.assets, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
-      if (!asset) {
-        if (auto) return waitForPlayer();
-        throw new Problem(msg`This release has no download for your computer.`);
-      }
+      // Of the release's files, the ones this computer can install, of the kind installed.
+      const ofKind = (list: Asset[]) => installable(list, config.os).filter((a) => !kind || isMsi(a.filename) === (kind === "msi"));
+      const approved = ofKind(release.assets);
+      // None marked for this computer: the player picks from the files there are, as they may know which runs. Files
+      // the site put on no platform aren't marked for it either (a PS5 or Switch build can be one), so several of them
+      // ask the same way, not as files for this computer.
+      const unmatched = !asset || (others.length > 0 && asset.os === "unknown");
+      if (!asset && !stray) [asset, ...others] = approved;
+      if (!asset && auto) return waitForPlayer();
       // The file the player picked last time, when it's still one of these: taken again without asking.
-      const again = pickedBefore([asset, ...others], lastPick);
+      const again = asset && pickedBefore([asset, ...others], lastPick);
       let pick = lastPick;
+      // The release's files a maintainer didn't tick, which Show all files offers too, once the player is asked.
+      let unapproved: Asset[] = [];
       // Picked by name: later releases keep to it, as to a file picked from several.
       if (clicked) {
         const files = installable(release.assets, config.os).map((a) => a.filename);
         pick = files.length > 1 ? assetFilterFor(clicked.filename, files) : undefined;
       } else if (again) asset = again;
-      else if (others.length || missed || unmatched) {
+      else if (!asset || others.length || missed || unmatched) {
         if (auto) return waitForPlayer();
-        const choices = [asset, ...others];
-        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, unmatched, resolve }));
+        unapproved = stray || custom ? [] : ofKind(release.otherAssets ?? (await otherFilesOf(entry.slug, release.version)));
+        if (!asset && !unapproved.length) throw new Problem(msg`This release has no download for your computer.`);
+        const choices = asset ? [asset, ...others] : [];
+        const all = [...approved, ...unapproved];
+        const picked = await new Promise<Asset | null>((resolve) => setChoice({ entry, version: release.version, assets: choices, all, unapproved: unapproved.map((a) => a.id), unmatched, resolve }));
         setChoice(null);
         if (!picked) return stop("file_choice");
         asset = picked;
-        pick = assetFilterFor(picked.filename, choices.map((a) => a.filename));
+        // Told apart from every file it could have been, as Show all files may have offered any of them.
+        const files = [...new Set([...choices, ...all].map((a) => a.filename))];
+        pick = assetFilterFor(picked.filename, files);
       }
-      // A file of a verified release that isn't verified itself asks first, as an unverified release does. An
-      // automatic update takes one that changed with Newest right away, as it would an unverified release, since it's
-      // still checked against what Quiver saw of it; never one Quiver has no checksum for. Otherwise it waits: until
-      // the site says it's verified by itself, else till the launcher starts again.
-      const why = !custom && !unverified ? unverifiedFile(asset, release) : undefined;
+      if (!asset) throw new Problem(msg`This release has no download for your computer.`);
+      // One a maintainer didn't tick always asks first, whatever the release: it's installed as the developer
+      // published it, checked against the file Quiver saw. A file of a verified release that isn't verified itself asks
+      // first, as an unverified release does. An automatic update takes one that changed with Newest right away, as it
+      // would an unverified release, since it's still checked against what Quiver saw of it; never one Quiver has no
+      // checksum for. Otherwise it waits: until the site says it's verified by itself, else till the launcher starts
+      // again.
+      const chose = asset;
+      const why = unapproved.some((a) => a.id === chose.id) ? "unapproved" : !custom && !unverified ? unverifiedFile(asset, release) : undefined;
       if (why === "changed" && auto && newestRightAway) unverified = true;
       else if (why) {
         if (auto) return waitForPlayer(asset.checkEndsAt ?? Infinity);
-        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: asset.checkEndsAt }))) return stop("unverified_prompt");
+        if (!(await ask({ entry, version: release.version, file: { name: asset.filename, why }, reasons: [], checkEndsAt: why === "unapproved" ? undefined : asset.checkEndsAt }))) return stop("unverified_prompt");
         unverified = true;
       }
       format = installFormat(asset.filename);

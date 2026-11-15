@@ -1,12 +1,12 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
-import type { AppQuery, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
+import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { i18n } from "@quiverlauncher/i18n";
 import type { MessageDescriptor } from "@lingui/core";
 import { Artwork, EntryCard, OS_NAMES, PlatformIcons, ReleaseBadge, SourcedImage, heroSources } from "@quiverlauncher/ui";
-import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove } from "./store";
+import { PORTABLE_FILE, availableOn, canGet, catalogOs, declinedUpdate, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, noProgram, pulledVerified, renamable, rootOf, samePath, skipped, stillWaiting, tvModeOn, updateFor, updatesOf, useLauncher, type AppMove, type Choice } from "./store";
 import { TabPrompt } from "./pad-hints";
 import { Dialog, FilterPill, LibraryPage, MultiPill, Popover, consoleOptions, filterLabel, pickedLabel, projectTypeOptions, withOverrides, type MultiOption } from "./library";
 import { BrowseCardOptions, useBrowseCards, useLibraryView, useSidebarFits } from "./library-view";
@@ -2350,8 +2350,30 @@ function AddFilesPrompt() {
 function ChooseFile() {
   const { choice } = useLauncher();
   if (!choice) return null;
+  // Its own state for each choice, so Show all files starts closed every time.
+  return <ChooseFileDialog key={`${choice.entry.id}@${choice.version}`} choice={choice} />;
+}
+
+function ChooseFileDialog({ choice }: { choice: Choice }) {
+  // Open from the start when nothing else is offered: then the files a maintainer didn't tick are all there is.
+  const [showAll, setShowAll] = useState(choice.assets.length === 0);
+  const unapproved = new Set(choice.unapproved);
   const name = choice.entry.projectName;
   const version = versionLabel(choice.version);
+  // The release's other files this computer can install, whatever system the site says they're for.
+  const offered = new Set(choice.assets.map((a) => a.id));
+  const rest = choice.all.filter((a) => !offered.has(a.id));
+  // What the site says each is for, with its name under it.
+  const labelled = (a: Asset) => (
+    <span>
+      <strong>
+        {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)}
+        {a.architecture !== "unknown" ? ` · ${a.architecture}` : ""}
+        {unapproved.has(a.id) ? ` · ${t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })}` : ""}
+      </strong>
+      <small>{a.filename}</small>
+    </span>
+  );
   return (
     <div className="overlay">
       <section className="detail choose" role="dialog" aria-label={t`Choose a download`}>
@@ -2364,23 +2386,38 @@ function ChooseFile() {
               ? t`None of ${name} ${version}'s files are marked for your computer. If you know which one runs on it, pick it.`
               : t`${name} ${version} has more than one file for your computer.`}
           </p>
-          <div className="choices">
-            {choice.assets.map((a) => (
-              <button key={a.id} onClick={() => choice.resolve(a)}>
-                {/* What the site says each is for, as the app's release files show it. */}
-                {choice.unmatched ? (
-                  <span>
-                    <strong>
-                      {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)} · {a.architecture}
-                    </strong>
-                    <small>{a.filename}</small>
-                  </span>
-                ) : (
-                  a.filename
-                )}
+          {choice.assets.length > 0 && (
+            <div className="choices">
+              {choice.assets.map((a) => (
+                <button key={a.id} onClick={() => choice.resolve(a)}>
+                  {choice.unmatched ? labelled(a) : a.filename}
+                </button>
+              ))}
+            </div>
+          )}
+          {rest.length > 0 &&
+            (showAll ? (
+              <>
+                <p className="muted">
+                  {choice.assets.length > 0 ? (
+                    <Trans>The release's other files. They may not run on your computer.</Trans>
+                  ) : (
+                    <Trans>The release's files Quiver doesn't offer. They may not run on your computer.</Trans>
+                  )}
+                </p>
+                <div className="choices">
+                  {rest.map((a) => (
+                    <button key={a.id} onClick={() => choice.resolve(a)}>
+                      {labelled(a)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <button type="button" className="show-all" aria-expanded={false} onClick={() => setShowAll(true)}>
+                <Trans>Show all files</Trans>
               </button>
             ))}
-          </div>
           <button onClick={() => choice.resolve(null)}>
             <Trans>Cancel</Trans>
           </button>
@@ -2405,19 +2442,23 @@ function UnverifiedPrompt() {
   const app = entry.projectName;
   const name = file?.name ?? "";
   const unchecked = file?.why === "unchecked";
+  // A file a maintainer didn't tick, picked from Show all files.
+  const unapproved = file?.why === "unapproved";
   const waits = checkEndsAt !== undefined;
   const hours = waits ? hoursFrom(checkEndsAt) : 0;
   // Newest right away, where only its scan makes it ask: that's the question, not that it isn't offered.
   const scanned = !file && early === "scan";
-  const title = unchecked
-    ? t`Install a file Quiver didn't check?`
-    : early === "asked" && waits
-      ? installs[asking.entry.id]
-        ? t`Update to ${release} before its 48 hours are up?`
-        : t`Install ${release} before its 48 hours are up?`
-      : scanned
-        ? t`Install ${release} with a virus scan warning?`
-        : t`Install ${release} before Quiver offers it?`;
+  const title = unapproved
+    ? t`Install a file Quiver doesn't offer?`
+    : unchecked
+      ? t`Install a file Quiver didn't check?`
+      : early === "asked" && waits
+        ? installs[asking.entry.id]
+          ? t`Update to ${release} before its 48 hours are up?`
+          : t`Install ${release} before its 48 hours are up?`
+        : scanned
+          ? t`Install ${release} with a virus scan warning?`
+          : t`Install ${release} before Quiver offers it?`;
   const scanLine = scan && (
     <p className="scan-line">
       VirusTotal: {scanText(scan)}{" "}
@@ -2430,7 +2471,7 @@ function UnverifiedPrompt() {
   );
   return (
     // Each question its own: the next one in turn starts afresh, its first button focused.
-    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked || scanned ? title : t`Install a release before Quiver offers it`} onClose={() => resolve(false)}>
+    <Dialog key={`${entry.id}@${release}:${name}`} label={unchecked || unapproved || scanned ? title : t`Install a release before Quiver offers it`} onClose={() => resolve(false)}>
       <div className="detail-body unverified-prompt">
         <h2>
           <ShieldAlert size={18} /> {title}
@@ -2443,9 +2484,11 @@ function UnverifiedPrompt() {
               : scanned
                 ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
                 : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
-            : unchecked
-              ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
-              : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
+            : unapproved
+              ? t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
+              : unchecked
+                ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
+                : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
         </p>
         {/* Asked because of its scan: the scan first, as what the sentence above leads to. */}
         {scanned && scanLine}

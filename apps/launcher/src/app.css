@@ -160,6 +160,8 @@ button.danger { color: var(--danger); }
 .choices button { justify-content: flex-start; }
 .choices button span { display: grid; gap: 2px; text-align: left; }
 .choices button small { color: var(--muted); font-size: 12px; font-weight: 400; overflow-wrap: anywhere; }
+.choose .show-all { align-self: flex-start; padding: 4px 0; border: 0; background: none; color: var(--link); font-size: 13px; }
+.choose .show-all:hover { text-decoration: underline; }
 .banner {
   display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 14px 16px;
   border: 1px solid #0ea5e955; border-radius: 9px; background: #0ea5e914; font-size: 14px;

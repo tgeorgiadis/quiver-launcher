@@ -281,12 +281,17 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
               fetchedAt: 1,
             }
           : null,
-    "catalog:releases": ({ slug, paginationOpts }) => page(listedReleases[slug] ?? (entries.some((e) => e.slug === slug) ? [release(slug)] : []), paginationOpts),
+    // A release's files it doesn't offer (`otherAssets`) are only in its history, as on the site.
+    "catalog:releases": ({ slug, paginationOpts }) =>
+      page(listedReleases[slug]?.map(({ otherAssets: _, ...r }) => r) ?? (entries.some((e) => e.slug === slug) ? [release(slug)] : []), paginationOpts),
     // Test Port's releases the site hasn't verified: one being checked, one no maintainer looked at, one a maintainer stopped.
     "catalog:unverifiedReleases": ({ slug }) => unverifiedFor(slug),
     // Every release, newest first, each with its state.
     "catalog:releaseHistory": ({ slug, paginationOpts }) => {
       if (!entries.some((e) => e.slug === slug)) return page([], paginationOpts);
+      // The verified releases a test listed in place of the app's one, as they are.
+      if (listedReleases[slug])
+        return page(listedReleases[slug].map(({ id, ...r }) => ({ ...r, releaseId: id, notes: "", state: "verified", reasons: [] })), paginationOpts);
       const { id, assets, ...verified } = release(slug);
       const all = [
         { ...verified, releaseId: id, notes: "Fixes a crash on start.", state: "verified", reasons: [], assets },

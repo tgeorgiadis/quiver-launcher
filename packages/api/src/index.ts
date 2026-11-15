@@ -177,6 +177,12 @@ export type Release = {
   prerelease: boolean;
   notes?: string;
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
 };
 
@@ -237,6 +243,12 @@ export type UnverifiedRelease = {
   scan?: ReleaseScan;
   /** With the checksums pinned when Quiver first saw them (none from a site older than blocked installs, when blocked). */
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
   upstreamUrl?: string;
 };
@@ -260,6 +272,12 @@ export type HistoryRelease = {
   scan?: ReleaseScan;
   /** With the checksums Quiver pinned. */
   assets: Asset[];
+  /**
+   * The release's files the site doesn't offer this app's players (a maintainer didn't tick them), for a player to
+   * pick by hand with Show all files. Each has the checksum Quiver saw as `unverifiedChecksum`: never an update, and
+   * installed only once the player confirms. Missing from a site older than them, and when there are none.
+   */
+  otherAssets?: Asset[];
   installationOverride?: InstallSettings;
   upstreamUrl?: string;
 };

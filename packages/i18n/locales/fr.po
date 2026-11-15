@@ -2634,6 +2634,10 @@ msgid "Install a file Quiver didn't check?"
 msgstr "Installer un fichier que Quiver n'a pas vérifié ?"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Install a file Quiver doesn't offer?"
+msgstr "Installer un fichier que Quiver ne propose pas ?"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Install a release before Quiver offers it"
 msgstr "Installer une version avant que Quiver ne la propose"
@@ -3608,6 +3612,11 @@ msgstr "Aucun fichier de cette version n'est prévu pour cet ordinateur."
 msgid "Normal"
 msgstr "Normale"
 
+#. A release file a maintainer didn't tick for the app, in Which download?'s Show all files
+#: ../../apps/launcher/src/App.tsx
+msgid "Not approved"
+msgstr "Non approuvé"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Not available for {os}"
 msgstr "Non disponible pour {os}"
@@ -4141,6 +4150,10 @@ msgstr "Quiver n'a pas pu afficher cette image. Elle a peut-être été déplac�
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver n'en a trouvé aucune dans tes dossiers de jeux."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked."
+msgstr "Quiver ne propose pas {name} pour {app} : il est peut-être pour un autre système, ou a été oublié lors du choix des téléchargements."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer a release of {app} yet."
@@ -4775,6 +4788,10 @@ msgstr "Réafficher"
 msgid "Show all apps"
 msgstr "Afficher toutes les apps"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Show all files"
+msgstr "Afficher tous les fichiers"
+
 #. Above a box for each platform (Windows, macOS, Linux, Android): the library lists apps for the ones ticked
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Show apps for"
@@ -5275,6 +5292,14 @@ msgstr "Le programme lui-même"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Les programmes que propose Jouer se trouvent sous Jouer avec, dans le menu de l'app."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's files Quiver doesn't offer. They may not run on your computer."
+msgstr "Les fichiers de la version que Quiver ne propose pas. Ils ne fonctionnent peut-être pas sur votre ordinateur."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's other files. They may not run on your computer."
+msgstr "Les autres fichiers de la version. Ils ne fonctionnent peut-être pas sur votre ordinateur."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "The saves and settings come over too."
