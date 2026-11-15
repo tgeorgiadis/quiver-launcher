@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -28,6 +28,7 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
+import { correctionClient } from "./corrections";
 import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
 import { AddApp, ChangeGame, LinkToCatalog } from "./own";
@@ -2418,11 +2419,95 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
                 <Trans>Show all files</Trans>
               </button>
             ))}
+          {showAll && choice.unapproved.length > 0 && <SuggestPlatform choice={choice} files={[...choice.assets, ...rest]} />}
           <button onClick={() => choice.resolve(null)}>
             <Trans>Cancel</Trans>
           </button>
         </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * Under Which download?'s files Quiver doesn't offer: tells the maintainers, in a click, which file is the build for
+ * which system, so they can tick it and set its platform. Sent as a correction to the app's downloads, as Report a
+ * problem sends one; signed in only, as that is.
+ */
+function SuggestPlatform({ choice, files }: { choice: Choice; files: Asset[] }) {
+  const { config, installs } = useLauncher();
+  const { user, suggestCorrection } = useAccount();
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState(choice.unapproved[0]);
+  const [os, setOs] = useState<string>(config.os in OS_NAMES ? config.os : "windows");
+  const [state, setState] = useState<"busy" | "sent" | { error: string }>();
+  if (!user)
+    return (
+      <p className="muted">
+        <Trans>Sign in to tell the maintainers which file is for which system.</Trans>
+      </p>
+    );
+  if (state === "sent")
+    return (
+      <p className="correction-sent" role="status">
+        <CircleCheck size={14} aria-hidden="true" /> <Trans>Sent. A maintainer will take a look.</Trans>
+      </p>
+    );
+  if (!open)
+    return (
+      <button type="button" className="show-all" onClick={() => setOpen(true)}>
+        <Trans>Tell the maintainers which file is for which system</Trans>
+      </button>
+    );
+  const send = () => {
+    const asset = files.find((a) => a.id === file);
+    if (!asset) return;
+    setState("busy");
+    // For the maintainers, who read corrections in English.
+    const system = OS_NAMES[os] ?? os;
+    suggestCorrection({
+      entryId: choice.entry.id,
+      topic: "downloads",
+      body: `${asset.filename} in ${versionLabel(choice.version)} is the ${system} build${choice.unapproved.includes(asset.id) ? ", but it isn't offered" : `, but it's marked for ${asset.os === "unknown" ? "no platform" : (OS_NAMES[asset.os] ?? asset.os)}`}. Please tick it and set its platform to ${system}. (Sent from Which download? in Quiver Launcher.)`,
+      client: correctionClient(config, installs[choice.entry.id]?.version),
+    }).then(
+      () => (track("correction_sent", { topic: "downloads", from: "file_choice" }), setState("sent")),
+      (error) => setState({ error: error instanceof Error ? error.message : String(error) }),
+    );
+  };
+  return (
+    <div className="suggest-platform" role="group" aria-labelledby="suggest-platform-title">
+      <h3 id="suggest-platform-title">
+        <Trans>Submit a correction for a release file's platform</Trans>
+      </h3>
+      <label className="field">
+        <Trans>File</Trans>
+        <select value={file} onChange={(e) => setFile(e.target.value)}>
+          {files.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.filename}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <Trans comment="Which download?: the system a release file is the build for, to tell the maintainers">Is for</Trans>
+        <select value={os} onChange={(e) => setOs(e.target.value)}>
+          {Object.entries(OS_NAMES).map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="button" disabled={state === "busy"} onClick={send}>
+        <Trans comment="Sends the maintainers which system a release file is for">Send</Trans>
+      </button>
+      {typeof state === "object" && (
+        <p className="job-error" role="status">
+          {state.error}
+        </p>
+      )}
     </div>
   );
 }

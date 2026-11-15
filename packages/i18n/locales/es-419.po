@@ -2167,6 +2167,10 @@ msgstr "Muy ancha"
 msgid "Featured"
 msgstr "Destacados"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "File"
+msgstr "Archivo"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "Nombre del archivo, como config.ini"
@@ -2793,6 +2797,11 @@ msgstr "Se instala desde las versiones del repositorio y se actualiza como las d
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Interface size"
 msgstr "Tamaño de la interfaz"
+
+#. Which download?: the system a release file is the build for, to tell the maintainers
+#: ../../apps/launcher/src/App.tsx
+msgid "Is for"
+msgstr "Es para"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
@@ -4675,6 +4684,8 @@ msgid "Select"
 msgstr "Seleccionar"
 
 #. Button: send a correction to the maintainers
+#. Sends the maintainers which system a release file is for
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/correction.tsx
 msgid "Send"
 msgstr "Enviar"
@@ -4690,6 +4701,10 @@ msgstr "Enviando…"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
 msgstr "Se envía con el nombre de tu cuenta, la versión de este launcher y tu sistema, para que los mantenedores puedan revisarlo."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sent. A maintainer will take a look."
+msgstr "Enviado. Un mantenedor lo revisará."
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -4923,6 +4938,10 @@ msgid "Sign in to sync your library"
 msgstr "Inicia sesión para sincronizar tu biblioteca"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Sign in to tell the maintainers which file is for which system."
+msgstr "Inicia sesión para decirles a los mantenedores qué archivo es para qué sistema."
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "Cerrar sesión"
 
@@ -5083,6 +5102,10 @@ msgid "Stop sharing"
 msgstr "Dejar de compartir"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Submit a correction for a release file's platform"
+msgstr "Enviar una corrección sobre la plataforma de un archivo de la versión"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Submit an app"
 msgstr "Enviar una app"
 
@@ -5148,6 +5171,10 @@ msgstr "Dile a Quiver dónde guardas tus juegos de {consoleName}, y encontrará 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Tell Quiver where you keep your game copies, and it finds this one and the next ones for you."
 msgstr "Dile a Quiver dónde guardas tus copias de juegos, y encontrará esta y las siguientes por ti."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Tell the maintainers which file is for which system"
+msgstr "Decirles a los mantenedores qué archivo es para qué sistema"
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx
@@ -5987,7 +6014,7 @@ msgstr "Todavía no etiquetaste ninguna app. Agrega etiquetas desde el menú de 
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "You reported a problem on {sent}. A maintainer will take a look."
-msgstr "Informaste un problema el {sent}. Un responsable lo revisará."
+msgstr "Informaste un problema el {sent}. Un mantenedor lo revisará."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "You skipped {updateVersion}. Quiver Launcher offers the next new release."

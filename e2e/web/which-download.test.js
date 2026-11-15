@@ -23,12 +23,21 @@ const RELEASE = {
 // Only the Windows build that wasn't ticked is one Windows can install: Show all files is open from the start.
 const ONLY_UNTICKED = { ...RELEASE, assets: files(["Port-android.apk", "android"]) };
 
-const open = (path, release = RELEASE) =>
+const open = (path, release = RELEASE, signIn = false) =>
   openApp({
     state: { library: [{ id: ID, slug: "test-port", addedAt: 1 }], installs: {} },
     config: { os: "windows", arch: "x64" },
     prepare: (api) => api.setReleases("test-port", [release]),
   }).then(async (s) => {
+    if (signIn) {
+      await s.page.locator(".account button").click();
+      const dialog = s.page.locator('[role="dialog"]');
+      await dialog.locator('form > button[type="button"]').last().click();
+      await dialog.locator('input[autocomplete="username"]').fill("files");
+      await dialog.locator('input[autocomplete="new-password"]').fill("a password for the test");
+      await dialog.locator("button.primary").click();
+      await s.page.locator(".account-button").waitFor();
+    }
     await s.page.locator("article[data-slug]").first().click({ button: "right" });
     await s.page.locator('[role="menu"] [role="menuitem"]').filter({ hasText: "Install" }).first().click();
     await s.page.locator(".choose").waitFor();
@@ -74,6 +83,30 @@ test("a file no maintainer ticked asks before it installs, and is offered at onc
     if (process.env.SHOT_DIR) await prompt.screenshot({ path: `${process.env.SHOT_DIR}/which-download-ask.png` });
     await prompt.getByRole("button", { name: "Install anyway" }).click();
     assert.equal(await installedFile(s), "Port-windows-x64.zip");
+  } finally {
+    await s.close();
+  }
+});
+
+test("the maintainers can be told, in a click, which file is the build for which system", async () => {
+  const s = await open(undefined, RELEASE, true);
+  try {
+    const dialog = s.page.locator(".choose");
+    await dialog.getByRole("button", { name: "Show all files" }).click();
+    await dialog.getByRole("button", { name: "Tell the maintainers which file is for which system" }).click();
+    // The file no maintainer ticked, for this computer's system, to start with.
+    const form = dialog.locator(".suggest-platform");
+    assert.equal(await form.locator("select").first().inputValue(), "Port-windows-x64.zip");
+    assert.equal(await form.locator("select").last().inputValue(), "windows");
+    if (process.env.SHOT_DIR) await dialog.screenshot({ path: `${process.env.SHOT_DIR}/which-download-suggest.png` });
+    await form.getByRole("button", { name: "Send" }).click();
+    await dialog.getByText("Sent. A maintainer will take a look.").waitFor();
+    const [sent] = s.api.corrections;
+    assert.equal(sent.topic, "downloads");
+    assert.equal(sent.entryId, ID);
+    assert.match(sent.body, /^Port-windows-x64\.zip in v1\.0\.0 is the Windows build, but it isn't offered\. Please tick it and set its platform to Windows\./);
+    // The picker is still open, to pick from.
+    assert.equal(await dialog.count(), 1);
   } finally {
     await s.close();
   }

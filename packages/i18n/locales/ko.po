@@ -2167,6 +2167,10 @@ msgstr "아주 넓게"
 msgid "Featured"
 msgstr "추천"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "File"
+msgstr "파일"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "파일 이름(예: config.ini)"
@@ -2793,6 +2797,11 @@ msgstr "저장소에 게시된 버전으로 설치하고, 다른 앱처럼 업�
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Interface size"
 msgstr "인터페이스 크기"
+
+#. Which download?: the system a release file is the build for, to tell the maintainers
+#: ../../apps/launcher/src/App.tsx
+msgid "Is for"
+msgstr "대상 시스템"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
@@ -4675,6 +4684,8 @@ msgid "Select"
 msgstr "선택"
 
 #. Button: send a correction to the maintainers
+#. Sends the maintainers which system a release file is for
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/correction.tsx
 msgid "Send"
 msgstr "보내기"
@@ -4690,6 +4701,10 @@ msgstr "보내는 중…"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
 msgstr "관리자가 확인할 수 있도록 계정 이름, 이 런처의 버전, 사용 중인 시스템과 함께 전송됩니다."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sent. A maintainer will take a look."
+msgstr "보냈어요. 관리자가 확인할 거예요."
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -4923,6 +4938,10 @@ msgid "Sign in to sync your library"
 msgstr "로그인하고 라이브러리 동기화하기"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Sign in to tell the maintainers which file is for which system."
+msgstr "어떤 파일이 어떤 시스템용인지 관리자에게 알리려면 로그인하세요."
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "로그아웃"
 
@@ -5083,6 +5102,10 @@ msgid "Stop sharing"
 msgstr "공유 중지"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Submit a correction for a release file's platform"
+msgstr "릴리스 파일의 플랫폼 수정 제안 보내기"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Submit an app"
 msgstr "앱 제출"
 
@@ -5148,6 +5171,10 @@ msgstr "{consoleName} 게임을 보관하는 위치를 알려 주면 Quiver가 �
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Tell Quiver where you keep your game copies, and it finds this one and the next ones for you."
 msgstr "게임 사본을 보관하는 위치를 알려 주면 Quiver가 이 사본과 다음 사본을 찾아 줍니다."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Tell the maintainers which file is for which system"
+msgstr "어떤 파일이 어떤 시스템용인지 관리자에게 알리기"
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx

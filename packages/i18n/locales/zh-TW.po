@@ -2167,6 +2167,10 @@ msgstr "超寬"
 msgid "Featured"
 msgstr "精選"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "File"
+msgstr "檔案"
+
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "檔名，例如 config.ini"
@@ -2793,6 +2797,11 @@ msgstr "從程式碼儲存庫的版本中安裝，並像其他應用程式一樣
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Interface size"
 msgstr "介面大小"
+
+#. Which download?: the system a release file is the build for, to tell the maintainers
+#: ../../apps/launcher/src/App.tsx
+msgid "Is for"
+msgstr "適用於"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
@@ -4675,6 +4684,8 @@ msgid "Select"
 msgstr "選擇"
 
 #. Button: send a correction to the maintainers
+#. Sends the maintainers which system a release file is for
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/correction.tsx
 msgid "Send"
 msgstr "傳送"
@@ -4690,6 +4701,10 @@ msgstr "正在傳送 →"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
 msgstr "報告會包含你的帳戶名稱、此啟動器的版本和你的系統資訊，以便維護者進行檢查。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Sent. A maintainer will take a look."
+msgstr "已送出。維護者會查看。"
 
 #. Button that sets up the player's copy of the game, then starts the app
 #: ../../apps/launcher/src/App.tsx
@@ -4923,6 +4938,10 @@ msgid "Sign in to sync your library"
 msgstr "登入以同步你的遊戲庫"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Sign in to tell the maintainers which file is for which system."
+msgstr "登入後即可告訴維護者哪個檔案適用於哪個系統。"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Sign out"
 msgstr "登出"
 
@@ -5083,6 +5102,10 @@ msgid "Stop sharing"
 msgstr "停止共享"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Submit a correction for a release file's platform"
+msgstr "提交版本檔案平台的更正"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Submit an app"
 msgstr "提交應用程式"
 
@@ -5148,6 +5171,10 @@ msgstr "告訴 Quiver 你把 {consoleName} 遊戲存放在哪裡，Quiver 會為
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Tell Quiver where you keep your game copies, and it finds this one and the next ones for you."
 msgstr "告訴 Quiver 你把遊戲副本存放在哪裡，Quiver 會為你查詢此副本以及之後的副本。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Tell the maintainers which file is for which system"
+msgstr "告訴維護者哪個檔案適用於哪個系統"
 
 #. The platform the player tried the app on
 #: ../../apps/launcher/src/feedback.tsx
