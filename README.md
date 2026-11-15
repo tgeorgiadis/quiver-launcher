@@ -63,9 +63,9 @@ tags you gave them, your hidden apps, the pictures you chose and your tag filter
 choose the folder you unzipped it to. You can do this later too, in **Settings › Library**.
 
 Adding them moves nothing: anything already installed stays where Quiver Launcher 3 put it and plays from there. The
-setup then shows that folder beside Quiver 4's and asks whether to move the apps across now, or keep them there for
+setup then shows that folder beside Quiver Launcher 4's and asks whether to move the apps across now, or keep them there for
 now. If you keep them, don't delete your Quiver Launcher 3 folder yet, as that would delete those apps: move them once
-you've tried Quiver 4, in **Settings › Apps folder**, and delete the old folder after.
+you've tried Quiver Launcher 4, in **Settings › Apps folder**, and delete the old folder after.
 
 Quiver Launcher 3 is still available on the [`v3` branch](https://github.com/tgeorgiadis/quiver-launcher/tree/v3)
 and its [releases](https://github.com/tgeorgiadis/quiver-launcher/releases?q=v3).

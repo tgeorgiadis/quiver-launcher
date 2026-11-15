@@ -885,8 +885,8 @@ msgid "Adding apps"
 msgstr "Aggiunta delle app"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver 4's folder now or later."
-msgstr "Aggiungerle non sposta nulla: le app installate restano dove le ha messe Quiver Launcher 3 e si avviano da lì. Al passaggio successivo scegli se spostarle nella cartella di Quiver 4 ora o più tardi."
+msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver Launcher 4's folder now or later."
+msgstr "Aggiungerle non sposta nulla: le app installate restano dove le ha messe Quiver Launcher 3 e si avviano da lì. Al passaggio successivo scegli se spostarle nella cartella di Quiver Launcher 4 ora o più tardi."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Advanced"
@@ -3679,8 +3679,8 @@ msgid "Nothing is downloading."
 msgstr "Nessun download in corso."
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder."
-msgstr "Niente viene spostato o copiato: le app installate restano dove le ha messe Quiver Launcher 3 e si avviano da lì. Per ora tieni la cartella di Quiver Launcher 3, perché eliminarla le eliminerebbe. Quando avrai provato Quiver 4, potrai spostarle nella cartella delle app di Quiver in Impostazioni › Cartella delle app."
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver Launcher 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "Niente viene spostato o copiato: le app installate restano dove le ha messe Quiver Launcher 3 e si avviano da lì. Per ora tieni la cartella di Quiver Launcher 3, perché eliminarla le eliminerebbe. Quando avrai provato Quiver Launcher 4, potrai spostarle nella cartella delle app di Quiver in Impostazioni › Cartella delle app."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."
@@ -4046,10 +4046,6 @@ msgstr "Azione rapida"
 msgid "Quit"
 msgstr "Esci"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver 4's apps folder"
-msgstr "Cartella delle app di Quiver 4"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
 msgstr "Quiver ha bloccato {installedVersion}: {blockedWhy}"
@@ -4153,6 +4149,10 @@ msgstr "Quiver Launcher 3"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Cartella di Quiver Launcher 3"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 4's folder"
+msgstr "Cartella delle app di Quiver Launcher 4"
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"

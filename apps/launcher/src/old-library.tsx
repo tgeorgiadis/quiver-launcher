@@ -122,9 +122,9 @@ function KeepNote({ library, inSetup }: { library: V3Library; inSetup?: boolean 
   return (
     <p className="muted old-library-keep">
       {installedIn(library) && inSetup
-        ? t`Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver 4's folder now or later.`
+        ? t`Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver Launcher 4's folder now or later.`
         : installedIn(library)
-        ? t`Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder.`
+        ? t`Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver Launcher 4, you can move them into Quiver's apps folder in Settings › Apps folder.`
         : t`Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is.`}
     </p>
   );

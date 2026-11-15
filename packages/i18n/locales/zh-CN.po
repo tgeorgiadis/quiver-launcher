@@ -885,8 +885,8 @@ msgid "Adding apps"
 msgstr "正在添加应用"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver 4's folder now or later."
-msgstr "添加不会移动任何内容：已安装的应用留在 Quiver Launcher 3 放置它们的位置，并从那里运行。下一步你可以选择现在还是以后把它们移到 Quiver 4 的文件夹。"
+msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver Launcher 4's folder now or later."
+msgstr "添加不会移动任何内容：已安装的应用留在 Quiver Launcher 3 放置它们的位置，并从那里运行。下一步你可以选择现在还是以后把它们移到 Quiver Launcher 4 的文件夹。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Advanced"
@@ -3679,8 +3679,8 @@ msgid "Nothing is downloading."
 msgstr "没有正在下载的内容。"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder."
-msgstr "不会移动或复制任何内容：已安装的应用留在 Quiver Launcher 3 放置它们的位置，并从那里运行。暂时请保留你的 Quiver Launcher 3 文件夹，删除它会连同这些应用一起删除。试用 Quiver 4 之后，你可以在 设置 › 应用文件夹 中把它们移到 Quiver 的应用文件夹。"
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver Launcher 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "不会移动或复制任何内容：已安装的应用留在 Quiver Launcher 3 放置它们的位置，并从那里运行。暂时请保留你的 Quiver Launcher 3 文件夹，删除它会连同这些应用一起删除。试用 Quiver Launcher 4 之后，你可以在 设置 › 应用文件夹 中把它们移到 Quiver 的应用文件夹。"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."
@@ -4046,10 +4046,6 @@ msgstr "快捷操作"
 msgid "Quit"
 msgstr "退出"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver 4's apps folder"
-msgstr "Quiver 4 的应用文件夹"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
 msgstr "Quiver 阻止了 {installedVersion}：{blockedWhy}"
@@ -4153,6 +4149,10 @@ msgstr "Quiver Launcher 3"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3 的文件夹"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 4's folder"
+msgstr "Quiver Launcher 4 的应用文件夹"
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"

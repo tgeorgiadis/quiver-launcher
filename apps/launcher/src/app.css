@@ -630,7 +630,8 @@ main.app-main { padding: 0 0 40px; }
 .old-library-place > div { display: grid; gap: 2px; min-width: 0; }
 .old-library-place strong { color: var(--strong); }
 .old-library-place small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-.old-library-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* The choices, under a line that sets them off from the two places. */
+.old-library-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
 @media (max-width: 620px) {
   .old-library-move, .old-library-choices { grid-template-columns: minmax(0, 1fr); }
   .old-library-arrow { justify-self: center; transform: rotate(90deg); }

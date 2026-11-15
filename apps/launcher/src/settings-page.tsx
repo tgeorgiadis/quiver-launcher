@@ -853,9 +853,9 @@ export function MoveOldApps({ dirs, onBusy, onKeep }: { dirs: string[]; onBusy: 
         </div>
         <ArrowRight className="old-library-arrow" size={22} aria-hidden="true" />
         <div className="old-library-place" data-to>
-          <FolderOpen size={28} aria-hidden="true" />
+          <Folder size={28} aria-hidden="true" />
           <div>
-            <strong>{t`Quiver 4's apps folder`}</strong>
+            <strong>{t`Quiver Launcher 4's folder`}</strong>
             <span>{free != null ? t`${space(free)} free` : t`New apps install here.`}</span>
             <small>{dir}</small>
           </div>

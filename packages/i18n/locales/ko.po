@@ -885,8 +885,8 @@ msgid "Adding apps"
 msgstr "앱 추가 중"
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver 4's folder now or later."
-msgstr "추가해도 아무것도 옮기지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. 다음 단계에서 지금 Quiver 4 폴더로 옮길지 나중에 옮길지 선택해요."
+msgid "Adding them moves nothing: your installed apps stay where Quiver Launcher 3 put them, and play from there. Next, you choose whether to move them into Quiver Launcher 4's folder now or later."
+msgstr "추가해도 아무것도 옮기지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. 다음 단계에서 지금 Quiver Launcher 4 폴더로 옮길지 나중에 옮길지 선택해요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Advanced"
@@ -3679,8 +3679,8 @@ msgid "Nothing is downloading."
 msgstr "다운로드 중인 항목이 없어요."
 
 #: ../../apps/launcher/src/old-library.tsx
-msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver 4, you can move them into Quiver's apps folder in Settings › Apps folder."
-msgstr "아무것도 옮기거나 복사하지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. Quiver Launcher 3 폴더를 지우면 앱도 함께 지워지니 당분간 그대로 두세요. Quiver 4를 써 본 뒤 설정 › 앱 폴더에서 Quiver의 앱 폴더로 옮길 수 있어요."
+msgid "Nothing is moved or copied: your installed apps stay where Quiver Launcher 3 put them, and play from there. Keep your Quiver Launcher 3 folder for now, as deleting it would delete them. Once you've tried Quiver Launcher 4, you can move them into Quiver's apps folder in Settings › Apps folder."
+msgstr "아무것도 옮기거나 복사하지 않아요. 설치된 앱은 Quiver Launcher 3가 둔 곳에 그대로 있고 거기서 실행돼요. Quiver Launcher 3 폴더를 지우면 앱도 함께 지워지니 당분간 그대로 두세요. Quiver Launcher 4를 써 본 뒤 설정 › 앱 폴더에서 Quiver의 앱 폴더로 옮길 수 있어요."
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Nothing is moved, copied or deleted, and your Quiver Launcher 3 folder stays as it is."
@@ -4046,10 +4046,6 @@ msgstr "빠른 실행"
 msgid "Quit"
 msgstr "종료"
 
-#: ../../apps/launcher/src/settings-page.tsx
-msgid "Quiver 4's apps folder"
-msgstr "Quiver 4의 앱 폴더"
-
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
 msgstr "Quiver가 {installedVersion}을(를) 차단했어요: {blockedWhy}"
@@ -4153,6 +4149,10 @@ msgstr "Quiver Launcher 3"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver Launcher 3's folder"
 msgstr "Quiver Launcher 3 폴더"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver Launcher 4's folder"
+msgstr "Quiver Launcher 4의 앱 폴더"
 
 #: ../ui/src/index.tsx
 msgid "Quiver Launcher doesn't offer this release by itself"
