@@ -2634,6 +2634,10 @@ msgid "Install a file Quiver didn't check?"
 msgstr "Install a file Quiver didn't check?"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Install a file Quiver doesn't offer?"
+msgstr "Install a file Quiver doesn't offer?"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Install a release before Quiver offers it"
 msgstr "Install a release before Quiver offers it"
@@ -3608,6 +3612,11 @@ msgstr "None of this release's files are for this computer."
 msgid "Normal"
 msgstr "Normal"
 
+#. A release file a maintainer didn't tick for the app, in Which download?'s Show all files
+#: ../../apps/launcher/src/App.tsx
+msgid "Not approved"
+msgstr "Not approved"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Not available for {os}"
 msgstr "Not available for {os}"
@@ -4141,6 +4150,10 @@ msgstr "Quiver couldn't show that picture. It may have been moved or deleted."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver didn't find one in your game folders."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked. It downloads as the developer published it, checked against the file Quiver saw."
+msgstr "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked. It downloads as the developer published it, checked against the file Quiver saw."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer a release of {app} yet."
@@ -5279,6 +5292,10 @@ msgstr "The program itself"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "The programs Play offers are under Play with in the app's menu."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's files Quiver doesn't offer. They may not run on your computer."
+msgstr "The release's files Quiver doesn't offer. They may not run on your computer."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The release's other files. They may not run on your computer."

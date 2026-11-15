@@ -66,6 +66,7 @@ export const fromSite = (u: UnverifiedRelease | HistoryRelease): Release => ({
   releasedAt: u.releasedAt,
   prerelease: u.prerelease,
   assets: u.assets,
+  ...(u.otherAssets?.length ? { otherAssets: u.otherAssets } : {}),
   ...(u.installationOverride ? { installationOverride: u.installationOverride } : {}),
 });
 

@@ -2634,6 +2634,10 @@ msgid "Install a file Quiver didn't check?"
 msgstr "Eine Datei installieren, die Quiver nicht geprüft hat?"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Install a file Quiver doesn't offer?"
+msgstr "Eine Datei installieren, die Quiver nicht anbietet?"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Install a release before Quiver offers it"
 msgstr "Version installieren, bevor Quiver sie anbietet"
@@ -3608,6 +3612,11 @@ msgstr "Keine Datei dieser Version ist für diesen Computer."
 msgid "Normal"
 msgstr "Normal"
 
+#. A release file a maintainer didn't tick for the app, in Which download?'s Show all files
+#: ../../apps/launcher/src/App.tsx
+msgid "Not approved"
+msgstr "Nicht freigegeben"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Not available for {os}"
 msgstr "Nicht verfügbar für {os}"
@@ -4141,6 +4150,10 @@ msgstr "Quiver konnte dieses Bild nicht anzeigen. Es wurde vielleicht verschoben
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver hat in deinen Spieleordnern keine gefunden."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked. It downloads as the developer published it, checked against the file Quiver saw."
+msgstr "Quiver bietet {name} für {app} nicht an: Sie ist vielleicht für ein anderes System oder wurde bei der Auswahl der Downloads übersehen. Sie wird so heruntergeladen, wie der Entwickler sie veröffentlicht hat, und mit der Datei abgeglichen, die Quiver gesehen hat."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer a release of {app} yet."
@@ -5279,6 +5292,10 @@ msgstr "Das Programm selbst"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "Die Programme, die „Spielen“ anbietet, findest du unter „Spielen mit“ im Menü der App."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's files Quiver doesn't offer. They may not run on your computer."
+msgstr "Die Dateien des Release, die Quiver nicht anbietet. Sie laufen vielleicht nicht auf deinem Computer."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The release's other files. They may not run on your computer."

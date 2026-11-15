@@ -2634,6 +2634,10 @@ msgid "Install a file Quiver didn't check?"
 msgstr "要安裝未經 Quiver 檢查的檔案嗎？"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Install a file Quiver doesn't offer?"
+msgstr "要安裝 Quiver 未提供的檔案嗎？"
+
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 msgid "Install a release before Quiver offers it"
 msgstr "在 Quiver 提供之前安裝版本"
@@ -3608,6 +3612,11 @@ msgstr "此版本的檔案均不適用於此電腦。"
 msgid "Normal"
 msgstr "普通"
 
+#. A release file a maintainer didn't tick for the app, in Which download?'s Show all files
+#: ../../apps/launcher/src/App.tsx
+msgid "Not approved"
+msgstr "未核准"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Not available for {os}"
 msgstr "不適用於 {os}"
@@ -4141,6 +4150,10 @@ msgstr "Quiver 無法顯示此圖片。它可能已被移動或刪除。"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver 在你的遊戲資料夾中沒有找到。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked. It downloads as the developer published it, checked against the file Quiver saw."
+msgstr "Quiver 沒有為 {app} 提供 {name}：它可能適用於其他系統，或在挑選下載時被遺漏了。它會按開發者發布的原樣下載，並與 Quiver 看到的檔案核對。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer a release of {app} yet."
@@ -5279,6 +5292,10 @@ msgstr "程式本身"
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
 msgstr "在應用程式選單的“使用以下方式遊玩”中，可以找到“遊玩”提供的程式。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The release's files Quiver doesn't offer. They may not run on your computer."
+msgstr "此版本中 Quiver 未提供的檔案。它們可能無法在你的電腦上執行。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The release's other files. They may not run on your computer."

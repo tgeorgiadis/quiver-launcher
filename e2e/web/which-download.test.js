@@ -1,6 +1,7 @@
 /**
  * Which download?: files the site put on no platform (a PS5 or Switch build) aren't files for this computer, so
- * several of them ask as files none of which is marked for it; and Show all files offers the release's others.
+ * several of them ask as files none of which is marked for it; and Show all files offers the release's others, the
+ * ones a maintainer didn't tick too, which ask before they install.
  */
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
@@ -16,13 +17,17 @@ const RELEASE = {
   releasedAt: Date.UTC(2026, 0, 1),
   prerelease: false,
   assets: files(["Port-ps5.zip", "unknown"], ["Port-switch.zip", "unknown"], ["Port-macos.zip", "macos"], ["Port-android.apk", "android"]),
+  // The Windows build, which no maintainer ticked: the site sends it apart, with the checksum it saw unverified.
+  otherAssets: files(["Port-windows-x64.zip", "windows"]).map(({ checksum, ...a }) => ({ ...a, unverifiedChecksum: checksum })),
 };
+// Only the Windows build that wasn't ticked is one Windows can install: Show all files is open from the start.
+const ONLY_UNTICKED = { ...RELEASE, assets: files(["Port-android.apk", "android"]) };
 
-const open = (path) =>
+const open = (path, release = RELEASE) =>
   openApp({
     state: { library: [{ id: ID, slug: "test-port", addedAt: 1 }], installs: {} },
     config: { os: "windows", arch: "x64" },
-    prepare: (api) => api.setReleases("test-port", [RELEASE]),
+    prepare: (api) => api.setReleases("test-port", [release]),
   }).then(async (s) => {
     await s.page.locator("article[data-slug]").first().click({ button: "right" });
     await s.page.locator('[role="menu"] [role="menuitem"]').filter({ hasText: "Install" }).first().click();
@@ -45,12 +50,30 @@ test("files on no platform ask as none marked for this computer, and Show all fi
     const choices = dialog.locator(".choices button");
     assert.equal(await choices.count(), 2);
     await dialog.getByRole("button", { name: "Show all files" }).click();
-    // The Android app isn't one Windows can install.
-    assert.equal(await choices.count(), 3);
+    // The Android app isn't one Windows can install; the Windows build no maintainer ticked is there, said so.
+    assert.equal(await choices.count(), 4);
+    assert.match(await choices.filter({ hasText: "Port-windows-x64.zip" }).innerText(), /Not approved/);
     assert.equal(await dialog.getByText("Port-android.apk").count(), 0);
     if (process.env.SHOT_DIR) await dialog.screenshot({ path: `${process.env.SHOT_DIR}/which-download-all.png` });
     await choices.filter({ hasText: "Port-macos.zip" }).click();
     assert.equal(await installedFile(s), "Port-macos.zip");
+  } finally {
+    await s.close();
+  }
+});
+
+test("a file no maintainer ticked asks before it installs, and is offered at once when it's all there is", async () => {
+  const s = await open(process.env.SHOT_DIR && `${process.env.SHOT_DIR}/which-download-unticked.png`, ONLY_UNTICKED);
+  try {
+    const dialog = s.page.locator(".choose");
+    assert.equal(await dialog.getByRole("button", { name: "Show all files" }).count(), 0);
+    await dialog.locator(".choices button").filter({ hasText: "Port-windows-x64.zip" }).click();
+    const prompt = s.page.locator(".unverified-prompt");
+    await prompt.waitFor();
+    assert.match(await prompt.innerText(), /Install a file Quiver doesn't offer\?/);
+    if (process.env.SHOT_DIR) await prompt.screenshot({ path: `${process.env.SHOT_DIR}/which-download-ask.png` });
+    await prompt.getByRole("button", { name: "Install anyway" }).click();
+    assert.equal(await installedFile(s), "Port-windows-x64.zip");
   } finally {
     await s.close();
   }
