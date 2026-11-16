@@ -1,11 +1,11 @@
 /**
  * Discussions, as on the website (its src/components/Discussions.tsx and
  * docs/specs/discussions.md): an app's Discussions tab, the Community page
- * with its three categories, and a discussion's own page. They read the
+ * (Recent, General and Following), and a discussion's own page. They read the
  * site's backend live, through the same signed-in Convex client as the
  * library sync (account.tsx).
  */
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { makeFunctionReference, type FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
@@ -17,26 +17,27 @@ import { i18n } from "@quiverlauncher/i18n";
 import { fullDate, relativeTime } from "@quiverlauncher/ui";
 import { useAccount, useLive } from "./account";
 import { ErrorBoundary } from "./boundary";
+import { isOwn } from "./custom";
+import { useLauncher } from "./store";
 
 /** The site's limits (its convex/limits.ts). */
 export const TITLE_LIMIT = 120;
 export const BODY_LIMIT = 4000;
 export const COMMENT_LIMIT = 2000;
 
-export const CATEGORIES = ["general", "help", "requests"] as const;
-export type Category = (typeof CATEGORIES)[number];
+/** The Community board's one category: help with Quiver Launcher goes to Discord and GitHub Issues. */
+export type Category = "general";
 
 // Put in the language when shown, not here, where the module loads before any is picked.
 export const CATEGORY_LABELS: Record<Category, MessageDescriptor> = {
   general: msg({ message: "General", comment: "Community board category for anything about ports and games" }),
-  help: msg({ message: "Help with Quiver Launcher", comment: "Community board category" }),
-  requests: msg({ message: "Requests", comment: "Community board category: apps or features people want" }),
 };
 const CATEGORY_HINTS: Record<Category, MessageDescriptor> = {
   general: msg`Ports, games, mods and anything else.`,
-  help: msg`Questions about installing, updating and playing with Quiver Launcher.`,
-  requests: msg`Apps you'd like in the catalog, and features you'd like to see.`,
 };
+
+const DISCORD_URL = "https://discord.gg/5XRThpWHGk";
+const ISSUES_URL = "https://github.com/tgeorgiadis/quiver-launcher/issues";
 
 type Author = { userId: string; author: string; avatar?: string; badge?: "developer" | "staff"; developerKey?: string };
 type Hidden = { underReview?: boolean; moderatorHidden?: boolean };
@@ -44,7 +45,8 @@ export type Summary = Author &
   Hidden & {
     id: string;
     title: string;
-    entry?: { id: string; name: string; slug?: string };
+    /** `consoles`, `icon` and `capsule` come in lists across apps: Recent, Following and search there. */
+    entry?: { id: string; name: string; slug?: string; consoles?: string[]; icon?: string; capsule?: string };
     category?: Category;
     comments: number;
     createdAt: number;
@@ -85,6 +87,8 @@ export const fns = {
   comments: ref<"query">("discussions:comments"),
   unseenCount: ref<"query">("discussions:unseenCount"),
   followed: ref<"query">("discussions:followed"),
+  recent: ref<"query">("discussions:recent"),
+  recentInApps: ref<"query">("discussions:recentInApps"),
   create: ref<"mutation">("discussions:create"),
   edit: ref<"mutation">("discussions:edit"),
   remove: ref<"mutation">("discussions:remove"),
@@ -205,7 +209,7 @@ function Flags({ thread }: { thread: Summary }) {
   );
 }
 
-function Row({ thread, place }: { thread: Summary; place?: boolean }) {
+function Row({ thread }: { thread: Summary }) {
   const { openDiscussion } = useNav();
   const active = relativeTime(thread.lastActivityAt);
   return (
@@ -218,7 +222,6 @@ function Row({ thread, place }: { thread: Summary; place?: boolean }) {
         <span className="discussion-row-meta">
           {[
             thread.author,
-            place && (thread.entry?.name ?? (thread.category && i18n._(CATEGORY_LABELS[thread.category]))),
             plural(thread.comments, { one: "# comment", other: "# comments" }),
             t({ message: `active ${active}`, comment: "When a discussion last had a comment, as in “active 2 days ago”" }),
           ]
@@ -900,16 +903,26 @@ function CommentBox({ discussionId, editing, onDone }: { discussionId?: string; 
   );
 }
 
-/** The Community page: discussions that aren't about one app, by category, and the ones the player follows. */
+type Place = "recent" | "general" | "following";
+
+/** The Community page: Recent across every app and General, General itself, and the discussions the player follows. */
 export function CommunityPage({ back, onBack }: { back: string; onBack: () => void }) {
   const { user } = useAccount();
-  const [place, setPlace] = useState<Category | "following">("general");
+  const live = useLive();
+  const [place, setPlace] = useState<Place>("recent");
+  const [mine, setMine] = useState(false);
   const [search, setSearch] = useState("");
   const [typed, setTyped] = useState("");
   useEffect(() => {
     const id = setTimeout(() => setSearch(typed), 300);
     return () => clearTimeout(id);
   }, [typed]);
+  const shown = place === "following" && !user ? "recent" : place;
+  const tabs: { id: Place; label: string }[] = [
+    { id: "recent", label: t({ message: "Recent", context: "Community tab", comment: "Community tab: the newest discussions on every app" }) },
+    { id: "general", label: i18n._(CATEGORY_LABELS.general) },
+    ...(user ? [{ id: "following" as const, label: t({ message: "Following", comment: "Community tab: the discussions the player follows" }) }] : []),
+  ];
   return (
     <section className="app-page community-page" aria-label={t`Community`}>
       <button className="back-link" onClick={onBack}>
@@ -919,30 +932,140 @@ export function CommunityPage({ back, onBack }: { back: string; onBack: () => vo
         <Trans comment="The page where players talk about anything that isn't one app">Community</Trans>
       </h1>
       <p className="muted">
-        <Trans>Talk with other players about ports, games and Quiver Launcher. For one app, use the Discussions tab on its page.</Trans>
+        <Trans>
+          What players are talking about across the catalog, and a place for everything else. Need help with Quiver Launcher? Ask on <a href={DISCORD_URL}>Discord</a> or in{" "}
+          <a href={ISSUES_URL}>GitHub Issues</a>.
+        </Trans>
       </p>
       <div className="community-bar">
-        <div className="detail-tabs" role="tablist" aria-label={t({ message: "Categories", comment: "The Community board's categories" })}>
-          {CATEGORIES.map((c) => (
-            <button key={c} type="button" role="tab" aria-selected={place === c} onClick={() => setPlace(c)}>
-              {i18n._(CATEGORY_LABELS[c])}
+        <div className="detail-tabs" role="tablist" aria-label={t({ message: "Community", comment: "The Community page's tabs" })}>
+          {tabs.map((tab) => (
+            <button key={tab.id} type="button" role="tab" aria-selected={shown === tab.id} onClick={() => setPlace(tab.id)}>
+              {tab.label}
+              {tab.id === "following" && live && (
+                <ErrorBoundary fallback={() => null}>
+                  <NewComments className="tab-count" />
+                </ErrorBoundary>
+              )}
             </button>
           ))}
-          {user && (
-            <button type="button" role="tab" aria-selected={place === "following"} onClick={() => setPlace("following")}>
-              <Trans>Discussions you follow</Trans>
-            </button>
-          )}
         </div>
-        {place !== "following" && (
+        {shown !== "following" && (
           <label className="community-search">
             <Search size={16} aria-hidden="true" />
             <input type="search" value={typed} placeholder={t`Search titles`} aria-label={t`Search discussion titles`} onChange={(e) => setTyped(e.target.value)} />
           </label>
         )}
+        {shown === "recent" && !search.trim() && (
+          <button type="button" className="community-chip" aria-pressed={mine} onClick={() => setMine(!mine)}>
+            <Trans comment="Community filter: only discussions on apps in the player's library">Only apps in my library</Trans>
+          </button>
+        )}
       </div>
-      <Live>{place === "following" ? <Followed /> : <Board key={place} category={place} search={search} />}</Live>
+      <Live>
+        {shown === "following" ? <Followed /> : shown === "general" ? <Board key="general" category="general" search={search} /> : <Recent mine={mine} search={search} />}
+      </Live>
     </section>
+  );
+}
+
+/** The library's catalog apps, by their ids on the site (not apps the player added themselves). */
+function useLibraryEntryIds() {
+  const { library } = useLauncher();
+  return useMemo(() => library.map((i) => i.id).filter((id) => !isOwn(id)).slice(0, 500), [library]);
+}
+
+/** Followed discussions with new comments, so Recent can say so: the newest 50 followed. */
+function useUnseen() {
+  const { user } = useAccount();
+  const list = usePaginatedQuery(fns.followed, user ? {} : "skip", { initialNumItems: 50 });
+  return useMemo(() => new Set((list.results as Summary[]).filter((d) => d.unseen).map((d) => d.id)), [list.results]);
+}
+
+/** Community's Recent tab: the newest discussions on every app and in General, or only on the library's apps. */
+function Recent({ mine, search }: { mine: boolean; search: string }) {
+  const text = search.trim();
+  const ids = useLibraryEntryIds();
+  const unseen = useUnseen();
+  const [limit, setLimit] = useState(20);
+  const all = usePaginatedQuery(fns.recent, !text && !mine ? {} : "skip", { initialNumItems: 20 });
+  const inLibrary = useQuery(fns.recentInApps, !text && mine ? { entryIds: ids, limit } : "skip") as Summary[] | undefined;
+  const found = useQuery(fns.search, text ? { text } : "skip") as Summary[] | undefined;
+  const rows = text ? found : mine ? inLibrary : all.status === "LoadingFirstPage" ? undefined : (all.results as Summary[]);
+  const more = !text && (mine ? (inLibrary?.length ?? 0) >= limit && limit < 100 : all.status === "CanLoadMore");
+  return (
+    <>
+      {!text && (
+        <p className="muted community-hint">
+          <Trans>Start a discussion from an app's page, or in General.</Trans>
+        </p>
+      )}
+      {rows === undefined ? (
+        <Spinner label={text ? t`Searching…` : t`Loading discussions…`} />
+      ) : rows.length ? (
+        <ul className="discussion-list panel">
+          {rows.map((thread) => (
+            <ActivityRow key={thread.id} thread={{ ...thread, unseen: unseen.has(thread.id) }} />
+          ))}
+        </ul>
+      ) : (
+        <p className="muted">
+          {text ? (
+            <Trans>No discussion titles match “{text}”.</Trans>
+          ) : mine ? (
+            <Trans>No discussions yet on the apps in your library.</Trans>
+          ) : (
+            <Trans>No discussions yet. Ask a question or share a tip.</Trans>
+          )}
+        </p>
+      )}
+      {more && (
+        <button type="button" className="button secondary" onClick={() => (mine ? setLimit((n) => n + 20) : all.loadMore(20))}>
+          <Trans>Load more</Trans>
+        </button>
+      )}
+    </>
+  );
+}
+
+/** One discussion in a list across apps: its app's art, name and consoles (or General), title, who started it, comments and last activity. */
+function ActivityRow({ thread }: { thread: Summary }) {
+  const { openDiscussion } = useNav();
+  const { consoleNames } = useLauncher();
+  const entry = thread.entry;
+  const [broken, setBroken] = useState(false);
+  const art = entry?.capsule ?? entry?.icon;
+  const place = entry
+    ? [entry.name, [...new Set((entry.consoles ?? []).map((c) => consoleNames[c] ?? c.toUpperCase()))].slice(0, 2).join(", ")].filter(Boolean).join(" · ")
+    : i18n._(CATEGORY_LABELS.general);
+  const active = relativeTime(thread.lastActivityAt);
+  const author = thread.author;
+  return (
+    <li className="discussion-row activity">
+      <button type="button" className="discussion-row-link" onClick={() => openDiscussion(thread.id)}>
+        {art && !broken ? (
+          <img className={`discussion-row-art${entry?.capsule ? "" : " icon"}`} src={art} alt="" loading="lazy" onError={() => setBroken(true)} />
+        ) : (
+          <span className="discussion-row-art empty" aria-hidden="true">
+            <MessagesSquare size={20} />
+          </span>
+        )}
+        <span className="discussion-row-body">
+          <span className="discussion-row-place">{place}</span>
+          <span className="discussion-row-title">
+            <Flags thread={{ ...thread, pinned: false }} />
+            {thread.title}
+          </span>
+          <span className="discussion-row-meta">
+            {[
+              t({ message: `Started by ${author}`, comment: "Who started a discussion, in a list of discussions" }),
+              plural(thread.comments, { one: "# comment", other: "# comments" }),
+              t({ message: `active ${active}`, comment: "When a discussion last had a comment, as in “active 2 days ago”" }),
+            ].join(" · ")}
+          </span>
+        </span>
+      </button>
+    </li>
   );
 }
 
@@ -959,7 +1082,7 @@ function Followed() {
       ) : (
         <ul className="discussion-list panel">
           {results.map((thread) => (
-            <Row key={thread.id} thread={thread} place />
+            <ActivityRow key={thread.id} thread={thread} />
           ))}
         </ul>
       )}
@@ -994,11 +1117,11 @@ export function CommunityButton({ open, onOpen }: { open: boolean; onOpen: () =>
   );
 }
 
-function NewComments() {
+function NewComments({ className = "downloads-count" }: { className?: string }) {
   const count = useQuery(fns.unseenCount, {}) as number | undefined;
   if (!count) return null;
   return (
-    <span className="downloads-count" aria-label={plural(count, { one: "# discussion with new comments", other: "# discussions with new comments" })}>
+    <span className={className} aria-label={plural(count, { one: "# discussion with new comments", other: "# discussions with new comments" })}>
       {count >= 50 ? "50+" : count}
     </span>
   );

@@ -812,6 +812,7 @@ msgid "Action"
 msgstr "操作"
 
 #. When a discussion last had a comment, as in “active 2 days ago”
+#. When a discussion last had a comment, as in “active 2 days ago”
 #: ../../apps/launcher/src/discussions.tsx
 msgid "active {active}"
 msgstr "{active}有新动态"
@@ -1247,10 +1248,6 @@ msgstr "你从 GitLab 添加的应用会直接从 GitLab 获取版本。不使�
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "尚未拥有的应用会显示“获取”；只有按下按钮后才会开始下载。"
 
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Apps you'd like in the catalog, and features you'd like to see."
-msgstr "你希望加入目录的应用，以及你想要的功能。"
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "游戏的插画和主机"
@@ -1491,11 +1488,6 @@ msgstr "轮播图"
 #: ../../apps/launcher/src/App.tsx
 msgid "Catalog filters"
 msgstr "目录筛选条件"
-
-#. The Community board's categories
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Categories"
-msgstr "分类"
 
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
@@ -1837,6 +1829,7 @@ msgstr "评论"
 msgid "Comments"
 msgstr "评论"
 
+#. The Community page's tabs
 #. The page where players talk about anything that isn't one app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -2106,10 +2099,6 @@ msgstr "讨论"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Discussions aren't available right now."
 msgstr "讨论暂时不可用。"
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Discussions you follow"
-msgstr "你关注的讨论"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Discussions you start or comment in show here, with their new comments."
@@ -2392,6 +2381,11 @@ msgstr "文件夹名称"
 msgid "Follow"
 msgstr "关注"
 
+#. Community tab: the discussions the player follows
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Following"
+msgstr "关注中"
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "For a folder with games for many consoles in it."
 msgstr "适用于包含多个主机游戏的文件夹。"
@@ -2551,11 +2545,6 @@ msgstr "按游戏分组"
 #: ../ui/src/index.tsx
 msgid "Has issues"
 msgstr "存在问题"
-
-#. Community board category
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Help with Quiver Launcher"
-msgstr "Quiver Launcher 使用帮助"
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
@@ -3797,6 +3786,10 @@ msgid "No discussion titles match “{text}”."
 msgstr "没有与“{text}”匹配的讨论标题。"
 
 #: ../../apps/launcher/src/discussions.tsx
+msgid "No discussions yet on the apps in your library."
+msgstr "你的库中的应用还没有讨论。"
+
+#: ../../apps/launcher/src/discussions.tsx
 msgid "No discussions yet. Ask a question or share a tip."
 msgstr "还没有讨论。提个问题或分享一个技巧吧。"
 
@@ -4033,6 +4026,11 @@ msgstr "确定"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "每个游戏显示一张卡片"
+
+#. Community filter: only discussions on apps in the player's library
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Only apps in my library"
+msgstr "仅限我库中的应用"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Only hidden apps"
@@ -4384,10 +4382,6 @@ msgstr "将新应用放入对应主机的文件夹"
 msgid "Putting it in place…"
 msgstr "正在将其放置到位 →"
 
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Questions about installing, updating and playing with Quiver Launcher."
-msgstr "关于用 Quiver Launcher 安装、更新和游玩的问题。"
-
 #. Controller action that presses the main button of the focused card or app's page, such as Get or Play
 #: ../../apps/launcher/src/spatial.ts
 msgid "Quick action"
@@ -4642,6 +4636,12 @@ msgstr "就绪：副本正常（{dump}）"
 msgid "Recent"
 msgstr "最近"
 
+#. Community tab: the newest discussions on every app
+#: ../../apps/launcher/src/discussions.tsx
+msgctxt "Community tab"
+msgid "Recent"
+msgstr "最新"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently added"
@@ -4810,11 +4810,6 @@ msgstr "已举报"
 #: ../../apps/launcher/src/own.tsx
 msgid "Repository"
 msgstr "代码仓库"
-
-#. Community board category: apps or features people want
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Requests"
-msgstr "请求"
 
 #. Puts the launch options back as Quiver chose them
 #: ../../apps/launcher/src/launch-options.tsx
@@ -5427,6 +5422,10 @@ msgstr "独立游戏"
 msgid "Start a discussion"
 msgstr "发起讨论"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Start a discussion from an app's page, or in General."
+msgstr "在应用页面或综合中发起讨论。"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Start using Quiver"
 msgstr "开始使用 Quiver"
@@ -5442,6 +5441,11 @@ msgstr "要启动哪个程序？"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Start with Windows, in the system tray"
 msgstr "随 Windows 启动，并留在系统托盘中"
+
+#. Who started a discussion, in a list of discussions
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Started by {author}"
+msgstr "由 {author} 发起"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
@@ -5554,10 +5558,6 @@ msgstr "标签"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Tags"
 msgstr "标签"
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Talk with other players about ports, games and Quiver Launcher. For one app, use the Discussions tab on its page."
-msgstr "和其他玩家聊聊移植版、游戏和 Quiver Launcher。关于某个应用，请使用其页面上的“讨论”标签页。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it ran after following the setup."
@@ -6359,6 +6359,10 @@ msgstr "欢迎使用 Quiver Launcher！"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "What comes over"
 msgstr "迁移的内容"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "What players are talking about across the catalog, and a place for everything else. Need help with Quiver Launcher? Ask on <0>Discord</0> or in <1>GitHub Issues</1>."
+msgstr "玩家们在整个目录中讨论的内容，以及聊其他一切的地方。需要 Quiver Launcher 的帮助？请到 <0>Discord</0> 或 <1>GitHub Issues</1> 提问。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What players said"
