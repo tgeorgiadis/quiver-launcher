@@ -11,8 +11,9 @@ useSharedApp();
 
 test("the Community page opens from the top bar, and an app's page has a Discussions tab", async () => {
   assert.equal(await open("button.community-button"), "page: Community");
-  for (const name of ["General", "Help with Quiver Launcher", "Requests"])
-    assert.equal(await page.getByRole("tab", { name }).count(), 1, `the ${name} category`);
+  for (const name of ["Recent", "General"]) assert.equal(await page.getByRole("tab", { name }).count(), 1, `the ${name} tab`);
+  // Help with Quiver Launcher and Requests went: launcher help is on Discord and GitHub Issues.
+  assert.equal(await page.getByRole("tab", { name: "Requests" }).count(), 0);
   assert.equal(await page.getByText("Discussions aren't available right now.").count(), 1);
   await everything("Community");
   assert.equal(await back(), "main");
