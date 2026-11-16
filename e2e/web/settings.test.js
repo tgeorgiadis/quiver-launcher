@@ -169,10 +169,10 @@ test("Advanced Settings takes a GitLab token, keeps it in the keychain, and show
     await setting.locator('input[type="password"]').fill("glpat-test");
     await setting.getByRole("button", { name: "Save token" }).click();
     await setting.getByText("Saved. Requests to GitLab use your token now.").waitFor();
-    // The token was kept in the keychain, not in settings.json.
+    // The token was kept in the keychain, not in settings.json: with every host's, under its own host.
     assert.deepEqual(
       await p.evaluate(() => window.__calls.find((c) => c.cmd === "secret_set")?.args),
-      { key: "gitlabToken", value: "glpat-test" },
+      { key: "repositoryTokens", value: JSON.stringify({ "gitlab.com": "glpat-test" }) },
     );
     // It went with the request that checked it, and the mock's higher limit shows.
     assert.ok(s2.api.gitlabRequests().some((r) => r.path === "/gitlab/user" && r.token === "glpat-test"));
