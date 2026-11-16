@@ -608,6 +608,9 @@ pub struct State {
     /// Places the launcher saw the app write saves to.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub found: Vec<String>,
+    /// The found places the catalog was told about already (`to_report`), so each is sent once.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reported: Vec<String>,
 }
 
 pub fn state(store: &Path) -> State {
@@ -634,6 +637,26 @@ pub fn places(state: &State, catalog: &[String]) -> (Vec<String>, &'static str) 
         return (state.found.clone(), "found");
     }
     (vec![], "none")
+}
+
+/// Places in one report to the catalog.
+const MAX_REPORT: usize = 8;
+
+/// The found places worth telling the catalog about, so it can list them for every player: folders that are there,
+/// not sent before. Never a folder the player chose, a lone file or a pattern (a file's name can be a player's own),
+/// and nothing once the player chose a folder: what the launcher found wasn't right then.
+pub fn to_report(state: &State, roots: &Roots) -> Vec<String> {
+    if !state.chosen.is_empty() {
+        return vec![];
+    }
+    state
+        .found
+        .iter()
+        .filter(|template| !state.reported.contains(template) && !template.starts_with("abs:"))
+        .filter(|template| resolve(template, roots, &[]).is_ok_and(|place| place.pattern.is_none() && place.base.is_dir()))
+        .take(MAX_REPORT)
+        .cloned()
+        .collect()
 }
 
 /// The chosen folders outside every root: the only absolute paths `resolve` follows.
@@ -1093,11 +1116,28 @@ mod tests {
     fn remembers_an_apps_places() {
         let (_dir, _, store) = world();
         assert_eq!(state(&store), State::default());
-        let kept = State { chosen: vec!["app/saves".into()], found: vec!["data/Game".into()] };
+        let kept = State { chosen: vec!["app/saves".into()], found: vec!["data/Game".into()], reported: vec!["data/Game".into()] };
         set_state(&store, &kept).unwrap();
         assert_eq!(state(&store), kept);
         // Beside the backups without being one.
         assert!(list(&store).is_empty());
+    }
+
+    #[test]
+    fn reports_only_found_folders_once_and_never_the_players_own() {
+        let (_dir, roots, _) = world();
+        write(&roots.app.join("saves/slot1.sav"), "one");
+        write(&roots.app.join("eeprom.bin"), "two");
+        write(&roots.data.clone().unwrap().join("Game/profile.dat"), "three");
+        let found: Vec<String> = ["app/saves", "app/eeprom.bin", "data/Game", "config/Gone", "abs:/somewhere/else"].map(String::from).into();
+        let mut state = State { found, ..Default::default() };
+        // Folders that are there: not the lone file, the folder that's gone, or one outside every root.
+        assert_eq!(to_report(&state, &roots), ["app/saves", "data/Game"]);
+        state.reported = vec!["app/saves".into()];
+        assert_eq!(to_report(&state, &roots), ["data/Game"]);
+        // The player chose a folder: what was found wasn't right.
+        state.chosen = vec!["app/other".into()];
+        assert!(to_report(&state, &roots).is_empty());
     }
 
     #[test]

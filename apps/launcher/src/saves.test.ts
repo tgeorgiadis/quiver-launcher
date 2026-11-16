@@ -1,5 +1,6 @@
-import { expect, it, vi } from "vitest";
-import { onSavesChanged, savesChanged, savesOf, savesOn } from "./saves";
+import { describe, expect, it, vi } from "vitest";
+import { ApiError } from "@quiverlauncher/api";
+import { onSavesChanged, reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
 
 it("names an installed app for the saves commands", () => {
   const entry = {
@@ -33,4 +34,40 @@ it("tells an open Saves tab about a new backup until it stops listening", () => 
   stop();
   savesChanged("e2");
   expect(heard.mock.calls).toEqual([["e1"]]);
+});
+
+describe("telling the catalog where an app saved", () => {
+  const of = savesOf("e1", { folder: "Game", version: "1.0" });
+  const entry = { slug: "game", catalogId: "qcat_1" };
+  const places = ["data/Game/saves"];
+  const via = (send: () => Promise<void>, found = places) => ({
+    toReport: vi.fn(async () => ({ os: "linux" as const, places: found })),
+    reported: vi.fn(async () => {}),
+    send: vi.fn(send),
+  });
+
+  it("sends the folders with the system, then remembers them as sent", async () => {
+    const calls = via(async () => {});
+    await reportSaveLocations(of, entry, calls);
+    expect(calls.send).toHaveBeenCalledWith(entry, { os: "linux", places });
+    expect(calls.reported).toHaveBeenCalledWith(of, places);
+  });
+
+  it("sends nothing when there's nothing new", async () => {
+    const calls = via(async () => {}, []);
+    await reportSaveLocations(of, entry, calls);
+    expect(calls.send).not.toHaveBeenCalled();
+    expect(calls.reported).not.toHaveBeenCalled();
+  });
+
+  it("doesn't send again what the site refused, and tries again later what never got there", async () => {
+    const refused = via(async () => Promise.reject(new ApiError(404, "No such app")));
+    await reportSaveLocations(of, entry, refused);
+    expect(refused.reported).toHaveBeenCalledWith(of, places);
+    for (const error of [new ApiError(503, "Down"), new ApiError(429, "Slow down"), new TypeError("Failed to fetch")]) {
+      const lost = via(async () => Promise.reject(error));
+      await reportSaveLocations(of, entry, lost);
+      expect(lost.reported).not.toHaveBeenCalled();
+    }
+  });
 });

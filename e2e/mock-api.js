@@ -142,6 +142,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   const catalogQueries = [];
   const downloads = [];
   const downloadProblems = [];
+  const saveReports = [];
   // While set, downloads stop halfway until it resolves; `stalls` are the ones waiting.
   let stalled = null;
   let unstall = () => {};
@@ -643,6 +644,25 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       res.writeHead(200, { "Content-Type": "image/png" });
       return res.end(PIXEL);
     }
+    // Where the launcher saw an app save, as it tells the site: noted for an app it lists.
+    const saved = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/save-locations$/);
+    if (saved) {
+      const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, headers);
+        return res.end();
+      }
+      const body = await new Promise((resolve) => {
+        let text = "";
+        req.on("data", (c) => (text += c));
+        req.on("end", () => resolve(JSON.parse(text || "{}")));
+      });
+      const slug = decodeURIComponent(saved[1]);
+      const listed = entries.some((e) => e.slug === slug);
+      if (listed) saveReports.push({ slug, ...body });
+      res.writeHead(listed ? 202 : 404, { ...headers, "Content-Type": "application/json" });
+      return res.end(JSON.stringify(listed ? { status: "noted" } : { error: { code: "NOT_FOUND", message: "No such app" } }));
+    }
     // A download that failed, as the launcher tells the site: noted for a file of an app it lists, as the site does.
     const problem = url.pathname.match(/^\/api\/v1\/apps\/([^/]+)\/download-problem$/);
     if (problem) {
@@ -781,6 +801,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     downloads: () => downloads,
     /** Failed downloads the launcher told the site of, oldest first: { slug, version, file, problem }. */
     downloadProblems: () => downloadProblems,
+    /** Where the launcher told the site an app saves, oldest first: { slug, os, places }. */
+    saveReports: () => saveReports,
     /** Downloads stop halfway while on, and finish when it's turned off. */
     stall(on) {
       if (on && !stalled) stalled = new Promise((resolve) => (unstall = resolve));

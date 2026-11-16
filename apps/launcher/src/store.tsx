@@ -26,7 +26,7 @@ import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
-import { savesChanged, savesOf, savesOn } from "./saves";
+import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
 
@@ -1489,8 +1489,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [githubToken, setGithubToken] = useState(saved.githubToken);
   const github = useMemo(() => createGithub(config.githubApi, githubToken), [config.githubApi, githubToken]);
   // What usage data reads later on, as it stands by then.
-  const forUsage = useRef({ library, installs, catalog, settings });
-  forUsage.current = { library, installs, catalog, settings };
+  const forUsage = useRef({ library, installs, catalog, settings, client });
+  forUsage.current = { library, installs, catalog, settings, client };
   useEffect(() => {
     const closed = native.onAppClosed(({ id, seconds }) => {
       const { catalog, installs } = forUsage.current;
@@ -1499,7 +1499,14 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const install = installs[id];
       if (install && savesOn(config.os))
         void native.savesPlayed(savesOf(id, install, catalog[id])).then(
-          (made) => made && savesChanged(id),
+          (made) => {
+            if (made) savesChanged(id);
+            // Where it saved, for the catalog to list for everyone: only from players who share usage data, and only
+            // for the catalog's own apps.
+            const entry = catalog[id];
+            if (entry?.slug && telemetryChoice().enabled)
+              void reportSaveLocations(savesOf(id, install, entry), entry, { toReport: native.savesToReport, reported: native.savesReported, send: (app, report) => forUsage.current.client.saveLocations(app, report) }).catch(() => {});
+          },
           () => {},
         );
     });

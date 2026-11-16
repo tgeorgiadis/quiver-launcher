@@ -707,6 +707,41 @@ async fn saves_played(data: State<'_, Data>, running: State<'_, Running>, watchi
     saves::backup(&store, &places, &roots, &saves::chosen_abs(&state), &saves::Stamp { app: &of.id, version: of.version.as_deref(), reason: "played", os })
 }
 
+/// What to tell the catalog about where an app saves.
+#[derive(Serialize)]
+struct SavesReport {
+    /// The system the places are for: "windows" for a Windows build run through Wine or Proton.
+    os: &'static str,
+    places: Vec<String>,
+}
+
+/// The places the launcher saw an app save in that the catalog hasn't been told about (`saves::to_report`). None
+/// for an app whose saves the catalog lists.
+#[tauri::command]
+async fn saves_to_report(data: State<'_, Data>, of: SavesOf) -> Result<SavesReport, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let places = if saves::catalog_templates(&of.locations, os).is_empty() { saves::to_report(&saves::state(&store), &roots) } else { vec![] };
+    Ok(SavesReport { os, places })
+}
+
+/// The catalog took (or refused) a report of these places: they aren't sent again.
+#[tauri::command]
+async fn saves_reported(data: State<'_, Data>, of: SavesOf, places: Vec<String>) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    let before = state.reported.len();
+    for place in places {
+        if state.found.contains(&place) && !state.reported.contains(&place) {
+            state.reported.push(place);
+        }
+    }
+    if state.reported.len() != before {
+        saves::set_state(&store, &state)?;
+    }
+    Ok(())
+}
+
 #[cfg(target_os = "android")]
 #[derive(Default)]
 struct Playing(std::sync::Mutex<Option<(String, std::time::Instant)>>);
@@ -2149,6 +2184,8 @@ pub fn run() {
             saves_open,
             saves_watch,
             saves_played,
+            saves_to_report,
+            saves_reported,
             create_app_folder,
             rename_app_folder,
             app_files,
