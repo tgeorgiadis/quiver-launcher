@@ -225,6 +225,13 @@ function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" |
 
 /** `icon`: the main action's, as the app's page has it. */
 type Item = { text: string; act: () => void; kind?: "danger"; disabled?: boolean; icon?: "play" | "get" | "add"; note?: string };
+// A submenu switches as soon as the pointer moves off towards another item; only while it's heading into the open one does it wait.
+/** How long the pointer rests on another item, while heading into the open submenu, before that item's submenu opens instead. */
+const AIM_RESTS = 80;
+/** How many pointer moves back its direction is measured from. */
+const AIM_TRAIL = 4;
+/** How far above and below the submenu still counts as heading into it, in pixels. */
+const AIM_SLACK = 20;
 type Sub = { key: "programs" | "add" | "tags" | "manage"; by: "hover" | "click"; focus?: boolean };
 
 /** A program's file name, without the folders it's in. */
@@ -433,15 +440,34 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
     setNewTag("");
   };
 
-  // The mouse opens a submenu by moving onto its item, and moving onto another item of the menu closes it.
-  // With one open, that waits until the pointer rests a moment (a short one, so a submenu still opens quickly): it can cross other items on its way into it.
+  // The mouse opens a submenu by moving onto its item, and moving onto another item of the menu closes it, at once.
+  // Only while the pointer heads for the open submenu does that wait, as it crosses other items on its way into it; resting there a moment then switches.
   // Only a moving pointer counts: a menu opening under one that's resting (a right-click, a key, a long press) opens no submenu by itself, so Escape closes the menu.
   const hover = (key?: Sub["key"]) => (e: PointerEv) => {
     if (e.pointerType !== "mouse") return;
     clearTimeout(pending.current);
     const next = () => setSub((s) => (key ? (s?.key === key ? s : { key, by: "hover" }) : null));
-    if (sub) pending.current = setTimeout(next, 120);
+    if (sub && sub.key !== key && heading(e.clientX, e.clientY)) pending.current = setTimeout(next, AIM_RESTS);
     else next();
+  };
+  // Where the pointer was a few moves ago, to tell which way it's going.
+  const trail = useRef<[number, number][]>([]);
+  const track = (e: PointerEv) => {
+    if (e.pointerType !== "mouse") return;
+    trail.current = [...trail.current.slice(-(AIM_TRAIL - 1)), [e.clientX, e.clientY]];
+  };
+  // Heading for the open submenu: inside the triangle from where the pointer was to the submenu's near edge (a little taller than it, for a hand that isn't steady).
+  const heading = (x: number, y: number) => {
+    const el = subMenu.current;
+    const from = trail.current[0];
+    if (!el || !from || !place || place.side === "below" || (from[0] === x && from[1] === y)) return false;
+    const r = el.getBoundingClientRect();
+    const edge = place.side === "right" ? r.left : r.right;
+    const a: [number, number] = [edge, r.top - AIM_SLACK];
+    const b: [number, number] = [edge, r.bottom + AIM_SLACK];
+    const side = (p: [number, number], q: [number, number]) => (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0]);
+    const [d1, d2, d3] = [side(from, a), side(a, b), side(b, from)];
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
   };
   const choose = (act: () => void) => () => (close(), act());
   const item = ({ text, act, kind, disabled, note }: Item, inSub = false): ReactNode => (
@@ -507,7 +533,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   };
 
   return (
-    <div ref={root} className="game-menu" data-arrows="" onKeyDown={keys}>
+    <div ref={root} className="game-menu" data-arrows="" onKeyDown={keys} onPointerMoveCapture={track}>
       {main && <MainItem main={main} onClick={choose(main.act)} onPointerMove={hover()} />}
       {top.map((i) => item(i))}
       {programsOn && opens("programs", t`Play with`)}
