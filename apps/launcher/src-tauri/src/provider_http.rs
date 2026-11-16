@@ -5,7 +5,7 @@
 //! a different host.
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 
 const MAX_BODY: usize = 10 * 1024 * 1024;
@@ -32,20 +32,14 @@ pub struct ProviderResponse {
 /// send CORS headers; this asks from Rust instead.
 #[tauri::command]
 pub async fn provider_http(request: ProviderRequest) -> Result<ProviderResponse, String> {
-    let mut current = validate_url(
+    let (mut current, mut addrs) = validate_url(
         reqwest::Url::parse(&request.url)
             .map_err(|_| "That repository address isn't valid.".to_string())?,
     )
     .await?;
     let mut headers = allowed_headers(&request.headers);
-    let client = reqwest::Client::builder()
-        .user_agent("QuiverLauncher/4")
-        .redirect(reqwest::redirect::Policy::none())
-        .timeout(TIMEOUT)
-        .build()
-        .map_err(|e| e.to_string())?;
     for redirects in 0..=MAX_REDIRECTS {
-        let response = client
+        let response = client_for(&current, &addrs)?
             .get(current.clone())
             .headers(headers.clone())
             .send()
@@ -66,13 +60,14 @@ pub async fn provider_http(request: ProviderRequest) -> Result<ProviderResponse,
             let next = current
                 .join(location)
                 .map_err(|_| "The repository host redirected to an invalid address.")?;
-            let next = validate_url(next).await?;
+            let (next, next_addrs) = validate_url(next).await?;
             // A token belongs to its host and port: never carry it to another one.
             if next.origin() != current.origin() {
                 headers.remove(reqwest::header::AUTHORIZATION);
                 headers.remove("private-token");
             }
             current = next;
+            addrs = next_addrs;
             continue;
         }
         let status = response.status().as_u16();
@@ -102,33 +97,52 @@ pub async fn provider_http(request: ProviderRequest) -> Result<ProviderResponse,
     Err("The repository host redirected too many times.".into())
 }
 
-/// Whether a URL is one the proxy may ask: https, a public host, and no local network.
-async fn validate_url(url: reqwest::Url) -> Result<reqwest::Url, String> {
+/// A client that connects only to the addresses `validate_url` checked, so a
+/// host can't answer the check with a public address and the request with a
+/// private one.
+fn client_for(url: &reqwest::Url, addrs: &[SocketAddr]) -> Result<reqwest::Client, String> {
+    let mut builder = reqwest::Client::builder()
+        .user_agent("QuiverLauncher/4")
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(TIMEOUT);
+    if let (Some(host), false) = (url.host_str(), addrs.is_empty()) {
+        builder = builder.resolve_to_addrs(host, addrs);
+    }
+    builder.build().map_err(|e| e.to_string())
+}
+
+/// Whether a URL is one the proxy may ask: https, a public host, and no local
+/// network. Returns the addresses its name resolved to, all of them checked;
+/// none for a host given as an address.
+async fn validate_url(url: reqwest::Url) -> Result<(reqwest::Url, Vec<SocketAddr>), String> {
     if url.scheme() != "https" {
         return Err("Repository hosts must use https.".into());
     }
     let host = url
         .host_str()
-        .ok_or("That repository address has no host.")?;
+        .ok_or("That repository address has no host.")?
+        .to_string();
     let port = url.port_or_known_default().unwrap_or(443);
     if host.eq_ignore_ascii_case("localhost") {
         return Err("A repository host can't be this computer.".into());
     }
-    if let Ok(ip) = host.parse::<IpAddr>() {
+    if let Ok(ip) = host.trim_matches(|c| c == '[' || c == ']').parse::<IpAddr>() {
         if blocked_ip(ip) {
             return Err("A repository host can't be a private address.".into());
         }
-        return Ok(url);
+        return Ok((url, Vec::new()));
     }
-    let addrs = tokio::net::lookup_host((host, port))
+    let addrs: Vec<SocketAddr> = tokio::net::lookup_host((host.as_str(), port))
         .await
-        .map_err(|_| "Couldn't look up the repository host.".to_string())?;
-    for addr in addrs {
-        if blocked_ip(addr.ip()) {
-            return Err("A repository host can't be a private address.".into());
-        }
+        .map_err(|_| "Couldn't look up the repository host.".to_string())?
+        .collect();
+    if addrs.is_empty() {
+        return Err("Couldn't look up the repository host.".into());
     }
-    Ok(url)
+    if addrs.iter().any(|addr| blocked_ip(addr.ip())) {
+        return Err("A repository host can't be a private address.".into());
+    }
+    Ok((url, addrs))
 }
 
 /// Loopback, private, link-local, multicast and documentation addresses, which
