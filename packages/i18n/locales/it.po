@@ -3028,6 +3028,10 @@ msgstr "Potrebbe essere stata eliminata o nascosta."
 msgid "It ran, but I had issues"
 msgstr "Si è avviato, ma ho avuto problemi"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
+msgstr "Avvia <0>{program}</0>, che è fuori dalla sua cartella e quindi resta dov'è. Disinstallalo o eliminalo tu se non ti serve più."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "Si avvia da dove si trova, e rimuoverlo dalla libreria lo lascia lì."
@@ -3048,6 +3052,10 @@ msgstr "Non si installava, non si apriva o non si avviava."
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "Ora è qui."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
+msgstr "È fuori dalla cartella dell'app, quindi spostare, rinominare, aggiornare o disinstallare l'app lo lascia dov'è."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."

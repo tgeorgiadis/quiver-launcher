@@ -276,13 +276,17 @@ fn present_app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<Pat
 fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>, options: &launch::LaunchOptions) -> Result<shortcut::Target, String> {
     let (exe, wine) = match (&options.executable, program) {
         // The program the player chose in Launch options.
+        // A full path is one anywhere, such as a game an installer in the app's folder put on another drive: it starts
+        // whether or not the folder is still there.
         (Some(chosen), program) => {
-            let exe = match program {
-                Some(_) => PathBuf::from(chosen),
-                None => present_app_dir(data, folder, dir)?.join(chosen),
-            };
+            let anywhere = program.is_some() || Path::new(chosen).is_absolute();
+            let exe = if anywhere { PathBuf::from(chosen) } else { present_app_dir(data, folder, dir)?.join(chosen) };
             if !exe.exists() {
-                return Err(format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options."));
+                return Err(if anywhere {
+                    launch::program_gone(&exe)
+                } else {
+                    format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options.")
+                });
             }
             let windows = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("exe") || e.eq_ignore_ascii_case("bat"));
             (exe, OS == "linux" && windows)
@@ -290,6 +294,10 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         (None, Some(program)) => {
             let exe = PathBuf::from(&program);
             if !exe.exists() {
+                let user = std::env::var("USER").or_else(|_| std::env::var("LOGNAME")).ok();
+                if let Some(drive) = launch::missing_drive(&exe, user.as_deref(), Path::exists) {
+                    return Err(launch::drive_gone(&exe, &drive));
+                }
                 // A Windows installer's program: the player can choose it again, or run the installer again.
                 if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d)) {
                     return Err(format!("The program isn't at {program} any more. Choose it again in Launch options, or run its installer again."));
@@ -1017,9 +1025,11 @@ fn file_kinds(data: State<'_, Data>, folder: String, dir: Option<String>) -> Res
     Ok(install::file_kinds(&app_dir(&data, &folder, dir)?))
 }
 
-/// Asks which program starts an installed app, starting in its folder; the
-/// answer is relative to that folder so it survives the folder moving. An app
-/// the player added from elsewhere (`program`) can start anything.
+/// Asks which program starts an installed app, starting in its folder: one
+/// inside it is kept relative to it, so it survives the folder moving; one
+/// anywhere else by its full path (`launch::chosen_program`), such as a game
+/// the app's own installer put on another drive. An app the player added from
+/// elsewhere (`program`) keeps the full path either way.
 /// `QUIVER_PICK` answers instead in end-to-end tests.
 #[tauri::command]
 async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, folder: String, dir: Option<String>, program: Option<String>) -> Result<Option<String>, String> {
@@ -1036,11 +1046,7 @@ async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, fo
     if program.is_some() {
         return Ok(Some(picked.to_string_lossy().into()));
     }
-    let inside = picked.canonicalize().ok().zip(root.canonicalize().ok()).and_then(|(p, r)| p.strip_prefix(r).ok().map(Path::to_path_buf));
-    match inside {
-        Some(relative) if !relative.as_os_str().is_empty() => Ok(Some(relative.to_string_lossy().into())),
-        _ => Err("Choose a program inside the app's folder.".into()),
-    }
+    launch::chosen_program(&picked, &root).map(Some)
 }
 
 /// The Protons on this computer, newest name first.

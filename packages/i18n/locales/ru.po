@@ -3028,6 +3028,10 @@ msgstr "Возможно, его удалили или скрыли."
 msgid "It ran, but I had issues"
 msgstr "Запустилось, но были проблемы"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
+msgstr "Оно запускает <0>{program}</0>, а это вне его папки, поэтому останется на месте. Удалите его сами, если он больше не нужен."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "Оно запускается там, где находится, и удаление из библиотеки его не трогает."
@@ -3048,6 +3052,10 @@ msgstr "Не устанавливалось, не открывалось или 
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "Сейчас оно здесь."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
+msgstr "Это вне папки приложения, поэтому перемещение, переименование, обновление или удаление приложения его не затронет."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."

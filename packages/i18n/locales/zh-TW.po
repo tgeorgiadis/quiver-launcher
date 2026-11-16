@@ -3028,6 +3028,10 @@ msgstr "它可能已被刪除或隱藏。"
 msgid "It ran, but I had issues"
 msgstr "它可以執行，但我遇到了一些問題"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
+msgstr "它啟動的是 <0>{program}</0>，該程式在它的資料夾之外，因此會保留在原處。如果不再需要，請自行解除安裝或刪除。"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "它會從當前位置啟動；從遊戲庫中移除後，它仍會留在原處。"
@@ -3048,6 +3052,10 @@ msgstr "無法安裝、開啟或啟動。"
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "它現在已在這裡。"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
+msgstr "它在應用程式資料夾之外，因此移動、重新命名、更新或解除安裝該應用程式都不會動到它。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."
