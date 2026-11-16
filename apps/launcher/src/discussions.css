@@ -72,3 +72,16 @@ img.avatar { object-fit: cover; }
 .discussion-comment.deleted p { margin: 0; font-style: italic; }
 .discussion-comment-box { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); }
 .discussion-locked { display: flex; align-items: center; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; }
+
+/* Community's Recent and Following: each discussion beside its app's portrait art, or General's icon. */
+.community-chip { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--muted); font-size: 12px; font-weight: 500; }
+.community-chip:hover { color: var(--fg); }
+.community-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--strong); }
+.community-hint { margin: 0; font-size: 13px; }
+.community-page .detail-tabs .tab-count { margin-left: 2px; }
+.discussion-row.activity .discussion-row-link { flex-direction: row; align-items: center; gap: 14px; }
+.discussion-row-art { flex-shrink: 0; width: 54px; height: 72px; border-radius: 4px; object-fit: cover; background: var(--field); }
+.discussion-row-art.icon { object-fit: contain; padding: 9px 0; }
+.discussion-row-art.empty { display: grid; place-items: center; color: var(--muted); }
+.discussion-row-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
+.discussion-row-place { color: var(--link); font-size: 12px; font-weight: 500; }

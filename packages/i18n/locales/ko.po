@@ -812,6 +812,7 @@ msgid "Action"
 msgstr "동작"
 
 #. When a discussion last had a comment, as in “active 2 days ago”
+#. When a discussion last had a comment, as in “active 2 days ago”
 #: ../../apps/launcher/src/discussions.tsx
 msgid "active {active}"
 msgstr "{active} 활동"
@@ -1247,10 +1248,6 @@ msgstr "GitLab에서 추가한 앱은 GitLab에서 직접 버전을 가져와요
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "아직 없는 앱에는 받기가 표시돼요. 누르기 전에는 아무것도 다운로드되지 않아요."
 
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Apps you'd like in the catalog, and features you'd like to see."
-msgstr "카탈로그에 있었으면 하는 앱과 바라는 기능."
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "게임의 아트워크와 콘솔"
@@ -1491,11 +1488,6 @@ msgstr "캐러셀"
 #: ../../apps/launcher/src/App.tsx
 msgid "Catalog filters"
 msgstr "카탈로그 필터"
-
-#. The Community board's categories
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Categories"
-msgstr "카테고리"
 
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
@@ -1837,6 +1829,7 @@ msgstr "댓글 달기"
 msgid "Comments"
 msgstr "댓글"
 
+#. The Community page's tabs
 #. The page where players talk about anything that isn't one app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -2106,10 +2099,6 @@ msgstr "토론"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Discussions aren't available right now."
 msgstr "지금은 토론을 이용할 수 없어요."
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Discussions you follow"
-msgstr "팔로우하는 토론"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Discussions you start or comment in show here, with their new comments."
@@ -2392,6 +2381,11 @@ msgstr "폴더 이름"
 msgid "Follow"
 msgstr "팔로우"
 
+#. Community tab: the discussions the player follows
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Following"
+msgstr "팔로우 중"
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "For a folder with games for many consoles in it."
 msgstr "여러 콘솔의 게임이 든 폴더용이에요."
@@ -2551,11 +2545,6 @@ msgstr "게임별로 그룹화"
 #: ../ui/src/index.tsx
 msgid "Has issues"
 msgstr "문제 있음"
-
-#. Community board category
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Help with Quiver Launcher"
-msgstr "Quiver Launcher 도움말"
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
@@ -3797,6 +3786,10 @@ msgid "No discussion titles match “{text}”."
 msgstr "“{text}”와 일치하는 토론 제목이 없어요."
 
 #: ../../apps/launcher/src/discussions.tsx
+msgid "No discussions yet on the apps in your library."
+msgstr "라이브러리에 있는 앱에 아직 토론이 없습니다."
+
+#: ../../apps/launcher/src/discussions.tsx
 msgid "No discussions yet. Ask a question or share a tip."
 msgstr "아직 토론이 없어요. 질문하거나 팁을 공유하세요."
 
@@ -4033,6 +4026,11 @@ msgstr "확인"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "게임마다 카드 하나"
+
+#. Community filter: only discussions on apps in the player's library
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Only apps in my library"
+msgstr "내 라이브러리의 앱만"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Only hidden apps"
@@ -4384,10 +4382,6 @@ msgstr "새 앱을 콘솔별 폴더에 넣기"
 msgid "Putting it in place…"
 msgstr "제자리에 놓는 중…"
 
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Questions about installing, updating and playing with Quiver Launcher."
-msgstr "Quiver Launcher로 설치, 업데이트, 플레이하는 방법에 관한 질문."
-
 #. Controller action that presses the main button of the focused card or app's page, such as Get or Play
 #: ../../apps/launcher/src/spatial.ts
 msgid "Quick action"
@@ -4642,6 +4636,12 @@ msgstr "준비됨: 정상 사본 ({dump})"
 msgid "Recent"
 msgstr "최근"
 
+#. Community tab: the newest discussions on every app
+#: ../../apps/launcher/src/discussions.tsx
+msgctxt "Community tab"
+msgid "Recent"
+msgstr "최근"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently added"
@@ -4810,11 +4810,6 @@ msgstr "신고됨"
 #: ../../apps/launcher/src/own.tsx
 msgid "Repository"
 msgstr "저장소"
-
-#. Community board category: apps or features people want
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Requests"
-msgstr "요청"
 
 #. Puts the launch options back as Quiver chose them
 #: ../../apps/launcher/src/launch-options.tsx
@@ -5427,6 +5422,10 @@ msgstr "독립형 게임"
 msgid "Start a discussion"
 msgstr "토론 시작"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Start a discussion from an app's page, or in General."
+msgstr "앱 페이지나 일반에서 토론을 시작하세요."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Start using Quiver"
 msgstr "Quiver 시작하기"
@@ -5442,6 +5441,11 @@ msgstr "어떤 프로그램을 실행할까요?"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Start with Windows, in the system tray"
 msgstr "Windows 시작 시 시스템 트레이에서 실행"
+
+#. Who started a discussion, in a list of discussions
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Started by {author}"
+msgstr "{author} 님이 시작"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
@@ -5554,10 +5558,6 @@ msgstr "태그"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Tags"
 msgstr "태그"
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Talk with other players about ports, games and Quiver Launcher. For one app, use the Discussions tab on its page."
-msgstr "다른 플레이어와 포트, 게임, Quiver Launcher에 대해 이야기하세요. 특정 앱에 대해서는 해당 앱 페이지의 토론 탭을 이용하세요."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it ran after following the setup."
@@ -6359,6 +6359,10 @@ msgstr "Quiver Launcher에 오신 것을 환영해요!"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "What comes over"
 msgstr "가져오는 항목"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "What players are talking about across the catalog, and a place for everything else. Need help with Quiver Launcher? Ask on <0>Discord</0> or in <1>GitHub Issues</1>."
+msgstr "카탈로그 전체에서 플레이어들이 나누는 이야기와 그 밖의 모든 이야기를 위한 공간입니다. Quiver Launcher 사용에 도움이 필요하신가요? <0>Discord</0> 또는 <1>GitHub Issues</1>에서 물어보세요."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What players said"

@@ -812,6 +812,7 @@ msgid "Action"
 msgstr "Действие"
 
 #. When a discussion last had a comment, as in “active 2 days ago”
+#. When a discussion last had a comment, as in “active 2 days ago”
 #: ../../apps/launcher/src/discussions.tsx
 msgid "active {active}"
 msgstr "активность {active}"
@@ -1247,10 +1248,6 @@ msgstr "Приложения, добавленные с GitLab, получают
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "У приложений, которых у вас ещё нет, есть кнопка «Получить»; ничего не загружается, пока вы её не нажмёте."
 
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Apps you'd like in the catalog, and features you'd like to see."
-msgstr "Приложения, которые вы хотели бы видеть в каталоге, и функции, которых вам не хватает."
-
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "Изображения и консоли из игры"
@@ -1491,11 +1488,6 @@ msgstr "карусель"
 #: ../../apps/launcher/src/App.tsx
 msgid "Catalog filters"
 msgstr "Фильтры каталога"
-
-#. The Community board's categories
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Categories"
-msgstr "Категории"
 
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
@@ -1837,6 +1829,7 @@ msgstr "Отправить"
 msgid "Comments"
 msgstr "Комментарии"
 
+#. The Community page's tabs
 #. The page where players talk about anything that isn't one app
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/discussions.tsx
@@ -2106,10 +2099,6 @@ msgstr "Обсуждения"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Discussions aren't available right now."
 msgstr "Обсуждения сейчас недоступны."
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Discussions you follow"
-msgstr "Отслеживаемые обсуждения"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Discussions you start or comment in show here, with their new comments."
@@ -2392,6 +2381,11 @@ msgstr "Имя папки"
 msgid "Follow"
 msgstr "Отслеживать"
 
+#. Community tab: the discussions the player follows
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Following"
+msgstr "Отслеживаемые"
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "For a folder with games for many consoles in it."
 msgstr "Для папки с играми для разных консолей."
@@ -2551,11 +2545,6 @@ msgstr "Группировать по играм"
 #: ../ui/src/index.tsx
 msgid "Has issues"
 msgstr "Есть проблемы"
-
-#. Community board category
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Help with Quiver Launcher"
-msgstr "Помощь с Quiver Launcher"
 
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
@@ -3797,6 +3786,10 @@ msgid "No discussion titles match “{text}”."
 msgstr "Нет обсуждений с названием «{text}»."
 
 #: ../../apps/launcher/src/discussions.tsx
+msgid "No discussions yet on the apps in your library."
+msgstr "Пока нет обсуждений приложений из вашей библиотеки."
+
+#: ../../apps/launcher/src/discussions.tsx
 msgid "No discussions yet. Ask a question or share a tip."
 msgstr "Обсуждений пока нет. Задайте вопрос или поделитесь советом."
 
@@ -4033,6 +4026,11 @@ msgstr "OK"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
 msgstr "Одна карточка на игру"
+
+#. Community filter: only discussions on apps in the player's library
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Only apps in my library"
+msgstr "Только приложения из моей библиотеки"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Only hidden apps"
@@ -4384,10 +4382,6 @@ msgstr "Класть новые приложения в папку их конс
 msgid "Putting it in place…"
 msgstr "Размещение…"
 
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Questions about installing, updating and playing with Quiver Launcher."
-msgstr "Вопросы об установке, обновлении и играх в Quiver Launcher."
-
 #. Controller action that presses the main button of the focused card or app's page, such as Get or Play
 #: ../../apps/launcher/src/spatial.ts
 msgid "Quick action"
@@ -4642,6 +4636,12 @@ msgstr "Готово: хорошая копия ({dump})"
 msgid "Recent"
 msgstr "Недавние"
 
+#. Community tab: the newest discussions on every app
+#: ../../apps/launcher/src/discussions.tsx
+msgctxt "Community tab"
+msgid "Recent"
+msgstr "Недавние"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently added"
@@ -4810,11 +4810,6 @@ msgstr "Жалоба отправлена"
 #: ../../apps/launcher/src/own.tsx
 msgid "Repository"
 msgstr "Репозиторий"
-
-#. Community board category: apps or features people want
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Requests"
-msgstr "Пожелания"
 
 #. Puts the launch options back as Quiver chose them
 #: ../../apps/launcher/src/launch-options.tsx
@@ -5427,6 +5422,10 @@ msgstr "Отдельная игра"
 msgid "Start a discussion"
 msgstr "Начать обсуждение"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Start a discussion from an app's page, or in General."
+msgstr "Начните обсуждение на странице приложения или в разделе «Общее»."
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "Start using Quiver"
 msgstr "Начать пользоваться Quiver"
@@ -5442,6 +5441,11 @@ msgstr "Какую программу запустить?"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Start with Windows, in the system tray"
 msgstr "Запускать вместе с Windows в системном трее"
+
+#. Who started a discussion, in a list of discussions
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Started by {author}"
+msgstr "Начал(а) {author}"
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Starting"
@@ -5554,10 +5558,6 @@ msgstr "Тег"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Tags"
 msgstr "Теги"
-
-#: ../../apps/launcher/src/discussions.tsx
-msgid "Talk with other players about ports, games and Quiver Launcher. For one app, use the Discussions tab on its page."
-msgstr "Общайтесь с другими игроками о портах, играх и Quiver Launcher. Для отдельного приложения используйте вкладку «Обсуждения» на его странице."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it ran after following the setup."
@@ -6359,6 +6359,10 @@ msgstr "Добро пожаловать в Quiver Launcher!"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "What comes over"
 msgstr "Что будет перенесено"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "What players are talking about across the catalog, and a place for everything else. Need help with Quiver Launcher? Ask on <0>Discord</0> or in <1>GitHub Issues</1>."
+msgstr "О чём игроки говорят по всему каталогу, и место для всего остального. Нужна помощь с Quiver Launcher? Спросите в <0>Discord</0> или в <1>GitHub Issues</1>."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "What players said"
