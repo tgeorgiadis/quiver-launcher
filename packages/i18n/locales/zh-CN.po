@@ -1,11 +1,12 @@
+#
 msgid ""
 msgstr ""
 "POT-Creation-Date: 2026-11-12 11:21+0800\n"
+"Language: zh-CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: @lingui/cli\n"
-"Language: zh-CN\n"
 
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "\"Runs well\" is the share of players who said it runs well for them."
@@ -25,6 +26,11 @@ msgstr "{0, plural, one {其他平台还有 # 个应用未显示。} other {其�
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# app} other {# apps}}"
 msgstr "{0, plural, one {# 个应用} other {# 个应用}}"
+
+#. placeholder {0}: thread.comments
+#: ../../apps/launcher/src/discussions.tsx
+msgid "{0, plural, one {# comment} other {# comments}}"
+msgstr "{0, plural, other {# 条评论}}"
 
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
@@ -162,6 +168,10 @@ msgstr "{count, plural, one {# 个应用} other {# 个应用}}，{installed, plu
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
 msgstr "{count, plural, other {# 个应用}}，{installed, plural, other {# 个已安装}}"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "{count, plural, one {# discussion with new comments} other {# discussions with new comments}}"
+msgstr "{count, plural, other {# 个讨论有新评论}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
@@ -778,6 +788,11 @@ msgstr "透明背景的 PNG 图片，用作 Steam 快捷方式图标。"
 msgid "About this project"
 msgstr "关于此项目"
 
+#. Reason for reporting a post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Abuse"
+msgstr "辱骂"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Account: {name}"
 msgstr "帐户：{name}"
@@ -786,6 +801,11 @@ msgstr "帐户：{name}"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Action"
 msgstr "操作"
+
+#. When a discussion last had a comment, as in “active 2 days ago”
+#: ../../apps/launcher/src/discussions.tsx
+msgid "active {active}"
+msgstr "{active}有新动态"
 
 #. Button that adds an app installed here to the library
 #. Button that adds an app to the library without installing it
@@ -801,6 +821,10 @@ msgstr "添加"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Add <0>portable.txt</0> to new installs"
 msgstr "为新安装添加 <0>portable.txt</0>"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Add a comment"
+msgstr "发表评论"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a console"
@@ -1209,6 +1233,10 @@ msgstr "你从 GitLab 添加的应用会直接从 GitLab 获取版本。不使�
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "尚未拥有的应用会显示“获取”；只有按下按钮后才会开始下载。"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Apps you'd like in the catalog, and features you'd like to see."
+msgstr "你希望加入目录的应用，以及你想要的功能。"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "游戏的插画和主机"
@@ -1217,6 +1245,10 @@ msgstr "游戏的插画和主机"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "As in Settings: {name}"
 msgstr "与“设置”中的相同：{name}"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
+msgstr "提问、分享技巧或聊聊这个应用。运行情况请写在玩家反馈里。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Ask where to install each app"
@@ -1397,6 +1429,7 @@ msgstr "无法添加：Quiver Launcher 不知道它的来源"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/file-picker.tsx
 #: ../../apps/launcher/src/launch-options.tsx
@@ -1444,6 +1477,11 @@ msgstr "轮播图"
 #: ../../apps/launcher/src/App.tsx
 msgid "Catalog filters"
 msgstr "目录筛选条件"
+
+#. The Community board's categories
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Categories"
+msgstr "分类"
 
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
@@ -1776,6 +1814,21 @@ msgstr "从 Quiver Launcher 3 迁移过来？"
 msgid "Coming from Quiver Launcher 3? Show Quiver where its folder is, and your apps will appear here."
 msgstr "从 Quiver Launcher 3 迁移过来？向 Quiver 指定其文件夹位置，你的应用就会显示在这里。"
 
+#. Button that posts a comment
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Comment"
+msgstr "评论"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Comments"
+msgstr "评论"
+
+#. The page where players talk about anything that isn't one app
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Community"
+msgstr "社区"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Community ports and recreations"
 msgstr "社区移植版和复刻作品"
@@ -1823,13 +1876,25 @@ msgstr "复制链接"
 msgid "Copying {folder}… {percent}%"
 msgstr "正在复制 {folder} → {percent}%"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't delete it. Try again."
+msgstr "无法删除。请重试。"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
 msgstr "安装失败"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't load discussions. Try again later."
+msgstr "无法加载讨论。请稍后重试。"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Couldn't load the release notes."
 msgstr "无法加载版本说明。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't post that. Try again."
+msgstr "无法发布。请重试。"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Couldn't reach quiverlauncher.com to show this playlist. Check your connection."
@@ -1859,6 +1924,10 @@ msgstr "无法扫描所有文件。"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Couldn't send it. Try again."
+msgstr "无法发送。请重试。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't send that. Try again."
 msgstr "无法发送。请重试。"
 
 #: ../../apps/launcher/src/account.tsx
@@ -1929,6 +1998,7 @@ msgstr "默认"
 #. Button: confirm deleting one of the player's tags from all their apps
 #. Button: delete one of the player's tags from all their apps
 #. Deletes a playlist
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Delete"
@@ -1941,6 +2011,24 @@ msgstr "删除（停止共享）"
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Delete {tag}"
 msgstr "删除 {tag}"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Delete your comment? This can't be undone."
+msgstr "删除你的评论？此操作无法撤销。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Delete your discussion? This can't be undone."
+msgstr "删除你的讨论？此操作无法撤销。"
+
+#. In place of a comment its author deleted
+#. In place of a post its author deleted
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Deleted"
+msgstr "已删除"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Deleting…"
+msgstr "正在删除…"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Description"
@@ -1968,7 +2056,9 @@ msgstr "详细信息"
 msgid "Detect it"
 msgstr ""
 
+#. Tag after the name of an app's developer
 #. Tag on a reply from the app's verified developer
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Developer"
 msgstr "开发者"
@@ -1992,6 +2082,24 @@ msgstr "开发者会把一些发布版本标记为预发布版本：早期或实
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Didn't finish"
 msgstr "未完成"
+
+#. Tab on an app's page: players' threads about it
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions"
+msgstr "讨论"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions aren't available right now."
+msgstr "讨论暂时不可用。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions you follow"
+msgstr "你关注的讨论"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions you start or comment in show here, with their new comments."
+msgstr "你发起或评论过的讨论会和新评论一起显示在这里。"
 
 #. Hide an announcement
 #. Hide an announcement
@@ -2131,6 +2239,7 @@ msgid "Easy setup: Quiver Launcher finds your copy of the game and puts it where
 msgstr "轻松设置：Quiver Launcher 会查找你的游戏副本，并将其放到应用所需的位置。"
 
 #. Edits a playlist
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit"
 msgstr "编辑"
@@ -2139,8 +2248,18 @@ msgstr "编辑"
 msgid "Edit playlist"
 msgstr "编辑播放列表"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Edit your comment"
+msgstr "编辑你的评论"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Edit your discussion"
+msgstr "编辑你的讨论"
+
+#. After a post's date: its author changed it
 #. An announcement changed after it was published
 #: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/discussions.tsx
 msgid "edited"
 msgstr "已编辑"
 
@@ -2254,6 +2373,11 @@ msgstr "文件夹"
 msgid "Folder name"
 msgstr "文件夹名称"
 
+#. Shows new comments on the account page
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Follow"
+msgstr "关注"
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "For a folder with games for many consoles in it."
 msgstr "适用于包含多个主机游戏的文件夹。"
@@ -2332,6 +2456,8 @@ msgstr "游戏体验"
 msgid "Games"
 msgstr "游戏"
 
+#. Community board category for anything about ports and games
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
 msgstr "常规"
@@ -2368,6 +2494,10 @@ msgstr "GitLab 令牌"
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "返回"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Go to Community"
+msgstr "前往社区"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Good copy"
@@ -2408,6 +2538,11 @@ msgstr "按游戏分组"
 msgid "Has issues"
 msgstr "存在问题"
 
+#. Community board category
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Help with Quiver Launcher"
+msgstr "Quiver Launcher 使用帮助"
+
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "帮助改进 Quiver Launcher：了解哪些屏幕和功能被使用，以及发生的错误。绝不会收集你的文件或文件夹。"
@@ -2433,6 +2568,8 @@ msgstr "仅显示已隐藏的应用"
 msgid "Hidden apps shown"
 msgstr "显示已隐藏的应用"
 
+#. Hides a post from everyone
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide"
 msgstr "隐藏"
@@ -2870,6 +3007,10 @@ msgstr "它已不在游戏读取的位置。请重新设置。"
 msgid "It looks and works differently in places, so give it a go with an open mind."
 msgstr "有些地方的外观和用法不一样了，请带着开放的心态试一试。"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "It may have been deleted or hidden."
+msgstr "它可能已被删除或隐藏。"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "它可以运行，但我遇到了一些问题"
@@ -3116,9 +3257,22 @@ msgstr "Linux 和 Windows（此电脑）"
 msgid "Linux only"
 msgstr "仅限 Linux"
 
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Load more"
 msgstr "加载更多"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Loading comments…"
+msgstr "正在加载评论…"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Loading discussion…"
+msgstr "正在加载讨论…"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Loading discussions…"
+msgstr "正在加载讨论…"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Loading mods…"
@@ -3140,6 +3294,16 @@ msgstr "正在加载游戏"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
 msgstr "定位现有安装 →"
+
+#. Moderation action
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Lock"
+msgstr "锁定"
+
+#. A discussion that takes no new comments
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Locked"
+msgstr "已锁定"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Logo"
@@ -3499,6 +3663,11 @@ msgstr "新应用会安装到 {to}。"
 msgid "New badge"
 msgstr "新内容徽标"
 
+#. A followed discussion has comments the viewer hasn't seen
+#: ../../apps/launcher/src/discussions.tsx
+msgid "New comments"
+msgstr "新评论"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "New in Quiver Launcher 4"
 msgstr "Quiver Launcher 4 的新功能"
@@ -3592,6 +3761,14 @@ msgstr "目前没有应用可以游玩此游戏。"
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "未检测到手柄。连接手柄后，它会显示在这里。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "No discussion titles match “{text}”."
+msgstr "没有与“{text}”匹配的讨论标题。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "No discussions yet. Ask a question or share a tip."
+msgstr "还没有讨论。提个问题或分享一个技巧吧。"
 
 #. A release with no files Quiver Launcher can install, such as one with only source code
 #: ../ui/src/index.tsx
@@ -3960,6 +4137,16 @@ msgstr "选择一个按键绑定，然后按下要用于该绑定的按键或按
 msgid "Picture from this computer"
 msgstr "来自此电脑的图片"
 
+#. Moderation action
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Pin"
+msgstr "置顶"
+
+#. A discussion kept at the top of the list
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Pinned"
+msgstr "已置顶"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Pinned to {installedVersion}."
 msgstr "已固定到 {installedVersion}。"
@@ -3975,6 +4162,11 @@ msgstr "已固定到 {version}"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pinned: click to unpin"
 msgstr "已固定：点击可取消固定"
+
+#. Reason for reporting a post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Piracy or malware"
+msgstr "盗版或恶意软件"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Places"
@@ -4093,6 +4285,22 @@ msgstr "移植版"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "竖版，约 600 × 900。适用于游戏库卡片和电视模式。"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Ports, games, mods and anything else."
+msgstr "移植版、游戏、模组及其他一切。"
+
+#. Button that posts a new discussion
+#. Form field: the opening post of a discussion
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Post"
+msgstr "发布"
+
+#. Button label while a post is being saved
+#. Button label while a post is being saved
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Posting…"
+msgstr "正在发布…"
+
 #. A release its developer marked as a pre-release: an early or experimental build
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
@@ -4145,6 +4353,10 @@ msgstr "将新应用放入对应主机的文件夹"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
 msgstr "正在将其放置到位 →"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Questions about installing, updating and playing with Quiver Launcher."
+msgstr "关于用 Quiver Launcher 安装、更新和游玩的问题。"
 
 #. Controller action that presses the main button of the focused card or app's page, such as Get or Play
 #: ../../apps/launcher/src/spatial.ts
@@ -4320,6 +4532,15 @@ msgstr "Quiver Launcher：前往你的游戏库"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver 会在 {dir} 中为它创建文件夹并打开该文件夹。请将应用文件放入其中；按“游玩”会启动其中的第一个程序。"
+
+#. Tag after the name of someone who runs Quiver
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Quiver staff"
+msgstr "Quiver 工作人员"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Quiver staff hid this, so others can't see it."
+msgstr "Quiver 工作人员隐藏了此内容，其他人看不到。"
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Quiver waits 48 hours before it offers an app's update, so a harmful release can be withdrawn first. If you'd rather have updates as soon as they're out, you can now choose that."
@@ -4526,14 +4747,30 @@ msgstr "重命名文件夹 →"
 msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
 msgstr "要用来自 {taken} 的游戏库替换当前游戏库（{count, plural, one {# 个应用} other {# 个应用}}）吗？当前游戏库也会保留为备份。"
 
+#. Button that reports a post to Quiver staff
+#. Button that sends a report
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Report"
+msgstr "举报"
+
 #. App page button: tell the maintainers something on the page is wrong or missing
 #: ../../apps/launcher/src/correction.tsx
 msgid "Report a problem"
 msgstr "报告问题"
 
+#. The viewer already reported this post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Reported"
+msgstr "已举报"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Repository"
 msgstr "代码仓库"
+
+#. Community board category: apps or features people want
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Requests"
+msgstr "请求"
 
 #. Puts the launch options back as Quiver chose them
 #: ../../apps/launcher/src/launch-options.tsx
@@ -4616,6 +4853,10 @@ msgstr "保存"
 msgid "Save as playlist"
 msgstr "保存为播放列表"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Save changes"
+msgstr "保存更改"
+
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/repository-tokens.tsx
@@ -4685,6 +4926,10 @@ msgstr "向上滚动"
 msgid "Search"
 msgstr "搜索"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Search discussion titles"
+msgstr "搜索讨论标题"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Search for a game"
 msgstr "搜索游戏"
@@ -4702,9 +4947,17 @@ msgstr "搜索移植版、游戏和工具"
 msgid "Search the catalog"
 msgstr "搜索目录"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Search titles"
+msgstr "搜索标题"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Search your library"
 msgstr "搜索你的游戏库"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Searching…"
+msgstr "正在搜索…"
 
 #. Label of how the library is split into sections (by console, say)
 #. Library view option: how the library is split into sections
@@ -4863,8 +5116,10 @@ msgid "Shortcuts"
 msgstr "快捷方式"
 
 #. Controller hint: what Confirm does, scrolling the focused control into view
+#. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
 #. Picks which library tab or playlist the sidebar lists
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Show"
@@ -5000,6 +5255,7 @@ msgid "Sidebar width"
 msgstr "侧边栏宽度"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in"
@@ -5016,6 +5272,10 @@ msgstr "登录以共享播放列表，让其他人可以将其添加到游戏库
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Sign in to share how it runs for you."
 msgstr "登录以分享你的运行体验。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Sign in to start a discussion or comment."
+msgstr "登录后即可发起讨论或评论。"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in to sync your library"
@@ -5080,7 +5340,9 @@ msgstr "有些应用需要你自己的游戏副本，例如 ROM 或光盘映像�
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
 msgstr "有人分享了播放列表？粘贴链接即可将其添加到你的游戏库。它会与对方的列表保持同步。"
 
+#. Reason for reporting a post
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/discussions.tsx
 msgid "Something else"
 msgstr "其他"
 
@@ -5102,6 +5364,11 @@ msgstr "排序模组"
 msgid "Source"
 msgstr "来源"
 
+#. Reason for reporting a post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Spam"
+msgstr "垃圾信息"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
 msgstr "方形，约 512×512。应用页面、图标视图及其快捷方式。"
@@ -5111,6 +5378,10 @@ msgstr "方形，约 512×512。应用页面、图标视图及其快捷方式。
 #: ../../apps/launcher/src/library.tsx
 msgid "Standalone game"
 msgstr "独立游戏"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Start a discussion"
+msgstr "发起讨论"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Start using Quiver"
@@ -5240,6 +5511,10 @@ msgstr "标签"
 msgid "Tags"
 msgstr "标签"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Talk with other players about ports, games and Quiver Launcher. For one app, use the Discussions tab on its page."
+msgstr "和其他玩家聊聊移植版、游戏和 Quiver Launcher。关于某个应用，请使用其页面上的“讨论”标签页。"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it ran after following the setup."
 msgstr "完成设置后，告诉其他人它的运行情况。"
@@ -5284,6 +5559,10 @@ msgstr "谢谢！维护者会查看此问题。"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "That address isn't a repository on {host}."
+msgstr ""
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "That didn't work. Try again."
 msgstr ""
 
 #: ../../apps/launcher/src/store.tsx
@@ -5485,9 +5764,21 @@ msgstr "无法移动此应用的文件夹。"
 msgid "This app's folder can't be renamed."
 msgstr "无法重命名此应用的文件夹。"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "This discussion is locked, so it takes no new comments."
+msgstr "此讨论已锁定，无法再发表新评论。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "This discussion isn't available"
+msgstr "此讨论不可用"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "此下载文件与 Quiver 检查过的文件不匹配，因此未安装。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "This is waiting for Quiver staff to review it before others can see it."
+msgstr "此内容正在等待 Quiver 工作人员审核，审核后其他人才能看到。"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "This mod has no files to download."
@@ -5540,6 +5831,11 @@ msgstr "此代码仓库尚无版本。"
 msgctxt "README callout"
 msgid "Tip"
 msgstr "提示"
+
+#. Form field: a discussion's title
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Title"
+msgstr "标题"
 
 #. When something happened, as in "Updated today"
 #: ../ui/src/index.tsx
@@ -5637,6 +5933,11 @@ msgstr "类型"
 msgid "Under a minute"
 msgstr "不到一分钟"
 
+#. Stops new comments showing on the account page
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Unfollow"
+msgstr "取消关注"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/mods.tsx
@@ -5660,7 +5961,14 @@ msgstr "要卸载 {name} 吗？"
 msgid "Uninstall and remove"
 msgstr "卸载并移除"
 
+#. Moderation action
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Unlock"
+msgstr "解锁"
+
+#. Moderation action
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
 msgid "Unpin"
 msgstr "取消固定"
 
@@ -6017,6 +6325,10 @@ msgstr "玩家评价"
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "哪些方面运行良好，哪些不行？你是否做了什么设置来让它运行或解决问题？"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "What would you like to ask or share? Say which version and platform if it's about a problem."
+msgstr "你想问什么或分享什么？如果是问题，请说明版本和平台。"
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "What's it about?"
 msgstr "它是什么？"
@@ -6071,6 +6383,10 @@ msgstr "哪个应用？"
 msgid "Which download?"
 msgstr "哪个下载项？"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Why are you reporting this?"
+msgstr "你为什么要举报？"
+
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
@@ -6103,11 +6419,17 @@ msgstr "已撤回"
 msgid "Withdrawn:"
 msgstr "已撤回："
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Yes, delete"
+msgstr "是，删除"
+
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Yesterday"
 msgstr "昨天"
 
 #. Tag by the player's own name on their feedback
+#. Tag on the viewer's own post
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You"
 msgstr "你"
@@ -6156,6 +6478,10 @@ msgstr "你已选择等待 48 小时再更新，因此 Quiver Launcher 暂时不
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You've reached the {limit}-character limit."
 msgstr "已达到 {limit} 个字符的上限。"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "You've reached the {max}-character limit."
+msgstr "已达到 {max} 个字符的上限。"
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You've shared how it ran. Has anything changed since?"

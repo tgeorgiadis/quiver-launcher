@@ -62,6 +62,9 @@ and headings, as in English.
 | note (a player's) | comentário | |
 | Installed (a version) / (a tab) / (an app, a mod) | Instalada / Instalados / Instalado | separate strings, by context |
 | Update (a card's badge) / (a button) | Atualização / Atualizar | separate strings, by context |
+| discussion / comment | discussão / comentário | Community board: Comunidade |
+| Follow / Unfollow (a discussion) | Seguir / Deixar de seguir | |
+| Pin / Lock / Report (a discussion) | Fixar / Trancar / Denunciar | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller
