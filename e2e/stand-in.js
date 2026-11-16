@@ -86,6 +86,7 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     // An app's saves (saves-tab.tsx): none known and no backups; making and restoring them is the real app's to show.
     saves_info: () => ({ places: [], from: "none", backups: [] }),
     saves_choose: () => ({ places: [], from: "none", backups: [] }),
+    saves_to_report: () => ({ os: "linux", places: [] }),
     secret_get: () => null,
     // GitLab's request limit, as the real Rust side reads it: the page can't see these headers itself.
     gitlab_limit: async ({ url, token }) => {

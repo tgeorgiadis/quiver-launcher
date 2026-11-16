@@ -282,6 +282,10 @@ export const native = {
   savesWatch: (of: SavesOf) => invoke<void>("saves_watch", { of }),
   /** After an app closed: remembers where it saved and backs its saves up if they changed. */
   savesPlayed: (of: SavesOf) => invoke<SaveBackup | null>("saves_played", { of }),
+  /** The folders the launcher saw an app save in that the catalog hasn't been told about, and the system they're for. */
+  savesToReport: (of: SavesOf) => invoke<{ os: "windows" | "linux" | "macos"; places: string[] }>("saves_to_report", { of }),
+  /** Those places were sent to the catalog: they aren't offered by `savesToReport` again. */
+  savesReported: (of: SavesOf, places: string[]) => invoke<void>("saves_reported", { of, places }),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
   cancelInstall: (id: string) => invoke<void>("cancel_install", { id }),
   /** Fails with "cancelled" when the player says no to Windows uninstalling it. */

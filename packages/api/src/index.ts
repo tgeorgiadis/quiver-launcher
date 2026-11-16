@@ -458,6 +458,12 @@ export type Readme = { markdown: string; rawBase?: string; htmlBase?: string };
  */
 export type DownloadProblem = { version: string; file: string; problem: "missing" | "mismatch" };
 
+/**
+ * Where Quiver Launcher saw an app keep its saves: the system, and each folder as a path under one of the
+ * system's folders ("data/Game/saves"). Nothing about the player or the computer.
+ */
+export type SaveLocationsReport = { os: "windows" | "linux" | "macos"; places: string[] };
+
 export { ApiError } from "./errors";
 
 export const DEFAULT_API = "https://api.quiverlauncher.com/api/v1";
@@ -514,6 +520,11 @@ export type Client = {
    * install, never retried. A 404 ApiError when the site doesn't offer that file.
    */
   downloadProblem(app: Pick<Entry, "slug" | "catalogId">, report: DownloadProblem): Promise<void>;
+  /**
+   * Tells the site where the launcher saw an app keep its saves, which it counts for the staff who list each app's
+   * save locations. A 404 ApiError when the site doesn't know the app or takes none of the places.
+   */
+  saveLocations(app: Pick<Entry, "slug" | "catalogId">, report: SaveLocationsReport): Promise<void>;
 };
 
 export function createClient(base: string = DEFAULT_API, options: ClientOptions = {}): Client {
@@ -653,6 +664,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     async downloadProblem({ slug, catalogId }, report) {
       // By its catalog id, which doesn't change when the app is renamed.
       const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/download-problem`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
+    async saveLocations({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/save-locations`;
       await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
     },
   };
