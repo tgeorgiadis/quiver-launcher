@@ -3028,6 +3028,10 @@ msgstr "삭제되었거나 숨겨졌을 수 있어요."
 msgid "It ran, but I had issues"
 msgstr "실행됐지만 문제가 있었어요"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
+msgstr "<0>{program}</0>을(를) 실행하며, 이 파일은 앱 폴더 밖에 있어 그대로 남습니다. 더 이상 필요 없다면 직접 제거하거나 삭제하세요."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
 msgstr "현재 위치에서 실행되며, 라이브러리에서 제거해도 그대로 남아 있어요."
@@ -3048,6 +3052,10 @@ msgstr "설치, 열기 또는 시작이 되지 않았어요."
 #: ../../apps/launcher/src/App.tsx
 msgid "It's here now."
 msgstr "지금 여기에 있어요."
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "It's outside the app's folder, so moving, renaming, updating or uninstalling the app leaves it where it is."
+msgstr "앱 폴더 밖에 있으므로 앱을 옮기거나, 이름을 바꾸거나, 업데이트하거나, 제거해도 그대로 남습니다."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Its author says it's still broken after the last fix."

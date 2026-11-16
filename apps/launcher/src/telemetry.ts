@@ -429,6 +429,8 @@ const EXPECTED = new RegExp(
     "no space left",
     "not enough space",
     "os error (28|112)\\b",
+    // A program the player chose on a drive they haven't connected (launch.rs).
+    "which isn't connected",
   ].join("|"),
   "i",
 );
@@ -492,6 +494,7 @@ const FAILURE_KINDS: [string, RegExp][] = [
   ["no_download", /no download for|no Windows installer|no files to download/i],
   ["network", /check your connection|error sending request|timed? ?out|took too long|connection (closed|reset|refused|aborted)|dns error|error decoding response body|failed to fetch|networkerror|HTTP status server error|isn't answering right now/i],
   ["no_program", /couldn.t find a program to start/i],
+  ["drive_missing", /which isn't connected/i],
   ["not_found", /os error (2|3)\b|no such file|cannot find the (file|path)/i],
 ];
 

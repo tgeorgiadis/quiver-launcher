@@ -15,7 +15,7 @@ import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, Rep
 import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
-import { LaunchOptionsButton } from "./launch-options";
+import { LaunchOptionsButton, outsideFolder } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
@@ -2149,6 +2149,7 @@ function UninstallPrompt() {
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
   const close = () => confirmUninstall(null);
+  const program = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
     <Dialog label={t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
@@ -2165,6 +2166,15 @@ function UninstallPrompt() {
         {portable && (
           <p>
             <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+          </p>
+        )}
+        {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
+        {program && (
+          <p>
+            <Trans>
+              It starts <code>{program}</code>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don&apos;t
+              want it any more.
+            </Trans>
           </p>
         )}
         <div className="row">

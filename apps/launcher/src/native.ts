@@ -130,7 +130,7 @@ export type DiscordGame ={ name: string; image?: string };
 
 /** How the player wants an app started, when the launcher's own choice isn't right. */
 export type LaunchOptions = {
-  /** The program to start: inside the app's folder (relative), or anywhere for a program the player added. */
+  /** The program to start: inside the app's folder (relative), or anywhere else by its full path, such as a game its installer put on another drive. */
   executable?: string;
   runner?: { kind: "direct" } | { kind: "wine" } | { kind: "proton"; path: string };
   /** What Settings runs every Windows program with on Linux, where the app has no runner of its own (never saved with an app). */
