@@ -268,30 +268,35 @@ function Board({ entryId, category, search = "" }: { entryId?: string; category?
   const text = search.trim();
   const found = useQuery(fns.search, text ? { ...where, text } : "skip") as Summary[] | undefined;
   const empty = list.status === "Exhausted" && results.length === 0 && (pinned?.length ?? 0) === 0;
+  const start = user ? (
+    <button type="button" className="button" onClick={() => setComposing(true)}>
+      <MessageSquare size={16} aria-hidden="true" /> <Trans>Start a discussion</Trans>
+    </button>
+  ) : (
+    <button type="button" className="button secondary" onClick={signIn}>
+      <Trans>Sign in</Trans>
+    </button>
+  );
   return (
     <>
       {composing && user ? (
         <Composer entryId={entryId} category={category} onClose={() => setComposing(false)} />
+      ) : empty && !text ? (
+        <div className="discussion-empty panel">
+          <MessagesSquare size={28} aria-hidden="true" />
+          <p>{t`No discussions yet. Ask a question or share a tip.`}</p>
+          {start}
+        </div>
       ) : (
         <div className="discussions-head">
           <p className="muted">
-            {empty
-              ? t`No discussions yet. Ask a question or share a tip.`
-              : !user
-                ? t`Sign in to start a discussion or comment.`
-                : entryId
-                  ? t`Ask a question, share a tip or talk about this app. For how it ran, use Player feedback.`
-                  : category && i18n._(CATEGORY_HINTS[category])}
+            {!user
+              ? t`Sign in to start a discussion or comment.`
+              : entryId
+                ? t`Ask a question, share a tip or talk about this app. For how it ran, use Player feedback.`
+                : category && i18n._(CATEGORY_HINTS[category])}
           </p>
-          {user ? (
-            <button type="button" className="button" onClick={() => setComposing(true)}>
-              <MessageSquare size={16} aria-hidden="true" /> <Trans>Start a discussion</Trans>
-            </button>
-          ) : (
-            <button type="button" className="button secondary" onClick={signIn}>
-              <Trans>Sign in</Trans>
-            </button>
-          )}
+          {start}
         </div>
       )}
       {text ? (
