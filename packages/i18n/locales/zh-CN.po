@@ -22,6 +22,11 @@ msgstr "（已更改）"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {其他平台还有 # 个应用未显示。} other {其他平台还有 # 个应用未显示。}}"
 
+#. placeholder {0}: stays.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# app stays at the top of the apps folder} other {# apps stay at the top of the apps folder}}"
+msgstr "{0, plural, other {# 个应用留在应用文件夹顶层}}"
+
 #. placeholder {0}: f.apps.length
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# app} other {# apps}}"
@@ -783,6 +788,10 @@ msgstr "引号未闭合。"
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "透明背景的 PNG 图片，用作 Steam 快捷方式图标。"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "A Windows installer put it there, and Windows looks after where it is."
+msgstr "它由 Windows 安装程序放在那里，其位置由 Windows 管理。"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
@@ -2987,6 +2996,10 @@ msgstr "适用于"
 msgid "It didn't run"
 msgstr "无法运行"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "It doesn't have a console. Choose one on its page, and it can move into that console's folder."
+msgstr "它没有设置主机。在它的页面上选择一个主机后，它就能移入该主机的文件夹。"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
 msgstr "它会在该位置拥有自己的文件夹，后续更新也会安装到此文件夹中。"
@@ -4411,6 +4424,10 @@ msgstr "Quiver 会检查游戏是否接受此副本。"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver 会检查你的副本，并将其放到游戏读取的位置，除非游戏本身会提示你提供文件。Quiver 绝不会下载游戏文件。"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
+msgstr "Quiver 无法在目录中查到它的主机。请联网后再试。"
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -6433,6 +6450,10 @@ msgstr "昨天"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You"
 msgstr "你"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
+msgstr "它是你从自己的文件夹或程序添加的，Quiver 会把这类应用留在你放置的位置。"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "You have it installed. If you're happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."

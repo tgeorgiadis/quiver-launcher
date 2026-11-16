@@ -360,8 +360,11 @@ type Launcher = {
   renameFolder: (id: string, name: string) => Promise<string>;
   /** The apps folders, the default first: the one apps install in, and each other one apps are kept in. */
   appsFolders: () => AppsFolder[];
-  /** The installed apps not yet in a folder for their console, each with the apps folder it's in (`unsortedApps`). */
-  unsortedApps: () => { id: string; folder: string; to: string }[];
+  /**
+   * The installed apps not yet in a folder for their console, each with the apps folder it's in, and those that stay
+   * at the top of the apps folder with why (`sortPlan`).
+   */
+  sortPlan: () => ReturnType<typeof sortPlan>;
   /**
    * Makes `to` the folder new apps install in, moving nothing: the apps in the old one stay there and play from it,
    * which becomes one more apps folder. Apps already in `to` become its own again.
@@ -417,11 +420,14 @@ const CONSOLE_FOLDERS: Record<string, string> = {
  * more than one). None for the player's own apps, which have no console to go by.
  */
 export function groupFolder(entry: Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">, consoleNames: Record<string, string> = {}): string | undefined {
-  if (isCustom(entry.id) || isLocal(entry.id)) return undefined;
+  if (isLocal(entry.id)) return undefined;
   if (entry.projectType === "emulator") return "Emulators";
   if (entry.projectType === "tool") return "Tools";
   if (entry.projectType === "game") return "Games";
   const consoles = entry.basedOn?.console ? [entry.basedOn.console] : (entry.consoles ?? []);
+  // An app the player added from a repository goes by the consoles they gave it (or its game's): without one, there's
+  // nothing to say it's a port of anything, so it stays where it is.
+  if (isCustom(entry.id) && !consoles.length) return undefined;
   const id = consoles[0];
   const folder = consoles.length > 1 ? "Multi-console" : !id ? "Other" : (CONSOLE_FOLDERS[id] ?? folderNameFor(consoleNames[id] ?? id));
   return `Ports/${folder}`;
@@ -523,24 +529,56 @@ export function movableApps(installs: Record<string, Install>): MovableApps {
 }
 
 /**
- * The installed apps that grouping by console would put in a console folder but that sit at the top of the default
- * apps folder: each with that folder (`to`), which `moveApp` puts in its console's folder there. Never one in
- * another apps folder (which may already be one console's) or one chosen for it alone, the player's own, a Windows
- * installer's, or one the catalog no longer lists.
+ * An app's entry with the consoles the player chose for it, if they did, in place of the catalog's (and its "Based
+ * on"): where grouping by console puts it, as the library shows it.
  */
-export function unsortedApps(
+export function withOwnConsoles<T extends Pick<Entry, "consoles" | "basedOn">>(entry: T, own: string[] | undefined): T {
+  if (!own) return entry;
+  const { basedOn: _, ...rest } = entry;
+  return { ...rest, consoles: own } as T;
+}
+
+/** Why an app at the top of the default apps folder stays there when the others move into console folders. */
+export type StaysReason = "own" | "installer" | "noConsole" | "unknown";
+
+/**
+ * The installed apps at the top of the default apps folder, as sorting into console folders takes them: those that
+ * move (`moves`, each with that folder as `to`, which `moveApp` puts in its console's folder there), and those that
+ * stay with why (`stays`): the player's own (a local app), a Windows installer's, an app the player added with no
+ * console to go by, or one the catalog hasn't answered for. Never one in another apps folder (which may already be
+ * one console's) or one chosen for it alone. `own` is the consoles the player chose for an app, by id.
+ */
+export function sortPlan(
   installs: Record<string, Install>,
   appsDir: string,
   catalog: Record<string, Pick<Entry, "id" | "projectType" | "consoles" | "basedOn">>,
   consoleNames: Record<string, string> = {},
-): { id: string; folder: string; to: string }[] {
-  const apps = Object.entries(installs).flatMap(([id, i]) => {
-    if (i.dir || !movable(i) || !catalog[id] || !groupFolder(catalog[id], consoleNames)) return [];
-    return [{ id, folder: i.folder, to: appsDir }];
-  });
-  // A folder two entries share moves once, with the first; the other goes with it (`moveApp`).
-  return apps.filter((a, n) => !apps.slice(0, n).some((b) => samePath(joinPath(appsDir, b.folder), joinPath(appsDir, a.folder))));
+  own: Record<string, string[] | undefined> = {},
+): { moves: { id: string; folder: string; to: string }[]; stays: { id: string; folder: string; why: StaysReason }[] } {
+  const moves: { id: string; folder: string; to: string }[] = [];
+  const stays: { id: string; folder: string; why: StaysReason }[] = [];
+  for (const [id, i] of Object.entries(installs)) {
+    if (i.dir) continue;
+    const why: StaysReason | undefined =
+      i.local || isLocal(id) ? "own"
+      : i.installer === "msi" ? "installer"
+      : !catalog[id] ? "unknown"
+      : !groupFolder(withOwnConsoles(catalog[id], own[id]), consoleNames) ? "noConsole"
+      : undefined;
+    if (why) stays.push({ id, folder: i.folder, why });
+    else moves.push({ id, folder: i.folder, to: appsDir });
+  }
+  // A folder two entries share moves once, with the first; the other goes with it (`moveApp`). One that stays with
+  // another of its folder moving goes too, so it isn't listed as staying.
+  const sameFolder = (a: { folder: string }, b: { folder: string }) => samePath(joinPath(appsDir, a.folder), joinPath(appsDir, b.folder));
+  return {
+    moves: moves.filter((a, n) => !moves.slice(0, n).some((b) => sameFolder(a, b))),
+    stays: stays.filter((a, n) => !moves.some((b) => sameFolder(a, b)) && !stays.slice(0, n).some((b) => sameFolder(a, b))),
+  };
 }
+
+/** The installed apps that sorting into console folders moves (`sortPlan`'s `moves`). */
+export const unsortedApps = (...args: Parameters<typeof sortPlan>) => sortPlan(...args).moves;
 
 /** Whether an install may be one of 3.x's that came over before Quiver knew which of them were in its apps folder. */
 export const unsureInApps = (i: Install) => Boolean(i.dir && !i.inApps && !i.local && i.installer !== "msi");
@@ -1360,6 +1398,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => void off.then((stop) => stop());
   }, [setNotice]);
   const library = useMemo(() => allItems.filter((i) => !i.removed), [allItems]);
+  // The consoles the player chose for an app, by id: where grouping by console puts it, as the library shows it.
+  const ownConsoles = useMemo(() => Object.fromEntries(library.flatMap((i) => (i.overrides?.consoles ? [[i.id, i.overrides.consoles]] : []))), [library]);
   // The catalog comes from the site's REST API, which Cloudflare caches for every player; only the account uses Convex.
   const client = useMemo(() => createClient(config.api, {
         onFallback: (e) => track("catalog_fallback_used", { reason: reasonOf(e), error: failureKind(e) }),
@@ -2009,7 +2049,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // Grouped by console: in the default apps folder, in its console's folder there. Any other folder (another
       // apps folder, which may already be one console's, or one chosen for it alone) is exactly where it goes.
       const desktop = config.os !== "android" && config.os !== "ios";
-      const group = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(catalog[entry.id] ?? entry, consoleNames) : undefined;
+      const group = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(withOwnConsoles(catalog[entry.id] ?? entry, ownConsoles[entry.id]), consoleNames) : undefined;
       const into = group ? joinPath(config.appsDir, group) : chosenFolder;
       const done = await native.install({
         id: entry.id,
@@ -2618,7 +2658,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     dismiss: (id) => setJobs(({ [id]: _, ...rest }) => rest),
     movableApps: () => movableApps(installs),
     appsFolders: () => appsFolders(installs, config.appsDir),
-    unsortedApps: () => unsortedApps(installs, config.appsDir, catalog, consoleNames),
+    sortPlan: () => sortPlan(installs, config.appsDir, catalog, consoleNames, ownConsoles),
     async switchAppsFolder(to) {
       const from = config.appsDir;
       if (samePath(to, from)) return;
@@ -2722,7 +2762,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const listed = appsFolders(installs, config.appsDir).some((f) => samePath(f.path, to));
         // Into the default apps folder while apps are grouped by console: its console's folder there, kept from
         // where it was or worked out now. Another folder is exactly where it goes.
-        const group = samePath(to, config.appsDir) && settings.groupByConsole ? (install.group ?? groupFolder(catalog[id] ?? { id, projectType: "port" }, consoleNames)) : undefined;
+        const group = samePath(to, config.appsDir) && settings.groupByConsole ? (install.group ?? groupFolder(withOwnConsoles(catalog[id] ?? { id, projectType: "port" }, ownConsoles[id]), consoleNames)) : undefined;
         const moved = await native.moveApp(id, install.folder, install.dir, group ? joinPath(to, group) : to, { inApps: listed, group });
         setInstalls((i) => {
           const now = i[id];

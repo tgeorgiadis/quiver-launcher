@@ -22,6 +22,11 @@ msgstr "(modificadas)"
 msgid "{0, plural, one {# app for other platforms isn't shown.} other {# apps for other platforms aren't shown.}}"
 msgstr "{0, plural, one {No se muestra # app para otras plataformas.} other {No se muestran # apps para otras plataformas.}}"
 
+#. placeholder {0}: stays.length
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "{0, plural, one {# app stays at the top of the apps folder} other {# apps stay at the top of the apps folder}}"
+msgstr "{0, plural, one {# app se queda en la raíz de la carpeta de apps} other {# apps se quedan en la raíz de la carpeta de apps}}"
+
 #. placeholder {0}: f.apps.length
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# app} other {# apps}}"
@@ -783,6 +788,10 @@ msgstr "Hay comillas sin cerrar."
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "Un PNG transparente. Para su acceso directo de Steam."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "A Windows installer put it there, and Windows looks after where it is."
+msgstr "La puso ahí un instalador de Windows, y Windows se encarga de dónde está."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "About this project"
@@ -2987,6 +2996,10 @@ msgstr "Es para"
 msgid "It didn't run"
 msgstr "No funcionó"
 
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "It doesn't have a console. Choose one on its page, and it can move into that console's folder."
+msgstr "No tiene consola. Elige una en su página y podrá moverse a la carpeta de esa consola."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "It gets a folder of its own in there, and updates keep installing into it."
 msgstr "Tendrá su propia carpeta ahí, y las actualizaciones se seguirán instalando en ella."
@@ -4411,6 +4424,10 @@ msgstr "Quiver revisa que sea una copia que el juego acepta."
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver revisa tu copia y la pone donde el juego la lee, salvo que el juego la pida por su cuenta. Nunca descarga archivos de juegos."
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
+msgstr "Quiver no pudo buscarla en el catálogo para saber su consola. Vuelve a intentarlo cuando tengas conexión."
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver couldn't open that music file. It may have been moved or deleted."
@@ -6433,6 +6450,10 @@ msgstr "Ayer"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You"
 msgstr "Tú"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
+msgstr "La agregaste desde tu propia carpeta o programa, y Quiver deja esas apps donde las pusiste."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "You have it installed. If you're happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."

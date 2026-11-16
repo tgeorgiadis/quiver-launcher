@@ -11,7 +11,7 @@ import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import { Button, Field, Panel } from "@quiverlauncher/ui/controls";
 import type { MessageDescriptor } from "@lingui/core";
-import { folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow } from "./store";
+import { folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -457,6 +457,20 @@ function MusicSetting() {
   );
 }
 
+/** Why an app stays at the top of the apps folder when the others move into console folders. */
+function staysWhy(why: StaysReason) {
+  switch (why) {
+    case "own":
+      return t`You added it from your own folder or program, and Quiver leaves those where you put them.`;
+    case "installer":
+      return t`A Windows installer put it there, and Windows looks after where it is.`;
+    case "noConsole":
+      return t`It doesn't have a console. Choose one on its page, and it can move into that console's folder.`;
+    case "unknown":
+      return t`Quiver couldn't look it up in the catalog to find its console. Try again once you're online.`;
+  }
+}
+
 /** What a move came to: how many moved, then any that couldn't (still where they were) and any old files left behind. */
 type MoveOutcome = { text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] };
 function MoveMessage({ message }: { message: MoveOutcome }) {
@@ -504,7 +518,7 @@ function MoveMessage({ message }: { message: MoveOutcome }) {
  * has got.
  */
 export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (busy: boolean) => void } = {}) {
-  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, unsortedApps, moveApp } = useLauncher();
+  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, sortPlan, moveApp } = useLauncher();
   const [asking, setAsking] = useState<{ to: string } | null>(null);
   // Moving the apps along is the player's choice; keeping them where they are is instant and first.
   const [keep, setKeep] = useState(true);
@@ -550,9 +564,10 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
   const fromV3 = (path: string) => v3Folders.some((f) => samePath(f, path));
   // A path's separator as the player's system writes it, for the help on console folders.
   const slash = config.os === "windows" ? "\\" : "/";
-  const unsorted = unsortedApps();
+  const { moves: unsorted, stays } = sortPlan();
   // Sorting the apps already installed into console folders: how many of how many have moved.
   const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
+  const [showStays, setShowStays] = useState(false);
   const idle = !asking && !bringing && !moving && !checking && !sorting;
   // A move under way, or the check before it: the setup's own buttons wait for it.
   const working = Boolean(moving || checking || sorting);
@@ -634,6 +649,8 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
         ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
         : { text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into console folders.`, left },
     );
+    // What stays at the top of the apps folder is listed below, open, so the player sees why.
+    setShowStays(true);
   };
   const open = (path: string) => void native.openAppsFolder(path).catch((e) => setMessage({ text: String(e), error: true }));
   return (
@@ -672,6 +689,23 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
             </Button>
           )}
         </div>
+      )}
+      {desktop && !inSetup && settings.groupByConsole && !sorting && stays.length > 0 && (
+        <details className="apps-staying muted" open={showStays} onToggle={(e) => setShowStays(e.currentTarget.open)}>
+          <summary>
+            {plural(stays.length, {
+              one: "# app stays at the top of the apps folder",
+              other: "# apps stay at the top of the apps folder",
+            })}
+          </summary>
+          <ul className="apps-left">
+            {stays.map((a) => (
+              <li key={a.id}>
+                <strong>{a.folder}</strong>: {staysWhy(a.why)}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
       <ul className="apps-folders">
         {(inSetup ? [home] : folders).map((f) => {
