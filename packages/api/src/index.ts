@@ -185,6 +185,12 @@ export type Release = {
    */
   otherAssets?: Asset[];
   installationOverride?: InstallSettings;
+  /**
+   * The repository ("owner/name") its host says the release is in, for a release read from the host itself. It
+   * differs from the one asked for when the repository was renamed or moved to another owner since, as the host
+   * still answers to the old name.
+   */
+  repository?: string;
 };
 
 export type Withdrawn = { version: string; reason: string; at: number };

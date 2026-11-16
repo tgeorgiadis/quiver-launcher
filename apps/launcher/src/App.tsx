@@ -1179,6 +1179,8 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
  */
 /** Each tab of an app's page's icon: outlined and grey, filled in the accent while it's open (app.css). */
 const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: Monitor };
+/** A tab of an app's page: which, its name, and a count beside it. */
+type PageTab = readonly [keyof typeof TAB_ICONS, string, string | undefined];
 
 function AppPage({
   entry: opened,
@@ -1277,14 +1279,20 @@ function AppPage({
   const checking = checkingOf(detail, releases);
   // Only when the app has videos, as on the website.
   const media = detail?.media ?? [];
-  const tabs = [
-    ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined],
-    ...(media.length ? ([["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)]] as const) : []),
-    ["releases", t({ message: "Releases", comment: "Tab of an app's page" }), history.items && `${history.items.length}${history.more ? "+" : ""}`],
+  const overviewTab: PageTab = ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined];
+  const computerTab: PageTab = ["computer", t`On this computer`, undefined];
+  // One the player added has no site page, so only its README and what this computer has of it, each a tab as a
+  // catalog app's are; a local app has no README, so no tabs.
+  const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : [])];
+  const siteTabs: PageTab[] = [
+    overviewTab,
+    ...(media.length ? [["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)] as const] : []),
+    ["releases", t({ message: "Releases", comment: "Tab of an app's page" }), history.items ? `${history.items.length}${history.more ? "+" : ""}` : undefined],
     ["feedback", t`Player feedback`, String(said)],
     ["discussions", t({ message: "Discussions", comment: "Tab on an app's page: players' threads about it" }), threads === undefined ? undefined : threads >= 100 ? "100+" : String(threads)],
-    ...(item || install ? ([["computer", t`On this computer`, undefined]] as const) : []),
-  ] as const;
+    ...(item || install ? [computerTab] : []),
+  ];
+  const tabs = site ? siteTabs : ownTabs.length > 1 ? ownTabs : [];
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
   const [problem, setProblem] = useState<string | null>(null);
   // The installed release was withdrawn: why, over the way off it.
@@ -1303,11 +1311,11 @@ function AppPage({
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
   const blockedWhy = install?.blocked ?? "";
-  // What this computer has of the app, and its setup: a tab of its own for a catalog app, the page itself for one of the player's own.
+  // What this computer has of the app, and its setup: a tab of its own, or the page itself for a local app.
   const computer = (item || install) && (
     <section className="app-panel computer-panel" aria-label={t`On this computer`}>
       {/* A tab says it already. */}
-      {!site && (
+      {!tabs.length && (
         <h3>
           <Trans>On this computer</Trans>
         </h3>
@@ -1623,7 +1631,7 @@ function AppPage({
         </div>
       </div>
       <div className="detail-bar">
-        {site && (
+        {tabs.length > 0 && (
           <div className="detail-tabs" role="tablist" aria-label={t`App sections`}>
             <TabPrompt step="prevTab" />
             {tabs.map(([key, label, count]) => {
@@ -1655,7 +1663,7 @@ function AppPage({
         )}
       </div>
       <div className="app-columns">
-        <div ref={content} className="app-content" role={site ? "tabpanel" : undefined}>
+        <div ref={content} className="app-content" role={tabs.length ? "tabpanel" : undefined}>
           {tab === "overview" && (
             <>
               {/* Short, general facts first, over the README, which can run long. */}
@@ -1674,7 +1682,7 @@ function AppPage({
           )}
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
           {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
-          {(site ? tab === "computer" : true) && computer}
+          {(tabs.length ? tab === "computer" : true) && computer}
           {tab === "discussions" && <DiscussionsTab entryId={entry.id} />}
           {tab === "feedback" && (
             <FeedbackTab

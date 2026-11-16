@@ -14,8 +14,20 @@ type RawRelease = {
   prerelease: boolean;
   published_at: string;
   body?: string;
+  /** The release's page, under the repository's name now: https://github.com/owner/name/releases/tag/v1. */
+  html_url?: string;
   assets: { id: number; name: string; browser_download_url: string; size: number; digest?: string }[];
 };
+
+/** The "owner/name" a release's page is under, which is the repository's name now. */
+export function repositoryOf(page: string | undefined): string | undefined {
+  try {
+    const [owner, name, releases] = new URL(page ?? "").pathname.split("/").filter(Boolean);
+    return owner && name && releases === "releases" ? `${owner}/${name}` : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 const fromGithub = (r: RawRelease): Release => ({
   id: r.tag_name,
@@ -23,6 +35,7 @@ const fromGithub = (r: RawRelease): Release => ({
   releasedAt: Date.parse(r.published_at) || 0,
   prerelease: r.prerelease,
   notes: r.body,
+  ...(repositoryOf(r.html_url) ? { repository: repositoryOf(r.html_url) } : {}),
   assets: r.assets.map((a) => ({
     id: String(a.id),
     url: a.browser_download_url,

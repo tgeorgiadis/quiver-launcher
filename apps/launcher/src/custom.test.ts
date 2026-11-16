@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { parseRepository, type Client, type GameDetail, type GameMatch } from "@quiverlauncher/api";
 import type { LibraryItem } from "./store";
 import { changesFrom, joinAccount } from "./sync";
-import { bestGameArt, folderNameFor, freeFolder } from "./custom";
+import { appsOfRepository, bestGameArt, folderNameFor, freeFolder, movedTo } from "./custom";
 
 test("a pasted repository is found on GitHub or GitLab, from any page of it", () => {
   expect(parseRepository("owner/name")).toEqual({ provider: "github", host: "github.com", repository: "owner/name" });
@@ -90,4 +90,20 @@ test("a year after an app's name isn't searched for as part of the game's", asyn
   await bestGameArt(client, "Folklore (2007)");
   await bestGameArt(client, "(2007)");
   expect(searched).toEqual(["Folklore", "(2007)"]);
+});
+
+test("a repository renamed or moved since it was added is found under its name now", () => {
+  const ref = { provider: "github", repository: "HarbourMasters/2ship2harkinian" };
+  expect(movedTo(ref, [{ repository: "2ship2harkinian/2ship2harkinian" }])).toBe("2ship2harkinian/2ship2harkinian");
+  // The same name in another case, or releases that don't say, aren't a move.
+  expect(movedTo(ref, [{ repository: "harbourmasters/2ship2harkinian" }])).toBeUndefined();
+  expect(movedTo(ref, [{}])).toBeUndefined();
+  expect(movedTo(ref, null)).toBeUndefined();
+
+  const statuses = [
+    { id: "2ship", provider: "github", repository: "2ship2harkinian/2ship2harkinian" },
+    { id: "soh", provider: "github", repository: "harbourmasters/shipwright" },
+  ];
+  expect(appsOfRepository(statuses, ref)).toEqual([]);
+  expect(appsOfRepository(statuses, ref, "2ship2harkinian/2ship2harkinian").map((s) => s.id)).toEqual(["2ship"]);
 });
