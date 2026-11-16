@@ -1011,6 +1011,11 @@ msgstr "所有應用程式"
 msgid "All consoles"
 msgstr "所有主機"
 
+#. Menu item, last under Manage: opens the app's page at its Manage tab
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "All options…"
+msgstr "所有選項…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
 msgstr "其他所有平臺"
@@ -3391,6 +3396,10 @@ msgstr "在你的應用程式資料夾中建立一個資料夾，用於存放該
 
 #. Menu item opening an app's folder, shortcuts and uninstalling
 #. Menu item opening an app's folder, shortcuts and uninstalling
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "管理"
@@ -4020,10 +4029,6 @@ msgstr "提供它們"
 msgid "OK"
 msgstr "確定"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "On this computer"
-msgstr "在此電腦上"
-
 #. Library view option: a game's ports (apps that play it) share one card, which lists them
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
@@ -4032,6 +4037,10 @@ msgstr "每個遊戲顯示一張卡片"
 #: ../../apps/launcher/src/App.tsx
 msgid "Only hidden apps"
 msgstr "僅顯示隱藏的應用程式"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Only your library shows this name. Its folder keeps the name it has."
+msgstr "此名稱僅在你的遊戲庫中顯示。資料夾名稱維持不變。"
 
 #. How strongly the library's background picture shows
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4745,12 +4754,17 @@ msgstr "從遊戲庫中移除後，其檔案仍會保留在原處。"
 msgid "Removing…"
 msgstr "正在移除 →"
 
+#. Button beside an app's name on its page: gives it a name of the player's own
 #. Button: rename one of the player's tags
 #. Renames an app's folder
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Rename"
 msgstr "重新命名"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Rename {app}"
+msgstr "重新命名 {app}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename {app}'s folder"
@@ -4767,6 +4781,11 @@ msgstr "重新命名資料夾"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Rename folder…"
 msgstr "重新命名資料夾 →"
+
+#. Menu item: gives an app in the library a name of the player's own
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Rename…"
+msgstr "重新命名…"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
@@ -6211,6 +6230,10 @@ msgstr "最多輸入 100 個字元。"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Use the catalog's consoles"
 msgstr "使用目錄中的主機資訊"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the catalog's name"
+msgstr "使用目錄中的名稱"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the catalog's name and artwork"

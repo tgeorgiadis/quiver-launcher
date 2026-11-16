@@ -1010,6 +1010,11 @@ msgstr "All apps"
 msgid "All consoles"
 msgstr "All consoles"
 
+#. Menu item, last under Manage: opens the app's page at its Manage tab
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "All options…"
+msgstr "All options…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
 msgstr "All other platforms"
@@ -3390,6 +3395,10 @@ msgstr "Makes a folder in your apps folder to put the app in."
 
 #. Menu item opening an app's folder, shortcuts and uninstalling
 #. Menu item opening an app's folder, shortcuts and uninstalling
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "Manage"
@@ -4019,10 +4028,6 @@ msgstr "Offer them"
 msgid "OK"
 msgstr "OK"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "On this computer"
-msgstr "On this computer"
-
 #. Library view option: a game's ports (apps that play it) share one card, which lists them
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
@@ -4031,6 +4036,10 @@ msgstr "One card for each game"
 #: ../../apps/launcher/src/App.tsx
 msgid "Only hidden apps"
 msgstr "Only hidden apps"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Only your library shows this name. Its folder keeps the name it has."
+msgstr "Only your library shows this name. Its folder keeps the name it has."
 
 #. How strongly the library's background picture shows
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4744,12 +4753,17 @@ msgstr "Removing it from your library leaves its files where they are."
 msgid "Removing…"
 msgstr "Removing…"
 
+#. Button beside an app's name on its page: gives it a name of the player's own
 #. Button: rename one of the player's tags
 #. Renames an app's folder
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Rename"
 msgstr "Rename"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Rename {app}"
+msgstr "Rename {app}"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename {app}'s folder"
@@ -4766,6 +4780,11 @@ msgstr "Rename folder"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Rename folder…"
 msgstr "Rename folder…"
+
+#. Menu item: gives an app in the library a name of the player's own
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Rename…"
+msgstr "Rename…"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
@@ -6210,6 +6229,10 @@ msgstr "Use no more than 100 characters."
 #: ../../apps/launcher/src/detail.tsx
 msgid "Use the catalog's consoles"
 msgstr "Use the catalog's consoles"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the catalog's name"
+msgstr "Use the catalog's name"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the catalog's name and artwork"

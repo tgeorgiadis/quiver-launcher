@@ -134,10 +134,10 @@ test("what the launcher refuses shows in the form, which stays open", async () =
   await form.locator(".job-error", { hasText: "isn't a valid" }).waitFor();
 });
 
-test("it's a form on the app's On this computer tab too", async () => {
+test("it's a form on the app's Manage tab too", async () => {
   await folderHas([]);
   await page.locator("article[data-slug] .card-open").first().click();
-  await page.getByRole("tab", { name: "On this computer" }).click().catch(() => page.locator("button", { hasText: "On this computer" }).first().click());
+  await page.getByRole("tab", { name: "Manage" }).click().catch(() => page.locator("button", { hasText: "Manage" }).first().click());
   await page.locator(".panel-action", { hasText: "Add files to folder" }).click();
   await page.locator(".computer-panel form.add-files").getByRole("checkbox").waitFor();
 });

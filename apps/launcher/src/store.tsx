@@ -346,6 +346,12 @@ type Launcher = {
   /** The app whose folder the player is renaming; null closes the prompt. */
   renaming: Entry | null;
   askRename: (entry: Entry | null) => void;
+  /** The library app the player is giving a name of their own (its id); null closes the prompt. */
+  naming: string | null;
+  askName: (id: string | null) => void;
+  /** The app whose page is to show its Manage tab, once it's open (its id); null once it has. */
+  managing: string | null;
+  askManage: (id: string | null) => void;
   /**
    * The app the player is choosing a folder for: to install it in (the version and options it was going to install
    * with, if any), or move it to; null closes the prompt.
@@ -1386,6 +1392,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [questions, setQuestions] = useState<Asking[]>([]);
   const [confirming, confirmUninstall] = useState<Confirming | null>(null);
   const [renaming, askRename] = useState<Entry | null>(null);
+  const [naming, askName] = useState<string | null>(null);
+  const [managing, askManage] = useState<string | null>(null);
   const [placing, setPlacing] = useState<Placing | null>(null);
   const askPlace = (entry: Entry | null, release?: Release, options?: GetOptions) => setPlacing(entry ? { entry, release, options } : null);
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
@@ -2695,6 +2703,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     renaming,
     askRename,
+    naming,
+    askName,
+    managing,
+    askManage,
     placing,
     askPlace,
     addingFiles,

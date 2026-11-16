@@ -294,7 +294,7 @@ function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () =>
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves } = useLauncher();
+  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askName, askManage, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -356,7 +356,10 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
 
   const { main, top } = useMainItems(entry, onOpen);
 
+  const inLibrary = library.find((i) => i.id === entry.id);
   const manage: Item[] = [];
+  // The player's own name for it, as its page's Manage tab has under Change name or artwork.
+  if (inLibrary) manage.push({ text: t({ message: "Rename…", comment: "Menu item: gives an app in the library a name of the player's own" }), act: () => askName(entry.id) });
   if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e), { stays: true })) });
   if (renamable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Rename folder…`, act: () => askRename(entry) });
   if (filesAddable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Add files to folder…`, act: () => askAddFiles(entry) });
@@ -420,7 +423,6 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   };
 
   // The player's tags: this app's, and those on their other apps, to tick.
-  const inLibrary = library.find((i) => i.id === entry.id);
   const tags = inLibrary?.overrides?.tags ?? [];
   const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase());
   const allTags = [...tags, ...library.flatMap((i) => i.overrides?.tags ?? [])].filter((tag, i, all) => all.findIndex((x) => x.toLowerCase() === tag.toLowerCase()) === i);
@@ -598,6 +600,13 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
           {manage.map((i) => item(i, true))}
           <hr />
           {leave.map((i) => item(i, true))}
+          {/* The rest of what the app's page has under Manage: its mods, launch options, updates and artwork. */}
+          {(inLibrary || install) && (
+            <>
+              <hr />
+              {item({ text: t({ message: "All options…", comment: "Menu item, last under Manage: opens the app's page at its Manage tab" }), act: () => (askManage(entry.id), onOpen()) }, true)}
+            </>
+          )}
         </>,
       )}
       <hr />

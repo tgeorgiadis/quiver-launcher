@@ -364,6 +364,12 @@ main.app-main { padding: 0 0 40px; }
 .app-hero .game-chip { white-space: normal; }
 /* The app's header (the designer's mockup): what it is, its version apart at the right, then how it runs and large buttons. */
 .app-heading { flex: 1; min-width: 0; }
+/* Its name, with a pencil beside it to rename it: faint until the pointer is on the name or the focus on the pencil. */
+.app-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.app-title h1 { min-width: 0; }
+.title-rename { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted); opacity: 0.45; cursor: pointer; }
+.app-title:hover .title-rename, .title-rename:focus-visible { opacity: 1; }
+.title-rename:hover { background: color-mix(in srgb, var(--text) 12%, transparent); color: var(--text); }
 .app-version { flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 18px; max-width: 40%; padding: 9px 16px; border: 1px solid var(--line-strong); border-radius: 10px; background: color-mix(in srgb, var(--panel) 80%, transparent); font-size: 14px; backdrop-filter: blur(6px); }
 .app-version .muted { font-size: 14px; }
 .app-version .verified.withdrawn { color: var(--danger); }
@@ -470,7 +476,7 @@ main.app-main { padding: 0 0 40px; }
   .app-hero { flex-wrap: wrap; }
   .app-version { max-width: none; justify-content: flex-start; flex-basis: 100%; }
 }
-/* One column: what was beside it is in the tabs (Project details in Overview, On this computer its own). */
+/* One column: what was beside it is in the tabs (Project details in Overview, Manage its own). */
 .app-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 28px var(--gutter) 32px; }
 /*
  * The tabs centred over what they show, which keeps to a column of its own in the middle with room either side,
@@ -487,7 +493,7 @@ main.app-main { padding: 0 0 40px; }
 .app-panel h3 { font-size: 15px; }
 .app-panel .row { flex-wrap: wrap; }
 /*
- * "On this computer": groups under small headings, each action a full-width
+ * The Manage tab: groups under small headings, each action a full-width
  * button with its icon (a chevron when it opens something), and what opens
  * as an inset card with its own title and close button.
  */
