@@ -221,6 +221,36 @@ export type PadLabels = {
   desktop?: boolean;
 };
 
+/** An app, as the Rust side needs it named for its saves. */
+export type SavesOf = {
+  id: string;
+  folder: string;
+  dir?: string;
+  wine: boolean;
+  /** The catalog's places for its saves. */
+  locations: { root: string; path: string; os?: string[] }[];
+  version?: string;
+  /** What it's called, to find folders named like it. */
+  names: string[];
+};
+export type SaveBackup = {
+  /** Its file's name, which names it to restore and remove. */
+  name: string;
+  at: number;
+  size: number;
+  files: number;
+  version?: string | null;
+  /** "played", "manual", "update", "uninstall" or "restore". */
+  reason: string;
+  device: string;
+};
+export type SavesInfo = {
+  places: { template: string; path: string; exists: boolean }[];
+  /** Who said where they are. */
+  from: "you" | "catalog" | "found" | "none";
+  backups: SaveBackup[];
+};
+
 export const native = {
   config: () => invoke<Config>("config"),
   readState: <T>(name: StateFile) => invoke<T | null>("read_state", { name }),
@@ -238,6 +268,20 @@ export const native = {
   setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long. */
   onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
+  /** Where an app's saves are and its backups (saves.rs). */
+  savesInfo: (of: SavesOf) => invoke<SavesInfo | null>("saves_info", { of }),
+  /** Backs up an app's saves if they changed; null when there was nothing new. Fails while the app runs. */
+  savesBackup: (of: SavesOf, reason: "manual" | "update" | "uninstall") => invoke<SaveBackup | null>("saves_backup", { of, reason }),
+  /** Puts a backup back, after backing up what's there; resolves to how many files. */
+  savesRestore: (of: SavesOf, name: string) => invoke<number>("saves_restore", { of, name }),
+  savesRemove: (id: string, name: string) => invoke<void>("saves_remove", { id, name }),
+  /** The folder the player says an app saves in, or none to go back to Quiver's choice. */
+  savesChoose: (of: SavesOf, path?: string) => invoke<SavesInfo | null>("saves_choose", { of, path }),
+  savesOpen: (of: SavesOf, template: string) => invoke<void>("saves_open", { of, template }),
+  /** Before an app starts: notes what's in its likely save places, so `savesPlayed` can tell where it saved. */
+  savesWatch: (of: SavesOf) => invoke<void>("saves_watch", { of }),
+  /** After an app closed: remembers where it saved and backs its saves up if they changed. */
+  savesPlayed: (of: SavesOf) => invoke<SaveBackup | null>("saves_played", { of }),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
   cancelInstall: (id: string) => invoke<void>("cancel_install", { id }),
   /** Fails with "cancelled" when the player says no to Windows uninstalling it. */
