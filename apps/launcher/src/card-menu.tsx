@@ -16,7 +16,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { canGet, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { manageTags } from "./tag-settings";
-import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
+import { foldersOn, providerName, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
 import { toggleHidden } from "./browse-hidden";
@@ -121,7 +121,7 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
       {top.map((i) => item(i.text, i.act))}
       {source === undefined
         ? item(t`View repository`, () => {}, true)
-        : source && item(source.provider === "gitlab" ? t`View on GitLab` : t`View on GitHub`, () => void native.openUrl(source.url))}
+        : source && item(t`View on ${providerName(source.provider, source.host)}`, () => void native.openUrl(source.url))}
       {item(t`Read the README`, onReadme)}
       <hr />
       {item(t`Share feedback…`, onFeedback)}
