@@ -1390,6 +1390,8 @@ html[data-navigating] .shelf-row { scroll-snap-type: none; }
 @keyframes progress-sweep { from { left: -30%; } to { left: 100%; } }
 @media (prefers-reduced-motion: reduce) { .progress.waiting .bar { animation: none; left: 0; width: 100%; opacity: 0.5; } }
 .apps-left { margin: 4px 0 0; padding-left: 18px; font-size: 12px; overflow-wrap: anywhere; }
+.apps-staying { margin: 8px 0; font-size: 13px; }
+.apps-staying summary { cursor: pointer; }
 /* A panel (the shared one), outlined in the accent while it waits for an answer. */
 .move-confirm { max-width: 620px; border-color: var(--accent); }
 .move-notes { display: grid; gap: 6px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.45; }
