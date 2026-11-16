@@ -1,0 +1,62 @@
+/*
+ * Discussions (discussions.tsx), as on the website (its src/styles.css):
+ * the app page's tab, the Community page and a discussion's own page.
+ */
+.topbar button.community-button { position: relative; width: 34px; height: 34px; padding: 0; border-radius: 50%; }
+.topbar button.community-button.active { background: var(--field); }
+.topbar button.community-button.active svg { color: var(--accent); }
+
+.community-page, .discussion-page { display: flex; flex-direction: column; gap: 16px; max-width: 960px; padding: 20px var(--gutter) 48px; }
+.community-page h1 { margin: 0; font-size: 28px; line-height: 1.2; }
+.community-page > p { margin: 0; max-width: 72ch; font-size: 14px; }
+.community-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; }
+.community-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 8px; background: var(--field); color: var(--muted); }
+.community-page .community-search input { min-width: 200px; height: 36px; border: 0; background: transparent; color: var(--fg); font-size: 13px; }
+
+.discussions { display: flex; flex-direction: column; gap: 16px; }
+.discussions-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; }
+.discussions-head p { margin: 0; max-width: 72ch; font-size: 14px; }
+.discussion-list { list-style: none; margin: 0; padding: 0; }
+.discussion-row + .discussion-row { border-top: 1px solid var(--line); }
+.discussion-row-link { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; padding: 12px 16px; border: 0; border-radius: 0; background: none; color: var(--fg); text-align: left; cursor: pointer; }
+.discussion-row-link:hover .discussion-row-title, .discussion-row-link:focus-visible .discussion-row-title { color: var(--link); }
+.discussion-row-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--strong); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.discussion-row-meta { color: var(--muted); font-size: 12px; }
+.discussion-flag { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; font-weight: 500; }
+.discussion-flag.new { border-color: var(--accent); color: var(--accent); }
+
+.discussion-composer { display: grid; gap: 12px; padding: 16px; }
+.discussion-composer h3 { margin: 0; font-size: 16px; }
+.discussion-composer .field, .discussion-comment-box .field { color: var(--muted); }
+.discussion-composer textarea, .discussion-comment-box textarea { width: 100%; resize: vertical; }
+.discussion-form-actions { display: flex; gap: 8px; }
+.discussion-count { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+.discussion-count.full { color: var(--caution); }
+
+.discussion-thread .eyebrow { margin: 0 0 4px; }
+.discussion-thread h1 { margin: 0 0 16px; font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.discussion-post { padding: 16px; }
+.discussion-post-head { display: flex; align-items: center; gap: 12px; }
+.discussion-post-head > div { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.discussion-post-head small { color: var(--muted); font-size: 12px; }
+.discussion-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.discussion-name .you-tag { margin-left: 0; }
+img.avatar { object-fit: cover; }
+.discussion-body { margin: 12px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; }
+.discussion-body a { color: var(--link); text-decoration: underline; }
+.discussion-deleted { margin: 12px 0 0; font-style: italic; }
+.discussion-hidden { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; color: var(--caution); font-size: 13px; }
+.discussion-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 8px; }
+.discussion-actions .text-button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; cursor: pointer; }
+.discussion-actions .text-button.danger { color: var(--danger); }
+.discussion-report { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.discussion-reported { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+
+.discussion-comments { display: flex; flex-direction: column; margin-top: 24px; }
+.discussion-comments h2 { margin: 0 0 8px; font-size: 18px; }
+.discussion-comments > .button { align-self: center; margin: 8px 0; }
+.discussion-comment { padding: 16px 0; border-top: 1px solid var(--line); }
+.discussion-comment.is-hidden { opacity: 0.7; }
+.discussion-comment.deleted p { margin: 0; font-style: italic; }
+.discussion-comment-box { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+.discussion-locked { display: flex; align-items: center; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; }

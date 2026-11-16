@@ -51,5 +51,8 @@
 | Note (a README callout) | 注意 | 與玩家留下的「備註」區分 |
 | Installed (a version, tab, app, or mod) | 已安裝 | 依語法調整位置，意思不變 |
 | Update (a badge or button) | 更新 | 徽章和按鈕依語境理解為「有更新」或「執行更新」 |
+| discussion / comment | 討論 / 留言 | 社群版面：社群 |
+| Follow / Unfollow (a discussion) | 追蹤 / 取消追蹤 | |
+| Pin / Lock / Report (a discussion) | 置頂 / 鎖定 / 檢舉 | |
 
 產品和平台名稱保留原文：Quiver、Quiver Launcher、GitHub、GitLab、Steam、Steam Deck、Flatpak、AppImage、Thunderstore、GameBanana。主機名稱和控制器按鈕（A、B、LB、RB）也保留原文。

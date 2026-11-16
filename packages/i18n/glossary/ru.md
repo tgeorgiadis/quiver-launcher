@@ -45,6 +45,9 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | port / standalone game | порт / отдельная игра | |
 | Installed (a version) / (a tab) / (an app) | Установлена / Установленные / Установлено | separate strings, by context |
 | Update (a card's badge) / (a button) | Обновление / Обновить | separate strings, by context |
+| discussion / comment | обсуждение / комментарий | Community board: Сообщество |
+| Follow / Unfollow (a discussion) | Отслеживать / Не отслеживать | |
+| Pin / Lock / Report (a discussion) | Закрепить / Закрыть / Пожаловаться | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

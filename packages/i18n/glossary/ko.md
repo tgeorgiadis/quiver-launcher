@@ -44,6 +44,9 @@ Polite, friendly 해요체 in sentences; short noun forms on buttons and labels
 | port / standalone game | 포트 / 독립형 게임 | |
 | Installed | 설치됨 | |
 | Update (a card's badge) / (a button) | 업데이트 | |
+| discussion / comment | 토론 / 댓글 | Community board: 커뮤니티 |
+| Follow / Unfollow (a discussion) | 팔로우 / 팔로우 취소 | |
+| Pin / Lock / Report (a discussion) | 고정 / 잠그기 / 신고 | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

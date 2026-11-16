@@ -44,6 +44,9 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | port / standalone game | Port / eigenständiges Spiel | |
 | Installed (a version, a tab, an app) | Installiert | the same in all three |
 | Update (a card's badge) / (a button) | Update / Aktualisieren | |
+| discussion / comment | Diskussion / Kommentar | Community board: Community |
+| Follow / Unfollow (a discussion) | Folgen / Nicht mehr folgen | |
+| Pin / Lock / Report (a discussion) | Anheften / Sperren / Melden | not “festgehalten”, which is for a release |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

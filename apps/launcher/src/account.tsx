@@ -134,6 +134,14 @@ const CORRECTION_FAILED = msg`Couldn't send it. Try again.`;
 const AccountContext = createContext<Account | null>(null);
 export const useAccount = () => useContext(AccountContext)!;
 
+/**
+ * Whether the site's backend is connected live, for screens that read it
+ * directly with Convex's hooks (discussions.tsx). False in end-to-end tests,
+ * which stand in for it over plain HTTP (TestAccount).
+ */
+const LiveContext = createContext(false);
+export const useLive = () => useContext(LiveContext);
+
 /** Tokens live on the Rust side (secrets.rs), in the OS keychain or the data folder, not the webview's storage. */
 const keychain: TokenStorage = {
   getItem: (key) => native.secretGet(key),
@@ -327,7 +335,11 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     unshareList: async (slug) => void (await client.mutation(fns.unshareList, { slug })),
     setAnalytics: async (enabled) => void (await setAnalytics({ enabled })),
   };
-  return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
+  return (
+    <AccountContext.Provider value={account}>
+      <LiveContext.Provider value={true}>{children}</LiveContext.Provider>
+    </AccountContext.Provider>
+  );
 }
 
 /** What the site stores of a collection; apps on this computer only never leave it. null clears a field there. */

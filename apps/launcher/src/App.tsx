@@ -1,5 +1,5 @@
-import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -19,6 +19,7 @@ import { LaunchOptionsButton } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
+import { CommunityButton, CommunityPage, DiscussionNavProvider, DiscussionPage, DiscussionsTab, useDiscussionCount } from "./discussions";
 import { CorrectionStatusPanel, ReportProblem } from "./correction";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
 import { WaysToPlay } from "./ways-to-play";
@@ -55,8 +56,14 @@ type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true } | { readme: true };
-type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "library" | "copies" | "updates" };
-const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
+type View =
+  | { kind: "app"; entry: Entry; at?: PageAt }
+  | { kind: "game"; game: GameLink }
+  | { kind: "downloads" }
+  | { kind: "settings"; section?: "library" | "copies" | "updates" }
+  | { kind: "community" }
+  | { kind: "discussion"; id: string };
+const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind === "discussion" ? `discussion:${v.id}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
 /** "v1.2" and "1.2" are the same release. */
@@ -111,6 +118,9 @@ export function App() {
   const openGame = useCallback((game: GameLink) => open({ kind: "game", game }), [open]);
   const openDownloads = useCallback(() => open({ kind: "downloads" }), [open]);
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
+  const openCommunity = useCallback(() => open({ kind: "community" }), [open]);
+  const openDiscussion = useCallback((id: string) => open({ kind: "discussion", id }), [open]);
+  const discussionNav = useMemo(() => ({ openDiscussion, openCommunity, signIn: () => setSigningIn(true) }), [openDiscussion, openCommunity]);
   // An app's Tags menu asks for the player's tags, in Settings' Library section (tag-settings.tsx).
   useEffect(() => {
     const manage = () => open({ kind: "settings", section: "library" });
@@ -180,7 +190,19 @@ export function App() {
   /** What Back on the page at `i` returns to. */
   const backFrom = (i: number) => {
     const below = stack[i - 1];
-    return !below ? listName : below.kind === "app" ? below.entry.projectName : below.kind === "game" ? (below.game.title ?? t`Back`) : below.kind === "downloads" ? t`Downloads` : t`Settings`;
+    return !below
+      ? listName
+      : below.kind === "app"
+        ? below.entry.projectName
+        : below.kind === "game"
+          ? (below.game.title ?? t`Back`)
+          : below.kind === "downloads"
+            ? t`Downloads`
+            : below.kind === "community"
+              ? t`Community`
+              : below.kind === "discussion"
+                ? t`Back`
+                : t`Settings`;
   };
   // The Sidebar layout's foot says how downloads are going, in place of the strip.
   const { view: libraryView, set: setLibraryView } = useLibraryView();
@@ -194,6 +216,7 @@ export function App() {
   const topBar = useRef<HTMLElement>(null);
   useTopBarFit(topBar);
   return (
+    <DiscussionNavProvider value={discussionNav}>
     <div className={tv ? "shell tv-mode" : "shell"}>
       {resizeEdges(config.os, buttons, maximized) && <ResizeEdges />}
       <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? (e) => moveWindow(e, movesByPage(config.x11, maximized)) : undefined}>
@@ -240,6 +263,7 @@ export function App() {
             <Tv size={19} />
           </button>
         )}
+        <CommunityButton open={top?.kind === "community"} onOpen={openCommunity} />
         <AnnouncementsButton onOpen={() => setAnnouncementsOpen(true)} />
         <DownloadsButton open={top?.kind === "downloads"} onOpen={openDownloads} />
         <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} title={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
@@ -279,6 +303,10 @@ export function App() {
                   <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
                 ) : view.kind === "settings" ? (
                   <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} start={view.section} />
+                ) : view.kind === "community" ? (
+                  <CommunityPage back={backFrom(i)} onBack={goBack} />
+                ) : view.kind === "discussion" ? (
+                  <DiscussionPage id={view.id} back={backFrom(i)} onBack={goBack} />
                 ) : (
                   <GamePage game={view.game} back={backFrom(i)} onBack={goBack} onOpenApp={openApp} action={action} />
                 )}
@@ -361,6 +389,7 @@ export function App() {
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
       <FilePicker />
     </div>
+    </DiscussionNavProvider>
   );
 }
 
@@ -1149,7 +1178,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
  * library's sidebar it has no way back, and shows the player's own play.
  */
 /** Each tab of an app's page's icon: outlined and grey, filled in the accent while it's open (app.css). */
-const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, computer: Monitor };
+const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: Monitor };
 
 function AppPage({
   entry: opened,
@@ -1192,7 +1221,7 @@ function AppPage({
   const releases = useReleases(entry, site);
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
-  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "computer">(
+  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer">(
     at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
@@ -1244,6 +1273,7 @@ function AppPage({
     if (!user) onSignIn();
   };
   const said = entry.recommended + entry.reportIssues + entry.reportBroken;
+  const threads = useDiscussionCount(entry.id, site);
   const checking = checkingOf(detail, releases);
   // Only when the app has videos, as on the website.
   const media = detail?.media ?? [];
@@ -1252,6 +1282,7 @@ function AppPage({
     ...(media.length ? ([["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)]] as const) : []),
     ["releases", t({ message: "Releases", comment: "Tab of an app's page" }), history.items && `${history.items.length}${history.more ? "+" : ""}`],
     ["feedback", t`Player feedback`, String(said)],
+    ["discussions", t({ message: "Discussions", comment: "Tab on an app's page: players' threads about it" }), threads === undefined ? undefined : threads >= 100 ? "100+" : String(threads)],
     ...(item || install ? ([["computer", t`On this computer`, undefined]] as const) : []),
   ] as const;
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
@@ -1644,6 +1675,7 @@ function AppPage({
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
           {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
           {(site ? tab === "computer" : true) && computer}
+          {tab === "discussions" && <DiscussionsTab entryId={entry.id} />}
           {tab === "feedback" && (
             <FeedbackTab
               entry={entry}

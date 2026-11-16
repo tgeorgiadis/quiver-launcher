@@ -1,11 +1,12 @@
+#
 msgid ""
 msgstr ""
 "POT-Creation-Date: 2026-10-23 23:38+1100\n"
+"Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: @lingui/cli\n"
-"Language: ko\n"
 
 #: ../../apps/launcher/src/ways-to-play.tsx
 msgid "\"Runs well\" is the share of players who said it runs well for them."
@@ -25,6 +26,11 @@ msgstr "{0, plural, other {다른 플랫폼용 앱 #개가 숨겨져 있어요.}
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{0, plural, one {# app} other {# apps}}"
 msgstr "{0, plural, other {앱 #개}}"
+
+#. placeholder {0}: thread.comments
+#: ../../apps/launcher/src/discussions.tsx
+msgid "{0, plural, one {# comment} other {# comments}}"
+msgstr "{0, plural, other {댓글 #개}}"
 
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
@@ -162,6 +168,10 @@ msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개는 �
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
 msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개 설치됨}}"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "{count, plural, one {# discussion with new comments} other {# discussions with new comments}}"
+msgstr "{count, plural, other {새 댓글이 있는 토론 #개}}"
 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
@@ -778,6 +788,11 @@ msgstr "투명 PNG. Steam 바로 가기에 쓰입니다."
 msgid "About this project"
 msgstr "이 프로젝트 정보"
 
+#. Reason for reporting a post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Abuse"
+msgstr "욕설 및 괴롭힘"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Account: {name}"
 msgstr "계정: {name}"
@@ -786,6 +801,11 @@ msgstr "계정: {name}"
 #: ../../apps/launcher/src/controls.tsx
 msgid "Action"
 msgstr "동작"
+
+#. When a discussion last had a comment, as in “active 2 days ago”
+#: ../../apps/launcher/src/discussions.tsx
+msgid "active {active}"
+msgstr "{active} 활동"
 
 #. Button that adds an app installed here to the library
 #. Button that adds an app to the library without installing it
@@ -801,6 +821,10 @@ msgstr "추가"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "Add <0>portable.txt</0> to new installs"
 msgstr "새로 설치할 때 <0>portable.txt</0> 추가"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Add a comment"
+msgstr "댓글 쓰기"
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "Add a console"
@@ -1209,6 +1233,10 @@ msgstr "GitLab에서 추가한 앱은 GitLab에서 직접 버전을 가져와요
 msgid "Apps you don't have yet show with Get; nothing downloads until you press it."
 msgstr "아직 없는 앱에는 받기가 표시돼요. 누르기 전에는 아무것도 다운로드되지 않아요."
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Apps you'd like in the catalog, and features you'd like to see."
+msgstr "카탈로그에 있었으면 하는 앱과 바라는 기능."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Artwork and consoles from the game"
 msgstr "게임의 아트워크와 콘솔"
@@ -1217,6 +1245,10 @@ msgstr "게임의 아트워크와 콘솔"
 #: ../../apps/launcher/src/launch-options.tsx
 msgid "As in Settings: {name}"
 msgstr "설정과 같이: {name}"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Ask a question, share a tip or talk about this app. For how it ran, use Player feedback."
+msgstr "질문하거나 팁을 공유하거나 이 앱에 대해 이야기하세요. 실행이 어땠는지는 플레이어 피드백에 남겨 주세요."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Ask where to install each app"
@@ -1397,6 +1429,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/correction.tsx
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 #: ../../apps/launcher/src/file-picker.tsx
 #: ../../apps/launcher/src/launch-options.tsx
@@ -1444,6 +1477,11 @@ msgstr "캐러셀"
 #: ../../apps/launcher/src/App.tsx
 msgid "Catalog filters"
 msgstr "카탈로그 필터"
+
+#. The Community board's categories
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Categories"
+msgstr "카테고리"
 
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
@@ -1776,6 +1814,21 @@ msgstr "Quiver Launcher 3에서 오셨나요?"
 msgid "Coming from Quiver Launcher 3? Show Quiver where its folder is, and your apps will appear here."
 msgstr "Quiver Launcher 3에서 오셨나요? 폴더 위치를 알려 주시면 앱이 여기에 나타나요."
 
+#. Button that posts a comment
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Comment"
+msgstr "댓글 달기"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Comments"
+msgstr "댓글"
+
+#. The page where players talk about anything that isn't one app
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Community"
+msgstr "커뮤니티"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "Community ports and recreations"
 msgstr "커뮤니티 포트 및 재구현"
@@ -1823,13 +1876,25 @@ msgstr "링크 복사"
 msgid "Copying {folder}… {percent}%"
 msgstr "{folder} 복사 중… {percent}%"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't delete it. Try again."
+msgstr "삭제하지 못했어요. 다시 시도하세요."
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
 msgstr "설치 실패"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't load discussions. Try again later."
+msgstr "토론을 불러오지 못했어요. 나중에 다시 시도하세요."
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Couldn't load the release notes."
 msgstr "릴리스 노트를 불러오지 못했습니다."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't post that. Try again."
+msgstr "게시하지 못했어요. 다시 시도하세요."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Couldn't reach quiverlauncher.com to show this playlist. Check your connection."
@@ -1859,6 +1924,10 @@ msgstr "일부 파일을 검사하지 못했어요."
 
 #: ../../apps/launcher/src/account.tsx
 msgid "Couldn't send it. Try again."
+msgstr "보내지 못했어요. 다시 시도하세요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Couldn't send that. Try again."
 msgstr "보내지 못했어요. 다시 시도하세요."
 
 #: ../../apps/launcher/src/account.tsx
@@ -1929,6 +1998,7 @@ msgstr "기본"
 #. Button: confirm deleting one of the player's tags from all their apps
 #. Button: delete one of the player's tags from all their apps
 #. Deletes a playlist
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Delete"
@@ -1941,6 +2011,24 @@ msgstr "삭제(공유 중지)"
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Delete {tag}"
 msgstr "{tag} 삭제"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Delete your comment? This can't be undone."
+msgstr "댓글을 삭제할까요? 되돌릴 수 없어요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Delete your discussion? This can't be undone."
+msgstr "토론을 삭제할까요? 되돌릴 수 없어요."
+
+#. In place of a comment its author deleted
+#. In place of a post its author deleted
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Deleted"
+msgstr "삭제됨"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Deleting…"
+msgstr "삭제 중…"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Description"
@@ -1968,7 +2056,9 @@ msgstr "세부 정보"
 msgid "Detect it"
 msgstr ""
 
+#. Tag after the name of an app's developer
 #. Tag on a reply from the app's verified developer
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Developer"
 msgstr "개발자"
@@ -1992,6 +2082,24 @@ msgstr "개발자는 일부 버전을 사전 출시로 표시해요. 베타나 �
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Didn't finish"
 msgstr "완료되지 않음"
+
+#. Tab on an app's page: players' threads about it
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions"
+msgstr "토론"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions aren't available right now."
+msgstr "지금은 토론을 이용할 수 없어요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions you follow"
+msgstr "팔로우하는 토론"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Discussions you start or comment in show here, with their new comments."
+msgstr "시작하거나 댓글을 단 토론이 새 댓글과 함께 여기에 표시돼요."
 
 #. Hide an announcement
 #. Hide an announcement
@@ -2131,6 +2239,7 @@ msgid "Easy setup: Quiver Launcher finds your copy of the game and puts it where
 msgstr "간편 설정: Quiver Launcher가 게임 사본을 찾아 앱에 필요한 위치에 넣어 줍니다."
 
 #. Edits a playlist
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Edit"
 msgstr "편집"
@@ -2139,8 +2248,18 @@ msgstr "편집"
 msgid "Edit playlist"
 msgstr "재생 목록 편집"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Edit your comment"
+msgstr "댓글 수정"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Edit your discussion"
+msgstr "토론 수정"
+
+#. After a post's date: its author changed it
 #. An announcement changed after it was published
 #: ../../apps/launcher/src/announcements-ui.tsx
+#: ../../apps/launcher/src/discussions.tsx
 msgid "edited"
 msgstr "수정됨"
 
@@ -2254,6 +2373,11 @@ msgstr "폴더"
 msgid "Folder name"
 msgstr "폴더 이름"
 
+#. Shows new comments on the account page
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Follow"
+msgstr "팔로우"
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "For a folder with games for many consoles in it."
 msgstr "여러 콘솔의 게임이 든 폴더용이에요."
@@ -2332,6 +2456,8 @@ msgstr "게임플레이"
 msgid "Games"
 msgstr "게임"
 
+#. Community board category for anything about ports and games
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "General"
 msgstr "일반"
@@ -2368,6 +2494,10 @@ msgstr "GitLab 토큰"
 #: ../../apps/launcher/src/App.tsx
 msgid "Go back"
 msgstr "뒤로 가기"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Go to Community"
+msgstr "커뮤니티로 가기"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Good copy"
@@ -2408,6 +2538,11 @@ msgstr "게임별로 그룹화"
 msgid "Has issues"
 msgstr "문제 있음"
 
+#. Community board category
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Help with Quiver Launcher"
+msgstr "Quiver Launcher 도움말"
+
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "Quiver Launcher 개선에 도움이 돼요. 어떤 화면과 기능이 쓰이는지, 어떤 오류가 생기는지 보내요. 파일이나 폴더는 절대 보내지 않아요."
@@ -2433,6 +2568,8 @@ msgstr "숨긴 앱만"
 msgid "Hidden apps shown"
 msgstr "숨긴 앱 표시 중"
 
+#. Hides a post from everyone
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Hide"
 msgstr "숨기기"
@@ -2870,6 +3007,10 @@ msgstr "게임이 읽는 위치에 더 이상 없어요. 다시 설정하세요.
 msgid "It looks and works differently in places, so give it a go with an open mind."
 msgstr "모양과 쓰는 방법이 달라진 곳이 있으니, 열린 마음으로 한번 써 보세요."
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "It may have been deleted or hidden."
+msgstr "삭제되었거나 숨겨졌을 수 있어요."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It ran, but I had issues"
 msgstr "실행됐지만 문제가 있었어요"
@@ -3116,9 +3257,22 @@ msgstr "Linux 및 Windows (이 컴퓨터)"
 msgid "Linux only"
 msgstr "Linux만"
 
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Load more"
 msgstr "더 불러오기"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Loading comments…"
+msgstr "댓글 불러오는 중…"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Loading discussion…"
+msgstr "토론 불러오는 중…"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Loading discussions…"
+msgstr "토론 불러오는 중…"
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "Loading mods…"
@@ -3140,6 +3294,16 @@ msgstr "게임 불러오는 중"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Locate existing install…"
 msgstr "기존 설치 위치 찾기…"
+
+#. Moderation action
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Lock"
+msgstr "잠그기"
+
+#. A discussion that takes no new comments
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Locked"
+msgstr "잠김"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Logo"
@@ -3499,6 +3663,11 @@ msgstr "새 앱은 {to}에 설치돼요."
 msgid "New badge"
 msgstr "신규 배지"
 
+#. A followed discussion has comments the viewer hasn't seen
+#: ../../apps/launcher/src/discussions.tsx
+msgid "New comments"
+msgstr "새 댓글"
+
 #: ../../apps/launcher/src/setup.tsx
 msgid "New in Quiver Launcher 4"
 msgstr "Quiver Launcher 4의 새로운 기능"
@@ -3592,6 +3761,14 @@ msgstr "아직 이 게임을 플레이할 수 있는 앱이 없어요."
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "감지된 컨트롤러가 없어요. 컨트롤러를 연결하면 여기에 표시돼요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "No discussion titles match “{text}”."
+msgstr "“{text}”와 일치하는 토론 제목이 없어요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "No discussions yet. Ask a question or share a tip."
+msgstr "아직 토론이 없어요. 질문하거나 팁을 공유하세요."
 
 #. A release with no files Quiver Launcher can install, such as one with only source code
 #: ../ui/src/index.tsx
@@ -3960,6 +4137,16 @@ msgstr "키 할당을 선택한 다음, 사용할 키나 버튼을 누르세요.
 msgid "Picture from this computer"
 msgstr "이 컴퓨터의 이미지"
 
+#. Moderation action
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Pin"
+msgstr "고정"
+
+#. A discussion kept at the top of the list
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Pinned"
+msgstr "고정됨"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Pinned to {installedVersion}."
 msgstr "{installedVersion}에 고정됨."
@@ -3975,6 +4162,11 @@ msgstr "{version}에 고정됨"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pinned: click to unpin"
 msgstr "고정됨: 클릭하여 고정 해제"
+
+#. Reason for reporting a post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Piracy or malware"
+msgstr "불법 복제 또는 악성 코드"
 
 #: ../../apps/launcher/src/file-picker.tsx
 msgid "Places"
@@ -4093,6 +4285,22 @@ msgstr "포트"
 msgid "Portrait, about 600×900. The library's cards and TV mode."
 msgstr "세로형, 약 600×900. 라이브러리 카드와 TV 모드에 쓰입니다."
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Ports, games, mods and anything else."
+msgstr "포트, 게임, 모드 등 무엇이든요."
+
+#. Button that posts a new discussion
+#. Form field: the opening post of a discussion
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Post"
+msgstr "게시"
+
+#. Button label while a post is being saved
+#. Button label while a post is being saved
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Posting…"
+msgstr "게시 중…"
+
 #. A release its developer marked as a pre-release: an early or experimental build
 #: ../../apps/launcher/src/detail.tsx
 msgid "Pre-release"
@@ -4145,6 +4353,10 @@ msgstr "새 앱을 콘솔별 폴더에 넣기"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Putting it in place…"
 msgstr "제자리에 놓는 중…"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Questions about installing, updating and playing with Quiver Launcher."
+msgstr "Quiver Launcher로 설치, 업데이트, 플레이하는 방법에 관한 질문."
 
 #. Controller action that presses the main button of the focused card or app's page, such as Get or Play
 #: ../../apps/launcher/src/spatial.ts
@@ -4320,6 +4532,15 @@ msgstr "Quiver Launcher: 라이브러리로 이동"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver가 {dir}에 폴더를 만들고 열어요. 그곳에 앱 파일을 넣으세요. 플레이를 누르면 그 안의 첫 번째 프로그램이 실행돼요."
+
+#. Tag after the name of someone who runs Quiver
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Quiver staff"
+msgstr "Quiver 운영진"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Quiver staff hid this, so others can't see it."
+msgstr "Quiver 운영진이 숨겨서 다른 사람에게는 보이지 않아요."
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Quiver waits 48 hours before it offers an app's update, so a harmful release can be withdrawn first. If you'd rather have updates as soon as they're out, you can now choose that."
@@ -4526,14 +4747,30 @@ msgstr "폴더 이름 바꾸기…"
 msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
 msgstr "라이브러리를 {taken}의 라이브러리({count, plural, other {앱 #개}})로 바꿀까요? 현재 라이브러리도 백업으로 보관돼요."
 
+#. Button that reports a post to Quiver staff
+#. Button that sends a report
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Report"
+msgstr "신고"
+
 #. App page button: tell the maintainers something on the page is wrong or missing
 #: ../../apps/launcher/src/correction.tsx
 msgid "Report a problem"
 msgstr "문제 신고"
 
+#. The viewer already reported this post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Reported"
+msgstr "신고됨"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Repository"
 msgstr "저장소"
+
+#. Community board category: apps or features people want
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Requests"
+msgstr "요청"
 
 #. Puts the launch options back as Quiver chose them
 #: ../../apps/launcher/src/launch-options.tsx
@@ -4616,6 +4853,10 @@ msgstr "저장"
 msgid "Save as playlist"
 msgstr "재생 목록으로 저장"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Save changes"
+msgstr "변경 사항 저장"
+
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/repository-tokens.tsx
@@ -4685,6 +4926,10 @@ msgstr "위로 스크롤"
 msgid "Search"
 msgstr "검색"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Search discussion titles"
+msgstr "토론 제목 검색"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Search for a game"
 msgstr "게임 검색"
@@ -4702,9 +4947,17 @@ msgstr "포트, 게임, 도구 검색"
 msgid "Search the catalog"
 msgstr "카탈로그 검색"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Search titles"
+msgstr "제목 검색"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Search your library"
 msgstr "라이브러리 검색"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Searching…"
+msgstr "검색 중…"
 
 #. Label of how the library is split into sections (by console, say)
 #. Library view option: how the library is split into sections
@@ -4863,8 +5116,10 @@ msgid "Shortcuts"
 msgstr "바로 가기"
 
 #. Controller hint: what Confirm does, scrolling the focused control into view
+#. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
 #. Picks which library tab or playlist the sidebar lists
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
 msgid "Show"
@@ -5000,6 +5255,7 @@ msgid "Sidebar width"
 msgstr "사이드바 너비"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in"
@@ -5016,6 +5272,10 @@ msgstr "로그인하면 다른 사람이 자기 라이브러리에 추가할 수
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Sign in to share how it runs for you."
 msgstr "로그인하고 실행 후기를 공유해 주세요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Sign in to start a discussion or comment."
+msgstr "토론을 시작하거나 댓글을 달려면 로그인하세요."
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in to sync your library"
@@ -5080,7 +5340,9 @@ msgstr "일부 앱은 ROM이나 디스크 이미지 같은 게임 사본이 필�
 msgid "Someone shared a playlist? Paste its link to add it to your library. It stays up to date with theirs."
 msgstr "누군가 재생 목록을 공유했나요? 링크를 붙여 넣어 라이브러리에 추가하세요. 원래 재생 목록과 계속 동기화돼요."
 
+#. Reason for reporting a post
 #: ../../apps/launcher/src/correction.tsx
+#: ../../apps/launcher/src/discussions.tsx
 msgid "Something else"
 msgstr "기타"
 
@@ -5102,6 +5364,11 @@ msgstr "모드 정렬"
 msgid "Source"
 msgstr "소스"
 
+#. Reason for reporting a post
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Spam"
+msgstr "스팸"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Square, about 512×512. The app's page, the Icon view and its shortcuts."
 msgstr "정사각형, 약 512×512. 앱 페이지, 아이콘 보기, 바로 가기에 쓰입니다."
@@ -5111,6 +5378,10 @@ msgstr "정사각형, 약 512×512. 앱 페이지, 아이콘 보기, 바로 가�
 #: ../../apps/launcher/src/library.tsx
 msgid "Standalone game"
 msgstr "독립형 게임"
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Start a discussion"
+msgstr "토론 시작"
 
 #: ../../apps/launcher/src/setup.tsx
 msgid "Start using Quiver"
@@ -5240,6 +5511,10 @@ msgstr "태그"
 msgid "Tags"
 msgstr "태그"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Talk with other players about ports, games and Quiver Launcher. For one app, use the Discussions tab on its page."
+msgstr "다른 플레이어와 포트, 게임, Quiver Launcher에 대해 이야기하세요. 특정 앱에 대해서는 해당 앱 페이지의 토론 탭을 이용하세요."
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Tell others how it ran after following the setup."
 msgstr "구성을 따라 한 뒤 어떻게 실행됐는지 다른 사람에게 알려 주세요."
@@ -5284,6 +5559,10 @@ msgstr "감사해요! 관리자가 확인할 거예요."
 
 #: ../../apps/launcher/src/store.tsx
 msgid "That address isn't a repository on {host}."
+msgstr ""
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "That didn't work. Try again."
 msgstr ""
 
 #: ../../apps/launcher/src/store.tsx
@@ -5485,9 +5764,21 @@ msgstr "이 앱의 폴더는 옮길 수 없어요."
 msgid "This app's folder can't be renamed."
 msgstr "이 앱의 폴더는 이름을 바꿀 수 없어요."
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "This discussion is locked, so it takes no new comments."
+msgstr "잠긴 토론이라 새 댓글을 달 수 없어요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "This discussion isn't available"
+msgstr "이 토론을 볼 수 없어요"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "이 다운로드가 Quiver가 확인한 파일과 일치하지 않아 설치하지 않았어요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "This is waiting for Quiver staff to review it before others can see it."
+msgstr "다른 사람에게 보이기 전에 Quiver 운영진의 검토를 기다리고 있어요."
 
 #: ../../apps/launcher/src/mods.tsx
 msgid "This mod has no files to download."
@@ -5540,6 +5831,11 @@ msgstr "이 저장소에는 아직 버전이 없어요."
 msgctxt "README callout"
 msgid "Tip"
 msgstr "팁"
+
+#. Form field: a discussion's title
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Title"
+msgstr "제목"
 
 #. When something happened, as in "Updated today"
 #: ../ui/src/index.tsx
@@ -5637,6 +5933,11 @@ msgstr "입력"
 msgid "Under a minute"
 msgstr "1분 미만"
 
+#. Stops new comments showing on the account page
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Unfollow"
+msgstr "팔로우 취소"
+
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/mods.tsx
@@ -5660,7 +5961,14 @@ msgstr "{name}을(를) 제거할까요?"
 msgid "Uninstall and remove"
 msgstr "제거 및 삭제"
 
+#. Moderation action
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Unlock"
+msgstr "잠금 해제"
+
+#. Moderation action
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/discussions.tsx
 msgid "Unpin"
 msgstr "고정 해제"
 
@@ -6017,6 +6325,10 @@ msgstr "플레이어 평가"
 msgid "What worked well, and what didn't? Did you do anything to get it running or fix a problem?"
 msgstr "무엇이 잘 됐고 무엇이 안 됐나요? 실행하거나 문제를 해결하려고 따로 한 일이 있나요?"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "What would you like to ask or share? Say which version and platform if it's about a problem."
+msgstr "무엇을 묻거나 공유하고 싶나요? 문제라면 버전과 플랫폼을 알려 주세요."
+
 #: ../../apps/launcher/src/correction.tsx
 msgid "What's it about?"
 msgstr "어떤 내용인가요?"
@@ -6071,6 +6383,10 @@ msgstr "어떤 앱인가요?"
 msgid "Which download?"
 msgstr "어떤 다운로드인가요?"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Why are you reporting this?"
+msgstr "신고하는 이유가 무엇인가요?"
+
 #. Library sidebar width
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Wide"
@@ -6103,11 +6419,17 @@ msgstr "철회됨"
 msgid "Withdrawn:"
 msgstr "철회됨:"
 
+#: ../../apps/launcher/src/discussions.tsx
+msgid "Yes, delete"
+msgstr "네, 삭제"
+
 #: ../../apps/launcher/src/sidebar.ts
 msgid "Yesterday"
 msgstr "어제"
 
 #. Tag by the player's own name on their feedback
+#. Tag on the viewer's own post
+#: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You"
 msgstr "나"
@@ -6156,6 +6478,10 @@ msgstr "업데이트를 48시간 기다리도록 선택했기 때문에, 직접 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You've reached the {limit}-character limit."
 msgstr "글자 수 제한({limit}자)에 도달했어요."
+
+#: ../../apps/launcher/src/discussions.tsx
+msgid "You've reached the {max}-character limit."
+msgstr "{max}자 제한에 도달했어요."
 
 #: ../../apps/launcher/src/feedback.tsx
 msgid "You've shared how it ran. Has anything changed since?"

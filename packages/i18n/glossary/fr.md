@@ -44,6 +44,9 @@ before « : ; ! ? », and « » for quotes.
 | port / standalone game | portage / jeu autonome | |
 | Installed (a version) / (a tab) / (an app) | Installée / Installés / Installé | separate strings, by context |
 | Update (a card's badge) / (a button) | Mise à jour / Mettre à jour | separate strings, by context |
+| discussion / comment | discussion / commentaire | Community board: Communauté |
+| Follow / Unfollow (a discussion) | Suivre / Ne plus suivre | |
+| Pin / Lock / Report (a discussion) | Épingler / Verrouiller / Signaler | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller
