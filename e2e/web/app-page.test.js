@@ -27,7 +27,7 @@ test("Play finding no program in an app's folder lets the player choose it, and 
     });
     await own.page.locator('article[data-slug="test-port"] .card-open').first().click();
     await own.page.getByRole("button", { name: "Play", exact: true }).first().click();
-    const choose = own.page.locator(".job-error").getByRole("button", { name: "Choose its program…" });
+    const choose = own.page.locator(".job-error").getByRole("button", { name: "Choose its executable…" });
     await choose.click();
     const started = () => own.app.execute(() => window.__calls.some((c) => c.cmd === "launch" && c.args.launch?.executable === "bin/start.bat"));
     await own.until(started);

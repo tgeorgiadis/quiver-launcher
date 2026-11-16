@@ -51,7 +51,7 @@ export function RunnerSelect({ value, onChange, onError, automatic, direct }: { 
   return (
     <select aria-label={t`Run with`} value={runnerValue(value)} onChange={(e) => pick(e.target.value)}>
       <option value="">{automatic}</option>
-      {direct && <option value="direct">{t`The program itself`}</option>}
+      {direct && <option value="direct">{t`The executable itself`}</option>}
       <option value="wine">Wine</option>
       {listed.map((p) => (
         <option key={p.path} value={`proton:${p.path}`}>
@@ -76,7 +76,7 @@ export function useAutomaticRunner() {
 }
 
 /** A runner Settings set, by name. */
-const runnerName = (runner: NonNullable<Runner>) => (runner.kind === "proton" ? folderName(runner.path) : runner.kind === "wine" ? "Wine" : t`The program itself`);
+const runnerName = (runner: NonNullable<Runner>) => (runner.kind === "proton" ? folderName(runner.path) : runner.kind === "wine" ? "Wine" : t`The executable itself`);
 
 /** Automatic's line in a Run with dropdown, saying what it runs Windows programs with. */
 const automaticLine = (name: string | null | undefined) =>
@@ -173,7 +173,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
       <PanelFormHead title={t`Launch options`} onClose={() => setOpen(false)} />
       <div className="launch-program">
         <span className="field-label">
-          <Trans>Program</Trans>
+          <Trans>Executable</Trans>
         </span>
         <p className="muted">
           {executable ? (
@@ -181,7 +181,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
               Starts <code>{executable}</code>
             </Trans>
           ) : (
-            t`Starts the program Quiver finds in its folder.`
+            t`Starts the executable Quiver finds in the app's folder. You can choose another, in that folder or anywhere else.`
           )}
         </p>
         {outsideFolder(executable, install.program) && (
@@ -191,7 +191,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
         )}
         <div className="row">
           <button type="button" onClick={choose}>
-            <Trans>Choose program…</Trans>
+            <Trans>Choose executable…</Trans>
           </button>
           {executable && (
             <button type="button" onClick={() => setExecutable(undefined)}>
@@ -219,7 +219,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
           onChange={(e) => setCommand(e.target.value)}
         />
         <span className="muted small">
-          <Trans>Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable.</Trans>
+          <Trans>Added after the executable, or write %command% where the executable should go. NAME=value at the start sets an environment variable.</Trans>
         </span>
       </label>
       {unclosed && (

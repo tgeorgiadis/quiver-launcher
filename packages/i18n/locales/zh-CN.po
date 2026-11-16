@@ -945,8 +945,8 @@ msgid "Added"
 msgstr "已添加"
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
-msgstr "添加在程序后面，或者在程序应放置的位置写入 %command%。在开头使用 NAME=value 设置环境变量。"
+msgid "Added after the executable, or write %command% where the executable should go. NAME=value at the start sets an environment variable."
+msgstr "添加在可执行文件之后，或在可执行文件应在的位置写 %command%。开头的 NAME=value 用于设置环境变量。"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Added from {site}. Quiver hasn't checked this app."
@@ -1690,6 +1690,10 @@ msgstr "选择“在 GitHub 上创建令牌”，然后登录 GitHub。"
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "选择“在 GitLab 上创建令牌”，然后登录 GitLab。"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose executable…"
+msgstr "选择可执行文件…"
+
 #. Generate token is the name of GitHub's button, as GitHub shows it in English
 #. Generate token is the name of GitLab's button, as GitLab shows it in English
 #: ../../apps/launcher/src/github-token.tsx
@@ -1698,8 +1702,8 @@ msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "选择“生成令牌”，复制令牌并粘贴到上方，然后选择“保存令牌”。"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Choose its program…"
-msgstr "选择其程序 →"
+msgid "Choose its executable…"
+msgstr "选择它的可执行文件…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1712,10 +1716,6 @@ msgstr "选择音乐 →"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "选择我的 Quiver Launcher 3 文件夹 →"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Choose program…"
-msgstr "选择程序 →"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
@@ -2299,6 +2299,10 @@ msgstr "所有内容均为最新版本。"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Evidence"
 msgstr "证据"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Executable"
+msgstr "可执行文件"
 
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
@@ -3023,8 +3027,8 @@ msgid "It ran, but I had issues"
 msgstr "它可以运行，但我遇到了一些问题"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
-msgstr "它启动的是 <0>{program}</0>，该程序在它的文件夹之外，因此会保留在原处。如果不再需要，请自行卸载或删除。"
+msgid "It starts <0>{executable}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
+msgstr "它启动的是 <0>{executable}</0>，该文件在它的文件夹之外，因此会保留在原处。如果不再需要，请自行卸载或删除。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
@@ -4365,10 +4369,6 @@ msgstr "上一个字母或页面"
 msgid "Previous tab"
 msgstr "上一个标签页"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Program"
-msgstr "程序"
-
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
@@ -5468,8 +5468,8 @@ msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
 msgstr "从当前位置启动。不会下载、移动或删除任何内容。"
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts the program Quiver finds in its folder."
-msgstr "启动 Quiver 在其文件夹中找到的程序。"
+msgid "Starts the executable Quiver finds in the app's folder. You can choose another, in that folder or anywhere else."
+msgstr "启动 Quiver 在应用文件夹中找到的可执行文件。你可以另选一个，可以在该文件夹中，也可以在其他任何位置。"
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
@@ -5667,6 +5667,10 @@ msgstr "开发者已证明自己是此应用的作者"
 msgid "The developer says {0} fixed this."
 msgstr "开发者表示 {0} 已修复此问题。"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "The executable itself"
+msgstr "可执行文件本身"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "你的游戏库文件已损坏。"
@@ -5722,10 +5726,6 @@ msgstr "你在 {sent} 报告的问题已修复。谢谢！"
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "The problem you reported with {app} was fixed. Thanks!"
 msgstr "你报告的 {app} 问题已修复。谢谢！"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "The program itself"
-msgstr "程序本身"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."

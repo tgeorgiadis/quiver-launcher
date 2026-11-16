@@ -945,8 +945,8 @@ msgid "Added"
 msgstr "Agregado"
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Added after the program, or write %command% where the program should go. NAME=value at the start sets an environment variable."
-msgstr "Se agrega después del programa, o escribe %command% donde debe ir el programa. NOMBRE=valor al inicio define una variable de entorno."
+msgid "Added after the executable, or write %command% where the executable should go. NAME=value at the start sets an environment variable."
+msgstr "Se agrega después del ejecutable, o escribe %command% donde debe ir el ejecutable. NOMBRE=valor al principio define una variable de entorno."
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Added from {site}. Quiver hasn't checked this app."
@@ -1690,6 +1690,10 @@ msgstr "Elige Crear un token en GitHub e inicia sesión en GitHub."
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "Elige Crear un token en GitLab e inicia sesión en GitLab."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose executable…"
+msgstr "Elegir ejecutable…"
+
 #. Generate token is the name of GitHub's button, as GitHub shows it in English
 #. Generate token is the name of GitLab's button, as GitLab shows it in English
 #: ../../apps/launcher/src/github-token.tsx
@@ -1698,8 +1702,8 @@ msgid "Choose Generate token, copy it, paste it above and choose Save token."
 msgstr "Elige Generate token, cópialo, pégalo arriba y elige Guardar token."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Choose its program…"
-msgstr "Elegir su programa…"
+msgid "Choose its executable…"
+msgstr "Elegir su ejecutable…"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Choose music to play in the background"
@@ -1712,10 +1716,6 @@ msgstr "Elegir música…"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Elegir mi carpeta de Quiver Launcher 3…"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Choose program…"
-msgstr "Elegir programa…"
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
@@ -2299,6 +2299,10 @@ msgstr "Todo está actualizado."
 #: ../../apps/launcher/src/detail.tsx
 msgid "Evidence"
 msgstr "Evidencia"
+
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Executable"
+msgstr "Ejecutable"
 
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Exit full screen"
@@ -3023,8 +3027,8 @@ msgid "It ran, but I had issues"
 msgstr "Funcionó, pero tuve problemas"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "It starts <0>{program}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
-msgstr "Inicia <0>{program}</0>, que está fuera de su carpeta, así que se queda donde está. Desinstálalo o bórralo tú si ya no lo quieres."
+msgid "It starts <0>{executable}</0>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don't want it any more."
+msgstr "Inicia <0>{executable}</0>, que está fuera de su carpeta, así que se queda donde está. Desinstálalo o bórralo tú si ya no lo quieres."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "It starts where it is, and removing it from your library leaves it there."
@@ -4365,10 +4369,6 @@ msgstr "Letra o página anterior"
 msgid "Previous tab"
 msgstr "Pestaña anterior"
 
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Program"
-msgstr "Programa"
-
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Project type"
@@ -5468,8 +5468,8 @@ msgid "Starts it where it is. Nothing is downloaded, moved or deleted."
 msgstr "La inicia donde está. No se descarga, mueve ni elimina nada."
 
 #: ../../apps/launcher/src/launch-options.tsx
-msgid "Starts the program Quiver finds in its folder."
-msgstr "Inicia el programa que Quiver encuentra en su carpeta."
+msgid "Starts the executable Quiver finds in the app's folder. You can choose another, in that folder or anywhere else."
+msgstr "Inicia el ejecutable que Quiver encuentra en la carpeta de la app. Puedes elegir otro, en esa carpeta o en cualquier otro lugar."
 
 #: ../../apps/launcher/src/custom.ts
 msgid "Starts the program you put in its folder, {folder}."
@@ -5667,6 +5667,10 @@ msgstr "El desarrollador demostró que crea esta app"
 msgid "The developer says {0} fixed this."
 msgstr "El desarrollador dice que {0} lo corrigió."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "The executable itself"
+msgstr "El ejecutable directamente"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "El archivo de tu biblioteca está dañado."
@@ -5722,10 +5726,6 @@ msgstr "El problema que informaste el {sent} se corrigió. ¡Gracias!"
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "The problem you reported with {app} was fixed. Thanks!"
 msgstr "El problema que informaste sobre {app} se corrigió. ¡Gracias!"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "The program itself"
-msgstr "El programa en sí"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The programs Play offers are under Play with in the app's menu."
