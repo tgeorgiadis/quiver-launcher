@@ -70,8 +70,10 @@ export function useAppDetail(entry: Entry): { source: Source | null | undefined;
 
 /** The catalog's apps for one the player added from its repository, once the catalog lists it. */
 export function useListed(entry: Entry): Entry[] {
-  const { listedAs } = useLauncher();
+  const { listedAs, moved } = useLauncher();
   const custom = isCustom(entry.id);
+  // Asked again once its repository turns out to have a new name, which the catalog may list it under.
+  const now = moved[entry.id];
   const [listed, setListed] = useState<Entry[]>([]);
   useEffect(() => {
     setListed([]);
@@ -82,7 +84,7 @@ export function useListed(entry: Entry): Entry[] {
       () => {},
     );
     return () => void (live = false);
-  }, [entry.id, custom]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entry.id, custom, now]); // eslint-disable-line react-hooks/exhaustive-deps
   return listed;
 }
 

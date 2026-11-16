@@ -20,7 +20,7 @@ import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccou
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
-import { appsOfRepository, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { appsOfRepository, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { artFile, artFiles, isArtAddress, type ArtSlot, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
@@ -286,6 +286,8 @@ type Launcher = {
   listedAs: (id: string) => Promise<Entry[]>;
   /** Repositories the player added that the catalog lists an app of now, that isn't in the library yet. */
   inCatalog: ReadonlySet<string>;
+  /** Apps the player added whose repository was renamed or moved since: its name now, by app (`movedTo`). */
+  moved: Readonly<Record<string, string>>;
   /** The game an app the player added plays: its artwork, consoles and "Based on". Null for none. */
   setGame: (id: string, art: GameArt | null) => void;
   /**
@@ -955,9 +957,11 @@ export const locatable = (id: string, install: Install | undefined, job: Job | u
  * The catalog's entry for a 3.x app: the one 3.x knew first, as one repository can ship several apps, each with an
  * entry of its own (a port of two games); else the one for its repository.
  */
-export function catalogMatch<T>(old: OldApp, ids: Map<string, T>): T | undefined {
+export function catalogMatch<T>(old: OldApp, ids: Map<string, T>, now?: string): T | undefined {
   const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
-  const byRepository = ref ? ids.get(customKey(ref.provider, ref.repository, ref.host)) : undefined;
+  // Under its name now too, when it was renamed or moved since 3.x knew it (`movedTo`), as the catalog follows a rename.
+  const byName = (repository: string) => (ref ? ids.get(customKey(ref.provider, repository, ref.host)) : undefined);
+  const byRepository = ref ? (byName(ref.repository) ?? (now ? byName(now) : undefined)) : undefined;
   return (old.catalogId && ids.get(`id:${old.catalogId}`)) || byRepository || undefined;
 }
 
@@ -1553,6 +1557,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
 
   // Catalog data for library apps: refreshed at start and every so often, fetched for apps another device added.
   const fetched = useRef(new Set<string>());
+  const [moved, setMoved] = useState<Record<string, string>>({});
   // Every half hour, look again for new releases.
   const [round, setRound] = useState(0);
   useEffect(() => {
@@ -1571,7 +1576,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       if (custom) {
         releasesOf(custom).then(
-          (releases) => setCatalog((c) => ({ ...c, [item.id]: { ...customEntry(item.id, custom, latestOf(releases), art), forHere: c[item.id]?.forHere, early: c[item.id]?.early } })),
+          (releases) => {
+            setCatalog((c) => ({ ...c, [item.id]: { ...customEntry(item.id, custom, latestOf(releases), art), forHere: c[item.id]?.forHere, early: c[item.id]?.early } }));
+            // Renamed or moved since: the catalog may list it under its name now, which its page then offers to switch to.
+            const now = movedTo(custom, releases);
+            if (now) setMoved((m) => (m[item.id] === now ? m : { ...m, [item.id]: now }));
+          },
           () => setCatalog((c) => (c[item.id] ? c : { ...c, [item.id]: customEntry(item.id, custom, undefined, art) })),
         );
         continue;
@@ -2201,7 +2211,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     try {
       const listed = await entriesOf(appsOfRepository(await catalogStatuses().catch((): ReleaseStatus[] => []), repository));
       if (listed.length) return { listed };
-      const latest = latestOf(await releasesOf(repository));
+      const releases = await releasesOf(repository);
+      // Under an old name: the catalog's app under its name now.
+      const now = movedTo(repository, releases);
+      const renamed = now ? await entriesOf(appsOfRepository(await catalogStatuses().catch((): ReleaseStatus[] => []), repository, now)) : [];
+      if (renamed.length) return { listed: renamed };
+      const latest = latestOf(releases);
       const app: CustomApp = { ...repository, name: repository.repository.split("/").at(-1)! };
       return { preview: { app, latest, files: latest ? bestAssets(latest.assets, config.os, config.arch) : [] } };
     } catch (e) {
@@ -2230,8 +2245,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     return () => void (live = false);
   }, [hasCustom]); // eslint-disable-line react-hooks/exhaustive-deps
   const inCatalog = useMemo(
-    () => new Set(library.flatMap((i) => (i.custom && appsOfRepository(statusList, i.custom).some((s) => !library.some((l) => l.id === s.id)) ? [i.id] : []))),
-    [library, statusList],
+    () => new Set(library.flatMap((i) => (i.custom && appsOfRepository(statusList, i.custom, moved[i.id]).some((s) => !library.some((l) => l.id === s.id)) ? [i.id] : []))),
+    [library, statusList, moved],
   );
   // The pictures nothing uses any more: replaced, or their app removed. Once a run, as the library was saved at the last.
   useEffect(() => {
@@ -2338,9 +2353,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     },
     async listedAs(id) {
       const app = allItems.find((i) => i.id === id)?.custom ?? (isCustom(id) ? fromKey(id) : null);
-      return app ? entriesOf(appsOfRepository(await statuses(), app)) : [];
+      return app ? entriesOf(appsOfRepository(await statuses(), app, moved[id])) : [];
     },
     inCatalog,
+    moved,
     setGame(id, art) {
       setLibrary((l) => l.map((i) => (i.id === id ? { ...i, art: art ?? undefined } : i)));
       setCatalog((c) => (c[id] ? { ...c, [id]: withGame(c[id], art) } : c));
@@ -2579,8 +2595,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       let done = 0;
       // Each asks the site, or its repository's host, so several at a time; then they're added in the library's order.
       const found = await inTurns(apps, 6, async (old) => {
-        const match = catalogMatch(old, ids);
-        const detail = match && (await client.app(match.slug).catch(() => null));
+        const listed = async (match: { slug: string } | undefined) => (match ? await client.app(match.slug).catch(() => null) : null);
+        const detail = await listed(catalogMatch(old, ids));
         if (detail) return { kind: "catalog" as const, detail };
         const ref = old.repository ? v3Ref(old.provider, old.repository) : null;
         if (!ref) return null;
@@ -2589,6 +2605,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         // and all: its releases are read when its page is opened.
         const custom: CustomApp = { ...ref, name: old.name };
         const [releases, art] = await Promise.all([releasesOf(custom).catch(() => null), bestGameArt(client, old.name).catch(() => undefined)]);
+        // Renamed or moved since 3.x knew it: the catalog's app under its name now.
+        const now = movedTo(custom, releases);
+        const renamed = now ? await listed(catalogMatch(old, ids, now)) : null;
+        if (renamed) return { kind: "catalog" as const, detail: renamed };
         return { kind: "custom" as const, custom, latest: releases ? latestOf(releases) : undefined, art };
       }, () => onProgress?.(++done));
       const missing: string[] = [];

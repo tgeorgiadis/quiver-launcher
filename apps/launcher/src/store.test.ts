@@ -94,6 +94,15 @@ describe("catalogMatch", () => {
     expect(catalogMatch({ ...old, catalogId: "gone" }, ids)?.id).toBe("sapphire");
     expect(catalogMatch({ name: "Other", provider: "github", repository: "someone/other" }, ids)).toBeUndefined();
   });
+
+  it("finds the catalog's app under the repository's name now, when it moved since 3.x knew it", () => {
+    const listed = new Map([["github:2ship2harkinian/2ship2harkinian", { id: "2ship" }]]);
+    const moved = { name: "The Legend of Zelda: Majora's Mask", provider: "github", repository: "harbourmasters/2ship2harkinian" };
+    expect(catalogMatch(moved, listed)).toBeUndefined();
+    expect(catalogMatch(moved, listed, "2Ship2Harkinian/2ship2harkinian")?.id).toBe("2ship");
+    // Its old name, when the catalog still lists it so, wins.
+    expect(catalogMatch(old, ids, "someone/else")?.id).toBe("sapphire");
+  });
 });
 
 describe("keptInstall", () => {

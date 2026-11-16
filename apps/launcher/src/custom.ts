@@ -83,9 +83,24 @@ const withArt = (entry: CatalogEntry, art?: GameArt): CatalogEntry =>
 export const withGame = (entry: CatalogEntry, art: GameArt | null): CatalogEntry =>
   withArt({ ...entry, games: [], consoles: undefined, artwork: undefined, libraryArt: undefined }, art ?? undefined);
 
-/** The catalog's apps for a repository: one repository can ship several, each with an entry of its own (a port of two games). */
-export const appsOfRepository = <T extends { provider: string; host?: string; repository?: string }>(all: T[], ref: Pick<CustomApp, "provider" | "host" | "repository">) =>
-  all.filter((s) => s.repository && customKey(s.provider, s.repository, s.host) === customKey(ref.provider, ref.repository, ref.host));
+/**
+ * The catalog's apps for a repository: one repository can ship several, each with an entry of its own (a port of two
+ * games). Under its name `now` too, when it was renamed or moved since (`movedTo`), as the catalog follows a rename.
+ */
+export const appsOfRepository = <T extends { provider: string; host?: string; repository?: string }>(all: T[], ref: Pick<CustomApp, "provider" | "host" | "repository">, now?: string) => {
+  const keys = new Set([ref.repository, ...(now ? [now] : [])].map((repository) => customKey(ref.provider, repository, ref.host)));
+  return all.filter((s) => s.repository && keys.has(customKey(s.provider, s.repository, s.host)));
+};
+
+/**
+ * The name a repository has now, from its host's releases, when that isn't the one it was added under: renamed, or
+ * moved to another owner (github.com/HarbourMasters/2ship2harkinian is 2ship2harkinian/2ship2harkinian), which the
+ * host still answers to. Undefined when it's the same, or the releases don't say.
+ */
+export function movedTo(ref: Pick<RepositoryRef, "repository">, releases: readonly Pick<Release, "repository">[] | null | undefined): string | undefined {
+  const now = releases?.find((r) => r.repository)?.repository;
+  return now && now.toLowerCase() !== ref.repository.toLowerCase() ? now : undefined;
+}
 
 const stub = (id: string, name: string, description: string): CatalogEntry => ({
   id,

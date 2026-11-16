@@ -172,3 +172,23 @@ test("custom keys round-trip GitHub, GitLab and a self-hosted Gitea", () => {
   expect(fromKey("github:owner/repo")).toEqual({ provider: "github", repository: "owner/repo", name: "repo" });
   expect(fromKey("gitea:codeberg.org/owner/repo")).toEqual({ provider: "gitea", host: "codeberg.org", repository: "owner/repo", name: "repo" });
 });
+
+test("GitHub releases say which repository they're in now, after a rename or a move to another owner", async () => {
+  const { fetch } = fakeFetch({
+    "https://api.github.com/repos/harbourmasters/2ship2harkinian/releases?per_page=10": {
+      json: [
+        {
+          tag_name: "5.0.1",
+          draft: false,
+          prerelease: false,
+          published_at: "2026-08-30T00:00:00Z",
+          html_url: "https://github.com/2ship2harkinian/2ship2harkinian/releases/tag/5.0.1",
+          assets: [],
+        },
+        { tag_name: "5.0.0", draft: false, prerelease: false, published_at: "2026-08-01T00:00:00Z", assets: [] },
+      ],
+    },
+  });
+  const releases = await githubProvider.releases({ provider: "github", repository: "harbourmasters/2ship2harkinian" }, { fetch });
+  expect(releases.map((r) => r.repository)).toEqual(["2ship2harkinian/2ship2harkinian", undefined]);
+});
