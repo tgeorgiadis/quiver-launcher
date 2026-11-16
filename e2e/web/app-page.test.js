@@ -43,8 +43,8 @@ test("an app's page and its dialogs", async () => {
   await section("Media");
   await everything("its Media");
   // Its setup, Mods among it, on its own tab.
-  await section("On this computer");
-  await everything("its On this computer tab");
+  await section("Manage");
+  await everything("its Manage tab");
   assert.equal(await open("button", { text: "Mods" }), "dialog: Mods for Test Port");
   await everything("Mods");
   assert.equal(await back(), "page: Test Port");
@@ -81,8 +81,8 @@ test("Up goes through a long page to its top before the top bar", async () => {
 test("a page opened with A has the focus in it, and a button that changes as it's pressed keeps it near", async () => {
   assert.equal(await appPage(), "page: Test Port");
   assert.equal(await reach.focused(app), 'button "Library" in Test Port');
-  // The app's setup is on its On this computer tab.
-  await page.locator("[aria-label=\"App sections\"] button", { hasText: "On this computer" }).click();
+  // The app's setup is on its Manage tab.
+  await page.locator("[aria-label=\"App sections\"] button", { hasText: "Manage" }).click();
   await open("button", { text: "Change version" });
   assert.doesNotMatch(await reach.focused(app), /^body/);
 });

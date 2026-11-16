@@ -1011,6 +1011,11 @@ msgstr "모든 앱"
 msgid "All consoles"
 msgstr "모든 콘솔"
 
+#. Menu item, last under Manage: opens the app's page at its Manage tab
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "All options…"
+msgstr "모든 옵션…"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "All other platforms"
 msgstr "기타 모든 플랫폼"
@@ -3391,6 +3396,10 @@ msgstr "앱 폴더 안에 앱을 넣을 폴더를 만들어요."
 
 #. Menu item opening an app's folder, shortcuts and uninstalling
 #. Menu item opening an app's folder, shortcuts and uninstalling
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#. Tab of an app's page: its shortcuts, setup and place in the library
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Manage"
 msgstr "관리"
@@ -4020,10 +4029,6 @@ msgstr "알려 주기"
 msgid "OK"
 msgstr "확인"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "On this computer"
-msgstr "이 컴퓨터에 있음"
-
 #. Library view option: a game's ports (apps that play it) share one card, which lists them
 #: ../../apps/launcher/src/library-view.tsx
 msgid "One card for each game"
@@ -4032,6 +4037,10 @@ msgstr "게임마다 카드 하나"
 #: ../../apps/launcher/src/App.tsx
 msgid "Only hidden apps"
 msgstr "숨긴 앱만 보기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Only your library shows this name. Its folder keeps the name it has."
+msgstr "이 이름은 내 라이브러리에만 표시됩니다. 폴더 이름은 그대로 유지됩니다."
 
 #. How strongly the library's background picture shows
 #: ../../apps/launcher/src/settings-page.tsx
@@ -4745,12 +4754,17 @@ msgstr "라이브러리에서 삭제해도 파일은 그대로 남아요."
 msgid "Removing…"
 msgstr "삭제하는 중…"
 
+#. Button beside an app's name on its page: gives it a name of the player's own
 #. Button: rename one of the player's tags
 #. Renames an app's folder
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Rename"
 msgstr "이름 바꾸기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Rename {app}"
+msgstr "{app} 이름 바꾸기"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Rename {app}'s folder"
@@ -4767,6 +4781,11 @@ msgstr "폴더 이름 바꾸기"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Rename folder…"
 msgstr "폴더 이름 바꾸기…"
+
+#. Menu item: gives an app in the library a name of the player's own
+#: ../../apps/launcher/src/card-menu.tsx
+msgid "Rename…"
+msgstr "이름 바꾸기…"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Replace your library with the one from {taken} ({count, plural, one {# app} other {# apps}})? Your library as it is now is kept as a backup too."
@@ -6211,6 +6230,10 @@ msgstr "100자 이하로 입력하세요."
 #: ../../apps/launcher/src/detail.tsx
 msgid "Use the catalog's consoles"
 msgstr "카탈로그의 콘솔 사용"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the catalog's name"
+msgstr "카탈로그의 이름 사용"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the catalog's name and artwork"

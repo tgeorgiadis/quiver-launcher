@@ -55,7 +55,7 @@ after(async () => {
 const card = (name) => page.locator("article").filter({ has: page.getByRole("button", { name, exact: true }) });
 /** The side panel: its own tab on a catalog app's page. */
 const toPanel = async () => {
-  const tab = page.getByRole("tab", { name: /On this computer/ });
+  const tab = page.getByRole("tab", { name: /Manage/ });
   await page.locator(".app-page h1").waitFor();
   if (await tab.count()) await tab.click();
   await page.locator(".app-panel").waitFor();
@@ -115,16 +115,16 @@ test("a repository moved to another owner since it was added still finds the cat
   await page.getByRole("button", { name: "Switch to the catalog's" }).waitFor();
 });
 
-test("an app the player added keeps its README and On this computer as tabs of their own", async () => {
+test("an app the player added keeps its README and Manage as tabs of their own", async () => {
   await card("My Port").getByRole("button", { name: "My Port", exact: true }).click();
   await page.locator(".app-page h1").waitFor();
   const tabs = page.locator('[aria-label="App sections"] [role="tab"]');
   await tabs.first().waitFor();
-  assert.deepEqual(await tabs.allInnerTexts(), ["Overview", "On this computer"]);
+  assert.deepEqual(await tabs.allInnerTexts(), ["Overview", "Manage"]);
   // Opened at its README; its setup waits on the other tab.
   await page.locator(".readme").waitFor();
   assert.equal(await page.locator(".computer-panel").count(), 0);
-  await page.getByRole("tab", { name: "On this computer" }).click();
+  await page.getByRole("tab", { name: "Manage" }).click();
   await page.locator(".computer-panel").waitFor();
   assert.equal(await page.locator(".readme").count(), 0);
 });

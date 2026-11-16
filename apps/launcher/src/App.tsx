@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -380,6 +380,7 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <RenamePrompt />
       <PlaceAppPrompt />
       <AddFilesPrompt />
       <ChangeVersion />
@@ -1178,7 +1179,7 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
  * library's sidebar it has no way back, and shows the player's own play.
  */
 /** Each tab of an app's page's icon: outlined and grey, filled in the accent while it's open (app.css). */
-const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: Monitor };
+const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: SlidersHorizontal };
 /** A tab of an app's page: which, its name, and a count beside it. */
 type PageTab = readonly [keyof typeof TAB_ICONS, string, string | undefined];
 
@@ -1199,7 +1200,7 @@ function AppPage({
   at?: PageAt;
   /**
    * Over TV mode: a larger header with its art, read from across a room, and only the buttons for playing it there
-   * (its folder and uninstalling are on its On this computer tab); Back (B) goes home; the README waits to be asked for.
+   * (its folder and uninstalling are on its Manage tab); Back (B) goes home; the README waits to be asked for.
    */
   tv?: boolean;
   onClose?: () => void;
@@ -1208,7 +1209,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1258,6 +1259,12 @@ function AppPage({
       el.style.minHeight = "";
     };
   }, [tab]);
+  // Asked for from its menu (All options…): its Manage tab, once.
+  useEffect(() => {
+    if (managing !== id) return;
+    if (item || install) setTab("computer");
+    askManage(null);
+  }, [managing]); // eslint-disable-line react-hooks/exhaustive-deps
   const readmeAsked = !!at && "readme" in at;
   const [readme, setReadme] = useState(readmeAsked);
   // Every release, asked for once the player opens the Releases tab or points
@@ -1280,7 +1287,7 @@ function AppPage({
   // Only when the app has videos, as on the website.
   const media = detail?.media ?? [];
   const overviewTab: PageTab = ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined];
-  const computerTab: PageTab = ["computer", t`On this computer`, undefined];
+  const computerTab: PageTab = ["computer", t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" }), undefined];
   // One the player added has no site page, so only its README and what this computer has of it, each a tab as a
   // catalog app's are; a local app has no README, so no tabs.
   const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : [])];
@@ -1311,13 +1318,14 @@ function AppPage({
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
   const blockedWhy = install?.blocked ?? "";
+  const app = entry.projectName;
   // What this computer has of the app, and its setup: a tab of its own, or the page itself for a local app.
   const computer = (item || install) && (
-    <section className="app-panel computer-panel" aria-label={t`On this computer`}>
+    <section className="app-panel computer-panel" aria-label={t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" })}>
       {/* A tab says it already. */}
       {!tabs.length && (
         <h3>
-          <Trans>On this computer</Trans>
+          <Trans comment="Tab of an app's page: its shortcuts, setup and place in the library">Manage</Trans>
         </h3>
       )}
       {/* A group with nothing in it for this app (no shortcuts on macOS, say) doesn't show. */}
@@ -1414,7 +1422,15 @@ function AppPage({
             <Artwork src={entry.artwork ?? entry.libraryArt?.logo} name={entry.projectName} />
             <div className="app-heading">
               <div className="eyebrow">{[eyebrow, PROJECT_TYPES[entry.projectType] && i18n._(PROJECT_TYPES[entry.projectType])].filter(Boolean).join(" / ").toLocaleUpperCase(i18n.locale)}</div>
-              <h1>{entry.projectName}</h1>
+              {/* In the library: a double click on its name, or the pencil beside it, renames it. */}
+              <div className="app-title">
+                <h1 onDoubleClick={item && !tv ? () => askName(item.id) : undefined}>{entry.projectName}</h1>
+                {item && !tv && (
+                  <button type="button" className="title-rename" aria-label={t`Rename ${app}`} title={t({ message: "Rename", comment: "Button beside an app's name on its page: gives it a name of the player's own" })} onClick={() => askName(item.id)}>
+                    <Pencil size={15} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
               {entry.games.length > 0 && (
                 <div className="based-on">
                   <span className="based-on-label">
@@ -1493,7 +1509,7 @@ function AppPage({
               )}
               {/* Out of Browse, as its card's menu has it. */}
               {site && !item && <BrowseHideButton entry={entry} />}
-              {/* Its files go; the app stays in the library to get again. Taking it out is under On this computer. */}
+              {/* Its files go; the app stays in the library to get again. Taking it out is under Manage. */}
               {install && !install.local && !(job && !("error" in job)) && !tv && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
@@ -2259,6 +2275,56 @@ function RenameFolderPrompt() {
           <button type="button" onClick={close}>
             <Trans>Cancel</Trans>
           </button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+/**
+ * The player's own name for an app in their library, in place of the catalog's: from its menu's Rename…, or its
+ * name on its page. Empty, or the catalog's own, shows the catalog's again. Its artwork stays as it is.
+ */
+function RenamePrompt() {
+  const { naming, askName, library, catalog, customize } = useLauncher();
+  const item = naming ? library.find((i) => i.id === naming) : undefined;
+  const [name, setName] = useState("");
+  const original = naming ? catalog[naming]?.projectName : undefined;
+  const now = item?.overrides?.name ?? original ?? "";
+  useEffect(() => {
+    // Its name now fills the field as it opens, selected to type over.
+    setName(now);
+  }, [naming]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!naming || !item) return null;
+  const app = now;
+  const close = () => askName(null);
+  const save = (to: string) => {
+    const next = to.trim();
+    customize(naming, { ...item.overrides, name: next && next !== original ? next : undefined });
+    close();
+  };
+  return (
+    <Dialog label={t`Rename ${app}`} onClose={close}>
+      <form className="detail-body rename-folder" onSubmit={(e) => (e.preventDefault(), save(name))}>
+        <h2>
+          <Pencil size={18} /> <Trans>Rename {app}</Trans>
+        </h2>
+        <input autoFocus aria-label={t`Name`} maxLength={200} placeholder={original} value={name} onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} />
+        <p className="muted">
+          <Trans>Only your library shows this name. Its folder keeps the name it has.</Trans>
+        </p>
+        <div className="row">
+          <button className="primary">
+            <Trans>Save</Trans>
+          </button>
+          <button type="button" onClick={close}>
+            <Trans>Cancel</Trans>
+          </button>
+          {original && item.overrides?.name && (
+            <button type="button" className="link-button" onClick={() => save("")}>
+              <Trans>Use the catalog&apos;s name</Trans>
+            </button>
+          )}
         </div>
       </form>
     </Dialog>
