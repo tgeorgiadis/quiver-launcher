@@ -512,6 +512,16 @@ main.app-main { padding: 0 0 40px; }
 .panel-action > svg { flex: none; color: var(--text-3); }
 .panel-action.danger > svg { color: inherit; }
 .panel-action .action-note { color: var(--muted); font-weight: 400; }
+/* The Saves tab: a place or a backup to a row, its buttons at the end. */
+.save-row { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 8px 12px; border-radius: 8px; background: var(--field); font-size: 13px; }
+.save-main { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.save-path { overflow-wrap: anywhere; }
+.save-note { color: var(--muted); font-size: 12px; }
+.save-button { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 28px; padding: 4px 10px; border-radius: 8px; background: var(--field-hover); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.save-button:hover:not(:disabled) { background: var(--line); }
+.save-source, .save-said { margin: 0; }
+.save-said { font-size: 13px; }
+.save-said.error { color: var(--red-text); }
 .panel-action.opens::after {
   content: ""; flex: none; width: 6px; height: 6px; margin: 0 3px 0 auto;
   border-right: 1.5px solid var(--text-4); border-bottom: 1.5px solid var(--text-4); transform: rotate(-45deg);

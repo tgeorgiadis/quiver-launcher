@@ -37,6 +37,11 @@ msgstr "{0, plural, one {# приложение} few {# приложения} ma
 msgid "{0, plural, one {# comment} other {# comments}}"
 msgstr "{0, plural, one {# комментарий} few {# комментария} many {# комментариев} other {# комментария}}"
 
+#. placeholder {0}: backup.files
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "{0, plural, one {# file} other {# files}}"
+msgstr "{0, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}"
+
 #. placeholder {0}: library.apps.length
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{0, plural, one {If you already installed it somewhere else, show Quiver the folder.} other {If you already installed them somewhere else, show Quiver the folder.}}"
@@ -968,6 +973,11 @@ msgstr "При добавлении ничего не перемещается: 
 msgid "Advanced"
 msgstr "Дополнительно"
 
+#. Why a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "After playing"
+msgstr "После игры"
+
 #. Browse card detail: AI-assisted or Mostly AI
 #: ../../apps/launcher/src/browse-cards.ts
 msgid "AI label"
@@ -1313,11 +1323,21 @@ msgstr "Назад к результатам по запросу «{searched}»"
 msgid "Back to top"
 msgstr "Наверх"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Back up now"
+msgstr "Создать копию сейчас"
+
+#. Said after a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Backed up."
+msgstr "Копия создана."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Background music"
 msgstr "Фоновая музыка"
 
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "Backups"
 msgstr "Резервные копии"
 
@@ -1356,6 +1376,21 @@ msgstr "По README проекта, проверено {date}"
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Be the first to say how it went."
 msgstr "Расскажите первым, как всё прошло."
+
+#. Why a save backup was made: it holds what was there before another backup was put back
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Before a restore"
+msgstr "Перед восстановлением"
+
+#. Why a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Before an update"
+msgstr "Перед обновлением"
+
+#. Why a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Before uninstalling"
+msgstr "Перед удалением"
 
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/ways-to-play.tsx
@@ -1449,6 +1484,7 @@ msgstr "Нельзя добавить: Quiver Launcher 3 не знает, отк
 #: ../../apps/launcher/src/own-copy-setup.tsx
 #: ../../apps/launcher/src/own.tsx
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Cancel"
@@ -1690,6 +1726,10 @@ msgstr "Нажмите «Создать токен на GitHub» и войдит
 msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "Нажмите «Создать токен на GitLab» и войдите в GitLab."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Choose folder"
+msgstr "Выбрать папку"
+
 #. Generate token is the name of GitHub's button, as GitHub shows it in English
 #. Generate token is the name of GitLab's button, as GitLab shows it in English
 #: ../../apps/launcher/src/github-token.tsx
@@ -1741,6 +1781,10 @@ msgstr "Выбрать эту папку"
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Choose when it expires."
 msgstr "Выберите срок действия."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Choose where this app saves"
+msgstr "Выберите, куда это приложение сохраняет данные"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Choose where to install {app}"
@@ -2432,6 +2476,10 @@ msgstr ""
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "From Quiver Launcher 3. Keep this folder until you move its apps."
 msgstr "Из Quiver Launcher 3. Сохраните эту папку, пока не переместите её приложения."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "From Quiver's catalog."
+msgstr "Из каталога Quiver."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
@@ -3362,6 +3410,11 @@ msgstr "Поиск…"
 msgid "Made by"
 msgstr "Автор"
 
+#. Why a save backup was made: the player pressed Back up now
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Made by you"
+msgstr "Создана вами"
+
 #. Which releases an app gets: only the ones its developer didn't mark as pre-releases
 #: ../../apps/launcher/src/App.tsx
 msgid "Main releases only"
@@ -3777,6 +3830,10 @@ msgstr "В этом плейлисте пока нет приложений. Д�
 msgid "No apps play this game yet."
 msgstr "Пока нет приложений для этой игры."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "No backups yet."
+msgstr "Копий пока нет."
+
 #: ../../apps/launcher/src/controls.tsx
 msgid "No controllers detected. Connect one and it appears here."
 msgstr "Контроллеры не обнаружены. Подключите контроллер, и он появится здесь."
@@ -3961,6 +4018,10 @@ msgstr "Ещё нет оценок"
 msgid "Not sure"
 msgstr "Не знаю"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Not there yet. It's made when the app first saves."
+msgstr "Пока не существует. Появится, когда приложение впервые сохранит данные."
+
 #. The player's note about how the app ran
 #: ../../apps/launcher/src/feedback.tsx
 msgid "Note"
@@ -3971,6 +4032,10 @@ msgstr "Заметка"
 msgctxt "README callout"
 msgid "Note"
 msgstr "Примечание"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing changed since the last backup."
+msgstr "С последней копии ничего не изменилось."
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing here."
@@ -4058,6 +4123,7 @@ msgstr "Открыть приложение"
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "Open folder"
 msgstr "Открыть папку"
 
@@ -4392,6 +4458,10 @@ msgstr "Быстрое действие"
 msgid "Quit"
 msgstr "Выйти"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver backs up your saves after you play, before an update and before uninstalling. It keeps the newest 10 on this computer."
+msgstr "Quiver создаёт копии сохранений после игры, перед обновлением и перед удалением. На этом компьютере хранятся 10 последних."
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver blocked {installedVersion}: {blockedWhy}"
 msgstr "Quiver заблокировал {installedVersion}: {blockedWhy}"
@@ -4459,6 +4529,10 @@ msgstr ""
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Quiver didn't find one in your game folders."
 msgstr "Quiver не нашёл её в ваших папках с играми."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver doesn't know where this app saves yet. Play it once, or choose the folder."
+msgstr "Quiver пока не знает, куда это приложение сохраняет данные. Запустите его один раз или выберите папку."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Quiver doesn't offer {name} for {app}: it may be for another system, or missed when the downloads were picked."
@@ -4560,6 +4634,10 @@ msgstr "Quiver Launcher: перейти в библиотеку"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver создаст для него папку в {dir} и откроет её. Положите туда файлы приложения; «Играть» запустит первую программу в ней."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver saw the app save here."
+msgstr "Quiver заметил, что приложение сохраняет данные здесь."
 
 #. Tag after the name of someone who runs Quiver
 #: ../../apps/launcher/src/discussions.tsx
@@ -4703,6 +4781,7 @@ msgstr "Перезагрузить"
 #. Removes a followed playlist from the library
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Remove"
 msgstr "Убрать"
@@ -4731,6 +4810,10 @@ msgstr "Убрать из библиотеки"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Remove tag {tag}"
 msgstr "Убрать тег {tag}"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Remove this backup"
+msgstr "Удалить эту копию"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
@@ -4822,6 +4905,7 @@ msgstr "Сбросить назначения по умолчанию"
 
 #. Window button: un-maximize
 #: ../../apps/launcher/src/recovery.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Restore"
 msgstr "Восстановить"
@@ -4837,6 +4921,15 @@ msgstr "Восстановить копию"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Restore from backup"
 msgstr "Восстановить из резервной копии"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Restore this backup? Your saves now are backed up first."
+msgstr "Восстановить эту копию? Сначала будет создана копия текущих сохранений."
+
+#. Said after a save backup was put back
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Restored."
+msgstr "Восстановлено."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Results for “{typed}”"
@@ -4917,6 +5010,13 @@ msgstr "Сохранено. Теперь запросы к GitHub использ
 #: ../../apps/launcher/src/gitlab-token.tsx
 msgid "Saved. Requests to GitLab use your token now."
 msgstr "Сохранено. Теперь запросы к GitLab используют ваш токен."
+
+#. Tab of an installed app's page: its save backups
+#. Tab of an installed app's page: its save backups
+#: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Saves"
+msgstr "Сохранения"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Saves and settings come too. After that, you can delete your Quiver Launcher 3 folder."
@@ -6227,6 +6327,10 @@ msgstr "По умолчанию (предлагать)"
 msgid "Use no more than 100 characters."
 msgstr "Используйте не более 100 символов."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Use Quiver's choice"
+msgstr "Использовать выбор Quiver"
+
 #: ../../apps/launcher/src/detail.tsx
 msgid "Use the catalog's consoles"
 msgstr "Использовать консоли из каталога"
@@ -6259,6 +6363,8 @@ msgstr "Подтверждён"
 msgid "Version {checkingVersion} is <0/>"
 msgstr "Версия {checkingVersion} <0/>"
 
+#. The app's version when a save backup was made
+#: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/update.tsx
 msgid "Version {version}"
 msgstr "Версия {version}"
@@ -6423,6 +6529,10 @@ msgstr "Где ваши игры?"
 msgid "Where it's hosted"
 msgstr ""
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Where saves are kept"
+msgstr "Где хранятся сохранения"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Where your Quiver Launcher 3 apps are, and Quiver's apps folder"
 msgstr "Где находятся ваши приложения из Quiver Launcher 3 и папка приложений Quiver"
@@ -6489,6 +6599,10 @@ msgstr "Вы"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "You added it from your own folder or program, and Quiver leaves those where you put them."
 msgstr "Вы добавили его из своей папки или программы, а такие приложения Quiver оставляет там, где вы их разместили."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "You chose this folder."
+msgstr "Вы выбрали эту папку."
 
 #: ../../apps/launcher/src/detail.tsx
 msgid "You have it installed. If you're happy to accept the risk, you can keep using it; otherwise, remove it and install an available release instead."

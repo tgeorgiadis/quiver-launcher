@@ -26,6 +26,7 @@ import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
+import { savesChanged, savesOf, savesOn } from "./saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
 
@@ -1494,6 +1495,13 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     const closed = native.onAppClosed(({ id, seconds }) => {
       const { catalog, installs } = forUsage.current;
       track("app_closed", { ...playedRef(appRef(id, catalog[id]?.slug ?? ""), installs[id]?.version ?? ""), seconds });
+      // Its saves, backed up if the session changed them.
+      const install = installs[id];
+      if (install && savesOn(config.os))
+        void native.savesPlayed(savesOf(id, install, catalog[id])).then(
+          (made) => made && savesChanged(id),
+          () => {},
+        );
     });
     // Once the catalog and the account have had time to come in, so its counts are of the library as it is.
     const counted = setTimeout(() => {
@@ -2069,6 +2077,12 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const desktop = config.os !== "android" && config.os !== "ios";
       const group = !was && desktop && groupByConsole && !chosenFolder ? groupFolder(withOwnConsoles(catalog[entry.id] ?? entry, ownConsoles[entry.id]), consoleNames) : undefined;
       const into = group ? joinPath(config.appsDir, group) : chosenFolder;
+      // An update writes over the app's folder, where many apps keep their saves: backed up first, as they are.
+      if (was && savesOn(config.os))
+        await native.savesBackup(savesOf(entry.id, was, catalog[entry.id] ?? entry), "update").then(
+          (made) => made && savesChanged(entry.id),
+          () => {},
+        );
       const done = await native.install({
         id: entry.id,
         url: asset.url,
@@ -2170,6 +2184,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       setNotice(t`Wait for it to finish moving, then try again.`);
       throw "cancelled";
     }
+    // Its saves are kept: in a folder of the app's own they'd go with it, and elsewhere a reinstall may want them back.
+    if (savesOn(config.os)) await native.savesBackup(savesOf(id, install, catalog[id]), "uninstall").catch(() => {});
     await native.uninstall(install.folder, install.dir);
     chosenFolder.current.delete(id);
     track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
@@ -2514,6 +2530,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // On the player's Discord profile while it runs: its square icon, else its box art.
       const entry = catalog[id];
       const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
+      // What's in its likely save places now, to tell afterwards where it saved (saves.rs). Never in the way of playing.
+      if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
         () => (musicForGame(), track("app_launched", played)),
         async (e) => {

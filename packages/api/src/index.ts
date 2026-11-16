@@ -17,6 +17,24 @@ export type InstallSettings = {
   mods?: ModSettings;
   /** What the player brings of their own, such as their copy of the game, and how the app gets it. */
   setupFiles?: SetupFile[];
+  /** Where the app keeps its saves, for the launcher's save backups. */
+  saves?: SaveSettings;
+};
+
+/** One place an app keeps saves: `path` under `root` (the app's folder, or one of the system's folders for apps' data). */
+export type SaveLocation = {
+  root: "app" | "data" | "config" | "localData" | "documents" | "home";
+  /** A folder, a file, or files matching one `*` in the last part ("saves/*.sav"). */
+  path: string;
+  /** The systems it applies to; every system when missing. */
+  os?: ("windows" | "linux" | "macos")[];
+  /** "settings": the app's settings rather than progress. */
+  kind?: "settings";
+};
+export type SaveSettings = {
+  locations: SaveLocation[];
+  /** Whether a save made on one system loads on another. Missing: nobody has checked. */
+  crossPlatform?: boolean;
 };
 
 /** A dump an app takes of the player's copy, as No-Intro, Redump or the app's own list gives it. */
