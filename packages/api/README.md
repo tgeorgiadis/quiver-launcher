@@ -17,6 +17,8 @@ deployment's own host (`FALLBACK_API`) from then on, as Quiver Launcher 3 does; 
 
 The types follow the site's public responses (also described at `/api/v1/openapi.json`); fields the client
 doesn't know are ignored. It also has small helpers the launcher uses: `inferPlatform` for release file names,
-`parseRepository` for GitHub and GitLab addresses, and `listSlug`/`listUrl` for shared lists.
+`parseRepository` for repository addresses, and `listSlug`/`listUrl` for shared lists. The repository providers in
+`src/providers/` (GitHub, GitLab, Gitea/Forgejo, Bitbucket and release feeds) sit behind `createProviders`, with
+`detectProvider` naming an unknown host.
 
 All rights reserved. See the repository's [LICENSE](../../LICENSE).
