@@ -76,9 +76,12 @@ fn named_setup(name: &str) -> bool {
     name.contains("setup") || name.contains("instal")
 }
 
-/// Installers of something else that come with an app (a runtime's, the app's own uninstaller).
+/// Programs of something else that come with an app (a runtime's installer, the app's own uninstaller, a crash reporter).
+/// A crash reporter by its whole name: an app's own name can start with "crash" too.
 fn runtime(name: &str) -> bool {
-    ["unins", "vc_redist", "vcredist", "dxsetup", "dxwebsetup", "directx", "dotnet", "windowsdesktop-runtime", "oalinst", "crash"].iter().any(|r| name.starts_with(r))
+    ["unins", "vc_redist", "vcredist", "dxsetup", "dxwebsetup", "directx", "dotnet", "windowsdesktop-runtime", "oalinst", "crashpad", "crashreport", "crashhandler", "crashsender", "crash_"]
+        .iter()
+        .any(|r| name.starts_with(r))
 }
 
 /// How far into a program its maker's marks are looked for.
@@ -429,6 +432,12 @@ mod tests {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, contents).unwrap();
         path.to_path_buf()
+    }
+
+    #[test]
+    fn an_app_named_crash_is_not_a_crash_reporter() {
+        assert!(runtime("crashpad_handler.exe") && runtime("crashreporter.exe") && runtime("crash_handler.exe"));
+        assert!(!runtime("crashlauncher-1.2.0-setup.exe") && !runtime("crashbandicoot.exe"));
     }
 
     #[test]
