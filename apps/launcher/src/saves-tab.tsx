@@ -28,9 +28,9 @@ function reasonLabel(reason: string) {
   return t({ message: "Made by you", comment: "Why a save backup was made: the player pressed Back up now" });
 }
 
-const SYSTEM_NAMES: Record<string, string> = { windows: "Windows", linux: "Linux", macos: "macOS" };
+export const SYSTEM_NAMES: Record<string, string> = { windows: "Windows", linux: "Linux", macos: "macOS" };
 
-const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
+export const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
 
 export function SavesTab({ entry }: { entry: Entry }) {
   const { installs, catalog, settings, cloudSavesFor } = useLauncher();
@@ -165,8 +165,12 @@ export function SavesTab({ entry }: { entry: Entry }) {
           ? t`Cloud saves are switched off in Settings. Backups stay on this computer.`
           : !cloud
             ? t`Couldn't reach your cloud saves. Backups stay on this computer for now.`
-            : !cloud.on
-              ? t`Cloud saves aren't available yet. Backups stay on this computer.`
+            : cloud.why === "paused"
+              ? t`Cloud saves are paused for now, so nothing new is being sent. Backups stay on this computer.`
+              : cloud.why === "suspended"
+                ? t`Quiver has stopped this account adding to its cloud saves. Backups stay on this computer.`
+                : !cloud.on
+                  ? t`Cloud saves aren't available yet. Backups stay on this computer.`
               : !cloud.allowed
                 ? t`Quiver has switched cloud saves off for this app. Its backups stay on this computer.`
                 : null;
@@ -180,6 +184,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
     const used = sizeLabel(cloud.used);
     const limit = sizeLabel(cloud.limit);
     const keep = cloud.keep;
+    const max = sizeLabel(cloud.maxCopy);
     const sent = lastSent(entry.id);
     const newest = info!.backups.find((b) => b.reason !== "restore") ?? info!.backups[0];
     const unsent = !info!.cloudOff && newest && !cloud.copies.some((c) => c.hash === newest.hash);
@@ -200,7 +205,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
         )}
         {!info!.cloudOff && sent === "big" && (
           <p className="save-said error" role="status">
-            <Trans>These saves are too big for cloud saves (100 MB). They&apos;re backed up on this computer only.</Trans>
+            {t`These saves are too big for cloud saves (${max}). They're backed up on this computer only.`}
           </p>
         )}
         {unsent && sent !== "big" && (

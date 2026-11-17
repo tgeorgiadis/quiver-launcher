@@ -16,7 +16,7 @@ import type { Feedback, Os } from "@quiverlauncher/api";
 import { native, type Config } from "./native";
 import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
 import type { CorrectionTopic } from "./corrections";
-import type { CloudApi, CloudBegun, CloudMine } from "./cloud-saves";
+import type { CloudApi, CloudBegun, CloudMine, CloudUsage } from "./cloud-saves";
 
 export type ReviewInput = {
   entryId: string;
@@ -182,6 +182,7 @@ const fns = {
   unshareList: ref("mutation", "sharedLists:unshare"),
   setAnalytics: ref("mutation", "users:setAnalytics"),
   cloudMine: ref("query", "cloudSaves:mine"),
+  cloudUsage: ref("query", "cloudSaves:usage"),
   cloudBegin: ref("action", "cloudSaves:beginUpload"),
   cloudFinish: ref("action", "cloudSaves:finishUpload"),
   cloudDownload: ref("action", "cloudSaves:download"),
@@ -346,6 +347,7 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     cloudSaves: me
       ? {
           mine: (entryId) => client.query(fns.cloudMine, { entryId }) as Promise<CloudMine | null>,
+          usage: () => client.query(fns.cloudUsage, {}) as Promise<CloudUsage | null>,
           begin: (backup) => client.action(fns.cloudBegin, backup) as Promise<CloudBegun>,
           finish: (id) => client.action(fns.cloudFinish, { id }) as Promise<boolean>,
           download: (id) => client.action(fns.cloudDownload, { id }) as Promise<{ url: string; size: number } | null>,
@@ -435,7 +437,7 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       method: body ? "POST" : "GET",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
-    }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
+    }).then(async (r) => (r.ok ? r.json() : Promise.reject(new Error((await r.json().catch(() => null))?.error ?? String(r.status)))));
   const adopt = async (token: string) => {
     await native.secretSet("testToken", token);
     setToken(token);
@@ -528,6 +530,7 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
     cloudSaves: user
       ? {
           mine: (entryId) => call("/cloud-saves/mine", { entryId }),
+          usage: () => call("/cloud-saves/usage", {}),
           begin: (backup) => call("/cloud-saves/begin", backup),
           finish: (id) => call("/cloud-saves/finish", { id }),
           download: (id) => call("/cloud-saves/download", { id }),

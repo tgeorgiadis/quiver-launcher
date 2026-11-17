@@ -42,8 +42,20 @@ with the saves on the computer.
 
 ## Limits
 
-The site sets them: 250 MB an account, the 5 newest copies of each app, 100 MB a copy. Over the limit, the backup
-stays on the computer and the Saves tab says the account is full.
+The site sets them, and the launcher shows what the site says: by default 250 MB an account, the 5 newest copies of
+each app, 100 MB a copy. Quiver can change them, give one app a bigger copy or one account more room. Over the limit,
+the backup stays on the computer and the Saves tab says the account is full.
+
+Quiver can also pause uploads for everyone, or stop one account's. Nothing is sent then, and the launcher says which
+it is. Copies already in the account can still be restored and removed, and backups on the computer carry on.
+
+## The whole account
+
+Settings has a Cloud saves section (`cloud-saves-page.tsx`) with everything the account keeps: a bar of the room used
+and each app that has copies, biggest first, with how many copies, their size, and when and from which computer it
+last synced. An app opens to its copies. Any copy can be removed, and all of an app's after a question. For an app
+installed on this computer, a copy can be restored, its saves sent now, and its save folder opened. The switch for
+cloud saves as a whole is there too.
 
 ## Safety
 
