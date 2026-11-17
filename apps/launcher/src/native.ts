@@ -243,12 +243,28 @@ export type SaveBackup = {
   /** "played", "manual", "update", "uninstall" or "restore". */
   reason: string;
   device: string;
+  /** The system its saves are for: "windows" for a Windows app run through Wine. */
+  os: string;
+  /** The checksum of the save files in it, which is how two copies are told apart. */
+  hash: string;
+};
+/** An app's saves as cloud saves compares them (cloud-saves.ts). */
+export type SavesCloud = {
+  /** The checksum of the saves as they are now; none when there are none here. */
+  hash?: string | null;
+  /** Their checksum when they last matched the account's newest copy. */
+  synced?: string | null;
+  /** The player switched cloud saves off for this app. */
+  off: boolean;
+  os: "windows" | "linux" | "macos";
 };
 export type SavesInfo = {
   places: { template: string; path: string; exists: boolean }[];
   /** Who said where they are. */
   from: "you" | "catalog" | "found" | "none";
   backups: SaveBackup[];
+  /** The player switched cloud saves off for this app. */
+  cloudOff?: boolean;
 };
 
 export const native = {
@@ -284,6 +300,15 @@ export const native = {
   savesPlayed: (of: SavesOf) => invoke<SaveBackup | null>("saves_played", { of }),
   /** The folders the launcher saw an app save in that the catalog hasn't been told about, and the system they're for. */
   savesToReport: (of: SavesOf) => invoke<{ os: "windows" | "linux" | "macos"; places: string[] }>("saves_to_report", { of }),
+  /** The saves as they are now and when they last matched the account, for cloud saves. */
+  savesCloud: (of: SavesOf) => invoke<SavesCloud>("saves_cloud", { of }),
+  /** Remembers that saves with this checksum match the account's newest copy. */
+  savesSynced: (of: SavesOf, hash: string | null) => invoke<void>("saves_synced", { of, hash }),
+  savesCloudOff: (of: SavesOf, off: boolean) => invoke<void>("saves_cloud_off", { of, off }),
+  /** Sends one backup to the link the site signed for it. */
+  savesUpload: (id: string, name: string, url: string, headers: Record<string, string>) => invoke<void>("saves_upload", { id, name, url, headers }),
+  /** Downloads a copy from the account and takes it in among the app's backups, where `savesRestore` can put it back. */
+  savesDownload: (of: SavesOf, url: string, size: number, hash: string) => invoke<SaveBackup>("saves_download", { of, url, size, hash }),
   /** Those places were sent to the catalog: they aren't offered by `savesToReport` again. */
   savesReported: (of: SavesOf, places: string[]) => invoke<void>("saves_reported", { of, places }),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */

@@ -38,6 +38,7 @@ msgid "{0, plural, one {# comment} other {# comments}}"
 msgstr "{0, plural, other {댓글 #개}}"
 
 #. placeholder {0}: backup.files
+#. placeholder {0}: copy.files
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {파일 #개}}"
@@ -1569,6 +1570,10 @@ msgstr "이 버전의 48시간 대기가 끝난 뒤 GitHub에서 변경됨."
 msgid "Changed on GitHub after this release finished its 48-hour wait. Its own wait ends {when}"
 msgstr "이 버전의 48시간 대기가 끝난 뒤 GitHub에서 변경됨. 이 파일의 대기는 {when} 끝나요"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Changed since their last backup"
+msgstr "마지막 백업 이후 변경됨"
+
 #: ../../apps/launcher/src/update.tsx
 msgid "Check for updates"
 msgstr "업데이트 확인"
@@ -1851,6 +1856,24 @@ msgstr "필터 닫기"
 msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
 msgstr "닫으면 시스템 트레이로 보내기 (Quiver Launcher가 계속 실행되며 앱을 업데이트해요)"
 
+#. Heading on an app's Saves tab: the copies of its saves kept with the player's account
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Cloud saves"
+msgstr "클라우드 세이브"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
+msgstr "클라우드 세이브는 Quiver 카탈로그의 앱에 사용할 수 있습니다. 이 앱의 백업은 이 컴퓨터에 남습니다."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves are switched off in Settings. Backups stay on this computer."
+msgstr "클라우드 세이브가 설정에서 꺼져 있습니다. 백업은 이 컴퓨터에 남습니다."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves aren't available yet. Backups stay on this computer."
+msgstr "클라우드 세이브는 아직 사용할 수 없습니다. 백업은 이 컴퓨터에 남습니다."
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Collapse all sections"
 msgstr "모든 섹션 접기"
@@ -1931,6 +1954,10 @@ msgstr "{folder} 복사 중… {percent}%"
 msgid "Couldn't delete it. Try again."
 msgstr "삭제하지 못했어요. 다시 시도하세요."
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't get your cloud saves. The app starts with the saves on this computer."
+msgstr "클라우드 세이브를 가져오지 못했습니다. 이 컴퓨터의 세이브로 앱을 시작합니다."
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
 msgstr "설치 실패"
@@ -1957,6 +1984,14 @@ msgstr "quiverlauncher.com에 연결할 수 없어 이 재생 목록을 표시�
 #: ../../apps/launcher/src/store.tsx
 msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "quiverlauncher.com에 연결할 수 없어요. 연결 상태를 확인하고 다시 시도하세요."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Couldn't reach your cloud saves. Backups stay on this computer for now."
+msgstr "클라우드 세이브에 연결하지 못했습니다. 백업은 당분간 이 컴퓨터에 남습니다."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Couldn't reach your cloud saves. Check your connection and try again."
+msgstr "클라우드 세이브에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요."
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
@@ -2179,6 +2214,10 @@ msgstr "허용 안 함"
 msgid "Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder."
 msgstr "Quiver Launcher 3 폴더는 아직 지우지 마세요. 설정 › 앱 폴더에서 언제든 옮길 수 있어요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Don't play yet"
+msgstr "아직 플레이하지 않기"
+
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2266,6 +2305,10 @@ msgstr "이 설정과 관계없이 앱마다 자체 설정에서 사전 출시�
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
 msgstr "이 설정과 관계없이 앱마다 자체 설정에서 스스로 업데이트할지, 먼저 물어볼지, 지금 버전을 유지할지 정할 수 있어요."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Each backup is also sent to your account, which keeps the newest {keep} of each app. {used} of {limit} used."
+msgstr "각 백업은 계정에도 전송되며, 계정에는 앱마다 최신 {keep}개가 보관됩니다. {limit} 중 {used} 사용 중."
 
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
@@ -2468,6 +2511,15 @@ msgstr "{0}에서 찾았어요. 가져오는 항목:"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "{folder}에서 찾았어요"
+
+#. Which computer a cloud save was made on
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "From {device}"
+msgstr "{device}에서"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}"
+msgstr "{device}에서, {cloudWhen}"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "From a git repository"
@@ -3170,6 +3222,14 @@ msgstr "당분간 그대로 두기"
 msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
 msgstr "이 앱의 데이터를 앱 폴더에 보관(<0>portable.txt</0>)"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Keep this app's saves with my Quiver account"
+msgstr "이 앱의 세이브를 내 Quiver 계정에 보관"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Keep this computer's saves"
+msgstr "이 컴퓨터의 세이브 유지"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "예전부터 여기 있던 앱이에요."
@@ -3195,6 +3255,10 @@ msgstr "크게"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Large name"
 msgstr "큰 이름"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Last backed up {hereWhen}"
+msgstr "마지막 백업: {hereWhen}"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Last played"
@@ -4045,6 +4109,10 @@ msgstr "여기에는 아무것도 없어요."
 msgid "Nothing in this playlist."
 msgstr "이 재생 목록이 비어 있어요."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing in your account for this app yet."
+msgstr "아직 계정에 이 앱의 세이브가 없습니다."
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Nothing is downloading."
 msgstr "다운로드 중인 항목이 없어요."
@@ -4550,6 +4618,10 @@ msgstr "Quiver Launcher 3 라이브러리를 찾았어요. 가져오는 항목:"
 msgid "Quiver has no list of good copies for {name} to check this one against."
 msgstr "{name}의 정상 사본 목록이 없어서 이 사본을 확인할 수 없어요."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver has switched cloud saves off for this app. Its backups stay on this computer."
+msgstr "Quiver가 이 앱의 클라우드 세이브를 껐습니다. 백업은 이 컴퓨터에 남습니다."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver hasn't checked this app."
 msgstr "Quiver가 이 앱을 확인하지 않았어요."
@@ -4815,6 +4887,10 @@ msgstr "태그 {tag} 삭제"
 msgid "Remove this backup"
 msgstr "이 백업 제거"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Remove this copy from your account"
+msgstr "계정에서 이 사본 삭제"
+
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/repository-tokens.tsx
@@ -4926,6 +5002,11 @@ msgstr "백업에서 복원"
 msgid "Restore this backup? Your saves now are backed up first."
 msgstr "이 백업을 복원할까요? 지금 세이브를 먼저 백업합니다."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Restore this copy? Your saves now are backed up first."
+msgstr "이 사본을 복원할까요? 현재 세이브를 먼저 백업합니다."
+
+#. Said after a save backup was put back
 #. Said after a save backup was put back
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Restored."
@@ -5166,6 +5247,10 @@ msgstr "선택"
 msgid "Send"
 msgstr "보내기"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Send the newest backup now"
+msgstr "최신 백업 지금 보내기"
+
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "사용 데이터 보내기"
@@ -5173,6 +5258,10 @@ msgstr "사용 데이터 보내기"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sending…"
 msgstr "보내는 중…"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Sent to your cloud saves."
+msgstr "클라우드 세이브로 보냈습니다."
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
@@ -5399,6 +5488,10 @@ msgstr "사이드바 너비"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in"
 msgstr "로그인"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Sign in to keep your saves with your Quiver account, so they follow you to another computer."
+msgstr "로그인하면 세이브를 Quiver 계정에 보관해 다른 컴퓨터에서도 이어서 쓸 수 있습니다."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign in to Quiver"
@@ -5843,6 +5936,10 @@ msgstr "이 릴리스의 다른 파일이에요. 이 컴퓨터에서 실행되�
 msgid "The saves and settings come over too."
 msgstr "저장 데이터와 설정도 함께 옮겨져요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves on this computer and the ones in your Quiver account have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr "이 컴퓨터의 세이브와 Quiver 계정의 세이브가 모두 변경되었습니다. 선택하지 않은 쪽은 앱의 세이브 탭에 백업으로 보관됩니다."
+
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
 msgstr "공유 재생 목록이 최신 상태예요."
@@ -5874,6 +5971,10 @@ msgstr "아직 버전이 없어요. 원본 프로젝트에서 다운로드를 �
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
 msgstr "이 이전 사본들은 안전하게 옮겼지만, 일부 파일이 사용 중이어서 남았어요. 직접 지워도 돼요:"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These saves are too big for cloud saves (100 MB). They're backed up on this computer only."
+msgstr "이 세이브는 클라우드 세이브에 넣기에는 너무 큽니다(100 MB). 이 컴퓨터에만 백업됩니다."
 
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
@@ -6303,6 +6404,10 @@ msgstr "10자 이상 입력하세요."
 msgid "Use controllers to move around Quiver"
 msgstr "컨트롤러로 Quiver 탐색"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves"
+msgstr "내 클라우드 세이브 사용"
+
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my default (include pre-releases)"
@@ -6363,6 +6468,7 @@ msgstr "인증됨"
 msgid "Version {checkingVersion} is <0/>"
 msgstr "{checkingVersion} 버전: <0/>"
 
+#. The app's version when a save backup was made
 #. The app's version when a save backup was made
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/update.tsx
@@ -6545,6 +6651,18 @@ msgstr "어떤 앱인가요?"
 msgid "Which download?"
 msgstr "어떤 다운로드인가요?"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Which saves of {name} do you want to keep?"
+msgstr "{name}의 어떤 세이브를 유지할까요?"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Which saves of {name}?"
+msgstr "{name}의 어떤 세이브?"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "While you're signed in, backups of your saves are also kept with your Quiver account, so they follow you to another computer. Each app's Saves tab has its own switch."
+msgstr "로그인한 동안에는 세이브 백업이 Quiver 계정에도 보관되어 다른 컴퓨터에서도 이어서 쓸 수 있습니다. 앱마다 세이브 탭에 별도의 스위치가 있습니다."
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Why are you reporting this?"
 msgstr "신고하는 이유가 무엇인가요?"
@@ -6665,6 +6783,10 @@ msgstr "내 앱"
 msgid "Your apps are in your library."
 msgstr "앱이 라이브러리에 들어왔어요."
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
+msgstr "클라우드 세이브가 가득 찼습니다({limit}). 최신 백업은 이 컴퓨터에만 있습니다. 여기나 다른 앱에서 사본을 삭제해 공간을 확보하세요."
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copies: {ready} of {total} set up"
 msgstr "내 사본: {total}개 중 {ready}개 설정됨"
@@ -6741,6 +6863,10 @@ msgstr "내 문제 신고"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your Quiver Launcher 3 apps are in your library"
 msgstr "Quiver Launcher 3의 앱이 라이브러리에 들어왔어요"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Your saves from {device} were put in place. The saves that were here are backed up."
+msgstr "{device}의 세이브를 적용했습니다. 여기 있던 세이브는 백업되었습니다."
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx

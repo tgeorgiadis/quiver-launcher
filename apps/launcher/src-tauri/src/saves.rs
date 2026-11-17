@@ -449,6 +449,8 @@ pub struct Backup {
     pub version: Option<String>,
     pub reason: String,
     pub device: String,
+    /// The system its saves are for: "windows" for a Windows app run through Wine.
+    pub os: String,
     pub hash: String,
 }
 
@@ -509,7 +511,7 @@ pub fn list(store: &Path) -> Vec<Backup> {
             let name = e.file_name().to_string_lossy().into_owned();
             let path = backup_file(store, &name).ok()?;
             let m = read_manifest(&path)?;
-            Some(Backup { name, at: m.at, size: e.metadata().ok()?.len(), files: m.files.len(), version: m.version, reason: m.reason, device: m.device, hash: m.hash })
+            Some(Backup { name, at: m.at, size: e.metadata().ok()?.len(), files: m.files.len(), version: m.version, reason: m.reason, device: m.device, os: m.os, hash: m.hash })
         })
         .collect();
     out.sort_by(|a, b| b.at.cmp(&a.at).then_with(|| b.name.cmp(&a.name)));
@@ -595,7 +597,55 @@ fn backup_as(store: &Path, templates: &[String], roots: &Roots, abs: &[String], 
     for old in before.iter().skip(KEEP - 1) {
         let _ = fs::remove_file(store.join(&old.name));
     }
-    Ok(Some(Backup { name, at, size, files: manifest.files.len(), version: manifest.version, reason: manifest.reason, device: manifest.device, hash }))
+    Ok(Some(Backup { name, at, size, files: manifest.files.len(), version: manifest.version, reason: manifest.reason, device: manifest.device, os: manifest.os, hash }))
+}
+
+/// The checksum of the saves as they are now, as a backup of them would carry it. `None` when there are none.
+pub fn current_hash(templates: &[String], roots: &Roots, abs: &[String]) -> Result<Option<String>, String> {
+    let (_, _, files) = current(templates, roots, abs, None)?;
+    Ok((!files.is_empty()).then(|| set_hash(&files)))
+}
+
+/// A backup's file, to send to the account.
+pub fn file_of(store: &Path, name: &str) -> Result<PathBuf, String> {
+    let file = backup_file(store, name)?;
+    read_manifest(&file).map(|_| file).ok_or_else(|| DAMAGED.to_string())
+}
+
+pub const BAD_COPY: &str = "That copy couldn't be downloaded whole. Your saves are as they were.";
+
+/// Takes a backup downloaded from the account in among this computer's, where Restore can put it back. It must be the
+/// copy that was asked for: a backup whose files add up to `hash`. One that's here already isn't kept twice.
+pub fn adopt(store: &Path, downloaded: &Path, hash: &str) -> Result<Backup, String> {
+    let manifest = read_manifest(downloaded).filter(|m| m.hash == hash && set_hash(&m.files) == hash);
+    let Some(manifest) = manifest else {
+        let _ = fs::remove_file(downloaded);
+        return Err(BAD_COPY.into());
+    };
+    let before = list(store);
+    if let Some(same) = before.iter().find(|b| b.hash == hash) {
+        let _ = fs::remove_file(downloaded);
+        return Ok(same.clone());
+    }
+    let mut at = now();
+    while store.join(format!("{at}.zip")).exists() {
+        at += 1;
+    }
+    let name = format!("{at}.zip");
+    fs::rename(downloaded, store.join(&name)).map_err(|_| FAILED.to_string())?;
+    // It may be older than every backup here by its own clock, and still mustn't be the one that goes.
+    for old in before.iter().skip(KEEP - 1) {
+        let _ = fs::remove_file(store.join(&old.name));
+    }
+    let size = fs::metadata(store.join(&name)).map(|m| m.len()).unwrap_or(0);
+    Ok(Backup { name, at: manifest.at, size, files: manifest.files.len(), version: manifest.version, reason: manifest.reason, device: manifest.device, os: manifest.os, hash: manifest.hash })
+}
+
+/// The places a backup's saves were in that mean the same on any computer: every one but a folder the player chose
+/// (the app's whole folder is only ever the player's choice).
+pub fn portable_places(store: &Path, name: &str) -> Vec<String> {
+    let manifest = backup_file(store, name).ok().and_then(|file| read_manifest(&file));
+    manifest.map(|m| m.places.into_iter().map(|p| p.template).filter(|t| t != "app" && valid_template(t)).collect()).unwrap_or_default()
 }
 
 pub fn remove(store: &Path, name: &str) -> Result<(), String> {
@@ -701,6 +751,13 @@ pub struct State {
     /// The found places the catalog was told about already (`to_report`), so each is sent once.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reported: Vec<String>,
+    /// The checksum of the saves when they last matched the account's newest copy: sent there, or put in place from
+    /// there. It tells which side changed since (cloud saves, cloud-saves.ts).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub synced: Option<String>,
+    /// The player switched cloud saves off for this app.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub cloud_off: bool,
 }
 
 pub fn state(store: &Path) -> State {
@@ -1097,6 +1154,56 @@ mod tests {
     }
 
     #[test]
+    fn takes_in_a_copy_from_the_account_and_restores_it() {
+        // One computer backs up; another, with no saves yet, takes the copy in and puts it in place.
+        let (_dir, roots, store) = world();
+        fs::create_dir_all(roots.app.join("saves")).unwrap();
+        fs::write(roots.app.join("saves/slot1.sav"), "progress").unwrap();
+        let places = vec!["app/saves".to_string()];
+        assert_eq!(current_hash(&places, &roots, &[]).unwrap(), None.or(Some(backup(&store, &places, &roots, &[], &STAMP).unwrap().unwrap().hash)));
+        let made = list(&store).remove(0);
+        assert_eq!(file_of(&store, &made.name).unwrap(), store.join(&made.name));
+        assert!(file_of(&store, "../state.json").is_err());
+
+        let (_dir2, roots2, store2) = world();
+        assert_eq!(current_hash(&places, &roots2, &[]).unwrap(), None);
+        fs::create_dir_all(&store2).unwrap();
+        let download = |name: &str| {
+            let to = store2.join(name);
+            fs::copy(store.join(&made.name), &to).unwrap();
+            to
+        };
+        // Not the copy that was asked for, or not a backup at all.
+        assert_eq!(adopt(&store2, &download(".cloud.part"), &"0".repeat(64)).unwrap_err(), BAD_COPY);
+        fs::write(store2.join(".cloud.part"), "not a zip").unwrap();
+        assert_eq!(adopt(&store2, &store2.join(".cloud.part"), &made.hash).unwrap_err(), BAD_COPY);
+        assert!(!store2.join(".cloud.part").exists());
+        assert!(list(&store2).is_empty());
+
+        let taken = adopt(&store2, &download(".cloud.part"), &made.hash).unwrap();
+        assert_eq!((taken.hash.as_str(), taken.files, taken.at), (made.hash.as_str(), 1, made.at));
+        assert_eq!(portable_places(&store2, &taken.name), places);
+        // The same copy again is the one that's here.
+        assert_eq!(adopt(&store2, &download(".cloud.part"), &made.hash).unwrap().name, taken.name);
+        assert_eq!(list(&store2).len(), 1);
+        assert_eq!(restore(&store2, &taken.name, &roots2, &[], &STAMP).unwrap(), 1);
+        assert_eq!(fs::read_to_string(roots2.app.join("saves/slot1.sav")).unwrap(), "progress");
+        assert_eq!(current_hash(&places, &roots2, &[]).unwrap(), Some(made.hash));
+    }
+
+    #[test]
+    fn remembers_what_was_synced_and_whether_cloud_saves_are_off() {
+        let (_dir, _, store) = world();
+        assert_eq!(state(&store), State::default());
+        let kept = State { synced: Some("a".repeat(64)), cloud_off: true, ..Default::default() };
+        set_state(&store, &kept).unwrap();
+        assert_eq!(state(&store), kept);
+        // A state file from before cloud saves reads as never synced, and on.
+        fs::write(store.join("state.json"), r#"{"found":["app/saves"]}"#).unwrap();
+        assert_eq!(state(&store), State { found: vec!["app/saves".into()], ..Default::default() });
+    }
+
+    #[test]
     fn keeps_the_newest_ten() {
         let (_dir, roots, store) = world();
         let places = vec!["app/save.bin".to_string()];
@@ -1242,7 +1349,7 @@ mod tests {
     fn remembers_an_apps_places() {
         let (_dir, _, store) = world();
         assert_eq!(state(&store), State::default());
-        let kept = State { chosen: vec!["app/saves".into()], found: vec!["data/Game".into()], reported: vec!["data/Game".into()] };
+        let kept = State { chosen: vec!["app/saves".into()], found: vec!["data/Game".into()], reported: vec!["data/Game".into()], ..Default::default() };
         set_state(&store, &kept).unwrap();
         assert_eq!(state(&store), kept);
         // Beside the backups without being one.

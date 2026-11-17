@@ -1,0 +1,203 @@
+/**
+ * Cloud saves: a signed-in player's save backups, kept with their Quiver account so they follow them to another
+ * computer. It rides on save backups (saves.rs): the copy sent is a backup's own zip, and a copy from the account is
+ * taken in as a backup and put in place by the same Restore.
+ *
+ * - After a backup is made, it's sent (`sendBackup`).
+ * - Before an app starts, the account's newest copy is compared with the saves here (`decide`, `beforePlay`): the
+ *   same, nothing happens; the account's is newer and the saves here haven't changed since they last matched, it's
+ *   put in place; both changed, the player chooses.
+ *
+ * The site keeps the limits (250 MB an account, 5 copies an app) and hands out links; the files go straight to and
+ * from storage. Only apps from the catalog, and never in the way of playing: when the account can't be reached the
+ * app starts as it is.
+ */
+import type { Entry } from "@quiverlauncher/api";
+import type { native, SaveBackup, SavesCloud, SavesOf } from "./native";
+
+/** One copy in the account, as the site lists it. */
+export type CloudCopy = {
+  id: string;
+  size: number;
+  hash: string;
+  os: "windows" | "linux" | "macos";
+  device: string;
+  files: number;
+  version?: string;
+  reason: string;
+  /** When its computer made it. */
+  madeAt: number;
+  /** When the account took it. */
+  createdAt: number;
+};
+/** The account's cloud saves, with one app's copies newest first. */
+export type CloudMine = {
+  /** False while the site has no storage for them. */
+  on: boolean;
+  limit: number;
+  used: number;
+  keep: number;
+  maxCopy: number;
+  /** False when Quiver switched cloud saves off for this app. */
+  allowed: boolean;
+  copies: CloudCopy[];
+};
+export type CloudBegun =
+  | { status: "upload"; id: string; url: string; headers: Record<string, string> }
+  | { status: "have"; id: string }
+  | { status: "full"; used: number; limit: number }
+  | { status: "off" }
+  | { status: "busy" };
+/** The site's side, for the signed-in account (account.tsx). */
+export type CloudApi = {
+  mine: (entryId: string) => Promise<CloudMine | null>;
+  begin: (backup: { entryId: string; size: number; hash: string; os: CloudCopy["os"]; device: string; files: number; version?: string; reason: string; madeAt: number }) => Promise<CloudBegun>;
+  finish: (id: string) => Promise<boolean>;
+  download: (id: string) => Promise<{ url: string; size: number } | null>;
+  remove: (what: { id: string } | { entryId: string }) => Promise<void>;
+};
+
+/** The biggest copy the account takes. */
+export const MAX_COPY = 100 * 1024 * 1024;
+
+/** How sending a backup went. "full": the account has no room. "big": over what one copy can be. */
+export type Sent = "sent" | "full" | "big" | "off" | "later";
+
+/** The last thing to say about each app's cloud saves, for its Saves tab. */
+const said = new Map<string, Sent>();
+export const lastSent = (id: string) => said.get(id);
+
+type Native = Pick<typeof native, "savesUpload" | "savesSynced" | "savesCloud" | "savesInfo" | "savesDownload" | "savesRestore" | "savesBackup">;
+
+const SYSTEMS = ["windows", "linux", "macos"];
+
+/**
+ * Sends one backup to the account. "later" when it didn't get there (no connection, too many at once): the next
+ * backup, or the next start of the app, sends what's newest then.
+ */
+export async function sendBackup(of: SavesOf, entryId: string, backup: SaveBackup, via: { api: CloudApi; native: Pick<Native, "savesUpload" | "savesSynced"> }): Promise<Sent> {
+  const done = (how: Sent) => (said.set(of.id, how), how);
+  if (!SYSTEMS.includes(backup.os)) return done("off");
+  if (backup.size > MAX_COPY) return done("big");
+  try {
+    const begun = await via.api.begin({
+      entryId,
+      size: backup.size,
+      hash: backup.hash,
+      os: backup.os as CloudCopy["os"],
+      device: backup.device,
+      files: backup.files,
+      ...(backup.version ? { version: backup.version } : {}),
+      reason: backup.reason,
+      madeAt: backup.at,
+    });
+    if (begun.status === "full" || begun.status === "off") return done(begun.status);
+    if (begun.status === "busy") return done("later");
+    if (begun.status === "upload") {
+      await via.native.savesUpload(of.id, backup.name, begun.url, begun.headers);
+      if (!(await via.api.finish(begun.id))) return done("later");
+    }
+    await via.native.savesSynced(of, backup.hash);
+    return done("sent");
+  } catch {
+    return done("later");
+  }
+}
+
+/** The account's newest copy this computer can use: one from the same system, or any when the app's saves load anywhere. */
+export const usable = (copies: CloudCopy[], os: string, crossPlatform: boolean | undefined) => copies.find((copy) => copy.os === os || crossPlatform === true);
+
+/**
+ * What to do before an app starts, from the saves here and the account's newest copy.
+ * - "same": they match.
+ * - "send": only this computer's changed (or the account has none): nothing to fetch.
+ * - "fetch": only the account's changed, or there are no saves here: the account's copy is put in place.
+ * - "ask": both changed since they last matched, or they never did: the player chooses.
+ */
+export function decide(here: Pick<SavesCloud, "hash" | "synced">, newest: Pick<CloudCopy, "hash"> | undefined): "same" | "send" | "fetch" | "ask" {
+  if (!newest) return "send";
+  if (here.hash === newest.hash) return "same";
+  if (!here.hash || here.hash === here.synced) return "fetch";
+  if (newest.hash === here.synced) return "send";
+  return "ask";
+}
+
+/** Downloads one of the account's copies and puts it in place, after backing up the saves here. Rejects with what to say. */
+export async function fetchCopy(of: SavesOf, copy: CloudCopy, via: { api: CloudApi; native: Pick<Native, "savesDownload" | "savesRestore" | "savesSynced"> }): Promise<void> {
+  const link = await via.api.download(copy.id);
+  if (!link) throw new Error("gone");
+  const backup = await via.native.savesDownload(of, link.url, link.size, copy.hash);
+  await via.native.savesRestore(of, backup.name);
+  await via.native.savesSynced(of, copy.hash);
+}
+
+/** Sends the backup of the saves as they are now, when there is one the account doesn't have. */
+export async function sendCurrent(of: SavesOf, entryId: string, via: { api: CloudApi; native: Native }): Promise<Sent | null> {
+  const [state, info] = await Promise.all([via.native.savesCloud(of), via.native.savesInfo(of)]);
+  if (state.off || !state.hash || state.hash === state.synced) return null;
+  // Only a backup of the saves as they are: an older one, or what a restore replaced, isn't where the player is.
+  const backup = info?.backups.find((b) => b.hash === state.hash);
+  return backup ? sendBackup(of, entryId, backup, via) : null;
+}
+
+export type Conflict = {
+  entry: Pick<Entry, "id" | "projectName">;
+  /** The account's newest copy. */
+  cloud: CloudCopy;
+  /** The newest backup of the saves here, when there is one of them as they are. */
+  here?: SaveBackup;
+};
+
+const within = <T>(work: Promise<T>, ms: number) => Promise.race([work, new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
+
+/**
+ * Before an app starts: brings its saves in line with the account's. Resolves to whether to start it ("stop" only
+ * when the player closed the question), with `problem` when the account's copy couldn't be put in place.
+ */
+export async function beforePlay(
+  of: SavesOf,
+  entry: Pick<Entry, "id" | "projectName" | "launcher">,
+  via: { api: CloudApi; native: Native; ask: (conflict: Conflict) => Promise<"cloud" | "here" | null>; changed: (id: string) => void },
+): Promise<{ go: boolean; fetched?: CloudCopy; problem?: string }> {
+  let state: SavesCloud;
+  let mine: CloudMine | null;
+  try {
+    state = await via.native.savesCloud(of);
+    if (state.off) return { go: true };
+    // Never long in the way of playing.
+    mine = await within(via.api.mine(entry.id), 6000);
+  } catch {
+    return { go: true };
+  }
+  if (!mine?.on || !mine.allowed) return { go: true };
+  const newest = usable(mine.copies, state.os, entry.launcher?.saves?.crossPlatform);
+  const fetch = async (copy: CloudCopy) => {
+    try {
+      await fetchCopy(of, copy, via);
+      via.changed(of.id);
+      return { go: true, fetched: copy };
+    } catch (e) {
+      return { go: true, problem: typeof e === "string" ? e : "" };
+    }
+  };
+  const what = decide(state, newest);
+  if (what === "same") {
+    if (state.synced !== state.hash) await via.native.savesSynced(of, state.hash ?? null).catch(() => {});
+    return { go: true };
+  }
+  if (what === "send" || !newest) {
+    // Catching up on a backup that didn't get there; the app doesn't wait for it.
+    void sendCurrent(of, entry.id, via).catch(() => {});
+    return { go: true };
+  }
+  if (what === "fetch") return fetch(newest);
+  const info = await via.native.savesInfo(of).catch(() => null);
+  const choice = await via.ask({ entry, cloud: newest, here: info?.backups.find((b) => b.hash === state.hash) });
+  if (!choice) return { go: false };
+  if (choice === "cloud") return fetch(newest);
+  // This computer's saves stay: the account's copy has been seen, so it isn't asked about again, and these go up.
+  await via.native.savesSynced(of, newest.hash).catch(() => {});
+  await via.native.savesBackup(of, "manual").catch(() => null);
+  void sendCurrent(of, entry.id, via).catch(() => {});
+  return { go: true };
+}

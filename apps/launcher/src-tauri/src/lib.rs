@@ -548,6 +548,8 @@ struct SavesInfo {
     /// Who said where they are: "you", "catalog", "found" or "none".
     from: &'static str,
     backups: Vec<saves::Backup>,
+    /// The player switched cloud saves off for this app.
+    cloud_off: bool,
 }
 
 /// One backup or restore at a time, so two never read and write the same saves.
@@ -592,7 +594,7 @@ fn saves_shown(data: &Data, of: &SavesOf) -> Result<SavesInfo, String> {
     let (roots, store, os) = saves_at(data, of)?;
     let state = saves::state(&store);
     let (places, from) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
-    Ok(SavesInfo { places: saves::shown(&places, &roots, &saves::chosen_abs(&state)), from, backups: saves::list(&store) })
+    Ok(SavesInfo { places: saves::shown(&places, &roots, &saves::chosen_abs(&state)), from, backups: saves::list(&store), cloud_off: state.cloud_off })
 }
 
 /// Where an app's saves are and its backups, for its Saves tab.
@@ -713,6 +715,136 @@ struct SavesReport {
     /// The system the places are for: "windows" for a Windows build run through Wine or Proton.
     os: &'static str,
     places: Vec<String>,
+}
+
+/// An app's saves as cloud saves compares them (cloud-saves.ts).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesCloud {
+    /// The checksum of the saves as they are now; none when there are none here.
+    hash: Option<String>,
+    /// Their checksum when they last matched the account's newest copy.
+    synced: Option<String>,
+    /// The player switched cloud saves off for this app.
+    off: bool,
+    os: &'static str,
+}
+
+#[tauri::command]
+async fn saves_cloud(data: State<'_, Data>, of: SavesOf) -> Result<SavesCloud, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let hash = saves::current_hash(&places, &roots, &saves::chosen_abs(&state))?;
+    Ok(SavesCloud { hash, synced: state.synced, off: state.cloud_off, os })
+}
+
+/// Remembers that the saves with this checksum match the account's newest copy, or with none that nothing does.
+#[tauri::command]
+async fn saves_synced(data: State<'_, Data>, of: SavesOf, hash: Option<String>) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    if state.synced != hash {
+        state.synced = hash;
+        saves::set_state(&store, &state)?;
+    }
+    Ok(())
+}
+
+/// Switches cloud saves off, or back on, for one app.
+#[tauri::command]
+async fn saves_cloud_off(data: State<'_, Data>, of: SavesOf, off: bool) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    state.cloud_off = off;
+    saves::set_state(&store, &state)
+}
+
+/// The biggest copy the account takes, which is also the most a download may hold.
+const MAX_CLOUD_COPY: u64 = 100 * 1024 * 1024;
+const CLOUD_UNREACHABLE: &str = "Couldn't reach cloud saves. Check your connection and try again.";
+
+/// A link the site signed for one copy: https, or this computer itself (tests).
+fn cloud_link(url: &str) -> Result<reqwest::Url, String> {
+    let link = reqwest::Url::parse(url).map_err(|_| CLOUD_UNREACHABLE.to_string())?;
+    let local = matches!(link.host_str(), Some("127.0.0.1" | "localhost"));
+    if link.scheme() == "https" || (link.scheme() == "http" && local) {
+        Ok(link)
+    } else {
+        Err(CLOUD_UNREACHABLE.into())
+    }
+}
+
+fn cloud_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder().user_agent("QuiverLauncher/4").connect_timeout(std::time::Duration::from_secs(15)).build().map_err(|e| e.to_string())
+}
+
+/// Sends one of an app's backups to the link the site signed for it, with the headers that link was signed with.
+#[tauri::command]
+async fn saves_upload(data: State<'_, Data>, id: String, name: String, url: String, headers: std::collections::HashMap<String, String>) -> Result<(), String> {
+    let file = saves::file_of(&data.0.join("saves").join(saves::store_name(&id)), &name)?;
+    let body = tokio::fs::read(&file).await.map_err(|e| format!("Couldn't read that backup: {e}"))?;
+    if body.len() as u64 > MAX_CLOUD_COPY {
+        return Err("That backup is too big for cloud saves.".into());
+    }
+    let mut request = cloud_client()?.put(cloud_link(&url)?);
+    // Its length is the body's own; the rest is what the link was signed with.
+    for (key, value) in headers.iter().filter(|(key, _)| !key.eq_ignore_ascii_case("content-length")) {
+        request = request.header(key.as_str(), value.as_str());
+    }
+    let response = request.body(body).send().await.map_err(|_| CLOUD_UNREACHABLE.to_string())?;
+    if !response.status().is_success() {
+        return Err(format!("Cloud saves didn't take that backup ({}).", response.status().as_u16()));
+    }
+    Ok(())
+}
+
+/// Downloads a copy from the account's link and takes it in among the app's backups, checked against the checksum
+/// the account has for it. Nothing of the player's saves is touched: `saves_restore` puts it in place.
+#[tauri::command]
+async fn saves_download(data: State<'_, Data>, of: SavesOf, url: String, size: u64, hash: String) -> Result<saves::Backup, String> {
+    let (_, store, os) = saves_at(&data, &of)?;
+    if size == 0 || size > MAX_CLOUD_COPY {
+        return Err(saves::BAD_COPY.into());
+    }
+    let mut response = cloud_client()?.get(cloud_link(&url)?).send().await.map_err(|_| CLOUD_UNREACHABLE.to_string())?;
+    if !response.status().is_success() {
+        return Err(CLOUD_UNREACHABLE.into());
+    }
+    std::fs::create_dir_all(&store).map_err(|e| e.to_string())?;
+    // Never a name a backup has, so half a download is never listed as one.
+    let part = store.join(format!(".cloud-{}.part", std::process::id()));
+    let written = async {
+        use tokio::io::AsyncWriteExt;
+        let mut file = tokio::fs::File::create(&part).await.ok()?;
+        let mut total = 0u64;
+        while let Some(chunk) = response.chunk().await.ok()? {
+            total += chunk.len() as u64;
+            if total > size {
+                return None;
+            }
+            file.write_all(&chunk).await.ok()?;
+        }
+        file.flush().await.ok()?;
+        (total == size).then_some(())
+    }
+    .await;
+    if written.is_none() {
+        let _ = std::fs::remove_file(&part);
+        return Err(saves::BAD_COPY.into());
+    }
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let taken = saves::adopt(&store, &part, &hash)?;
+    // On a computer that doesn't know where this app saves yet, the copy says where.
+    let mut state = saves::state(&store);
+    if saves::places(&state, &saves::catalog_templates(&of.locations, os)).1 == "none" {
+        state.found = saves::merge(&state.found, &saves::portable_places(&store, &taken.name));
+        saves::set_state(&store, &state)?;
+    }
+    Ok(taken)
 }
 
 /// The places the launcher saw an app save in that the catalog hasn't been told about (`saves::to_report`). None
@@ -2186,6 +2318,11 @@ pub fn run() {
             saves_played,
             saves_to_report,
             saves_reported,
+            saves_cloud,
+            saves_synced,
+            saves_cloud_off,
+            saves_upload,
+            saves_download,
             create_app_folder,
             rename_app_folder,
             app_files,

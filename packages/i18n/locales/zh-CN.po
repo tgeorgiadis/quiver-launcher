@@ -38,6 +38,7 @@ msgid "{0, plural, one {# comment} other {# comments}}"
 msgstr "{0, plural, other {# 条评论}}"
 
 #. placeholder {0}: backup.files
+#. placeholder {0}: copy.files
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {# 个文件}}"
@@ -1569,6 +1570,10 @@ msgstr "此版本结束 48 小时等待期后，GitHub 上的文件发生了变�
 msgid "Changed on GitHub after this release finished its 48-hour wait. Its own wait ends {when}"
 msgstr "此版本结束 48 小时等待期后，GitHub 上的文件发生了变化。该文件的等待期将于 {when} 结束"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Changed since their last backup"
+msgstr "自上次备份后有更改"
+
 #: ../../apps/launcher/src/update.tsx
 msgid "Check for updates"
 msgstr "检查更新"
@@ -1851,6 +1856,24 @@ msgstr "关闭筛选条件"
 msgid "Close to the system tray (Quiver Launcher keeps running and updating apps)"
 msgstr "关闭到系统托盘（Quiver Launcher 会继续运行并更新应用）"
 
+#. Heading on an app's Saves tab: the copies of its saves kept with the player's account
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "Cloud saves"
+msgstr "云存档"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
+msgstr "云存档适用于 Quiver 目录中的应用。此应用的备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves are switched off in Settings. Backups stay on this computer."
+msgstr "云存档已在设置中关闭。备份保留在这台电脑上。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Cloud saves aren't available yet. Backups stay on this computer."
+msgstr "云存档尚不可用。备份保留在这台电脑上。"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Collapse all sections"
 msgstr "折叠所有分区"
@@ -1931,6 +1954,10 @@ msgstr "正在复制 {folder} → {percent}%"
 msgid "Couldn't delete it. Try again."
 msgstr "无法删除。请重试。"
 
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't get your cloud saves. The app starts with the saves on this computer."
+msgstr "无法获取你的云存档。应用将使用这台电脑上的存档启动。"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Couldn't install"
 msgstr "安装失败"
@@ -1957,6 +1984,14 @@ msgstr "无法连接 quiverlauncher.com 以显示此播放列表。请检查网�
 #: ../../apps/launcher/src/store.tsx
 msgid "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgstr "无法连接 quiverlauncher.com。请检查网络连接，然后重试。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Couldn't reach your cloud saves. Backups stay on this computer for now."
+msgstr "无法连接到你的云存档。备份暂时保留在这台电脑上。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Couldn't reach your cloud saves. Check your connection and try again."
+msgstr "无法连接到你的云存档。请检查网络连接后重试。"
 
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
@@ -2179,6 +2214,10 @@ msgstr "不允许"
 msgid "Don't delete your Quiver Launcher 3 folder yet. Move them anytime in Settings › Apps folder."
 msgstr "暂时不要删除你的 Quiver Launcher 3 文件夹。随时可以在 设置 › 应用文件夹 中移动它们。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Don't play yet"
+msgstr "暂不游玩"
+
 #. Closes a dialog
 #. Closes the thanks after a problem was reported
 #: ../../apps/launcher/src/announcements-ui.tsx
@@ -2266,6 +2305,10 @@ msgstr "无论这里如何设置，每个应用都可以在自己的设置中选
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Each app can update by itself, ask first, or stay on its version, whatever this says, from its own settings."
 msgstr "无论这里如何设置，每个应用都可以在自己的设置中选择自动更新、先询问或保留在当前版本。"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Each backup is also sent to your account, which keeps the newest {keep} of each app. {used} of {limit} used."
+msgstr "每个备份也会发送到你的账号，账号为每个应用保留最新的 {keep} 个。已用 {used}，共 {limit}。"
 
 #. Browse card detail: a chip on apps whose game files Quiver Launcher finds and puts in place
 #. Chip on apps whose game files Quiver Launcher finds and puts in place for the player
@@ -2468,6 +2511,15 @@ msgstr "在 {0} 中找到。以下内容会迁移过来："
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "在 {folder} 中找到"
+
+#. Which computer a cloud save was made on
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "From {device}"
+msgstr "来自 {device}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}"
+msgstr "来自 {device}，{cloudWhen}"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "From a git repository"
@@ -3170,6 +3222,14 @@ msgstr "暂时留在原处"
 msgid "Keep this app's data in its folder (<0>portable.txt</0>)"
 msgstr "将此应用的数据保存在其文件夹中（<0>portable.txt</0>）"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Keep this app's saves with my Quiver account"
+msgstr "将此应用的存档保存到我的 Quiver 账号"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Keep this computer's saves"
+msgstr "保留这台电脑的存档"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "从之前的位置保留在此处。"
@@ -3195,6 +3255,10 @@ msgstr "大"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Large name"
 msgstr "名称较长"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Last backed up {hereWhen}"
+msgstr "上次备份：{hereWhen}"
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Last played"
@@ -4045,6 +4109,10 @@ msgstr "这里没有内容。"
 msgid "Nothing in this playlist."
 msgstr "此播放列表中没有内容。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing in your account for this app yet."
+msgstr "你的账号中还没有此应用的存档。"
+
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Nothing is downloading."
 msgstr "没有正在下载的内容。"
@@ -4550,6 +4618,10 @@ msgstr "Quiver 找到了你的 Quiver Launcher 3 游戏库。以下内容会迁�
 msgid "Quiver has no list of good copies for {name} to check this one against."
 msgstr "Quiver 没有 {name} 的已知正常副本列表可用于比对。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver has switched cloud saves off for this app. Its backups stay on this computer."
+msgstr "Quiver 已为此应用关闭云存档。它的备份保留在这台电脑上。"
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver hasn't checked this app."
 msgstr "Quiver 尚未检查此应用。"
@@ -4815,6 +4887,10 @@ msgstr "移除标签 {tag}"
 msgid "Remove this backup"
 msgstr "移除此备份"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Remove this copy from your account"
+msgstr "从你的账号中移除此副本"
+
 #: ../../apps/launcher/src/github-token.tsx
 #: ../../apps/launcher/src/gitlab-token.tsx
 #: ../../apps/launcher/src/repository-tokens.tsx
@@ -4926,6 +5002,11 @@ msgstr "从备份恢复"
 msgid "Restore this backup? Your saves now are backed up first."
 msgstr "恢复此备份？会先备份你当前的存档。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Restore this copy? Your saves now are backed up first."
+msgstr "恢复此副本？会先备份你当前的存档。"
+
+#. Said after a save backup was put back
 #. Said after a save backup was put back
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Restored."
@@ -5166,6 +5247,10 @@ msgstr "选择"
 msgid "Send"
 msgstr "发送"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Send the newest backup now"
+msgstr "立即发送最新备份"
+
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Send usage data"
 msgstr "发送使用情况数据"
@@ -5173,6 +5258,10 @@ msgstr "发送使用情况数据"
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sending…"
 msgstr "正在发送 →"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Sent to your cloud saves."
+msgstr "已发送到你的云存档。"
 
 #: ../../apps/launcher/src/correction.tsx
 msgid "Sent with your account name, this launcher's version and your system, so maintainers can check it."
@@ -5399,6 +5488,10 @@ msgstr "侧边栏宽度"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Sign in"
 msgstr "登录"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Sign in to keep your saves with your Quiver account, so they follow you to another computer."
+msgstr "登录后可将存档保存到你的 Quiver 账号，换一台电脑也能继续使用。"
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Sign in to Quiver"
@@ -5843,6 +5936,10 @@ msgstr "此版本的其他文件。它们可能无法在你的电脑上运行。
 msgid "The saves and settings come over too."
 msgstr "存档和设置也会一并迁移。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves on this computer and the ones in your Quiver account have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr "这台电脑上的存档和你 Quiver 账号中的存档都有更改。未选择的一方会作为备份保留在应用的“存档”标签页中。"
+
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
 msgstr "共享播放列表已是最新版本。"
@@ -5874,6 +5971,10 @@ msgstr "还没有版本。请前往上游项目查找下载。"
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
 msgstr "这些旧副本已安全移动，但部分文件当时正在使用，因此仍留在原处。你可以删除它们："
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These saves are too big for cloud saves (100 MB). They're backed up on this computer only."
+msgstr "这些存档太大，无法使用云存档（100 MB）。它们只备份在这台电脑上。"
 
 #: ../../apps/launcher/src/account.tsx
 msgid "This account is suspended."
@@ -6303,6 +6404,10 @@ msgstr "至少输入 10 个字符。"
 msgid "Use controllers to move around Quiver"
 msgstr "使用手柄浏览 Quiver"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves"
+msgstr "使用我的云存档"
+
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my default (include pre-releases)"
@@ -6363,6 +6468,7 @@ msgstr "已验证"
 msgid "Version {checkingVersion} is <0/>"
 msgstr "版本 {checkingVersion} 为 <0/>"
 
+#. The app's version when a save backup was made
 #. The app's version when a save backup was made
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/update.tsx
@@ -6545,6 +6651,18 @@ msgstr "哪个应用？"
 msgid "Which download?"
 msgstr "哪个下载项？"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Which saves of {name} do you want to keep?"
+msgstr "要保留 {name} 的哪份存档？"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Which saves of {name}?"
+msgstr "{name} 的哪份存档？"
+
+#: ../../apps/launcher/src/settings-page.tsx
+msgid "While you're signed in, backups of your saves are also kept with your Quiver account, so they follow you to another computer. Each app's Saves tab has its own switch."
+msgstr "登录期间，存档备份也会保存到你的 Quiver 账号，换一台电脑也能继续使用。每个应用的“存档”标签页都有单独的开关。"
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Why are you reporting this?"
 msgstr "你为什么要举报？"
@@ -6665,6 +6783,10 @@ msgstr "你的应用"
 msgid "Your apps are in your library."
 msgstr "你的应用已在游戏库中。"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
+msgstr "你的云存档已满（{limit}）。最新备份只在这台电脑上。请移除这里或其他应用的副本以腾出空间。"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copies: {ready} of {total} set up"
 msgstr "你的副本：已设置 {ready}/{total} 个"
@@ -6741,6 +6863,10 @@ msgstr "你提交的问题报告"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your Quiver Launcher 3 apps are in your library"
 msgstr "你在 Quiver Launcher 3 中的应用已加入游戏库"
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Your saves from {device} were put in place. The saves that were here are backed up."
+msgstr "已换上来自 {device} 的存档。原先在这里的存档已备份。"
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
