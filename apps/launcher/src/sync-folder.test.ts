@@ -141,3 +141,11 @@ it("a newly chosen folder gets saves only for the apps it has nothing of", async
   expect(theirs.native.savesFolderPut).not.toHaveBeenCalled();
   expect(theirs.native.savesBackup).not.toHaveBeenCalled();
 });
+
+it("asks before an older app is given the folder's saves from a newer version", async () => {
+  const w = world({ state: { hash: A, synced: A, copies: [kept(B, { version: "1.2.0" })] } });
+  w.ask.mockResolvedValue("here");
+  expect(await folderBeforePlay({ ...of, version: "1.1.0" }, entry, FOLDER, w.via)).toEqual({ go: true });
+  expect(w.ask).toHaveBeenCalledWith(expect.objectContaining({ from: "folder", newer: { cloud: "1.2.0", here: "1.1.0" } }));
+  expect(w.native.savesRestore).not.toHaveBeenCalled();
+});

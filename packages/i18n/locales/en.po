@@ -1616,10 +1616,6 @@ msgstr "Changed on GitHub after this release finished its 48-hour wait."
 msgid "Changed on GitHub after this release finished its 48-hour wait. Its own wait ends {when}"
 msgstr "Changed on GitHub after this release finished its 48-hour wait. Its own wait ends {when}"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Changed since their last backup"
-msgstr "Changed since their last backup"
-
 #: ../../apps/launcher/src/update.tsx
 msgid "Check for updates"
 msgstr "Check for updates"
@@ -2630,6 +2626,10 @@ msgstr "From {device}"
 msgid "From {device}, {cloudWhen}"
 msgstr "From {device}, {cloudWhen}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}. The saves here are backed up first."
+msgstr "From {device}, {cloudWhen}. The saves here are backed up first."
+
 #: ../../apps/launcher/src/own.tsx
 msgid "From a git repository"
 msgstr "From a git repository"
@@ -3335,10 +3335,6 @@ msgstr "Keep this app's data in its folder (<0>portable.txt</0>)"
 msgid "Keep this app's saves with my Quiver account"
 msgstr "Keep this app's saves with my Quiver account"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Keep this computer's saves"
-msgstr "Keep this computer's saves"
-
 #: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Keep your save backups in a folder of your own too, such as one inside Dropbox, OneDrive, Google Drive or Syncthing. Choose the same folder on your other computers, and Quiver offers your newest saves when you start an app there. It needs no Quiver account, and works for apps you added yourself."
 msgstr "Keep your save backups in a folder of your own too, such as one inside Dropbox, OneDrive, Google Drive or Syncthing. Choose the same folder on your other computers, and Quiver offers your newest saves when you start an app there. It needs no Quiver account, and works for apps you added yourself."
@@ -3370,8 +3366,12 @@ msgid "Large name"
 msgstr "Large name"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Last backed up {hereWhen}"
-msgstr "Last backed up {hereWhen}"
+msgid "Last backed up {hereWhen}. The saves in your sync folder stay there as a backup. These become your newest."
+msgstr "Last backed up {hereWhen}. The saves in your sync folder stay there as a backup. These become your newest."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
+msgstr "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Last played"
@@ -4539,6 +4539,10 @@ msgstr "Play time"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Play with"
 msgstr "Play with"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Play with the saves on this computer"
+msgstr "Play with the saves on this computer"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Play without it"
@@ -6171,6 +6175,22 @@ msgid "The saves and settings come over too."
 msgstr "The saves and settings come over too."
 
 #: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder stay there as a backup."
+msgstr "The saves in your sync folder stay there as a backup."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder stay there as a backup. These become your newest."
+msgstr "The saves in your sync folder stay there as a backup. These become your newest."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+
+#: ../../apps/launcher/src/App.tsx
 msgid "The saves in your sync folder would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
 msgstr "The saves in your sync folder would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
 
@@ -6193,6 +6213,14 @@ msgstr "The tags you gave your apps, including any brought over from Quiver Laun
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "Theme"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and the saves in your sync folder are put in place."
+msgstr "Then press Play, and the saves in your sync folder are put in place."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and your cloud saves are put in place."
+msgstr "Then press Play, and your cloud saves are put in place."
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "There are no backups to restore."
@@ -6579,6 +6607,10 @@ msgid "Update to {updateLabel}"
 msgstr "Update to {updateLabel}"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Update to {updateTo}"
+msgstr "Update to {updateTo}"
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Update to {updateVersion}"
 msgstr "Update to {updateVersion}"
 
@@ -6674,6 +6706,10 @@ msgstr "Use controllers to move around Quiver"
 msgid "Use my cloud saves"
 msgstr "Use my cloud saves"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves anyway"
+msgstr "Use my cloud saves anyway"
+
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my default (include pre-releases)"
@@ -6717,6 +6753,10 @@ msgstr "Use the catalog's name and artwork"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use the saves in my sync folder"
 msgstr "Use the saves in my sync folder"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the saves in my sync folder anyway"
+msgstr "Use the saves in my sync folder anyway"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use the system's title bar (instead of Quiver's own window buttons)"
@@ -7067,6 +7107,22 @@ msgstr "Your cloud saves are full ({limit}). Remove copies to make room."
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup."
+msgstr "Your cloud saves stay in your account as a backup."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup. These become your newest."
+msgstr "Your cloud saves stay in your account as a backup. These become your newest."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"

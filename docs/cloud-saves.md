@@ -37,6 +37,12 @@ off for (Settings, or the app's Saves tab).
 "Last matched" is one checksum per app, kept beside its backups (`state.json`, `synced`). Putting a copy in place
 first backs up the saves that are there, so either choice can be undone from the Saves tab.
 
+A copy made by a newer version of the app than the one installed is never put in place by itself before play
+(`fromNewer`): an older app may not load it, or may write over it. The same question says both versions, and when
+the app has an update it offers it first ("Update to v1.1.0"), which starts nothing and leaves the saves as they
+are; after the update, Play puts the copy in place as usual. Only at play: a restore from the Saves tab is the
+player's own choice and isn't asked about. Versions compare as numbers; one that isn't a number never asks.
+
 A copy made on another system (Windows, Linux, macOS) is only put in place by itself when the catalog says the
 app's saves load on any system. The player can still restore any copy from the Saves tab.
 

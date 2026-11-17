@@ -7,6 +7,8 @@
  * - Before an app starts, the account's newest copy is compared with the saves here (`decide`, `beforePlay`): the
  *   same, nothing happens; the account's is newer and the saves here haven't changed since they last matched, it's
  *   put in place; both changed, the player chooses.
+ * - A copy made by a newer version of the app than the one installed is never put in place by itself at that point:
+ *   the older app may not read it, so the player is asked first and can update instead (`fromNewer`).
  *
  * A backup says where its saves were, but it may come from another computer, or from someone else with the player's
  * account. So its files only go to the places this computer keeps the app's saves in already; any other folder is
@@ -241,7 +243,22 @@ export type Conflict = {
   here?: SaveBackup;
   /** Folders that copy would go in that this computer hasn't kept the app's saves in: the player is shown them before choosing it. */
   places?: SavePlace[];
+  /**
+   * That copy was made by a newer version of the app than the one installed here, which may not read it: the player
+   * is told both versions before choosing it, and can update first.
+   */
+  newer?: { cloud: string; here: string };
 };
+
+/**
+ * Whether saves made by version `made` come from a newer app than the `installed` one: only when both are known and
+ * `made` reads as the higher number. Anything else (the same, older, or a version that isn't a number) is let through.
+ */
+export function fromNewer(made: string | undefined, installed: string | undefined): boolean {
+  const bare = (version: string) => version.trim().replace(/^v/i, "");
+  if (!made || !installed || !/^\d/.test(bare(made)) || !/^\d/.test(bare(installed))) return false;
+  return bare(made).localeCompare(bare(installed), undefined, { numeric: true }) > 0;
+}
 
 /**
  * Somewhere an app's backups are also kept, which its saves are brought in line with before it starts: the
@@ -340,8 +357,10 @@ export async function inLine(
     void elsewhere.sendCurrent().catch(() => {});
     return { go: true };
   }
-  if (what === "fetch") return fetch(newest);
-  const choice = await via.ask({ entry, cloud: newest, here: await hereNow(), ...(from ? { from } : {}) });
+  // Saves from a newer version of the app than the one here: the player says before this one is given them.
+  const newer = fromNewer(newest.version, of.version) ? { cloud: newest.version!, here: of.version! } : undefined;
+  if (what === "fetch" && !newer) return fetch(newest);
+  const choice = await via.ask({ entry, cloud: newest, here: await hereNow(), ...(newer ? { newer } : {}), ...(from ? { from } : {}) });
   if (!choice) return { go: false };
   if (choice === "cloud") return fetch(newest);
   return keepHere(newest);

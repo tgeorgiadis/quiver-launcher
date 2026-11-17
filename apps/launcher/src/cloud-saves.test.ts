@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { beforePlay, decide, fetchCopy, lastSent, onSent, restoreBackup, retries, RETRY_AFTER, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
+import { beforePlay, decide, fetchCopy, fromNewer, lastSent, onSent, restoreBackup, retries, RETRY_AFTER, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
 import type { SaveBackup, SavePlace, SavesCloud, SavesOf } from "./native";
 
 const of: SavesOf = { id: "e1", folder: "Game", wine: false, locations: [], names: ["Game"] };
@@ -292,4 +292,53 @@ it("tries a send that didn't get there again after 1, 5, 15 and 60 minutes, then
   expect(timers.at(-1)!.ms).toBe(RETRY_AFTER[1]);
   noting.stop();
   expect(noting.waiting("e2")).toBe(false);
+});
+
+it("knows saves made by a newer version of the app from the rest", () => {
+  expect(fromNewer("1.1.0", "1.0.0")).toBe(true);
+  expect(fromNewer("v1.10", "1.9")).toBe(true);
+  expect(fromNewer("2.0", "v1.9.9")).toBe(true);
+  expect(fromNewer("1.0.0", "1.0.0")).toBe(false);
+  expect(fromNewer("v1.0.0", "1.0.0")).toBe(false);
+  expect(fromNewer("1.0.0", "1.1.0")).toBe(false);
+  // A version that isn't known, or isn't a number, is never a reason to ask.
+  expect(fromNewer(undefined, "1.0")).toBe(false);
+  expect(fromNewer("1.1", undefined)).toBe(false);
+  expect(fromNewer("nightly", "1.0")).toBe(false);
+  expect(fromNewer("1.1", "abc123")).toBe(false);
+});
+
+it("asks before an older app is given saves made by a newer version", async () => {
+  const old: SavesOf = { ...of, version: "1.0.0" };
+  // Another computer played with a newer version; the saves here haven't changed since they matched.
+  const start = { state: { os: "windows" as const, off: false, hash: A, synced: A }, copies: [copy(B, { version: "v1.1.0" })], backups: [backup(A)] };
+  // Closing the question starts nothing and changes nothing: the way to update first.
+  let w = world(start);
+  expect(await beforePlay(old, entry, w.via)).toEqual({ go: false });
+  expect(w.ask).toHaveBeenCalledWith(expect.objectContaining({ newer: { cloud: "v1.1.0", here: "1.0.0" }, cloud: expect.objectContaining({ hash: B }) }));
+  expect(w.native.savesDownload).not.toHaveBeenCalled();
+  expect(w.state.synced).toBe(A);
+  // Using them anyway puts them in place.
+  w = world(start);
+  w.ask.mockResolvedValue("cloud");
+  expect(await beforePlay(old, entry, w.via)).toMatchObject({ go: true, fetched: { hash: B } });
+  expect(w.ask).toHaveBeenCalledTimes(1);
+  expect(w.native.savesRestore).toHaveBeenCalled();
+  // Keeping this computer's leaves them, and doesn't ask about that copy again.
+  w = world(start);
+  w.ask.mockResolvedValue("here");
+  expect(await beforePlay(old, entry, w.via)).toEqual({ go: true });
+  expect(w.native.savesDownload).not.toHaveBeenCalled();
+  expect(w.state.synced).toBe(B);
+  // The same version, an older one, or after updating: put in place with no question.
+  for (const [made, installed] of [["1.1.0", "1.1.0"], ["1.0.0", "1.1.0"], [undefined, "1.0.0"], ["1.1.0", undefined]]) {
+    w = world({ ...start, copies: [copy(B, made ? { version: made } : {})] });
+    expect(await beforePlay({ ...of, ...(installed ? { version: installed } : {}) }, entry, w.via)).toMatchObject({ go: true, fetched: { hash: B } });
+    expect(w.ask).not.toHaveBeenCalled();
+  }
+  // Both changed: the one question says the version too.
+  w = world({ ...start, state: { os: "windows" as const, off: false, hash: C, synced: A } });
+  await beforePlay(old, entry, w.via);
+  expect(w.ask).toHaveBeenCalledTimes(1);
+  expect(w.ask).toHaveBeenCalledWith(expect.objectContaining({ newer: { cloud: "v1.1.0", here: "1.0.0" } }));
 });
