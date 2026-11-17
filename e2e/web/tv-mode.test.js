@@ -169,6 +169,7 @@ test("Discover sorts by release date once a console is picked, not the whole cat
     for (let i = 0; i < 4; i++) await press(s2, "DPadRight");
     await s2.until(async () => (await s2.page.locator(".tv-filter-picks").innerText()).startsWith("Release date, oldest first"));
     await press(s2, "East");
+    await s2.page.locator(".tv-dropdown").waitFor({ state: "detached" });
     await s2.page.getByText("Pick a console to sort by release date").waitFor();
     // A console: its games, in order.
     await press(s2, "RightTrigger");
