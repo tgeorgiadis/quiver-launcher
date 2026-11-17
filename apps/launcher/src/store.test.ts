@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "@quiverlauncher/api";
-import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
+import { sortPlan, withOwnConsoles, adoptedInstall, appRef, appsFolders, groupFolder, joinPath, rootOf, unsortedApps, folderClash, keptWhereTheyAre, ownedBy, bringsAlong, catalogMatch, declinedUpdate, earlyGet, earlyGetOffer, earlyKey, earlyOffer, earlyRelease, earlyUpdate, filesAddable, renamable, folderGone, forHereKey, hasUpdate, importedPlaylists, importedTags, removedTags, withAllTags, markedInApps, retagged, withOldPictures, installFiles, keptInstall, locatable, looseInstalls, mayUpdate, movableApps, movedInside, noProgram, notOfferedYet, oncePerFolder, twinsOf, withCopiesIn, withTwins, playedRef, relocatedInstall, skipped, uniqueFiles, updateFor, mainRelease, onlyPrereleases, updatesOf, usableCatalog, wantsPrereleases, withEarlyFor, withMainRelease, withPrereleases, type ImportedApp, type LibraryItem } from "./store";
 import type { OldApp, OldFilter } from "./native";
 
 const entry = {
@@ -848,4 +848,22 @@ describe("renamable", () => {
     expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(false);
     expect(renamable({ ...base, installer: "msi" })).toBe(false);
   });
+});
+
+describe("removedTags", () => {
+  const entry = { tags: ["recomp", "nintendo", "n64"] } as Parameters<typeof removedTags>[1];
+  const old = (tags: string[], catalogTags?: string[]) => ({ name: "Test Port", tags, catalogTags }) as Parameters<typeof removedTags>[0];
+  it("the catalog's tags a 3.x app no longer had, that the catalog still gives it", () => {
+    expect(removedTags(old(["N64", "mine"], ["recomp", "n64", "gone"]), entry)).toEqual(["recomp"]);
+  });
+  it("none from a 3.x that didn't keep the catalog's tags, or an app with them all", () => {
+    expect(removedTags(old(["mine"]), entry)).toEqual([]);
+    expect(removedTags(old(["recomp", "nintendo", "n64"], ["recomp", "nintendo", "n64"]), entry)).toEqual([]);
+  });
+});
+
+it("withAllTags gives an entry back the tags the player hid", () => {
+  const sent = { id: "a", tags: ["recomp", "nintendo"] } as Parameters<typeof withAllTags>[0];
+  expect(withAllTags(sent)).toBe(sent);
+  expect(withAllTags({ ...sent, tags: ["nintendo"], allTags: ["recomp", "nintendo"] })).toEqual(sent);
 });
