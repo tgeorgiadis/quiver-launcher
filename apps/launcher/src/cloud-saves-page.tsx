@@ -5,9 +5,11 @@
  * copies beside its backups; this is where to see what they add up to and to make room.
  */
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, CloudDownload, CloudUpload, FolderOpen, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, CloudDownload, CloudUpload, FolderOpen, LayoutGrid, Trash2 } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import type { Entry } from "@quiverlauncher/api";
+import { Artwork, cardSources } from "@quiverlauncher/ui";
 import { sizeLabel } from "./downloads";
 import { native } from "./native";
 import { onSavesChanged, savesChanged, savesOf } from "./saves";
@@ -18,8 +20,12 @@ import { useLauncher } from "./store";
 
 type App = CloudUsage["apps"][number];
 
+/** Asks for an app's page, which App.tsx opens over Settings. */
+export const OPEN_APP = "quiver-open-app";
+const openPage = (entry: Entry) => window.dispatchEvent(new CustomEvent<Entry>(OPEN_APP, { detail: entry }));
+
 export function CloudSavesSettings() {
-  const { settings, setSettings, installs, catalog } = useLauncher();
+  const { settings, setSettings, installs, catalog, cloudCatchUp, client } = useLauncher();
   const account = useAccount();
   const api = account.cloudSaves;
   /** Undefined while it loads; null when the account can't be reached. */
@@ -69,6 +75,7 @@ export function CloudSavesSettings() {
   const remove = (app: App, what: { id: string } | { entryId: string }) =>
     run(app, async () => {
       await api?.remove(what);
+      cloudCatchUp();
       return null;
     });
   const sendNow = (app: App) =>
@@ -80,7 +87,7 @@ export function CloudSavesSettings() {
       const backups = (await native.savesInfo(of))?.backups ?? [];
       const newest = made ?? backups.find((b) => b.reason !== "restore") ?? backups[0];
       if (!newest) return t`This app has no saves on this computer yet.`;
-      const how = await sendBackup(of, app.entryId, newest, { api, native });
+      const how = await sendBackup(of, app.entryId, newest, { api, native, manual: true });
       savesChanged(app.entryId);
       const limit = usage ? sizeLabel(usage.limit) : "";
       if (how === "sent") return t`Sent to your cloud saves.`;
@@ -94,6 +101,14 @@ export function CloudSavesSettings() {
       const place = of && (await native.savesInfo(of))?.places.find((p) => p.exists);
       if (!of || !place) return t`This app has no saves on this computer yet.`;
       await native.savesOpen(of, place.template);
+      return null;
+    });
+
+  /** The app's page: straight away for an app in the library, else once the site has said what it is. */
+  const page = (app: App) =>
+    run(app, async () => {
+      const entry = catalog[app.entryId] ?? (app.slug ? (await client.app(app.slug)).entry : null);
+      if (entry) openPage(entry);
       return null;
     });
 
@@ -170,10 +185,15 @@ export function CloudSavesSettings() {
             const name = app.name;
             const installed = Boolean(installs[app.entryId]);
             const shown = open === app.entryId;
+            const entry = catalog[app.entryId];
+            const art = entry?.artwork ?? entry?.libraryArt?.logo ?? app.artwork;
             return (
               <li key={app.entryId} className="cloud-app">
                 <button className="cloud-app-row" aria-expanded={shown} onClick={() => (setOpen(shown ? null : app.entryId), setAsking(null))}>
                   {shown ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
+                  <span className="cloud-app-icon">
+                    <Artwork src={art} sources={art ? cardSources(art, "36px") : undefined} name={name} />
+                  </span>
                   <span className="save-main">
                     <span>{name}</span>
                     <span className="save-note">
@@ -250,6 +270,11 @@ export function CloudSavesSettings() {
                       {installed && (
                         <button className="save-button" disabled={busy} onClick={() => openFolder(app)}>
                           <FolderOpen size={14} aria-hidden="true" /> <Trans>Open save folder</Trans>
+                        </button>
+                      )}
+                      {(entry || app.slug) && (
+                        <button className="save-button" disabled={busy} onClick={() => page(app)}>
+                          <LayoutGrid size={14} aria-hidden="true" /> <Trans>App page</Trans>
                         </button>
                       )}
                       {asking === app.entryId ? (

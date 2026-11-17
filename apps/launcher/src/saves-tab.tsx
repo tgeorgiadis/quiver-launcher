@@ -33,7 +33,7 @@ export const SYSTEM_NAMES: Record<string, string> = { windows: "Windows", linux:
 export const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
 
 export function SavesTab({ entry }: { entry: Entry }) {
-  const { installs, catalog, settings, cloudSavesFor } = useLauncher();
+  const { installs, catalog, settings, cloudSavesFor, cloudCatchUp } = useLauncher();
   const account = useAccount();
   const install = installs[entry.id];
   const known = catalog[entry.id] ?? entry;
@@ -83,7 +83,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
     run(async () => {
       const made = await native.savesBackup(of, "manual");
       // Sent to the account too; how that went shows in the cloud part.
-      if (made && api && cloudOn) await sendBackup(of, entry.id, made, { api, native });
+      if (made && api && cloudOn) await sendBackup(of, entry.id, made, { api, native, manual: true });
       return made ? t({ message: "Backed up.", comment: "Said after a save backup was made" }) : t`Nothing changed since the last backup.`;
     });
   /** Something done with the account's copies: what it says goes in the cloud part. */
@@ -103,6 +103,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
   const removeCloud = (copy: CloudCopy) =>
     runCloud(async () => {
       await api?.remove({ id: copy.id });
+      cloudCatchUp();
       return null;
     });
   const setCloudOff = (off: boolean) =>
@@ -115,7 +116,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
     runCloud(async () => {
       const newest = info.backups.find((b) => b.reason !== "restore") ?? info.backups[0];
       if (!api || !newest) return null;
-      const how = await sendBackup(of, entry.id, newest, { api, native });
+      const how = await sendBackup(of, entry.id, newest, { api, native, manual: true });
       return how === "sent" ? t`Sent to your cloud saves.` : null;
     });
   const restore = (backup: SaveBackup) =>

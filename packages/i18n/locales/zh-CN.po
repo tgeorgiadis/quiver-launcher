@@ -193,6 +193,10 @@ msgstr "{count, plural, other {# 个讨论有新评论}}"
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {添加 # 个应用} other {添加 # 个应用}}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
+msgstr "{count, plural, other {它占用的空间最多。它的 # 个副本（{largestSize}）会从你的账号中移除。它在这台电脑上的存档和备份会保留。}}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
 msgstr "{count, plural, one {将已安装的 # 个应用保留在原处：{dir}} other {将已安装的 # 个应用保留在原处：{dir}}}"
@@ -641,6 +645,10 @@ msgstr "{updateCount, plural, one {# 个模组有可用更新。} other {# 个�
 #: ../../apps/launcher/src/App.tsx
 msgid "{updateVersion} is available."
 msgstr "{updateVersion} 已可用。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{used} of {limit} used."
+msgstr "已用 {used}，共 {limit}。"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "{used} of {limit} used. Each app keeps its newest {keep} copies."
@@ -1167,6 +1175,7 @@ msgid "APP DETAILS"
 msgstr "应用详细信息"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "App page"
 msgstr "应用页面"
 
@@ -1877,6 +1886,10 @@ msgstr "云存档"
 msgid "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
 msgstr "云存档适用于 Quiver 目录中的应用。此应用的备份保留在这台电脑上。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Cloud saves are off for {largestName}, and its copies were removed from your account."
+msgstr "已为 {largestName} 关闭云存档，并已从你的账号中移除其副本。"
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Cloud saves are paused for now, so nothing new is being sent. Backups stay on this computer."
 msgstr "云存档目前已暂停，不会发送新内容。备份保留在这台电脑上。"
@@ -2016,6 +2029,7 @@ msgstr "无法连接 quiverlauncher.com。请检查网络连接，然后重试�
 msgid "Couldn't reach your cloud saves. Backups stay on this computer for now."
 msgstr "无法连接到你的云存档。备份暂时保留在这台电脑上。"
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Couldn't reach your cloud saves. Check your connection and try again."
@@ -2543,6 +2557,10 @@ msgstr "在 {0} 中找到。以下内容会迁移过来："
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "在 {folder} 中找到"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Free up space"
+msgstr "腾出空间"
 
 #. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
@@ -4082,6 +4100,7 @@ msgid "Not installed yet"
 msgstr "尚未安装"
 
 #: ../../apps/launcher/src/app-updates.tsx
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
@@ -5311,6 +5330,10 @@ msgstr "查看游戏页面"
 msgid "See the report"
 msgstr "查看报告"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "See what each app keeps in your account, and remove copies you don't need."
+msgstr "查看每个应用在你账号中保留的内容，并移除不需要的副本。"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "See which apps"
 msgstr "查看哪些应用"
@@ -5994,6 +6017,10 @@ msgstr "包含 Quiver Launcher 3 程序的文件夹。如果是便携版，就�
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "游戏启动时会提示你提供此文件。Quiver 可以先检查你的副本。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
+msgstr "{name} 的最新备份只在这台电脑上，在有空间之前，之后的每个备份也是如此。有空间后 Quiver 会自动发送。"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "原版游戏"
@@ -6260,6 +6287,10 @@ msgstr "重试"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Turn off"
 msgstr "关闭"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Turn off cloud saves for {largestName}"
+msgstr "为 {largestName} 关闭云存档"
 
 #. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
@@ -6886,6 +6917,10 @@ msgstr "你的应用"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Your apps are in your library."
 msgstr "你的应用已在游戏库中。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves are full"
+msgstr "你的云存档已满"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Your cloud saves are full ({limit}). Remove copies to make room."

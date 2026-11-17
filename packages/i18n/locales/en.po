@@ -192,6 +192,10 @@ msgstr "{count, plural, one {# discussion with new comments} other {# discussion
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Add # app} other {Add # apps}}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
+msgstr "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
 msgstr "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
@@ -640,6 +644,10 @@ msgstr "{updateCount, plural, one {# mod has an update.} other {# mods have upda
 #: ../../apps/launcher/src/App.tsx
 msgid "{updateVersion} is available."
 msgstr "{updateVersion} is available."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{used} of {limit} used."
+msgstr "{used} of {limit} used."
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "{used} of {limit} used. Each app keeps its newest {keep} copies."
@@ -1166,6 +1174,7 @@ msgid "APP DETAILS"
 msgstr "APP DETAILS"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "App page"
 msgstr "App page"
 
@@ -1876,6 +1885,10 @@ msgstr "Cloud saves"
 msgid "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
 msgstr "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Cloud saves are off for {largestName}, and its copies were removed from your account."
+msgstr "Cloud saves are off for {largestName}, and its copies were removed from your account."
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Cloud saves are paused for now, so nothing new is being sent. Backups stay on this computer."
 msgstr "Cloud saves are paused for now, so nothing new is being sent. Backups stay on this computer."
@@ -2015,6 +2028,7 @@ msgstr "Couldn't reach quiverlauncher.com. Check your connection and try again."
 msgid "Couldn't reach your cloud saves. Backups stay on this computer for now."
 msgstr "Couldn't reach your cloud saves. Backups stay on this computer for now."
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Couldn't reach your cloud saves. Check your connection and try again."
@@ -2542,6 +2556,10 @@ msgstr "Found in {0}. This comes over:"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "Found in {folder}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Free up space"
+msgstr "Free up space"
 
 #. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
@@ -4081,6 +4099,7 @@ msgid "Not installed yet"
 msgstr "Not installed yet"
 
 #: ../../apps/launcher/src/app-updates.tsx
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
@@ -5310,6 +5329,10 @@ msgstr "See the game's page"
 msgid "See the report"
 msgstr "See the report"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "See what each app keeps in your account, and remove copies you don't need."
+msgstr "See what each app keeps in your account, and remove copies you don't need."
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "See which apps"
 msgstr "See which apps"
@@ -5993,6 +6016,10 @@ msgstr "The folder with Quiver Launcher 3's program in it. For a portable copy, 
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "The game asks for it when it starts. Quiver can check yours first."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
+msgstr "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "THE ORIGINAL GAME"
@@ -6259,6 +6286,10 @@ msgstr "Try again"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Turn off"
 msgstr "Turn off"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Turn off cloud saves for {largestName}"
+msgstr "Turn off cloud saves for {largestName}"
 
 #. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
@@ -6885,6 +6916,10 @@ msgstr "Your apps"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Your apps are in your library."
 msgstr "Your apps are in your library."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves are full"
+msgstr "Your cloud saves are full"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Your cloud saves are full ({limit}). Remove copies to make room."
