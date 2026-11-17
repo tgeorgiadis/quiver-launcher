@@ -16,11 +16,11 @@ import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocke
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, syncableCustom, type Collection } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, syncableCustom, withoutApp, type Collection } from "./sync";
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
-import { appsOfRepository, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { appsOfRepository, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, isOwn, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { artFile, artFiles, isArtAddress, type ArtSlot, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
@@ -2716,6 +2716,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           i.id !== id ? [i] : i.account ? [{ ...i, removed: true, pending: { removed: true } }] : [],
         ),
       );
+      // One the player added has no page to add it back from: it comes off their playlists with it.
+      if (isOwn(id)) setCollections((all) => withoutApp(all, id, userId));
       setJobs(({ [id]: _, ...rest }) => rest);
     },
     uninstall: (id) =>
