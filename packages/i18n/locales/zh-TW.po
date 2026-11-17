@@ -4428,7 +4428,9 @@ msgstr "其他"
 msgid "Other files"
 msgstr "其他檔案"
 
+#. A shelf on Browse's front page: apps for consoles no other shelf's maker made
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/discover.tsx
 #: ../../apps/launcher/src/library.tsx
 msgid "Other platforms"
 msgstr "其他平臺"
@@ -4631,6 +4633,11 @@ msgstr "此應用程式的播放清單"
 #: ../../apps/launcher/src/library.tsx
 msgid "Port"
 msgstr "移植版"
+
+#. A shelf on Browse's front page: apps for handhelds (PSP, Vita, DS, 3DS, Game Boy)
+#: ../../apps/launcher/src/discover.tsx
+msgid "Portable systems"
+msgstr "掌機"
 
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Portrait, about 600×900. The library's cards and TV mode."

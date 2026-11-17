@@ -177,3 +177,19 @@ test("in Steam's desktop layout, where X isn't Quiver's, a catalog card offers i
   assert.doesNotMatch(await hints(), /\bX\b/);
   assert.equal(await CARD.locator("[data-pad-glyph]").count(), 0);
 });
+
+test("a console shelf's See all puts its maker on the console filter, in place of the front page", async () => {
+  await open("button", { text: "Browse" });
+  // From the front page: no filters on from the tests before.
+  const clear = page.getByRole("button", { name: "Clear all" });
+  if (await clear.count()) await clear.click();
+  const shelf = page.locator('section.shelf[aria-label="Nintendo"]');
+  await shelf.waitFor();
+  await shelf.getByRole("button", { name: "See all: Nintendo" }).click();
+  await page.locator(".discover").waitFor({ state: "detached" });
+  assert.equal(await page.locator(".pill.on .pill-text").first().textContent(), "All Nintendo");
+  // Its apps, all of them for a Nintendo console.
+  await s.until(async () => (await page.locator("article[data-slug]").count()) > 0);
+  await clear.click();
+  await page.locator(".discover").waitFor();
+});
