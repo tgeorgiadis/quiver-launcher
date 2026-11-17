@@ -31,6 +31,7 @@ import { RepositoryTokens } from "./repository-tokens";
 import { TelemetrySetting } from "./telemetry-ui";
 import { savesOn } from "./saves";
 import { CloudSavesSettings } from "./cloud-saves-page";
+import { SyncFolderSettings } from "./sync-folder-page";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
@@ -139,7 +140,10 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
             ) : section === "copies" ? (
               <GameCopySettings />
             ) : section === "cloud" ? (
-              <CloudSavesSettings />
+              <>
+                <CloudSavesSettings />
+                <SyncFolderSettings />
+              </>
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (

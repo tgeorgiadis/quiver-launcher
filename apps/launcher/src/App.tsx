@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -2221,6 +2221,8 @@ function SavesConflictPrompt() {
   const name = conflict.entry.projectName;
   const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
   const { cloud, here } = conflict;
+  // The other saves are the account's, or the ones in the player's sync folder (sync-folder.ts).
+  const folder = conflict.from === "folder";
   const device = cloud.device;
   const cloudWhen = when(cloud.madeAt);
   const hereWhen = here ? when(here.at) : "";
@@ -2228,26 +2230,32 @@ function SavesConflictPrompt() {
     <Dialog label={t`Which saves of ${name}?`} onClose={() => conflict.answer(null)}>
       <div className="detail-body program-prompt saves-conflict">
         <h2>
-          <Cloud size={18} aria-hidden="true" /> {t`Which saves of ${name} do you want to keep?`}
+          {folder ? <FolderSync size={18} aria-hidden="true" /> : <Cloud size={18} aria-hidden="true" />} {t`Which saves of ${name} do you want to keep?`}
         </h2>
         {conflict.places?.length ? (
           <>
             <p className="muted">
-              <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              {folder ? (
+                <Trans>The saves in your sync folder would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              ) : (
+                <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              )}
             </p>
             <SavePlaces places={conflict.places} />
           </>
         ) : (
           <p className="muted">
-            <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
+            {folder ? (
+              <Trans>The saves on this computer and the ones in your sync folder have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
+            ) : (
+              <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
+            )}
           </p>
         )}
         <div className="choices">
           <button autoFocus onClick={() => conflict.answer("cloud")}>
             <span>
-              <strong>
-                <Trans>Use my cloud saves</Trans>
-              </strong>
+              <strong>{folder ? <Trans>Use the saves in my sync folder</Trans> : <Trans>Use my cloud saves</Trans>}</strong>
               <small>{t`From ${device}, ${cloudWhen}`}</small>
             </span>
           </button>

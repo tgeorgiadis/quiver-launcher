@@ -515,7 +515,7 @@ fn now() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
 }
 
-fn read_manifest(zip_file: &Path) -> Option<Manifest> {
+pub(crate) fn read_manifest(zip_file: &Path) -> Option<Manifest> {
     let mut archive = zip::ZipArchive::new(fs::File::open(zip_file).ok()?).ok()?;
     let mut text = String::new();
     archive.by_name(MANIFEST).ok()?.take(8 * 1024 * 1024).read_to_string(&mut text).ok()?;
@@ -670,9 +670,27 @@ pub fn adopt(store: &Path, downloaded: &Path, hash: &str) -> Result<Backup, Stri
     Ok(Backup { name, at: manifest.at, size, files: manifest.files.len(), version: manifest.version, reason: manifest.reason, device: manifest.device, os: manifest.os, hash: manifest.hash })
 }
 
+/// A backup that is whole, from wherever it came: its manifest adds up, it holds no more than saves do, and every
+/// file it names is in it with the size and checksum it says. `None` for one cut short, still being written by
+/// something else, or changed since it was made. Nothing is unpacked to find out.
+pub fn verify(zip_file: &Path) -> Option<Manifest> {
+    let manifest = read_manifest(zip_file).filter(|m| sized_like_saves(m) && set_hash(&m.files) == m.hash)?;
+    let mut archive = zip::ZipArchive::new(fs::File::open(zip_file).ok()?).ok()?;
+    for info in &manifest.files {
+        let mut entry = archive.by_name(&format!("{}/{}", info.place, info.path)).ok()?;
+        let mut sha = Sha256::new();
+        // No more than it says it holds: a zip can claim one size and unpack to another.
+        let read = io::copy(&mut (&mut entry).take(info.size + 1), &mut sha).ok()?;
+        if read != info.size || hex::encode(sha.finalize()) != info.sha256 {
+            return None;
+        }
+    }
+    Some(manifest)
+}
+
 /// Whether a backup holds no more than saves do: a zip can name any number of files of any size, and unpacking
 /// them would fill the disk before anything was found wrong.
-fn sized_like_saves(manifest: &Manifest) -> bool {
+pub(crate) fn sized_like_saves(manifest: &Manifest) -> bool {
     let mut places = vec![(0usize, 0u64); manifest.places.len()];
     for file in &manifest.files {
         let Some(place) = places.get_mut(file.place) else { return false };
@@ -873,6 +891,17 @@ pub struct State {
     /// The player switched cloud saves off for this app.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub cloud_off: bool,
+    /// The same as `synced`, for the player's sync folder (sync_folder.rs).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub folder_synced: Option<FolderSynced>,
+}
+
+/// When the saves last matched the newest backup in a sync folder. It only counts for that folder: another one's
+/// backups were never compared with the saves here.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct FolderSynced {
+    pub folder: String,
+    pub hash: String,
 }
 
 pub fn state(store: &Path) -> State {

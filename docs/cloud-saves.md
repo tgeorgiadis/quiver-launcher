@@ -4,6 +4,9 @@ A signed-in player's save backups are also kept with their Quiver account, so th
 computer. It rides on save backups (`apps/launcher/src-tauri/src/saves.rs`): the copy sent is a backup's own zip,
 and a copy from the account is taken in as a backup and put in place by the same Restore, with the same checks.
 
+A player who'd rather not use an account, or wants a second place, can have backups kept in a folder of their own
+that Dropbox, OneDrive or Syncthing syncs: see [Sync folder](sync-folder.md).
+
 ## What is sent
 
 One zip per backup: the save files and a manifest naming the app, when the backup was made, the app's version, the

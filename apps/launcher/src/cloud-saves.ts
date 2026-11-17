@@ -233,12 +233,30 @@ export async function sendCurrent(of: SavesOf, entryId: string, via: { api: Clou
 
 export type Conflict = {
   entry: Pick<Entry, "id" | "projectName">;
-  /** The account's newest copy. */
+  /** The newest copy kept elsewhere: the account's, or the sync folder's. */
   cloud: CloudCopy;
+  /** Where that copy is. The account's when not said. */
+  from?: "folder";
   /** The newest backup of the saves here, when there is one of them as they are. */
   here?: SaveBackup;
-  /** Folders the account's copy would go in that this computer hasn't kept the app's saves in: the player is shown them before choosing it. */
+  /** Folders that copy would go in that this computer hasn't kept the app's saves in: the player is shown them before choosing it. */
   places?: SavePlace[];
+};
+
+/**
+ * Somewhere an app's backups are also kept, which its saves are brought in line with before it starts: the
+ * player's account, or their sync folder (sync-folder.ts).
+ */
+export type Elsewhere = {
+  /** The saves here beside the copies kept there, newest first. Null when it isn't used for this app, or can't be reached now: the app starts as it is. */
+  look: () => Promise<{ hash?: string | null; synced?: string | null; os: string; copies: CloudCopy[] } | null>;
+  /** Takes one of its copies in among the app's backups, where Restore can put it back. */
+  take: (copy: CloudCopy) => Promise<SaveBackup>;
+  /** Remembers that saves with this checksum match its newest copy. */
+  synced: (hash: string | null) => Promise<void>;
+  /** Sends the backup of the saves as they are now, when it doesn't have them. */
+  sendCurrent: () => Promise<unknown>;
+  from?: "folder";
 };
 
 const within = <T>(work: Promise<T>, ms: number) => Promise.race([work, new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
@@ -247,37 +265,61 @@ const within = <T>(work: Promise<T>, ms: number) => Promise.race([work, new Prom
  * Before an app starts: brings its saves in line with the account's. Resolves to whether to start it ("stop" only
  * when the player closed the question), with `problem` when the account's copy couldn't be put in place.
  */
-export async function beforePlay(
+export function beforePlay(
   of: SavesOf,
   entry: Pick<Entry, "id" | "projectName" | "launcher">,
   via: { api: CloudApi; native: Native; ask: (conflict: Conflict) => Promise<"cloud" | "here" | null>; changed: (id: string) => void },
 ): Promise<{ go: boolean; fetched?: CloudCopy; problem?: string }> {
-  let state: SavesCloud;
-  let mine: CloudMine | null;
-  try {
-    state = await via.native.savesCloud(of);
-    if (state.off) return { go: true };
-    // Never long in the way of playing.
-    mine = await within(via.api.mine(entry.id), 6000);
-  } catch {
-    return { go: true };
-  }
-  if (!mine?.on || !mine.allowed) return { go: true };
-  const newest = usable(mine.copies, state.os, entry.launcher?.saves?.crossPlatform);
+  const account: Elsewhere = {
+    async look() {
+      const state = await via.native.savesCloud(of);
+      if (state.off) return null;
+      // Never long in the way of playing.
+      const mine = await within(via.api.mine(entry.id), 6000);
+      return mine?.on && mine.allowed ? { ...state, copies: mine.copies } : null;
+    },
+    async take(copy) {
+      const link = await via.api.download(copy.id);
+      if (!link) throw new Error("gone");
+      return via.native.savesDownload(of, link.url, link.size, copy.hash);
+    },
+    synced: (hash) => via.native.savesSynced(of, hash),
+    sendCurrent: () => sendCurrent(of, entry.id, via),
+  };
+  return inLine(of, entry, account, via);
+}
+
+/**
+ * Brings an app's saves in line with the copies kept somewhere else, before it starts: the same, nothing happens;
+ * only the other side changed since they last matched, its newest copy is put in place; both changed, the player
+ * chooses. Whatever is put in place goes through `restoreBackup`, wherever it came from.
+ */
+export async function inLine(
+  of: SavesOf,
+  entry: Pick<Entry, "id" | "projectName" | "launcher">,
+  elsewhere: Elsewhere,
+  via: { native: Pick<Native, "savesInfo" | "savesRestorePlan" | "savesRestore" | "savesBackup">; ask: (conflict: Conflict) => Promise<"cloud" | "here" | null>; changed: (id: string) => void },
+): Promise<{ go: boolean; fetched?: CloudCopy; problem?: string }> {
+  const { from } = elsewhere;
+  const state = await elsewhere.look().catch(() => null);
+  if (!state) return { go: true };
+  const newest = usable(state.copies, state.os, entry.launcher?.saves?.crossPlatform);
   const hereNow = async () => (await via.native.savesInfo(of).catch(() => null))?.backups.find((b) => b.hash === state.hash);
-  /** This computer's saves stay: the account's copy has been seen, so it isn't asked about again, and these go up. */
+  /** This computer's saves stay: the other copy has been seen, so it isn't asked about again, and these go up. */
   const keepHere = async (copy: CloudCopy) => {
-    await via.native.savesSynced(of, copy.hash).catch(() => {});
+    await elsewhere.synced(copy.hash).catch(() => {});
     await via.native.savesBackup(of, "manual").catch(() => null);
-    void sendCurrent(of, entry.id, via).catch(() => {});
+    void elsewhere.sendCurrent().catch(() => {});
     return { go: true };
   };
   const fetch = async (copy: CloudCopy) => {
     // A copy for a folder this computer doesn't know is never put there by itself: the player sees the folder first.
     let choice: "cloud" | "here" | null = "cloud";
     try {
-      const confirm: ConfirmPlaces = async (places) => (choice = await via.ask({ entry, cloud: copy, here: await hereNow(), places })) === "cloud";
-      if (await fetchCopy(of, copy, { ...via, confirm })) {
+      const confirm: ConfirmPlaces = async (places) => (choice = await via.ask({ entry, cloud: copy, here: await hereNow(), places, ...(from ? { from } : {}) })) === "cloud";
+      const backup = await elsewhere.take(copy);
+      if (await restoreBackup(of, backup.name, { native: via.native, confirm })) {
+        await elsewhere.synced(copy.hash);
         via.changed(of.id);
         return { go: true, fetched: copy };
       }
@@ -290,16 +332,16 @@ export async function beforePlay(
   };
   const what = decide(state, newest);
   if (what === "same") {
-    if (state.synced !== state.hash) await via.native.savesSynced(of, state.hash ?? null).catch(() => {});
+    if (state.synced !== state.hash) await elsewhere.synced(state.hash ?? null).catch(() => {});
     return { go: true };
   }
   if (what === "send" || !newest) {
     // Catching up on a backup that didn't get there; the app doesn't wait for it.
-    void sendCurrent(of, entry.id, via).catch(() => {});
+    void elsewhere.sendCurrent().catch(() => {});
     return { go: true };
   }
   if (what === "fetch") return fetch(newest);
-  const choice = await via.ask({ entry, cloud: newest, here: await hereNow() });
+  const choice = await via.ask({ entry, cloud: newest, here: await hereNow(), ...(from ? { from } : {}) });
   if (!choice) return { go: false };
   if (choice === "cloud") return fetch(newest);
   return keepHere(newest);
