@@ -19,7 +19,7 @@ import { DEFAULT_BACKGROUND_OPACITY, useBackgroundImage } from "./library-backgr
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
-import { TagSettings } from "./tag-settings";
+import { CatalogTagSettings, TagSettings } from "./tag-settings";
 import { ControlSettings } from "./controls";
 import { WindowsRunnerSetting } from "./launch-options";
 import { PortableDefaultSetting } from "./app-files";
@@ -31,6 +31,7 @@ import { RepositoryTokens } from "./repository-tokens";
 import { TelemetrySetting } from "./telemetry-ui";
 import { savesOn } from "./saves";
 import { CloudSavesSettings } from "./cloud-saves-page";
+import { SyncFolderSettings } from "./sync-folder-page";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
@@ -139,7 +140,10 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
             ) : section === "copies" ? (
               <GameCopySettings />
             ) : section === "cloud" ? (
-              <CloudSavesSettings />
+              <>
+                <CloudSavesSettings />
+                <SyncFolderSettings />
+              </>
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (
@@ -356,6 +360,7 @@ function LibrarySettings() {
         <PlatformChoice />
       </section>
       <TagSettings />
+      <CatalogTagSettings />
       <FindOldLibrary />
       <section className="settings-section" aria-label={t`Restore from backup`}>
         <h3>

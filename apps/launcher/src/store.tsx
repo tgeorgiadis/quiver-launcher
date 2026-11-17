@@ -9,6 +9,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
+import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
@@ -16,17 +17,18 @@ import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocke
 import { captureError, captureFailure, failureKind, Problem, reasonOf, reportStartupFailure, setTelemetryAppsDir, setTelemetryAppsFolders, telemetryChoice, track, type TelemetryContext } from "./telemetry";
 import { appsDueToday, appsOnComputer, librarySummary } from "./usage-summary";
 import { AccountProvider, useAccount } from "./account";
-import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, syncableCustom, type Collection } from "./sync";
+import { applyServer, applyServerCollections, changesFrom, hasFilters, joinAccount, matches, newKey, syncableCustom, withoutApp, type Collection } from "./sync";
 import type { Platform } from "./platforms";
 import { setBindings, setScrolling, type Bindings } from "./spatial";
 import { musicForGame, setMusic } from "./music";
-import { appsOfRepository, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
+import { appsOfRepository, movedTo, bestGameArt, customEntry, customKey, folderNameFor, fromKey, freeFolder, isCustom, isLocal, isOwn, localEntry, localKey, withGame, type CustomApp, type GameArt, type LocalApp } from "./custom";
 import { artFile, artFiles, isArtAddress, type ArtSlot, type Pictures } from "./custom-art";
 import { followTheme, type Theme } from "./theme";
 import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { folderBeforePlay } from "./sync-folder";
 import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
@@ -85,6 +87,11 @@ export type CatalogEntry = Entry & {
    * chose pre-releases for this app (`withPrereleases`). Only in the store's `catalog`; never kept.
    */
   verifiedMain?: Verified;
+  /**
+   * The catalog's tags, while `tags` is those of them the player hasn't hidden (catalog-tags.ts). Only in the store's
+   * `catalog`; never kept.
+   */
+  allTags?: string[];
 };
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
@@ -230,6 +237,8 @@ type Launcher = {
   /** The catalog's consoles, and their names by id. */
   consoles: Console[];
   consoleNames: Record<string, string>;
+  /** An entry from the site (Browse's, or a game's ports) less the tags hidden here, as `catalog`'s are. */
+  withShownTags: <E extends Pick<Entry, "id" | "tags">>(entry: E) => E;
   library: LibraryItem[];
   installs: Record<string, Install>;
   catalog: Record<string, CatalogEntry>;
@@ -810,10 +819,17 @@ export function usableCatalog(catalog: Record<string, CatalogEntry>) {
   return Object.fromEntries(Object.entries(catalog).filter(([, e]) => whole(e)));
 }
 
+/** The entry with every tag the catalog gave it, the ones the player hid among them. */
+export function withAllTags(entry: CatalogEntry): CatalogEntry {
+  if (!entry.allTags) return entry;
+  const { allTags, ...rest } = entry;
+  return { ...rest, tags: allTags };
+}
+
 /** Entries as they're kept: each the site's own. The same object when none had the player's choice in it. */
 function keptAsSent(catalog: Record<string, CatalogEntry>) {
-  if (!Object.values(catalog).some((e) => e.verifiedMain)) return catalog;
-  return Object.fromEntries(Object.entries(catalog).map(([id, e]) => [id, withMainRelease(e)]));
+  if (!Object.values(catalog).some((e) => e.verifiedMain || e.allTags)) return catalog;
+  return Object.fromEntries(Object.entries(catalog).map(([id, e]) => [id, withMainRelease(withAllTags(e))]));
 }
 
 /** "v1.2" and "1.2" are the same release. */
@@ -1037,6 +1053,16 @@ export function importedTags(old: OldApp, entry: Entry): string[] {
 }
 
 /**
+ * The catalog's tags the player took off a 3.x app, which 3.x let them: those it last had from the catalog that the
+ * app no longer had there, and the catalog still gives it. None from a 3.x that didn't keep the catalog's.
+ */
+export function removedTags(old: OldApp, entry: Entry): string[] {
+  const kept = new Set((old.tags ?? []).map((t) => t.trim().toLowerCase()));
+  const was = new Set((old.catalogTags ?? []).map((t) => t.toLowerCase()));
+  return entry.tags.filter((t) => was.has(t.toLowerCase()) && !kept.has(t.toLowerCase()));
+}
+
+/**
  * The library with one of the player's tags renamed on every app that has it, whatever its case, or taken off them
  * all without `to`. An app that has the new name already keeps it once, and only the apps changed are new objects.
  */
@@ -1199,6 +1225,8 @@ export type Settings = {
   groupByConsole?: boolean;
   /** Apps hidden from the library here. */
   hidden?: string[];
+  /** The catalog's tags hidden here: everywhere, on one app, or as they're added (catalog-tags.ts). */
+  hiddenTags?: HiddenTags;
   /** Keyboard and controller bindings; unset uses the defaults. */
   keys?: Bindings;
   pad?: Bindings;
@@ -1238,6 +1266,8 @@ export type Settings = {
   cloudSavesOff?: boolean;
   /** The player was told their cloud saves are full; not told again until a backup gets there. */
   cloudFullTold?: boolean;
+  /** A folder of the player's own that save backups are also kept in, for Dropbox, OneDrive or Syncthing to sync (sync-folder.ts). */
+  syncFolder?: string;
   /** Quiver Launcher has started here before. */
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
@@ -1499,17 +1529,31 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // Each app's verified release as the player chose: the newest pre-release for an app that gets them. What was looked
   // up early for the other choice is left out, and looked up again.
   const prereleasesOn = Boolean(settings.prereleases);
+  // Its tags are those the player hasn't hidden; never a console's, which says what the app is for.
+  const hiddenTags = settings.hiddenTags;
+  const isConsole = (tag: string) => Object.hasOwn(consoleNames, tag);
   const catalog = useMemo(() => {
     let shown = rawCatalog;
     for (const [id, entry] of Object.entries(rawCatalog)) {
       const wants = wantsPrereleases({ prereleases: prereleasesOn }, installs[id]);
-      const now = withEarlyFor(entry.verifiedPrerelease && wants ? withPrereleases(entry, true) : entry, wants);
+      const released = withEarlyFor(entry.verifiedPrerelease && wants ? withPrereleases(entry, true) : entry, wants);
+      const tags = shownTags(hiddenTags, id, entry.tags, isConsole);
+      const now = tags === entry.tags ? released : { ...released, tags: [...tags], allTags: entry.tags };
       if (now === entry) continue;
       if (shown === rawCatalog) shown = { ...rawCatalog };
       shown[id] = now;
     }
     return shown;
-  }, [rawCatalog, installs, prereleasesOn]);
+  }, [rawCatalog, installs, prereleasesOn, hiddenTags, consoleNames]); // eslint-disable-line react-hooks/exhaustive-deps
+  const withShownTags = useMemo(() => {
+    const made = new WeakMap<object, object>();
+    return <E extends Pick<Entry, "id" | "tags">>(entry: E): E => {
+      const tags = shownTags(hiddenTags, entry.id, entry.tags, isConsole);
+      if (tags === entry.tags) return entry;
+      if (!made.has(entry)) made.set(entry, { ...entry, tags: [...tags] });
+      return made.get(entry) as E;
+    };
+  }, [hiddenTags, consoleNames]); // eslint-disable-line react-hooks/exhaustive-deps
   /** Whether this app gets pre-releases: what's asked of the site's releases for it. */
   const prereleasesFor = (id: string) => wantsPrereleases(settings, installs[id]);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
@@ -1521,8 +1565,26 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // is made or an app starts, as things stand by then.
   const cloudNow = useRef<Launcher["cloudSavesFor"]>(() => null);
   cloudNow.current = (id) => (savesOn(config.os) && !settings.cloudSavesOff && !isLocal(id) && catalog[id]?.slug ? account.cloudSaves : null);
-  /** Sends a backup that was just made to the account; never waited for. */
+  // The sync folder takes every app's backups, the player's own apps too, signed in or not.
+  const syncFolder = savesOn(config.os) ? settings.syncFolder : undefined;
+  /** Said once each time the launcher runs: a folder on a drive that's unplugged fails for every backup. */
+  const folderFailed = useRef(false);
+  /** Keeps a backup that was just made in the sync folder too; never waited for. */
+  const sendToFolder = (id: string, install: Install, made: SaveBackup) => {
+    const folder = forUsage.current.settings.syncFolder;
+    if (!folder || !savesOn(config.os)) return;
+    native.savesFolderPut(savesOf(id, install, forUsage.current.catalog[id]), folder, made.name).then(
+      () => ((folderFailed.current = false), savesChanged(id)),
+      (e) => {
+        if (folderFailed.current) return;
+        folderFailed.current = true;
+        setNotice(typeof e === "string" ? e : t`Couldn't write to your sync folder. Your backups are on this computer.`, { stays: true });
+      },
+    );
+  };
+  /** Sends a backup that was just made to the sync folder and to the account; never waited for. */
   const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined) => {
+    if (made) sendToFolder(id, install, made);
     const api = made && cloudNow.current(id);
     if (!api || !made) return;
     void native
@@ -2393,6 +2455,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     providers,
     consoles,
     consoleNames,
+    withShownTags,
     collections,
     saveCollection: (c) => {
       if (!c.removed && !allCollections.some((x) => x.key === c.key))
@@ -2634,6 +2697,19 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (device) setNotice(t`Your saves from ${device} were put in place. The saves that were here are backed up.`);
         else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get your cloud saves. The app starts with the saves on this computer.`, { stays: true });
       }
+      // And with the sync folder's (sync-folder.ts), the same way, for any app and with no account.
+      if (syncFolder) {
+        const named = entry ?? { id, projectName: install.folder };
+        const synced = await folderBeforePlay(savesOf(id, { ...install, program }, entry), named, syncFolder, {
+          native,
+          changed: savesChanged,
+          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+        }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof folderBeforePlay>>);
+        if (!synced.go) return;
+        const device = synced.fetched?.device;
+        if (device) setNotice(t`Your saves from ${device} were put in place from your sync folder. The saves that were here are backed up.`);
+        else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get the saves in your sync folder. The app starts with the saves on this computer.`, { stays: true });
+      }
       // What's in its likely save places now, to tell afterwards where it saved (saves.rs). Never in the way of playing.
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
@@ -2682,6 +2758,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           i.id !== id ? [i] : i.account ? [{ ...i, removed: true, pending: { removed: true } }] : [],
         ),
       );
+      // One the player added has no page to add it back from: it comes off their playlists with it.
+      if (isOwn(id)) setCollections((all) => withoutApp(all, id, userId));
       setJobs(({ [id]: _, ...rest }) => rest);
     },
     uninstall: (id) =>
@@ -2743,6 +2821,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }, () => onProgress?.(++done));
       const missing: string[] = [];
       const tags = new Map<string, string[]>();
+      // The catalog's tags they took off an app in 3.x, which stay off it here.
+      const removed = new Map<string, string[]>();
       const hidden: string[] = [];
       const imported: ImportedApp[] = [];
       // The pictures the player had for them, to keep a copy of once they're in: by app.
@@ -2761,6 +2841,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (install) setInstalls((i) => ({ ...i, [entry.id]: keptInstall(i[entry.id], install) }));
         const own = importedTags(old, entry);
         if (own.length) tags.set(entry.id, own);
+        const off = removedTags(old, entry).filter((t) => !isConsole(t));
+        if (off.length) removed.set(entry.id, off);
         if (old.hidden) hidden.push(entry.id);
         // One they chose themselves, for any app; an address, only for their own, as a catalog app's was the catalog's.
         if (old.icon && (!isArtAddress(old.icon) || it.kind === "custom")) pictures.push([entry.id, old.icon]);
@@ -2779,6 +2861,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           }),
         );
       if (hidden.length) setSettings((s) => ({ ...s, hidden: [...new Set([...(s.hidden ?? []), ...hidden])] }));
+      if (removed.size)
+        setSettings((s) => ({ ...s, hiddenTags: [...removed].reduce((h, [id, off]) => off.reduce((next, tag) => hideOnApp(next, id, tag, true), h), s.hiddenTags ?? {}) }));
       // Their pictures, as each kind of picture the player chose for them (OldPictures), where the app has none of the
       // player's here already. A file is copied in for each, sized for it, as picking one does; one that can't be read
       // is left out.
