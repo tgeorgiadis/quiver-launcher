@@ -33,7 +33,8 @@ export function CloudSavesSettings() {
 
   const load = useCallback(() => {
     if (!api) return setUsage(undefined);
-    api.usage().then(setUsage, () => setUsage(null));
+    // A site from before this page lists each app's copies as a number: taken as out of reach.
+    api.usage().then((u) => setUsage(u && u.apps.every((app) => Array.isArray(app.copies)) ? u : null), () => setUsage(null));
   }, [Boolean(api)]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     load();
