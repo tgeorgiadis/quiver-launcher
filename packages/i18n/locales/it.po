@@ -2766,10 +2766,10 @@ msgstr "File"
 msgid "File name, like config.ini"
 msgstr "Nome del file, come config.ini"
 
-#. Discover's button and X's hint: narrows the games to the library or not, makers, home consoles or handhelds
+#. Discover's button and X's hint: the order of the games, and narrowing them to the library or not, makers, home consoles or handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter consoles"
-msgstr "Filtra le console"
+msgid "Filter & sort"
+msgstr "Filtra e ordina"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx

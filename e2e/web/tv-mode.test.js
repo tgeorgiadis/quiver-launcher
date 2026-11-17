@@ -79,13 +79,19 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     // Filter: X opens its list from the games, under its button. Its first line is the library's choice, left and right.
     const picks = s2.page.locator(".tv-filter-picks");
     const row = (name) => s2.page.locator(".tv-dropdown li", { hasText: name });
-    assert.equal(await picks.innerText(), "Not in library");
+    assert.equal(await picks.innerText(), "Recently added, Not in library");
     await press(s2, "West");
     await s2.page.locator(".tv-dropdown").waitFor();
+    // Sort first: left and right change the catalog's order; then the library's choice.
     await press(s2, "DPadRight");
-    await s2.until(async () => (await picks.innerText()) === "In library");
+    await s2.until(async () => (await picks.innerText()) === "Recently updated, Not in library");
     await press(s2, "DPadLeft");
-    await s2.until(async () => (await picks.innerText()) === "Not in library");
+    await s2.until(async () => (await picks.innerText()) === "Recently added, Not in library");
+    await press(s2, "DPadDown");
+    await press(s2, "DPadRight");
+    await s2.until(async () => (await picks.innerText()) === "Recently added, In library");
+    await press(s2, "DPadLeft");
+    await s2.until(async () => (await picks.innerText()) === "Recently added, Not in library");
     // Handhelds: neither console is one, so the one shown goes back to All, and there's nothing.
     await row("Handhelds").click();
     await s2.until(async () => (await chosen()) === "All consoles");
@@ -97,7 +103,7 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     await consoles().filter({ hasText: "N64" }).waitFor();
     await press(s2, "East");
     await s2.page.locator(".tv-dropdown").waitFor({ state: "detached" });
-    assert.equal(await picks.innerText(), "Not in library, Nintendo, Home consoles, Handhelds");
+    assert.equal(await picks.innerText(), "Recently added, Not in library, Nintendo, Home consoles, Handhelds");
     assert.deepEqual(await consoles().allInnerTexts(), ["All consoles", "SNES", "N64"]);
   } finally {
     await s2.close();

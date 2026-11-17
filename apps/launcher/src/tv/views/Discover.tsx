@@ -1,7 +1,8 @@
 /**
  * Discover: catalog games and library games not yet installed, with the consoles
- * above them and Filter before those: the library (not in it / in it / both), makers,
- * and home consoles or handhelds, in a list X opens from anywhere here. Up from the
+ * above them and Filter & sort before those: the catalog's order, the library (not in
+ * it / in it / both), makers, and home consoles or handhelds, in a list X opens from
+ * anywhere here. Up from the
  * grid's top row goes to the consoles; LB / RB step through them from anywhere, the
  * console's name flashing up as they do. A gets a game: adds it to the library and
  * downloads it in one press. Pages load as focus nears the end.
@@ -68,7 +69,7 @@ const games = () => t({ message: "Games", comment: "Controller hint on Discover'
 /** And for the shoulder buttons, which step through the consoles there. */
 const consolesHint = () => t({ message: "Consoles", comment: "Controller hint on Discover: the shoulder buttons go to the next or previous console" });
 /** Filter's name, on its button and as X's hint. */
-const filterName = () => t({ message: "Filter consoles", comment: "Discover's button and X's hint: narrows the games to the library or not, makers, home consoles or handhelds" });
+const filterName = () => t({ message: "Filter & sort", comment: "Discover's button and X's hint: the order of the games, and narrowing them to the library or not, makers, home consoles or handhelds" });
 
 type Props = {
   state: DiscoverState;
@@ -110,17 +111,17 @@ function ConsoleFilter({ filter, setFilter, sort, setSort, makers, picked, forms
   const rows: Row[] = [
     {
       kind: "choice",
-      label: t({ message: "Games", comment: "Discover's Filter: whether it shows games in the library, games not in it, or both" }),
-      options: LIBRARY_FILTERS.map((f) => ({ value: f.id, label: i18n._(f.label) })),
-      value: filter,
-      set: (value) => setFilter(value as LibraryFilter),
-    },
-    {
-      kind: "choice",
       label: t({ message: "Sort", comment: "Label of the library's sort order" }),
       options: CATALOG_SORTS.map((s) => ({ value: s.id, label: i18n._(s.label) })),
       value: sort,
       set: (value) => setSort(value as Sort),
+    },
+    {
+      kind: "choice",
+      label: t({ message: "Games", comment: "Discover's Filter: whether it shows games in the library, games not in it, or both" }),
+      options: LIBRARY_FILTERS.map((f) => ({ value: f.id, label: i18n._(f.label) })),
+      value: filter,
+      set: (value) => setFilter(value as LibraryFilter),
     },
     { kind: "action", label: t({ message: "Every console", comment: "Discover's Filter: no maker or kind picked" }), value: tick(!picked.length && !forms.length), run: clear },
     ...makers.map((brand): Row => ({ kind: "action", label: makerName(brand), value: tick(picked.includes(brand)), run: () => toggleMaker(brand) })),
@@ -209,10 +210,10 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     if (filter !== "inLibrary" && apps.length < 24 && page.entries.length && !page.done && !page.loading && !page.error) loadMore();
   }, [filter, apps.length, page.entries.length, page.done, page.loading, page.error, loadMore]);
 
-  /** What Filter has picked, after its name: the library's choice, then makers and kinds. */
+  /** What Filter & sort has picked, after its name: the order, the library's choice, then makers and kinds. */
   const picks = [
+    i18n._(CATALOG_SORTS.find((s) => s.id === sort)!.label),
     i18n._(LIBRARY_FILTERS.find((f) => f.id === filter)!.label),
-    ...(sort === "added" ? [] : [i18n._(CATALOG_SORTS.find((s) => s.id === sort)!.label)]),
     ...brands.filter((b) => makers.includes(b)).map(makerName),
     ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f])),
   ].join(", ");
