@@ -115,8 +115,81 @@ fn valid_part(part: &str) -> bool {
     !part.is_empty() && part != "." && part != ".." && !part.chars().any(|c| c.is_control() || "<>:\"|?\\".contains(c))
 }
 
+/// Folders no app's saves are in, and that hold what must never be copied into a backup or written over by a restore:
+/// keys and passwords, other programs' own data (browsers, mail, chat, wallets) and the places a system starts
+/// programs from. The catalog refuses the same ones (convex/saveLocations.ts on the website), and they're refused
+/// here too so that a place listed there by mistake, or a backup made elsewhere, can't reach them. Lowercase.
+const NEVER_ANYWHERE: [&str; 5] = [".ssh", ".gnupg", "startup", "autostart", "keychains"];
+const NEVER_IN_HOME: [&str; 24] = [
+    ".aws", ".azure", ".kube", ".docker", ".mozilla", ".thunderbird", ".password-store", ".pki", ".cert", ".putty", ".netrc", ".git-credentials", ".gitconfig", ".npmrc", ".profile", ".bashrc",
+    ".bash_profile", ".bash_history", ".zshrc", ".zsh_history", ".electrum", ".bitcoin", ".ethereum", "applications",
+];
+const NEVER_IN_APP_DATA: [&str; 40] = [
+    "google", "google-chrome", "chromium", "mozilla", "firefox", "thunderbird", "microsoft", "microsoft edge", "bravesoftware", "opera software", "vivaldi", "apple", "apple computer", "packages",
+    "programs", "temp", "bitwarden", "1password", "keepass", "keepassxc", "keyrings", "kwalletd", "gnupg", "ssh", "signal", "discord", "telegram desktop", "slack", "code", "git", "gh", "gcloud",
+    "rclone", "systemd", "dconf", "exodus", "electrum", "bitcoin", "ethereum", "ledger live",
+];
+/// Folders every program or the player shares: a place can be inside one, never the whole of it.
+const SHARED: [&str; 12] = ["documents", "desktop", "downloads", "pictures", "music", "videos", "onedrive", "dropbox", "google drive", "iclouddrive", "my games", "saved games"];
+/// Where programs keep their data under the home folder. A place there is held to the rules for app data, and
+/// anywhere else under these folders' first parts is refused.
+const APP_DATA_IN_HOME: [&[&str]; 11] = [
+    &[".config"],
+    &[".cache"],
+    &[".local", "share"],
+    &[".local", "state"],
+    &["appdata", "local"],
+    &["appdata", "locallow"],
+    &["appdata", "roaming"],
+    &["library", "application support"],
+    &["library", "caches"],
+    &["library", "containers"],
+    &["library", "preferences"],
+];
+
+/// Why a place is never one app's saves.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Refused {
+    /// It holds keys or another program's own data.
+    Private,
+    /// It's a folder every app shares.
+    Shared,
+}
+
+fn refused(root: &str, path: &str) -> Option<Refused> {
+    let lower = path.to_lowercase();
+    let parts: Vec<&str> = lower.split('/').collect();
+    let other_programs = |folder: &str| NEVER_IN_APP_DATA.contains(&folder) || folder.starts_with("com.apple.");
+    if parts.iter().any(|p| NEVER_ANYWHERE.contains(p)) {
+        return Some(Refused::Private);
+    }
+    if root == "app" {
+        return None;
+    }
+    if parts.len() == 1 && SHARED.contains(&parts[0]) {
+        return Some(Refused::Shared);
+    }
+    if root == "home" {
+        if NEVER_IN_HOME.contains(&parts[0]) {
+            return Some(Refused::Private);
+        }
+        if APP_DATA_IN_HOME.iter().any(|prefix| prefix[0] == parts[0]) {
+            let Some(prefix) = APP_DATA_IN_HOME.iter().find(|prefix| parts.starts_with(prefix)) else { return Some(Refused::Shared) };
+            return match parts.get(prefix.len()) {
+                None => Some(Refused::Shared),
+                Some(folder) if other_programs(folder) => Some(Refused::Private),
+                Some(_) => None,
+            };
+        }
+    } else if root != "documents" && other_programs(parts[0]) {
+        return Some(Refused::Private);
+    }
+    None
+}
+
 /// Whether a template is one of the roots and a plain path under it: no `..`, no drive, one `*` at most and only in
-/// the last part. `app` alone is the app's whole folder, which only the player can choose.
+/// the last part, and not a folder that holds keys or other programs' data. `app` alone is the app's whole folder,
+/// which only the player can choose.
 pub fn valid_template(template: &str) -> bool {
     let (root, path) = template.split_once('/').unwrap_or((template, ""));
     if !ROOTS.contains(&root) {
@@ -127,8 +200,11 @@ pub fn valid_template(template: &str) -> bool {
     }
     let parts: Vec<&str> = path.split('/').collect();
     let last = parts[parts.len() - 1];
-    path.len() <= 200 && parts.iter().all(|p| valid_part(p)) && parts[..parts.len() - 1].iter().all(|p| !p.contains('*')) && last.matches('*').count() <= 1 && last != "*"
+    refused(root, path).is_none() && path.len() <= 200 && parts.iter().all(|p| valid_part(p)) && parts[..parts.len() - 1].iter().all(|p| !p.contains('*')) && last.matches('*').count() <= 1 && last != "*"
 }
+
+const PRIVATE: &str = "Quiver doesn't back up that folder: it holds keys or another program's own data.";
+const SHARED_FOLDER: &str = "Choose the folder this app saves in, not a folder every app shares.";
 
 /// A template on this computer.
 #[derive(Debug, Clone, PartialEq)]
@@ -172,22 +248,36 @@ pub fn templatize(path: &Path, roots: &Roots) -> Result<String, String> {
     let rel = |base: &Path| path.strip_prefix(base).ok().map(|r| r.components().map(|c| c.as_os_str().to_string_lossy().into_owned()).collect::<Vec<_>>());
     if let Some(parts) = rel(&roots.app) {
         let template = if parts.is_empty() { "app".to_string() } else { format!("app/{}", parts.join("/")) };
+        if refused("app", &parts.join("/")).is_some() {
+            return Err(PRIVATE.into());
+        }
         return if valid_template(&template) { Ok(template) } else { Ok(format!("abs:{}", path.display())) };
     }
     let mut best: Option<(usize, String)> = None;
+    let mut why: Option<Refused> = None;
     for root in ["localData", "data", "config", "documents", "home"] {
         let Some(base) = roots.of(root) else { continue };
         let Some(parts) = rel(&base) else { continue };
         if parts.is_empty() {
-            return Err("Choose the folder this app saves in, not a folder every app shares.".into());
+            return Err(SHARED_FOLDER.into());
         }
         let depth = base.components().count();
         let template = format!("{root}/{}", parts.join("/"));
-        if valid_template(&template) && best.as_ref().is_none_or(|(d, _)| depth > *d) {
+        if let Some(refusal) = refused(root, &parts.join("/")) {
+            // Keys in one reading of the path outweigh "shared" in another.
+            if why != Some(Refused::Private) {
+                why = Some(refusal);
+            }
+        } else if valid_template(&template) && best.as_ref().is_none_or(|(d, _)| depth > *d) {
             best = Some((depth, template));
         }
     }
-    Ok(best.map(|(_, t)| t).unwrap_or_else(|| format!("abs:{}", path.display())))
+    match (best, why) {
+        (Some((_, template)), _) => Ok(template),
+        (None, Some(Refused::Private)) => Err(PRIVATE.into()),
+        (None, Some(Refused::Shared)) => Err(SHARED_FOLDER.into()),
+        (None, None) => Ok(format!("abs:{}", path.display())),
+    }
 }
 
 fn extension(name: &str) -> String {
@@ -902,6 +992,33 @@ mod tests {
         for good in ["app", "app/saves", "localData/Game/saves", "app/save/*.sav", "home/.game", "documents/My Games/Game"] {
             assert!(valid_template(good), "{good}");
         }
+        for good in ["home/Saved Games/Game", "home/Desktop/saves", "home/AppData/LocalLow/Studio/Game", "home/.config/game", "app/microsoft/saves", "documents/Game"] {
+            assert!(valid_template(good), "{good}");
+        }
+        // Keys, other programs' data and folders every app shares, wherever a place came from.
+        for bad in [
+            "home/.ssh",
+            "home/.SSH/id_ed25519",
+            "app/backup/.gnupg",
+            "home/.aws/credentials",
+            "config/autostart",
+            "data/Microsoft/Windows/Start Menu/Programs/Startup",
+            "data/Mozilla/Firefox/Profiles",
+            "localData/Google/Chrome/User Data",
+            "data/com.apple.Safari",
+            "config/git",
+            "home/.config",
+            "home/.config/google-chrome/Default",
+            "home/.local/bin",
+            "home/AppData",
+            "home/AppData/Local/Google/Chrome",
+            "home/Library/Mail/V10",
+            "home/Documents",
+            "home/Saved Games",
+            "documents/My Games",
+        ] {
+            assert!(!valid_template(bad), "{bad}");
+        }
         for bad in ["", "app/", "data", "home", "temp/x", "app/../x", "app/a//b", "app/a\\b", "app/C:/x", "app/sa*ve/x", "app/*", "app/*.s*v", "/etc", "abs:/etc"] {
             assert!(!valid_template(bad), "{bad}");
         }
@@ -913,6 +1030,9 @@ mod tests {
         assert_eq!(resolve("localData/Game/saves", &roots, &[]).unwrap(), Place { base: dir.path().join("local/Game/saves"), pattern: None });
         assert_eq!(resolve("app/save/*.sav", &roots, &[]).unwrap(), Place { base: roots.app.join("save"), pattern: Some("*.sav".into()) });
         assert!(resolve("app/../../x", &roots, &[]).is_err());
+        // A backup or a catalog place naming a folder of keys is never followed.
+        assert!(resolve("home/.ssh", &roots, &[]).is_err());
+        assert!(resolve("data/Mozilla/Firefox/Profiles", &roots, &[]).is_err());
         let elsewhere = format!("abs:{}", dir.path().join("elsewhere").display());
         assert!(resolve(&elsewhere, &roots, &[]).is_err());
         assert_eq!(resolve(&elsewhere, &roots, &[elsewhere.clone()]).unwrap().base, dir.path().join("elsewhere"));
@@ -931,6 +1051,12 @@ mod tests {
         assert_eq!(templatize(&dir.path().join("home/.game"), &roots).unwrap(), "home/.game");
         assert!(templatize(&dir.path().join("home/Documents"), &roots).is_err());
         assert!(templatize(&dir.path().join("home"), &roots).is_err());
+        // Never a folder of keys or another program's data, even though the player chose it.
+        for private in ["home/.ssh", "home/.aws", "config/google-chrome/Default", "data/Mozilla/Firefox", "apps/Game/.ssh"] {
+            assert_eq!(templatize(&dir.path().join(private), &roots).unwrap_err(), PRIVATE, "{private}");
+        }
+        assert_eq!(templatize(&dir.path().join("home/Saved Games"), &roots).unwrap_err(), SHARED_FOLDER);
+        assert_eq!(templatize(&dir.path().join("home/Saved Games/Game"), &roots).unwrap(), "home/Saved Games/Game");
         let other = dir.path().join("other/drive");
         assert_eq!(templatize(&other, &roots).unwrap(), format!("abs:{}", other.display()));
         assert!(templatize(Path::new("saves"), &roots).is_err());
@@ -939,7 +1065,7 @@ mod tests {
     #[test]
     fn reads_the_catalogs_places_for_this_system() {
         let location = |root: &str, path: &str, os: Option<&[&str]>| Location { root: root.into(), path: path.into(), os: os.map(|o| o.iter().map(|s| s.to_string()).collect()) };
-        let all = [location("localData", "Game", Some(&["windows"])), location("config", "Game", Some(&["linux", "macos"])), location("app", "save.bin", None), location("app", "../x", None)];
+        let all = [location("localData", "Game", Some(&["windows"])), location("config", "Game", Some(&["linux", "macos"])), location("app", "save.bin", None), location("app", "../x", None), location("home", ".ssh", None), location("config", "autostart", None)];
         assert_eq!(catalog_templates(&all, "linux"), ["config/Game", "app/save.bin"]);
         assert_eq!(catalog_templates(&all, "windows"), ["localData/Game", "app/save.bin"]);
     }
