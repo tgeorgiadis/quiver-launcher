@@ -1122,7 +1122,7 @@ msgstr "所有主机"
 #. Discover's filter: consoles by every maker
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All makers"
-msgstr ""
+msgstr "所有厂商"
 
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
@@ -1898,7 +1898,7 @@ msgstr "选择 AppImage 或其他用于启动该应用的程序。"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Choose another maker, or Home & handheld."
-msgstr ""
+msgstr "请选择其他厂商，或“家用机和掌机”。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
@@ -3048,7 +3048,7 @@ msgstr "按游戏分组"
 #. Discover's filter: handheld consoles, such as the Game Boy or PSP
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Handhelds"
-msgstr ""
+msgstr "掌机"
 
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
@@ -3191,12 +3191,12 @@ msgstr "主页"
 #. Discover's filter: home consoles and handhelds alike
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Home & handheld"
-msgstr ""
+msgstr "家用机和掌机"
 
 #. Discover's filter: consoles played on a TV, not handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Home consoles"
-msgstr ""
+msgstr "家用主机"
 
 #. TV mode setting: whether the Home tab shows
 #: ../../apps/launcher/src/tv/views/Settings.tsx
@@ -4503,7 +4503,7 @@ msgstr "无主机"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "No consoles are both"
-msgstr ""
+msgstr "没有同时符合的主机"
 
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "No controller connected"

@@ -1122,7 +1122,7 @@ msgstr "모든 콘솔"
 #. Discover's filter: consoles by every maker
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All makers"
-msgstr ""
+msgstr "모든 제조사"
 
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
@@ -1898,7 +1898,7 @@ msgstr "앱을 실행하는 AppImage나 다른 프로그램을 선택하세요."
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Choose another maker, or Home & handheld."
-msgstr ""
+msgstr "다른 제조사를 고르거나 거치형 및 휴대용을 선택하세요."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
@@ -3048,7 +3048,7 @@ msgstr "게임별로 그룹화"
 #. Discover's filter: handheld consoles, such as the Game Boy or PSP
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Handhelds"
-msgstr ""
+msgstr "휴대용 콘솔"
 
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
@@ -3191,12 +3191,12 @@ msgstr "홈"
 #. Discover's filter: home consoles and handhelds alike
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Home & handheld"
-msgstr ""
+msgstr "거치형 및 휴대용"
 
 #. Discover's filter: consoles played on a TV, not handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Home consoles"
-msgstr ""
+msgstr "거치형 콘솔"
 
 #. TV mode setting: whether the Home tab shows
 #: ../../apps/launcher/src/tv/views/Settings.tsx
@@ -4503,7 +4503,7 @@ msgstr "콘솔 없음"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "No consoles are both"
-msgstr ""
+msgstr "두 조건에 모두 맞는 콘솔이 없어요"
 
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "No controller connected"

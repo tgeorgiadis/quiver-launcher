@@ -1122,7 +1122,7 @@ msgstr "Alle Konsolen"
 #. Discover's filter: consoles by every maker
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "All makers"
-msgstr ""
+msgstr "Alle Hersteller"
 
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
@@ -1898,7 +1898,7 @@ msgstr "Wähle ein AppImage oder ein anderes Programm, das die App startet."
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Choose another maker, or Home & handheld."
-msgstr ""
+msgstr "Wähle einen anderen Hersteller oder Heimkonsole & Handheld."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
@@ -3048,7 +3048,7 @@ msgstr "Nach Spiel gruppieren"
 #. Discover's filter: handheld consoles, such as the Game Boy or PSP
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Handhelds"
-msgstr ""
+msgstr "Handhelds"
 
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
@@ -3191,12 +3191,12 @@ msgstr "Startseite"
 #. Discover's filter: home consoles and handhelds alike
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Home & handheld"
-msgstr ""
+msgstr "Heimkonsole & Handheld"
 
 #. Discover's filter: consoles played on a TV, not handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Home consoles"
-msgstr ""
+msgstr "Heimkonsolen"
 
 #. TV mode setting: whether the Home tab shows
 #: ../../apps/launcher/src/tv/views/Settings.tsx
@@ -4503,7 +4503,7 @@ msgstr "Keine Konsole"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "No consoles are both"
-msgstr ""
+msgstr "Keine Konsole passt zu beidem"
 
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "No controller connected"
