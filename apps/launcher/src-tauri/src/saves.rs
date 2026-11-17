@@ -1486,7 +1486,7 @@ mod tests {
         let trust = Trust { known: &[], confirmed: &[], names: &names };
         let plan = restore_plan(&store, &name, &roots, &[], &trust).unwrap();
         assert_eq!(plan.iter().map(|p| p.template.as_str()).collect::<Vec<_>>(), ["localData/Game/saves", "app/data/*.sav"]);
-        assert_eq!(plan[0].path, dir.path().join("local/Game/saves").to_string_lossy());
+        assert_eq!(plan[0].path, dir.path().join("local").join("Game").join("saves").to_string_lossy());
         assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &trust).unwrap_err(), NOT_AGREED);
         assert!(!dir.path().join("local/Game").exists());
         // Agreeing to one of two isn't agreeing to both.
