@@ -1,5 +1,5 @@
-import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, LayoutGrid, Library, LogOut, Monitor, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -15,12 +15,14 @@ import { VersionsDialog, PanelFormHead, ProjectDetails, Readme, ReleasesTab, Rep
 import { UpdateBanner, useUpdateCheck } from "./update";
 import { useAnnouncementsCheck } from "./announcements";
 import { AnnouncementBanner, AnnouncementsButton, AnnouncementsDialog, useTidyDismissals } from "./announcements-ui";
-import { LaunchOptionsButton } from "./launch-options";
+import { LaunchOptionsButton, outsideFolder } from "./launch-options";
 import { AddFilesButton, AddFilesDialogBody } from "./app-files";
 import { versionLabel, wayOffLabel } from "./versions";
 import { FeedbackBox, FeedbackTab, useOwnFeedback, type Intent } from "./feedback";
+import { CommunityButton, CommunityPage, DiscussionNavProvider, DiscussionPage, DiscussionsTab, useDiscussionCount } from "./discussions";
 import { CorrectionStatusPanel, ReportProblem } from "./correction";
 import { GamePage, GamesSection, gameVersionLabel, type GameLink } from "./game";
+import { WaysToPlay } from "./ways-to-play";
 import { Discover, MoreLikeThis } from "./discover";
 import { ErrorBoundary } from "./boundary";
 import { FORWARD, pageArea, toTop } from "./spatial";
@@ -28,6 +30,7 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
+import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
 import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
@@ -39,8 +42,12 @@ import { useTopBarFit } from "./top-bar-fit";
 import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { MANAGE_TAGS } from "./tag-settings";
+import { OPEN_APP } from "./cloud-saves-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
+import { savesChanged, savesOf, savesOn } from "./saves";
+import type { CloudUsage } from "./cloud-saves";
+import { SavesTab } from "./saves-tab";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
@@ -53,8 +60,14 @@ type Tab = "library" | "browse";
 /** A page over the library or catalog: an app's, an original game's, Downloads or Settings. */
 /** Where an app's page opens: its Releases, with a version's notes open (Downloads' See changelog), or its Player feedback. */
 export type PageAt = { releases: string } | { feedback: true } | { readme: true };
-type View = { kind: "app"; entry: Entry; at?: PageAt } | { kind: "game"; game: GameLink } | { kind: "downloads" } | { kind: "settings"; section?: "library" | "copies" | "updates" };
-const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind);
+type View =
+  | { kind: "app"; entry: Entry; at?: PageAt }
+  | { kind: "game"; game: GameLink }
+  | { kind: "downloads" }
+  | { kind: "settings"; section?: "library" | "copies" | "cloud" | "updates" }
+  | { kind: "community" }
+  | { kind: "discussion"; id: string };
+const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind === "discussion" ? `discussion:${v.id}` : v.kind);
 const shorten = (text: string) => (text.length > 40 ? `${text.slice(0, 39).trimEnd()}…` : text);
 /** "v1.2" for "1.2" or "v1.2": releases are tagged either way. */
 /** "v1.2" and "1.2" are the same release. */
@@ -108,12 +121,21 @@ export function App() {
   const openGame = useCallback((game: GameLink) => open({ kind: "game", game }), [open]);
   const openDownloads = useCallback(() => open({ kind: "downloads" }), [open]);
   const openSettings = useCallback(() => open({ kind: "settings" }), [open]);
+  const openCommunity = useCallback(() => open({ kind: "community" }), [open]);
+  const openDiscussion = useCallback((id: string) => open({ kind: "discussion", id }), [open]);
+  const discussionNav = useMemo(() => ({ openDiscussion, openCommunity, signIn: () => setSigningIn(true) }), [openDiscussion, openCommunity]);
   // An app's Tags menu asks for the player's tags, in Settings' Library section (tag-settings.tsx).
   useEffect(() => {
     const manage = () => open({ kind: "settings", section: "library" });
     window.addEventListener(MANAGE_TAGS, manage);
     return () => window.removeEventListener(MANAGE_TAGS, manage);
   }, [open]);
+  // Settings' Cloud saves lists apps, and each can ask for its page (cloud-saves-page.tsx).
+  useEffect(() => {
+    const page = (e: Event) => openApp((e as CustomEvent<Entry>).detail);
+    window.addEventListener(OPEN_APP, page);
+    return () => window.removeEventListener(OPEN_APP, page);
+  }, [openApp]);
   // Read from the stack as shown, not in setStack's updater, which React can run twice.
   const shown = useRef<View[]>([]);
   const goBack = useCallback(() => {
@@ -177,7 +199,19 @@ export function App() {
   /** What Back on the page at `i` returns to. */
   const backFrom = (i: number) => {
     const below = stack[i - 1];
-    return !below ? listName : below.kind === "app" ? below.entry.projectName : below.kind === "game" ? (below.game.title ?? t`Back`) : below.kind === "downloads" ? t`Downloads` : t`Settings`;
+    return !below
+      ? listName
+      : below.kind === "app"
+        ? below.entry.projectName
+        : below.kind === "game"
+          ? (below.game.title ?? t`Back`)
+          : below.kind === "downloads"
+            ? t`Downloads`
+            : below.kind === "community"
+              ? t`Community`
+              : below.kind === "discussion"
+                ? t`Back`
+                : t`Settings`;
   };
   // The Sidebar layout's foot says how downloads are going, in place of the strip.
   const { view: libraryView, set: setLibraryView } = useLibraryView();
@@ -191,6 +225,7 @@ export function App() {
   const topBar = useRef<HTMLElement>(null);
   useTopBarFit(topBar);
   return (
+    <DiscussionNavProvider value={discussionNav}>
     <div className="shell">
       {resizeEdges(config.os, buttons, maximized) && <ResizeEdges />}
       <header ref={topBar} className={buttons === "none" ? "topbar" : "topbar with-window-controls"} onMouseDown={buttons === "window" ? (e) => moveWindow(e, movesByPage(config.x11, maximized)) : undefined}>
@@ -225,6 +260,7 @@ export function App() {
         <button className="icon tv-button" aria-label={t`TV mode`} title={t`TV mode: for a controller, the couch and a Steam Deck`} onClick={() => setTv(true)}>
           <Tv size={19} />
         </button>
+        <CommunityButton open={top?.kind === "community"} onOpen={openCommunity} />
         <AnnouncementsButton onOpen={() => setAnnouncementsOpen(true)} />
         <DownloadsButton open={top?.kind === "downloads"} onOpen={openDownloads} />
         <button className={`icon settings-button${top?.kind === "settings" ? " active" : ""}`} aria-label={t`Settings`} title={t`Settings`} aria-current={top?.kind === "settings" ? "page" : undefined} onClick={openSettings}>
@@ -264,6 +300,10 @@ export function App() {
                   <DownloadsPage back={backFrom(i)} onBack={goBack} onOpen={openApp} action={downloadAction} />
                 ) : view.kind === "settings" ? (
                   <SettingsPage back={backFrom(i)} onBack={goBack} onRunSetup={() => setSettingUp(true)} start={view.section} />
+                ) : view.kind === "community" ? (
+                  <CommunityPage back={backFrom(i)} onBack={goBack} />
+                ) : view.kind === "discussion" ? (
+                  <DiscussionPage id={view.id} back={backFrom(i)} onBack={goBack} />
                 ) : (
                   <GamePage game={view.game} back={backFrom(i)} onBack={goBack} onOpenApp={openApp} action={action} />
                 )}
@@ -337,13 +377,18 @@ export function App() {
       <UnverifiedPrompt />
       <UninstallPrompt />
       <RenameFolderPrompt />
+      <RenamePrompt />
       <PlaceAppPrompt />
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
+      <SavesConflictPrompt />
+      <SavesPlacesPrompt />
+      <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
       <OwnCopyPrompt />
       <Notice />
     </div>
+    </DiscussionNavProvider>
   );
 }
 
@@ -418,7 +463,7 @@ function BrowsePage({
   kept: KeptBrowse | null;
   onKeep: (kept: KeptBrowse) => void;
 }) {
-  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs } = useLauncher();
+  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs, withShownTags } = useLauncher();
   const saved = useAccount().user?.catalogDefaults;
   // As in Quiver Launcher 3, apps already in the library stay out of Browse unless the player asks for them.
   const showOwned = Boolean(settings.browseShowsLibrary);
@@ -805,7 +850,7 @@ function BrowsePage({
             {entries.map((entry) => (
               <EntryCard
                 key={entry.id}
-                entry={entry}
+                entry={withShownTags(entry)}
                 {...looks.card(entry)}
                 // A download's progress, or what went wrong, shows over the art without hover.
                 className={jobs[entry.id] ? "busy" : undefined}
@@ -1132,7 +1177,9 @@ function Action({ entry, apart, reasonElsewhere }: { entry: Entry; apart?: boole
  * library's sidebar it has no way back, and shows the player's own play.
  */
 /** Each tab of an app's page's icon: outlined and grey, filled in the accent while it's open (app.css). */
-const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, computer: Monitor };
+const TAB_ICONS = { overview: Info, media: CirclePlay, releases: CircleArrowDown, feedback: Smile, discussions: MessagesSquare, computer: SlidersHorizontal, saves: Save };
+/** A tab of an app's page: which, its name, and a count beside it. */
+type PageTab = readonly [keyof typeof TAB_ICONS, string, string | undefined];
 
 function AppPage({
   entry: opened,
@@ -1154,7 +1201,7 @@ function AppPage({
   onOpenApp: (entry: Entry, at?: PageAt) => void;
   onSignIn: () => void;
 }) {
-  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
+  const { config, library, installs, jobs, catalog, remove, confirmUninstall, askRename, askName, managing, askManage, consoleNames, setUpdates, declineUpdate, get, switched, switchToCatalog, locateInstall, askPlace, appMoves, settings } = useLauncher();
   // An app the player added and switched to the catalog's shows the catalog's.
   const id = switched[opened.id] ?? opened.id;
   const item = library.find((i) => i.id === id);
@@ -1169,7 +1216,7 @@ function AppPage({
   const releases = useReleases(entry, site);
   const { own, refresh } = useOwnFeedback(entry, site);
   const { user } = useAccount();
-  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "computer">(
+  const [tab, setTab] = useState<"overview" | "media" | "releases" | "feedback" | "discussions" | "computer" | "saves">(
     at && "releases" in at ? "releases" : at && "feedback" in at ? "feedback" : "overview",
   );
   // Another tab: its content keeps the last one's height until it has come (nothing loading in it, and no longer
@@ -1204,6 +1251,12 @@ function AppPage({
       el.style.minHeight = "";
     };
   }, [tab]);
+  // Asked for from its menu (All options…): its Manage tab, once.
+  useEffect(() => {
+    if (managing !== id) return;
+    if (item || install) setTab("computer");
+    askManage(null);
+  }, [managing]); // eslint-disable-line react-hooks/exhaustive-deps
   const readmeAsked = !!at && "readme" in at;
   // Every release, asked for once the player opens the Releases tab or points
   // at it: most visits never do, and an app's history is one of the site's
@@ -1220,16 +1273,26 @@ function AppPage({
     if (!user) onSignIn();
   };
   const said = entry.recommended + entry.reportIssues + entry.reportBroken;
+  const threads = useDiscussionCount(entry.id, site);
   const checking = checkingOf(detail, releases);
   // Only when the app has videos, as on the website.
   const media = detail?.media ?? [];
-  const tabs = [
-    ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined],
-    ...(media.length ? ([["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)]] as const) : []),
-    ["releases", t({ message: "Releases", comment: "Tab of an app's page" }), history.items && `${history.items.length}${history.more ? "+" : ""}`],
+  const overviewTab: PageTab = ["overview", t({ message: "Overview", comment: "Tab of an app's page" }), undefined];
+  const computerTab: PageTab = ["computer", t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" }), undefined];
+  const savesTab: PageTab[] = install && savesOn(config.os) ? [["saves", t({ message: "Saves", comment: "Tab of an installed app's page: its save backups" }), undefined]] : [];
+  // One the player added has no site page, so only its README and what this computer has of it, each a tab as a
+  // catalog app's are; a local app has no README, so no tabs.
+  const ownTabs: PageTab[] = [...(isLocal(entry.id) ? [] : [overviewTab]), ...(item || install ? [computerTab] : []), ...savesTab];
+  const siteTabs: PageTab[] = [
+    overviewTab,
+    ...(media.length ? [["media", t({ message: "Media", comment: "Tab of an app's page, with its videos" }), String(media.length)] as const] : []),
+    ["releases", t({ message: "Releases", comment: "Tab of an app's page" }), history.items ? `${history.items.length}${history.more ? "+" : ""}` : undefined],
     ["feedback", t`Player feedback`, String(said)],
-    ...(item || install ? ([["computer", t`On this computer`, undefined]] as const) : []),
-  ] as const;
+    ["discussions", t({ message: "Discussions", comment: "Tab on an app's page: players' threads about it" }), threads === undefined ? undefined : threads >= 100 ? "100+" : String(threads)],
+    ...(item || install ? [computerTab] : []),
+    ...savesTab,
+  ];
+  const tabs = site ? siteTabs : ownTabs.length > 1 ? ownTabs : [];
   const hero = entry.libraryArt?.hero || entry.libraryArt?.header;
   const [problem, setProblem] = useState<string | null>(null);
   // The installed release was withdrawn: why, over the way off it.
@@ -1248,13 +1311,14 @@ function AppPage({
   const installedVersion = versionLabel(install?.version);
   const pulledVersion = versionLabel(pulled ? pulled.version : undefined);
   const blockedWhy = install?.blocked ?? "";
-  // What this computer has of the app, and its setup: a tab of its own for a catalog app, the page itself for one of the player's own.
+  const app = entry.projectName;
+  // What this computer has of the app, and its setup: a tab of its own, or the page itself for a local app.
   const computer = (item || install) && (
-    <section className="app-panel computer-panel" aria-label={t`On this computer`}>
+    <section className="app-panel computer-panel" aria-label={t({ message: "Manage", comment: "Tab of an app's page: its shortcuts, setup and place in the library" })}>
       {/* A tab says it already. */}
-      {!site && (
+      {!tabs.length && (
         <h3>
-          <Trans>On this computer</Trans>
+          <Trans comment="Tab of an app's page: its shortcuts, setup and place in the library">Manage</Trans>
         </h3>
       )}
       {/* A group with nothing in it for this app (no shortcuts on macOS, say) doesn't show. */}
@@ -1271,7 +1335,7 @@ function AppPage({
         <ModsButton entry={entry} />
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
         {filesAddable(install) && foldersOn(config.os) && !(job && !("error" in job)) && <AddFilesButton entry={entry} />}
-        {install?.installer === "msi" && !job && <ReinstallButton id={entry.id} />}
+        {install?.installer && !job && <ReinstallButton id={entry.id} />}
         {renamable(install) && foldersOn(config.os) && !(job && !("error" in job)) && (
           <button className="panel-action opens" onClick={() => askRename(entry)}>
             <FolderPen size={16} aria-hidden="true" /> <Trans>Rename folder</Trans>
@@ -1351,7 +1415,15 @@ function AppPage({
             <Artwork src={entry.artwork ?? entry.libraryArt?.logo} name={entry.projectName} />
             <div className="app-heading">
               <div className="eyebrow">{[eyebrow, PROJECT_TYPES[entry.projectType] && i18n._(PROJECT_TYPES[entry.projectType])].filter(Boolean).join(" / ").toLocaleUpperCase(i18n.locale)}</div>
-              <h1>{entry.projectName}</h1>
+              {/* In the library: a double click on its name, or the pencil beside it, renames it. */}
+              <div className="app-title">
+                <h1 onDoubleClick={item ? () => askName(item.id) : undefined}>{entry.projectName}</h1>
+                {item && (
+                  <button type="button" className="title-rename" aria-label={t`Rename ${app}`} title={t({ message: "Rename", comment: "Button beside an app's name on its page: gives it a name of the player's own" })} onClick={() => askName(item.id)}>
+                    <Pencil size={15} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
               {entry.games.length > 0 && (
                 <div className="based-on">
                   <span className="based-on-label">
@@ -1364,6 +1436,8 @@ function AppPage({
                     </button>
                   ))}
                   {entry.basedOn && <span className="based-on-version">{gameVersionLabel(entry.basedOn, consoleNames)}</span>}
+                  {/* The other apps that play its game, best first: which is best is easy to miss on the game's page alone. */}
+                  {site && <WaysToPlay entry={entry} onOpenApp={onOpenApp} onOpenGame={onOpenGame} />}
                 </div>
               )}
               {entry.description && <p className="app-tagline">{entry.description}</p>}
@@ -1428,7 +1502,7 @@ function AppPage({
               )}
               {/* Out of Browse, as its card's menu has it. */}
               {site && !item && <BrowseHideButton entry={entry} />}
-              {/* Its files go; the app stays in the library to get again. Taking it out is under On this computer. */}
+              {/* Its files go; the app stays in the library to get again. Taking it out is under Manage. */}
               {install && !install.local && !(job && !("error" in job)) && (
                 <button className="danger" onClick={() => confirmUninstall({ entry })}>
                   <Trash2 size={17} /> <Trans>Uninstall</Trans>
@@ -1566,7 +1640,7 @@ function AppPage({
         </div>
       </div>
       <div className="detail-bar">
-        {site && (
+        {tabs.length > 0 && (
           <div className="detail-tabs" role="tablist" aria-label={t`App sections`}>
             <TabPrompt step="prevTab" />
             {tabs.map(([key, label, count]) => {
@@ -1598,7 +1672,7 @@ function AppPage({
         )}
       </div>
       <div className="app-columns">
-        <div ref={content} className="app-content" role={site ? "tabpanel" : undefined}>
+        <div ref={content} className="app-content" role={tabs.length ? "tabpanel" : undefined}>
           {tab === "overview" && (
             <>
               {/* Short, general facts first, over the README, which can run long. */}
@@ -1610,7 +1684,9 @@ function AppPage({
           )}
           {tab === "media" && <MediaTab videos={media} slug={entry.slug} />}
           {tab === "releases" && <ReleasesTab entry={entry} detail={detail} history={history} checking={checking} openVersion={at && "releases" in at ? at.releases : undefined} />}
-          {(site ? tab === "computer" : true) && computer}
+          {(tabs.length ? tab === "computer" : true) && computer}
+          {tab === "saves" && savesTab.length > 0 && <SavesTab entry={entry} />}
+          {tab === "discussions" && <DiscussionsTab entryId={entry.id} />}
           {tab === "feedback" && (
             <FeedbackTab
               entry={entry}
@@ -1663,7 +1739,7 @@ function UpdatesChoice({ id }: { id: string }) {
   const { installs, settings, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
-  const auto = !install.installer;
+  const auto = !install.installer && !install.setup;
   const installedVersion = versionLabel(install.version);
   const byDefault =
     settings.autoUpdates && auto
@@ -2024,6 +2100,247 @@ function Notice() {
   );
 }
 
+/** Play, for an app whose saves changed both here and in the account since they last matched: which the player keeps. */
+/**
+ * The account had no room for a backup: said once, with the two ways to make some. The backup is on this computer
+ * either way, and is sent by itself once there's room.
+ */
+function SavesFullPrompt({ onFreeUp }: { onFreeUp: () => void }) {
+  const { savesFull: id, closeSavesFull: close, catalog, installs, cloudCatchUp, setNotice } = useLauncher();
+  const account = useAccount();
+  const api = account.cloudSaves;
+  const [usage, setUsage] = useState<CloudUsage | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setUsage(null);
+    if (id && api) api.usage().then(setUsage, () => {});
+  }, [id, Boolean(api)]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!id || !api) return null;
+  const name = catalog[id]?.projectName ?? "";
+  const used = usage ? sizeLabel(usage.used) : "";
+  const limit = usage ? sizeLabel(usage.limit) : "";
+  // The app keeping the most, when it's installed here: its switch is this computer's to set.
+  const [largest] = usage?.apps ?? [];
+  const largestInstall = largest && installs[largest.entryId];
+  const largestName = largest?.name ?? "";
+  const largestSize = largest ? sizeLabel(largest.size) : "";
+  const count = largest?.copies.length ?? 0;
+  const turnOff = () => {
+    if (!largest || !largestInstall) return;
+    setBusy(true);
+    native
+      .savesCloudOff(savesOf(largest.entryId, largestInstall, catalog[largest.entryId]), true)
+      .then(() => api.remove({ entryId: largest.entryId }))
+      .then(
+        () => {
+          savesChanged(largest.entryId);
+          cloudCatchUp();
+          setNotice(t`Cloud saves are off for ${largestName}, and its copies were removed from your account.`);
+        },
+        () => setNotice(t`Couldn't reach your cloud saves. Check your connection and try again.`, { stays: true }),
+      )
+      .finally(() => (setBusy(false), close()));
+  };
+  return (
+    <Dialog label={t`Your cloud saves are full`} onClose={close}>
+      <div className="detail-body program-prompt saves-full">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> <Trans>Your cloud saves are full</Trans>
+        </h2>
+        <p className="muted">
+          {usage ? t`${used} of ${limit} used.` : null} {t`The newest backup of ${name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then.`}
+        </p>
+        <div className="choices">
+          <button autoFocus disabled={busy} onClick={() => (close(), onFreeUp())}>
+            <span>
+              <strong>
+                <Trans>Free up space</Trans>
+              </strong>
+              <small>
+                <Trans>See what each app keeps in your account, and remove copies you don&apos;t need.</Trans>
+              </small>
+            </span>
+          </button>
+          {largest && largestInstall && (
+            <button disabled={busy} onClick={turnOff}>
+              <span>
+                <strong>{t`Turn off cloud saves for ${largestName}`}</strong>
+                <small>
+                  {plural(count, {
+                    one: `It keeps the most. Its # copy (${largestSize}) is removed from your account. Its saves and backups on this computer stay.`,
+                    other: `It keeps the most. Its # copies (${largestSize}) are removed from your account. Its saves and backups on this computer stay.`,
+                  })}
+                </small>
+              </span>
+            </button>
+          )}
+        </div>
+        <div className="row">
+          <button disabled={busy} onClick={close}>
+            <Trans>Not now</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function SavesConflictPrompt() {
+  const { savesConflict: conflict, catalog, installs, jobs, get } = useLauncher();
+  if (!conflict) return null;
+  // Saves from a newer version than the one installed: updating first is the way that can't go wrong, when there's an update.
+  const latest = catalog[conflict.entry.id];
+  const update = conflict.newer && latest && !jobs[conflict.entry.id] ? updateFor(latest, installs[conflict.entry.id]) : undefined;
+  const updateTo = versionLabel(update?.version);
+  const madeWith = versionLabel(conflict.newer?.cloud);
+  const have = versionLabel(conflict.newer?.here);
+  const name = conflict.entry.projectName;
+  const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
+  const { cloud, here } = conflict;
+  // The other saves are the account's, or the ones in the player's sync folder (sync-folder.ts).
+  const folder = conflict.from === "folder";
+  const device = cloud.device;
+  const cloudWhen = when(cloud.madeAt);
+  const hereWhen = here ? when(here.at) : "";
+  return (
+    <Dialog label={t`Which saves of ${name}?`} onClose={() => conflict.answer(null)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          {folder ? <FolderSync size={18} aria-hidden="true" /> : <Cloud size={18} aria-hidden="true" />} {t`Which saves of ${name} do you want to keep?`}
+        </h2>
+        {conflict.places?.length ? (
+          <>
+            <p className="muted">
+              {folder ? (
+                <Trans>The saves in your sync folder would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              ) : (
+                <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              )}
+            </p>
+            <SavePlaces places={conflict.places} />
+          </>
+        ) : conflict.newer ? (
+          <p className="muted">
+            {folder
+              ? update
+                ? t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`
+              : update
+                ? t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`}
+          </p>
+        ) : (
+          <p className="muted">
+            {t`${name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab.`}
+          </p>
+        )}
+        <div className="choices">
+          {update && latest && (
+            <button
+              autoFocus
+              className="saves-update"
+              onClick={() => {
+                // Nothing starts and the saves stay as they are: after the update, Play brings the other saves in.
+                conflict.answer(null);
+                void get(latest);
+              }}
+            >
+              <span>
+                <strong>{t`Update to ${updateTo}`}</strong>
+                <small>
+                  {folder ? <Trans>Then press Play, and the saves in your sync folder are put in place.</Trans> : <Trans>Then press Play, and your cloud saves are put in place.</Trans>}
+                </small>
+              </span>
+            </button>
+          )}
+          <button autoFocus={!update} onClick={() => conflict.answer("cloud")}>
+            <span>
+              <strong>
+                {folder ? (
+                  conflict.newer ? (
+                    <Trans>Use the saves in my sync folder anyway</Trans>
+                  ) : (
+                    <Trans>Use the saves in my sync folder</Trans>
+                  )
+                ) : conflict.newer ? (
+                  <Trans>Use my cloud saves anyway</Trans>
+                ) : (
+                  <Trans>Use my cloud saves</Trans>
+                )}
+              </strong>
+              <small>{conflict.newer ? t`From ${device}, ${cloudWhen}. The saves here are backed up first.` : t`From ${device}, ${cloudWhen}`}</small>
+            </span>
+          </button>
+          <button onClick={() => conflict.answer("here")}>
+            <span>
+              <strong>
+                <Trans>Play with the saves on this computer</Trans>
+              </strong>
+              <small>
+                {folder
+                  ? conflict.places?.length
+                    ? t`The saves in your sync folder stay there as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. The saves in your sync folder stay there as a backup. These become your newest.`
+                      : t`The saves in your sync folder stay there as a backup. These become your newest.`
+                  : conflict.places?.length
+                    ? t`Your cloud saves stay in your account as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. Your cloud saves stay in your account as a backup. These become your newest.`
+                      : t`Your cloud saves stay in your account as a backup. These become your newest.`}
+              </small>
+            </span>
+          </button>
+        </div>
+        <div className="row">
+          <button onClick={() => conflict.answer(null)}>
+            <Trans>Don&apos;t play yet</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** The folders a backup would be put in, as they are on this computer. */
+function SavePlaces({ places }: { places: { template: string; path: string }[] }) {
+  return (
+    <ul className="save-places">
+      {places.map((place) => (
+        <li key={place.template}>{place.path || place.template}</li>
+      ))}
+    </ul>
+  );
+}
+
+/** Restore, for a backup whose saves were in a folder this computer hasn't kept that app's saves in: the player sees the folder and says whether to go ahead. */
+function SavesPlacesPrompt() {
+  const { savesPlaces: asked } = useLauncher();
+  if (!asked) return null;
+  const name = asked.name;
+  return (
+    <Dialog label={t`Restore to this folder?`} onClose={() => asked.answer(false)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> {t`Restore ${name}'s saves to this folder?`}
+        </h2>
+        <p className="muted">
+          <Trans>This backup&apos;s saves were in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only restore it if this is where the app saves:</Trans>
+        </p>
+        <SavePlaces places={asked.places} />
+        <div className="row">
+          <button onClick={() => asked.answer(false)}>
+            <Trans>Cancel</Trans>
+          </button>
+          <button className="primary" onClick={() => asked.answer(true)}>
+            <Trans>Restore</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 /** Play, for an app with more than one of its programs picked (its menu's Play with): which one starts. */
 function ProgramPrompt() {
   const { choosingProgram: choice, chooseProgram, installs, catalog, play, setLaunch } = useLauncher();
@@ -2085,6 +2402,7 @@ function UninstallPrompt() {
   // Out of the library too: said only when it's in there.
   const leaves = confirming.remove && library.some((i) => i.id === entry.id);
   const close = () => confirmUninstall(null);
+  const program = going?.launch?.executable && outsideFolder(going.launch.executable, going.program) ? going.launch.executable : undefined;
   return (
     <Dialog label={t`Uninstall ${name}`} onClose={close}>
       <div className="detail-body uninstall-prompt">
@@ -2101,6 +2419,15 @@ function UninstallPrompt() {
         {portable && (
           <p>
             <Trans>This app may keep its saves in this folder. They&apos;ll be removed with it.</Trans>
+          </p>
+        )}
+        {/* What it starts is somewhere else (Launch options): only its folder goes, so the player knows that stays. */}
+        {program && (
+          <p>
+            <Trans>
+              It starts <code>{program}</code>, which is outside its folder, so it stays where it is. Uninstall or delete that yourself if you don&apos;t
+              want it any more.
+            </Trans>
           </p>
         )}
         <div className="row">
@@ -2185,6 +2512,56 @@ function RenameFolderPrompt() {
           <button type="button" onClick={close}>
             <Trans>Cancel</Trans>
           </button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+/**
+ * The player's own name for an app in their library, in place of the catalog's: from its menu's Rename…, or its
+ * name on its page. Empty, or the catalog's own, shows the catalog's again. Its artwork stays as it is.
+ */
+function RenamePrompt() {
+  const { naming, askName, library, catalog, customize } = useLauncher();
+  const item = naming ? library.find((i) => i.id === naming) : undefined;
+  const [name, setName] = useState("");
+  const original = naming ? catalog[naming]?.projectName : undefined;
+  const now = item?.overrides?.name ?? original ?? "";
+  useEffect(() => {
+    // Its name now fills the field as it opens, selected to type over.
+    setName(now);
+  }, [naming]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!naming || !item) return null;
+  const app = now;
+  const close = () => askName(null);
+  const save = (to: string) => {
+    const next = to.trim();
+    customize(naming, { ...item.overrides, name: next && next !== original ? next : undefined });
+    close();
+  };
+  return (
+    <Dialog label={t`Rename ${app}`} onClose={close}>
+      <form className="detail-body rename-folder" onSubmit={(e) => (e.preventDefault(), save(name))}>
+        <h2>
+          <Pencil size={18} /> <Trans>Rename {app}</Trans>
+        </h2>
+        <input autoFocus aria-label={t`Name`} maxLength={200} placeholder={original} value={name} onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} />
+        <p className="muted">
+          <Trans>Only your library shows this name. Its folder keeps the name it has.</Trans>
+        </p>
+        <div className="row">
+          <button className="primary">
+            <Trans>Save</Trans>
+          </button>
+          <button type="button" onClick={close}>
+            <Trans>Cancel</Trans>
+          </button>
+          {original && item.overrides?.name && (
+            <button type="button" className="link-button" onClick={() => save("")}>
+              <Trans>Use the catalog&apos;s name</Trans>
+            </button>
+          )}
         </div>
       </form>
     </Dialog>

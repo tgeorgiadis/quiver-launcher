@@ -67,6 +67,9 @@ and headings, as in English.
 | Home (TV mode's tab) | Início | |
 | ROM | ROM (uma ROM) | |
 | stick (left / right) | analógico (esquerdo / direito) | |
+| discussion / comment | discussão / comentário | Community board: Comunidade |
+| Follow / Unfollow (a discussion) | Seguir / Deixar de seguir | |
+| Pin / Lock / Report (a discussion) | Fixar / Trancar / Denunciar | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

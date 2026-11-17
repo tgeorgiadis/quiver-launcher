@@ -16,10 +16,12 @@ import type { Entry } from "@quiverlauncher/api";
 import { canGet, earlyGetOffer, earlyOffer, filesAddable, hasUpdate, locatable, movable, pulledVerified, renamable, updateFor, useLauncher } from "./store";
 import { Popover, newKey } from "./library";
 import { manageTags } from "./tag-settings";
-import { foldersOn, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
+import { foldersOn, providerName, shortcutRequest, shortcutsOn, steamRunsUsNote, useAppDetail, withTag } from "./detail";
 import { bare, versionLabel } from "./versions";
 import { isLocal } from "./custom";
 import { toggleHidden } from "./browse-hidden";
+import { tagLabel } from "@quiverlauncher/ui";
+import { hiddenOnApp, hideOnApp, hideableTags } from "./catalog-tags";
 import { native } from "./native";
 import { track } from "./telemetry";
 import { boxZoom, windowBox, zoom } from "./zoom";
@@ -121,7 +123,7 @@ function BrowseMenuItems({ entry, onOpen, close, onReadme, onFeedback }: { entry
       {top.map((i) => item(i.text, i.act))}
       {source === undefined
         ? item(t`View repository`, () => {}, true)
-        : source && item(source.provider === "gitlab" ? t`View on GitLab` : t`View on GitHub`, () => void native.openUrl(source.url))}
+        : source && item(t`View on ${providerName(source.provider, source.host)}`, () => void native.openUrl(source.url))}
       {item(t`Read the README`, onReadme)}
       <hr />
       {item(t`Share feedback…`, onFeedback)}
@@ -225,6 +227,13 @@ function useMenuOpener(target: () => Element | null, where: "card" | "sidebar" |
 
 /** `icon`: the main action's, as the app's page has it. */
 type Item = { text: string; act: () => void; kind?: "danger"; disabled?: boolean; icon?: "play" | "get" | "add"; note?: string };
+// A submenu switches as soon as the pointer moves off towards another item; only while it's heading into the open one does it wait.
+/** How long the pointer rests on another item, while heading into the open submenu, before that item's submenu opens instead. */
+const AIM_RESTS = 80;
+/** How many pointer moves back its direction is measured from. */
+const AIM_TRAIL = 4;
+/** How far above and below the submenu still counts as heading into it, in pixels. */
+const AIM_SLACK = 20;
 type Sub = { key: "programs" | "add" | "tags" | "manage"; by: "hover" | "click"; focus?: boolean };
 
 /** A program's file name, without the folders it's in. */
@@ -294,7 +303,7 @@ function MainItem({ main, onClick, onPointerMove }: { main: Item; onClick: () =>
 
 /** The menu's items, made anew each time it opens. */
 function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () => void; close: () => void; escape: { current: (() => boolean) | null } }) {
-  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves } = useLauncher();
+  const { config, installs, jobs, catalog, collections, library, settings, setSettings, get, play, reinstall, cancel, dismiss, confirmUninstall, askRename, askName, askManage, askAddFiles, changeVersion, locateInstall, remove, saveCollection, setNotice, setLaunch, setTags, askPlace, appMoves, consoleNames } = useLauncher();
   const [sub, setSub] = useState<Sub | null>(null);
   // Where the open submenu sits: beside the menu, or under its item where neither side has room (a phone).
   const [place, setPlace] = useState<{ key: Sub["key"]; side: "right" | "left" | "below"; top: number }>();
@@ -338,7 +347,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
 
   const install = installs[entry.id];
   // Play with: for an app in its own folder, not one the player added from where it is, or one its Windows installer put elsewhere.
-  const programsOn = Boolean(install && !install.program && install.installer !== "msi" && foldersOn(config.os));
+  const programsOn = Boolean(install && !install.program && !install.installer && foldersOn(config.os));
   useEffect(() => {
     if (sub?.key !== "programs" || found || !install) return;
     native.listPrograms(install.folder, install.dir).then(setFound, () => setFound([]));
@@ -356,7 +365,10 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
 
   const { main, top } = useMainItems(entry, onOpen);
 
+  const inLibrary = library.find((i) => i.id === entry.id);
   const manage: Item[] = [];
+  // The player's own name for it, as its page's Manage tab has under Change name or artwork.
+  if (inLibrary) manage.push({ text: t({ message: "Rename…", comment: "Menu item: gives an app in the library a name of the player's own" }), act: () => askName(entry.id) });
   if (install && foldersOn(config.os)) manage.push({ text: t`Open folder`, act: () => void native.openFolder(entry.id).catch((e) => setNotice(String(e), { stays: true })) });
   if (renamable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Rename folder…`, act: () => askRename(entry) });
   if (filesAddable(install) && foldersOn(config.os) && !busy) manage.push({ text: t`Add files to folder…`, act: () => askAddFiles(entry) });
@@ -372,7 +384,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
       // Steam running Quiver can't take a shortcut on Windows (lib.rs): greyed, saying why, rather than failing once it's pressed. On Linux it can.
       config.steamRunsUs && config.os !== "linux" ? { text: t`Add to Steam`, act: () => {}, disabled: true, note: steamRunsUsNote() } : { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) },
     );
-  if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
+  if (install?.installer && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
   // Every release, verified or not, as the app's page has them: the player's own files have none.
   if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
   // Already on this computer, somewhere Quiver doesn't know: played from there, with nothing to download.
@@ -382,7 +394,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const newest = latest.verified?.version ?? latest.lastReleaseVersion;
   const both = config.os === "linux" && latest.supportedOS.includes("linux") && latest.supportedOS.includes("windows");
   const onNewest = !install || Boolean(newest && bare(install.version) === bare(newest));
-  if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && install?.installer !== "msi" && !busy)
+  if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && !install?.installer && !busy)
     manage.push({
       text: install?.wine ? t`Switch to the Linux version` : install ? t`Switch to the Windows version (Wine)` : t`Install the Windows version (Wine)`,
       act: () => void get(latest, undefined, { platform: install?.wine ? "linux" : "windows" }),
@@ -420,26 +432,47 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   };
 
   // The player's tags: this app's, and those on their other apps, to tick.
-  const inLibrary = library.find((i) => i.id === entry.id);
   const tags = inLibrary?.overrides?.tags ?? [];
   const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase());
   const allTags = [...tags, ...library.flatMap((i) => i.overrides?.tags ?? [])].filter((tag, i, all) => all.findIndex((x) => x.toLowerCase() === tag.toLowerCase()) === i);
   const toggleTag = (tag: string) => setTags(entry.id, hasTag(tag) ? tags.filter((x) => x.toLowerCase() !== tag.toLowerCase()) : withTag(tags, tag));
+  // The catalog's tags on it, to untick: all but a console's, and those hidden on every app (Settings shows them).
+  const theirTags = hideableTags(catalog[entry.id], settings.hiddenTags, consoleNames);
+  const toggleTheirs = (tag: string) => setSettings((s) => ({ ...s, hiddenTags: hideOnApp(s.hiddenTags, entry.id, tag, !hiddenOnApp(s.hiddenTags, entry.id, tag)) }));
   const addTag = () => {
     const next = withTag(tags, newTag);
     if (next !== tags) setTags(entry.id, next);
     setNewTag("");
   };
 
-  // The mouse opens a submenu by moving onto its item, and moving onto another item of the menu closes it.
-  // With one open, that waits until the pointer rests a moment (a short one, so a submenu still opens quickly): it can cross other items on its way into it.
+  // The mouse opens a submenu by moving onto its item, and moving onto another item of the menu closes it, at once.
+  // Only while the pointer heads for the open submenu does that wait, as it crosses other items on its way into it; resting there a moment then switches.
   // Only a moving pointer counts: a menu opening under one that's resting (a right-click, a key, a long press) opens no submenu by itself, so Escape closes the menu.
   const hover = (key?: Sub["key"]) => (e: PointerEv) => {
     if (e.pointerType !== "mouse") return;
     clearTimeout(pending.current);
     const next = () => setSub((s) => (key ? (s?.key === key ? s : { key, by: "hover" }) : null));
-    if (sub) pending.current = setTimeout(next, 120);
+    if (sub && sub.key !== key && heading(e.clientX, e.clientY)) pending.current = setTimeout(next, AIM_RESTS);
     else next();
+  };
+  // Where the pointer was a few moves ago, to tell which way it's going.
+  const trail = useRef<[number, number][]>([]);
+  const track = (e: PointerEv) => {
+    if (e.pointerType !== "mouse") return;
+    trail.current = [...trail.current.slice(-(AIM_TRAIL - 1)), [e.clientX, e.clientY]];
+  };
+  // Heading for the open submenu: inside the triangle from where the pointer was to the submenu's near edge (a little taller than it, for a hand that isn't steady).
+  const heading = (x: number, y: number) => {
+    const el = subMenu.current;
+    const from = trail.current[0];
+    if (!el || !from || !place || place.side === "below" || (from[0] === x && from[1] === y)) return false;
+    const r = el.getBoundingClientRect();
+    const edge = place.side === "right" ? r.left : r.right;
+    const a: [number, number] = [edge, r.top - AIM_SLACK];
+    const b: [number, number] = [edge, r.bottom + AIM_SLACK];
+    const side = (p: [number, number], q: [number, number]) => (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0]);
+    const [d1, d2, d3] = [side(from, a), side(a, b), side(b, from)];
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
   };
   const choose = (act: () => void) => () => (close(), act());
   const item = ({ text, act, kind, disabled, note }: Item, inSub = false): ReactNode => (
@@ -505,7 +538,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   };
 
   return (
-    <div ref={root} className="game-menu" data-arrows="" onKeyDown={keys}>
+    <div ref={root} className="game-menu" data-arrows="" onKeyDown={keys} onPointerMoveCapture={track}>
       {main && <MainItem main={main} onClick={choose(main.act)} onPointerMove={hover()} />}
       {top.map((i) => item(i))}
       {programsOn && opens("programs", t`Play with`)}
@@ -582,7 +615,20 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
             />
-            {allTags.length > 0 && (
+            {theirTags.length > 0 && (
+              <>
+                <div className="game-menu-heading">
+                  <Trans comment="Heading in an app's Tags menu, over the tags the catalog gave it">From the catalog</Trans>
+                </div>
+                {theirTags.map((tag) => (
+                  <button key={tag} type="button" role="menuitemcheckbox" data-item aria-checked={!hiddenOnApp(settings.hiddenTags, entry.id, tag)} onClick={() => toggleTheirs(tag)}>
+                    <span className="game-menu-check">{!hiddenOnApp(settings.hiddenTags, entry.id, tag) && <Check size={14} />}</span>
+                    {tagLabel(tag)}
+                  </button>
+                ))}
+              </>
+            )}
+            {(allTags.length > 0 || theirTags.length > 0) && (
               <>
                 <hr />
                 {item({ text: t({ message: "Manage tags…", comment: "Menu item: rename or delete the player's tags, in Settings" }), act: manageTags }, true)}
@@ -598,6 +644,13 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
           {manage.map((i) => item(i, true))}
           <hr />
           {leave.map((i) => item(i, true))}
+          {/* The rest of what the app's page has under Manage: its mods, launch options, updates and artwork. */}
+          {(inLibrary || install) && (
+            <>
+              <hr />
+              {item({ text: t({ message: "All options…", comment: "Menu item, last under Manage: opens the app's page at its Manage tab" }), act: () => (askManage(entry.id), onOpen()) }, true)}
+            </>
+          )}
         </>,
       )}
       <hr />

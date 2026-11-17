@@ -22,6 +22,12 @@ const runnerFrom = (value: string): Runner =>
  * chose, by its name as launch reads it, else the release they installed. Only then is there a runner to choose.
  */
 export const windowsProgram = (executable: string | undefined, wine: boolean | undefined) => (executable ? /\.(exe|bat)$/i.test(executable) : Boolean(wine));
+/**
+ * Whether the program the player chose is outside the app's folder, kept by its full path: a game the app's own
+ * installer put on another drive, say. Moving, renaming, updating and uninstalling the app leave it where it is. An
+ * app the player added (`program`) always keeps a full path, and has no folder of Quiver's.
+ */
+export const outsideFolder = (executable: string | undefined, program?: string) => Boolean(executable && !program && /^([a-z]:[\\/]|[\\/])/i.test(executable));
 /** A Proton's name from its folder. */
 const folderName = (path: string) => path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || path;
 
@@ -178,6 +184,11 @@ export function LaunchOptionsButton({ id }: { id: string }) {
             t`Starts the program Quiver finds in its folder.`
           )}
         </p>
+        {outsideFolder(executable, install.program) && (
+          <p className="muted small">
+            <Trans>It&apos;s outside the app&apos;s folder, so moving, renaming, updating or uninstalling the app leaves it where it is.</Trans>
+          </p>
+        )}
         <div className="row">
           <button type="button" onClick={choose}>
             <Trans>Choose program…</Trans>

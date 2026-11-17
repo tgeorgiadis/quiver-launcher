@@ -272,3 +272,31 @@ test("View options' card size slider: the d-pad's left and right size the cards 
   assert.equal(await scale(), "1");
   await back();
 });
+
+test("with the mouse, a submenu switches at once, unless the pointer is heading into the open one", async () => {
+  await page.locator(".library-tile").first().click({ button: "right" });
+  const add = page.locator('.game-menu [role="menuitem"]', { hasText: "Add to playlist" });
+  const tags = page.locator('.game-menu [role="menuitem"]', { hasText: "Tags" });
+  await add.waitFor();
+  const open = () => app.execute(() => document.querySelector(".game-submenu")?.getAttribute("aria-label") ?? null);
+  const middle = async (item) => {
+    const b = await item.boundingBox();
+    return [b.x + b.width / 2, b.y + b.height / 2];
+  };
+  // On the way from where the menu opened, the pointer may cross another submenu's item: resting on Add to playlist opens its own.
+  await page.mouse.move(...(await middle(add)), { steps: 4 });
+  await page.waitForTimeout(200);
+  assert.equal(await open(), "Add to playlist");
+  // Straight down onto Tags, away from the open submenu: it opens with no wait.
+  await page.mouse.move(...(await middle(tags)), { steps: 4 });
+  assert.equal(await open(), "Tags", "switched at once");
+  // Back up, then across Tags towards the open submenu's near edge: it stays open, the pointer heading into it.
+  await page.mouse.move(...(await middle(add)), { steps: 4 });
+  assert.equal(await open(), "Add to playlist");
+  const b = await tags.boundingBox();
+  await page.mouse.move(b.x + b.width - 4, b.y + b.height / 2, { steps: 4 });
+  assert.equal(await open(), "Add to playlist", "kept open on the way into it");
+  // Resting on Tags opens its own.
+  await page.waitForTimeout(200);
+  assert.equal(await open(), "Tags", "resting on Tags opens it");
+});

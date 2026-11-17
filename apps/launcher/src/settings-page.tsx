@@ -5,13 +5,13 @@
  * with a way back to the list; Back from a section goes to the list first.
  */
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ChevronRight, Clock, Disc3, Folder, FolderInput, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Clock, Cloud, Disc3, Folder, FolderInput, FolderOpen, Gamepad2, Library, Monitor, RefreshCw, Wrench } from "lucide-react";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { i18n, LANGUAGES, type Language } from "@quiverlauncher/i18n";
 import { Button, Field, Panel } from "@quiverlauncher/ui/controls";
 import type { MessageDescriptor } from "@lingui/core";
-import { folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow } from "./store";
+import { folderClash, samePath, useLauncher, type AppsFolder as AppsFolderRow, type StaysReason } from "./store";
 import { WHEEL_SPEEDS, pageArea } from "./spatial";
 import { native, type AppsMoving } from "./native";
 import { DEFAULT_MUSIC_VOLUME, musicProblem, watchMusicProblem } from "./music";
@@ -19,7 +19,7 @@ import { DEFAULT_BACKGROUND_OPACITY, useBackgroundImage } from "./library-backgr
 import { BrowseCardOptions, PlatformChoice, ViewOptions } from "./library-view";
 import { Snapshots } from "./recovery";
 import { FindOldLibrary } from "./old-library";
-import { TagSettings } from "./tag-settings";
+import { CatalogTagSettings, TagSettings } from "./tag-settings";
 import { ControlSettings } from "./controls";
 import { WindowsRunnerSetting } from "./launch-options";
 import { PortableDefaultSetting } from "./app-files";
@@ -27,19 +27,24 @@ import { UpdateSettings } from "./update";
 import { AppUpdatesSetting } from "./app-updates";
 import { GithubTokenSetting } from "./github-token";
 import { GitlabTokenSetting } from "./gitlab-token";
+import { RepositoryTokens } from "./repository-tokens";
 import { TelemetrySetting } from "./telemetry-ui";
+import { savesOn } from "./saves";
+import { CloudSavesSettings } from "./cloud-saves-page";
+import { SyncFolderSettings } from "./sync-folder-page";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
 import { foldersOn } from "./detail";
 
-type Section = "general" | "library" | "apps" | "copies" | "controllers" | "updates" | "advanced";
+type Section = "general" | "library" | "apps" | "copies" | "cloud" | "controllers" | "updates" | "advanced";
 // Names put in the language when shown, not here, where the module loads before any is picked.
 const SECTIONS: [Section, MessageDescriptor, ReactNode][] = [
   ["general", msg`General`, <Monitor size={17} />],
   ["library", msg`Library`, <Library size={17} />],
   ["apps", msg`Apps folder`, <FolderOpen size={17} />],
   ["copies", msg`Game copies`, <Disc3 size={17} />],
+  ["cloud", msg`Cloud saves`, <Cloud size={17} />],
   ["controllers", msg`Controllers`, <Gamepad2 size={17} />],
   ["updates", msg`Updates`, <RefreshCw size={17} />],
   ["advanced", msg`Advanced`, <Wrench size={17} />],
@@ -66,7 +71,8 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
   const sideBySide = useSideBySide();
   const { config } = useLauncher();
   // Game copies are for computers: a phone keeps an app's files to itself.
-  const sections = SECTIONS.filter(([key]) => key !== "copies" || foldersOn(config.os));
+  // So are cloud saves, which ride on save backups.
+  const sections = SECTIONS.filter(([key]) => (key !== "copies" || foldersOn(config.os)) && (key !== "cloud" || savesOn(config.os)));
   // Side by side, General shows until another is picked; narrow, the list does.
   const [picked, setPicked] = useState<Section | null>(start ?? null);
   const section = picked ?? (sideBySide ? "general" : null);
@@ -133,6 +139,11 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
               </>
             ) : section === "copies" ? (
               <GameCopySettings />
+            ) : section === "cloud" ? (
+              <>
+                <CloudSavesSettings />
+                <SyncFolderSettings />
+              </>
             ) : section === "controllers" ? (
               <ControlSettings />
             ) : section === "updates" ? (
@@ -144,6 +155,7 @@ export function SettingsPage({ back, onBack, onRunSetup, start }: { back: string
               <>
                 <GithubTokenSetting />
                 <GitlabTokenSetting />
+                <RepositoryTokens />
               </>
             )}
           </div>
@@ -348,6 +360,7 @@ function LibrarySettings() {
         <PlatformChoice />
       </section>
       <TagSettings />
+      <CatalogTagSettings />
       <FindOldLibrary />
       <section className="settings-section" aria-label={t`Restore from backup`}>
         <h3>
@@ -455,6 +468,20 @@ function MusicSetting() {
   );
 }
 
+/** Why an app stays at the top of the apps folder when the others move into console folders. */
+function staysWhy(why: StaysReason) {
+  switch (why) {
+    case "own":
+      return t`You added it from your own folder or program, and Quiver leaves those where you put them.`;
+    case "installer":
+      return t`A Windows installer put it there, and Windows looks after where it is.`;
+    case "noConsole":
+      return t`It doesn't have a console. Choose one on its page, and it can move into that console's folder.`;
+    case "unknown":
+      return t`Quiver couldn't look it up in the catalog to find its console. Try again once you're online.`;
+  }
+}
+
 /** What a move came to: how many moved, then any that couldn't (still where they were) and any old files left behind. */
 type MoveOutcome = { text: string; error?: boolean; left?: string[]; failed?: { folder: string; why: string }[] };
 function MoveMessage({ message }: { message: MoveOutcome }) {
@@ -502,7 +529,7 @@ function MoveMessage({ message }: { message: MoveOutcome }) {
  * has got.
  */
 export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (busy: boolean) => void } = {}) {
-  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, unsortedApps, moveApp } = useLauncher();
+  const { config, jobs, movableApps, appsFolders, switchAppsFolder, moveApps, settings, setSettings, sortPlan, moveApp } = useLauncher();
   const [asking, setAsking] = useState<{ to: string } | null>(null);
   // Moving the apps along is the player's choice; keeping them where they are is instant and first.
   const [keep, setKeep] = useState(true);
@@ -548,9 +575,10 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
   const fromV3 = (path: string) => v3Folders.some((f) => samePath(f, path));
   // A path's separator as the player's system writes it, for the help on console folders.
   const slash = config.os === "windows" ? "\\" : "/";
-  const unsorted = unsortedApps();
+  const { moves: unsorted, stays } = sortPlan();
   // Sorting the apps already installed into console folders: how many of how many have moved.
   const [sorting, setSorting] = useState<{ done: number; total: number } | null>(null);
+  const [showStays, setShowStays] = useState(false);
   const idle = !asking && !bringing && !moving && !checking && !sorting;
   // A move under way, or the check before it: the setup's own buttons wait for it.
   const working = Boolean(moving || checking || sorting);
@@ -632,6 +660,8 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
         ? { text: t`Moved ${n - failed.length} of ${plural(n, { one: "# app", other: "# apps" })}.`, error: true, left, failed }
         : { text: t`Moved ${plural(n, { one: "# app", other: "# apps" })} into console folders.`, left },
     );
+    // What stays at the top of the apps folder is listed below, open, so the player sees why.
+    setShowStays(true);
   };
   const open = (path: string) => void native.openAppsFolder(path).catch((e) => setMessage({ text: String(e), error: true }));
   return (
@@ -670,6 +700,23 @@ export function AppsFolder({ inSetup, onBusy }: { inSetup?: boolean; onBusy?: (b
             </Button>
           )}
         </div>
+      )}
+      {desktop && !inSetup && settings.groupByConsole && !sorting && stays.length > 0 && (
+        <details className="apps-staying muted" open={showStays} onToggle={(e) => setShowStays(e.currentTarget.open)}>
+          <summary>
+            {plural(stays.length, {
+              one: "# app stays at the top of the apps folder",
+              other: "# apps stay at the top of the apps folder",
+            })}
+          </summary>
+          <ul className="apps-left">
+            {stays.map((a) => (
+              <li key={a.id}>
+                <strong>{a.folder}</strong>: {staysWhy(a.why)}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
       <ul className="apps-folders">
         {(inSetup ? [home] : folders).map((f) => {

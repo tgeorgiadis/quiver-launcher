@@ -99,8 +99,8 @@ test("the player's picture shows behind the library's grid and nowhere else, and
 });
 
 test("Settings' list stays on the screen as the page scrolls, in a window with just room for it", async () => {
-  // Room for the list's seven sections, and little more.
-  const s2 = await openApp({ state: installed, height: 390 });
+  // Room for the list's eight sections, and little more.
+  const s2 = await openApp({ state: installed, height: 434 });
   try {
     await s2.page.locator(".topbar").waitFor();
     await s2.page.locator(".topbar button[aria-label='Settings']").click();
@@ -188,10 +188,10 @@ test("Advanced Settings takes a GitLab token, keeps it in the keychain, and show
     await setting.locator('input[type="password"]').fill("glpat-test");
     await setting.getByRole("button", { name: "Save token" }).click();
     await setting.getByText("Saved. Requests to GitLab use your token now.").waitFor();
-    // The token was kept in the keychain, not in settings.json.
+    // The token was kept in the keychain, not in settings.json: with every host's, under its own host.
     assert.deepEqual(
       await p.evaluate(() => window.__calls.find((c) => c.cmd === "secret_set")?.args),
-      { key: "gitlabToken", value: "glpat-test" },
+      { key: "repositoryTokens", value: JSON.stringify({ "gitlab.com": "glpat-test" }) },
     );
     // It went with the request that checked it, and the mock's higher limit shows.
     assert.ok(s2.api.gitlabRequests().some((r) => r.path === "/gitlab/user" && r.token === "glpat-test"));

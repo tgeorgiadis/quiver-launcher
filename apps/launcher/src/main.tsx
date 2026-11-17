@@ -9,6 +9,7 @@ import "./base.css";
 import "@quiverlauncher/ui/controls.css";
 import "@quiverlauncher/ui/catalog.css";
 import "./app.css";
+import "./discussions.css";
 import { App } from "./App";
 import { LauncherProvider, startupFailed } from "./store";
 import { captureUncaught } from "./telemetry";

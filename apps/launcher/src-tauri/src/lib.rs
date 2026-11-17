@@ -18,12 +18,16 @@ mod move_journal;
 mod msi;
 mod own_copy;
 mod picker;
+mod provider_http;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
+mod saves;
 mod secrets;
+mod setup;
 mod shortcut;
 mod snapshots;
 mod steam;
+mod sync_folder;
 #[cfg(windows)]
 mod tray;
 mod tv;
@@ -276,13 +280,17 @@ fn present_app_dir(data: &Data, folder: &str, dir: Option<String>) -> Result<Pat
 fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], wine: bool, program: Option<String>, options: &launch::LaunchOptions) -> Result<shortcut::Target, String> {
     let (exe, wine) = match (&options.executable, program) {
         // The program the player chose in Launch options.
+        // A full path is one anywhere, such as a game an installer in the app's folder put on another drive: it starts
+        // whether or not the folder is still there.
         (Some(chosen), program) => {
-            let exe = match program {
-                Some(_) => PathBuf::from(chosen),
-                None => present_app_dir(data, folder, dir)?.join(chosen),
-            };
+            let anywhere = program.is_some() || Path::new(chosen).is_absolute();
+            let exe = if anywhere { PathBuf::from(chosen) } else { present_app_dir(data, folder, dir)?.join(chosen) };
             if !exe.exists() {
-                return Err(format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options."));
+                return Err(if anywhere {
+                    launch::program_gone(&exe)
+                } else {
+                    format!("{chosen} isn't in the app's folder any more. Choose its program again in Launch options.")
+                });
             }
             let windows = exe.extension().is_some_and(|e| e.eq_ignore_ascii_case("exe") || e.eq_ignore_ascii_case("bat"));
             (exe, OS == "linux" && windows)
@@ -290,8 +298,12 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         (None, Some(program)) => {
             let exe = PathBuf::from(&program);
             if !exe.exists() {
+                let user = std::env::var("USER").or_else(|_| std::env::var("LOGNAME")).ok();
+                if let Some(drive) = launch::missing_drive(&exe, user.as_deref(), Path::exists) {
+                    return Err(launch::drive_gone(&exe, &drive));
+                }
                 // A Windows installer's program: the player can choose it again, or run the installer again.
-                if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d)) {
+                if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d) || setup::elsewhere(&d)) {
                     return Err(format!("The program isn't at {program} any more. Choose it again in Launch options, or run its installer again."));
                 }
                 return Err(format!("The program isn't at {program} any more. Remove this app and add it again from where it is now."));
@@ -300,7 +312,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         }
         (None, None) => {
             let dir = present_app_dir(data, folder, dir)?;
-            if msi::installed(&dir) {
+            if msi::installed(&dir) || setup::elsewhere(&dir) {
                 return Err("Quiver doesn't know which program its installer put on this computer yet. Press Play to choose it.".into());
             }
             if let Some(id) = flatpak::installed(&dir) {
@@ -538,6 +550,481 @@ impl Running {
     }
 }
 
+/// An app, as the window names it for its saves (saves.rs).
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesOf {
+    id: String,
+    folder: String,
+    dir: Option<String>,
+    /// A Windows build run through Wine or Proton here: its saves are in its prefix.
+    #[serde(default)]
+    wine: bool,
+    /// Where the catalog says it keeps its saves (`launcher.saves.locations`).
+    #[serde(default)]
+    locations: Vec<saves::Location>,
+    version: Option<String>,
+    /// What it's called, to find folders named like it: its name, its folder, its repository.
+    #[serde(default)]
+    names: Vec<String>,
+}
+
+/// What an app's Saves tab shows.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesInfo {
+    places: Vec<saves::Shown>,
+    /// Who said where they are: "you", "catalog", "found" or "none".
+    from: &'static str,
+    backups: Vec<saves::Backup>,
+    /// The player switched cloud saves off for this app.
+    cloud_off: bool,
+}
+
+/// One backup or restore at a time, so two never read and write the same saves.
+static SAVES_BUSY: std::sync::Mutex<()> = std::sync::Mutex::new(());
+/// What was in each running app's likely save places when it started, by app id.
+#[derive(Default)]
+struct Watching(std::sync::Mutex<std::collections::HashMap<String, saves::Watch>>);
+
+const CLOSE_FIRST: &str = "Close the app first.";
+
+/// A Windows user's folder in the prefix a Windows app runs in here: the one Quiver keeps for Proton, else Wine's own.
+fn wine_user(data: &Data, folder: &str) -> Option<PathBuf> {
+    let users = Path::new("drive_c").join("users");
+    let proton = install::plain_name(folder).ok().map(|name| data.0.join("proton").join(name).join("pfx").join(&users).join("steamuser"));
+    let wine = || {
+        let prefix = std::env::var_os("WINEPREFIX").map(PathBuf::from).or_else(|| own_copy::host_home().map(|h| h.join(".wine")))?;
+        Some(prefix.join(&users).join(std::env::var("USER").ok()?))
+    };
+    proton.filter(|p| p.is_dir()).or_else(|| wine().filter(|p| p.is_dir()))
+}
+
+/// Where an app's save roots are on this computer, its backups, and the system its saves are for.
+fn saves_at(data: &Data, of: &SavesOf) -> Result<(saves::Roots, PathBuf, &'static str), String> {
+    let app = app_dir(data, &of.folder, of.dir.clone())?;
+    let store = data.0.join("saves").join(saves::store_name(&of.id));
+    if of.wine && OS != "windows" {
+        let roots = match wine_user(data, &of.folder) {
+            Some(user) => saves::Roots::windows_user(app, &user),
+            // No prefix yet: only its own folder is known.
+            None => saves::Roots { app, ..Default::default() },
+        };
+        return Ok((roots, store, "windows"));
+    }
+    let root = |name: &str| own_copy::root_dir(Some(name), &app, false).ok();
+    let home = own_copy::host_home();
+    let documents = if sandbox::id().is_some() { home.as_ref().map(|h| h.join("Documents")) } else { dirs::document_dir().or_else(|| home.as_ref().map(|h| h.join("Documents"))) };
+    let roots = saves::Roots { data: root("data"), config: root("config"), local_data: root("localData"), documents, home, app };
+    Ok((roots, store, OS))
+}
+
+fn saves_shown(data: &Data, of: &SavesOf) -> Result<SavesInfo, String> {
+    let (roots, store, os) = saves_at(data, of)?;
+    let state = saves::state(&store);
+    let (places, from) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    Ok(SavesInfo { places: saves::shown(&places, &roots, &saves::chosen_abs(&state)), from, backups: saves::list(&store), cloud_off: state.cloud_off })
+}
+
+/// Where an app's saves are and its backups, for its Saves tab.
+#[tauri::command]
+async fn saves_info(data: State<'_, Data>, of: SavesOf) -> Result<SavesInfo, String> {
+    saves_shown(&data, &of)
+}
+
+/// Backs up an app's saves now, if they changed since the last backup: "manual" from its Saves tab, "update" and
+/// "uninstall" before those. Null when there was nothing new to keep. Only a manual one says there are no saves.
+#[tauri::command]
+async fn saves_backup(data: State<'_, Data>, running: State<'_, Running>, of: SavesOf, reason: String) -> Result<Option<saves::Backup>, String> {
+    if !["manual", "update", "uninstall"].contains(&reason.as_str()) {
+        return Err("Unknown reason for a backup.".into());
+    }
+    if running.has(&of.id) {
+        return Err(CLOSE_FIRST.into());
+    }
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let made = saves::backup(&store, &places, &roots, &saves::chosen_abs(&state), &saves::Stamp { app: &of.id, version: of.version.as_deref(), reason: &reason, os })?;
+    if made.is_none() && reason == "manual" && saves::shown(&places, &roots, &saves::chosen_abs(&state)).iter().all(|p| !p.exists) {
+        return Err(saves::NO_SAVES.into());
+    }
+    Ok(made)
+}
+
+/// The folders restoring a backup would write to that this computer doesn't keep the app's saves in yet, for the
+/// player to agree to before `saves_restore`. None for a backup of the places known here; refused when one of its
+/// places is nowhere an app saves.
+#[tauri::command]
+async fn saves_restore_plan(data: State<'_, Data>, of: SavesOf, name: String) -> Result<Vec<saves::Shown>, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (known, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    saves::restore_plan(&store, &name, &roots, &saves::chosen_abs(&state), &saves::Trust { known: &known, confirmed: &[], names: &of.names })
+}
+
+/// Puts a backup back, after backing up what's there. Resolves to how many files it put back. Its files only go to
+/// the places this computer keeps the app's saves in, and to those of `saves_restore_plan` the player agreed to
+/// (`confirmed`), which are remembered as places the app saves in.
+#[tauri::command]
+async fn saves_restore(data: State<'_, Data>, running: State<'_, Running>, of: SavesOf, name: String, confirmed: Option<Vec<String>>) -> Result<usize, String> {
+    if running.has(&of.id) {
+        return Err(CLOSE_FIRST.into());
+    }
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let mut state = saves::state(&store);
+    let (known, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let confirmed = confirmed.unwrap_or_default();
+    let trust = saves::Trust { known: &known, confirmed: &confirmed, names: &of.names };
+    let abs = saves::chosen_abs(&state);
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    // Only the places the backup really has, whatever the window sent.
+    let agreed: Vec<String> = saves::restore_plan(&store, &name, &roots, &abs, &trust)?.into_iter().map(|p| p.template).filter(|t| confirmed.contains(t)).collect();
+    let put = saves::restore(&store, &name, &roots, &abs, &saves::Stamp { app: &of.id, version: of.version.as_deref(), reason: "restore", os }, &trust)?;
+    if !agreed.is_empty() {
+        state.found = saves::merge(&state.found, &agreed);
+        saves::set_state(&store, &state)?;
+    }
+    Ok(put)
+}
+
+/// Removes one of an app's backups.
+#[tauri::command]
+async fn saves_remove(data: State<'_, Data>, id: String, name: String) -> Result<(), String> {
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    saves::remove(&data.0.join("saves").join(saves::store_name(&id)), &name)
+}
+
+/// The player's own answer to where an app saves (a folder they picked), or none to go back to what Quiver works out.
+#[tauri::command]
+async fn saves_choose(data: State<'_, Data>, of: SavesOf, path: Option<String>) -> Result<SavesInfo, String> {
+    let (roots, store, _) = saves_at(&data, &of)?;
+    let mut state = saves::state(&store);
+    state.chosen = match path {
+        Some(path) => {
+            let path = PathBuf::from(path);
+            if !path.is_dir() {
+                return Err("That folder isn't there.".into());
+            }
+            vec![saves::templatize(&path, &roots)?]
+        }
+        None => vec![],
+    };
+    saves::set_state(&store, &state)?;
+    saves_shown(&data, &of)
+}
+
+/// Opens one of an app's save places in the file manager: one of the places its Saves tab lists, never any other path.
+#[tauri::command]
+async fn saves_open(data: State<'_, Data>, of: SavesOf, template: String) -> Result<(), String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    if !places.contains(&template) {
+        return Err("That isn't one of this app's save places.".into());
+    }
+    let folder = saves::folder_of(&saves::resolve(&template, &roots, &saves::chosen_abs(&state))?);
+    if !folder.is_dir() {
+        return Err("This folder isn't there yet. It's made when the app first saves.".into());
+    }
+    reveal(&folder)
+}
+
+/// Before an app starts: what's in its likely save places, to tell afterwards where it saved (`saves_played`).
+#[tauri::command]
+async fn saves_watch(data: State<'_, Data>, watching: State<'_, Watching>, of: SavesOf) -> Result<(), String> {
+    let (roots, _, _) = saves_at(&data, &of)?;
+    let watch = saves::watch_start(&roots, &of.names);
+    watching.0.lock().unwrap().insert(of.id.clone(), watch);
+    Ok(())
+}
+
+/// After an app closed: the places it wrote saves to are remembered, and its saves backed up if they changed.
+#[tauri::command]
+async fn saves_played(data: State<'_, Data>, running: State<'_, Running>, watching: State<'_, Watching>, of: SavesOf) -> Result<Option<saves::Backup>, String> {
+    // Started again already (or a second copy still runs): the next close backs up.
+    if running.has(&of.id) {
+        return Ok(None);
+    }
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    let watch = watching.0.lock().unwrap().remove(&of.id);
+    if let Some(watch) = watch {
+        let found = saves::merge(&state.found, &saves::watch_end(watch, &roots));
+        if found != state.found {
+            state.found = found;
+            saves::set_state(&store, &state)?;
+        }
+    }
+    let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    saves::backup(&store, &places, &roots, &saves::chosen_abs(&state), &saves::Stamp { app: &of.id, version: of.version.as_deref(), reason: "played", os })
+}
+
+/// What to tell the catalog about where an app saves.
+#[derive(Serialize)]
+struct SavesReport {
+    /// The system the places are for: "windows" for a Windows build run through Wine or Proton.
+    os: &'static str,
+    places: Vec<String>,
+}
+
+/// An app's saves as cloud saves compares them (cloud-saves.ts).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesCloud {
+    /// The checksum of the saves as they are now; none when there are none here.
+    hash: Option<String>,
+    /// Their checksum when they last matched the account's newest copy.
+    synced: Option<String>,
+    /// The player switched cloud saves off for this app.
+    off: bool,
+    os: &'static str,
+}
+
+#[tauri::command]
+async fn saves_cloud(data: State<'_, Data>, of: SavesOf) -> Result<SavesCloud, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let hash = saves::current_hash(&places, &roots, &saves::chosen_abs(&state))?;
+    Ok(SavesCloud { hash, synced: state.synced, off: state.cloud_off, os })
+}
+
+/// Remembers that the saves with this checksum match the account's newest copy, or with none that nothing does.
+#[tauri::command]
+async fn saves_synced(data: State<'_, Data>, of: SavesOf, hash: Option<String>) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    if state.synced != hash {
+        state.synced = hash;
+        saves::set_state(&store, &state)?;
+    }
+    Ok(())
+}
+
+/// Switches cloud saves off, or back on, for one app.
+#[tauri::command]
+async fn saves_cloud_off(data: State<'_, Data>, of: SavesOf, off: bool) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    state.cloud_off = off;
+    saves::set_state(&store, &state)
+}
+
+/// The biggest copy the account takes, which is also the most a download may hold.
+const MAX_CLOUD_COPY: u64 = 100 * 1024 * 1024;
+const CLOUD_UNREACHABLE: &str = "Couldn't reach cloud saves. Check your connection and try again.";
+
+/// A link the site signed for one copy: https, or this computer itself (tests).
+fn cloud_link(url: &str) -> Result<reqwest::Url, String> {
+    let link = reqwest::Url::parse(url).map_err(|_| CLOUD_UNREACHABLE.to_string())?;
+    let local = matches!(link.host_str(), Some("127.0.0.1" | "localhost"));
+    if link.scheme() == "https" || (link.scheme() == "http" && local) {
+        Ok(link)
+    } else {
+        Err(CLOUD_UNREACHABLE.into())
+    }
+}
+
+fn cloud_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder().user_agent("QuiverLauncher/4").connect_timeout(std::time::Duration::from_secs(15)).build().map_err(|e| e.to_string())
+}
+
+/// Sends one of an app's backups to the link the site signed for it, with the headers that link was signed with.
+#[tauri::command]
+async fn saves_upload(data: State<'_, Data>, id: String, name: String, url: String, headers: std::collections::HashMap<String, String>) -> Result<(), String> {
+    let file = saves::file_of(&data.0.join("saves").join(saves::store_name(&id)), &name)?;
+    let body = tokio::fs::read(&file).await.map_err(|e| format!("Couldn't read that backup: {e}"))?;
+    if body.len() as u64 > MAX_CLOUD_COPY {
+        return Err("That backup is too big for cloud saves.".into());
+    }
+    let mut request = cloud_client()?.put(cloud_link(&url)?);
+    // Its length is the body's own; the rest is what the link was signed with.
+    for (key, value) in headers.iter().filter(|(key, _)| !key.eq_ignore_ascii_case("content-length")) {
+        request = request.header(key.as_str(), value.as_str());
+    }
+    let response = request.body(body).send().await.map_err(|_| CLOUD_UNREACHABLE.to_string())?;
+    if !response.status().is_success() {
+        return Err(format!("Cloud saves didn't take that backup ({}).", response.status().as_u16()));
+    }
+    Ok(())
+}
+
+/// Downloads a copy from the account's link and takes it in among the app's backups, checked against the checksum
+/// the account has for it. Nothing of the player's saves is touched, and nothing it says about where the app saves
+/// is taken up: `saves_restore` puts it in place, in the places this computer knows or the player agrees to.
+#[tauri::command]
+async fn saves_download(data: State<'_, Data>, of: SavesOf, url: String, size: u64, hash: String) -> Result<saves::Backup, String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    if size == 0 || size > MAX_CLOUD_COPY {
+        return Err(saves::BAD_COPY.into());
+    }
+    let mut response = cloud_client()?.get(cloud_link(&url)?).send().await.map_err(|_| CLOUD_UNREACHABLE.to_string())?;
+    if !response.status().is_success() {
+        return Err(CLOUD_UNREACHABLE.into());
+    }
+    std::fs::create_dir_all(&store).map_err(|e| e.to_string())?;
+    // Never a name a backup has, so half a download is never listed as one.
+    let part = store.join(format!(".cloud-{}.part", std::process::id()));
+    let written = async {
+        use tokio::io::AsyncWriteExt;
+        let mut file = tokio::fs::File::create(&part).await.ok()?;
+        let mut total = 0u64;
+        while let Some(chunk) = response.chunk().await.ok()? {
+            total += chunk.len() as u64;
+            if total > size {
+                return None;
+            }
+            file.write_all(&chunk).await.ok()?;
+        }
+        file.flush().await.ok()?;
+        (total == size).then_some(())
+    }
+    .await;
+    if written.is_none() {
+        let _ = std::fs::remove_file(&part);
+        return Err(saves::BAD_COPY.into());
+    }
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    saves::adopt(&store, &part, &hash)
+}
+
+/// The folder save backups are also kept in for the folder the player picked (sync_folder.rs): that one, or a
+/// "Quiver Saves" folder inside it.
+#[tauri::command]
+async fn saves_folder_choose(data: State<'_, Data>, path: String) -> Result<String, String> {
+    let (picked, own) = (PathBuf::from(path), data.0.clone());
+    let folder = tauri::async_runtime::spawn_blocking(move || sync_folder::choose(&picked, &own)).await.map_err(|e| e.to_string())??;
+    Ok(folder.to_string_lossy().into())
+}
+
+/// What the sync folder holds, by app, for Settings. `there`: false when the folder can't be found now.
+#[derive(Serialize)]
+struct SyncFolderKept {
+    there: bool,
+    apps: Vec<sync_folder::AppKept>,
+}
+
+#[tauri::command]
+async fn saves_folder_summary(folder: String) -> Result<SyncFolderKept, String> {
+    // Off the window's thread: a folder on a drive that's asleep, or on the network, can take a while.
+    tauri::async_runtime::spawn_blocking(move || {
+        let folder = PathBuf::from(folder);
+        SyncFolderKept { there: folder.is_dir(), apps: sync_folder::summary(&folder) }
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn saves_folder_open(folder: String) -> Result<(), String> {
+    let folder = PathBuf::from(folder);
+    if !folder.is_dir() {
+        return Err(sync_folder::GONE.into());
+    }
+    reveal(&folder)
+}
+
+/// An app's saves beside the sync folder's backups of them, as they're compared before it starts (sync-folder.ts).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesFolder {
+    /// The checksum of the saves as they are now; none when there are none here.
+    hash: Option<String>,
+    /// The checksum they had when they last matched the newest backup in this folder.
+    synced: Option<String>,
+    os: &'static str,
+    /// False when the folder can't be found now: a drive that isn't plugged in.
+    there: bool,
+    /// The folder's backups of the app, newest first. The first arrived whole.
+    copies: Vec<sync_folder::Kept>,
+}
+
+#[tauri::command]
+async fn saves_folder_state(data: State<'_, Data>, of: SavesOf, folder: String) -> Result<SavesFolder, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let hash = saves::current_hash(&places, &roots, &saves::chosen_abs(&state))?;
+    let synced = state.folder_synced.filter(|s| s.folder == folder).map(|s| s.hash);
+    let at = Path::new(&folder);
+    Ok(SavesFolder { hash, synced, os, there: at.is_dir(), copies: sync_folder::list(at, &of.id, true) })
+}
+
+/// Remembers that the saves with this checksum match the newest backup in this sync folder, or with none that
+/// nothing does.
+fn folder_synced(store: &Path, folder: &str, hash: Option<String>) -> Result<(), String> {
+    let mut state = saves::state(store);
+    let synced = hash.map(|hash| saves::FolderSynced { folder: folder.to_string(), hash });
+    if state.folder_synced != synced {
+        state.folder_synced = synced;
+        saves::set_state(store, &state)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn saves_folder_synced(data: State<'_, Data>, of: SavesOf, folder: String, hash: Option<String>) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    folder_synced(&store, &folder, hash)
+}
+
+/// Keeps one of an app's backups in the sync folder too, as the newest there, and remembers the two match.
+#[tauri::command]
+async fn saves_folder_put(data: State<'_, Data>, of: SavesOf, folder: String, name: String) -> Result<sync_folder::Kept, String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let file = saves::file_of(&store, &name)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let label = of.names.first().map(String::as_str).unwrap_or_default();
+    let kept = sync_folder::put(Path::new(&folder), &of.id, label, &file)?;
+    folder_synced(&store, &folder, Some(kept.hash.clone()))?;
+    Ok(kept)
+}
+
+/// Takes one of the sync folder's backups in among the app's own. Nothing of the player's saves is touched, and
+/// nothing it says about where the app saves is taken up: `saves_restore` puts it in place, in the places this
+/// computer knows or the player agrees to.
+#[tauri::command]
+async fn saves_folder_take(data: State<'_, Data>, of: SavesOf, folder: String, name: String) -> Result<saves::Backup, String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    sync_folder::take(Path::new(&folder), &of.id, &name, &store)
+}
+
+/// The places the launcher saw an app save in that the catalog hasn't been told about (`saves::to_report`). None
+/// for an app whose saves the catalog lists.
+#[tauri::command]
+async fn saves_to_report(data: State<'_, Data>, of: SavesOf) -> Result<SavesReport, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let places = if saves::catalog_templates(&of.locations, os).is_empty() { saves::to_report(&saves::state(&store), &roots) } else { vec![] };
+    Ok(SavesReport { os, places })
+}
+
+/// The catalog took (or refused) a report of these places: they aren't sent again.
+#[tauri::command]
+async fn saves_reported(data: State<'_, Data>, of: SavesOf, places: Vec<String>) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = saves::state(&store);
+    let before = state.reported.len();
+    for place in places {
+        if state.found.contains(&place) && !state.reported.contains(&place) {
+            state.reported.push(place);
+        }
+    }
+    if state.reported.len() != before {
+        saves::set_state(&store, &state)?;
+    }
+    Ok(())
+}
+
 #[cfg(target_os = "android")]
 #[derive(Default)]
 struct Playing(std::sync::Mutex<Option<(String, std::time::Instant)>>);
@@ -727,7 +1214,7 @@ fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
         .unwrap_or_default();
     let install = installs.get(&id).ok_or("This app isn't installed.")?;
     // A Windows installer's files are where its program is, not in the app's folder.
-    if let Some(program) = install["program"].as_str().filter(|_| install["installer"] == "msi") {
+    if let Some(program) = install["program"].as_str().filter(|_| install["installer"] == "msi" || install["installer"] == "setup") {
         if let Some(parent) = Path::new(program).parent().filter(|p| p.is_dir()) {
             return reveal(parent);
         }
@@ -789,16 +1276,28 @@ fn create_app_folder(data: State<Data>, name: String) -> Result<String, String> 
     Ok(name)
 }
 
-/// Renames an installed app's folder in the apps folder, and its Proton
-/// prefix with it. Not while the launcher has it running: its files are in use.
+/// Renames an installed app's folder, and its Proton prefix with it: one at the
+/// top of the apps folder, or `dir`, where it is (its console's folder, say),
+/// whose own name is `from`. Not while the launcher has it running: its files
+/// are in use.
 #[tauri::command]
-fn rename_app_folder(data: State<Data>, running: State<Running>, id: String, from: String, to: String) -> Result<(), String> {
+fn rename_app_folder(data: State<Data>, running: State<Running>, id: String, from: String, to: String, dir: Option<String>) -> Result<(), String> {
     if running.has(&id) {
         return Err("Close the app first, then rename its folder.".into());
     }
     let from = install::plain_name(&from)?;
     let to = install::plain_name(&to)?;
-    apps_folder::rename(&data.apps(), &data.0.join("proton"), from, to)
+    let parent = match dir {
+        None => data.apps(),
+        Some(dir) => {
+            let dir = PathBuf::from(dir);
+            match (dir.parent(), dir.file_name()) {
+                (Some(parent), Some(name)) if name == from => parent.to_path_buf(),
+                _ => return Err("This app's folder can't be renamed.".into()),
+            }
+        }
+    };
+    apps_folder::rename(&parent, &data.0.join("proton"), from, to)
 }
 
 /// Those of `names` that are files in an installed app's folder.
@@ -1031,9 +1530,11 @@ fn file_kinds(data: State<'_, Data>, folder: String, dir: Option<String>) -> Res
     Ok(install::file_kinds(&app_dir(&data, &folder, dir)?))
 }
 
-/// Asks which program starts an installed app, starting in its folder; the
-/// answer is relative to that folder so it survives the folder moving. An app
-/// the player added from elsewhere (`program`) can start anything.
+/// Asks which program starts an installed app, starting in its folder: one
+/// inside it is kept relative to it, so it survives the folder moving; one
+/// anywhere else by its full path (`launch::chosen_program`), such as a game
+/// the app's own installer put on another drive. An app the player added from
+/// elsewhere (`program`) keeps the full path either way.
 /// `QUIVER_PICK` answers instead in end-to-end tests.
 #[tauri::command]
 async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, folder: String, dir: Option<String>, program: Option<String>) -> Result<Option<String>, String> {
@@ -1050,11 +1551,7 @@ async fn pick_executable(app: tauri::AppHandle, window: tauri::WebviewWindow, fo
     if program.is_some() {
         return Ok(Some(picked.to_string_lossy().into()));
     }
-    let inside = picked.canonicalize().ok().zip(root.canonicalize().ok()).and_then(|(p, r)| p.strip_prefix(r).ok().map(Path::to_path_buf));
-    match inside {
-        Some(relative) if !relative.as_os_str().is_empty() => Ok(Some(relative.to_string_lossy().into())),
-        _ => Err("Choose a program inside the app's folder.".into()),
-    }
+    launch::chosen_program(&picked, &root).map(Some)
 }
 
 /// The Protons on this computer, newest name first.
@@ -1394,6 +1891,10 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
         // Windows removes what its installer put on the computer, first.
         if msi::installed(&dir) {
             msi::uninstall(&dir)?;
+        }
+        // An app its own setup program installed has its own uninstaller, which goes first too.
+        if setup::installed(&dir) {
+            setup::uninstall(&dir)?;
         }
         // Android removes an app installed from an APK, once the player confirms it.
         #[cfg(target_os = "android")]
@@ -1899,6 +2400,7 @@ pub fn run() {
             app.manage(gamepad::Pads::default());
             app.manage(Installing::default());
             app.manage(Running::default());
+            app.manage(Watching::default());
             app.manage(discord::Presence::new());
             #[cfg(target_os = "android")]
             app.manage(Playing::default());
@@ -1948,6 +2450,7 @@ pub fn run() {
             secret_get,
             secret_set,
             gitlab_limit,
+            provider_http::provider_http,
             browser_sign_in,
             browser_sign_in_cancel,
             log_error,
@@ -1970,6 +2473,29 @@ pub fn run() {
             check_update,
             install_update,
             open_folder,
+            saves_info,
+            saves_backup,
+            saves_restore,
+            saves_restore_plan,
+            saves_remove,
+            saves_choose,
+            saves_open,
+            saves_watch,
+            saves_played,
+            saves_to_report,
+            saves_reported,
+            saves_cloud,
+            saves_synced,
+            saves_cloud_off,
+            saves_upload,
+            saves_download,
+            saves_folder_choose,
+            saves_folder_summary,
+            saves_folder_open,
+            saves_folder_state,
+            saves_folder_synced,
+            saves_folder_put,
+            saves_folder_take,
             create_app_folder,
             rename_app_folder,
             app_files,

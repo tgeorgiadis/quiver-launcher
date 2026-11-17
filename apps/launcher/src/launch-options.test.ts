@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { windowsProgram } from "./launch-options";
+import { outsideFolder, windowsProgram } from "./launch-options";
 
 describe("windowsProgram", () => {
   it("follows the release the player installed when they chose no program", () => {
@@ -13,5 +13,21 @@ describe("windowsProgram", () => {
     expect(windowsProgram("start.bat", false)).toBe(true);
     expect(windowsProgram("Game.AppImage", undefined)).toBe(false);
     expect(windowsProgram("game.x86_64", true)).toBe(false);
+  });
+});
+
+describe("outsideFolder", () => {
+  it("is a program chosen by its full path, on any system", () => {
+    expect(outsideFolder("E:\\Games\\Game.exe")).toBe(true);
+    expect(outsideFolder("d:/Games/Game.exe")).toBe(true);
+    expect(outsideFolder("/run/media/deck/SD/game.sh")).toBe(true);
+    expect(outsideFolder("\\\\nas\\games\\Game.exe")).toBe(true);
+  });
+
+  it("isn't one in the app's folder, nor an added app's, whose program is always a full path", () => {
+    expect(outsideFolder("bin/Game.exe")).toBe(false);
+    expect(outsideFolder("Game.exe")).toBe(false);
+    expect(outsideFolder(undefined)).toBe(false);
+    expect(outsideFolder("/home/tom/game.sh", "/home/tom/game.sh")).toBe(false);
   });
 });

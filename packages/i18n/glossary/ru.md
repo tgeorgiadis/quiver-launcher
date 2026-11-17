@@ -50,6 +50,9 @@ Every plural needs all four forms: `one` (1, 21), `few` (2–4, 22–24), `many`
 | hold (a button) | зажать / зажмите | the note after a controller hint: зажать |
 | ROM / your own copy | ROM / ваша копия | |
 | Recycle Bin | корзина | |
+| discussion / comment | обсуждение / комментарий | Community board: Сообщество |
+| Follow / Unfollow (a discussion) | Отслеживать / Не отслеживать | |
+| Pin / Lock / Report (a discussion) | Закрепить / Закрыть / Пожаловаться | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

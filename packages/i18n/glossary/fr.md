@@ -51,6 +51,9 @@ before « : ; ! ? », and « » for quotes.
 | hold (a button) | maintenir | |
 | the launcher | le lanceur | |
 | ROM | ROM (une ROM) | |
+| discussion / comment | discussion / commentaire | Community board: Communauté |
+| Follow / Unfollow (a discussion) | Suivre / Ne plus suivre | |
+| Pin / Lock / Report (a discussion) | Épingler / Verrouiller / Signaler | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

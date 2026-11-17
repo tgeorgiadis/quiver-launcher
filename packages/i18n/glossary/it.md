@@ -50,6 +50,9 @@ Address the player as **tu**, friendly and plain. Sentence case.
 | hold (a controller button) | tieni premuto | |
 | ROM / your own copy | ROM / una tua copia | |
 | On / Off (a TV mode setting) | Attivata / Disattivata | |
+| discussion / comment | discussione / commento | Community board: Community |
+| Follow / Unfollow (a discussion) | Segui / Non seguire più | |
+| Pin / Lock / Report (a discussion) | Fissa in alto / Chiudi / Segnala | |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller

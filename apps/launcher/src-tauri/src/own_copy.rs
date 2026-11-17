@@ -326,7 +326,7 @@ fn plain(part: &str) -> bool {
 }
 
 /// The home folder games see: in the Flatpak, the host's (games start outside the sandbox), not the sandbox's.
-fn host_home() -> Option<PathBuf> {
+pub fn host_home() -> Option<PathBuf> {
     std::env::var_os("HOME").map(PathBuf::from).filter(|h| h.is_absolute()).or_else(dirs::home_dir)
 }
 /// The system's folders for apps' data, as the game reads them. `XDG_*` is the sandbox's own in the Flatpak, so

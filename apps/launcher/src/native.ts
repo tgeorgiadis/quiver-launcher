@@ -81,6 +81,8 @@ export type Config = {
   /** How this copy was installed, for usage data (update.rs). Missing from an older build. */
   package?: string;
 };
+/** A repository host's answer, fetched by the Rust side for hosts that don't send CORS headers. */
+export type ProviderHttpResponse = { status: number; headers: Record<string, string>; body: string };
 export type Progress = {
   id: string;
   phase: "downloading" | "installing";
@@ -111,13 +113,16 @@ export type Installed = {
   version: string;
   /** The downloaded file's `sha256:<hex>`. Missing from the web side's stand-in for the Rust side. */
   checksum?: string;
-  installer: "msi" | null;
+  /** "msi" for an MSI package; "setup" for a setup program that installed outside the app's folder. */
+  installer: "msi" | "setup" | null;
   /** The program a Windows installer installed, when the launcher could tell. */
   program: string | null;
   /** Where it installed, to start looking from when the player chooses its program. */
   location: string | null;
   /** Windows wants a restart to finish. */
   restart: boolean;
+  /** A setup program installed it, in the app's folder or outside it. Missing from the web side's stand-in. */
+  setup?: boolean;
 };
 
 /** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */
@@ -128,7 +133,7 @@ export type DiscordGame ={ name: string; image?: string };
 
 /** How the player wants an app started, when the launcher's own choice isn't right. */
 export type LaunchOptions = {
-  /** The program to start: inside the app's folder (relative), or anywhere for a program the player added. */
+  /** The program to start: inside the app's folder (relative), or anywhere else by its full path, such as a game its installer put on another drive. */
   executable?: string;
   runner?: { kind: "direct" } | { kind: "wine" } | { kind: "proton"; path: string };
   /** What Settings runs every Windows program with on Linux, where the app has no runner of its own (never saved with an app). */
@@ -219,6 +224,68 @@ export type PadLabels = {
   desktop?: boolean;
 };
 
+/** An app, as the Rust side needs it named for its saves. */
+export type SavesOf = {
+  id: string;
+  folder: string;
+  dir?: string;
+  wine: boolean;
+  /** The catalog's places for its saves. */
+  locations: { root: string; path: string; os?: string[] }[];
+  version?: string;
+  /** What it's called, to find folders named like it. */
+  names: string[];
+};
+export type SaveBackup = {
+  /** Its file's name, which names it to restore and remove. */
+  name: string;
+  at: number;
+  size: number;
+  files: number;
+  version?: string | null;
+  /** "played", "manual", "update", "uninstall" or "restore". */
+  reason: string;
+  device: string;
+  /** The system its saves are for: "windows" for a Windows app run through Wine. */
+  os: string;
+  /** The checksum of the save files in it, which is how two copies are told apart. */
+  hash: string;
+};
+/** An app's saves as cloud saves compares them (cloud-saves.ts). */
+export type SavesCloud = {
+  /** The checksum of the saves as they are now; none when there are none here. */
+  hash?: string | null;
+  /** Their checksum when they last matched the account's newest copy. */
+  synced?: string | null;
+  /** The player switched cloud saves off for this app. */
+  off: boolean;
+  os: "windows" | "linux" | "macos";
+};
+/** An app's saves beside its backups in the sync folder (sync-folder.ts). */
+export type SavesFolder = {
+  /** The checksum of the saves as they are now; none when there are none here. */
+  hash?: string | null;
+  /** Their checksum when they last matched the folder's newest backup. */
+  synced?: string | null;
+  os: "windows" | "linux" | "macos";
+  /** False when the folder can't be found now: a drive that isn't plugged in. */
+  there: boolean;
+  /** The folder's backups of the app, newest first. The first arrived whole. */
+  copies: SaveBackup[];
+};
+/** What the sync folder holds for one app. `label`: what its folder there is called. */
+export type SyncFolderApp = { id: string; label: string; copies: number; size: number; newest: SaveBackup };
+/** A place an app's saves are in: as a backup names it, and the folder that is on this computer. */
+export type SavePlace = { template: string; path: string; exists: boolean };
+export type SavesInfo = {
+  places: SavePlace[];
+  /** Who said where they are. */
+  from: "you" | "catalog" | "found" | "none";
+  backups: SaveBackup[];
+  /** The player switched cloud saves off for this app. */
+  cloudOff?: boolean;
+};
+
 export const native = {
   /** Whether holding Start + Select closes the game being played. */
   closeCombo: (on: boolean) => invoke<void>("close_combo", { on }),
@@ -240,6 +307,55 @@ export const native = {
   setDiscordPresence: (enabled: boolean, texts: { idle: string; button: string }) => invoke<void>("set_discord_presence", { enabled, texts }),
   /** An app started with an id has closed, after running this long. */
   onAppClosed: (handler: (p: { id: string; seconds: number }) => void) => listen<{ id: string; seconds: number }>("app-closed", (e) => handler(e.payload)),
+  /** Where an app's saves are and its backups (saves.rs). */
+  savesInfo: (of: SavesOf) => invoke<SavesInfo | null>("saves_info", { of }),
+  /** Backs up an app's saves if they changed; null when there was nothing new. Fails while the app runs. */
+  savesBackup: (of: SavesOf, reason: "manual" | "update" | "uninstall") => invoke<SaveBackup | null>("saves_backup", { of, reason }),
+  /** Puts a backup back, after backing up what's there; resolves to how many files. */
+  /**
+   * The folders restoring a backup would write to that this computer doesn't keep the app's saves in yet, for the
+   * player to agree to. None for a backup of the places known here. Fails when a place is nowhere an app saves.
+   */
+  savesRestorePlan: (of: SavesOf, name: string) => invoke<SavePlace[]>("saves_restore_plan", { of, name }),
+  /** `confirmed`: the places of `savesRestorePlan` the player agreed to. Without them a backup naming one isn't restored. */
+  savesRestore: (of: SavesOf, name: string, confirmed: string[] = []) => invoke<number>("saves_restore", { of, name, confirmed }),
+  savesRemove: (id: string, name: string) => invoke<void>("saves_remove", { id, name }),
+  /** The folder the player says an app saves in, or none to go back to Quiver's choice. */
+  savesChoose: (of: SavesOf, path?: string) => invoke<SavesInfo | null>("saves_choose", { of, path }),
+  savesOpen: (of: SavesOf, template: string) => invoke<void>("saves_open", { of, template }),
+  /** Before an app starts: notes what's in its likely save places, so `savesPlayed` can tell where it saved. */
+  savesWatch: (of: SavesOf) => invoke<void>("saves_watch", { of }),
+  /** After an app closed: remembers where it saved and backs its saves up if they changed. */
+  savesPlayed: (of: SavesOf) => invoke<SaveBackup | null>("saves_played", { of }),
+  /** The folders the launcher saw an app save in that the catalog hasn't been told about, and the system they're for. */
+  savesToReport: (of: SavesOf) => invoke<{ os: "windows" | "linux" | "macos"; places: string[] }>("saves_to_report", { of }),
+  /** The saves as they are now and when they last matched the account, for cloud saves. */
+  savesCloud: (of: SavesOf) => invoke<SavesCloud>("saves_cloud", { of }),
+  /** Remembers that saves with this checksum match the account's newest copy. */
+  savesSynced: (of: SavesOf, hash: string | null) => invoke<void>("saves_synced", { of, hash }),
+  savesCloudOff: (of: SavesOf, off: boolean) => invoke<void>("saves_cloud_off", { of, off }),
+  /** Sends one backup to the link the site signed for it. */
+  savesUpload: (id: string, name: string, url: string, headers: Record<string, string>) => invoke<void>("saves_upload", { id, name, url, headers }),
+  /** Downloads a copy from the account and takes it in among the app's backups, where `savesRestore` can put it back. */
+  savesDownload: (of: SavesOf, url: string, size: number, hash: string) => invoke<SaveBackup>("saves_download", { of, url, size, hash }),
+  /**
+   * The sync folder (sync_folder.rs): a folder of the player's own that backups are also kept in. The folder to use
+   * for the one they picked: that one, or a "Quiver Saves" folder inside it.
+   */
+  savesFolderChoose: (path: string) => invoke<string>("saves_folder_choose", { path }),
+  /** Every app with backups in the sync folder, the one backed up last first. */
+  savesFolderSummary: (folder: string) => invoke<{ there: boolean; apps: SyncFolderApp[] }>("saves_folder_summary", { folder }),
+  savesFolderOpen: (folder: string) => invoke<void>("saves_folder_open", { folder }),
+  /** An app's saves as they are now, and the folder's backups of them. */
+  savesFolderState: (of: SavesOf, folder: string) => invoke<SavesFolder>("saves_folder_state", { of, folder }),
+  /** Remembers that saves with this checksum match the folder's newest backup. */
+  savesFolderSynced: (of: SavesOf, folder: string, hash: string | null) => invoke<void>("saves_folder_synced", { of, folder, hash }),
+  /** Keeps one of the app's backups in the folder too, as its newest. */
+  savesFolderPut: (of: SavesOf, folder: string, name: string) => invoke<SaveBackup>("saves_folder_put", { of, folder, name }),
+  /** Takes one of the folder's backups in among the app's own, where `savesRestore` can put it back. */
+  savesFolderTake: (of: SavesOf, folder: string, name: string) => invoke<SaveBackup>("saves_folder_take", { of, folder, name }),
+  /** Those places were sent to the catalog: they aren't offered by `savesToReport` again. */
+  savesReported: (of: SavesOf, places: string[]) => invoke<void>("saves_reported", { of, places }),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */
   cancelInstall: (id: string) => invoke<void>("cancel_install", { id }),
   /** Fails with "cancelled" when the player says no to Windows uninstalling it. */
@@ -248,6 +364,8 @@ export const native = {
   secretSet: (key: string, value: string | null) => invoke<void>("secret_set", { key, value }),
   /** GitLab's request limit, read by the Rust side: the page can't see GitLab's rate-limit headers. */
   gitlabLimit: (url: string, token: string | null) => invoke<GitlabLimit>("gitlab_limit", { url, token }),
+  /** A repository host's API answer, fetched by Rust for a host that doesn't send CORS headers. */
+  providerHttp: (url: string, headers: Record<string, string>) => invoke<ProviderHttpResponse>("provider_http", { request: { url, headers } }),
   /** Opens a sign-in page in the browser; resolves once it returns to the launcher. */
   browserSignIn: (url: string) => invoke<{ code: string } | { error: string }>("browser_sign_in", { url }),
   /** Stops waiting for the sign-in: browserSignIn then resolves to the error "cancelled". Starting another does this too. */
@@ -329,7 +447,8 @@ export const native = {
   /** Makes a folder in the apps folder (or finds it), opens it, and resolves to its name. */
   createAppFolder: (name: string) => invoke<string>("create_app_folder", { name }),
   /** Renames an installed app's folder in the apps folder (and its Proton prefix); fails while the launcher has it running. */
-  renameAppFolder: (id: string, from: string, to: string) => invoke<void>("rename_app_folder", { id, from, to }),
+  /** `dir`: the folder's own path, for one not at the top of the apps folder (in its console's folder). */
+  renameAppFolder: (id: string, from: string, to: string, dir?: string) => invoke<void>("rename_app_folder", { id, from, to, dir: dir ?? null }),
   /** Those of `names` that are files in an installed app's folder. */
   appFiles: (folder: string, dir: string | undefined, names: string[]) => invoke<string[]>("app_files", { folder, dir, names }),
   /** Adds empty files to an installed app's folder and takes others away; returns those that stayed because they weren't empty. */

@@ -3,7 +3,7 @@
  * apps look for to change how they run. `portable.txt`, which has many keep their
  * saves and settings there, gets a checkbox; any other is a name to type. What's
  * ticked comes from the folder itself, so it's right for an install from Quiver
- * Launcher 3 or a file the player made by hand. On an app's On this computer tab,
+ * Launcher 3 or a file the player made by hand. On an app's Manage tab,
  * in its menu's Manage (as a dialog), with Settings' default for new installs.
  */
 import { useEffect, useState, type ReactNode } from "react";
@@ -148,7 +148,7 @@ function AddFilesForm({ entry, head, className, onClose }: { entry: Entry; head:
   );
 }
 
-/** On an app's On this computer tab: a button that opens the form in place, as Launch options does. */
+/** On an app's Manage tab: a button that opens the form in place, as Launch options does. */
 export function AddFilesButton({ entry }: { entry: Entry }) {
   const [open, setOpen] = useState(false);
   if (!open)

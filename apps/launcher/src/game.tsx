@@ -113,7 +113,7 @@ export function GamePage({
   onOpenApp: (entry: Entry) => void;
   action: (entry: Entry) => ReactNode;
 }) {
-  const { client, library, consoleNames, remember } = useLauncher();
+  const { client, library, consoleNames, remember, withShownTags } = useLauncher();
   const looks = useBrowseCards();
   const [data, setData] = useState<GameDetail | null | undefined>(() => seen.get(link.slug));
   const [failed, setFailed] = useState(false);
@@ -239,7 +239,7 @@ export function GamePage({
                     {group.entries.map((entry) => (
                       <EntryCard
                         key={entry.id}
-                        entry={entry}
+                        entry={withShownTags(entry)}
                         {...looks.card(entry)}
                         consoleNames={consoleNames}
                         onOpen={() => onOpenApp(entry)}

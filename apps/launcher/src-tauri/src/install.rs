@@ -50,7 +50,8 @@ pub struct Installed {
     pub version: String,
     /// The downloaded file's `sha256:<hex>`, which tells it from the file its release is verified with later.
     pub checksum: String,
-    /// "msi" for a Windows installer, whose files are where its setup put them.
+    /// "msi" for a Windows Installer package, "setup" for a setup program the player installed outside the app's
+    /// folder: either's files are where its setup put them.
     pub installer: Option<&'static str>,
     /// The program a Windows installer installed, when Quiver could tell.
     pub program: Option<String>,
@@ -58,6 +59,8 @@ pub struct Installed {
     pub location: Option<String>,
     /// Windows wants a restart to finish installing.
     pub restart: bool,
+    /// A setup program installed it, in the app's folder or outside it.
+    pub setup: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -176,6 +179,7 @@ pub async fn install(
                 program: path(setup.program),
                 location: path(setup.location),
                 restart: setup.restart,
+                setup: false,
             });
         }
         // Android asks the player to confirm installing an APK.
@@ -185,10 +189,45 @@ pub async fn install(
         let version = req.version.clone();
         let out = staging.join("out");
         let dir = target.clone();
+        let unpacked = out.clone();
+        // A download that's a Windows setup program is run, not kept as the app: it installs the app itself.
+        let installer = tokio::task::spawn_blocking(move || -> Result<Option<(PathBuf, crate::setup::Kind)>, String> {
+            extract(&file, &filename, &unpacked)?;
+            flatten(&unpacked).map_err(text)?;
+            drop_records(&unpacked);
+            Ok(if cfg!(windows) { crate::setup::installer_in(&unpacked) } else { None })
+        })
+        .await
+        .map_err(text)??;
+        if let Some((installer, kind)) = installer {
+            progress(Progress { id: req.id.clone(), phase: "installing", received: 0, total: None, setup: true });
+            let (dir, version, preferred, files) = (target.clone(), req.version.clone(), req.preferred.clone(), files.clone());
+            let keep = req.program.clone().map(PathBuf::from);
+            let outcome = tokio::task::spawn_blocking(move || -> Result<crate::setup::Outcome, String> {
+                let outcome = crate::setup::install(&installer, kind, &dir, &preferred, keep.as_deref(), &version)?;
+                if matches!(&outcome, crate::setup::Outcome::Installed(setup) if setup.here) {
+                    set_files(&dir, &files, &[])?;
+                }
+                Ok(outcome)
+            })
+            .await
+            .map_err(text)??;
+            if let crate::setup::Outcome::Installed(setup) = outcome {
+                // In the app's folder it's an install like any other; elsewhere, Play starts the program it put there.
+                let path = |p: PathBuf| p.to_string_lossy().into_owned();
+                return Ok(Installed {
+                    dir: target.to_string_lossy().into(),
+                    version: req.version.clone(),
+                    checksum: format!("sha256:{hash}"),
+                    installer: (!setup.here).then_some("setup"),
+                    program: setup.program.filter(|_| !setup.here).map(path),
+                    location: (!setup.here).then(|| path(setup.location)),
+                    restart: false,
+                    setup: true,
+                });
+            }
+        }
         tokio::task::spawn_blocking(move || -> Result<(), String> {
-            extract(&file, &filename, &out)?;
-            flatten(&out).map_err(text)?;
-            drop_records(&out);
             // This release's Flatpak bundle, where it lands: not one an earlier build left in the folder.
             let bundle = crate::flatpak::bundle_in(&out).and_then(|b| b.strip_prefix(&out).ok().map(|rel| dir.join(rel)));
             // Marked as Quiver's before anything goes in, so an install cut short can still be retried or removed.
@@ -231,6 +270,7 @@ pub async fn install(
             program: None,
             location: None,
             restart: false,
+            setup: false,
         })
     }
     .await;
@@ -608,7 +648,7 @@ pub(crate) fn flatten(dir: &Path) -> io::Result<()> {
 /// `msiexec /x` with the product's code).
 fn records() -> Vec<&'static str> {
     #[allow(unused_mut)]
-    let mut names = vec![VERSION_FILE, crate::flatpak::FILE, crate::msi::FILE, crate::msi::V3_FILE, crate::mods::RECORD];
+    let mut names = vec![VERSION_FILE, crate::flatpak::FILE, crate::msi::FILE, crate::msi::V3_FILE, crate::setup::FILE, crate::mods::RECORD];
     #[cfg(target_os = "android")]
     names.push(crate::android::FILE);
     names

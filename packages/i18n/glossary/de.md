@@ -52,6 +52,9 @@ launchers do. Sentence case, with nouns capitalised as German needs.
 | hold (a button) | halten | |
 | Recycle Bin | Papierkorb | |
 | On / Off (a setting's value) | An / Aus | |
+| discussion / comment | Diskussion / Kommentar | Community board: Community |
+| Follow / Unfollow (a discussion) | Folgen / Nicht mehr folgen | |
+| Pin / Lock / Report (a discussion) | Anheften / Sperren / Melden | not “festgehalten”, which is for a release |
 
 Left as they are: Quiver, Quiver Launcher, GitHub, GitLab, Steam, Steam Deck,
 Flatpak, AppImage, Thunderstore, GameBanana, console names, and controller
