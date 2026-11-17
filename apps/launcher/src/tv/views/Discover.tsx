@@ -38,8 +38,6 @@ export const newDiscoverState = (): DiscoverState => ({ filter: "notInLibrary", 
 
 /** The most consoles the catalog takes in one question (App.tsx's MAX_SYSTEMS). */
 const MAX_CONSOLES = 8;
-/** How long a console's name shows as LB / RB come to it. */
-const FLASH_MS = 900;
 
 const LIBRARY_FILTERS: { id: LibraryFilter; label: MessageDescriptor }[] = [
   { id: "notInLibrary", label: msg({ message: "Not in library", comment: "Discover's filter: games not in the library yet" }) },
@@ -77,6 +75,8 @@ type Props = {
   onGot: (app: TvApp) => void;
   /** The search (the catalog is searched for it, once typing pauses). */
   search: string;
+  /** Shows a name large over the page for a moment (the shell's Flash, one for its tabs and these consoles). */
+  flash: (label: string) => void;
 };
 
 /**
@@ -116,7 +116,7 @@ function ConsoleFilter({ filter, setFilter, makers, picked, forms, toggleMaker, 
   );
 }
 
-export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDetails, onDownloads, consoleName, onGot, search: typed }: Props) {
+export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDetails, onDownloads, consoleName, onGot, search: typed, flash: showFlash }: Props) {
   const { bridge, consoles } = useTv();
   const [filter, setFilter] = useState(state.filter);
   const [makers, setMakers] = useState(state.makers);
@@ -200,12 +200,8 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   const at = Math.max(0, consoleChips.findIndex((c) => c.id === consoleId));
 
   /** The console LB / RB came to, its name large over the games for a moment, so the change can't be missed. */
-  const [flash, setFlash] = useState<{ n: number; label: string } | null>(null);
-  useEffect(() => {
-    if (!flash) return;
-    const timer = setTimeout(() => setFlash(null), FLASH_MS);
-    return () => clearTimeout(timer);
-  }, [flash]);
+  /** Each LB / RB, a new number: the console chip they came to pops again. */
+  const [pop, setPop] = useState(0);
   const showConsole = (id: string | null) => setConsoleId((state.consoleId = id));
   /** LB / RB: the next or previous of the consoles the filter leaves, after All, round from the last to All. */
   const shoulders = (action: InputAction) => {
@@ -213,7 +209,8 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     const by = action === "tabPrev" ? -1 : 1;
     const next = consoleChips[(at + by + consoleChips.length) % consoleChips.length];
     showConsole(next.id);
-    setFlash((f) => ({ n: (f?.n ?? 0) + 1, label: next.id ? consoles.get(next.id).name : next.label }));
+    showFlash(next.id ? consoles.get(next.id).name : next.label);
+    setPop((n) => n + 1);
     return true;
   };
   /** X: Filter's list, but on a game that uses X itself. */
@@ -282,20 +279,15 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         </button>
         {consoleChips.map((c, i) => (
           <button
-            key={c.id === consoleId && flash ? `${c.id ?? "*"}:${flash.n}` : (c.id ?? "*")}
+            key={c.id === consoleId && pop ? `${c.id ?? "*"}:${pop}` : (c.id ?? "*")}
             type="button"
-            className={`tv-filter${c.id === consoleId ? " chosen" : ""}${c.id === consoleId && flash ? " pop" : ""}${zone === "consoles" && i === at ? " focused" : ""}`}
+            className={`tv-filter${c.id === consoleId ? " chosen" : ""}${c.id === consoleId && pop ? " pop" : ""}${zone === "consoles" && i === at ? " focused" : ""}`}
             onClick={() => showConsole(c.id)}
           >
             {c.label}
           </button>
         ))}
       </div>
-      {flash && (
-        <div key={flash.n} className="tv-console-flash" aria-live="polite">
-          {flash.label}
-        </div>
-      )}
       {choosing && (
         <ConsoleFilter
           filter={filter}

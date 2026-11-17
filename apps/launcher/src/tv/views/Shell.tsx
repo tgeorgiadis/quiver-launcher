@@ -17,6 +17,7 @@ import { Backdrop, GameHeader } from "./GameHeader";
 import { Details } from "./Details";
 import { Settings } from "./Settings";
 import { Discover, newDiscoverState } from "./Discover";
+import { Flash, useFlash } from "./Flash";
 import { Downloads } from "./Downloads";
 import { Osk } from "./Osk";
 import { Search } from "lucide-react";
@@ -72,15 +73,23 @@ export function Shell() {
     setDirection(tabs.findIndex((t) => t.id === id) < tabs.findIndex((t) => t.id === tab.id) ? -1 : 1);
     setSelectedId(id);
   };
+  /** The tab LB / RB or LT / RT came to: its name large for a moment, and a pop in the tab strip. */
+  const { flash, show: showFlash } = useFlash();
+  const goFlashing = (id: string) => {
+    if (id === tab.id) return;
+    go(id);
+    const to = tabs.find((t) => t.id === id);
+    if (to) showFlash(to.label);
+  };
   /** LB / RB: the next or previous tab. */
   const step = (by: 1 | -1) => {
     const i = tabs.findIndex((t) => t.id === tab.id);
-    go(tabs[Math.min(tabs.length - 1, Math.max(0, i + by))].id);
+    goFlashing(tabs[Math.min(tabs.length - 1, Math.max(0, i + by))].id);
   };
   /** The library tab (Home, All or a console) last shown, to come back to from Discover and Downloads. */
   const library = useRef(tabs[0].id);
   if (tab.kind !== "discover" && tab.kind !== "downloads") library.current = tab.id;
-  const cycle = (by: 1 | -1) => go(cycleTab(tabs, tab.id, library.current, by));
+  const cycle = (by: 1 | -1) => goFlashing(cycleTab(tabs, tab.id, library.current, by));
 
   /**
    * After Get in Discover, with "Go to it": the game's console tab with it focused. The tab may only
@@ -147,6 +156,7 @@ export function Shell() {
         tabs={tabs}
         selected={tab.id}
         onSelect={go}
+        pop={flash?.n}
       />
       <main className="tv-content">
         <div className={`tv-page${direction < 0 ? " from-left" : ""}`} key={tab.id}>
@@ -187,11 +197,13 @@ export function Shell() {
               consoleName={consoleName}
               search={search}
               onGot={(app) => settings.afterGet === "library" && goToGame(app)}
+              flash={showFlash}
             />
           ) : (
             <Downloads onFocus={setFocused} onGlobal={global} back={backToLibrary} onDetails={openDetails} />
           )}
         </div>
+        <Flash flash={flash} />
       </main>
       {search && (grid || tab.kind === "discover") && (
         <button type="button" className="tv-search-chip" onClick={() => setSearch("")} aria-label={t`Clear the search`}>

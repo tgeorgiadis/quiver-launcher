@@ -40,8 +40,12 @@ test("a controller's shoulder buttons go between the tabs, and its triggers to D
     assert.equal(await selectedTab(s2), "Home");
     await press(s2, "RightTrigger");
     await s2.until(async () => (await selectedTab(s2)) === "All");
+    // Each change flashes the tab's name over the page, and pops it in the tab strip.
+    await s2.page.locator(".tv-flash", { hasText: "All" }).waitFor();
+    await s2.page.locator(".tv-tab.selected.pop").waitFor();
     await press(s2, "RightTrigger2");
     await s2.until(async () => (await selectedTab(s2)) === "Discover");
+    await s2.page.locator(".tv-flash", { hasText: "Discover" }).waitFor();
     await press(s2, "RightTrigger2");
     await s2.until(async () => (await selectedTab(s2)).startsWith("Downloads"));
     await press(s2, "LeftTrigger2");
@@ -63,7 +67,7 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     // console's full name flashes up over the games.
     await press(s2, "RightTrigger");
     await s2.until(async () => (await chosen()) === "SNES");
-    await s2.page.locator(".tv-console-flash", { hasText: "Super Nintendo Entertainment System" }).waitFor();
+    await s2.page.locator(".tv-flash", { hasText: "Super Nintendo Entertainment System" }).waitFor();
     await press(s2, "RightTrigger");
     await s2.until(async () => (await chosen()) === "N64");
     await press(s2, "RightTrigger");
@@ -71,7 +75,7 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     await press(s2, "LeftTrigger");
     await s2.until(async () => (await chosen()) === "N64");
     assert.equal(await selectedTab(s2), "Discover");
-    await s2.page.locator(".tv-console-flash").waitFor({ state: "detached" });
+    await s2.page.locator(".tv-flash").waitFor({ state: "detached" });
     // Filter: X opens its list from the games, under its button. Its first line is the library's choice, left and right.
     const picks = s2.page.locator(".tv-filter-picks");
     const row = (name) => s2.page.locator(".tv-dropdown li", { hasText: name });

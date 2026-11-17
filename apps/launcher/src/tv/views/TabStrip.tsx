@@ -12,9 +12,9 @@ import { useTv } from "../context";
 import type { Tab } from "../consoles/tabs";
 import { Glyph } from "./Glyph";
 
-function TabLabel({ tab, selected, compact, onSelect }: { tab: Tab; selected: boolean; compact: boolean; onSelect: (id: string) => void }) {
+function TabLabel({ tab, selected, compact, pop, onSelect }: { tab: Tab; selected: boolean; compact: boolean; pop: boolean; onSelect: (id: string) => void }) {
   return (
-    <span role="tab" aria-selected={selected} data-tab={tab.id} className={`tv-tab${selected ? " selected" : ""}`} onClick={() => onSelect(tab.id)}>
+    <span role="tab" aria-selected={selected} data-tab={tab.id} className={`tv-tab${selected ? " selected" : ""}${pop ? " pop" : ""}`} onClick={() => onSelect(tab.id)}>
       {compact && tab.kind === "console" ? tab.short : tab.label}
       {tab.kind === "downloads" && tab.count ? <span className="tv-tab-count">{tab.count}</span> : null}
     </span>
@@ -48,7 +48,18 @@ function DownloadStatus() {
   );
 }
 
-export function TabStrip({ tabs, selected, onSelect }: { tabs: Tab[]; selected: string; onSelect: (id: string) => void }) {
+/** `pop`: LB / RB or LT / RT just came to the selected tab (each time a new number), which pops as it does. */
+export function TabStrip({ tabs, selected, onSelect, pop }: { tabs: Tab[]; selected: string; onSelect: (id: string) => void; pop?: number }) {
+  const tabLabel = (tab: Tab) => (
+    <TabLabel
+      key={tab.id === selected && pop ? `${tab.id}:${pop}` : tab.id}
+      tab={tab}
+      selected={tab.id === selected}
+      compact={compact}
+      pop={tab.id === selected && Boolean(pop)}
+      onSelect={onSelect}
+    />
+  );
   const { pads, tap } = useTv();
   const clock = useClock();
   const nav = useRef<HTMLElement>(null);
@@ -86,9 +97,7 @@ export function TabStrip({ tabs, selected, onSelect }: { tabs: Tab[]; selected: 
         <Glyph action="tabPrev" />
       </button>
       <div className="tv-tabs" ref={scroller} role="tablist">
-        {library.map((tab) => (
-          <TabLabel key={tab.id} tab={tab} selected={tab.id === selected} compact={compact} onSelect={onSelect} />
-        ))}
+        {library.map(tabLabel)}
       </div>
       <div className="tv-tabs-end" role="tablist">
         {/* LT / RT go straight between the library tab, Discover and Downloads. */}
@@ -97,9 +106,7 @@ export function TabStrip({ tabs, selected, onSelect }: { tabs: Tab[]; selected: 
         >
           <Glyph action="pagePrev" size={22} />
         </button>
-        {end.map((tab) => (
-          <TabLabel key={tab.id} tab={tab} selected={tab.id === selected} compact={compact} onSelect={onSelect} />
-        ))}
+        {end.map(tabLabel)}
         <button type="button" className="tv-glyph-button small" aria-label={t({ message: "Library, Discover, Downloads: forward", comment: "TV mode's button that steps on between the library, Discover and Downloads" })}
           onClick={() => tap("pageNext")}
         >
