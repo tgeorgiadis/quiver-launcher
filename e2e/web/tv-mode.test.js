@@ -10,6 +10,22 @@ import * as reach from "../reach.js";
 after(stop);
 
 const selectedTab = (s) => s.page.locator(".tv-tab.selected").innerText();
+/**
+ * What flashed up over the page (Flash.tsx), and whether a tab popped, from now on: watched for as it happens, as on a
+ * slow machine the flash can be gone again before a check.
+ */
+const watchFlashes = (s) =>
+  s.page.evaluate(() => {
+    window.__flashes = [];
+    window.__popped = false;
+    new MutationObserver(() => {
+      const flash = document.querySelector(".tv-flash")?.textContent;
+      if (flash && !window.__flashes.includes(flash)) window.__flashes.push(flash);
+      if (document.querySelector(".tv-tab.selected.pop")) window.__popped = true;
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+  });
+const flashed = (s, text) => s.until(() => s.page.evaluate((t) => window.__flashes.includes(t), text));
+
 /** A controller's press: down, then up. */
 const press = async (s, key) => {
   await s.pad(key, true);
@@ -38,14 +54,15 @@ test("a controller's shoulder buttons go between the tabs, and its triggers to D
   const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });
   try {
     assert.equal(await selectedTab(s2), "Home");
+    await watchFlashes(s2);
     await press(s2, "RightTrigger");
     await s2.until(async () => (await selectedTab(s2)) === "All");
     // Each change flashes the tab's name over the page, and pops it in the tab strip.
-    await s2.page.locator(".tv-flash", { hasText: "All" }).waitFor();
-    await s2.page.locator(".tv-tab.selected.pop").waitFor();
+    await flashed(s2, "All");
+    assert.equal(await s2.page.evaluate(() => window.__popped), true);
     await press(s2, "RightTrigger2");
     await s2.until(async () => (await selectedTab(s2)) === "Discover");
-    await s2.page.locator(".tv-flash", { hasText: "Discover" }).waitFor();
+    await flashed(s2, "Discover");
     await press(s2, "RightTrigger2");
     await s2.until(async () => (await selectedTab(s2)).startsWith("Downloads"));
     await press(s2, "LeftTrigger2");
@@ -65,9 +82,10 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     await s2.until(async () => (await chosen()) === "All consoles");
     // The test catalog's consoles, by year: SNES, then N64; then round to All. Discover stays the tab, and the
     // console's full name flashes up over the games.
+    await watchFlashes(s2);
     await press(s2, "RightTrigger");
     await s2.until(async () => (await chosen()) === "SNES");
-    await s2.page.locator(".tv-flash", { hasText: "Super Nintendo Entertainment System" }).waitFor();
+    await flashed(s2, "Super Nintendo Entertainment System");
     await press(s2, "RightTrigger");
     await s2.until(async () => (await chosen()) === "N64");
     await press(s2, "RightTrigger");
@@ -194,9 +212,10 @@ test("X in the library's tabs opens Sort: a pick sorts every tab, flashes its na
       (await list.locator("li .tv-settings-label").allInnerTexts()).slice(0, 4),
       ["Name", "Game", "Release date, oldest first", "Release date, newest first"],
     );
+    await watchFlashes(s2);
     await list.locator("li", { hasText: "Most played" }).click();
     await list.waitFor({ state: "detached" });
-    await s2.page.locator(".tv-flash", { hasText: "Most played" }).waitFor();
+    await flashed(s2, "Most played");
     assert.deepEqual(await s2.app.execute(() => window.__files.settings.tv), { sort: "playtime" });
     // B closes it without changing anything.
     await press(s2, "West");

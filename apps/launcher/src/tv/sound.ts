@@ -31,12 +31,13 @@ const TONES: Record<Sound, { wave: OscillatorType; from: number; to: number; len
   tab: { wave: "sine", from: 880, to: 1480, length: 0.07, volume: 0.06 },
 };
 
-let context: AudioContext | null = null;
+/** Made at the first sound; false where there's no audio to make one with, so it isn't tried at every press. */
+let context: AudioContext | null | false = null;
 
 /** The sound for a press; a held direction's repeats are quieter. */
 export function playFor(action: InputAction, repeat: boolean) {
   const sound = SOUND_OF[action];
-  if (!sound || typeof AudioContext === "undefined") return;
+  if (!sound || context === false) return;
   try {
     context ??= new AudioContext();
     if (context.state === "suspended") void context.resume();
@@ -54,6 +55,7 @@ export function playFor(action: InputAction, repeat: boolean) {
     tone.start(now);
     tone.stop(now + length + 0.02);
   } catch {
-    // No sound where there's no audio device: the press still goes through.
+    // No sound where there's no audio device: the press still goes through, and later ones don't try again.
+    if (!context) context = false;
   }
 }
