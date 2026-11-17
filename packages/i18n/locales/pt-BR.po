@@ -1575,6 +1575,11 @@ msgstr "carrossel"
 msgid "Catalog filters"
 msgstr "Filtros do catálogo"
 
+#. Settings section: the tags apps have from the catalog, which the player can hide
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Catalog tags"
+msgstr "Tags do catálogo"
+
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
 msgctxt "README callout"
@@ -2647,6 +2652,13 @@ msgstr "Do Quiver Launcher 3. Mantenha esta pasta até mover os apps dela."
 msgid "From Quiver's catalog."
 msgstr "Do catálogo do Quiver."
 
+#. Heading in an app's Tags menu, over the tags the catalog gave it
+#. Label on an app's page, over the tags the catalog gave it
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "From the catalog"
+msgstr "Do catálogo"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
 msgstr "Tela cheia"
@@ -2764,7 +2776,9 @@ msgstr "Tem problemas"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "Ajuda a melhorar o Quiver Launcher: quais telas e recursos são usados, e erros. Nunca seus arquivos ou pastas."
 
+#. Beside a catalog tag the player hid on every app
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
 msgstr "Oculto"
 
@@ -2785,11 +2799,22 @@ msgstr "Só apps ocultos"
 msgid "Hidden apps shown"
 msgstr "Apps ocultos visíveis"
 
+#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "Ocultar"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide {name}"
+msgstr "Ocultar {name}"
+
+#. Button: hide every catalog tag on every app
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide all"
+msgstr "Ocultar todas"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Hide any AI use"
@@ -2834,6 +2859,14 @@ msgstr "Ocultar apps feitos principalmente por IA"
 #: ../../apps/launcher/src/App.tsx
 msgid "Hide password"
 msgstr "Ocultar senha"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide tags the catalog adds from now on"
+msgstr "Ocultar as tags que o catálogo adicionar daqui em diante"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Hide the catalog's tag {name} on this app"
+msgstr "Ocultar a tag do catálogo {name} neste app"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Hide the other files"
@@ -5556,6 +5589,7 @@ msgstr "Link da playlist compartilhada"
 msgid "Shortcuts"
 msgstr "Atalhos"
 
+#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -5563,10 +5597,12 @@ msgstr "Atalhos"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "Mostrar"
 
 #. A dot under the featured apps: shows that app's slide
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "Mostrar {name}"
@@ -5578,6 +5614,11 @@ msgstr "Mostre uma imagem sua atrás da grade da biblioteca. O layout Barra late
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
 msgstr "Mostrar de novo"
+
+#. Button: show every catalog tag again
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show all"
+msgstr "Mostrar todas"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Show all apps"
@@ -5659,6 +5700,10 @@ msgstr "Mostrar senha"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps come over with the tags you gave them, your hidden apps, the pictures you chose and your tag filters. Anything already installed plays from where it is, so nothing downloads again, and nothing is moved or deleted."
 msgstr "Mostre ao Quiver onde está sua pasta do Quiver Launcher 3, e seus apps vêm junto com as tags que você deu a eles, seus apps ocultos, as imagens que você escolheu e seus filtros de tags. O que já está instalado abre de onde está, então nada é baixado de novo, e nada é movido nem apagado."
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show the catalog's tag {name} on this app"
+msgstr "Mostrar a tag do catálogo {name} neste app"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Show the full description"
@@ -6206,6 +6251,10 @@ msgstr "A playlist compartilhada está atualizada."
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "As tags que você deu aos seus apps, incluindo as trazidas do Quiver Launcher 3. Renomear ou excluir uma tag muda ela em todos os apps que a têm. As tags do catálogo não são afetadas."
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "As tags que seus apps têm do catálogo. Uma tag oculta fica fora dos cards, do filtro de tags, da busca e das playlists neste computador. Para ocultar uma em um só app, desmarque-a no menu Tags desse app."
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"

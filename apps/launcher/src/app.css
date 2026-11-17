@@ -1894,6 +1894,8 @@ body:has(.overlay) .shell > main { overflow: hidden; scrollbar-gutter: stable; }
 .tag-list .tag-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tag-list .tag-name .muted { font-size: 12px; margin-left: 6px; }
 .tag-list .tag-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.tag-list .tag-actions { align-items: center; }
+.tag-all { display: flex; gap: 8px; margin: 10px 0 6px; }
 .tag-rename { display: flex; gap: 6px; flex: 1; }
 .tag-rename input { flex: 1; min-width: 0; }
 

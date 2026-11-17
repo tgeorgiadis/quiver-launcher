@@ -9,6 +9,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
+import { hideOnApp, shownTags, type HiddenTags } from "./catalog-tags";
 import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
@@ -86,6 +87,11 @@ export type CatalogEntry = Entry & {
    * chose pre-releases for this app (`withPrereleases`). Only in the store's `catalog`; never kept.
    */
   verifiedMain?: Verified;
+  /**
+   * The catalog's tags, while `tags` is those of them the player hasn't hidden (catalog-tags.ts). Only in the store's
+   * `catalog`; never kept.
+   */
+  allTags?: string[];
 };
 export type Install = {
   /** Set for an install adopted from Quiver Launcher 3, which stays where it was. */
@@ -231,6 +237,8 @@ type Launcher = {
   /** The catalog's consoles, and their names by id. */
   consoles: Console[];
   consoleNames: Record<string, string>;
+  /** An entry from the site (Browse's, or a game's ports) less the tags hidden here, as `catalog`'s are. */
+  withShownTags: <E extends Pick<Entry, "id" | "tags">>(entry: E) => E;
   library: LibraryItem[];
   installs: Record<string, Install>;
   catalog: Record<string, CatalogEntry>;
@@ -811,10 +819,17 @@ export function usableCatalog(catalog: Record<string, CatalogEntry>) {
   return Object.fromEntries(Object.entries(catalog).filter(([, e]) => whole(e)));
 }
 
+/** The entry with every tag the catalog gave it, the ones the player hid among them. */
+export function withAllTags(entry: CatalogEntry): CatalogEntry {
+  if (!entry.allTags) return entry;
+  const { allTags, ...rest } = entry;
+  return { ...rest, tags: allTags };
+}
+
 /** Entries as they're kept: each the site's own. The same object when none had the player's choice in it. */
 function keptAsSent(catalog: Record<string, CatalogEntry>) {
-  if (!Object.values(catalog).some((e) => e.verifiedMain)) return catalog;
-  return Object.fromEntries(Object.entries(catalog).map(([id, e]) => [id, withMainRelease(e)]));
+  if (!Object.values(catalog).some((e) => e.verifiedMain || e.allTags)) return catalog;
+  return Object.fromEntries(Object.entries(catalog).map(([id, e]) => [id, withMainRelease(withAllTags(e))]));
 }
 
 /** "v1.2" and "1.2" are the same release. */
@@ -1038,6 +1053,16 @@ export function importedTags(old: OldApp, entry: Entry): string[] {
 }
 
 /**
+ * The catalog's tags the player took off a 3.x app, which 3.x let them: those it last had from the catalog that the
+ * app no longer had there, and the catalog still gives it. None from a 3.x that didn't keep the catalog's.
+ */
+export function removedTags(old: OldApp, entry: Entry): string[] {
+  const kept = new Set((old.tags ?? []).map((t) => t.trim().toLowerCase()));
+  const was = new Set((old.catalogTags ?? []).map((t) => t.toLowerCase()));
+  return entry.tags.filter((t) => was.has(t.toLowerCase()) && !kept.has(t.toLowerCase()));
+}
+
+/**
  * The library with one of the player's tags renamed on every app that has it, whatever its case, or taken off them
  * all without `to`. An app that has the new name already keeps it once, and only the apps changed are new objects.
  */
@@ -1200,6 +1225,8 @@ export type Settings = {
   groupByConsole?: boolean;
   /** Apps hidden from the library here. */
   hidden?: string[];
+  /** The catalog's tags hidden here: everywhere, on one app, or as they're added (catalog-tags.ts). */
+  hiddenTags?: HiddenTags;
   /** Keyboard and controller bindings; unset uses the defaults. */
   keys?: Bindings;
   pad?: Bindings;
@@ -1502,17 +1529,31 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // Each app's verified release as the player chose: the newest pre-release for an app that gets them. What was looked
   // up early for the other choice is left out, and looked up again.
   const prereleasesOn = Boolean(settings.prereleases);
+  // Its tags are those the player hasn't hidden; never a console's, which says what the app is for.
+  const hiddenTags = settings.hiddenTags;
+  const isConsole = (tag: string) => Object.hasOwn(consoleNames, tag);
   const catalog = useMemo(() => {
     let shown = rawCatalog;
     for (const [id, entry] of Object.entries(rawCatalog)) {
       const wants = wantsPrereleases({ prereleases: prereleasesOn }, installs[id]);
-      const now = withEarlyFor(entry.verifiedPrerelease && wants ? withPrereleases(entry, true) : entry, wants);
+      const released = withEarlyFor(entry.verifiedPrerelease && wants ? withPrereleases(entry, true) : entry, wants);
+      const tags = shownTags(hiddenTags, id, entry.tags, isConsole);
+      const now = tags === entry.tags ? released : { ...released, tags: [...tags], allTags: entry.tags };
       if (now === entry) continue;
       if (shown === rawCatalog) shown = { ...rawCatalog };
       shown[id] = now;
     }
     return shown;
-  }, [rawCatalog, installs, prereleasesOn]);
+  }, [rawCatalog, installs, prereleasesOn, hiddenTags, consoleNames]); // eslint-disable-line react-hooks/exhaustive-deps
+  const withShownTags = useMemo(() => {
+    const made = new WeakMap<object, object>();
+    return <E extends Pick<Entry, "id" | "tags">>(entry: E): E => {
+      const tags = shownTags(hiddenTags, entry.id, entry.tags, isConsole);
+      if (tags === entry.tags) return entry;
+      if (!made.has(entry)) made.set(entry, { ...entry, tags: [...tags] });
+      return made.get(entry) as E;
+    };
+  }, [hiddenTags, consoleNames]); // eslint-disable-line react-hooks/exhaustive-deps
   /** Whether this app gets pre-releases: what's asked of the site's releases for it. */
   const prereleasesFor = (id: string) => wantsPrereleases(settings, installs[id]);
   const [githubToken, setGithubToken] = useState(saved.githubToken);
@@ -2414,6 +2455,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     providers,
     consoles,
     consoleNames,
+    withShownTags,
     collections,
     saveCollection: (c) => {
       if (!c.removed && !allCollections.some((x) => x.key === c.key))
@@ -2779,6 +2821,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }, () => onProgress?.(++done));
       const missing: string[] = [];
       const tags = new Map<string, string[]>();
+      // The catalog's tags they took off an app in 3.x, which stay off it here.
+      const removed = new Map<string, string[]>();
       const hidden: string[] = [];
       const imported: ImportedApp[] = [];
       // The pictures the player had for them, to keep a copy of once they're in: by app.
@@ -2797,6 +2841,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         if (install) setInstalls((i) => ({ ...i, [entry.id]: keptInstall(i[entry.id], install) }));
         const own = importedTags(old, entry);
         if (own.length) tags.set(entry.id, own);
+        const off = removedTags(old, entry).filter((t) => !isConsole(t));
+        if (off.length) removed.set(entry.id, off);
         if (old.hidden) hidden.push(entry.id);
         // One they chose themselves, for any app; an address, only for their own, as a catalog app's was the catalog's.
         if (old.icon && (!isArtAddress(old.icon) || it.kind === "custom")) pictures.push([entry.id, old.icon]);
@@ -2815,6 +2861,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
           }),
         );
       if (hidden.length) setSettings((s) => ({ ...s, hidden: [...new Set([...(s.hidden ?? []), ...hidden])] }));
+      if (removed.size)
+        setSettings((s) => ({ ...s, hiddenTags: [...removed].reduce((h, [id, off]) => off.reduce((next, tag) => hideOnApp(next, id, tag, true), h), s.hiddenTags ?? {}) }));
       // Their pictures, as each kind of picture the player chose for them (OldPictures), where the app has none of the
       // player's here already. A file is copied in for each, sized for it, as picking one does; one that can't be read
       // is left out.

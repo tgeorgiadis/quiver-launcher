@@ -479,7 +479,7 @@ function BrowsePage({
   kept: KeptBrowse | null;
   onKeep: (kept: KeptBrowse) => void;
 }) {
-  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs } = useLauncher();
+  const { client, config, library, remember, consoles, consoleNames, settings, setSettings, jobs, withShownTags } = useLauncher();
   const saved = useAccount().user?.catalogDefaults;
   // As in Quiver Launcher 3, apps already in the library stay out of Browse unless the player asks for them.
   const showOwned = Boolean(settings.browseShowsLibrary);
@@ -866,7 +866,7 @@ function BrowsePage({
             {entries.map((entry) => (
               <EntryCard
                 key={entry.id}
-                entry={entry}
+                entry={withShownTags(entry)}
                 {...looks.card(entry)}
                 // A download's progress, or what went wrong, shows over the art without hover.
                 className={jobs[entry.id] ? "busy" : undefined}

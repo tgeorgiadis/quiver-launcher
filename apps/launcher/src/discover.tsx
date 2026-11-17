@@ -62,7 +62,7 @@ export function Discover({
   /** The apps hidden from Browse (browse-hidden.ts), out of it as the grid has them. */
   hidden: ReadonlySet<string>;
 }) {
-  const { consoles, consoleNames, library, jobs } = useLauncher();
+  const { consoles, consoleNames, library, jobs, withShownTags } = useLauncher();
   // As in the grid: the apps in the library when the page came stay out; one added since stays, with its badge.
   const [owned] = useState(() => new Set(library.map((i) => i.id)));
   const showing = (entries: Entry[]) => browseShown(entries, { owned, showOwned, hidden, view: "hide" });
@@ -82,7 +82,7 @@ export function Discover({
   const card = (entry: Entry) => (
     <EntryCard
       key={entry.id}
-      entry={entry}
+      entry={withShownTags(entry)}
       {...looks.card(entry)}
       className={jobs[entry.id] ? "busy" : undefined}
       consoleNames={consoleNames}
@@ -140,7 +140,7 @@ export function Discover({
  * None for an app with no console (the player's own, a tool) or when there's nothing else to show.
  */
 export function MoreLikeThis({ entry, onOpen, action }: { entry: Entry; onOpen: (entry: Entry) => void; action: (entry: Entry) => ReactNode }) {
-  const { client, config, consoleNames, remember, library, jobs, settings } = useLauncher();
+  const { client, config, consoleNames, remember, library, jobs, settings, withShownTags } = useLauncher();
   const looks = useBrowseCards();
   const system = entry.consoles?.[0];
   const [items, setItems] = useState<{ for: string; entries: Entry[] } | null>(null);
@@ -170,7 +170,7 @@ export function MoreLikeThis({ entry, onOpen, action }: { entry: Entry; onOpen: 
         {entries?.map((e) => (
           <EntryCard
             key={e.id}
-            entry={e}
+            entry={withShownTags(e)}
             {...looks.card(e)}
             className={jobs[e.id] ? "busy" : undefined}
             consoleNames={consoleNames}

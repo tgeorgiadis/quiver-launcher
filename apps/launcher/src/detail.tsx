@@ -11,7 +11,8 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { ApiError, providerFor, type AiUse, type Asset, type Checking, type Client, type DeveloperProfile, type Detail, type Entry, type HistoryRelease, type Os, type Readme as ReadmeText, type Release, type ReleaseScan, type RepositoryRef, type Withdrawn } from "@quiverlauncher/api";
-import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime } from "@quiverlauncher/ui";
+import { EasySetupChip, OS_NAMES, ReleaseBadge, alertTitles, badgeState, hasEasySetup, fullDate, platformList, relativeTime, tagLabel } from "@quiverlauncher/ui";
+import { hiddenOnApp, hideOnApp, hideableTags } from "./catalog-tags";
 import { Markdown } from "@quiverlauncher/ui/markdown";
 import { i18n } from "@quiverlauncher/i18n";
 import { earlyHereFor, onlyPrereleases, pulledVerified, useLauncher, type Install, type Settings } from "./store";
@@ -1602,8 +1603,9 @@ export const withTag = (tags: string[], input: string) => {
 
 /** The player's playlists the app is on (or a new one), and their own tags on it. */
 export function Tags({ id }: { id: string }) {
-  const { library, collections, setTags } = useLauncher();
+  const { library, collections, setTags, catalog, settings, setSettings, consoleNames } = useLauncher();
   const tags = library.find((i) => i.id === id)?.overrides?.tags ?? [];
+  const theirs = hideableTags(catalog[id], settings.hiddenTags, consoleNames);
   const [input, setInput] = useState("");
   const has = (tag: string) => tags.some((t) => t.toLowerCase() === tag.toLowerCase());
   const toggle = (tag: string) => setTags(id, has(tag) ? tags.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...tags, tag]);
@@ -1638,6 +1640,32 @@ export function Tags({ id }: { id: string }) {
           <input aria-label={t`Add a tag`} placeholder={t`Add a tag…`} value={input} onChange={(e) => setInput(e.target.value)} />
         </div>
       </form>
+      {theirs.length > 0 && (
+        <div className="tag-field">
+          <span className="field-label">
+            <Trans comment="Label on an app's page, over the tags the catalog gave it">From the catalog</Trans>
+          </span>
+          <div className="chips">
+            {theirs.map((tag) => {
+              const off = hiddenOnApp(settings.hiddenTags, id, tag);
+              const name = tagLabel(tag);
+              return (
+                <button
+                  type="button"
+                  key={tag}
+                  className={off ? "chip" : "chip on"}
+                  aria-pressed={!off}
+                  aria-label={off ? t`Show the catalog's tag ${name} on this app` : t`Hide the catalog's tag ${name} on this app`}
+                  onClick={() => setSettings((s) => ({ ...s, hiddenTags: hideOnApp(s.hiddenTags, id, tag, !off) }))}
+                >
+                  {name}
+                  {!off && " ×"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

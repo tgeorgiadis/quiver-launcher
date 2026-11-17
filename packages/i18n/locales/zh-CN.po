@@ -1575,6 +1575,11 @@ msgstr "轮播图"
 msgid "Catalog filters"
 msgstr "目录筛选条件"
 
+#. Settings section: the tags apps have from the catalog, which the player can hide
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Catalog tags"
+msgstr "目录标签"
+
 #. Heading of a README's caution callout, as on GitHub
 #: ../ui/src/index.tsx
 msgctxt "README callout"
@@ -2647,6 +2652,13 @@ msgstr "来自 Quiver Launcher 3。移动其中的应用之前，请保留此文
 msgid "From Quiver's catalog."
 msgstr "来自 Quiver 的目录。"
 
+#. Heading in an app's Tags menu, over the tags the catalog gave it
+#. Label on an app's page, over the tags the catalog gave it
+#: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/detail.tsx
+msgid "From the catalog"
+msgstr "来自目录"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Full screen"
 msgstr "全屏"
@@ -2764,7 +2776,9 @@ msgstr "存在问题"
 msgid "Helps improve Quiver Launcher: which screens and features get used, and errors. Never your files or folders."
 msgstr "帮助改进 Quiver Launcher：了解哪些屏幕和功能被使用，以及发生的错误。绝不会收集你的文件或文件夹。"
 
+#. Beside a catalog tag the player hid on every app
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hidden"
 msgstr "已隐藏"
 
@@ -2785,11 +2799,22 @@ msgstr "仅显示已隐藏的应用"
 msgid "Hidden apps shown"
 msgstr "显示已隐藏的应用"
 
+#. Button: hide a catalog tag on every app
 #. Hides a post from everyone
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/feedback.tsx
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Hide"
 msgstr "隐藏"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide {name}"
+msgstr "隐藏 {name}"
+
+#. Button: hide every catalog tag on every app
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide all"
+msgstr "全部隐藏"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Hide any AI use"
@@ -2834,6 +2859,14 @@ msgstr "隐藏主要由 AI 生成的应用"
 #: ../../apps/launcher/src/App.tsx
 msgid "Hide password"
 msgstr "隐藏密码"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Hide tags the catalog adds from now on"
+msgstr "隐藏目录今后新增的标签"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Hide the catalog's tag {name} on this app"
+msgstr "在此应用上隐藏目录标签 {name}"
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Hide the other files"
@@ -5556,6 +5589,7 @@ msgstr "共享播放列表链接"
 msgid "Shortcuts"
 msgstr "快捷方式"
 
+#. Button: show a hidden catalog tag again
 #. Controller hint: what Confirm does, scrolling the focused control into view
 #. Makes a hidden post visible again
 #. Picks which library tab or playlist the library shows, where the tabs don't fit
@@ -5563,10 +5597,12 @@ msgstr "快捷方式"
 #: ../../apps/launcher/src/discussions.tsx
 #: ../../apps/launcher/src/library.tsx
 #: ../../apps/launcher/src/spatial.ts
+#: ../../apps/launcher/src/tag-settings.tsx
 msgid "Show"
 msgstr "显示"
 
 #. A dot under the featured apps: shows that app's slide
+#: ../../apps/launcher/src/tag-settings.tsx
 #: ../ui/src/discover.tsx
 msgid "Show {name}"
 msgstr "显示 {name}"
@@ -5578,6 +5614,11 @@ msgstr "显示一张你自己的图片作为游戏库网格背景。“侧边栏
 #: ../../apps/launcher/src/announcements-ui.tsx
 msgid "Show again"
 msgstr "再次显示"
+
+#. Button: show every catalog tag again
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "Show all"
+msgstr "全部显示"
 
 #: ../../apps/launcher/src/library.tsx
 msgid "Show all apps"
@@ -5659,6 +5700,10 @@ msgstr "显示密码"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Show Quiver where your Quiver Launcher 3 folder is, and your apps come over with the tags you gave them, your hidden apps, the pictures you chose and your tag filters. Anything already installed plays from where it is, so nothing downloads again, and nothing is moved or deleted."
 msgstr "告诉 Quiver 你的 Quiver Launcher 3 文件夹在哪里，你的应用就会连同你加的标签、隐藏的应用、选择的图片和标签筛选器一起迁移过来。已安装的内容从原位置运行，无需重新下载，也不会移动或删除任何内容。"
+
+#: ../../apps/launcher/src/detail.tsx
+msgid "Show the catalog's tag {name} on this app"
+msgstr "在此应用上显示目录标签 {name}"
 
 #: ../../apps/launcher/src/game.tsx
 msgid "Show the full description"
@@ -6206,6 +6251,10 @@ msgstr "共享播放列表已是最新版本。"
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "The tags you gave your apps, including any brought over from Quiver Launcher 3. Renaming or deleting one changes it on every app that has it. The catalog's own tags aren't affected."
 msgstr "你给应用添加的标签，包括从 Quiver Launcher 3 带过来的。重命名或删除一个标签会改动所有带有它的应用。目录自带的标签不受影响。"
+
+#: ../../apps/launcher/src/tag-settings.tsx
+msgid "The tags your apps have from the catalog. A hidden tag is left off cards, the tag filter, search and playlists on this computer. To hide one on a single app, untick it in that app's Tags menu."
+msgstr "你的应用从目录获得的标签。隐藏的标签不会出现在这台电脑的卡片、标签筛选、搜索和播放列表中。要只在某个应用上隐藏，请在该应用的“标签”菜单中取消勾选。"
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"

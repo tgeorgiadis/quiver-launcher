@@ -818,6 +818,8 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     stalled: () => stalls.size,
     /** The verified releases an app lists in place of its one, newest first. */
     setReleases: (slug, list) => (listedReleases[slug] = list),
+    /** Changes a catalog app as the site has it (its tags, say). */
+    setEntry: (slug, changes) => Object.assign(entries.find((e) => e.slug === slug), changes),
     /** Publishes a new verified release of every app. */
     release: (next) => (version = next),
     /** Quiver Launcher's releases, for updates, and the key they're signed with. */
