@@ -2768,8 +2768,8 @@ msgstr "파일 이름(예: config.ini)"
 
 #. Discover's button and X's hint: the order of the games, and narrowing them to the library or not, makers, home consoles or handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter & sort"
-msgstr "필터 및 정렬"
+msgid "Filter/Sort"
+msgstr "필터/정렬"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3856,8 +3856,8 @@ msgid "Layout"
 msgstr "레이아웃"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
-msgstr "LB / RB로 콘솔을 넘겨요. 필터 및 정렬에서 제조사나 종류로 좁힐 수 있어요."
+msgid "LB / RB go through the consoles; Filter/Sort narrows them to makers or kinds."
+msgstr "LB / RB로 콘솔을 넘겨요. 필터/정렬에서 제조사나 종류로 좁힐 수 있어요."
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."

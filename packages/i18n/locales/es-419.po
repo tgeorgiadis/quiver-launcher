@@ -2768,8 +2768,8 @@ msgstr "Nombre del archivo, como config.ini"
 
 #. Discover's button and X's hint: the order of the games, and narrowing them to the library or not, makers, home consoles or handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter & sort"
-msgstr "Filtrar y ordenar"
+msgid "Filter/Sort"
+msgstr "Filtrar/Ordenar"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3856,8 +3856,8 @@ msgid "Layout"
 msgstr "Diseño"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
-msgstr "LB / RB recorren las consolas; Filtrar y ordenar las reduce a fabricantes o tipos."
+msgid "LB / RB go through the consoles; Filter/Sort narrows them to makers or kinds."
+msgstr "LB / RB recorren las consolas; Filtrar/Ordenar las reduce a fabricantes o tipos."
 
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."

@@ -928,15 +928,27 @@
   margin-right: calc(var(--u) * 10);
   border-radius: calc(var(--u) * 10);
 }
-.tv-filter-picks {
-  max-width: calc(var(--u) * 260);
-  overflow: hidden;
-  color: #94a3b8;
-  font-weight: 500;
-  text-overflow: ellipsis;
+/* What Filter/Sort picked: at the top right, beside the focused game's name, where there's room. */
+.tv-filter-summary {
+  position: absolute;
+  top: calc(var(--u) * 22);
+  right: calc(var(--u) * 48);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: calc(var(--u) * 6);
+  max-width: 44%;
+  pointer-events: none;
 }
-.tv-filter-button.chosen .tv-filter-picks {
+.tv-filter-summary span {
+  padding: calc(var(--u) * 4) calc(var(--u) * 11);
+  border: 1px solid #38bdf84d;
+  border-radius: 999px;
+  background: #38bdf81a;
   color: #bae6fd;
+  font-size: calc(var(--u) * 12.5);
+  font-weight: 600;
+  white-space: nowrap;
 }
 .tv-filter-caret {
   width: calc(var(--u) * 14);

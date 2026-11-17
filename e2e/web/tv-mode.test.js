@@ -77,7 +77,8 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     assert.equal(await selectedTab(s2), "Discover");
     await s2.page.locator(".tv-flash").waitFor({ state: "detached" });
     // Filter: X opens its list from the games, under its button. Its first line is the library's choice, left and right.
-    const picks = s2.page.locator(".tv-filter-picks");
+    /** What Filter/Sort picked, as the top right shows it. */
+    const picks = { innerText: async () => (await s2.page.locator(".tv-filter-summary span").allInnerTexts()).join(", ") };
     const row = (name) => s2.page.locator(".tv-dropdown li", { hasText: name });
     assert.equal(await picks.innerText(), "Recently added, Not in library");
     await press(s2, "West");
@@ -167,7 +168,7 @@ test("Discover sorts by release date once a console is picked, not the whole cat
     await s2.page.locator(".tv-dropdown").waitFor();
     // Sort, first: Recently added, Recently updated, Top rated, Name A–Z, then Release date, oldest first.
     for (let i = 0; i < 4; i++) await press(s2, "DPadRight");
-    await s2.until(async () => (await s2.page.locator(".tv-filter-picks").innerText()).startsWith("Release date, oldest first"));
+    await s2.until(async () => (await s2.page.locator(".tv-filter-summary span").first().innerText()) === "Release date, oldest first");
     await press(s2, "East");
     await s2.page.locator(".tv-dropdown").waitFor({ state: "detached" });
     await s2.page.getByText("Pick a console to sort by release date").waitFor();

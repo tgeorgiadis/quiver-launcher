@@ -76,7 +76,7 @@ const games = () => t({ message: "Games", comment: "Controller hint on Discover'
 /** And for the shoulder buttons, which step through the consoles there. */
 const consolesHint = () => t({ message: "Consoles", comment: "Controller hint on Discover: the shoulder buttons go to the next or previous console" });
 /** Filter's name, on its button and as X's hint. */
-const filterName = () => t({ message: "Filter & sort", comment: "Discover's button and X's hint: the order of the games, and narrowing them to the library or not, makers, home consoles or handhelds" });
+const filterName = () => t({ message: "Filter/Sort", comment: "Discover's button and X's hint: the order of the games, and narrowing them to the library or not, makers, home consoles or handhelds" });
 
 type Props = {
   state: DiscoverState;
@@ -232,13 +232,13 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   const sorting = byYear && !pickConsole && (!allThere || listed.some((a) => a.entry.games[0] && !(a.entry.games[0].slug in years)));
   const apps = useMemo(() => (!byYear ? listed : pickConsole || sorting ? [] : sortApps(listed, sort, years)), [byYear, pickConsole, sorting, listed, sort, years]);
 
-  /** What Filter & sort has picked, after its name: the order, the library's choice, then makers and kinds. */
+  /** What Filter/Sort has picked, at the top right: the order, the library's choice, then makers and kinds. */
   const picks = [
     i18n._(CATALOG_SORTS.find((s) => s.id === sort)!.label),
     i18n._(LIBRARY_FILTERS.find((f) => f.id === filter)!.label),
     ...brands.filter((b) => makers.includes(b)).map(makerName),
     ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f])),
-  ].join(", ");
+  ];
   const consoleChips = useMemo(() => [{ id: null, label: t`All consoles` }, ...shown.map((c) => ({ id: c.id as string | null, label: c.short }))], [shown]);
   const at = Math.max(0, consoleChips.findIndex((c) => c.id === consoleId));
 
@@ -303,7 +303,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   const emptyText = none
     ? { title: t`No consoles match this filter`, text: t`Change the filter, or choose Every console.` }
     : pickConsole
-      ? { title: t`Pick a console to sort by release date`, text: t`LB / RB go through the consoles; Filter & sort narrows them to makers or kinds.` }
+      ? { title: t`Pick a console to sort by release date`, text: t`LB / RB go through the consoles; Filter/Sort narrows them to makers or kinds.` }
       : sorting && !page.error
         ? { title: t`Sorting by release date…`, text: "" }
         : page.error && filter !== "inLibrary"
@@ -317,11 +317,15 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   return (
     <div className="tv-discover">
       <GameHeader app={zone === "grid" ? focused : null} consoleName={focused && zone === "grid" ? consoleName(focused) : ""} />
+      <div className="tv-filter-summary" aria-label={filterName()}>
+        {picks.map((pick) => (
+          <span key={pick}>{pick}</span>
+        ))}
+      </div>
       <div className={`tv-chip-row consoles${zone === "consoles" ? " active" : ""}`} role="toolbar" aria-label={t`Consoles`}>
         <button ref={filterButton} type="button" className={`tv-filter tv-filter-button${narrowed || filter !== "notInLibrary" || sort !== "added" ? " chosen" : ""}`} aria-haspopup="dialog" onClick={() => setChoosing(true)}>
           <Glyph action="secondary" size={20} />
           {filterName()}
-          <span className="tv-filter-picks">{picks}</span>
           <ChevronDown aria-hidden="true" className="tv-filter-caret" />
         </button>
         {consoleChips.map((c, i) => (
