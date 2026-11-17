@@ -2282,9 +2282,15 @@ function SavesConflictPrompt() {
           <button onClick={() => conflict.answer("here")}>
             <span>
               <strong>
-                <Trans>Keep this computer&apos;s saves</Trans>
+                <Trans>Play with the saves on this computer</Trans>
               </strong>
-              {!conflict.places?.length && (here || !conflict.newer) && <small>{here ? t`Last backed up ${hereWhen}` : t`Changed since their last backup`}</small>}
+              <small>
+                {conflict.places?.length
+                  ? t`Your cloud saves stay in your account as a backup.`
+                  : here
+                    ? t`Last backed up ${hereWhen}. Your cloud saves stay in your account as a backup. These become your newest.`
+                    : t`Your cloud saves stay in your account as a backup. These become your newest.`}
+              </small>
             </span>
           </button>
         </div>

@@ -1589,10 +1589,6 @@ msgstr "Alterado no GitHub depois que esta versão terminou a espera de 48 horas
 msgid "Changed on GitHub after this release finished its 48-hour wait. Its own wait ends {when}"
 msgstr "Alterado no GitHub depois que esta versão terminou a espera de 48 horas. A espera dele termina {when}"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Changed since their last backup"
-msgstr "Alterados desde o último backup"
-
 #: ../../apps/launcher/src/update.tsx
 msgid "Check for updates"
 msgstr "Procurar atualizações"
@@ -3282,10 +3278,6 @@ msgstr "Manter os dados deste app na pasta dele (<0>portable.txt</0>)"
 msgid "Keep this app's saves with my Quiver account"
 msgstr "Manter os saves deste app na minha conta Quiver"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Keep this computer's saves"
-msgstr "Manter os saves deste computador"
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "Mantidos aqui de antes."
@@ -3313,8 +3305,8 @@ msgid "Large name"
 msgstr "Nome grande"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Last backed up {hereWhen}"
-msgstr "Último backup: {hereWhen}"
+msgid "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Last played"
@@ -4465,6 +4457,10 @@ msgstr "Tempo de jogo"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Play with"
 msgstr "Jogar com"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Play with the saves on this computer"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Play without it"
@@ -6958,6 +6954,14 @@ msgstr "Seus saves na nuvem estão cheios ({limit}). Remova cópias para liberar
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "Seus saves na nuvem estão cheios ({limit}). O backup mais recente está só neste computador. Remova cópias aqui ou de outro app para liberar espaço."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."

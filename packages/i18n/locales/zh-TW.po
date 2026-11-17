@@ -1589,10 +1589,6 @@ msgstr "此版本結束 48 小時等待期後，GitHub 上的檔案發生了變�
 msgid "Changed on GitHub after this release finished its 48-hour wait. Its own wait ends {when}"
 msgstr "此版本結束 48 小時等待期後，GitHub 上的檔案發生了變化。該檔案的等待期將於 {when} 結束"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Changed since their last backup"
-msgstr "自上次備份後有變更"
-
 #: ../../apps/launcher/src/update.tsx
 msgid "Check for updates"
 msgstr "檢查更新"
@@ -3282,10 +3278,6 @@ msgstr "將此應用程式的資料儲存在其資料夾中（<0>portable.txt</0
 msgid "Keep this app's saves with my Quiver account"
 msgstr "將此應用程式的存檔保存到我的 Quiver 帳號"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Keep this computer's saves"
-msgstr "保留這部電腦的存檔"
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "從之前的位置保留在此處。"
@@ -3313,8 +3305,8 @@ msgid "Large name"
 msgstr "名稱較長"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Last backed up {hereWhen}"
-msgstr "上次備份：{hereWhen}"
+msgid "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Last played"
@@ -4465,6 +4457,10 @@ msgstr "遊玩時間"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Play with"
 msgstr "使用以下方式遊玩"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Play with the saves on this computer"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Play without it"
@@ -6958,6 +6954,14 @@ msgstr "你的雲端存檔已滿（{limit}）。請移除副本以騰出空間�
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "你的雲端存檔已滿（{limit}）。最新備份只在這部電腦上。請移除這裡或其他應用程式的副本以騰出空間。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
