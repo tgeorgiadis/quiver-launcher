@@ -23,6 +23,7 @@ mod provider_http;
 mod sandbox;
 mod saves;
 mod secrets;
+mod setup;
 mod shortcut;
 mod snapshots;
 mod steam;
@@ -301,7 +302,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                     return Err(launch::drive_gone(&exe, &drive));
                 }
                 // A Windows installer's program: the player can choose it again, or run the installer again.
-                if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d)) {
+                if app_dir(data, folder, dir).is_ok_and(|d| msi::installed(&d) || setup::elsewhere(&d)) {
                     return Err(format!("The program isn't at {program} any more. Choose it again in Launch options, or run its installer again."));
                 }
                 return Err(format!("The program isn't at {program} any more. Remove this app and add it again from where it is now."));
@@ -310,7 +311,7 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
         }
         (None, None) => {
             let dir = present_app_dir(data, folder, dir)?;
-            if msi::installed(&dir) {
+            if msi::installed(&dir) || setup::elsewhere(&dir) {
                 return Err("Quiver doesn't know which program its installer put on this computer yet. Press Play to choose it.".into());
             }
             if let Some(id) = flatpak::installed(&dir) {
@@ -1186,7 +1187,7 @@ fn open_folder(data: State<Data>, id: String) -> Result<(), String> {
         .unwrap_or_default();
     let install = installs.get(&id).ok_or("This app isn't installed.")?;
     // A Windows installer's files are where its program is, not in the app's folder.
-    if let Some(program) = install["program"].as_str().filter(|_| install["installer"] == "msi") {
+    if let Some(program) = install["program"].as_str().filter(|_| install["installer"] == "msi" || install["installer"] == "setup") {
         if let Some(parent) = Path::new(program).parent().filter(|p| p.is_dir()) {
             return reveal(parent);
         }
@@ -1863,6 +1864,10 @@ async fn uninstall(app: tauri::AppHandle, folder: String, dir: Option<String>) -
         // Windows removes what its installer put on the computer, first.
         if msi::installed(&dir) {
             msi::uninstall(&dir)?;
+        }
+        // An app its own setup program installed has its own uninstaller, which goes first too.
+        if setup::installed(&dir) {
+            setup::uninstall(&dir)?;
         }
         // Android removes an app installed from an APK, once the player confirms it.
         #[cfg(target_os = "android")]

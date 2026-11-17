@@ -345,7 +345,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
 
   const install = installs[entry.id];
   // Play with: for an app in its own folder, not one the player added from where it is, or one its Windows installer put elsewhere.
-  const programsOn = Boolean(install && !install.program && install.installer !== "msi" && foldersOn(config.os));
+  const programsOn = Boolean(install && !install.program && !install.installer && foldersOn(config.os));
   useEffect(() => {
     if (sub?.key !== "programs" || found || !install) return;
     native.listPrograms(install.folder, install.dir).then(setFound, () => setFound([]));
@@ -382,7 +382,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
       // Steam running Quiver can't take a shortcut on Windows (lib.rs): greyed, saying why, rather than failing once it's pressed. On Linux it can.
       config.steamRunsUs && config.os !== "linux" ? { text: t`Add to Steam`, act: () => {}, disabled: true, note: steamRunsUsNote() } : { text: t`Add to Steam`, act: () => void shortcut(native.addToSteam) },
     );
-  if (install?.installer === "msi" && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
+  if (install?.installer && !busy) manage.push({ text: t`Run installer again`, act: () => void reinstall(entry.id) });
   // Every release, verified or not, as the app's page has them: the player's own files have none.
   if (!isLocal(entry.id) && !install?.local && !busy) manage.push({ text: install ? t`Change version…` : t`Choose a version…`, act: () => changeVersion(entry) });
   // Already on this computer, somewhere Quiver doesn't know: played from there, with nothing to download.
@@ -392,7 +392,7 @@ function MenuItems({ entry, onOpen, close, escape }: { entry: Entry; onOpen: () 
   const newest = latest.verified?.version ?? latest.lastReleaseVersion;
   const both = config.os === "linux" && latest.supportedOS.includes("linux") && latest.supportedOS.includes("windows");
   const onNewest = !install || Boolean(newest && bare(install.version) === bare(newest));
-  if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && install?.installer !== "msi" && !busy)
+  if (both && onNewest && canGet(latest, config.os) && !pulledVerified(latest) && !isLocal(entry.id) && !install?.local && !install?.installer && !busy)
     manage.push({
       text: install?.wine ? t`Switch to the Linux version` : install ? t`Switch to the Windows version (Wine)` : t`Install the Windows version (Wine)`,
       act: () => void get(latest, undefined, { platform: install?.wine ? "linux" : "windows" }),

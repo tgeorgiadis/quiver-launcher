@@ -113,13 +113,16 @@ export type Installed = {
   version: string;
   /** The downloaded file's `sha256:<hex>`. Missing from the web side's stand-in for the Rust side. */
   checksum?: string;
-  installer: "msi" | null;
+  /** "msi" for an MSI package; "setup" for a setup program that installed outside the app's folder. */
+  installer: "msi" | "setup" | null;
   /** The program a Windows installer installed, when the launcher could tell. */
   program: string | null;
   /** Where it installed, to start looking from when the player chooses its program. */
   location: string | null;
   /** Windows wants a restart to finish. */
   restart: boolean;
+  /** A setup program installed it, in the app's folder or outside it. Missing from the web side's stand-in. */
+  setup?: boolean;
 };
 
 /** A game as Discord shows it while it runs: its name, and a picture Discord can fetch from the web. */

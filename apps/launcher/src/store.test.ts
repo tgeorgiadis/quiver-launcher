@@ -297,6 +297,8 @@ describe("the files in an app's folder", () => {
     expect(filesAddable(install)).toBe(true);
     expect(filesAddable({ ...install, program: "/games/a.exe" })).toBe(false);
     expect(filesAddable({ ...install, installer: "msi" })).toBe(false);
+    expect(filesAddable({ ...install, installer: "setup" })).toBe(false);
+    expect(filesAddable({ ...install, setup: true })).toBe(true);
   });
 });
 
@@ -371,6 +373,10 @@ describe("pre-releases", () => {
     expect(updatesOf({}, { updates: "auto" })).toBe("auto");
     expect(updatesOf({ autoUpdates: true }, { installer: "msi" })).toBeUndefined();
     expect(updatesOf({}, { updates: "auto", installer: "msi" })).toBeUndefined();
+    // A setup program's window waits for the player too, wherever it installed.
+    expect(updatesOf({ autoUpdates: true }, { installer: "setup" })).toBeUndefined();
+    expect(updatesOf({ autoUpdates: true }, { setup: true })).toBeUndefined();
+    expect(updatesOf({}, { updates: "pinned", setup: true })).toBe("pinned");
   });
 
   it("make the newest pre-release the app's update for a player who chose them", () => {
@@ -847,5 +853,6 @@ describe("renamable", () => {
     expect(renamable({ ...base, dir: "D:\\Old\\Apps\\ArmyOfTwo", inApps: true })).toBe(false);
     expect(renamable({ ...base, dir: "C:\\Quiver\\apps\\Xbox 360\\Other", inApps: true, group: "Xbox 360" })).toBe(false);
     expect(renamable({ ...base, installer: "msi" })).toBe(false);
+    expect(renamable({ ...base, installer: "setup" })).toBe(false);
   });
 });

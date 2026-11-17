@@ -129,8 +129,13 @@ export type Install = {
   local?: true;
   /** A program the player picked, started exactly where it is; for a Windows installer, the program it installed. */
   program?: string;
-  /** Installed by its Windows installer (MSI), wherever its setup put it: Windows updates and uninstalls it, never on its own. */
-  installer?: "msi";
+  /**
+   * Installed by its Windows installer, wherever its setup put it: an MSI package ("msi"), or a setup program the player
+   * installed outside the app's folder ("setup"). Its setup updates it and its uninstaller removes it, never on its own.
+   */
+  installer?: "msi" | "setup";
+  /** A setup program installed it, in the app's folder or outside it: an update runs its setup window again, so it never updates on its own. */
+  setup?: true;
   /** The player's own way of starting it; kept through updates. */
   launch?: LaunchOptions;
   /** The file the player picked among several for this computer, as a filter (`assetFilterFor`): updates take it again. */
@@ -420,7 +425,7 @@ export type Placing = { entry: Entry; release?: Release; options?: GetOptions };
 export type AppMove = { copied: number; size: number };
 
 /** Whether an install's folder can move to another: one Quiver put there, not a Windows installer's or the player's own. */
-export const movable = (install: Install | undefined) => Boolean(install && !install.local && install.installer !== "msi");
+export const movable = (install: Install | undefined) => Boolean(install && !install.local && !install.installer);
 
 /** `placed`: how many apps are in folders the player chose for each, which moving the apps folder leaves be. */
 export type MovableApps = { inside: MovingApp[]; elsewhere: MovingApp[]; placed: number };
@@ -547,8 +552,8 @@ export function movableApps(installs: Record<string, Install>): MovableApps {
   return {
     inside: all.flatMap(([id, i]) => (i.dir ? [] : [{ id, folder: i.folder }])),
     // A folder of the player's own files kept in another apps folder (by changing the default) goes with that folder.
-    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && i.installer !== "msi" ? [{ id, folder: i.folder, dir: i.dir, ...(i.group ? { group: i.group } : {}) }] : [])),
-    placed: all.filter(([, i]) => i.dir && !i.inApps && !i.local && i.installer !== "msi").length,
+    elsewhere: all.flatMap(([id, i]) => (i.dir && i.inApps && !i.installer ? [{ id, folder: i.folder, dir: i.dir, ...(i.group ? { group: i.group } : {}) }] : [])),
+    placed: all.filter(([, i]) => i.dir && !i.inApps && !i.local && !i.installer).length,
   };
 }
 
@@ -585,7 +590,7 @@ export function sortPlan(
     if (i.dir) continue;
     const why: StaysReason | undefined =
       i.local || isLocal(id) ? "own"
-      : i.installer === "msi" ? "installer"
+      : i.installer ? "installer"
       : !catalog[id] ? "unknown"
       : !groupFolder(withOwnConsoles(catalog[id], own[id]), consoleNames) ? "noConsole"
       : undefined;
@@ -605,7 +610,7 @@ export function sortPlan(
 export const unsortedApps = (...args: Parameters<typeof sortPlan>) => sortPlan(...args).moves;
 
 /** Whether an install may be one of 3.x's that came over before Quiver knew which of them were in its apps folder. */
-export const unsureInApps = (i: Install) => Boolean(i.dir && !i.inApps && !i.local && i.installer !== "msi");
+export const unsureInApps = (i: Install) => Boolean(i.dir && !i.inApps && !i.local && !i.installer);
 
 /**
  * The installs with those 3.x has in its apps folder marked as such, or the same object when none needs it: the ones
@@ -715,12 +720,12 @@ const latestOf = (releases: Release[]) => releases.find((r) => !r.prerelease) ??
  * whose files are wherever its setup put them.
  */
 export const renamable = (install: Install | undefined) =>
-  Boolean(install && (!install.dir || (install.group && !install.program && baseName(install.dir) === install.folder)) && install.installer !== "msi");
+  Boolean(install && (!install.dir || (install.group && !install.program && baseName(install.dir) === install.folder)) && !install.installer);
 
 /** The empty file that has many apps keep their saves and settings in their own folder. */
 export const PORTABLE_FILE = "portable.txt";
 /** Whether files can be added to an app's folder: not a program the player added from where it is, or one its Windows installer put elsewhere. */
-export const filesAddable = (install: Install | undefined) => Boolean(install && !install.program && install.installer !== "msi");
+export const filesAddable = (install: Install | undefined) => Boolean(install && !install.program && !install.installer);
 /** File names without blanks or repeats; on Windows, names in different case are one file. */
 export const uniqueFiles = (names: string[]) => {
   const seen = new Set<string>();
@@ -754,9 +759,9 @@ export const canGet = (entry: Entry, os: string) => availableOn(entry, os) && Bo
  * How an app updates: its own choice, else the player's default (`Settings.autoUpdates`). Unset: it offers them. A
  * Windows installer's setup waits for the player, so it never updates by itself either way.
  */
-export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Pick<Install, "updates" | "installer"> | undefined): "auto" | "pinned" | undefined => {
+export const updatesOf = (settings: Pick<Settings, "autoUpdates">, install: Pick<Install, "updates" | "installer" | "setup"> | undefined): "auto" | "pinned" | undefined => {
   const updates = install?.updates ?? (settings.autoUpdates ? "auto" : undefined);
-  return updates === "ask" || (updates === "auto" && install?.installer) ? undefined : updates;
+  return updates === "ask" || (updates === "auto" && (install?.installer || install?.setup)) ? undefined : updates;
 };
 
 /** Whether an app gets pre-releases: its own choice, else the player's default. */
@@ -2189,10 +2194,10 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         filesToAdd: files ?? catalogFiles,
         version: release.version,
         preferred: executables,
-        program: was?.installer === "msi" ? was.program : undefined,
+        program: was?.installer ? was.program : undefined,
       });
       // A Windows installer's program, when Quiver can't tell which it is: the player says, as in Quiver Launcher 3.
-      const msi = done.installer === "msi";
+      const msi = Boolean(done.installer);
       const program = msi ? (done.program ?? (await native.pickProgram(done.location ?? undefined).catch(() => null)) ?? undefined) : undefined;
       const name = entry.projectName;
       if (done.restart) setNotice(t`${name} is installed. Windows says to restart the computer to finish setting it up.`, { stays: true });
@@ -2218,7 +2223,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const dir = into && !msi ? done.dir : i[entry.id]?.dir;
         const inApps = into && !msi ? Boolean(group) || appsFolders(i, config.appsDir).some((f) => samePath(f.path, into)) : i[entry.id]?.inApps;
         const kept = into && !msi ? group : i[entry.id]?.group;
-        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(msi ? { installer: "msi" as const, ...(program ? { program } : {}) } : {}), ...(wine ? { wine: true } : {}) } };
+        return { ...i, [entry.id]: { dir, ...(inApps ? { inApps: true as const } : {}), ...(kept ? { group: kept } : {}), lastPlayed: i[entry.id]?.lastPlayed, ...(installedAt ? { installedAt } : {}), playTime: i[entry.id]?.playTime, ...(i[entry.id]?.copies ? { copies: i[entry.id].copies } : {}), ...(launch ? { launch } : {}), ...(updates ? { updates } : {}), ...(skip ? { skip } : {}), ...(declined ? { declined } : {}), ...(unverified ? { unverified: true } : {}), ...(blocked ? { blocked } : {}), ...(checksum ? { checksum } : {}), ...(pick ? { pick } : {}), ...(files ? { files } : {}), version: release.version, releasedAt: release.releasedAt, releaseId: release.id, folder, executables: msi ? [] : executables, ...(done.installer ? { installer: done.installer, ...(program ? { program } : {}) } : {}), ...(done.setup ? { setup: true as const } : {}), ...(wine ? { wine: true } : {}) } };
       });
       setJobs(({ [entry.id]: _, ...rest }) => rest);
       setFinished((f) => [{ id: entry.id, version: release.version, update: Boolean(from), at: Date.now() }, ...f.filter((d) => d.id !== entry.id)]);
@@ -2625,7 +2630,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       const launch = { ...install.launch, ...(chosen ? { executable: chosen } : {}), windowsRunner: settings.windowsRunner, copies: launchCopies(catalog[id], install) };
       let program = install.program;
       // A Windows installer's program the player didn't choose after its setup: they choose it now.
-      if (install.installer === "msi" && !program) {
+      if (install.installer && !program) {
         program = (await native.pickProgram().catch(() => null)) ?? undefined;
         if (!program) return;
       }

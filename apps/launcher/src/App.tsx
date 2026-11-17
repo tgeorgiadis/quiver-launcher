@@ -1358,7 +1358,7 @@ function AppPage({
         <ModsButton entry={entry} />
         {install && foldersOn(config.os) && <LaunchOptionsButton id={entry.id} />}
         {filesAddable(install) && foldersOn(config.os) && !(job && !("error" in job)) && <AddFilesButton entry={entry} />}
-        {install?.installer === "msi" && !job && <ReinstallButton id={entry.id} />}
+        {install?.installer && !job && <ReinstallButton id={entry.id} />}
         {renamable(install) && foldersOn(config.os) && !(job && !("error" in job)) && (
           <button className="panel-action opens" onClick={() => askRename(entry)}>
             <FolderPen size={16} aria-hidden="true" /> <Trans>Rename folder</Trans>
@@ -1769,7 +1769,7 @@ function UpdatesChoice({ id }: { id: string }) {
   const { installs, settings, setUpdates } = useLauncher();
   const install = installs[id];
   if (!install || install.local) return null;
-  const auto = !install.installer;
+  const auto = !install.installer && !install.setup;
   const installedVersion = versionLabel(install.version);
   const byDefault =
     settings.autoUpdates && auto
