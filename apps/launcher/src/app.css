@@ -542,6 +542,11 @@ main.app-main { padding: 0 0 40px; }
 .settings-pane button.save-button { padding: 4px 10px; border-radius: 8px; background: var(--field-hover); font-size: 12px; font-weight: 500; }
 .settings-pane button.save-button:hover:not(:disabled) { background: var(--line); }
 .settings-pane button.save-button.danger { color: var(--red-text); }
+/* Settings, Sync folder (sync-folder-page.tsx): the folder to a row, then an app to a row. */
+.sync-folder > :is(p, .save-row, .cloud-app-actions) { max-width: 760px; }
+.sync-folder-row { flex-wrap: wrap; }
+.sync-folder-row .save-main { flex-basis: 240px; }
+.sync-app-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 13px; font-weight: 500; }
 .panel-action.opens::after {
   content: ""; flex: none; width: 6px; height: 6px; margin: 0 3px 0 auto;
   border-right: 1.5px solid var(--text-4); border-bottom: 1.5px solid var(--text-4); transform: rotate(-45deg);

@@ -4,13 +4,14 @@
  * themselves after playing, before an update and before uninstalling (store.tsx).
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, CloudDownload, CloudUpload, FolderOpen, FolderSearch, RotateCcw, Trash2, Undo2 } from "lucide-react";
+import { Archive, CloudDownload, CloudUpload, FolderInput, FolderOpen, FolderSearch, FolderSync, RotateCcw, Trash2, Undo2 } from "lucide-react";
 import { i18n } from "@lingui/core";
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Entry } from "@quiverlauncher/api";
 import { sizeLabel } from "./downloads";
-import { native, type SaveBackup, type SavesInfo } from "./native";
+import { native, type SaveBackup, type SavesFolder, type SavesInfo } from "./native";
+import { restoreFromFolder } from "./sync-folder";
 import { onSavesChanged, savesOf } from "./saves";
 import { fetchCopy, lastSent, restoreBackup, sendBackup, type CloudCopy, type CloudMine } from "./cloud-saves";
 import { useAccount } from "./account";
@@ -53,6 +54,12 @@ export function SavesTab({ entry }: { entry: Entry }) {
   /** What the cloud part says after something was done there. */
   const [cloudSaid, setCloudSaid] = useState<{ text: string; error?: true } | null>(null);
   const api = cloudSavesFor(entry.id);
+  /** The player's sync folder, and its backups of this app (sync-folder.ts); null while they're read. */
+  const folder = settings.syncFolder;
+  const [kept, setKept] = useState<SavesFolder | null>(null);
+  /** The folder's backup Restore asks about. */
+  const [askingKept, setAskingKept] = useState<string | null>(null);
+  const [keptSaid, setKeptSaid] = useState<{ text: string; error?: true } | null>(null);
   /** Shows the player a folder a backup names that this computer hasn't kept the app's saves in, before anything goes there. */
   const confirm = confirmSavePlaces(known.projectName);
 
@@ -62,7 +69,9 @@ export function SavesTab({ entry }: { entry: Entry }) {
     if (api)
       api.mine(entry.id).then(setCloud, () => setCloud(null));
     else setCloud(null);
-  }, [of, Boolean(api), entry.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (folder) native.savesFolderState(of, folder).then(setKept, () => setKept(null));
+    else setKept(null);
+  }, [of, Boolean(api), entry.id, folder]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     load();
     return onSavesChanged((id) => id === entry.id && load());
@@ -76,6 +85,8 @@ export function SavesTab({ entry }: { entry: Entry }) {
     setCloudSaid(null);
     setAsking(null);
     setAskingCloud(null);
+    setAskingKept(null);
+    setKeptSaid(null);
     work()
       .then((text) => text && setSaid({ text }), failed)
       .finally(() => (setBusy(false), load()));
@@ -86,6 +97,8 @@ export function SavesTab({ entry }: { entry: Entry }) {
       const made = await native.savesBackup(of, "manual");
       // Sent to the account too; how that went shows in the cloud part.
       if (made && api && cloudOn) await sendBackup(of, entry.id, made, { api, native, manual: true });
+      // And kept in the sync folder; how that went shows in its part.
+      if (made && folder) await native.savesFolderPut(of, folder, made.name).catch((e) => setKeptSaid({ text: String(e), error: true }));
       return made ? t({ message: "Backed up.", comment: "Said after a save backup was made" }) : t`Nothing changed since the last backup.`;
     });
   /** Something done with the account's copies: what it says goes in the cloud part. */
@@ -120,6 +133,27 @@ export function SavesTab({ entry }: { entry: Entry }) {
       if (!api || !newest) return null;
       const how = await sendBackup(of, entry.id, newest, { api, native, manual: true });
       return how === "sent" ? t`Sent to your cloud saves.` : null;
+    });
+  /** Something done with the sync folder's backups: what it says goes in its part. */
+  const runKept = (work: () => Promise<string | null>) =>
+    run(() =>
+      work().then(
+        (text) => (text && setKeptSaid({ text }), null),
+        (e) => (setKeptSaid({ text: String(e), error: true }), null),
+      ),
+    );
+  const restoreKept = (backup: SaveBackup) =>
+    runKept(async () => {
+      if (!folder || !(await restoreFromFolder(of, folder, backup, { native, confirm }))) return null;
+      return t({ message: "Restored.", comment: "Said after a save backup was put back" });
+    });
+  /** Copies the newest backup in now: after choosing the folder, or once its drive is back. */
+  const putNewest = () =>
+    runKept(async () => {
+      const newest = info.backups.find((b) => b.reason !== "restore") ?? info.backups[0];
+      if (!folder || !newest) return null;
+      await native.savesFolderPut(of, folder, newest.name);
+      return t`Copied to your sync folder.`;
     });
   const restore = (backup: SaveBackup) =>
     run(async () => {
@@ -271,6 +305,96 @@ export function SavesTab({ entry }: { entry: Entry }) {
     );
   }
 
+  /** The sync folder's side: its backups of this app, from this computer and the player's others. */
+  function folderPart() {
+    const heading = (
+      <h4>
+        <Trans comment="Heading on an app's Saves tab: the backups of its saves in the player's own synced folder">Sync folder</Trans>
+      </h4>
+    );
+    if (!folder)
+      return (
+        <div className="panel-group sync-saves">
+          {heading}
+          <p className="muted save-source">
+            <Trans>Backups can also go in a folder of your own, such as one in Dropbox, OneDrive or Syncthing, so your saves follow you to your other computers without an account. Choose it in Settings, under Cloud saves.</Trans>
+          </p>
+        </div>
+      );
+    if (!kept) return null;
+    const newest = info!.backups.find((b) => b.reason !== "restore") ?? info!.backups[0];
+    const missing = kept.there && newest && !kept.copies.some((c) => c.hash === newest.hash);
+    return (
+      <div className="panel-group sync-saves">
+        {heading}
+        <p className="muted save-source">
+          <FolderSync size={13} aria-hidden="true" /> {t`Each backup is also kept in ${folder}, which holds the newest 5 of this app from all your computers.`}
+        </p>
+        {!kept.there && (
+          <p className="save-said error" role="status">
+            <Trans>Quiver can&apos;t find this folder right now. If it&apos;s on a drive, plug it in. Backups carry on on this computer.</Trans>
+          </p>
+        )}
+        {missing && (
+          <button className="panel-action" disabled={busy} onClick={putNewest}>
+            <FolderInput size={16} aria-hidden="true" /> <Trans>Copy the newest backup there now</Trans>
+          </button>
+        )}
+        {keptSaid && (
+          <p className={keptSaid.error ? "save-said error" : "save-said"} role={keptSaid.error ? "alert" : "status"}>
+            {keptSaid.text}
+          </p>
+        )}
+        {kept.copies.map((copy) => {
+          const files = plural(copy.files, { one: "# file", other: "# files" });
+          const version = copy.version ?? "";
+          const device = copy.device;
+          return (
+            <div className="save-row cloud-row" key={copy.name}>
+              <span className="save-main">
+                <span>{when(copy.at)}</span>
+                <span className="save-note">
+                  {[t({ message: `From ${device}`, comment: "Which computer a cloud save was made on" }), SYSTEM_NAMES[copy.os] ?? copy.os, files, sizeLabel(copy.size), version && t({ message: `Version ${version}`, comment: "The app's version when a save backup was made" })]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+                {copy.hash === kept.hash && (
+                  <span className="save-note">
+                    <Trans>These are the saves on this computer now.</Trans>
+                  </span>
+                )}
+                {askingKept === copy.name && (
+                  <span className="save-note">
+                    <Trans>Restore this backup? Your saves now are backed up first.</Trans>
+                  </span>
+                )}
+              </span>
+              {askingKept === copy.name ? (
+                <>
+                  <button className="save-button primary" disabled={busy} onClick={() => restoreKept(copy)}>
+                    <Trans>Restore</Trans>
+                  </button>
+                  <button className="save-button" disabled={busy} onClick={() => setAskingKept(null)}>
+                    <Trans>Cancel</Trans>
+                  </button>
+                </>
+              ) : (
+                <button className="save-button" disabled={busy} onClick={() => setAskingKept(copy.name)}>
+                  <RotateCcw size={14} aria-hidden="true" /> <Trans>Restore</Trans>
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {kept.there && !kept.copies.length && (
+          <p className="muted save-source">
+            <Trans>Nothing in your sync folder for this app yet.</Trans>
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <section className="app-panel computer-panel saves-panel" aria-label={t({ message: "Saves", comment: "Tab of an installed app's page: its save backups" })}>
       <div className="panel-group">
@@ -364,6 +488,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
         )}
       </div>
       {cloudPart()}
+      {folderPart()}
     </section>
   );
 }

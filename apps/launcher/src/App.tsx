@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, FolderSync, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -2227,6 +2227,8 @@ function SavesConflictPrompt() {
   const name = conflict.entry.projectName;
   const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
   const { cloud, here } = conflict;
+  // The other saves are the account's, or the ones in the player's sync folder (sync-folder.ts).
+  const folder = conflict.from === "folder";
   const device = cloud.device;
   const cloudWhen = when(cloud.madeAt);
   const hereWhen = here ? when(here.at) : "";
@@ -2234,24 +2236,32 @@ function SavesConflictPrompt() {
     <Dialog label={t`Which saves of ${name}?`} onClose={() => conflict.answer(null)}>
       <div className="detail-body program-prompt saves-conflict">
         <h2>
-          <Cloud size={18} aria-hidden="true" /> {t`Which saves of ${name} do you want to keep?`}
+          {folder ? <FolderSync size={18} aria-hidden="true" /> : <Cloud size={18} aria-hidden="true" />} {t`Which saves of ${name} do you want to keep?`}
         </h2>
         {conflict.places?.length ? (
           <>
             <p className="muted">
-              <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              {folder ? (
+                <Trans>The saves in your sync folder would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              ) : (
+                <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+              )}
             </p>
             <SavePlaces places={conflict.places} />
           </>
         ) : conflict.newer ? (
           <p className="muted">
-            {update
-              ? t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
-              : t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`}
+            {folder
+              ? update
+                ? t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`The saves in your sync folder were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`
+              : update
+                ? t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+                : t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`}
           </p>
         ) : (
           <p className="muted">
-            <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
+            {t`${name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab.`}
           </p>
         )}
         <div className="choices">
@@ -2260,7 +2270,7 @@ function SavesConflictPrompt() {
               autoFocus
               className="saves-update"
               onClick={() => {
-                // Nothing starts and the saves stay as they are: after the update, Play brings the cloud saves in.
+                // Nothing starts and the saves stay as they are: after the update, Play brings the other saves in.
                 conflict.answer(null);
                 void get(latest);
               }}
@@ -2268,14 +2278,26 @@ function SavesConflictPrompt() {
               <span>
                 <strong>{t`Update to ${updateTo}`}</strong>
                 <small>
-                  <Trans>Then press Play, and your cloud saves are put in place.</Trans>
+                  {folder ? <Trans>Then press Play, and the saves in your sync folder are put in place.</Trans> : <Trans>Then press Play, and your cloud saves are put in place.</Trans>}
                 </small>
               </span>
             </button>
           )}
           <button autoFocus={!update} onClick={() => conflict.answer("cloud")}>
             <span>
-              <strong>{conflict.newer ? <Trans>Use my cloud saves anyway</Trans> : <Trans>Use my cloud saves</Trans>}</strong>
+              <strong>
+                {folder ? (
+                  conflict.newer ? (
+                    <Trans>Use the saves in my sync folder anyway</Trans>
+                  ) : (
+                    <Trans>Use the saves in my sync folder</Trans>
+                  )
+                ) : conflict.newer ? (
+                  <Trans>Use my cloud saves anyway</Trans>
+                ) : (
+                  <Trans>Use my cloud saves</Trans>
+                )}
+              </strong>
               <small>{conflict.newer ? t`From ${device}, ${cloudWhen}. The saves here are backed up first.` : t`From ${device}, ${cloudWhen}`}</small>
             </span>
           </button>
@@ -2285,11 +2307,17 @@ function SavesConflictPrompt() {
                 <Trans>Play with the saves on this computer</Trans>
               </strong>
               <small>
-                {conflict.places?.length
-                  ? t`Your cloud saves stay in your account as a backup.`
-                  : here
-                    ? t`Last backed up ${hereWhen}. Your cloud saves stay in your account as a backup. These become your newest.`
-                    : t`Your cloud saves stay in your account as a backup. These become your newest.`}
+                {folder
+                  ? conflict.places?.length
+                    ? t`The saves in your sync folder stay there as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. The saves in your sync folder stay there as a backup. These become your newest.`
+                      : t`The saves in your sync folder stay there as a backup. These become your newest.`
+                  : conflict.places?.length
+                    ? t`Your cloud saves stay in your account as a backup.`
+                    : here
+                      ? t`Last backed up ${hereWhen}. Your cloud saves stay in your account as a backup. These become your newest.`
+                      : t`Your cloud saves stay in your account as a backup. These become your newest.`}
               </small>
             </span>
           </button>

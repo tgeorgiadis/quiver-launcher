@@ -26,6 +26,7 @@ mod secrets;
 mod shortcut;
 mod snapshots;
 mod steam;
+mod sync_folder;
 #[cfg(windows)]
 mod tray;
 mod update;
@@ -863,6 +864,110 @@ async fn saves_download(data: State<'_, Data>, of: SavesOf, url: String, size: u
     }
     let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
     saves::adopt(&store, &part, &hash)
+}
+
+/// The folder save backups are also kept in for the folder the player picked (sync_folder.rs): that one, or a
+/// "Quiver Saves" folder inside it.
+#[tauri::command]
+async fn saves_folder_choose(data: State<'_, Data>, path: String) -> Result<String, String> {
+    let (picked, own) = (PathBuf::from(path), data.0.clone());
+    let folder = tauri::async_runtime::spawn_blocking(move || sync_folder::choose(&picked, &own)).await.map_err(|e| e.to_string())??;
+    Ok(folder.to_string_lossy().into())
+}
+
+/// What the sync folder holds, by app, for Settings. `there`: false when the folder can't be found now.
+#[derive(Serialize)]
+struct SyncFolderKept {
+    there: bool,
+    apps: Vec<sync_folder::AppKept>,
+}
+
+#[tauri::command]
+async fn saves_folder_summary(folder: String) -> Result<SyncFolderKept, String> {
+    // Off the window's thread: a folder on a drive that's asleep, or on the network, can take a while.
+    tauri::async_runtime::spawn_blocking(move || {
+        let folder = PathBuf::from(folder);
+        SyncFolderKept { there: folder.is_dir(), apps: sync_folder::summary(&folder) }
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn saves_folder_open(folder: String) -> Result<(), String> {
+    let folder = PathBuf::from(folder);
+    if !folder.is_dir() {
+        return Err(sync_folder::GONE.into());
+    }
+    reveal(&folder)
+}
+
+/// An app's saves beside the sync folder's backups of them, as they're compared before it starts (sync-folder.ts).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavesFolder {
+    /// The checksum of the saves as they are now; none when there are none here.
+    hash: Option<String>,
+    /// The checksum they had when they last matched the newest backup in this folder.
+    synced: Option<String>,
+    os: &'static str,
+    /// False when the folder can't be found now: a drive that isn't plugged in.
+    there: bool,
+    /// The folder's backups of the app, newest first. The first arrived whole.
+    copies: Vec<sync_folder::Kept>,
+}
+
+#[tauri::command]
+async fn saves_folder_state(data: State<'_, Data>, of: SavesOf, folder: String) -> Result<SavesFolder, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (places, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let hash = saves::current_hash(&places, &roots, &saves::chosen_abs(&state))?;
+    let synced = state.folder_synced.filter(|s| s.folder == folder).map(|s| s.hash);
+    let at = Path::new(&folder);
+    Ok(SavesFolder { hash, synced, os, there: at.is_dir(), copies: sync_folder::list(at, &of.id, true) })
+}
+
+/// Remembers that the saves with this checksum match the newest backup in this sync folder, or with none that
+/// nothing does.
+fn folder_synced(store: &Path, folder: &str, hash: Option<String>) -> Result<(), String> {
+    let mut state = saves::state(store);
+    let synced = hash.map(|hash| saves::FolderSynced { folder: folder.to_string(), hash });
+    if state.folder_synced != synced {
+        state.folder_synced = synced;
+        saves::set_state(store, &state)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn saves_folder_synced(data: State<'_, Data>, of: SavesOf, folder: String, hash: Option<String>) -> Result<(), String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    folder_synced(&store, &folder, hash)
+}
+
+/// Keeps one of an app's backups in the sync folder too, as the newest there, and remembers the two match.
+#[tauri::command]
+async fn saves_folder_put(data: State<'_, Data>, of: SavesOf, folder: String, name: String) -> Result<sync_folder::Kept, String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let file = saves::file_of(&store, &name)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    let label = of.names.first().map(String::as_str).unwrap_or_default();
+    let kept = sync_folder::put(Path::new(&folder), &of.id, label, &file)?;
+    folder_synced(&store, &folder, Some(kept.hash.clone()))?;
+    Ok(kept)
+}
+
+/// Takes one of the sync folder's backups in among the app's own. Nothing of the player's saves is touched, and
+/// nothing it says about where the app saves is taken up: `saves_restore` puts it in place, in the places this
+/// computer knows or the player agrees to.
+#[tauri::command]
+async fn saves_folder_take(data: State<'_, Data>, of: SavesOf, folder: String, name: String) -> Result<saves::Backup, String> {
+    let (_, store, _) = saves_at(&data, &of)?;
+    let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
+    sync_folder::take(Path::new(&folder), &of.id, &name, &store)
 }
 
 /// The places the launcher saw an app save in that the catalog hasn't been told about (`saves::to_report`). None
@@ -2342,6 +2447,13 @@ pub fn run() {
             saves_cloud_off,
             saves_upload,
             saves_download,
+            saves_folder_choose,
+            saves_folder_summary,
+            saves_folder_open,
+            saves_folder_state,
+            saves_folder_synced,
+            saves_folder_put,
+            saves_folder_take,
             create_app_folder,
             rename_app_folder,
             app_files,

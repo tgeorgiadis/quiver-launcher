@@ -32,6 +32,11 @@ msgstr "{0, plural, other {앱 #개가 앱 폴더 최상위에 남아 있습니�
 msgid "{0, plural, one {# app} other {# apps}}"
 msgstr "{0, plural, other {앱 #개}}"
 
+#. placeholder {0}: app.copies
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{0, plural, one {# backup} other {# backups}}"
+msgstr ""
+
 #. placeholder {0}: thread.comments
 #: ../../apps/launcher/src/discussions.tsx
 msgid "{0, plural, one {# comment} other {# comments}}"
@@ -130,6 +135,10 @@ msgstr "{app} 버전"
 msgid "{app}'s folder is now {renamed}."
 msgstr "{app} 폴더 이름이 {renamed}(으)로 바뀌었어요."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{apps, plural, one {# app} other {# apps}}"
+msgstr ""
+
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/ways-to-play.tsx
@@ -180,6 +189,10 @@ msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개는 �
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
 msgstr "{count, plural, other {앱 #개}}, {installed, plural, other {#개 설치됨}}"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{count, plural, one {# backup} other {# backups}}"
+msgstr ""
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "{count, plural, one {# copy} other {# copies}}"
@@ -492,6 +505,10 @@ msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해�
 msgid "{name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where {name} needs it."
 msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해요. ROM을 고르면 Quiver가 확인하고 {name}에 필요한 위치에 놓아요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab."
+msgstr ""
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
 msgstr "{name}, {pulledLabel} 철회됨"
@@ -556,6 +573,10 @@ msgstr "{pulledLabel}이(가) 철회됐어요."
 msgid "{pulledVersion} was withdrawn"
 msgstr "{pulledVersion} 철회됨"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
+msgstr ""
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
 msgstr "{rating, plural, other {좋아요 {likes}개}}"
@@ -613,6 +634,10 @@ msgstr "{systems} 전용"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{tagged, plural, one {The tags you gave # app} other {The tags you gave # apps}}"
 msgstr "{tagged, plural, other {앱 #개에 붙인 태그}}"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{there, plural, one {This folder already has saves of # app. Quiver offers them when you start it here.} other {This folder already has saves of # apps. Quiver offers them when you start those apps here.}}"
+msgstr ""
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -1360,6 +1385,10 @@ msgstr "배경 음악"
 msgid "Backups"
 msgstr "백업"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Backups can also go in a folder of your own, such as one in Dropbox, OneDrive or Syncthing, so your saves follow you to your other computers without an account. Choose it in Settings, under Cloud saves."
+msgstr ""
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Banner"
 msgstr "배너"
@@ -1506,6 +1535,7 @@ msgstr "추가할 수 없음: Quiver Launcher 3이 어디서 받은 앱인지 �
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Cancel"
 msgstr "취소"
@@ -1552,7 +1582,9 @@ msgid "Caution"
 msgstr "주의"
 
 #. Button: choose another copy of the game
+#. Button: choose another sync folder
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Change"
 msgstr "변경"
 
@@ -1747,6 +1779,7 @@ msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "‘GitLab에서 토큰 만들기’를 선택하고 GitLab에 로그인하세요."
 
 #: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Choose folder"
 msgstr "폴더 선택"
 
@@ -1829,6 +1862,10 @@ msgstr "{consoleName} 게임을 보관하는 위치 선택"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Quiver Launcher 3 폴더 선택"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Choose your sync folder"
+msgstr ""
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Choose…"
@@ -1978,9 +2015,17 @@ msgstr "컨트롤러"
 msgid "Controllers"
 msgstr "컨트롤러"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Copied to your sync folder."
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
 msgstr "링크 복사"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Copy the newest backup there now"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Copying {folder}… {percent}%"
@@ -1989,6 +2034,10 @@ msgstr "{folder} 복사 중… {percent}%"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Couldn't delete it. Try again."
 msgstr "삭제하지 못했어요. 다시 시도하세요."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't get the saves in your sync folder. The app starts with the saves on this computer."
+msgstr ""
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Couldn't get your cloud saves. The app starts with the saves on this computer."
@@ -2069,6 +2118,14 @@ msgstr "로그인하지 못했어요. 연결 상태를 확인하고 다시 시�
 #: ../../apps/launcher/src/library.tsx
 msgid "Couldn't stop sharing it. Try again."
 msgstr "공유를 중지하지 못했어요. 다시 시도하세요."
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Couldn't use that folder. Choose another."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't write to your sync folder. Your backups are on this computer."
+msgstr ""
 
 #. Library card image: the wide library art
 #: ../../apps/launcher/src/custom-art.tsx
@@ -2349,6 +2406,10 @@ msgid "Each app can update by itself, ask first, or stay on its version, whateve
 msgstr "이 설정과 관계없이 앱마다 자체 설정에서 스스로 업데이트할지, 먼저 물어볼지, 지금 버전을 유지할지 정할 수 있어요."
 
 #: ../../apps/launcher/src/saves-tab.tsx
+msgid "Each backup is also kept in {folder}, which holds the newest 5 of this app from all your computers."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "Each backup is also sent to your account, which keeps the newest {keep} of each app. {used} of {limit} used."
 msgstr "각 백업은 계정에도 전송되며, 계정에는 앱마다 최신 {keep}개가 보관됩니다. {limit} 중 {used} 사용 중."
 
@@ -2558,6 +2619,7 @@ msgstr "{folder}에서 찾았어요"
 msgid "Free up space"
 msgstr "공간 확보"
 
+#. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
 #: ../../apps/launcher/src/cloud-saves-page.tsx
@@ -3278,6 +3340,10 @@ msgstr "이 앱의 데이터를 앱 폴더에 보관(<0>portable.txt</0>)"
 msgid "Keep this app's saves with my Quiver account"
 msgstr "이 앱의 세이브를 내 Quiver 계정에 보관"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Keep your save backups in a folder of your own too, such as one inside Dropbox, OneDrive, Google Drive or Syncthing. Choose the same folder on your other computers, and Quiver offers your newest saves when you start an app there. It needs no Quiver account, and works for apps you added yourself."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "예전부터 여기 있던 앱이에요."
@@ -3303,6 +3369,10 @@ msgstr "크게"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Large name"
 msgstr "큰 이름"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Last backed up {hereWhen}. The saves in your sync folder stay there as a backup. These become your newest."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
@@ -3897,6 +3967,10 @@ msgstr "새 재생 목록…"
 msgid "New release: {version}"
 msgstr "새 버전: {version}"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Newest from {device}, {date}"
+msgstr ""
+
 #. How apps update: to the newest release as soon as it's out, without waiting 48 hours
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Newest right away"
@@ -4087,6 +4161,10 @@ msgstr "설치 안 됨"
 msgid "Not installed first"
 msgstr "미설치 먼저"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "not installed on this computer"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not installed only"
 msgstr "미설치만"
@@ -4158,6 +4236,10 @@ msgstr "참고"
 msgid "Nothing changed since the last backup."
 msgstr "마지막 백업 이후 바뀐 것이 없습니다."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Nothing here yet. Backups appear after you play."
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing here."
 msgstr "여기에는 아무것도 없어요."
@@ -4173,6 +4255,10 @@ msgstr "아직 계정에 이 앱의 세이브가 없습니다."
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Nothing in your account yet. Copies appear here after you play an app from the catalog."
 msgstr "아직 계정에 아무것도 없습니다. 카탈로그의 앱을 플레이하면 여기에 사본이 표시됩니다."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing in your sync folder for this app yet."
+msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Nothing is downloading."
@@ -4253,6 +4339,7 @@ msgstr "앱 열기"
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Open folder"
 msgstr "폴더 열기"
 
@@ -4626,6 +4713,14 @@ msgstr "Quiver가 이 버전을 차단해서 파일 링크를 제공하지 않�
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
 msgstr "Quiver가 이 버전을 차단함"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer and go in the folder once it's back."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer."
+msgstr ""
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver can't play that file. Try an MP3 or OGG."
@@ -5112,6 +5207,7 @@ msgstr "이 사본을 복원할까요? 현재 세이브를 먼저 백업합니�
 msgid "Restore to this folder?"
 msgstr ""
 
+#. Said after a save backup was put back
 #. Said after a save backup was put back
 #. Said after a save backup was put back
 #. Said after a save backup was put back
@@ -5811,6 +5907,10 @@ msgstr "{total}단계 중 {n}단계"
 msgid "still scanning its files."
 msgstr "아직 파일을 검사하는 중이에요."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Stop keeping backups in this folder? The backups in it stay there, and the ones on this computer aren't touched."
+msgstr ""
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Stop looking in {folder} for {console}"
 msgstr "{console}용으로 {folder}에서 그만 찾기"
@@ -5818,6 +5918,12 @@ msgstr "{console}용으로 {folder}에서 그만 찾기"
 #: ../../apps/launcher/src/library.tsx
 msgid "Stop sharing"
 msgstr "공유 중지"
+
+#. Button: no longer keep save backups in the sync folder
+#. Button: no longer keep save backups in the sync folder
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Stop using"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Submit a correction for a release file's platform"
@@ -5855,6 +5961,13 @@ msgstr "Linux 버전으로 전환"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Switch to the Windows version (Wine)"
 msgstr "Windows 버전으로 전환 (Wine)"
+
+#. Heading in Settings: a folder of the player's own that save backups are also kept in
+#. Heading on an app's Saves tab: the backups of its saves in the player's own synced folder
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Sync folder"
+msgstr ""
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
@@ -6026,6 +6139,10 @@ msgstr "Quiver Launcher 3 프로그램이 들어 있는 폴더예요. 포터블 
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "게임이 시작할 때 요청해요. Quiver가 먼저 확인해 줄 수 있어요."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "the newest 5 of each app are kept"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
 msgstr "{name}의 최신 백업은 이 컴퓨터에만 있으며, 공간이 생길 때까지 이후 백업도 마찬가지입니다. 공간이 생기면 Quiver가 자동으로 보냅니다."
@@ -6063,8 +6180,24 @@ msgid "The saves and settings come over too."
 msgstr "저장 데이터와 설정도 함께 옮겨져요."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "The saves on this computer and the ones in your Quiver account have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
-msgstr "이 컴퓨터의 세이브와 Quiver 계정의 세이브가 모두 변경되었습니다. 선택하지 않은 쪽은 앱의 세이브 탭에 백업으로 보관됩니다."
+msgid "The saves in your sync folder stay there as a backup."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder stay there as a backup. These become your newest."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
@@ -6077,6 +6210,10 @@ msgstr "앱에 붙인 태그입니다. Quiver Launcher 3에서 가져온 태그�
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "테마"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and the saves in your sync folder are put in place."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Then press Play, and your cloud saves are put in place."
@@ -6097,6 +6234,10 @@ msgstr "아직 여기에 모드가 없어요."
 #: ../../apps/launcher/src/detail.tsx
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "아직 버전이 없어요. 원본 프로젝트에서 다운로드를 확인해 보세요."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These are the saves on this computer now."
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
@@ -6606,6 +6747,14 @@ msgstr "카탈로그의 이름 사용"
 msgid "Use the catalog's name and artwork"
 msgstr "카탈로그의 이름과 아트워크 사용"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the saves in my sync folder"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the saves in my sync folder anyway"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use the system's title bar (instead of Quiver's own window buttons)"
 msgstr "시스템 제목 표시줄 사용(Quiver 자체 창 버튼 대신)"
@@ -6626,6 +6775,7 @@ msgstr "인증됨"
 msgid "Version {checkingVersion} is <0/>"
 msgstr "{checkingVersion} 버전: <0/>"
 
+#. The app's version when a save backup was made
 #. The app's version when a save backup was made
 #. The app's version when a save backup was made
 #. The app's version when a save backup was made
@@ -7051,6 +7201,14 @@ msgstr "내 문제 신고"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your Quiver Launcher 3 apps are in your library"
 msgstr "Quiver Launcher 3의 앱이 라이브러리에 들어왔어요"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Your save backups go here from now on, after you play."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Your saves from {device} were put in place from your sync folder. The saves that were here are backed up."
+msgstr ""
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Your saves from {device} were put in place. The saves that were here are backed up."

@@ -32,6 +32,11 @@ msgstr "{0, plural, one {# app se queda en la raíz de la carpeta de apps} other
 msgid "{0, plural, one {# app} other {# apps}}"
 msgstr "{0, plural, one {# app} other {# apps}}"
 
+#. placeholder {0}: app.copies
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{0, plural, one {# backup} other {# backups}}"
+msgstr ""
+
 #. placeholder {0}: thread.comments
 #: ../../apps/launcher/src/discussions.tsx
 msgid "{0, plural, one {# comment} other {# comments}}"
@@ -130,6 +135,10 @@ msgstr "Versiones de {app}"
 msgid "{app}'s folder is now {renamed}."
 msgstr "La carpeta de {app} ahora se llama {renamed}."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{apps, plural, one {# app} other {# apps}}"
+msgstr ""
+
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/ways-to-play.tsx
@@ -180,6 +189,10 @@ msgstr "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# 
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# already installed} other {# already installed}}"
 msgstr "{count, plural, one {# app} other {# apps}}, {installed, plural, one {# ya instalada} other {# ya instaladas}}"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{count, plural, one {# backup} other {# backups}}"
+msgstr ""
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "{count, plural, one {# copy} other {# copies}}"
@@ -492,6 +505,10 @@ msgstr "{name} necesita tu propia copia del juego para funcionar. Elige la carpe
 msgid "{name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where {name} needs it."
 msgstr "{name} necesita tu propia copia del juego para funcionar. Elige la ROM, y Quiver la revisa y la pone donde {name} la necesita."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab."
+msgstr ""
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
 msgstr "{name}, {pulledLabel} fue retirada"
@@ -556,6 +573,10 @@ msgstr "{pulledLabel} fue retirada."
 msgid "{pulledVersion} was withdrawn"
 msgstr "{pulledVersion} fue retirada"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{put, plural, one {The saves of # app were copied in. New backups follow after you play.} other {The saves of # apps were copied in. New backups follow after you play.}}"
+msgstr ""
+
 #: ../../apps/launcher/src/mods.tsx
 msgid "{rating, plural, one {{likes} like} other {{likes} likes}}"
 msgstr "{rating, plural, one {{likes} me gusta} other {{likes} me gusta}}"
@@ -613,6 +634,10 @@ msgstr "Solo {systems}"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "{tagged, plural, one {The tags you gave # app} other {The tags you gave # apps}}"
 msgstr "{tagged, plural, one {Las etiquetas que le pusiste a # app} other {Las etiquetas que le pusiste a # apps}}"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "{there, plural, one {This folder already has saves of # app. Quiver offers them when you start it here.} other {This folder already has saves of # apps. Quiver offers them when you start those apps here.}}"
+msgstr ""
 
 #: ../ui/src/index.tsx
 msgid "{total, plural, one {# player} other {# players}}"
@@ -1360,6 +1385,10 @@ msgstr "Música de fondo"
 msgid "Backups"
 msgstr "Copias de seguridad"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Backups can also go in a folder of your own, such as one in Dropbox, OneDrive or Syncthing, so your saves follow you to your other computers without an account. Choose it in Settings, under Cloud saves."
+msgstr ""
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Banner"
 msgstr "Banner"
@@ -1506,6 +1535,7 @@ msgstr "No se puede agregar: Quiver Launcher 3 no sabe de dónde viene"
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/settings-page.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 #: ../../apps/launcher/src/tag-settings.tsx
 msgid "Cancel"
 msgstr "Cancelar"
@@ -1552,7 +1582,9 @@ msgid "Caution"
 msgstr "Precaución"
 
 #. Button: choose another copy of the game
+#. Button: choose another sync folder
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Change"
 msgstr "Cambiar"
 
@@ -1747,6 +1779,7 @@ msgid "Choose Create a token on GitLab, and sign in to GitLab."
 msgstr "Elige Crear un token en GitLab e inicia sesión en GitLab."
 
 #: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Choose folder"
 msgstr "Elegir carpeta"
 
@@ -1829,6 +1862,10 @@ msgstr "Elige dónde guardas tus juegos de {consoleName}"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Elige tu carpeta de Quiver Launcher 3"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Choose your sync folder"
+msgstr ""
 
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Choose…"
@@ -1978,9 +2015,17 @@ msgstr "Control"
 msgid "Controllers"
 msgstr "Controles"
 
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Copied to your sync folder."
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Copy link"
 msgstr "Copiar enlace"
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Copy the newest backup there now"
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Copying {folder}… {percent}%"
@@ -1989,6 +2034,10 @@ msgstr "Copiando {folder}… {percent}%"
 #: ../../apps/launcher/src/discussions.tsx
 msgid "Couldn't delete it. Try again."
 msgstr "No se pudo eliminar. Inténtalo de nuevo."
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't get the saves in your sync folder. The app starts with the saves on this computer."
+msgstr ""
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Couldn't get your cloud saves. The app starts with the saves on this computer."
@@ -2069,6 +2118,14 @@ msgstr "No se pudo iniciar sesión. Revisa tu conexión e intenta de nuevo."
 #: ../../apps/launcher/src/library.tsx
 msgid "Couldn't stop sharing it. Try again."
 msgstr "No se pudo dejar de compartirla. Intenta de nuevo."
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Couldn't use that folder. Choose another."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Couldn't write to your sync folder. Your backups are on this computer."
+msgstr ""
 
 #. Library card image: the wide library art
 #: ../../apps/launcher/src/custom-art.tsx
@@ -2349,6 +2406,10 @@ msgid "Each app can update by itself, ask first, or stay on its version, whateve
 msgstr "Cada app puede actualizarse sola, preguntar antes o quedarse en su versión desde su propia configuración, diga lo que diga esta opción."
 
 #: ../../apps/launcher/src/saves-tab.tsx
+msgid "Each backup is also kept in {folder}, which holds the newest 5 of this app from all your computers."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
 msgid "Each backup is also sent to your account, which keeps the newest {keep} of each app. {used} of {limit} used."
 msgstr "Cada respaldo también se envía a tu cuenta, que conserva los {keep} más recientes de cada app. {used} de {limit} en uso."
 
@@ -2558,6 +2619,7 @@ msgstr "Encontrada en {folder}"
 msgid "Free up space"
 msgstr "Liberar espacio"
 
+#. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
 #: ../../apps/launcher/src/cloud-saves-page.tsx
@@ -3278,6 +3340,10 @@ msgstr "Guardar los datos de esta app en su carpeta (<0>portable.txt</0>)"
 msgid "Keep this app's saves with my Quiver account"
 msgstr "Guardar las partidas de esta app en mi cuenta de Quiver"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Keep your save backups in a folder of your own too, such as one inside Dropbox, OneDrive, Google Drive or Syncthing. Choose the same folder on your other computers, and Quiver offers your newest saves when you start an app there. It needs no Quiver account, and works for apps you added yourself."
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "Se quedaron aquí de antes."
@@ -3303,6 +3369,10 @@ msgstr "Grande"
 #: ../../apps/launcher/src/library-view.tsx
 msgid "Large name"
 msgstr "Nombre grande"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Last backed up {hereWhen}. The saves in your sync folder stay there as a backup. These become your newest."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
@@ -3897,6 +3967,10 @@ msgstr "Nueva playlist…"
 msgid "New release: {version}"
 msgstr "Nueva versión: {version}"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Newest from {device}, {date}"
+msgstr ""
+
 #. How apps update: to the newest release as soon as it's out, without waiting 48 hours
 #: ../../apps/launcher/src/app-updates.tsx
 msgid "Newest right away"
@@ -4087,6 +4161,10 @@ msgstr "No instalado"
 msgid "Not installed first"
 msgstr "No instalados primero"
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "not installed on this computer"
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Not installed only"
 msgstr "Solo no instalados"
@@ -4158,6 +4236,10 @@ msgstr "Nota"
 msgid "Nothing changed since the last backup."
 msgstr "Nada cambió desde el último respaldo."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Nothing here yet. Backups appear after you play."
+msgstr ""
+
 #: ../../apps/launcher/src/library.tsx
 msgid "Nothing here."
 msgstr "No hay nada aquí."
@@ -4173,6 +4255,10 @@ msgstr "Aún no hay nada en tu cuenta para esta app."
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Nothing in your account yet. Copies appear here after you play an app from the catalog."
 msgstr "Aún no hay nada en tu cuenta. Las copias aparecen aquí después de jugar una app del catálogo."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Nothing in your sync folder for this app yet."
+msgstr ""
 
 #: ../../apps/launcher/src/downloads-page.tsx
 msgid "Nothing is downloading."
@@ -4253,6 +4339,7 @@ msgstr "Abrir app"
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
 msgid "Open folder"
 msgstr "Abrir carpeta"
 
@@ -4626,6 +4713,14 @@ msgstr "Quiver bloqueó esta versión, así que no enlaza sus archivos. Para ins
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Quiver blocked this version"
 msgstr "Quiver bloqueó esta versión"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer and go in the folder once it's back."
+msgstr ""
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "Quiver can't find this folder right now. If it's on a drive, plug it in. Backups carry on on this computer."
+msgstr ""
 
 #: ../../apps/launcher/src/music.ts
 msgid "Quiver can't play that file. Try an MP3 or OGG."
@@ -5112,6 +5207,7 @@ msgstr "¿Restaurar esta copia? Primero se respaldan tus partidas actuales."
 msgid "Restore to this folder?"
 msgstr ""
 
+#. Said after a save backup was put back
 #. Said after a save backup was put back
 #. Said after a save backup was put back
 #. Said after a save backup was put back
@@ -5811,6 +5907,10 @@ msgstr "Paso {n} de {total}"
 msgid "still scanning its files."
 msgstr "aún analizando sus archivos."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Stop keeping backups in this folder? The backups in it stay there, and the ones on this computer aren't touched."
+msgstr ""
+
 #: ../../apps/launcher/src/own-copy-settings.tsx
 msgid "Stop looking in {folder} for {console}"
 msgstr "Dejar de buscar en {folder} para {console}"
@@ -5818,6 +5918,12 @@ msgstr "Dejar de buscar en {folder} para {console}"
 #: ../../apps/launcher/src/library.tsx
 msgid "Stop sharing"
 msgstr "Dejar de compartir"
+
+#. Button: no longer keep save backups in the sync folder
+#. Button: no longer keep save backups in the sync folder
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Stop using"
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Submit a correction for a release file's platform"
@@ -5855,6 +5961,13 @@ msgstr "Cambiar a la versión de Linux"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Switch to the Windows version (Wine)"
 msgstr "Cambiar a la versión de Windows (Wine)"
+
+#. Heading in Settings: a folder of the player's own that save backups are also kept in
+#. Heading on an app's Saves tab: the backups of its saves in the player's own synced folder
+#: ../../apps/launcher/src/saves-tab.tsx
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Sync folder"
+msgstr ""
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
@@ -6026,6 +6139,10 @@ msgstr "La carpeta donde está el programa de Quiver Launcher 3. Para una copia 
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "El juego la pide al iniciar. Quiver puede revisar la tuya antes."
 
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "the newest 5 of each app are kept"
+msgstr ""
+
 #: ../../apps/launcher/src/App.tsx
 msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
 msgstr "El respaldo más reciente de {name} está solo en esta computadora, igual que los siguientes hasta que haya espacio. Entonces Quiver lo envía por su cuenta."
@@ -6063,8 +6180,24 @@ msgid "The saves and settings come over too."
 msgstr "Las partidas guardadas y la configuración también se mueven."
 
 #: ../../apps/launcher/src/App.tsx
-msgid "The saves on this computer and the ones in your Quiver account have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
-msgstr "Las partidas guardadas de esta computadora y las de tu cuenta de Quiver cambiaron. Las que no elijas se conservan como respaldo en la pestaña Partidas guardadas de la app."
+msgid "The saves in your sync folder stay there as a backup."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder stay there as a backup. These become your newest."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "The saves in your sync folder would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
+msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
 msgid "The shared playlist is up to date."
@@ -6077,6 +6210,10 @@ msgstr "Las etiquetas que les pusiste a tus apps, incluidas las que trajiste de 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Theme"
 msgstr "Tema"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and the saves in your sync folder are put in place."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Then press Play, and your cloud saves are put in place."
@@ -6097,6 +6234,10 @@ msgstr "Aún no hay mods aquí."
 #: ../../apps/launcher/src/detail.tsx
 msgid "There are no releases yet. Check the upstream project for downloads."
 msgstr "Aún no hay versiones. Busca descargas en el proyecto original."
+
+#: ../../apps/launcher/src/saves-tab.tsx
+msgid "These are the saves on this computer now."
+msgstr ""
 
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "These old copies moved safely, but some of their files were in use and stayed behind. You can delete them:"
@@ -6606,6 +6747,14 @@ msgstr "Usar el nombre del catálogo"
 msgid "Use the catalog's name and artwork"
 msgstr "Usar el nombre y el arte del catálogo"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the saves in my sync folder"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use the saves in my sync folder anyway"
+msgstr ""
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Use the system's title bar (instead of Quiver's own window buttons)"
 msgstr "Usar la barra de título del sistema (en lugar de los botones de ventana propios de Quiver)"
@@ -6626,6 +6775,7 @@ msgstr "Verificado"
 msgid "Version {checkingVersion} is <0/>"
 msgstr "La versión {checkingVersion} está <0/>"
 
+#. The app's version when a save backup was made
 #. The app's version when a save backup was made
 #. The app's version when a save backup was made
 #. The app's version when a save backup was made
@@ -7051,6 +7201,14 @@ msgstr "Tu informe de problema"
 #: ../../apps/launcher/src/setup.tsx
 msgid "Your Quiver Launcher 3 apps are in your library"
 msgstr "Tus apps de Quiver Launcher 3 están en tu biblioteca"
+
+#: ../../apps/launcher/src/sync-folder-page.tsx
+msgid "Your save backups go here from now on, after you play."
+msgstr ""
+
+#: ../../apps/launcher/src/store.tsx
+msgid "Your saves from {device} were put in place from your sync folder. The saves that were here are backed up."
+msgstr ""
 
 #: ../../apps/launcher/src/store.tsx
 msgid "Your saves from {device} were put in place. The saves that were here are backed up."

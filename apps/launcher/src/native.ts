@@ -258,6 +258,20 @@ export type SavesCloud = {
   off: boolean;
   os: "windows" | "linux" | "macos";
 };
+/** An app's saves beside its backups in the sync folder (sync-folder.ts). */
+export type SavesFolder = {
+  /** The checksum of the saves as they are now; none when there are none here. */
+  hash?: string | null;
+  /** Their checksum when they last matched the folder's newest backup. */
+  synced?: string | null;
+  os: "windows" | "linux" | "macos";
+  /** False when the folder can't be found now: a drive that isn't plugged in. */
+  there: boolean;
+  /** The folder's backups of the app, newest first. The first arrived whole. */
+  copies: SaveBackup[];
+};
+/** What the sync folder holds for one app. `label`: what its folder there is called. */
+export type SyncFolderApp = { id: string; label: string; copies: number; size: number; newest: SaveBackup };
 /** A place an app's saves are in: as a backup names it, and the folder that is on this computer. */
 export type SavePlace = { template: string; path: string; exists: boolean };
 export type SavesInfo = {
@@ -317,6 +331,22 @@ export const native = {
   savesUpload: (id: string, name: string, url: string, headers: Record<string, string>) => invoke<void>("saves_upload", { id, name, url, headers }),
   /** Downloads a copy from the account and takes it in among the app's backups, where `savesRestore` can put it back. */
   savesDownload: (of: SavesOf, url: string, size: number, hash: string) => invoke<SaveBackup>("saves_download", { of, url, size, hash }),
+  /**
+   * The sync folder (sync_folder.rs): a folder of the player's own that backups are also kept in. The folder to use
+   * for the one they picked: that one, or a "Quiver Saves" folder inside it.
+   */
+  savesFolderChoose: (path: string) => invoke<string>("saves_folder_choose", { path }),
+  /** Every app with backups in the sync folder, the one backed up last first. */
+  savesFolderSummary: (folder: string) => invoke<{ there: boolean; apps: SyncFolderApp[] }>("saves_folder_summary", { folder }),
+  savesFolderOpen: (folder: string) => invoke<void>("saves_folder_open", { folder }),
+  /** An app's saves as they are now, and the folder's backups of them. */
+  savesFolderState: (of: SavesOf, folder: string) => invoke<SavesFolder>("saves_folder_state", { of, folder }),
+  /** Remembers that saves with this checksum match the folder's newest backup. */
+  savesFolderSynced: (of: SavesOf, folder: string, hash: string | null) => invoke<void>("saves_folder_synced", { of, folder, hash }),
+  /** Keeps one of the app's backups in the folder too, as its newest. */
+  savesFolderPut: (of: SavesOf, folder: string, name: string) => invoke<SaveBackup>("saves_folder_put", { of, folder, name }),
+  /** Takes one of the folder's backups in among the app's own, where `savesRestore` can put it back. */
+  savesFolderTake: (of: SavesOf, folder: string, name: string) => invoke<SaveBackup>("saves_folder_take", { of, folder, name }),
   /** Those places were sent to the catalog: they aren't offered by `savesToReport` again. */
   savesReported: (of: SavesOf, places: string[]) => invoke<void>("saves_reported", { of, places }),
   /** Stops an app's install while it downloads; the install then fails with "cancelled". */

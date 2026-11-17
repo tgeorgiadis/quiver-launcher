@@ -27,6 +27,7 @@ import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { folderBeforePlay } from "./sync-folder";
 import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
@@ -1233,6 +1234,8 @@ export type Settings = {
   cloudSavesOff?: boolean;
   /** The player was told their cloud saves are full; not told again until a backup gets there. */
   cloudFullTold?: boolean;
+  /** A folder of the player's own that save backups are also kept in, for Dropbox, OneDrive or Syncthing to sync (sync-folder.ts). */
+  syncFolder?: string;
   /** Quiver Launcher has started here before. */
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
@@ -1516,8 +1519,26 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // is made or an app starts, as things stand by then.
   const cloudNow = useRef<Launcher["cloudSavesFor"]>(() => null);
   cloudNow.current = (id) => (savesOn(config.os) && !settings.cloudSavesOff && !isLocal(id) && catalog[id]?.slug ? account.cloudSaves : null);
-  /** Sends a backup that was just made to the account; never waited for. */
+  // The sync folder takes every app's backups, the player's own apps too, signed in or not.
+  const syncFolder = savesOn(config.os) ? settings.syncFolder : undefined;
+  /** Said once each time the launcher runs: a folder on a drive that's unplugged fails for every backup. */
+  const folderFailed = useRef(false);
+  /** Keeps a backup that was just made in the sync folder too; never waited for. */
+  const sendToFolder = (id: string, install: Install, made: SaveBackup) => {
+    const folder = forUsage.current.settings.syncFolder;
+    if (!folder || !savesOn(config.os)) return;
+    native.savesFolderPut(savesOf(id, install, forUsage.current.catalog[id]), folder, made.name).then(
+      () => ((folderFailed.current = false), savesChanged(id)),
+      (e) => {
+        if (folderFailed.current) return;
+        folderFailed.current = true;
+        setNotice(typeof e === "string" ? e : t`Couldn't write to your sync folder. Your backups are on this computer.`, { stays: true });
+      },
+    );
+  };
+  /** Sends a backup that was just made to the sync folder and to the account; never waited for. */
   const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined) => {
+    if (made) sendToFolder(id, install, made);
     const api = made && cloudNow.current(id);
     if (!api || !made) return;
     void native
@@ -2628,6 +2649,19 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         const device = synced.fetched?.device;
         if (device) setNotice(t`Your saves from ${device} were put in place. The saves that were here are backed up.`);
         else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get your cloud saves. The app starts with the saves on this computer.`, { stays: true });
+      }
+      // And with the sync folder's (sync-folder.ts), the same way, for any app and with no account.
+      if (syncFolder) {
+        const named = entry ?? { id, projectName: install.folder };
+        const synced = await folderBeforePlay(savesOf(id, { ...install, program }, entry), named, syncFolder, {
+          native,
+          changed: savesChanged,
+          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+        }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof folderBeforePlay>>);
+        if (!synced.go) return;
+        const device = synced.fetched?.device;
+        if (device) setNotice(t`Your saves from ${device} were put in place from your sync folder. The saves that were here are backed up.`);
+        else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get the saves in your sync folder. The app starts with the saves on this computer.`, { stays: true });
       }
       // What's in its likely save places now, to tell afterwards where it saved (saves.rs). Never in the way of playing.
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
