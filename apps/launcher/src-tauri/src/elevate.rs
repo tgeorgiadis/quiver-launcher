@@ -10,7 +10,7 @@ use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, WAIT_OBJECT_0};
 use windows_sys::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
-use windows_sys::Win32::System::Threading::{WaitForSingleObject, INFINITE};
+use windows_sys::Win32::System::Threading::{GetExitCodeProcess, WaitForSingleObject, INFINITE};
 use windows_sys::Win32::UI::Shell::{ShellExecuteExW, SEE_MASK_FLAG_NO_UI, SEE_MASK_NOASYNC, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW};
 use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
@@ -31,6 +31,16 @@ impl Process {
         // SAFETY: the handle is open until `self` drops.
         unsafe { WaitForSingleObject(self.0, INFINITE) == WAIT_OBJECT_0 }
     }
+
+    /// Waits for it to close, then what it ended with, when that could be told.
+    pub fn code(&self) -> Option<i32> {
+        if !self.wait() {
+            return None;
+        }
+        let mut code = 0u32;
+        // SAFETY: the handle is open until `self` drops, and `code` outlives the call.
+        (unsafe { GetExitCodeProcess(self.0, &mut code) } != 0).then_some(code as i32)
+    }
 }
 
 impl Drop for Process {
@@ -43,11 +53,17 @@ impl Drop for Process {
 /// Starts a program with administrator rights, once the player allows it.
 /// None when it's running but Windows gave no handle to wait on.
 pub fn start(program: &Path, args: &[String], dir: &Path) -> std::io::Result<Option<Process>> {
-    shell_start("runas", program, args, dir)
+    shell_start("runas", program, command_line(args), dir)
 }
 
-fn shell_start(verb: &str, program: &Path, args: &[String], dir: &Path) -> std::io::Result<Option<Process>> {
-    let (verb, program, line, dir): (String, PathBuf, String, PathBuf) = (verb.to_owned(), program.to_owned(), command_line(args), dir.to_owned());
+/// Starts a program as a double click would, asking for administrator rights only when it needs them. `line` is its
+/// arguments exactly as it gets them: some installers read theirs by rules of their own.
+pub fn open(program: &Path, line: &str, dir: &Path) -> std::io::Result<Option<Process>> {
+    shell_start("open", program, line.to_owned(), dir)
+}
+
+fn shell_start(verb: &str, program: &Path, line: String, dir: &Path) -> std::io::Result<Option<Process>> {
+    let (verb, program, dir): (String, PathBuf, PathBuf) = (verb.to_owned(), program.to_owned(), dir.to_owned());
     // The shell wants COM ready on its thread, which isn't this one's to change; the prompt waits there as long as the player does.
     std::thread::spawn(move || {
         let (verb, program, line, dir) = (wide(verb.as_ref()), wide(program.as_os_str()), wide(OsString::from(line).as_os_str()), wide(dir.as_os_str()));
@@ -130,8 +146,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let cmd = std::env::var_os("ComSpec").map(PathBuf::from).unwrap();
         let args = ["/c".to_string(), "cd".to_string(), ">".to_string(), "where it ran.txt".to_string()];
-        let process = shell_start("open", &cmd, &args, dir.path()).unwrap().expect("a handle to wait on");
-        assert!(process.wait());
+        let process = shell_start("open", &cmd, command_line(&args), dir.path()).unwrap().expect("a handle to wait on");
+        assert_eq!(process.code(), Some(0));
         let ran = std::fs::read_to_string(dir.path().join("where it ran.txt")).unwrap();
         assert_eq!(std::fs::canonicalize(ran.trim()).unwrap(), std::fs::canonicalize(dir.path()).unwrap());
     }
@@ -139,6 +155,6 @@ mod tests {
     #[test]
     fn a_program_that_isnt_there_is_an_error() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(shell_start("open", &dir.path().join("none.exe"), &[], dir.path()).is_err());
+        assert!(shell_start("open", &dir.path().join("none.exe"), String::new(), dir.path()).is_err());
     }
 }
