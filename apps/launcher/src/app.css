@@ -522,6 +522,20 @@ main.app-main { padding: 0 0 40px; }
 .save-source, .save-said { margin: 0; }
 .save-said { font-size: 13px; }
 .save-said.error { color: var(--red-text); }
+/* Settings, Cloud saves (cloud-saves-page.tsx): the room used as a bar, then an app to a row that opens to its copies. */
+.storage-bar { height: 8px; max-width: 760px; border-radius: 8px; background: var(--field); overflow: hidden; }
+.storage-bar > span { display: block; height: 100%; border-radius: 8px; background: var(--accent); }
+.storage-bar.full > span { background: var(--red-text); }
+.cloud-apps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; max-width: 760px; }
+.cloud-app { border: 1px solid var(--line); border-radius: 10px; }
+.settings-pane button.cloud-app-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 12px 14px; border-radius: 10px; background: none; font-size: 13px; font-weight: 500; text-align: left; }
+.settings-pane button.cloud-app-row:hover { background: var(--field); }
+.cloud-app-row > svg { flex: none; color: var(--text-3); }
+.cloud-app-copies { display: flex; flex-direction: column; gap: 8px; padding: 0 14px 14px; }
+.cloud-app-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.settings-pane button.save-button { padding: 4px 10px; border-radius: 8px; background: var(--field-hover); font-size: 12px; font-weight: 500; }
+.settings-pane button.save-button:hover:not(:disabled) { background: var(--line); }
+.settings-pane button.save-button.danger { color: var(--red-text); }
 .panel-action.opens::after {
   content: ""; flex: none; width: 6px; height: 6px; margin: 0 3px 0 auto;
   border-right: 1.5px solid var(--text-4); border-bottom: 1.5px solid var(--text-4); transform: rotate(-45deg);

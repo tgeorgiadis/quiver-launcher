@@ -884,7 +884,7 @@ function mockAccount(entries) {
   };
   // Cloud saves, as the site's cloudSaves functions and its private bucket: rows { id, user, entryId, status, size,
   // hash, os, device, files, version, reason, madeAt, createdAt } and each stored object's bytes by row id.
-  const cloud = { rows: [], objects: new Map(), limit: 250 * 1024 * 1024, keep: 5, on: true, off: new Set(), next: 1 };
+  const cloud = { rows: [], objects: new Map(), limit: 250 * 1024 * 1024, maxCopy: 100 * 1024 * 1024, keep: 5, on: true, why: undefined, off: new Set(), next: 1 };
   const cloudUsed = (name) => cloud.rows.filter((r) => r.user === name).reduce((n, r) => n + r.size, 0);
   const cloudDrop = (rows) => {
     for (const row of rows) cloud.objects.delete(row.id);
@@ -998,12 +998,26 @@ function mockAccount(entries) {
     }
     if (path === "/cloud-saves/mine")
       return send(res, {
-        on: cloud.on, limit: cloud.limit, used: cloudUsed(name), keep: cloud.keep, maxCopy: 100 * 1024 * 1024, allowed: !cloud.off.has(body.entryId),
+        on: cloud.on && !cloud.why, ...(cloud.why ? { why: cloud.why } : {}), limit: cloud.limit, used: cloudUsed(name), keep: cloud.keep, maxCopy: cloud.maxCopy, allowed: !cloud.off.has(body.entryId),
         copies: cloud.rows.filter((r) => r.user === name && r.entryId === body.entryId && r.status === "stored").sort((a, b) => b.createdAt - a.createdAt)
           .map(({ user: _, key: __, status: ___, entryId: ____, ...copy }) => copy),
       });
+    if (path === "/cloud-saves/usage") {
+      const stored = cloud.rows.filter((r) => r.user === name && r.status === "stored");
+      const apps = [...new Set(stored.map((r) => r.entryId))].map((entryId) => {
+        const copies = stored.filter((r) => r.entryId === entryId).sort((a, b) => b.createdAt - a.createdAt);
+        const entry = entries.find((e) => e.id === entryId);
+        return {
+          entryId, name: entry?.projectName ?? "Removed app", ...(entry ? { slug: entry.slug } : {}), allowed: !cloud.off.has(entryId),
+          size: copies.reduce((n, r) => n + r.size, 0),
+          copies: copies.map(({ user: _, key: __, status: ___, entryId: ____, ...copy }) => copy),
+        };
+      });
+      return send(res, { on: cloud.on && !cloud.why, ...(cloud.why ? { why: cloud.why } : {}), limit: cloud.limit, used: cloudUsed(name), keep: cloud.keep, apps: apps.sort((a, b) => b.size - a.size) });
+    }
     if (path === "/cloud-saves/begin") {
-      if (!cloud.on || cloud.off.has(body.entryId)) return send(res, { status: "off" });
+      if (body.size > cloud.maxCopy) return send(res, { error: "That backup is too big for cloud saves" }, 400);
+      if (!cloud.on || cloud.why || cloud.off.has(body.entryId)) return send(res, { status: "off" });
       const ofApp = cloud.rows.filter((r) => r.user === name && r.entryId === body.entryId).sort((a, b) => a.createdAt - b.createdAt);
       const same = ofApp.find((r) => r.status === "stored" && r.hash === body.hash);
       if (same) return send(res, { status: "have", id: same.id });

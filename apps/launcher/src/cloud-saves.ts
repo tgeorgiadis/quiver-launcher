@@ -8,7 +8,7 @@
  *   same, nothing happens; the account's is newer and the saves here haven't changed since they last matched, it's
  *   put in place; both changed, the player chooses.
  *
- * The site keeps the limits (250 MB an account, 5 copies an app) and hands out links; the files go straight to and
+ * The site keeps the limits (by default 250 MB an account, 5 copies an app, 100 MB a copy) and hands out links; the files go straight to and
  * from storage. Only apps from the catalog, and never in the way of playing: when the account can't be reached the
  * app starts as it is.
  */
@@ -32,8 +32,10 @@ export type CloudCopy = {
 };
 /** The account's cloud saves, with one app's copies newest first. */
 export type CloudMine = {
-  /** False while the site has no storage for them. */
+  /** False while the site has no storage for them, or uploads are stopped (`why`). Copies can still be fetched and removed. */
   on: boolean;
+  /** "paused": Quiver paused uploads for everyone. "suspended": it stopped this account's. */
+  why?: "paused" | "suspended";
   limit: number;
   used: number;
   keep: number;
@@ -41,6 +43,15 @@ export type CloudMine = {
   /** False when Quiver switched cloud saves off for this app. */
   allowed: boolean;
   copies: CloudCopy[];
+};
+/** Everything the account keeps, by app, biggest first; each app's copies newest first. */
+export type CloudUsage = {
+  on: boolean;
+  why?: "paused" | "suspended";
+  limit: number;
+  used: number;
+  keep: number;
+  apps: { entryId: string; name: string; slug?: string; artwork?: string; allowed: boolean; size: number; copies: CloudCopy[] }[];
 };
 export type CloudBegun =
   | { status: "upload"; id: string; url: string; headers: Record<string, string> }
@@ -51,14 +62,15 @@ export type CloudBegun =
 /** The site's side, for the signed-in account (account.tsx). */
 export type CloudApi = {
   mine: (entryId: string) => Promise<CloudMine | null>;
+  usage: () => Promise<CloudUsage | null>;
   begin: (backup: { entryId: string; size: number; hash: string; os: CloudCopy["os"]; device: string; files: number; version?: string; reason: string; madeAt: number }) => Promise<CloudBegun>;
   finish: (id: string) => Promise<boolean>;
   download: (id: string) => Promise<{ url: string; size: number } | null>;
   remove: (what: { id: string } | { entryId: string }) => Promise<void>;
 };
 
-/** The biggest copy the account takes. */
-export const MAX_COPY = 100 * 1024 * 1024;
+/** The site's refusal of a copy over what one can be, which it words this way (cloudSaves.ts there). */
+const tooBig = (e: unknown) => /too big/i.test(String((e as { data?: unknown } | null)?.data ?? (e as Error | null)?.message ?? e));
 
 /** How sending a backup went. "full": the account has no room. "big": over what one copy can be. */
 export type Sent = "sent" | "full" | "big" | "off" | "later";
@@ -78,7 +90,6 @@ const SYSTEMS = ["windows", "linux", "macos"];
 export async function sendBackup(of: SavesOf, entryId: string, backup: SaveBackup, via: { api: CloudApi; native: Pick<Native, "savesUpload" | "savesSynced"> }): Promise<Sent> {
   const done = (how: Sent) => (said.set(of.id, how), how);
   if (!SYSTEMS.includes(backup.os)) return done("off");
-  if (backup.size > MAX_COPY) return done("big");
   try {
     const begun = await via.api.begin({
       entryId,
@@ -99,8 +110,8 @@ export async function sendBackup(of: SavesOf, entryId: string, backup: SaveBacku
     }
     await via.native.savesSynced(of, backup.hash);
     return done("sent");
-  } catch {
-    return done("later");
+  } catch (e) {
+    return done(tooBig(e) ? "big" : "later");
   }
 }
 

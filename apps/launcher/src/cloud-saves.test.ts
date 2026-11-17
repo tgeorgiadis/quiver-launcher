@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { beforePlay, decide, lastSent, MAX_COPY, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
+import { beforePlay, decide, lastSent, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
 import type { SaveBackup, SavesCloud, SavesOf } from "./native";
 
 const of: SavesOf = { id: "e1", folder: "Game", wine: false, locations: [], names: ["Game"] };
@@ -9,13 +9,14 @@ const B = "b".repeat(64);
 const C = "c".repeat(64);
 const backup = (hash: string, more: Partial<SaveBackup> = {}): SaveBackup => ({ name: "1.zip", at: 1000, size: 2000, files: 2, version: "1.0", reason: "played", device: "DESKTOP", os: "windows", hash, ...more });
 const copy = (hash: string, more: Partial<CloudCopy> = {}): CloudCopy => ({ id: `copy-${hash[0]}`, size: 2000, hash, os: "windows", device: "LAPTOP", files: 2, reason: "played", madeAt: 2000, createdAt: 2000, ...more });
-const mine = (copies: CloudCopy[], more: Partial<CloudMine> = {}): CloudMine => ({ on: true, limit: 250, used: 0, keep: 5, maxCopy: MAX_COPY, allowed: true, copies, ...more });
+const mine = (copies: CloudCopy[], more: Partial<CloudMine> = {}): CloudMine => ({ on: true, limit: 250, used: 0, keep: 5, maxCopy: 100 * 1024 * 1024, allowed: true, copies, ...more });
 
 /** The account and this computer, as far as cloud saves reaches them. */
 function world(start: { state: SavesCloud; copies?: CloudCopy[]; backups?: SaveBackup[]; mine?: Partial<CloudMine>; begin?: Awaited<ReturnType<CloudApi["begin"]>> }) {
   const state = { ...start.state };
   const api = {
     mine: vi.fn(async () => mine(start.copies ?? [], start.mine)),
+    usage: vi.fn(async () => null),
     begin: vi.fn(async () => start.begin ?? ({ status: "upload", id: "new", url: "https://bucket/put", headers: { "content-length": "2000" } } as const)),
     finish: vi.fn(async () => true),
     download: vi.fn(async () => ({ url: "https://bucket/get", size: 2000 })),
@@ -80,8 +81,10 @@ it("doesn't upload what the account has, and says why a backup stays here", asyn
   expect(lastSent("e1")).toBe("full");
 
   const big = world({ state: { hash: A, off: false, os: "windows" } });
-  expect(await sendBackup(of, "e1", backup(A, { size: MAX_COPY + 1 }), big)).toBe("big");
-  expect(big.api.begin).not.toHaveBeenCalled();
+  // The site says what one copy can be, and refuses a bigger one in these words.
+  big.api.begin.mockRejectedValue(Object.assign(new Error("ConvexError"), { data: "That backup is too big for cloud saves" }));
+  expect(await sendBackup(of, "e1", backup(A, { size: 300 * 1024 * 1024 }), big)).toBe("big");
+  expect(lastSent("e1")).toBe("big");
 
   // No connection, the upload refused, or it didn't arrive whole: tried again with a later backup.
   const offline = world({ state: { hash: A, off: false, os: "windows" } });
