@@ -1589,10 +1589,6 @@ msgstr "이 버전의 48시간 대기가 끝난 뒤 GitHub에서 변경됨."
 msgid "Changed on GitHub after this release finished its 48-hour wait. Its own wait ends {when}"
 msgstr "이 버전의 48시간 대기가 끝난 뒤 GitHub에서 변경됨. 이 파일의 대기는 {when} 끝나요"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Changed since their last backup"
-msgstr "마지막 백업 이후 변경됨"
-
 #: ../../apps/launcher/src/update.tsx
 msgid "Check for updates"
 msgstr "업데이트 확인"
@@ -2573,6 +2569,10 @@ msgstr "{device}에서"
 msgid "From {device}, {cloudWhen}"
 msgstr "{device}에서, {cloudWhen}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}. The saves here are backed up first."
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "From a git repository"
 msgstr ""
@@ -3278,10 +3278,6 @@ msgstr "이 앱의 데이터를 앱 폴더에 보관(<0>portable.txt</0>)"
 msgid "Keep this app's saves with my Quiver account"
 msgstr "이 앱의 세이브를 내 Quiver 계정에 보관"
 
-#: ../../apps/launcher/src/App.tsx
-msgid "Keep this computer's saves"
-msgstr "이 컴퓨터의 세이브 유지"
-
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Kept here from before."
 msgstr "예전부터 여기 있던 앱이에요."
@@ -3309,8 +3305,8 @@ msgid "Large name"
 msgstr "큰 이름"
 
 #: ../../apps/launcher/src/App.tsx
-msgid "Last backed up {hereWhen}"
-msgstr "마지막 백업: {hereWhen}"
+msgid "Last backed up {hereWhen}. Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
 
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Last played"
@@ -4461,6 +4457,10 @@ msgstr "플레이 시간"
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Play with"
 msgstr "플레이할 프로그램"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Play with the saves on this computer"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Play without it"
@@ -6078,6 +6078,10 @@ msgstr "앱에 붙인 태그입니다. Quiver Launcher 3에서 가져온 태그�
 msgid "Theme"
 msgstr "테마"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and your cloud saves are put in place."
+msgstr ""
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "There are no backups to restore."
 msgstr "복원할 백업이 없어요."
@@ -6459,6 +6463,10 @@ msgid "Update to {updateLabel}"
 msgstr "{updateLabel}(으)로 업데이트"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Update to {updateTo}"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Update to {updateVersion}"
 msgstr "{updateVersion}(으)로 업데이트"
 
@@ -6553,6 +6561,10 @@ msgstr "컨트롤러로 Quiver 탐색"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my cloud saves"
 msgstr "내 클라우드 세이브 사용"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves anyway"
+msgstr ""
 
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
@@ -6942,6 +6954,22 @@ msgstr "클라우드 세이브가 가득 찼습니다({limit}). 사본을 삭제
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "클라우드 세이브가 가득 찼습니다({limit}). 최신 백업은 이 컴퓨터에만 있습니다. 여기나 다른 앱에서 사본을 삭제해 공간을 확보하세요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves stay in your account as a backup. These become your newest."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
