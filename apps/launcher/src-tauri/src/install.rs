@@ -735,7 +735,7 @@ pub(crate) fn writable(path: &Path) {
 }
 
 /// Programs that come with an app but don't start it.
-pub(crate) const HELPERS: [&str; 6] = ["unins", "crash", "vc_redist", "dxsetup", "setup", "updater"];
+pub(crate) const HELPERS: [&str; 10] = ["unins", "crashpad", "crashreport", "crashhandler", "crashsender", "crash_", "vc_redist", "dxsetup", "setup", "updater"];
 
 /// The program to start: the first file matching the catalog's preferred
 /// executables, else the likeliest program, shallowest first.
@@ -885,7 +885,7 @@ pub fn file_kinds(dir: &Path) -> Vec<String> {
 /// not an uninstaller or a runtime's installer. Shallowest first, then by name;
 /// a Windows build's too on Linux, where Wine runs it.
 pub fn programs(dir: &Path, os: &str) -> Vec<PathBuf> {
-    const NOT_PROGRAMS: [&str; 4] = ["unins", "crash", "vc_redist", "dxsetup"];
+    const NOT_PROGRAMS: [&str; 8] = ["unins", "crashpad", "crashreport", "crashhandler", "crashsender", "crash_", "vc_redist", "dxsetup"];
     let mut files = Vec::new();
     walk(dir, 0, &mut files);
     files.sort_by_key(|p| (p.components().count(), p.to_string_lossy().to_lowercase()));
@@ -1212,6 +1212,8 @@ mod tests {
         picks("Tenkaichi3", &["Tenkaichi3Decomp-setup.exe", "Tenkaichi3Decomp.exe"], "Tenkaichi3Decomp.exe");
         picks("DDNet", &["DDNet-Server.exe", "DDNet.exe"], "DDNet.exe");
         picks("SSNE", &["gctool.exe", "SSNE-Native.exe"], "SSNE-Native.exe");
+        // A game named Crash is no crash reporter.
+        picks("CrashOfTheTitans", &["crash-launcher.exe", "crashpad_handler.exe", "uninstall.exe", "builder-pack/toolchain/python/python.exe"], "crash-launcher.exe");
         // Another maker's program that came along.
         picks("Arena Evolved", &["ffmpeg.exe", "halo.exe"], "halo.exe");
         picks("MegaGlest", &["7z.exe", "7za64.exe", "megaglestx64.exe"], "megaglestx64.exe");
