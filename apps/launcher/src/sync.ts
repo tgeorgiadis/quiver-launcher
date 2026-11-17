@@ -5,6 +5,7 @@
  * never touched here.
  */
 import type { Entry } from "@quiverlauncher/api";
+import { isOwn } from "./custom";
 import { forPlatforms, type Platform } from "./platforms";
 import type { CustomApp, LibraryItem } from "./store";
 
@@ -222,4 +223,26 @@ export function matches(c: Filters, app: AppFacts, makers: Record<string, string
 /** Whether an app is on a playlist: picked for it, or matching its filters. */
 export function inCollection(c: Filters & Pick<Collection, "apps">, app: AppFacts, makers: Record<string, string> = {}) {
   return Boolean(app.id && c.apps?.includes(app.id)) || (hasFilters(c) && matches(c, app, makers));
+}
+
+/**
+ * The apps picked for a playlist that aren't in the library and still show on it: the catalog's, which have a page
+ * to open and add them from. Not one the player added themselves and has since removed (or that a playlist kept
+ * from before it was removed): it has no page and can't be added from here, so it would be a card nothing can be
+ * done with.
+ */
+export const pickedOutside = (c: Pick<Collection, "apps"> | undefined, inLibrary: (id: string) => boolean, catalog: Record<string, unknown>) =>
+  (c?.apps ?? []).filter((id) => !inLibrary(id) && Boolean(catalog[id]) && !isOwn(id));
+
+/**
+ * The playlists once an app the player added themselves leaves the library: it comes off each one it was picked
+ * for, and isn't the icon of any. Only the playlists changed are new objects, to save to `account` when there is one.
+ */
+export function withoutApp(collections: Collection[], id: string, account?: string): Collection[] {
+  return collections.map((c) => {
+    if (c.removed || c.follows || !(c.apps?.includes(id) || c.icon === id)) return c;
+    const { icon, ...rest } = c;
+    const synced = c.account ?? account;
+    return { ...rest, ...(icon && icon !== id ? { icon } : {}), apps: c.apps?.filter((a) => a !== id), account: synced, pending: synced ? true : undefined };
+  });
 }
