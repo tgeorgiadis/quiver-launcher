@@ -9,7 +9,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { msg, plural, t } from "@lingui/core/macro";
 import { ApiError, createClient, createGithub, createGitlab, createProviders, githubRepository, parseRepository, toRef, type Asset, type Client, type Console, type Entry, type Github, type Gitlab, type Os, type HistoryRelease, type Release, type ReleaseScan, type ReleaseStatus, type UnverifiedRelease, type Verified, type Withdrawn, type Providers, type RepositoryRef } from "@quiverlauncher/api";
 import type { HiddenApp } from "./browse-hidden";
-import { native, type Config, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
+import { native, type Config, type SaveBackup, type LaunchOptions, type MovingApp, type OldApp, type OldFilter, type Progress, type StateProblem, type V3Library, type WindowsRunner } from "./native";
 import { Recovery } from "./recovery";
 import { assetFilterFor, bestAssets, installable, installFormat, isMsi, pickedBefore, releaseFor } from "./assets";
 import { cameAfter, fromSite, scanAsks, installedFile, insteadOf, newestUnblocked, sameChecksum, unverifiedFile, versionLabel, withdrawnAsBlocked } from "./versions";
@@ -27,6 +27,7 @@ import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { beforePlay, sendBackup, type CloudApi, type Conflict } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
 
@@ -237,6 +238,10 @@ type Launcher = {
   confirming: Confirming | null;
   /** Asks the player before uninstalling (or uninstalling and removing) an app; null closes the prompt. */
   confirmUninstall: (confirming: Confirming | null) => void;
+  /** An app's saves here and in the account both changed: Play asks which to keep, and `answer` is called with it (null: neither, don't start). */
+  savesConflict: (Conflict & { answer: (keep: "cloud" | "here" | null) => void }) | null;
+  /** The account's cloud saves for an app, or null when it has none: signed out, switched off, or not from the catalog. */
+  cloudSavesFor: (id: string) => CloudApi | null;
   /** The app whose Play asks which of the player's programs to start; null closes the prompt. */
   choosingProgram: string | null;
   chooseProgram: (id: string | null) => void;
@@ -1215,6 +1220,8 @@ export type Settings = {
   telemetryConsent?: boolean;
   /** The first-run notice about usage data was answered. */
   telemetryNoticeSeen?: boolean;
+  /** Cloud saves switched off for every app: save backups stay on this computer (cloud-saves.ts). */
+  cloudSavesOff?: boolean;
   /** Quiver Launcher has started here before. */
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
@@ -1400,6 +1407,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [addingFiles, askAddFiles] = useState<Entry | null>(null);
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
+  const [savesConflict, setSavesConflict] = useState<Launcher["savesConflict"]>(null);
   const [settingUpCopy, setUpCopy] = useState<Launcher["settingUpCopy"]>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
@@ -1491,6 +1499,20 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   // What usage data reads later on, as it stands by then.
   const forUsage = useRef({ library, installs, catalog, settings, client });
   forUsage.current = { library, installs, catalog, settings, client };
+  // Cloud saves are for the catalog's apps, for a signed-in player who hasn't switched them off. Read when a backup
+  // is made or an app starts, as things stand by then.
+  const cloudNow = useRef<Launcher["cloudSavesFor"]>(() => null);
+  cloudNow.current = (id) => (savesOn(config.os) && !settings.cloudSavesOff && !isLocal(id) && catalog[id]?.slug ? account.cloudSaves : null);
+  /** Sends a backup that was just made to the account; never waited for. */
+  const sendToCloud = (id: string, install: Install, made: SaveBackup | null | undefined) => {
+    const api = made && cloudNow.current(id);
+    if (!api || !made) return;
+    void native
+      .savesCloud(savesOf(id, install, forUsage.current.catalog[id]))
+      .then((state) => (state.off ? null : sendBackup(savesOf(id, install, forUsage.current.catalog[id]), id, made, { api, native })))
+      .then(() => savesChanged(id))
+      .catch(() => {});
+  };
   useEffect(() => {
     const closed = native.onAppClosed(({ id, seconds }) => {
       const { catalog, installs } = forUsage.current;
@@ -1501,6 +1523,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
         void native.savesPlayed(savesOf(id, install, catalog[id])).then(
           (made) => {
             if (made) savesChanged(id);
+            sendToCloud(id, install, made);
             // Where it saved, for the catalog to list for everyone: only from players who share usage data, and only
             // for the catalog's own apps.
             const entry = catalog[id];
@@ -2087,7 +2110,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // An update writes over the app's folder, where many apps keep their saves: backed up first, as they are.
       if (was && savesOn(config.os))
         await native.savesBackup(savesOf(entry.id, was, catalog[entry.id] ?? entry), "update").then(
-          (made) => made && savesChanged(entry.id),
+          (made) => made && (savesChanged(entry.id), sendToCloud(entry.id, was, made)),
           () => {},
         );
       const done = await native.install({
@@ -2192,7 +2215,11 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       throw "cancelled";
     }
     // Its saves are kept: in a folder of the app's own they'd go with it, and elsewhere a reinstall may want them back.
-    if (savesOn(config.os)) await native.savesBackup(savesOf(id, install, catalog[id]), "uninstall").catch(() => {});
+    if (savesOn(config.os))
+      await native.savesBackup(savesOf(id, install, catalog[id]), "uninstall").then(
+        (made) => sendToCloud(id, install, made),
+        () => {},
+      );
     await native.uninstall(install.folder, install.dir);
     chosenFolder.current.delete(id);
     track("app_uninstalled", appRef(id, catalog[id]?.slug ?? allItems.find((i) => i.id === id)?.slug ?? ""));
@@ -2488,6 +2515,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     confirmUninstall,
     choosingProgram,
     chooseProgram,
+    savesConflict,
+    cloudSavesFor: (id) => cloudNow.current(id),
     settingUpCopy,
     setUpCopy,
     cache: (entries) => setCatalog((c) => ({ ...c, ...Object.fromEntries(entries.map((e) => [e.id, { ...c[e.id], ...e }])) })),
@@ -2537,6 +2566,21 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       // On the player's Discord profile while it runs: its square icon, else its box art.
       const entry = catalog[id];
       const presence = entry?.projectName ? { name: entry.projectName, image: entry.artwork || entry.libraryArt?.capsule || entry.libraryArt?.header || undefined } : undefined;
+      // Its saves brought in line with the account's first (cloud-saves.ts): a newer copy from another computer is put
+      // in place, and when both changed the player says which to keep.
+      const cloud = cloudNow.current(id);
+      if (cloud && entry) {
+        const synced = await beforePlay(savesOf(id, { ...install, program }, entry), entry, {
+          api: cloud,
+          native,
+          changed: savesChanged,
+          ask: (conflict) => new Promise((resolve) => setSavesConflict({ ...conflict, answer: (keep) => (setSavesConflict(null), resolve(keep)) })),
+        }).catch(() => ({ go: true }) as Awaited<ReturnType<typeof beforePlay>>);
+        if (!synced.go) return;
+        const device = synced.fetched?.device;
+        if (device) setNotice(t`Your saves from ${device} were put in place. The saves that were here are backed up.`);
+        else if (synced.problem !== undefined) setNotice(synced.problem || t`Couldn't get your cloud saves. The app starts with the saves on this computer.`, { stays: true });
+      }
       // What's in its likely save places now, to tell afterwards where it saved (saves.rs). Never in the way of playing.
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
       await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(

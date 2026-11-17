@@ -29,6 +29,7 @@ import { GithubTokenSetting } from "./github-token";
 import { GitlabTokenSetting } from "./gitlab-token";
 import { RepositoryTokens } from "./repository-tokens";
 import { TelemetrySetting } from "./telemetry-ui";
+import { savesOn } from "./saves";
 import type { Theme } from "./theme";
 import { INTERFACE_SIZES } from "./zoom";
 import { GameCopySettings } from "./own-copy-settings";
@@ -295,6 +296,17 @@ function GeneralSettings({ onRunSetup }: { onRunSetup: () => void }) {
           <input type="checkbox" checked={!settings.discordPresenceOff} onChange={(e) => setSettings({ ...settings, discordPresenceOff: e.target.checked ? undefined : true })} />
           <Trans>Show on Discord what I'm playing, or that I'm in Quiver Launcher</Trans>
         </label>
+      )}
+      {savesOn(config.os) && (
+        <div className="telemetry-setting">
+          <label className="toggle">
+            <input type="checkbox" checked={!settings.cloudSavesOff} onChange={(e) => setSettings({ ...settings, cloudSavesOff: e.target.checked ? undefined : true })} />
+            <Trans>Cloud saves</Trans>
+          </label>
+          <p className="muted">
+            <Trans>While you&apos;re signed in, backups of your saves are also kept with your Quiver account, so they follow you to another computer. Each app&apos;s Saves tab has its own switch.</Trans>
+          </p>
+        </div>
       )}
       <TelemetrySetting />
       <div className="settings-section">

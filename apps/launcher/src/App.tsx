@@ -1,5 +1,5 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, BookOpen, Save, ChevronDown, Cloud, CircleArrowDown, CircleCheck, CirclePlay, CircleUser, Compass, Disc3, Download, Eye, EyeOff, FolderInput, FolderOpen, FolderPen, FolderSearch, History, Info, MessagesSquare, LayoutGrid, Library, LogOut, PanelLeft, Mail, PackagePlus, Pencil, Pin, Play, Plus, Search, SettingsIcon, RotateCcw, ShieldAlert, ShieldCheck, ShieldX, SlidersHorizontal, Smile, Trash2, TriangleAlert, Tv, X } from "lucide-react";
 import type { AppQuery, Asset, Entry, GameMatch, Os, Page, ProjectType } from "@quiverlauncher/api";
 import { msg, plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -387,6 +387,7 @@ export function App() {
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
+      <SavesConflictPrompt />
       <OwnCopyPrompt />
       <Notice />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
@@ -2111,6 +2112,53 @@ function Notice() {
         <div className="row">
           <button className="primary" autoFocus onClick={close}>
             <Trans>OK</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** Play, for an app whose saves changed both here and in the account since they last matched: which the player keeps. */
+function SavesConflictPrompt() {
+  const { savesConflict: conflict } = useLauncher();
+  if (!conflict) return null;
+  const name = conflict.entry.projectName;
+  const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
+  const { cloud, here } = conflict;
+  const device = cloud.device;
+  const cloudWhen = when(cloud.madeAt);
+  const hereWhen = here ? when(here.at) : "";
+  return (
+    <Dialog label={t`Which saves of ${name}?`} onClose={() => conflict.answer(null)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> {t`Which saves of ${name} do you want to keep?`}
+        </h2>
+        <p className="muted">
+          <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
+        </p>
+        <div className="choices">
+          <button autoFocus onClick={() => conflict.answer("cloud")}>
+            <span>
+              <strong>
+                <Trans>Use my cloud saves</Trans>
+              </strong>
+              <small>{t`From ${device}, ${cloudWhen}`}</small>
+            </span>
+          </button>
+          <button onClick={() => conflict.answer("here")}>
+            <span>
+              <strong>
+                <Trans>Keep this computer&apos;s saves</Trans>
+              </strong>
+              <small>{here ? t`Last backed up ${hereWhen}` : t`Changed since their last backup`}</small>
+            </span>
+          </button>
+        </div>
+        <div className="row">
+          <button onClick={() => conflict.answer(null)}>
+            <Trans>Don&apos;t play yet</Trans>
           </button>
         </div>
       </div>

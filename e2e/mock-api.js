@@ -779,6 +779,12 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
     telemetry: () => telemetry,
     telemetryBodies: () => telemetryBodies,
     /** Calls to users.setAnalytics: { user, enabled }. */
+    /**
+     * Cloud saves, as the site keeps them: `rows` (each copy's { id, user, entryId, status, size, hash, os, device, … }),
+     * `objects` (the bytes by row id), and what a test can set: `limit`, `keep`, `on`, and `off` (entry ids staff
+     * switched it off for).
+     */
+    cloudSaves: account.cloud,
     analyticsCalls: account.analyticsCalls,
     /** Turns usage data off (or on) for an account, as the website's privacy page does. */
     setAnalytics: account.setAnalytics,
@@ -876,8 +882,32 @@ function mockAccount(entries) {
     res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" });
     res.end(JSON.stringify(body));
   };
+  // Cloud saves, as the site's cloudSaves functions and its private bucket: rows { id, user, entryId, status, size,
+  // hash, os, device, files, version, reason, madeAt, createdAt } and each stored object's bytes by row id.
+  const cloud = { rows: [], objects: new Map(), limit: 250 * 1024 * 1024, keep: 5, on: true, off: new Set(), next: 1 };
+  const cloudUsed = (name) => cloud.rows.filter((r) => r.user === name).reduce((n, r) => n + r.size, 0);
+  const cloudDrop = (rows) => {
+    for (const row of rows) cloud.objects.delete(row.id);
+    cloud.rows = cloud.rows.filter((r) => !rows.includes(r));
+  };
+  /** The bucket: a signed link takes one PUT of exactly the size it was signed for, or gives the object back. */
+  function bucket(req, res, id) {
+    const row = cloud.rows.find((r) => r.id === id);
+    if (!row || new URL(req.url, "http://x").searchParams.get("signed") !== row.key) return res.writeHead(403).end();
+    if (req.method === "GET") {
+      const object = cloud.objects.get(id);
+      if (!object) return res.writeHead(404).end();
+      res.writeHead(200, { "Content-Type": "application/zip", "Content-Length": object.length });
+      return res.end(object);
+    }
+    if (req.method !== "PUT" || Number(req.headers["content-length"]) !== row.size) return res.writeHead(403).end();
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => (cloud.objects.set(id, Buffer.concat(chunks)), res.writeHead(200).end()));
+  }
   async function handle(req, res, path) {
     if (req.method === "OPTIONS") return send(res, {});
+    if (path.startsWith("/cloud-saves/object/")) return bucket(req, res, path.slice(20));
     const body = req.method === "POST" ? await read(req) : {};
     // GitHub/Discord: start, the provider page that sends the browser back, and redeem.
     if (path === "/oauth/start") {
@@ -964,6 +994,45 @@ function mockAccount(entries) {
     if (path === "/lists/unshare") {
       if (lists.get(body.slug)?.owner !== name) return send(res, { error: "List not found" }, 400);
       lists.delete(body.slug);
+      return send(res, null);
+    }
+    if (path === "/cloud-saves/mine")
+      return send(res, {
+        on: cloud.on, limit: cloud.limit, used: cloudUsed(name), keep: cloud.keep, maxCopy: 100 * 1024 * 1024, allowed: !cloud.off.has(body.entryId),
+        copies: cloud.rows.filter((r) => r.user === name && r.entryId === body.entryId && r.status === "stored").sort((a, b) => b.createdAt - a.createdAt)
+          .map(({ user: _, key: __, status: ___, entryId: ____, ...copy }) => copy),
+      });
+    if (path === "/cloud-saves/begin") {
+      if (!cloud.on || cloud.off.has(body.entryId)) return send(res, { status: "off" });
+      const ofApp = cloud.rows.filter((r) => r.user === name && r.entryId === body.entryId).sort((a, b) => a.createdAt - b.createdAt);
+      const same = ofApp.find((r) => r.status === "stored" && r.hash === body.hash);
+      if (same) return send(res, { status: "have", id: same.id });
+      const stale = ofApp.filter((r) => r.status === "pending");
+      const kept = ofApp.filter((r) => r.status === "stored");
+      const leaving = kept.slice(0, Math.max(0, kept.length - (cloud.keep - 1)));
+      const freed = [...stale, ...leaving].reduce((n, r) => n + r.size, 0);
+      if (cloudUsed(name) - freed + body.size > cloud.limit) return send(res, { status: "full", used: cloudUsed(name), limit: cloud.limit });
+      cloudDrop(stale);
+      const id = `save_${cloud.next++}`;
+      const key = `key_${Math.random()}`;
+      cloud.rows.push({ ...body, id, user: name, status: "pending", key, createdAt: Date.now() + cloud.next });
+      return send(res, { status: "upload", id, url: `http://${req.headers.host}/account/cloud-saves/object/${id}?signed=${key}`, headers: { "content-length": String(body.size), "content-type": "application/zip" } });
+    }
+    if (path === "/cloud-saves/finish") {
+      const row = cloud.rows.find((r) => r.id === body.id && r.user === name);
+      if (!row) return send(res, false);
+      if (cloud.objects.get(row.id)?.length !== row.size) return cloudDrop([row]), send(res, false);
+      row.status = "stored";
+      const copies = cloud.rows.filter((r) => r.user === name && r.entryId === row.entryId && r.status === "stored").sort((a, b) => b.createdAt - a.createdAt);
+      cloudDrop(copies.slice(cloud.keep));
+      return send(res, true);
+    }
+    if (path === "/cloud-saves/download") {
+      const row = cloud.rows.find((r) => r.id === body.id && r.user === name && r.status === "stored");
+      return send(res, row ? { url: `http://${req.headers.host}/account/cloud-saves/object/${row.id}?signed=${row.key}`, size: row.size } : null);
+    }
+    if (path === "/cloud-saves/remove") {
+      cloudDrop(cloud.rows.filter((r) => r.user === name && (r.id === body.id || (body.entryId && r.entryId === body.entryId))));
       return send(res, null);
     }
     if (path === "/library/save") {
@@ -1067,5 +1136,5 @@ function mockAccount(entries) {
     if (user) user.catalogDefaults = defaults;
   };
   const collections = (name) => [...(users.get(name)?.collections.values() ?? [])];
-  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections };
+  return { handle, reviews, corrections, resolveCorrection, feedback, lists, analyticsCalls, setAnalytics, setCatalogDefaults, collections, cloud };
 }

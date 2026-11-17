@@ -16,6 +16,7 @@ import type { Feedback, Os } from "@quiverlauncher/api";
 import { native, type Config } from "./native";
 import type { Change, Collection, ServerCollection, ServerItem } from "./sync";
 import type { CorrectionTopic } from "./corrections";
+import type { CloudApi, CloudBegun, CloudMine } from "./cloud-saves";
 
 export type ReviewInput = {
   entryId: string;
@@ -94,6 +95,8 @@ export type Account = {
   unshareList: (slug: string) => Promise<void>;
   /** Turns anonymous usage data on or off for the account, wherever they sign in (the website's users.setAnalytics). */
   setAnalytics: (enabled: boolean) => Promise<void>;
+  /** The account's cloud saves (cloud-saves.ts, the website's cloudSaves); null signed out. */
+  cloudSaves: CloudApi | null;
 };
 
 /** The signed-in account, as the website's users.me has it. */
@@ -154,7 +157,7 @@ export function AccountProvider({ config, children }: { config: Config; children
   return <ConvexAccount url={config.convex} returnTo={config.returnTo}>{children}</ConvexAccount>;
 }
 
-const ref = <T extends "query" | "mutation">(type: T, name: string) =>
+const ref = <T extends "query" | "mutation" | "action">(type: T, name: string) =>
   makeFunctionReference<T>(name) as unknown as FunctionReference<T>;
 const fns = {
   refreshSession: ref("mutation", "auth:refreshSession"),
@@ -178,6 +181,11 @@ const fns = {
   shareList: ref("mutation", "sharedLists:share"),
   unshareList: ref("mutation", "sharedLists:unshare"),
   setAnalytics: ref("mutation", "users:setAnalytics"),
+  cloudMine: ref("query", "cloudSaves:mine"),
+  cloudBegin: ref("action", "cloudSaves:beginUpload"),
+  cloudFinish: ref("action", "cloudSaves:finishUpload"),
+  cloudDownload: ref("action", "cloudSaves:download"),
+  cloudRemove: ref("mutation", "cloudSaves:remove"),
   github: [ref("mutation", "auth:startSignInGithub"), ref("mutation", "auth:completeSignInGithub")],
   discord: [ref("mutation", "auth:startSignInDiscord"), ref("mutation", "auth:completeSignInDiscord")],
 };
@@ -334,6 +342,16 @@ function ConvexAccountState({ client, returnTo, children }: { client: ConvexReac
     },
     unshareList: async (slug) => void (await client.mutation(fns.unshareList, { slug })),
     setAnalytics: async (enabled) => void (await setAnalytics({ enabled })),
+    // An older site has none of these: each call fails, which cloud saves takes as "not now".
+    cloudSaves: me
+      ? {
+          mine: (entryId) => client.query(fns.cloudMine, { entryId }) as Promise<CloudMine | null>,
+          begin: (backup) => client.action(fns.cloudBegin, backup) as Promise<CloudBegun>,
+          finish: (id) => client.action(fns.cloudFinish, { id }) as Promise<boolean>,
+          download: (id) => client.action(fns.cloudDownload, { id }) as Promise<{ url: string; size: number } | null>,
+          remove: async (what) => void (await client.mutation(fns.cloudRemove, what)),
+        }
+      : null,
   };
   return (
     <AccountContext.Provider value={account}>
@@ -507,6 +525,15 @@ function TestAccount({ base, returnTo, children }: { base: string; returnTo: str
       setUser((u) => u && { ...u, analyticsOptOut: enabled ? undefined : true });
       await call("/analytics", { enabled }).finally(() => changes.current++);
     },
+    cloudSaves: user
+      ? {
+          mine: (entryId) => call("/cloud-saves/mine", { entryId }),
+          begin: (backup) => call("/cloud-saves/begin", backup),
+          finish: (id) => call("/cloud-saves/finish", { id }),
+          download: (id) => call("/cloud-saves/download", { id }),
+          remove: async (what) => void (await call("/cloud-saves/remove", what)),
+        }
+      : null,
   };
   return <AccountContext.Provider value={account}>{children}</AccountContext.Provider>;
 }
