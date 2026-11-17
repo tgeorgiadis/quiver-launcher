@@ -2216,8 +2216,14 @@ function SavesFullPrompt({ onFreeUp }: { onFreeUp: () => void }) {
 }
 
 function SavesConflictPrompt() {
-  const { savesConflict: conflict } = useLauncher();
+  const { savesConflict: conflict, catalog, installs, jobs, get } = useLauncher();
   if (!conflict) return null;
+  // Saves from a newer version than the one installed: updating first is the way that can't go wrong, when there's an update.
+  const latest = catalog[conflict.entry.id];
+  const update = conflict.newer && latest && !jobs[conflict.entry.id] ? updateFor(latest, installs[conflict.entry.id]) : undefined;
+  const updateTo = versionLabel(update?.version);
+  const madeWith = versionLabel(conflict.newer?.cloud);
+  const have = versionLabel(conflict.newer?.here);
   const name = conflict.entry.projectName;
   const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
   const { cloud, here } = conflict;
@@ -2237,18 +2243,40 @@ function SavesConflictPrompt() {
             </p>
             <SavePlaces places={conflict.places} />
           </>
+        ) : conflict.newer ? (
+          <p className="muted">
+            {update
+              ? t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. Update first, then play.`
+              : t`Your cloud saves were made with ${madeWith} of this app, and this computer has ${have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab.`}
+          </p>
         ) : (
           <p className="muted">
             <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
           </p>
         )}
         <div className="choices">
-          <button autoFocus onClick={() => conflict.answer("cloud")}>
+          {update && latest && (
+            <button
+              autoFocus
+              className="saves-update"
+              onClick={() => {
+                // Nothing starts and the saves stay as they are: after the update, Play brings the cloud saves in.
+                conflict.answer(null);
+                void get(latest);
+              }}
+            >
+              <span>
+                <strong>{t`Update to ${updateTo}`}</strong>
+                <small>
+                  <Trans>Then press Play, and your cloud saves are put in place.</Trans>
+                </small>
+              </span>
+            </button>
+          )}
+          <button autoFocus={!update} onClick={() => conflict.answer("cloud")}>
             <span>
-              <strong>
-                <Trans>Use my cloud saves</Trans>
-              </strong>
-              <small>{t`From ${device}, ${cloudWhen}`}</small>
+              <strong>{conflict.newer ? <Trans>Use my cloud saves anyway</Trans> : <Trans>Use my cloud saves</Trans>}</strong>
+              <small>{conflict.newer ? t`From ${device}, ${cloudWhen}. The saves here are backed up first.` : t`From ${device}, ${cloudWhen}`}</small>
             </span>
           </button>
           <button onClick={() => conflict.answer("here")}>
@@ -2256,7 +2284,7 @@ function SavesConflictPrompt() {
               <strong>
                 <Trans>Keep this computer&apos;s saves</Trans>
               </strong>
-              {!conflict.places?.length && <small>{here ? t`Last backed up ${hereWhen}` : t`Changed since their last backup`}</small>}
+              {!conflict.places?.length && (here || !conflict.newer) && <small>{here ? t`Last backed up ${hereWhen}` : t`Changed since their last backup`}</small>}
             </span>
           </button>
         </div>

@@ -2573,6 +2573,10 @@ msgstr "来自 {device}"
 msgid "From {device}, {cloudWhen}"
 msgstr "来自 {device}，{cloudWhen}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}. The saves here are backed up first."
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "From a git repository"
 msgstr ""
@@ -6078,6 +6082,10 @@ msgstr "你给应用添加的标签，包括从 Quiver Launcher 3 带过来的�
 msgid "Theme"
 msgstr "主题"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and your cloud saves are put in place."
+msgstr ""
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "There are no backups to restore."
 msgstr "没有可恢复的备份。"
@@ -6459,6 +6467,10 @@ msgid "Update to {updateLabel}"
 msgstr "更新到 {updateLabel}"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Update to {updateTo}"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Update to {updateVersion}"
 msgstr "更新到 {updateVersion}"
 
@@ -6553,6 +6565,10 @@ msgstr "使用手柄浏览 Quiver"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my cloud saves"
 msgstr "使用我的云存档"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves anyway"
+msgstr ""
 
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
@@ -6942,6 +6958,14 @@ msgstr "你的云存档已满（{limit}）。请移除副本以腾出空间。"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "你的云存档已满（{limit}）。最新备份只在这台电脑上。请移除这里或其他应用的副本以腾出空间。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"

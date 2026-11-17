@@ -2573,6 +2573,10 @@ msgstr "De {device}"
 msgid "From {device}, {cloudWhen}"
 msgstr "De {device}, {cloudWhen}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "From {device}, {cloudWhen}. The saves here are backed up first."
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "From a git repository"
 msgstr ""
@@ -6078,6 +6082,10 @@ msgstr "As tags que você deu aos seus apps, incluindo as trazidas do Quiver Lau
 msgid "Theme"
 msgstr "Tema"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Then press Play, and your cloud saves are put in place."
+msgstr ""
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "There are no backups to restore."
 msgstr "Não há cópias de segurança para restaurar."
@@ -6459,6 +6467,10 @@ msgid "Update to {updateLabel}"
 msgstr "Atualizar para {updateLabel}"
 
 #: ../../apps/launcher/src/App.tsx
+msgid "Update to {updateTo}"
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
 msgid "Update to {updateVersion}"
 msgstr "Atualizar para {updateVersion}"
 
@@ -6553,6 +6565,10 @@ msgstr "Usar controles para navegar pelo Quiver"
 #: ../../apps/launcher/src/App.tsx
 msgid "Use my cloud saves"
 msgstr "Usar meus saves na nuvem"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Use my cloud saves anyway"
+msgstr ""
 
 #. Which releases an app gets: whatever Settings, Updates says, which is to include pre-releases
 #: ../../apps/launcher/src/App.tsx
@@ -6942,6 +6958,14 @@ msgstr "Seus saves na nuvem estão cheios ({limit}). Remova cópias para liberar
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "Seus saves na nuvem estão cheios ({limit}). O backup mais recente está só neste computador. Remova cópias aqui ou de outro app para liberar espaço."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. The ones you don't pick are kept as a backup on the app's Saves tab."
+msgstr ""
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves were made with {madeWith} of this app, and this computer has {have}. An older version may not be able to load them. Update first, then play."
+msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
