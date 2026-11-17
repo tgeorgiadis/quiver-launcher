@@ -1141,11 +1141,6 @@ msgstr "所有平台"
 msgid "All project types"
 msgstr "所有项目类型"
 
-#. TV mode setting: the order of the games on the All tab
-#: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "All tab order"
-msgstr "“全部”标签页顺序"
-
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "所有标签"
@@ -1785,6 +1780,11 @@ msgstr "正在检查 →"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "正在检查 → {0}/{1}"
+
+#. Controller hint in TV mode's Sort list: sorts the games this way
+#: ../../apps/launcher/src/tv/views/SortList.tsx
+msgid "Choose"
+msgstr "选择"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -4190,6 +4190,11 @@ msgstr "下载量最多"
 msgid "Most games first"
 msgstr "游戏最多的优先"
 
+#. Library sort: the app played longest, all told, first
+#: ../../apps/launcher/src/sort.ts
+msgid "Most played"
+msgstr "游玩最久"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "最相关"
@@ -4307,6 +4312,7 @@ msgid "Name"
 msgstr "名称"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Name A–Z"
 msgstr "按名称 A–Z 排序"
 
@@ -5558,6 +5564,7 @@ msgstr "最新"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently added"
 msgstr "最近添加"
 
@@ -5566,13 +5573,14 @@ msgid "Recently finished"
 msgstr "最近完成"
 
 #. A shelf on TV mode's Home: the games installed last
+#. Library sort: the app installed last first
+#: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
 msgid "Recently installed"
 msgstr "最近安装"
 
 #: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
-#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Recently played"
 msgstr "最近游玩"
 
@@ -5586,6 +5594,7 @@ msgstr "最近游玩的优先（按下可按 A–Z 排序）"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently updated"
 msgstr "最近更新"
 
@@ -5600,6 +5609,16 @@ msgstr "刷新"
 #: ../../apps/launcher/src/App.tsx
 msgid "Reinstall {installedVersion}"
 msgstr "重新安装 {installedVersion}"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, newest first"
+msgstr "发行日期，最新在前"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, oldest first"
+msgstr "发行日期，最早在前"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
@@ -6439,9 +6458,15 @@ msgstr "其他"
 #. Label of the library's sort order
 #. Label of the library's sort order
 #. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
 #. The order the catalog's apps are listed in
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+#: ../../apps/launcher/src/tv/views/SortList.tsx
 msgid "Sort"
 msgstr "排序"
 
@@ -6827,6 +6852,10 @@ msgstr ""
 msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
 msgstr "{name} 的最新备份只在这台电脑上，在有空间之前，之后的每个备份也是如此。有空间后 Quiver 会自动发送。"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "The order of the games on All and each console's tab; X there changes it too"
+msgstr "“全部”和各主机标签页中游戏的顺序；在那里按 X 也能更改"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "原版游戏"
@@ -7102,6 +7131,7 @@ msgstr "顶部"
 #. Sort order for mods
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Top rated"
 msgstr "评分最高"
 

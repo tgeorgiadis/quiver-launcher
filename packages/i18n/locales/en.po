@@ -1140,11 +1140,6 @@ msgstr "All platforms"
 msgid "All project types"
 msgstr "All project types"
 
-#. TV mode setting: the order of the games on the All tab
-#: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "All tab order"
-msgstr "All tab order"
-
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "All tags"
@@ -1784,6 +1779,11 @@ msgstr "Checking…"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "Checking… {0} of {1}"
+
+#. Controller hint in TV mode's Sort list: sorts the games this way
+#: ../../apps/launcher/src/tv/views/SortList.tsx
+msgid "Choose"
+msgstr "Choose"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -4189,6 +4189,11 @@ msgstr "Most downloaded"
 msgid "Most games first"
 msgstr "Most games first"
 
+#. Library sort: the app played longest, all told, first
+#: ../../apps/launcher/src/sort.ts
+msgid "Most played"
+msgstr "Most played"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "Most relevant"
@@ -4306,6 +4311,7 @@ msgid "Name"
 msgstr "Name"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Name A–Z"
 msgstr "Name A–Z"
 
@@ -5557,6 +5563,7 @@ msgstr "Recent"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently added"
 msgstr "Recently added"
 
@@ -5565,13 +5572,14 @@ msgid "Recently finished"
 msgstr "Recently finished"
 
 #. A shelf on TV mode's Home: the games installed last
+#. Library sort: the app installed last first
+#: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
 msgid "Recently installed"
 msgstr "Recently installed"
 
 #: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
-#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Recently played"
 msgstr "Recently played"
 
@@ -5585,6 +5593,7 @@ msgstr "Recently played first (press for A to Z)"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently updated"
 msgstr "Recently updated"
 
@@ -5599,6 +5608,16 @@ msgstr "Refresh"
 #: ../../apps/launcher/src/App.tsx
 msgid "Reinstall {installedVersion}"
 msgstr "Reinstall {installedVersion}"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, newest first"
+msgstr "Release date, newest first"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, oldest first"
+msgstr "Release date, oldest first"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
@@ -6438,9 +6457,15 @@ msgstr "Something else"
 #. Label of the library's sort order
 #. Label of the library's sort order
 #. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
 #. The order the catalog's apps are listed in
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+#: ../../apps/launcher/src/tv/views/SortList.tsx
 msgid "Sort"
 msgstr "Sort"
 
@@ -6826,6 +6851,10 @@ msgstr "the newest 5 of each app are kept"
 msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
 msgstr "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "The order of the games on All and each console's tab; X there changes it too"
+msgstr "The order of the games on All and each console's tab; X there changes it too"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "THE ORIGINAL GAME"
@@ -7101,6 +7130,7 @@ msgstr "Top"
 #. Sort order for mods
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Top rated"
 msgstr "Top rated"
 

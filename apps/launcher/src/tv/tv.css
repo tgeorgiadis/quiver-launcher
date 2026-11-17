@@ -1017,6 +1017,11 @@
   max-height: calc(var(--u) * 380);
   margin: 0;
 }
+/* X's Sort list in the library's tabs: over the top of the games, under the top bar and the game's name. */
+.tv-dropdown.tv-sort-list {
+  top: calc(var(--u) * 108);
+  left: calc(var(--u) * 40);
+}
 /* Ticks, not ways in: no arrow after them (the library's choice keeps its two). */
 .tv-dropdown .tv-settings-value svg:only-of-type {
   display: none;

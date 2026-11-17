@@ -1141,11 +1141,6 @@ msgstr "모든 플랫폼"
 msgid "All project types"
 msgstr "모든 프로젝트 유형"
 
-#. TV mode setting: the order of the games on the All tab
-#: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "All tab order"
-msgstr "전체 탭 순서"
-
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "모든 태그"
@@ -1785,6 +1780,11 @@ msgstr "확인 중…"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "확인 중… {1} 중 {0}"
+
+#. Controller hint in TV mode's Sort list: sorts the games this way
+#: ../../apps/launcher/src/tv/views/SortList.tsx
+msgid "Choose"
+msgstr "선택"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -4190,6 +4190,11 @@ msgstr "다운로드 많은 순"
 msgid "Most games first"
 msgstr "게임 많은 순"
 
+#. Library sort: the app played longest, all told, first
+#: ../../apps/launcher/src/sort.ts
+msgid "Most played"
+msgstr "가장 많이 플레이함"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "관련성 높은 순"
@@ -4307,6 +4312,7 @@ msgid "Name"
 msgstr "이름"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Name A–Z"
 msgstr "이름 가나다순"
 
@@ -5558,6 +5564,7 @@ msgstr "최근"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently added"
 msgstr "최근 추가"
 
@@ -5566,13 +5573,14 @@ msgid "Recently finished"
 msgstr "최근 완료"
 
 #. A shelf on TV mode's Home: the games installed last
+#. Library sort: the app installed last first
+#: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
 msgid "Recently installed"
 msgstr "최근 설치"
 
 #: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
-#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Recently played"
 msgstr "최근 플레이"
 
@@ -5586,6 +5594,7 @@ msgstr "최근 플레이 순(누르면 가나다순)"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently updated"
 msgstr "최근 업데이트"
 
@@ -5600,6 +5609,16 @@ msgstr "새로 고침"
 #: ../../apps/launcher/src/App.tsx
 msgid "Reinstall {installedVersion}"
 msgstr "{installedVersion} 다시 설치"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, newest first"
+msgstr "출시일, 최신순"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, oldest first"
+msgstr "출시일, 오래된 순"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
@@ -6439,9 +6458,15 @@ msgstr "기타"
 #. Label of the library's sort order
 #. Label of the library's sort order
 #. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
 #. The order the catalog's apps are listed in
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+#: ../../apps/launcher/src/tv/views/SortList.tsx
 msgid "Sort"
 msgstr "정렬"
 
@@ -6827,6 +6852,10 @@ msgstr ""
 msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
 msgstr "{name}의 최신 백업은 이 컴퓨터에만 있으며, 공간이 생길 때까지 이후 백업도 마찬가지입니다. 공간이 생기면 Quiver가 자동으로 보냅니다."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "The order of the games on All and each console's tab; X there changes it too"
+msgstr "전체 탭과 각 콘솔 탭의 게임 순서예요. 거기서 X로도 바꿀 수 있어요"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "원작 게임"
@@ -7102,6 +7131,7 @@ msgstr "맨 위로"
 #. Sort order for mods
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Top rated"
 msgstr "평점 높은 순"
 

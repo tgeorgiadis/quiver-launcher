@@ -151,6 +151,34 @@ test("a game with an update waiting is on Home's Updates shelf", async () => {
   }
 });
 
+test("X in the library's tabs opens Sort: a pick sorts every tab, flashes its name and is kept", async () => {
+  const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });
+  try {
+    await press(s2, "RightTrigger");
+    await s2.until(async () => (await selectedTab(s2)) === "All");
+    await s2.page.locator(".tv-hints-right", { hasText: "Sort" }).waitFor();
+    await press(s2, "West");
+    const list = s2.page.locator(".tv-sort-list");
+    await list.waitFor();
+    assert.deepEqual(
+      (await list.locator("li .tv-settings-label").allInnerTexts()).slice(0, 4),
+      ["Name", "Game", "Release date, oldest first", "Release date, newest first"],
+    );
+    await list.locator("li", { hasText: "Most played" }).click();
+    await list.waitFor({ state: "detached" });
+    await s2.page.locator(".tv-flash", { hasText: "Most played" }).waitFor();
+    assert.deepEqual(await s2.app.execute(() => window.__files.settings.tv), { sort: "playtime" });
+    // B closes it without changing anything.
+    await press(s2, "West");
+    await list.waitFor();
+    await press(s2, "East");
+    await list.waitFor({ state: "detached" });
+    assert.deepEqual(await s2.app.execute(() => window.__files.settings.tv), { sort: "playtime" });
+  } finally {
+    await s2.close();
+  }
+});
+
 test("TV mode's settings are kept in the launcher's, only those changed", async () => {
   const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });
   try {

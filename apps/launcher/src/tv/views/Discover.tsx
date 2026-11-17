@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { Entry } from "@quiverlauncher/api";
+import type { Entry, Sort } from "@quiverlauncher/api";
 import { msg, t } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
@@ -20,12 +20,15 @@ import { LAYER } from "../input/router";
 import { GameHeader } from "./GameHeader";
 import { Glyph } from "./Glyph";
 import { GridTab, type Back } from "./GridTab";
+import { usesX } from "./tileActions";
 import { RowList, useRows, type Row } from "./Settings";
 import { discoverApps, matchesSearch, type LibraryFilter } from "./lists";
 
 /** Kept by the shell: Discover comes back as it was left. */
 export type DiscoverState = {
   filter: LibraryFilter;
+  /** The catalog's order (not while searching, which is by how well games match). */
+  sort: Sort;
   /** The makers (the catalog's brands) and kinds the consoles are narrowed to; none is any. */
   makers: string[];
   forms: ConsoleForm[];
@@ -34,7 +37,7 @@ export type DiscoverState = {
   pages: Map<string, { entries: Entry[]; cursor: string | null; done: boolean; loading: boolean; error: string | null }>;
 };
 
-export const newDiscoverState = (): DiscoverState => ({ filter: "notInLibrary", makers: [], forms: [], consoleId: null, pages: new Map() });
+export const newDiscoverState = (): DiscoverState => ({ filter: "notInLibrary", sort: "added", makers: [], forms: [], consoleId: null, pages: new Map() });
 
 /** The most consoles the catalog takes in one question (App.tsx's MAX_SYSTEMS). */
 const MAX_CONSOLES = 8;
@@ -50,6 +53,14 @@ const FORM_NAMES: Record<ConsoleForm, MessageDescriptor> = {
   handheld: msg({ message: "Handhelds", comment: "Discover's filter: handheld consoles, such as the Game Boy or PSP" }),
 };
 
+/** The catalog's orders, as Browse has them; Discover starts with the newest. */
+const CATALOG_SORTS: { id: Sort; label: MessageDescriptor }[] = [
+  { id: "added", label: msg`Recently added` },
+  { id: "updated", label: msg`Recently updated` },
+  { id: "rating", label: msg`Top rated` },
+  { id: "name", label: msg`Name A–Z` },
+];
+
 const makerName = (brand: string) => (brand === "OtherPlatforms" ? t`Other platforms` : brand);
 
 /** Discover's hint for going back down from the consoles to the games. */
@@ -58,8 +69,6 @@ const games = () => t({ message: "Games", comment: "Controller hint on Discover'
 const consolesHint = () => t({ message: "Consoles", comment: "Controller hint on Discover: the shoulder buttons go to the next or previous console" });
 /** Filter's name, on its button and as X's hint. */
 const filterName = () => t({ message: "Filter consoles", comment: "Discover's button and X's hint: narrows the games to the library or not, makers, home consoles or handhelds" });
-/** A game whose own X is in use: its update, or holding to cancel its waiting download. */
-const usesX = (app: TvApp | null | undefined) => app?.state === "updateAvailable" || app?.state === "queued";
 
 type Props = {
   state: DiscoverState;
@@ -83,9 +92,11 @@ type Props = {
  * Filter's list: the library (one of three, left / right), then makers and kinds, each ticked or not with A, any
  * number of them; B closes it.
  */
-function ConsoleFilter({ filter, setFilter, makers, picked, forms, toggleMaker, toggleForm, clear, onClose, left }: {
+function ConsoleFilter({ filter, setFilter, sort, setSort, makers, picked, forms, toggleMaker, toggleForm, clear, onClose, left }: {
   filter: LibraryFilter;
   setFilter: (filter: LibraryFilter) => void;
+  sort: Sort;
+  setSort: (sort: Sort) => void;
   makers: string[];
   picked: string[];
   forms: ConsoleForm[];
@@ -104,6 +115,13 @@ function ConsoleFilter({ filter, setFilter, makers, picked, forms, toggleMaker, 
       value: filter,
       set: (value) => setFilter(value as LibraryFilter),
     },
+    {
+      kind: "choice",
+      label: t({ message: "Sort", comment: "Label of the library's sort order" }),
+      options: CATALOG_SORTS.map((s) => ({ value: s.id, label: i18n._(s.label) })),
+      value: sort,
+      set: (value) => setSort(value as Sort),
+    },
     { kind: "action", label: t({ message: "Every console", comment: "Discover's Filter: no maker or kind picked" }), value: tick(!picked.length && !forms.length), run: clear },
     ...makers.map((brand): Row => ({ kind: "action", label: makerName(brand), value: tick(picked.includes(brand)), run: () => toggleMaker(brand) })),
     ...CONSOLE_FORMS.map((f): Row => ({ kind: "action", label: i18n._(FORM_NAMES[f]), value: tick(forms.includes(f)), run: () => toggleForm(f) })),
@@ -119,6 +137,7 @@ function ConsoleFilter({ filter, setFilter, makers, picked, forms, toggleMaker, 
 export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDetails, onDownloads, consoleName, onGot, search: typed, flash: showFlash }: Props) {
   const { bridge, consoles } = useTv();
   const [filter, setFilter] = useState(state.filter);
+  const [sort, setSort] = useState(state.sort);
   const [makers, setMakers] = useState(state.makers);
   const [forms, setForms] = useState(state.forms);
   const [consoleId, setConsoleId] = useState(state.consoleId);
@@ -148,7 +167,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   }, [consoleId, narrowed, shown, makers]);
   /** No console is of those makers and kinds (an Xbox handheld): nothing to ask for. */
   const none = onConsoles !== null && onConsoles.size === 0;
-  const key = `${JSON.stringify(query)}|${search}`;
+  const key = `${JSON.stringify(query)}|${search || sort}`;
   if (!state.pages.has(key)) state.pages.set(key, { entries: [], cursor: null, done: false, loading: false, error: null });
   const page = state.pages.get(key)!;
 
@@ -157,7 +176,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     if (p.loading || p.done || none) return;
     p.loading = true;
     bridge
-      .discover({ ...query, search: search || undefined, cursor: p.cursor, limit: 48 })
+      .discover({ ...query, ...(search ? { search } : { sort }), cursor: p.cursor, limit: 48 })
       .then((next) => {
         p.entries = [...p.entries, ...next.items];
         p.cursor = next.nextCursor;
@@ -169,7 +188,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         p.loading = false;
         setLoaded((n) => n + 1);
       });
-  }, [bridge, query, none, search, key, state.pages]);
+  }, [bridge, query, none, search, sort, key, state.pages]);
 
   useEffect(() => {
     if (filter !== "inLibrary" && !page.entries.length) loadMore();
@@ -193,6 +212,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   /** What Filter has picked, after its name: the library's choice, then makers and kinds. */
   const picks = [
     i18n._(LIBRARY_FILTERS.find((f) => f.id === filter)!.label),
+    ...(sort === "added" ? [] : [i18n._(CATALOG_SORTS.find((s) => s.id === sort)!.label)]),
     ...brands.filter((b) => makers.includes(b)).map(makerName),
     ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f])),
   ].join(", ");
@@ -256,7 +276,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
 
   const loading = filter !== "inLibrary" && page.loading && !page.entries.length;
   /** What the grid shows: each its own place to come back to. */
-  const view = `${filter}:${makers.join(",") || "*"}:${forms.join(",") || "*"}:${consoleId ?? "*"}|${search}`;
+  const view = `${filter}:${sort}:${makers.join(",") || "*"}:${forms.join(",") || "*"}:${consoleId ?? "*"}|${search}`;
   const emptyText = none
     ? { title: t`No consoles match this filter`, text: t`Change the filter, or choose Every console.` }
     : page.error && filter !== "inLibrary"
@@ -271,7 +291,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     <div className="tv-discover">
       <GameHeader app={zone === "grid" ? focused : null} consoleName={focused && zone === "grid" ? consoleName(focused) : ""} />
       <div className={`tv-chip-row consoles${zone === "consoles" ? " active" : ""}`} role="toolbar" aria-label={t`Consoles`}>
-        <button ref={filterButton} type="button" className={`tv-filter tv-filter-button${narrowed || filter !== "notInLibrary" ? " chosen" : ""}`} aria-haspopup="dialog" onClick={() => setChoosing(true)}>
+        <button ref={filterButton} type="button" className={`tv-filter tv-filter-button${narrowed || filter !== "notInLibrary" || sort !== "added" ? " chosen" : ""}`} aria-haspopup="dialog" onClick={() => setChoosing(true)}>
           <Glyph action="secondary" size={20} />
           {filterName()}
           <span className="tv-filter-picks">{picks}</span>
@@ -292,6 +312,8 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         <ConsoleFilter
           filter={filter}
           setFilter={(f) => setFilter((state.filter = f))}
+          sort={sort}
+          setSort={(s) => setSort((state.sort = s))}
           makers={brands}
           picked={makers}
           forms={forms}

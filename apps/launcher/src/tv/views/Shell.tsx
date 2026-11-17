@@ -9,7 +9,12 @@ import { inLibraryView, type TvApp } from "../bridge";
 import { resolveConsole } from "../consoles/resolve";
 import { buildTabs, consoleTabId, cycleTab, keepTab } from "../consoles/tabs";
 import type { InputAction } from "../input/actions";
-import type { AllSort } from "../settings";
+import type { TvSort } from "../settings";
+import { useLauncher } from "../../store";
+import { compareApps, byRelease, type SortFacts } from "../../sort";
+import { useGameYears } from "../../game-years";
+import { SortList, sortHint, sortName } from "./SortList";
+import { usesX } from "./tileActions";
 import { TabStrip } from "./TabStrip";
 import { GridTab } from "./GridTab";
 import { HintBar } from "./HintBar";
@@ -25,15 +30,25 @@ import { matchesSearch } from "./lists";
 import { Home } from "./Home";
 import { ShelfNavigator } from "../nav/shelf";
 
-type Overlay = { kind: "details"; app: TvApp } | { kind: "menu" } | null;
+type Overlay = { kind: "details"; app: TvApp } | { kind: "menu" } | { kind: "sort" } | null;
 
-const byTitle = (a: TvApp, b: TvApp) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true });
-export function sortApps(apps: TvApp[], sort: AllSort) {
-  return [...apps].sort(sort === "recent" ? (a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0) || byTitle(a, b) : byTitle);
+/** The library's games in the launcher's order (sort.ts), by the names the player gave them; `years` for release dates. */
+export function sortApps(apps: TvApp[], sort: TvSort, years: Record<string, number | null> = {}) {
+  const facts = new Map(
+    apps.map((app): [string, SortFacts] => [
+      app.id,
+      { lastPlayed: app.lastPlayed, addedAt: app.addedAt, installedAt: app.installedAt, playTime: app.playTime, year: app.entry.games[0] && years[app.entry.games[0].slug], installed: true },
+    ]),
+  );
+  return apps
+    .map((app) => ({ app, entry: { ...app.entry, projectName: app.title } }))
+    .sort((a, b) => compareApps(sort, a.entry, b.entry, (e) => facts.get(e.id)!))
+    .map(({ app }) => app);
 }
 
 export function Shell() {
-  const { bridge, settings, consoles } = useTv();
+  const { bridge, settings, setSettings, consoles } = useTv();
+  const { client } = useLauncher();
 
   const consoleOf = useMemo(
     () => new Map(bridge.apps.map((app) => [app.id, resolveConsole(app)])),
@@ -119,6 +134,8 @@ export function Shell() {
     else if (action === "pagePrev") cycle(-1);
     else if (action === "pageNext") cycle(1);
     else if (action === "menu") setOverlay({ kind: "menu" });
+    // X in the library's tabs: their order, but on a game that uses X itself.
+    else if (action === "secondary" && grid && !usesX(focused)) setOverlay({ kind: "sort" });
     else if (action === "search") {
       // Home and Downloads have nothing to search in: All does.
       if (tab.kind === "home" || tab.kind === "downloads") go("all");
@@ -138,12 +155,14 @@ export function Shell() {
       : { label: first.label, go: () => setSelectedId(first.id) };
 
   const grid = tab.kind === "all" || tab.kind === "console";
+  // The year each game first came out, looked up while a release date sort is on (game-years.ts).
+  const years = useGameYears(client, installed.flatMap((a) => a.entry.games.map((g) => g.slug)), byRelease(settings.sort));
   const apps = useMemo(() => {
     const found = installed.filter((a) => matchesSearch(a, search));
-    if (tab.kind === "all") return sortApps(found, settings.allSort);
-    if (tab.kind === "console") return sortApps(found.filter((a) => consoleOf.get(a.id) === tab.console!.id), "name");
+    if (tab.kind === "all") return sortApps(found, settings.sort, years);
+    if (tab.kind === "console") return sortApps(found.filter((a) => consoleOf.get(a.id) === tab.console!.id), settings.sort, years);
     return [];
-  }, [tab, installed, consoleOf, settings.allSort, search]);
+  }, [tab, installed, consoleOf, settings.sort, years, search]);
   const shown = tab.kind === "downloads" ? null : focused;
   const openDetails = (app: TvApp) => setOverlay({ kind: "details", app });
   const toDownloads = () => go("downloads");
@@ -182,6 +201,7 @@ export function Shell() {
                 onDetails={openDetails}
                 onDownloads={toDownloads}
                 empty={search ? { title: t`Nothing matches “${search}”`, text: t`Search again, or B to clear the search.` } : undefined}
+                moreHints={usesX(focused) ? [] : [{ action: "secondary", label: sortHint() }]}
               />
             </div>
           ) : tab.kind === "discover" ? (
@@ -204,6 +224,17 @@ export function Shell() {
           )}
         </div>
         <Flash flash={flash} />
+        {overlay?.kind === "sort" && (
+          <SortList
+            value={settings.sort}
+            onPick={(sort) => {
+              setSettings({ sort });
+              setOverlay(null);
+              showFlash(sortName(sort));
+            }}
+            onClose={() => setOverlay(null)}
+          />
+        )}
       </main>
       {search && (grid || tab.kind === "discover") && (
         <button type="button" className="tv-search-chip" onClick={() => setSearch("")} aria-label={t`Clear the search`}>

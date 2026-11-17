@@ -22,6 +22,9 @@ export const HINT = {
   details: () => t({ message: "Details", comment: "Controller hint: what Options does on an app card, opening its page" }),
 };
 
+/** A game whose own X is in use: its update, or holding to cancel its waiting download. Elsewhere X opens a list. */
+export const usesX = (app: TvApp | null | undefined) => app?.state === "updateAvailable" || app?.state === "queued";
+
 export function tileHints(app: TvApp | null | undefined, back?: Back): ButtonHint[] {
   const hints: ButtonHint[] = [];
   switch (app?.state) {

@@ -1141,11 +1141,6 @@ msgstr "Все платформы"
 msgid "All project types"
 msgstr "Все типы проектов"
 
-#. TV mode setting: the order of the games on the All tab
-#: ../../apps/launcher/src/tv/views/Settings.tsx
-msgid "All tab order"
-msgstr "Порядок вкладки «Все»"
-
 #: ../../apps/launcher/src/library.tsx
 msgid "All tags"
 msgstr "Все теги"
@@ -1785,6 +1780,11 @@ msgstr "Проверка…"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "Проверка… {0} из {1}"
+
+#. Controller hint in TV mode's Sort list: sorts the games this way
+#: ../../apps/launcher/src/tv/views/SortList.tsx
+msgid "Choose"
+msgstr "Выбрать"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -4190,6 +4190,11 @@ msgstr "Самые скачиваемые"
 msgid "Most games first"
 msgstr "Сначала с большим числом игр"
 
+#. Library sort: the app played longest, all told, first
+#: ../../apps/launcher/src/sort.ts
+msgid "Most played"
+msgstr "Больше всего играли"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "По релевантности"
@@ -4307,6 +4312,7 @@ msgid "Name"
 msgstr "Название"
 
 #: ../../apps/launcher/src/App.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Name A–Z"
 msgstr "Название А–Я"
 
@@ -5558,6 +5564,7 @@ msgstr "Недавние"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently added"
 msgstr "Недавно добавленные"
 
@@ -5566,13 +5573,14 @@ msgid "Recently finished"
 msgstr "Недавно завершённые"
 
 #. A shelf on TV mode's Home: the games installed last
+#. Library sort: the app installed last first
+#: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
 msgid "Recently installed"
 msgstr "Недавно установленные"
 
 #: ../../apps/launcher/src/sort.ts
 #: ../../apps/launcher/src/tv/views/homeShelves.ts
-#: ../../apps/launcher/src/tv/views/Settings.tsx
 msgid "Recently played"
 msgstr "Недавно сыгранные"
 
@@ -5586,6 +5594,7 @@ msgstr "Сначала недавно сыгранные (нажмите для 
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Recently updated"
 msgstr "Недавно обновлённые"
 
@@ -5600,6 +5609,16 @@ msgstr "Обновить список"
 #: ../../apps/launcher/src/App.tsx
 msgid "Reinstall {installedVersion}"
 msgstr "Переустановить {installedVersion}"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, newest first"
+msgstr "Дата выхода, сначала новые"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, oldest first"
+msgstr "Дата выхода, сначала старые"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
@@ -6439,9 +6458,15 @@ msgstr "Другое"
 #. Label of the library's sort order
 #. Label of the library's sort order
 #. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
+#. Label of the library's sort order
 #. The order the catalog's apps are listed in
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+#: ../../apps/launcher/src/tv/views/SortList.tsx
 msgid "Sort"
 msgstr "Сортировка"
 
@@ -6827,6 +6852,10 @@ msgstr ""
 msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
 msgstr "Последняя копия {name} есть только на этом компьютере, как и каждая следующая, пока не появится место. Тогда Quiver отправит её сам."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "The order of the games on All and each console's tab; X there changes it too"
+msgstr "Порядок игр во вкладке «Все» и во вкладке каждой консоли; там его меняет и X"
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "ОРИГИНАЛЬНАЯ ИГРА"
@@ -7102,6 +7131,7 @@ msgstr "Наверх"
 #. Sort order for mods
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/mods.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Top rated"
 msgstr "Лучшие по оценкам"
 

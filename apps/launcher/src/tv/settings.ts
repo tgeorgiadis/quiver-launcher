@@ -6,7 +6,11 @@
 
 export type UpdateBehavior = "ask" | "off" | "auto";
 export type ConsoleTabOrder = "manufacturerThenYear" | "gameCount" | "alphabetical";
-export type AllSort = "name" | "recent";
+import type { LibrarySort } from "../sort";
+
+/** The launcher's sorts TV mode's library tabs offer (sort.ts): they hold installed games, so not installed first or last. */
+export const TV_SORTS = ["name", "game", "released", "released-new", "played", "installed-at", "playtime", "added", "updated"] as const satisfies readonly LibrarySort[];
+export type TvSort = (typeof TV_SORTS)[number];
 /** After Get in Discover: stay there (get several in a row), or go to the game in the library. */
 export type AfterGet = "stay" | "library";
 
@@ -17,7 +21,8 @@ export type TvSettings = {
   updateBehavior: UpdateBehavior;
   showHomeTab: boolean;
   consoleTabOrder: ConsoleTabOrder;
-  allSort: AllSort;
+  /** The order of the games in the library's tabs, All and each console's (X there, views/SortList.tsx). */
+  sort: TvSort;
   /** The monitor's name; null is the one the window is on. */
   monitor: string | null;
   reduceMotion: boolean;
@@ -31,7 +36,7 @@ export const DEFAULT_SETTINGS: TvSettings = {
   updateBehavior: "ask",
   showHomeTab: true,
   consoleTabOrder: "manufacturerThenYear",
-  allSort: "name",
+  sort: "name",
   monitor: null,
   reduceMotion: false,
   sounds: true,
@@ -52,7 +57,8 @@ export function tvSettings(raw: unknown): TvSettings {
     updateBehavior: oneOf(s.updateBehavior, ["ask", "off", "auto"], d.updateBehavior),
     showHomeTab: bool(s.showHomeTab, d.showHomeTab),
     consoleTabOrder: oneOf(s.consoleTabOrder, ["manufacturerThenYear", "gameCount", "alphabetical"], d.consoleTabOrder),
-    allSort: oneOf(s.allSort, ["name", "recent"], d.allSort),
+    // Once the All tab's own order, A–Z or recently played.
+    sort: oneOf(s.sort, TV_SORTS, s.allSort === "recent" ? "played" : d.sort),
     monitor: typeof s.monitor === "string" && s.monitor ? s.monitor : null,
     reduceMotion: bool(s.reduceMotion, d.reduceMotion),
     sounds: bool(s.sounds, d.sounds),

@@ -15,9 +15,21 @@ describe("tvSettings", () => {
     expect(s.afterGet).toBe("library");
   });
 
+  it("takes the All tab's old order as the library's sort", () => {
+    expect(tvSettings({ allSort: "recent" }).sort).toBe("played");
+    expect(tvSettings({ allSort: "name" }).sort).toBe("name");
+    expect(tvSettings({ allSort: "recent", sort: "playtime" }).sort).toBe("playtime");
+  });
+
+  it("takes the All tab's old order as the library's sort", () => {
+    expect(tvSettings({ allSort: "recent" }).sort).toBe("played");
+    expect(tvSettings({ allSort: "name" }).sort).toBe("name");
+    expect(tvSettings({ allSort: "recent", sort: "playtime" }).sort).toBe("playtime");
+  });
+
   it("saves only what differs from the defaults, and nothing once all are back", () => {
     expect(savedTvSettings(undefined, { reduceMotion: true })).toEqual({ reduceMotion: true });
-    expect(savedTvSettings({ reduceMotion: true }, { allSort: "recent" })).toEqual({ reduceMotion: true, allSort: "recent" });
+    expect(savedTvSettings({ reduceMotion: true }, { sort: "released" })).toEqual({ reduceMotion: true, sort: "released" });
     expect(savedTvSettings({ reduceMotion: true }, { reduceMotion: false })).toBeUndefined();
   });
 });

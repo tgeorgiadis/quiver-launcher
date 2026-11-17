@@ -12,7 +12,8 @@ import { useTv, useInputHandler } from "../context";
 import { LAYER } from "../input/router";
 import type { TvApp } from "../bridge";
 import { tvNative } from "../tvNative";
-import type { TvSettings } from "../settings";
+import { TV_SORTS, type TvSettings } from "../settings";
+import { sortName } from "./SortList";
 import { OTHER } from "../consoles/consoles";
 import { useLauncher } from "../../store";
 import { native } from "../../native";
@@ -223,13 +224,11 @@ export function Settings({ onClose }: { onClose: () => void }) {
     },
     {
       kind: "choice",
-      label: t({ message: "All tab order", comment: "TV mode setting: the order of the games on the All tab" }),
-      options: [
-        { value: "name", label: aToZ },
-        { value: "recent", label: t`Recently played` },
-      ],
-      value: s.allSort,
-      set: set("allSort"),
+      label: t({ message: "Sort", comment: "Label of the library's sort order" }),
+      detail: t`The order of the games on All and each console's tab; X there changes it too`,
+      options: TV_SORTS.map((sort) => ({ value: sort, label: sortName(sort) })),
+      value: s.sort,
+      set: set("sort"),
     },
     {
       kind: "choice",
