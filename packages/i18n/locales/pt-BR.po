@@ -505,6 +505,10 @@ msgstr "{name} precisa da sua própria cópia do jogo para rodar. Escolha a past
 msgid "{name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where {name} needs it."
 msgstr "{name} precisa da sua própria cópia do jogo para rodar. Escolha a ROM, e o Quiver confere e coloca onde {name} precisa."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab."
+msgstr ""
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
 msgstr "{name}, {pulledLabel} foi retirada"
@@ -6193,14 +6197,6 @@ msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The saves in your sync folder would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
-msgstr ""
-
-#: ../../apps/launcher/src/App.tsx
-msgid "The saves on this computer and the ones in your Quiver account have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
-msgstr "Os saves deste computador e os da sua conta Quiver mudaram. Os que você não escolher ficam como backup na aba Saves do app."
-
-#: ../../apps/launcher/src/App.tsx
-msgid "The saves on this computer and the ones in your sync folder have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
 msgstr ""
 
 #: ../../apps/launcher/src/library.tsx

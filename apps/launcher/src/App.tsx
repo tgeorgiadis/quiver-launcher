@@ -2261,11 +2261,7 @@ function SavesConflictPrompt() {
           </p>
         ) : (
           <p className="muted">
-            {folder ? (
-              <Trans>The saves on this computer and the ones in your sync folder have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
-            ) : (
-              <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
-            )}
+            {t`${name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab.`}
           </p>
         )}
         <div className="choices">

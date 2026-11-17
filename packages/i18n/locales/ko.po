@@ -505,6 +505,10 @@ msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해�
 msgid "{name} needs your own copy of the game to run. Choose the ROM, and Quiver checks it and puts it where {name} needs it."
 msgstr "{name}을(를) 실행하려면 직접 가진 게임 사본이 필요해요. ROM을 고르면 Quiver가 확인하고 {name}에 필요한 위치에 놓아요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{name} was played on this computer and on another one since your saves last synced, so there are two different sets of saves now. Choose which to continue from. The other set is kept as a backup on the app's Saves tab."
+msgstr ""
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "{name}, {pulledLabel} was withdrawn"
 msgstr "{name}, {pulledLabel} 철회됨"
@@ -6193,14 +6197,6 @@ msgstr ""
 
 #: ../../apps/launcher/src/App.tsx
 msgid "The saves in your sync folder would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
-msgstr ""
-
-#: ../../apps/launcher/src/App.tsx
-msgid "The saves on this computer and the ones in your Quiver account have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
-msgstr "이 컴퓨터의 세이브와 Quiver 계정의 세이브가 모두 변경되었습니다. 선택하지 않은 쪽은 앱의 세이브 탭에 백업으로 보관됩니다."
-
-#: ../../apps/launcher/src/App.tsx
-msgid "The saves on this computer and the ones in your sync folder have both changed. The ones you don't pick are kept as a backup on the app's Saves tab."
 msgstr ""
 
 #: ../../apps/launcher/src/library.tsx
