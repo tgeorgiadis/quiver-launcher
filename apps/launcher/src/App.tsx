@@ -42,6 +42,7 @@ import { useTopBarFit } from "./top-bar-fit";
 import { ResizeEdges, WindowControls, moveWindow, movesByPage, resizeEdges, useWindowButtons } from "./window-bar";
 import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { MANAGE_TAGS } from "./tag-settings";
+import { OPEN_APP } from "./cloud-saves-page";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
 import { savesChanged, savesOf, savesOn } from "./saves";
@@ -131,6 +132,12 @@ export function App() {
     window.addEventListener(MANAGE_TAGS, manage);
     return () => window.removeEventListener(MANAGE_TAGS, manage);
   }, [open]);
+  // Settings' Cloud saves lists apps, and each can ask for its page (cloud-saves-page.tsx).
+  useEffect(() => {
+    const page = (e: Event) => openApp((e as CustomEvent<Entry>).detail);
+    window.addEventListener(OPEN_APP, page);
+    return () => window.removeEventListener(OPEN_APP, page);
+  }, [openApp]);
   // Read from the stack as shown, not in setStack's updater, which React can run twice.
   const shown = useRef<View[]>([]);
   const goBack = useCallback(() => {

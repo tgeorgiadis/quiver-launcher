@@ -1175,6 +1175,7 @@ msgid "APP DETAILS"
 msgstr "DETALLES DE LA APP"
 
 #: ../../apps/launcher/src/card-menu.tsx
+#: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "App page"
 msgstr "Página de la app"
 
