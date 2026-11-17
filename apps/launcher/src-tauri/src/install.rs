@@ -755,15 +755,18 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
     // A Windows build's helper script (a run.sh beside its .exe) isn't the
     // game: with no Linux program here, there's none, and Wine runs the .exe.
     let scripts = files.iter().any(|p| linux(p, &name(p))) || !files.iter().any(|p| name(p).ends_with(".exe") && !helper(&name(p)));
-    let found = files.iter().find(|p| {
-        let n = name(p);
-        let program = match os {
-            "windows" => n.ends_with(".exe"),
-            "macos" => n.ends_with(".app"),
-            _ => linux(p, &n) || (scripts && n.ends_with(".sh")),
-        };
-        program && !helper(&n)
-    });
+    let found = if os == "windows" {
+        likeliest(dir, files.iter().filter(|p| name(p).ends_with(".exe") && !helper(&name(p))).collect())
+    } else {
+        files.iter().find(|p| {
+            let n = name(p);
+            let program = match os {
+                "macos" => n.ends_with(".app"),
+                _ => linux(p, &n) || (scripts && n.ends_with(".sh")),
+            };
+            program && !helper(&n)
+        })
+    };
     // With nothing better: a Windows build a script starts, a Mac build that's a bare program rather than an .app.
     found
         .or_else(|| {
@@ -777,7 +780,90 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
                 program && !helper(&n)
             })
         })
+        // Its setup or updater, when that's the only program it has: some apps are started by theirs.
+        .or_else(|| files.iter().filter(|_| os == "windows").find(|p| name(p).ends_with(".exe") && ONLY_PROGRAMS.iter().any(|h| name(p).starts_with(h))))
         .cloned()
+}
+
+/// Helpers that start an app when it has no other program.
+const ONLY_PROGRAMS: [&str; 2] = ["setup", "updater"];
+
+/// Words in a program's name that say it's a helper of the app's, not what starts it: "Game Settings.exe",
+/// "game-updater.exe", "GameBugReporter.exe".
+const HELPER_WORDS: [&str; 40] = [
+    "setup", "install", "installer", "uninstall", "uninstaller", "updater", "update", "settings", "config", "configuration", "configurator", "configuracion", "server", "dedicated",
+    "editor", "report", "reporter", "tool", "tools", "extract", "extractor", "patcher", "benchmark", "diagnostics", "debug", "debugger", "dev", "test", "tests", "handler", "helper",
+    "redist", "cli", "console", "headless", "backend", "viewer", "packer", "converter", "importer",
+];
+/// Programs of other makers that come along with an app.
+const TOOLS: [&str; 22] = [
+    "ffmpeg", "ffprobe", "ffplay", "7z", "7za", "7zr", "curl", "aria2c", "wget", "zip", "unzip", "createdump", "gh", "python", "pythonw", "cmake", "ninja", "git", "hactool", "premake5", "chdman",
+    "dolphintool",
+];
+/// Words for an earlier build kept beside the current one: "Game (classic).exe".
+const OLD_WORDS: [&str; 4] = ["classic", "legacy", "old", "deprecated"];
+/// Words in a folder's name that say nothing about which program is its app's.
+const COMMON_WORDS: [&str; 26] = [
+    "recomp", "recompiled", "recompilation", "static", "port", "native", "the", "for", "and", "launcher", "game", "engine", "windows", "win64", "win32", "x64", "x86", "decomp", "project",
+    "remastered", "enhanced", "open", "edition", "play", "start", "pc",
+];
+
+/// A name's words, lowercase and without accents: split at anything that isn't a letter or digit, and where a
+/// capital follows a small letter ("KameoBugReporter" is kameo, bug, reporter).
+fn words(name: &str) -> Vec<String> {
+    let plain = |c: char| match c {
+        'á' | 'à' | 'â' | 'ä' | 'ã' | 'å' => 'a',
+        'é' | 'è' | 'ê' | 'ë' => 'e',
+        'í' | 'ì' | 'î' | 'ï' => 'i',
+        'ó' | 'ò' | 'ô' | 'ö' | 'õ' => 'o',
+        'ú' | 'ù' | 'û' | 'ü' => 'u',
+        'ñ' => 'n',
+        'ç' => 'c',
+        c => c,
+    };
+    let mut words = vec![String::new()];
+    let mut before = ' ';
+    for c in name.chars() {
+        let small = c.to_lowercase().next().map_or(c, plain);
+        if !small.is_alphanumeric() || (c.is_uppercase() && (before.is_lowercase() || before.is_ascii_digit())) {
+            words.push(String::new());
+        }
+        if small.is_alphanumeric() {
+            words.last_mut().unwrap().push(small);
+        }
+        before = c;
+    }
+    words.retain(|w| !w.is_empty());
+    words
+}
+
+/// The program likeliest to start a Windows build, of those in its folder: the shallowest, and there one that isn't
+/// a helper by its name, isn't an earlier build kept beside the current one, is the app's own launcher, or is named
+/// most like the folder; then by name.
+fn likeliest<'a>(dir: &Path, programs: Vec<&'a PathBuf>) -> Option<&'a PathBuf> {
+    let stem = |p: &Path| p.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+    let named: Vec<Vec<String>> = programs.iter().map(|p| words(&stem(p))).collect();
+    let folder = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let folder_words: Vec<String> = words(&folder).into_iter().filter(|w| w.len() >= 4 && !COMMON_WORDS.contains(&w.as_str())).collect();
+    let folder_name = words(&folder).concat();
+    let rank = |i: usize| {
+        let (path, words) = (programs[i], &named[i]);
+        let whole = stem(path).to_lowercase();
+        // "7za64" is 7za.
+        let tool = whole.trim_end_matches("x64").trim_end_matches("x86").trim_end_matches("64").trim_end_matches("32");
+        let helper = words.iter().any(|w| HELPER_WORDS.contains(&w.as_str()) || w.ends_with("tool")) || TOOLS.contains(&whole.as_str()) || TOOLS.contains(&tool);
+        // Old only beside the same name without the word: a game called Classic is itself.
+        let current: Vec<&String> = words.iter().filter(|w| !OLD_WORDS.contains(&w.as_str())).collect();
+        let old = current.len() < words.len() && named.iter().enumerate().any(|(j, other)| j != i && other.iter().collect::<Vec<_>>() == current);
+        let launcher = words.iter().any(|w| w.ends_with("launcher"));
+        // "Play Game.exe" is named as Game.exe is.
+        let core: String = words.iter().filter(|w| !["play", "start"].contains(&w.as_str())).map(String::as_str).collect();
+        let whole_match = if core.len() >= 3 && folder_name.contains(&core) { core.len() } else { 0 };
+        let alike = folder_words.iter().filter(|w| core.contains(w.as_str())).map(|w| w.len()).max().unwrap_or(0).max(whole_match);
+        let depth = path.strip_prefix(dir).map_or(0, |rel| rel.components().count());
+        (depth, helper, old, !launcher, std::cmp::Reverse(alike), path.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default())
+    };
+    (0..programs.len()).min_by_key(|&i| rank(i)).map(|i| programs[i])
 }
 
 /// The kinds of file in an app's folder (their extensions, never their names), for an error report to say what was
@@ -1101,6 +1187,58 @@ mod tests {
         };
         assert_eq!(found(&[]), "Game.exe");
         assert_eq!(found(&["tool*.exe"]), "Tool.exe");
+    }
+
+    #[test]
+    fn picks_the_game_over_the_helpers_beside_it() {
+        let pick = |folder: &str, files: &[&str]| {
+            let root = tempfile::tempdir().unwrap();
+            let dir = root.path().join(folder);
+            for f in files {
+                let p = dir.join(f);
+                fs::create_dir_all(p.parent().unwrap()).unwrap();
+                fs::write(p, "").unwrap();
+            }
+            find_executable(&dir, &[], "windows").map(|p| p.strip_prefix(&dir).unwrap().to_string_lossy().replace('\\', "/"))
+        };
+        let picks = |folder: &str, files: &[&str], want: &str| assert_eq!(pick(folder, files).as_deref(), Some(want), "{files:?}");
+        // A helper by a word anywhere in its name, however it's spelled.
+        picks("Savage Wind", &["Savage Wind Configuration.exe", "savagewind.exe"], "savagewind.exe");
+        picks("Strikers", &["strikers-settings.exe", "strikers.exe"], "strikers.exe");
+        picks("sm64coopdx", &["coopdx_updater.exe", "sm64coopdx.exe"], "sm64coopdx.exe");
+        picks("PT", &["pt-updater.exe", "pt.exe"], "pt.exe");
+        picks("Kameo", &["KameoBugReporter.exe", "kameorepowered.exe"], "kameorepowered.exe");
+        picks("RedDeadRevolver", &["Configuración.exe", "RedDeadRevolver.exe"], "RedDeadRevolver.exe");
+        picks("Tenkaichi3", &["Tenkaichi3Decomp-setup.exe", "Tenkaichi3Decomp.exe"], "Tenkaichi3Decomp.exe");
+        picks("DDNet", &["DDNet-Server.exe", "DDNet.exe"], "DDNet.exe");
+        picks("SSNE", &["gctool.exe", "SSNE-Native.exe"], "SSNE-Native.exe");
+        // Another maker's program that came along.
+        picks("Arena Evolved", &["ffmpeg.exe", "halo.exe"], "halo.exe");
+        picks("MegaGlest", &["7z.exe", "7za64.exe", "megaglestx64.exe"], "megaglestx64.exe");
+        // An earlier build kept beside the current one; a game named Classic is itself.
+        picks("Infamous", &["inFAMOUS Second Son (classic).exe", "inFAMOUS Second Son.exe"], "inFAMOUS Second Son.exe");
+        picks("Games", &["Sonic Classic.exe", "Tracker.exe"], "Sonic Classic.exe");
+        // The app's own launcher, then the program named like its folder.
+        picks("Wet", &["extract-xiso.exe", "wet.exe", "WetLauncher.exe"], "WetLauncher.exe");
+        picks("zamn", &["zamn.exe", "zamn_launcher.exe"], "zamn_launcher.exe");
+        picks("TimeSplitters-Recomp", &["Prepare Xbox Files.exe", "timesplitters.exe"], "timesplitters.exe");
+        picks("StrikeCollectionHD", &["hdpack_xbrz.exe", "StrikeCollectionHD.exe"], "StrikeCollectionHD.exe");
+        picks("Game", &["Play Game.exe", "The Game.exe"], "Play Game.exe");
+        // Depth still comes first: a setup at the top is the first step, whatever tools are under it.
+        picks("MP4", &["MP4-Setup.exe", "bin/mp4_xlate.exe", "llvm/bin/clang.exe"], "MP4-Setup.exe");
+        // A helper is still the program when it's the only one, and a script comes before a bare setup.
+        picks("Tools", &["Game Editor.exe"], "Game Editor.exe");
+        picks("SMT", &["Updater.exe", "data.pak"], "Updater.exe");
+        picks("Infamous 2", &["Setup.exe", "Play inFAMOUS 2.cmd"], "Play inFAMOUS 2.cmd");
+        assert_eq!(pick("None", &["unins000.exe", "vc_redist.x64.exe"]), None);
+    }
+
+    #[test]
+    fn splits_a_name_into_its_words() {
+        assert_eq!(words("KameoBugReporter"), ["kameo", "bug", "reporter"]);
+        assert_eq!(words("SM3Launcher v2"), ["sm3", "launcher", "v2"]);
+        assert_eq!(words("Configuración_del-juego"), ["configuracion", "del", "juego"]);
+        assert_eq!(words("inFAMOUS"), ["in", "famous"]);
     }
 
     #[test]
