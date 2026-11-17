@@ -51,6 +51,38 @@ test("a controller's shoulder buttons go between the tabs, and its triggers to D
   }
 });
 
+test("on Discover the shoulder buttons step through the consoles, round to All, and a maker or kind narrows them", async () => {
+  const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });
+  const chosen = () => s2.page.locator(".tv-filter.chosen").allInnerTexts();
+  try {
+    await press(s2, "RightTrigger2");
+    await s2.until(async () => (await selectedTab(s2)) === "Discover");
+    await s2.until(async () => (await chosen()).includes("All consoles"));
+    // The test catalog's consoles, by year: SNES, then N64; then round to All. Discover stays the tab.
+    await press(s2, "RightTrigger");
+    await s2.until(async () => (await chosen()).includes("SNES"));
+    await press(s2, "RightTrigger");
+    await s2.until(async () => (await chosen()).includes("N64"));
+    await press(s2, "RightTrigger");
+    await s2.until(async () => (await chosen()).includes("All consoles"));
+    await press(s2, "LeftTrigger");
+    await s2.until(async () => (await chosen()).includes("N64"));
+    assert.equal(await selectedTab(s2), "Discover");
+    // Handhelds: neither is one, so the console shown goes back to All, and there's nothing.
+    await s2.page.locator(".tv-filter", { hasText: "Handhelds" }).click();
+    await s2.until(async () => (await chosen()).includes("All consoles"));
+    await s2.page.getByText("No consoles are both").waitFor();
+    assert.equal(await s2.page.locator(".tv-filter", { hasText: "N64" }).count(), 0);
+    // Nintendo's home consoles: both again.
+    await s2.page.locator(".tv-filter", { hasText: "Home consoles" }).click();
+    await s2.page.locator(".tv-filter", { hasText: "Nintendo" }).click();
+    await s2.page.locator(".tv-filter", { hasText: "N64" }).waitFor();
+    assert.deepEqual(await chosen(), ["Not in library", "Nintendo", "Home consoles", "All consoles"]);
+  } finally {
+    await s2.close();
+  }
+});
+
 test("TV mode's buttons are the player's: with A and B swapped, B changes a setting and A goes back", async () => {
   const swapped = { tvMode: "on", pad: { confirm: ["East"], back: ["South"] } };
   const s2 = await openApp({ state: { ...installed, settings: swapped }, ready: ".tv-tab.selected" });

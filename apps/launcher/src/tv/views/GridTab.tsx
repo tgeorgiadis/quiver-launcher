@@ -9,6 +9,7 @@ import { t } from "@lingui/core/macro";
 import { useTv, useInputHandler } from "../context";
 import type { TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
+import type { ButtonHint } from "../input/router";
 import { GridNavigator } from "../nav/grid";
 import { GameTile } from "./GameTile";
 import { tileHints, useTileActions, type Back } from "./tileActions";
@@ -35,6 +36,8 @@ type Props = {
   /** The mouse went to a tile while something above had the input: the grid takes it. */
   onPointerFocus?: () => void;
   empty?: { title: string; text: string };
+  /** What else the buttons do here, after a tile's own (Discover's shoulder buttons). */
+  moreHints?: ButtonHint[];
 };
 
 /** Sizes at 720p, times the scale. */
@@ -68,7 +71,7 @@ const tileIndex = (target: EventTarget) => {
   return index == null ? null : Number(index);
 };
 
-export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetails, onDownloads, active = true, onEdge, onNearEnd, onGet, onPointerFocus, empty }: Props) {
+export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetails, onDownloads, active = true, onEdge, onNearEnd, onGet, onPointerFocus, empty, moreHints = [] }: Props) {
   const { scale, settings, pointer } = useTv();
   const actions = useTileActions(onDownloads, onGet);
   const scroller = useRef<HTMLDivElement>(null);
@@ -144,7 +147,7 @@ export function GridTab({ tabId, apps, memory, onFocus, onGlobal, back, onDetail
     },
     holdFor: (action) => (action === "secondary" ? actions.holdFor(app) : undefined),
     onHold: (action) => action === "secondary" && actions.cancel(app),
-    hints: () => tileHints(app, back),
+    hints: () => [...tileHints(app, back), ...moreHints],
   }, undefined, active);
 
   // More to load when focus nears the end.

@@ -41,8 +41,12 @@ describe("discoverApps", () => {
     expect(discoverApps(got, catalog, "notInLibrary", null).map((a) => a.id)).toEqual([]);
   });
 
-  it("narrows the library's games to the chosen console (the catalog's are fetched for it)", () => {
-    expect(discoverApps(library, [], "inLibrary", "ps1").map((a) => a.id)).toEqual(["ps"]);
+  it("narrows the library's games and the catalog's to the chosen consoles", () => {
+    expect(discoverApps(library, [], "inLibrary", new Set(["ps1"])).map((a) => a.id)).toEqual(["ps"]);
+    const handhelds = [app("gba", "notInstalled", { consoles: ["gba"] }), app("n64", "notInstalled", { consoles: ["n64"] })];
+    expect(discoverApps(library, handhelds, "notInLibrary", new Set(["gba", "psp"])).map((a) => a.id)).toEqual(["gba"]);
+    // None matching: nothing.
+    expect(discoverApps(library, handhelds, "all", new Set()).map((a) => a.id)).toEqual([]);
   });
 });
 

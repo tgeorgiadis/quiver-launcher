@@ -18,19 +18,20 @@ export type LibraryFilter = "notInLibrary" | "inLibrary" | "all";
  * for the first time) aren't here, except those got during this visit (`kept`):
  * they stay where they were, so getting one doesn't move the others.
  * `library` is the library as TV mode shows it; `catalog` the catalog's pages
- * (already for the chosen console), seen as apps.
+ * (asked for the chosen consoles where the catalog could narrow to them), seen as apps.
+ * `consoles`: the console chosen, or those a maker or kind narrows to; null is any.
  */
 export function discoverApps(
   library: readonly TvApp[],
   catalog: readonly TvApp[],
   filter: LibraryFilter,
-  consoleId: string | null,
+  consoles: ReadonlySet<string> | null,
   kept: ReadonlySet<string> = new Set(),
 ): TvApp[] {
   const ids = new Set(library.map((a) => a.id));
-  const onConsole = (a: TvApp) => !consoleId || a.basedOn === consoleId || a.consoles.includes(consoleId);
+  const onConsole = (a: TvApp) => !consoles || (a.basedOn !== undefined && consoles.has(a.basedOn)) || a.consoles.some((c) => consoles.has(c));
   const mine = library.filter((a) => onConsole(a) && (kept.has(a.id) || !inLibraryView(a)));
-  const theirs = catalog.filter((a) => !ids.has(a.id) || kept.has(a.id));
+  const theirs = catalog.filter((a) => onConsole(a) && (!ids.has(a.id) || kept.has(a.id)));
   if (filter === "inLibrary") return mine;
   if (filter === "notInLibrary") return theirs;
   return [...mine.filter((a) => !kept.has(a.id)), ...theirs];

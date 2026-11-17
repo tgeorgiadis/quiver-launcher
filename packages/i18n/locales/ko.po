@@ -1119,6 +1119,11 @@ msgstr "모든 앱"
 msgid "All consoles"
 msgstr "모든 콘솔"
 
+#. Discover's filter: consoles by every maker
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "All makers"
+msgstr ""
+
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "All options…"
@@ -1891,6 +1896,10 @@ msgstr "앱을 실행하는 앱을 선택하세요."
 msgid "Choose an AppImage or another program that starts the app."
 msgstr "앱을 실행하는 AppImage나 다른 프로그램을 선택하세요."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Choose another maker, or Home & handheld."
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
 msgstr "다른 프로그램 선택…"
@@ -2155,7 +2164,9 @@ msgstr "{name}의 콘솔"
 msgid "Console tab order"
 msgstr "콘솔 탭 순서"
 
+#. Controller hint on Discover: the shoulder buttons go to the next or previous console
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Consoles"
 msgstr "콘솔"
 
@@ -3034,6 +3045,11 @@ msgstr "개발자별로 그룹화"
 msgid "Group by game"
 msgstr "게임별로 그룹화"
 
+#. Discover's filter: handheld consoles, such as the Game Boy or PSP
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Handhelds"
+msgstr ""
+
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Has issues"
@@ -3171,6 +3187,16 @@ msgstr "길게 눌러 제거해요. 파일은 휴지통으로 이동해요."
 #: ../../apps/launcher/src/tv/consoles/tabs.ts
 msgid "Home"
 msgstr "홈"
+
+#. Discover's filter: home consoles and handhelds alike
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Home & handheld"
+msgstr ""
+
+#. Discover's filter: consoles played on a TV, not handhelds
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Home consoles"
+msgstr ""
 
 #. TV mode setting: whether the Home tab shows
 #: ../../apps/launcher/src/tv/views/Settings.tsx
@@ -4475,6 +4501,10 @@ msgstr "아직 백업이 없습니다."
 msgid "No console"
 msgstr "콘솔 없음"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "No consoles are both"
+msgstr ""
+
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "No controller connected"
 msgstr "연결된 컨트롤러 없음"
@@ -4904,6 +4934,7 @@ msgstr "기타 파일"
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Other platforms"
 msgstr "기타 플랫폼"
 
@@ -6605,9 +6636,7 @@ msgid "Sync folder"
 msgstr ""
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
-#. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Tabs"
 msgstr "탭"
 

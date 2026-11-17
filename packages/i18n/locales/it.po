@@ -1119,6 +1119,11 @@ msgstr "Tutte le app"
 msgid "All consoles"
 msgstr "Tutte le console"
 
+#. Discover's filter: consoles by every maker
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "All makers"
+msgstr ""
+
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "All options…"
@@ -1891,6 +1896,10 @@ msgstr "Scegli un'app che avvia l'app."
 msgid "Choose an AppImage or another program that starts the app."
 msgstr "Scegli un AppImage o un altro programma che avvia l'app."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Choose another maker, or Home & handheld."
+msgstr ""
+
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
 msgstr "Scegli un altro programma…"
@@ -2155,7 +2164,9 @@ msgstr "Console di {name}"
 msgid "Console tab order"
 msgstr "Ordine delle schede console"
 
+#. Controller hint on Discover: the shoulder buttons go to the next or previous console
 #: ../../apps/launcher/src/detail.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Consoles"
 msgstr "Console"
 
@@ -3034,6 +3045,11 @@ msgstr "Raggruppa per sviluppatore"
 msgid "Group by game"
 msgstr "Raggruppa per gioco"
 
+#. Discover's filter: handheld consoles, such as the Game Boy or PSP
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Handhelds"
+msgstr ""
+
 #: ../../apps/launcher/src/feedback.tsx
 #: ../ui/src/index.tsx
 msgid "Has issues"
@@ -3171,6 +3187,16 @@ msgstr "Tieni premuto per disinstallare. I suoi file vanno nel Cestino."
 #: ../../apps/launcher/src/tv/consoles/tabs.ts
 msgid "Home"
 msgstr "Home"
+
+#. Discover's filter: home consoles and handhelds alike
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Home & handheld"
+msgstr ""
+
+#. Discover's filter: consoles played on a TV, not handhelds
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Home consoles"
+msgstr ""
 
 #. TV mode setting: whether the Home tab shows
 #: ../../apps/launcher/src/tv/views/Settings.tsx
@@ -4475,6 +4501,10 @@ msgstr "Ancora nessun backup."
 msgid "No console"
 msgstr "Nessuna console"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "No consoles are both"
+msgstr ""
+
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "No controller connected"
 msgstr "Nessun controller connesso"
@@ -4904,6 +4934,7 @@ msgstr "Altri file"
 
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/library.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Other platforms"
 msgstr "Altre piattaforme"
 
@@ -6605,9 +6636,7 @@ msgid "Sync folder"
 msgstr ""
 
 #. Controller hint: what the shoulder buttons do where there are tabs, change tab
-#. Controller hint: what the shoulder buttons do where there are tabs, change tab
 #: ../../apps/launcher/src/spatial.ts
-#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Tabs"
 msgstr "Schede"
 
