@@ -51,6 +51,15 @@ const NOT_SAVE_DIRS: [&str; 18] = [
     "mods", "shadercache", "shader_cache", "shaders", "cache", "caches", "logs", "log", "crashdumps", "crashes", "dumps", "screenshots", "texture_packs", "textures", "temp", "tmp", ".git",
     "__pycache__",
 ];
+/// Files a system runs by themselves or on a double click, or an app starts with: scripts, shortcuts and settings a
+/// system loads. No app keeps its saves as these, so they're never backed up, removed or put back: a backup that
+/// came from somewhere else can't swap an app's start script, or leave something to be run later.
+const SCRIPTS: [&str; 29] = [
+    "bat", "cmd", "ps1", "psm1", "psd1", "vbs", "vbe", "jse", "wsf", "wsh", "hta", "lnk", "scr", "com", "pif", "cpl", "reg", "sh", "bash", "zsh", "fish", "command", "desktop", "service", "jar", "url",
+    "inf", "py", "pyw",
+];
+/// Places in one backup: more than the catalog lists for an app or the launcher finds.
+const MAX_PLACES: usize = 16;
 const PROGRAMS: [&str; 6] = ["exe", "dll", "so", "dylib", "appimage", "msi"];
 const ROOTS: [&str; 6] = ["app", "data", "config", "localData", "documents", "home"];
 
@@ -111,23 +120,32 @@ pub fn catalog_templates(locations: &[Location], os: &str) -> Vec<String> {
         .collect()
 }
 
+/// A name that means the same on every system. Windows drops a dot or a space from the end of one, so "Startup." there
+/// is "Startup": such a name is never followed, as it would get past every check made on how it's written.
 fn valid_part(part: &str) -> bool {
-    !part.is_empty() && part != "." && part != ".." && !part.chars().any(|c| c.is_control() || "<>:\"|?\\".contains(c))
+    !part.is_empty() && part != "." && part != ".." && !part.ends_with(['.', ' ']) && !part.starts_with(' ') && !part.chars().any(|c| c.is_control() || "<>:\"|?\\".contains(c))
+}
+
+/// Whether a folder's name could be Windows's short name for another ("MICROS~1" for "Microsoft"), which would get
+/// past the folders refused by name.
+fn short_name(part: &str) -> bool {
+    part.as_bytes().windows(2).any(|pair| pair[0] == b'~' && pair[1].is_ascii_digit())
 }
 
 /// Folders no app's saves are in, and that hold what must never be copied into a backup or written over by a restore:
 /// keys and passwords, other programs' own data (browsers, mail, chat, wallets) and the places a system starts
 /// programs from. The catalog refuses the same ones (convex/saveLocations.ts on the website), and they're refused
 /// here too so that a place listed there by mistake, or a backup made elsewhere, can't reach them. Lowercase.
-const NEVER_ANYWHERE: [&str; 5] = [".ssh", ".gnupg", "startup", "autostart", "keychains"];
-const NEVER_IN_HOME: [&str; 24] = [
+const NEVER_ANYWHERE: [&str; 7] = [".ssh", ".gnupg", "startup", "autostart", "keychains", "windowspowershell", "powershell"];
+const NEVER_IN_HOME: [&str; 35] = [
     ".aws", ".azure", ".kube", ".docker", ".mozilla", ".thunderbird", ".password-store", ".pki", ".cert", ".putty", ".netrc", ".git-credentials", ".gitconfig", ".npmrc", ".profile", ".bashrc",
-    ".bash_profile", ".bash_history", ".zshrc", ".zsh_history", ".electrum", ".bitcoin", ".ethereum", "applications",
+    ".bash_profile", ".bash_history", ".zshrc", ".zsh_history", ".electrum", ".bitcoin", ".ethereum", "applications", ".zshenv", ".zprofile", ".zlogin", ".zlogout", ".bash_login", ".bash_logout", ".xprofile", ".xinitrc", ".xsession", ".xsessionrc",
+    ".pam_environment",
 ];
-const NEVER_IN_APP_DATA: [&str; 40] = [
+const NEVER_IN_APP_DATA: [&str; 46] = [
     "google", "google-chrome", "chromium", "mozilla", "firefox", "thunderbird", "microsoft", "microsoft edge", "bravesoftware", "opera software", "vivaldi", "apple", "apple computer", "packages",
     "programs", "temp", "bitwarden", "1password", "keepass", "keepassxc", "keyrings", "kwalletd", "gnupg", "ssh", "signal", "discord", "telegram desktop", "slack", "code", "git", "gh", "gcloud",
-    "rclone", "systemd", "dconf", "exodus", "electrum", "bitcoin", "ethereum", "ledger live",
+    "rclone", "systemd", "dconf", "exodus", "electrum", "bitcoin", "ethereum", "ledger live", "fish", "zsh", "nushell", "environment.d", "applications", "plasma-workspace",
 ];
 /// Folders every program or the player shares: a place can be inside one, never the whole of it.
 const SHARED: [&str; 12] = ["documents", "desktop", "downloads", "pictures", "music", "videos", "onedrive", "dropbox", "google drive", "iclouddrive", "my games", "saved games"];
@@ -200,7 +218,7 @@ pub fn valid_template(template: &str) -> bool {
     }
     let parts: Vec<&str> = path.split('/').collect();
     let last = parts[parts.len() - 1];
-    refused(root, path).is_none() && path.len() <= 200 && parts.iter().all(|p| valid_part(p)) && parts[..parts.len() - 1].iter().all(|p| !p.contains('*')) && last.matches('*').count() <= 1 && last != "*"
+    refused(root, path).is_none() && path.len() <= 200 && parts.iter().all(|p| valid_part(p) && !short_name(p)) && parts[..parts.len() - 1].iter().all(|p| !p.contains('*')) && last.matches('*').count() <= 1 && last != "*"
 }
 
 const PRIVATE: &str = "Quiver doesn't back up that folder: it holds keys or another program's own data.";
@@ -301,6 +319,11 @@ fn matches(pattern: &str, name: &str) -> bool {
     }
 }
 
+/// Whether a file is one a restore or a backup leaves alone: a script or a shortcut.
+fn left_alone(name: &str) -> bool {
+    SCRIPTS.contains(&extension(name).as_str())
+}
+
 /// One save file: which place it's in, its path inside it with `/`, and where it is.
 #[derive(Debug, Clone)]
 pub struct Found {
@@ -367,6 +390,12 @@ fn kind_of(place: &Place) -> Kind {
 
 /// The save files in one place, as it is now. One that isn't there has none.
 fn files_in(place: &Place, kind: Kind, index: usize) -> Result<Vec<Found>, TooBig> {
+    let mut files = all_files_in(place, kind, index)?;
+    files.retain(|f| !left_alone(f.path.rsplit('/').next().unwrap_or(&f.path)));
+    Ok(files)
+}
+
+fn all_files_in(place: &Place, kind: Kind, index: usize) -> Result<Vec<Found>, TooBig> {
     let one = |file: &Path| {
         let meta = fs::symlink_metadata(file).ok().filter(|m| m.is_file())?;
         let name = file.file_name()?.to_string_lossy().into_owned();
@@ -617,7 +646,7 @@ pub const BAD_COPY: &str = "That copy couldn't be downloaded whole. Your saves a
 /// Takes a backup downloaded from the account in among this computer's, where Restore can put it back. It must be the
 /// copy that was asked for: a backup whose files add up to `hash`. One that's here already isn't kept twice.
 pub fn adopt(store: &Path, downloaded: &Path, hash: &str) -> Result<Backup, String> {
-    let manifest = read_manifest(downloaded).filter(|m| m.hash == hash && set_hash(&m.files) == hash);
+    let manifest = read_manifest(downloaded).filter(|m| m.hash == hash && set_hash(&m.files) == hash && sized_like_saves(m));
     let Some(manifest) = manifest else {
         let _ = fs::remove_file(downloaded);
         return Err(BAD_COPY.into());
@@ -641,11 +670,87 @@ pub fn adopt(store: &Path, downloaded: &Path, hash: &str) -> Result<Backup, Stri
     Ok(Backup { name, at: manifest.at, size, files: manifest.files.len(), version: manifest.version, reason: manifest.reason, device: manifest.device, os: manifest.os, hash: manifest.hash })
 }
 
-/// The places a backup's saves were in that mean the same on any computer: every one but a folder the player chose
-/// (the app's whole folder is only ever the player's choice).
-pub fn portable_places(store: &Path, name: &str) -> Vec<String> {
-    let manifest = backup_file(store, name).ok().and_then(|file| read_manifest(&file));
-    manifest.map(|m| m.places.into_iter().map(|p| p.template).filter(|t| t != "app" && valid_template(t)).collect()).unwrap_or_default()
+/// Whether a backup holds no more than saves do: a zip can name any number of files of any size, and unpacking
+/// them would fill the disk before anything was found wrong.
+fn sized_like_saves(manifest: &Manifest) -> bool {
+    let mut places = vec![(0usize, 0u64); manifest.places.len()];
+    for file in &manifest.files {
+        let Some(place) = places.get_mut(file.place) else { return false };
+        *place = (place.0 + 1, place.1.saturating_add(file.size));
+    }
+    manifest.places.len() <= MAX_PLACES && places.iter().all(|(files, bytes)| *files <= MAX_FILES && *bytes <= MAX_PLACE)
+}
+
+/// Where a restore may write. A backup says where its saves were, but it may have been made on another computer, or
+/// by someone else with the player's account: its word is only taken for places this computer keeps the app's saves
+/// in already. Any other is the player's to agree to, shown as the folder it is here, and only when it's in the
+/// app's own folder or a folder named like the app, which is where apps save.
+#[derive(Default)]
+pub struct Trust<'a> {
+    /// The places this computer keeps the app's saves in: the player's own, the catalog's or the ones it found.
+    pub known: &'a [String],
+    /// The backup's other places the player agreed to (`restore_plan` lists them).
+    pub confirmed: &'a [String],
+    /// What the app is called, to tell a folder named like it.
+    pub names: &'a [String],
+}
+
+pub const WRONG_PLACE: &str = "This backup's saves were in a folder Quiver doesn't keep this app's saves in on this computer. Choose where the app saves first, then restore it.";
+const NOT_AGREED: &str = "This backup's saves go in a folder Quiver hasn't used for this app on this computer. Restore it from the app's Saves tab.";
+
+/// Whether a known place covers another: the same one, or a folder that holds it.
+fn covers(known: &Place, place: &Place) -> bool {
+    match &known.pattern {
+        None => place.base.starts_with(&known.base),
+        Some(pattern) => place.base == known.base && place.pattern.as_ref().is_some_and(|p| p.eq_ignore_ascii_case(pattern)),
+    }
+}
+
+/// Whether a place can be offered to the player as somewhere to restore to: in the app's own folder, or in a folder
+/// named like the app. Never the app's whole folder, which holds the game itself.
+fn offerable(template: &str, names: &[String]) -> bool {
+    let Some((root, path)) = template.split_once('/') else { return false };
+    if !valid_template(template) {
+        return false;
+    }
+    if root == "app" {
+        return true;
+    }
+    let names: Vec<String> = names.iter().map(|n| plain(n)).filter(|n| n.len() >= 3).collect();
+    path.split('/').filter(|part| !part.contains('*')).any(|part| named_like(part, &names))
+}
+
+/// A backup's places that aren't among the ones this computer knows for the app, each resolved here.
+fn unknown_places(manifest: &Manifest, roots: &Roots, abs: &[String], trust: &Trust) -> Result<Vec<(String, Place)>, String> {
+    let known: Vec<Place> = trust.known.iter().filter_map(|t| resolve(t, roots, abs).ok()).collect();
+    let mut out = vec![];
+    for info in &manifest.places {
+        // A place that's refused by name is said the same way as any other the app doesn't save in.
+        let place = resolve(&info.template, roots, abs).map_err(|e| if info.template.starts_with("abs:") || valid_template(&info.template) { e } else { WRONG_PLACE.to_string() })?;
+        if known.iter().any(|k| covers(k, &place)) {
+            continue;
+        }
+        if !offerable(&info.template, trust.names) {
+            return Err(WRONG_PLACE.into());
+        }
+        out.push((info.template.clone(), place));
+    }
+    Ok(out)
+}
+
+/// The folders a restore of this backup would write to that this computer doesn't keep the app's saves in yet, for
+/// the player to agree to (`Trust::confirmed`). None for a backup of the places known here. Fails when one of them
+/// can't be offered at all.
+pub fn restore_plan(store: &Path, name: &str, roots: &Roots, abs: &[String], trust: &Trust) -> Result<Vec<Shown>, String> {
+    let manifest = read_manifest(&backup_file(store, name)?).ok_or(DAMAGED)?;
+    let unknown = unknown_places(&manifest, roots, abs, trust)?;
+    Ok(unknown
+        .into_iter()
+        .map(|(template, place)| {
+            let path = place.pattern.as_ref().map_or(place.base.clone(), |p| place.base.join(p));
+            Shown { template, path: path.to_string_lossy().into(), exists: place.base.exists() }
+        })
+        .collect())
 }
 
 pub fn remove(store: &Path, name: &str) -> Result<(), String> {
@@ -669,9 +774,15 @@ fn put(from: &Path, to: &Path) -> io::Result<()> {
 /// Puts a backup's files back where the app reads them. What's there now is backed up first, so this can be undone;
 /// then save files that aren't in the backup are taken away, so the app sees exactly what was backed up. Resolves to
 /// how many files it put back.
-pub fn restore(store: &Path, name: &str, roots: &Roots, abs: &[String], stamp: &Stamp) -> Result<usize, String> {
+///
+/// Files only go to places `trust` allows: the ones this computer knows for the app, and the backup's others the
+/// player agreed to. A backup naming any other place isn't restored at all.
+pub fn restore(store: &Path, name: &str, roots: &Roots, abs: &[String], stamp: &Stamp, trust: &Trust) -> Result<usize, String> {
     let zip_file = backup_file(store, name)?;
     let manifest = read_manifest(&zip_file).ok_or(DAMAGED)?;
+    if unknown_places(&manifest, roots, abs, trust)?.iter().any(|(template, _)| !trust.confirmed.contains(template)) {
+        return Err(NOT_AGREED.into());
+    }
     let places = manifest.places.iter().map(|p| resolve(&p.template, roots, abs)).collect::<Result<Vec<_>, _>>()?;
     // Everything out and checked before anything of the player's is touched.
     let temp = store.join(".restore");
@@ -707,6 +818,9 @@ pub fn restore(store: &Path, name: &str, roots: &Roots, abs: &[String], stamp: &
 /// A backup's files written under `temp`, each checked against the manifest. Nothing but saves comes out, whatever
 /// the zip holds: its entries are only read by the names the manifest gives, and those are checked first.
 fn unpack(zip_file: &Path, manifest: &Manifest, places: &[Place], temp: &Path) -> Result<Vec<(FileInfo, PathBuf)>, String> {
+    if !sized_like_saves(manifest) || set_hash(&manifest.files) != manifest.hash {
+        return Err(DAMAGED.into());
+    }
     let mut archive = zip::ZipArchive::new(fs::File::open(zip_file).map_err(|_| DAMAGED)?).map_err(|_| DAMAGED)?;
     let mut seen = HashSet::new();
     let mut out = vec![];
@@ -714,6 +828,10 @@ fn unpack(zip_file: &Path, manifest: &Manifest, places: &[Place], temp: &Path) -
         let parts: Vec<&str> = info.path.split('/').collect();
         let name = parts[parts.len() - 1];
         let place = places.get(info.place).ok_or(DAMAGED)?;
+        // A backup made before these were left out may hold one: it stays in the backup.
+        if left_alone(name) {
+            continue;
+        }
         let fits = match manifest.places[info.place].kind {
             Kind::Folder => !parts[..parts.len() - 1].iter().any(|p| skip_dir(p)),
             Kind::File => parts.len() == 1 && place.base.file_name().is_some_and(|f| f.to_string_lossy() == name),
@@ -732,9 +850,6 @@ fn unpack(zip_file: &Path, manifest: &Manifest, places: &[Place], temp: &Path) -
             return Err(DAMAGED.into());
         }
         out.push((info.clone(), target));
-    }
-    if set_hash(&manifest.files) != manifest.hash {
-        return Err(DAMAGED.into());
     }
     Ok(out)
 }
@@ -1044,6 +1159,11 @@ mod tests {
 
     const STAMP: Stamp = Stamp { app: "game", version: Some("1.0"), reason: "manual", os: "linux" };
 
+    /// A restore on a computer that keeps the app's saves in these places.
+    fn knowing(places: &[String]) -> Trust<'_> {
+        Trust { known: places, ..Default::default() }
+    }
+
     #[test]
     fn templates_are_plain_paths_under_a_root() {
         for good in ["app", "app/saves", "localData/Game/saves", "app/save/*.sav", "home/.game", "documents/My Games/Game"] {
@@ -1182,11 +1302,10 @@ mod tests {
 
         let taken = adopt(&store2, &download(".cloud.part"), &made.hash).unwrap();
         assert_eq!((taken.hash.as_str(), taken.files, taken.at), (made.hash.as_str(), 1, made.at));
-        assert_eq!(portable_places(&store2, &taken.name), places);
         // The same copy again is the one that's here.
         assert_eq!(adopt(&store2, &download(".cloud.part"), &made.hash).unwrap().name, taken.name);
         assert_eq!(list(&store2).len(), 1);
-        assert_eq!(restore(&store2, &taken.name, &roots2, &[], &STAMP).unwrap(), 1);
+        assert_eq!(restore(&store2, &taken.name, &roots2, &[], &STAMP, &knowing(&places)).unwrap(), 1);
         assert_eq!(fs::read_to_string(roots2.app.join("saves/slot1.sav")).unwrap(), "progress");
         assert_eq!(current_hash(&places, &roots2, &[]).unwrap(), Some(made.hash));
     }
@@ -1215,7 +1334,7 @@ mod tests {
         assert_eq!(all.len(), KEEP);
         assert!(all.windows(2).all(|pair| pair[0].at > pair[1].at));
         // The newest is the last one made.
-        restore(&store, &all[1].name, &roots, &[], &STAMP).unwrap();
+        restore(&store, &all[1].name, &roots, &[], &STAMP, &knowing(&places)).unwrap();
         assert_eq!(fs::read_to_string(roots.app.join("save.bin")).unwrap(), (KEEP + 1).to_string());
     }
 
@@ -1237,7 +1356,7 @@ mod tests {
         write(&roots.app.join("settings.ini"), "new settings");
         write(&roots.app.join("save/b.sav"), "new b");
         write(&roots.app.join("save/notes.txt"), "not matched");
-        assert_eq!(restore(&store, &old.name, &roots, &[], &STAMP).unwrap(), 4);
+        assert_eq!(restore(&store, &old.name, &roots, &[], &STAMP, &knowing(&places)).unwrap(), 4);
         assert_eq!(fs::read_to_string(folder.join("slot1.sav")).unwrap(), "old one");
         assert_eq!(fs::read_to_string(folder.join("b/slot2.sav")).unwrap(), "old two");
         assert!(!folder.join("slot3.sav").exists());
@@ -1250,7 +1369,7 @@ mod tests {
         // What was there went into a backup of its own, so the restore can be undone.
         let all = list(&store);
         assert_eq!(all.iter().map(|b| b.reason.as_str()).collect::<Vec<_>>(), ["restore", "manual"]);
-        restore(&store, &all[0].name, &roots, &[], &STAMP).unwrap();
+        restore(&store, &all[0].name, &roots, &[], &STAMP, &knowing(&places)).unwrap();
         assert_eq!(fs::read_to_string(folder.join("slot1.sav")).unwrap(), "new one");
         assert_eq!(fs::read_to_string(folder.join("slot3.sav")).unwrap(), "new three");
         assert!(!folder.join("b/slot2.sav").exists());
@@ -1308,19 +1427,164 @@ mod tests {
             // The same file twice.
             (manifest_of(&[("app/saves", Kind::Folder)], &[(0, "a.sav", "x"), (0, "A.sav", "x")]), vec![("0/a.sav", "x"), ("0/A.sav", "x")]),
         ];
+        let places: Vec<String> = ["app/saves", "app/save.bin"].map(String::from).to_vec();
         for (n, (manifest, entries)) in cases.iter().enumerate() {
             let name = forged(&store, manifest, entries);
-            assert!(restore(&store, &name, &roots, &[], &STAMP).is_err(), "case {n}");
+            assert!(restore(&store, &name, &roots, &[], &STAMP, &knowing(&places)).is_err(), "case {n}");
             assert_eq!(fs::read_to_string(roots.app.join("saves/slot.sav")).unwrap(), "mine", "case {n}");
         }
         let mut wrong = manifest_of(&[("app/saves", Kind::Folder)], &[(0, "slot.sav", "x")]);
         wrong.hash = "0".repeat(64);
         let name = forged(&store, &wrong, &[("0/slot.sav", "x")]);
-        assert_eq!(restore(&store, &name, &roots, &[], &STAMP).unwrap_err(), DAMAGED);
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &knowing(&places)).unwrap_err(), DAMAGED);
         assert!(!dir.path().join("evil.sav").exists() && !dir.path().join("apps/evil.sav").exists());
         // Only this app's backups, by name.
-        assert!(restore(&store, "../5.zip", &roots, &[], &STAMP).is_err());
+        assert!(restore(&store, "../5.zip", &roots, &[], &STAMP, &knowing(&places)).is_err());
         assert!(remove(&store, "state.json").is_err());
+    }
+
+    #[test]
+    fn a_backup_never_chooses_where_its_files_go() {
+        // A backup someone else put in the player's account: it names places that run things or hold the player's
+        // own files, and none is where this computer keeps the app's saves.
+        let (dir, roots, store) = world();
+        write(&roots.app.join("saves/slot.sav"), "mine");
+        write(&dir.path().join("home/Documents/Taxes/2025.txt"), "the player's own");
+        let known = vec!["app/saves".to_string()];
+        let names = vec!["Game".to_string()];
+        let trust = Trust { known: &known, confirmed: &[], names: &names };
+        let planted: [(&str, Kind, &str, &str); 5] = [
+            ("home/.zshenv", Kind::File, ".zshenv", "home/.zshenv"),
+            ("home/.config/fish", Kind::Folder, "config.fish", "home/.config/fish/config.fish"),
+            ("config/environment.d", Kind::Folder, "x.conf", "config/environment.d/x.conf"),
+            ("documents/Notes", Kind::Folder, "run.txt", "home/Documents/Notes/run.txt"),
+            ("documents/Taxes", Kind::Folder, "note.txt", "home/Documents/Taxes/note.txt"),
+        ];
+        for (template, kind, file, lands) in planted {
+            let entry = format!("0/{file}");
+            let name = forged(&store, &manifest_of(&[(template, kind)], &[(0, file, "run me")]), &[(entry.as_str(), "run me")]);
+            assert!(restore_plan(&store, &name, &roots, &[], &trust).is_err(), "{template}");
+            // Not even when the window says the player agreed.
+            let said = vec![template.to_string()];
+            assert!(restore(&store, &name, &roots, &[], &STAMP, &Trust { confirmed: &said, ..knowing(&known) }).is_err(), "{template}");
+            assert!(!dir.path().join(lands).exists(), "{template}");
+        }
+        assert_eq!(fs::read_to_string(dir.path().join("home/Documents/Taxes/2025.txt")).unwrap(), "the player's own");
+        // One good place doesn't carry a bad one in with it.
+        let name = forged(&store, &manifest_of(&[("app/saves", Kind::Folder), ("documents/Notes", Kind::Folder)], &[(0, "slot.sav", "theirs"), (1, "a.txt", "x")]), &[("0/slot.sav", "theirs"), ("1/a.txt", "x")]);
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &trust).unwrap_err(), WRONG_PLACE);
+        assert_eq!(fs::read_to_string(roots.app.join("saves/slot.sav")).unwrap(), "mine");
+    }
+
+    #[test]
+    fn a_place_this_computer_doesnt_know_waits_for_the_player() {
+        // A new computer: it has no saves and knows no place for the app. The backup's folder is named like the
+        // app, so it can be offered, and nothing is written until the player agrees to it.
+        let (dir, roots, store) = world();
+        let names = vec!["Game".to_string()];
+        let name = forged(&store, &manifest_of(&[("localData/Game/saves", Kind::Folder), ("app/data/*.sav", Kind::Pattern)], &[(0, "slot.sav", "progress"), (1, "a.sav", "more")]), &[("0/slot.sav", "progress"), ("1/a.sav", "more")]);
+        let trust = Trust { known: &[], confirmed: &[], names: &names };
+        let plan = restore_plan(&store, &name, &roots, &[], &trust).unwrap();
+        assert_eq!(plan.iter().map(|p| p.template.as_str()).collect::<Vec<_>>(), ["localData/Game/saves", "app/data/*.sav"]);
+        assert_eq!(plan[0].path, dir.path().join("local/Game/saves").to_string_lossy());
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &trust).unwrap_err(), NOT_AGREED);
+        assert!(!dir.path().join("local/Game").exists());
+        // Agreeing to one of two isn't agreeing to both.
+        let one = vec!["localData/Game/saves".to_string()];
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &Trust { confirmed: &one, ..trust }).unwrap_err(), NOT_AGREED);
+        let both = vec!["localData/Game/saves".to_string(), "app/data/*.sav".to_string()];
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &Trust { confirmed: &both, names: &names, known: &[] }).unwrap(), 2);
+        assert_eq!(fs::read_to_string(dir.path().join("local/Game/saves/slot.sav")).unwrap(), "progress");
+        // Known now, there's nothing left to ask.
+        assert!(restore_plan(&store, &name, &roots, &[], &Trust { known: &both, ..Default::default() }).unwrap().is_empty());
+        // A folder that holds a known place's saves covers it; the app's whole folder is only ever the player's own.
+        let whole = vec!["app".to_string(), "localData/Game".to_string()];
+        assert!(restore_plan(&store, &name, &roots, &[], &knowing(&whole)).unwrap().is_empty());
+        let other = vec!["app/data/*.dat".to_string(), "localData/Game/saves".to_string()];
+        assert_eq!(restore_plan(&store, &name, &roots, &[], &Trust { known: &other, names: &names, confirmed: &[] }).unwrap().len(), 1);
+        // A folder not named like the app, outside its own, is never offered.
+        let name = forged(&store, &manifest_of(&[("localData/Other/saves", Kind::Folder)], &[(0, "slot.sav", "x")]), &[("0/slot.sav", "x")]);
+        assert_eq!(restore_plan(&store, &name, &roots, &[], &trust).unwrap_err(), WRONG_PLACE);
+    }
+
+    #[test]
+    fn names_windows_reads_as_another_folder_are_refused() {
+        for bad in [
+            "data/Microsoft./Windows/Start Menu/Programs/Startup.",
+            "data/Game/Startup ",
+            "data/Game/ saves",
+            "data/MICROS~1/Windows/STARTM~1/Programs/Startu~1",
+            "home/.zshenv",
+            "home/.zprofile",
+            "home/.bash_login",
+            "home/.xprofile",
+            "home/.config/fish",
+            "home/.config/environment.d",
+            "config/environment.d",
+            "home/.local/share/applications",
+            "data/applications",
+            "documents/WindowsPowerShell",
+            "documents/PowerShell/Modules",
+            "home/Documents/WindowsPowerShell",
+        ] {
+            assert!(!valid_template(bad), "{bad}");
+        }
+        for good in ["data/Game.v2/saves", "home/.game", "app/save~", "documents/My Games/Game"] {
+            assert!(valid_template(good), "{good}");
+        }
+        // A file named to become a program once Windows drops the dot isn't a save.
+        let (_dir, roots, store) = world();
+        let known = vec!["app/saves".to_string()];
+        let name = forged(&store, &manifest_of(&[("app/saves", Kind::Folder)], &[(0, "run.exe.", "x")]), &[("0/run.exe.", "x")]);
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &knowing(&known)).unwrap_err(), DAMAGED);
+    }
+
+    #[test]
+    fn scripts_and_shortcuts_are_left_alone() {
+        let (dir, roots, store) = world();
+        let folder = dir.path().join("local/Game");
+        write(&folder.join("slot.sav"), "one");
+        write(&folder.join("start.bat"), "the player's");
+        write(&roots.app.join("saves/slot.sav"), "one");
+        write(&roots.app.join("saves/start.sh"), "the app's");
+        let places = vec!["localData/Game".to_string(), "app/saves".to_string()];
+        let made = backup(&store, &places, &roots, &[], &STAMP).unwrap().unwrap();
+        // Never backed up, wherever they are.
+        assert_eq!(made.files, 2);
+        // A backup that holds one anyway doesn't put it back, not even over the app's own, and one that's there isn't
+        // taken away.
+        let entries = [("0/slot.sav", "two"), ("0/evil.cmd", "x"), ("0/link.desktop", "x"), ("1/slot.sav", "two"), ("1/start.sh", "theirs")];
+        let name = forged(
+            &store,
+            &manifest_of(&[("localData/Game", Kind::Folder), ("app/saves", Kind::Folder)], &[(0, "slot.sav", "two"), (0, "evil.cmd", "x"), (0, "link.desktop", "x"), (1, "slot.sav", "two"), (1, "start.sh", "theirs")]),
+            &entries,
+        );
+        assert_eq!(restore(&store, &name, &roots, &[], &STAMP, &knowing(&places)).unwrap(), 2);
+        assert_eq!(fs::read_to_string(folder.join("slot.sav")).unwrap(), "two");
+        assert!(!folder.join("evil.cmd").exists() && !folder.join("link.desktop").exists());
+        assert_eq!(fs::read_to_string(folder.join("start.bat")).unwrap(), "the player's");
+        assert_eq!(fs::read_to_string(roots.app.join("saves/start.sh")).unwrap(), "the app's");
+    }
+
+    #[test]
+    fn a_backup_bigger_than_saves_are_isnt_unpacked() {
+        let (_dir, roots, store) = world();
+        let known = vec!["app/saves".to_string()];
+        let mut many = manifest_of(&[("app/saves", Kind::Folder)], &[]);
+        many.files = (0..=MAX_FILES).map(|n| FileInfo { place: 0, path: format!("{n}.sav"), size: 1, sha256: "0".repeat(64) }).collect();
+        many.hash = set_hash(&many.files);
+        let mut heavy = manifest_of(&[("app/saves", Kind::Folder)], &[]);
+        heavy.files = (0..5).map(|n| FileInfo { place: 0, path: format!("{n}.sav"), size: MAX_FILE, sha256: "0".repeat(64) }).collect();
+        heavy.hash = set_hash(&heavy.files);
+        let mut spread = manifest_of(&[("app/saves", Kind::Folder)], &[(0, "slot.sav", "x")]);
+        spread.places = (0..=MAX_PLACES).map(|n| PlaceInfo { template: format!("app/saves{n}"), kind: Kind::Folder }).collect();
+        for (n, manifest) in [many, heavy, spread].iter().enumerate() {
+            let name = forged(&store, manifest, &[("0/slot.sav", "x")]);
+            assert!(restore(&store, &name, &roots, &[], &STAMP, &knowing(&known)).is_err(), "case {n}");
+            assert!(!store.join(".restore").join("0").exists(), "case {n}");
+            fs::copy(store.join(&name), store.join(".cloud.part")).unwrap();
+            assert_eq!(adopt(&store, &store.join(".cloud.part"), &manifest.hash).unwrap_err(), BAD_COPY, "case {n}");
+        }
     }
 
     #[test]

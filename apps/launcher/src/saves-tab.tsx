@@ -12,7 +12,7 @@ import type { Entry } from "@quiverlauncher/api";
 import { sizeLabel } from "./downloads";
 import { native, type SaveBackup, type SavesInfo } from "./native";
 import { onSavesChanged, savesOf } from "./saves";
-import { fetchCopy, lastSent, sendBackup, type CloudCopy, type CloudMine } from "./cloud-saves";
+import { fetchCopy, lastSent, restoreBackup, sendBackup, type CloudCopy, type CloudMine } from "./cloud-saves";
 import { useAccount } from "./account";
 import { isLocal } from "./custom";
 import { useLauncher } from "./store";
@@ -33,7 +33,7 @@ export const SYSTEM_NAMES: Record<string, string> = { windows: "Windows", linux:
 export const when = (at: number) => new Date(at).toLocaleString(i18n.locale, { dateStyle: "medium", timeStyle: "short" });
 
 export function SavesTab({ entry }: { entry: Entry }) {
-  const { installs, catalog, settings, cloudSavesFor, cloudCatchUp } = useLauncher();
+  const { installs, catalog, settings, cloudSavesFor, cloudCatchUp, confirmSavePlaces } = useLauncher();
   const account = useAccount();
   const install = installs[entry.id];
   const known = catalog[entry.id] ?? entry;
@@ -53,6 +53,8 @@ export function SavesTab({ entry }: { entry: Entry }) {
   /** What the cloud part says after something was done there. */
   const [cloudSaid, setCloudSaid] = useState<{ text: string; error?: true } | null>(null);
   const api = cloudSavesFor(entry.id);
+  /** Shows the player a folder a backup names that this computer hasn't kept the app's saves in, before anything goes there. */
+  const confirm = confirmSavePlaces(known.projectName);
 
   const load = useCallback(() => {
     if (!of) return;
@@ -97,7 +99,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
   const restoreCloud = (copy: CloudCopy) =>
     runCloud(async () => {
       if (!api) return null;
-      await fetchCopy(of, copy, { api, native });
+      if (!(await fetchCopy(of, copy, { api, native, confirm }))) return null;
       return t({ message: "Restored.", comment: "Said after a save backup was put back" });
     });
   const removeCloud = (copy: CloudCopy) =>
@@ -121,7 +123,7 @@ export function SavesTab({ entry }: { entry: Entry }) {
     });
   const restore = (backup: SaveBackup) =>
     run(async () => {
-      await native.savesRestore(of, backup.name);
+      if (!(await restoreBackup(of, backup.name, { native, confirm }))) return null;
       return t({ message: "Restored.", comment: "Said after a save backup was put back" });
     });
   const remove = (backup: SaveBackup) =>

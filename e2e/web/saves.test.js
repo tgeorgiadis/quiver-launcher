@@ -29,6 +29,7 @@ const savesAre = (info, fails = {}) =>
         if (fails[cmd]) return Promise.reject(fails[cmd]);
         if (cmd === "saves_info" || cmd === "saves_choose") return Promise.resolve(info);
         if (cmd === "saves_backup") return Promise.resolve(info.backups[0] ?? null);
+        if (cmd === "saves_restore_plan") return Promise.resolve(info.unknown ?? []);
         if (cmd === "saves_restore") return Promise.resolve(3);
         if (cmd === "pick_folder") return Promise.resolve(window.__picked);
         return Promise.resolve(null);
@@ -100,6 +101,25 @@ test("restoring asks first, then says it's done", async () => {
   await panel.getByRole("button", { name: "Remove this backup" }).click();
   await page.waitForFunction(() => window.__calls.some((c) => c.cmd === "saves_remove"));
   assert.deepEqual((await calls("saves_remove"))[0], { id: ID, name: "2000.zip" });
+});
+
+test("a backup of a folder this computer doesn't know shows the folder before anything goes there", async () => {
+  const elsewhere = { template: "localData/Test Port/saves", path: "/home/me/.local/share/Test Port/saves", exists: false };
+  await savesAre({ places: [place], from: "catalog", backups: [backup(2000, "manual")], unknown: [elsewhere] });
+  const panel = await openSaves();
+  const restore = async () => {
+    await panel.getByRole("button", { name: "Restore" }).click();
+    await panel.locator(".save-button.primary", { hasText: "Restore" }).click();
+    const dialog = page.getByRole("dialog", { name: "Restore to this folder?" });
+    await dialog.getByText(elsewhere.path).waitFor();
+    return dialog;
+  };
+  await (await restore()).getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("dialog", { name: "Restore to this folder?" }).waitFor({ state: "detached" });
+  assert.equal((await calls("saves_restore")).length, 0, "not without the player agreeing to the folder");
+  await (await restore()).getByRole("button", { name: "Restore" }).click();
+  await panel.getByText("Restored.").waitFor();
+  assert.deepEqual((await calls("saves_restore"))[0].confirmed, [elsewhere.template]);
 });
 
 test("what the launcher refuses is said in the tab", async () => {

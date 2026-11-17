@@ -27,7 +27,7 @@ import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
-import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict } from "./cloud-saves";
+import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
 
@@ -240,6 +240,10 @@ type Launcher = {
   confirmUninstall: (confirming: Confirming | null) => void;
   /** An app's saves here and in the account both changed: Play asks which to keep, and `answer` is called with it (null: neither, don't start). */
   savesConflict: (Conflict & { answer: (keep: "cloud" | "here" | null) => void }) | null;
+  /** A backup the player asked to restore names folders this computer hasn't kept that app's saves in: they're shown, and `answer` is called with whether to go ahead (App.tsx's SavesPlacesPrompt). */
+  savesPlaces: { name: string; places: Parameters<ConfirmPlaces>[0]; answer: (ok: boolean) => void } | null;
+  /** Asks the player whether a backup of `name`'s saves may be put in those folders. */
+  confirmSavePlaces: (name: string) => ConfirmPlaces;
   /** The app whose backup found the account full: asked about once, until a backup gets there again (App.tsx's SavesFullPrompt). Null closes it. */
   savesFull: string | null;
   closeSavesFull: () => void;
@@ -1415,6 +1419,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [savesConflict, setSavesConflict] = useState<Launcher["savesConflict"]>(null);
+  const [savesPlaces, setSavesPlaces] = useState<Launcher["savesPlaces"]>(null);
   const [savesFull, setSavesFull] = useState<string | null>(null);
   const [settingUpCopy, setUpCopy] = useState<Launcher["settingUpCopy"]>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
@@ -2554,6 +2559,8 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     choosingProgram,
     chooseProgram,
     savesConflict,
+    savesPlaces,
+    confirmSavePlaces: (name) => (places) => new Promise((resolve) => setSavesPlaces({ name, places, answer: (ok) => (setSavesPlaces(null), resolve(ok)) })),
     savesFull,
     closeSavesFull: () => setSavesFull(null),
     cloudCatchUp: () => cloudCatchUp.current(),

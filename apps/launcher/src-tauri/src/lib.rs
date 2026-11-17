@@ -624,16 +624,40 @@ async fn saves_backup(data: State<'_, Data>, running: State<'_, Running>, of: Sa
     Ok(made)
 }
 
-/// Puts a backup back, after backing up what's there. Resolves to how many files it put back.
+/// The folders restoring a backup would write to that this computer doesn't keep the app's saves in yet, for the
+/// player to agree to before `saves_restore`. None for a backup of the places known here; refused when one of its
+/// places is nowhere an app saves.
 #[tauri::command]
-async fn saves_restore(data: State<'_, Data>, running: State<'_, Running>, of: SavesOf, name: String) -> Result<usize, String> {
+async fn saves_restore_plan(data: State<'_, Data>, of: SavesOf, name: String) -> Result<Vec<saves::Shown>, String> {
+    let (roots, store, os) = saves_at(&data, &of)?;
+    let state = saves::state(&store);
+    let (known, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    saves::restore_plan(&store, &name, &roots, &saves::chosen_abs(&state), &saves::Trust { known: &known, confirmed: &[], names: &of.names })
+}
+
+/// Puts a backup back, after backing up what's there. Resolves to how many files it put back. Its files only go to
+/// the places this computer keeps the app's saves in, and to those of `saves_restore_plan` the player agreed to
+/// (`confirmed`), which are remembered as places the app saves in.
+#[tauri::command]
+async fn saves_restore(data: State<'_, Data>, running: State<'_, Running>, of: SavesOf, name: String, confirmed: Option<Vec<String>>) -> Result<usize, String> {
     if running.has(&of.id) {
         return Err(CLOSE_FIRST.into());
     }
     let (roots, store, os) = saves_at(&data, &of)?;
-    let state = saves::state(&store);
+    let mut state = saves::state(&store);
+    let (known, _) = saves::places(&state, &saves::catalog_templates(&of.locations, os));
+    let confirmed = confirmed.unwrap_or_default();
+    let trust = saves::Trust { known: &known, confirmed: &confirmed, names: &of.names };
+    let abs = saves::chosen_abs(&state);
     let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
-    saves::restore(&store, &name, &roots, &saves::chosen_abs(&state), &saves::Stamp { app: &of.id, version: of.version.as_deref(), reason: "restore", os })
+    // Only the places the backup really has, whatever the window sent.
+    let agreed: Vec<String> = saves::restore_plan(&store, &name, &roots, &abs, &trust)?.into_iter().map(|p| p.template).filter(|t| confirmed.contains(t)).collect();
+    let put = saves::restore(&store, &name, &roots, &abs, &saves::Stamp { app: &of.id, version: of.version.as_deref(), reason: "restore", os }, &trust)?;
+    if !agreed.is_empty() {
+        state.found = saves::merge(&state.found, &agreed);
+        saves::set_state(&store, &state)?;
+    }
+    Ok(put)
 }
 
 /// Removes one of an app's backups.
@@ -803,10 +827,11 @@ async fn saves_upload(data: State<'_, Data>, id: String, name: String, url: Stri
 }
 
 /// Downloads a copy from the account's link and takes it in among the app's backups, checked against the checksum
-/// the account has for it. Nothing of the player's saves is touched: `saves_restore` puts it in place.
+/// the account has for it. Nothing of the player's saves is touched, and nothing it says about where the app saves
+/// is taken up: `saves_restore` puts it in place, in the places this computer knows or the player agrees to.
 #[tauri::command]
 async fn saves_download(data: State<'_, Data>, of: SavesOf, url: String, size: u64, hash: String) -> Result<saves::Backup, String> {
-    let (_, store, os) = saves_at(&data, &of)?;
+    let (_, store, _) = saves_at(&data, &of)?;
     if size == 0 || size > MAX_CLOUD_COPY {
         return Err(saves::BAD_COPY.into());
     }
@@ -837,14 +862,7 @@ async fn saves_download(data: State<'_, Data>, of: SavesOf, url: String, size: u
         return Err(saves::BAD_COPY.into());
     }
     let _busy = SAVES_BUSY.lock().unwrap_or_else(|e| e.into_inner());
-    let taken = saves::adopt(&store, &part, &hash)?;
-    // On a computer that doesn't know where this app saves yet, the copy says where.
-    let mut state = saves::state(&store);
-    if saves::places(&state, &saves::catalog_templates(&of.locations, os)).1 == "none" {
-        state.found = saves::merge(&state.found, &saves::portable_places(&store, &taken.name));
-        saves::set_state(&store, &state)?;
-    }
-    Ok(taken)
+    saves::adopt(&store, &part, &hash)
 }
 
 /// The places the launcher saw an app save in that the catalog hasn't been told about (`saves::to_report`). None
@@ -2311,6 +2329,7 @@ pub fn run() {
             saves_info,
             saves_backup,
             saves_restore,
+            saves_restore_plan,
             saves_remove,
             saves_choose,
             saves_open,

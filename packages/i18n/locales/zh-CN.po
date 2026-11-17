@@ -5075,12 +5075,17 @@ msgid "Reset bindings to defaults"
 msgstr "将按键绑定重置为默认值"
 
 #. Window button: un-maximize
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Restore"
 msgstr "恢复"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore {name}'s saves to this folder?"
+msgstr ""
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Restore a backup Quiver kept. The newest is first."
@@ -5102,6 +5107,10 @@ msgstr "恢复此备份？会先备份你当前的存档。"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Restore this copy? Your saves now are backed up first."
 msgstr "恢复此副本？会先备份你当前的存档。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore to this folder?"
+msgstr ""
 
 #. Said after a save backup was put back
 #. Said after a save backup was put back
@@ -6138,6 +6147,10 @@ msgstr "无法移动此应用的文件夹。"
 msgid "This app's folder can't be renamed."
 msgstr "无法重命名此应用的文件夹。"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
+msgstr ""
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This discussion is locked, so it takes no new comments."
 msgstr "此讨论已锁定，无法再发表新评论。"
@@ -6929,6 +6942,10 @@ msgstr "你的云存档已满（{limit}）。请移除副本以腾出空间。"
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "你的云存档已满（{limit}）。最新备份只在这台电脑上。请移除这里或其他应用的副本以腾出空间。"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copies: {ready} of {total} set up"

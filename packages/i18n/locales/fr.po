@@ -5075,12 +5075,17 @@ msgid "Reset bindings to defaults"
 msgstr "Rétablir les attributions par défaut"
 
 #. Window button: un-maximize
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Restore"
 msgstr "Restaurer"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore {name}'s saves to this folder?"
+msgstr ""
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Restore a backup Quiver kept. The newest is first."
@@ -5102,6 +5107,10 @@ msgstr "Restaurer cette sauvegarde ? Vos parties actuelles sont d'abord sauvegar
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Restore this copy? Your saves now are backed up first."
 msgstr "Restaurer cette copie ? Vos parties actuelles sont d'abord sauvegardées."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore to this folder?"
+msgstr ""
 
 #. Said after a save backup was put back
 #. Said after a save backup was put back
@@ -6138,6 +6147,10 @@ msgstr "Le dossier de cette app ne peut pas être déplacé."
 msgid "This app's folder can't be renamed."
 msgstr "Le dossier de cette app ne peut pas être renommé."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
+msgstr ""
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This discussion is locked, so it takes no new comments."
 msgstr "Cette discussion est verrouillée : elle n'accepte plus de nouveaux commentaires."
@@ -6929,6 +6942,10 @@ msgstr "Vos parties dans le cloud sont pleines ({limit}). Supprimez des copies p
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "Vos parties dans le cloud sont pleines ({limit}). La sauvegarde la plus récente est sur cet ordinateur uniquement. Supprimez des copies ici ou dans une autre app pour faire de la place."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copies: {ready} of {total} set up"
