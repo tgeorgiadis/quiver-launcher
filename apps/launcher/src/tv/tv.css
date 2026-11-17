@@ -919,6 +919,12 @@
   grid-template-rows: calc(var(--u) * 112) calc(var(--u) * 44) calc(var(--u) * 42) minmax(0, 1fr);
   height: 100%;
 }
+/* Filter, with X's picture before its name. */
+.tv-chip-row.top .tv-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 6);
+}
 /* The consoles under the filters: a little smaller, so the two rows read as filter and choice. */
 .tv-chip-row.consoles .tv-filter {
   padding: calc(var(--u) * 5) calc(var(--u) * 12);

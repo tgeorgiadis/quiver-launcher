@@ -71,7 +71,9 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     // Filter: a list under its button. Handhelds: neither console is one, so the one shown goes back to All, and there's nothing.
     const filter = s2.page.locator(".tv-chip-row.top .tv-filter", { hasText: "Filter" });
     const row = (name) => s2.page.locator(".tv-dropdown li", { hasText: name });
-    await filter.click();
+    // X opens it from the games, with no way to walk there.
+    await press(s2, "West");
+    await s2.page.locator(".tv-dropdown").waitFor();
     await row("Handhelds").click();
     await s2.until(async () => (await chosen()).includes("All consoles"));
     await s2.page.getByText("No consoles match this filter").waitFor();

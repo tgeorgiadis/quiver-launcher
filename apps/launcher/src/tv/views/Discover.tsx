@@ -3,8 +3,8 @@
  * the library filter (not in it / in it / all) and Filter, which narrows the consoles
  * to makers and to home consoles or handhelds; under them, the consoles left. Up
  * from the grid's top row goes to the consoles, and up again to the filters. LB / RB
- * step through the consoles from anywhere. A gets a game: adds it to the library and
- * downloads it in one press. Pages load as focus nears the end.
+ * step through the consoles, and X opens Filter, from anywhere. A gets a game: adds
+ * it to the library and downloads it in one press. Pages load as focus nears the end.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -18,6 +18,7 @@ import { isInstalled, type TvApp } from "../bridge";
 import type { InputAction } from "../input/actions";
 import { LAYER } from "../input/router";
 import { GameHeader } from "./GameHeader";
+import { Glyph } from "./Glyph";
 import { GridTab, type Back } from "./GridTab";
 import { RowList, useRows, type Row } from "./Settings";
 import { discoverApps, matchesSearch, type LibraryFilter } from "./lists";
@@ -55,6 +56,11 @@ const makerName = (brand: string) => (brand === "OtherPlatforms" ? t`Other platf
 const games = () => t({ message: "Games", comment: "Controller hint on Discover's filters: back down to the games" });
 /** And for the shoulder buttons, which step through the consoles there. */
 const consolesHint = () => t({ message: "Consoles", comment: "Controller hint on Discover: the shoulder buttons go to the next or previous console" });
+
+/** Filter's name, on its button and as X's hint. */
+const filterName = () => t({ message: "Filter", comment: "Discover's button that narrows the consoles to makers, home consoles or handhelds" });
+/** A game whose own X is in use: its update, or holding to cancel its waiting download. */
+const usesX = (app: TvApp | null | undefined) => app?.state === "updateAvailable" || app?.state === "queued";
 
 /** The top row: the library filters, then Filter. */
 type Chip = { kind: "library"; id: LibraryFilter; label: string } | { kind: "filter"; label: string };
@@ -176,7 +182,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
 
   const filterLabel = narrowed
     ? t({ message: `Filter: ${[...brands.filter((b) => makers.includes(b)).map(makerName), ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f]))].join(", ")}`, comment: "Discover's Filter button, with the makers and kinds picked" })
-    : t({ message: "Filter", comment: "Discover's button that narrows the consoles to makers, home consoles or handhelds" });
+    : filterName();
   const chips: Chip[] = [...LIBRARY_CHIPS.map((c) => ({ kind: "library" as const, id: c.id, label: i18n._(c.label) })), { kind: "filter", label: filterLabel }];
   const consoleChips = useMemo(() => [{ id: null, label: t`All consoles` }, ...shown.map((c) => ({ id: c.id as string | null, label: c.short }))], [shown]);
   const [chip, setChip] = useState(0);
@@ -190,7 +196,14 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     showConsole(consoleChips[(at + by + consoleChips.length) % consoleChips.length].id);
     return true;
   };
-  const gridGlobal = (action: InputAction) => shoulders(action) || onGlobal(action);
+  /** X: Filter's list, but on a game that uses X itself. */
+  const filterKey = (action: InputAction, game?: TvApp | null) => {
+    if (action !== "secondary" || usesX(game)) return false;
+    setChoosing(true);
+    return true;
+  };
+  const filterHint = { action: "secondary" as const, label: filterName() };
+  const gridGlobal = (action: InputAction) => shoulders(action) || filterKey(action, focused) || onGlobal(action);
   /** New makers or kinds: the console shown stays only if it's still among those left. */
   const narrow = (nextMakers: string[], nextForms: ConsoleForm[]) => {
     setMakers((state.makers = nextMakers));
@@ -209,7 +222,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   useInputHandler(
     {
       onAction(action) {
-        if (shoulders(action) || onGlobal(action)) return;
+        if (shoulders(action) || filterKey(action) || onGlobal(action)) return;
         if (action === "left") setChip((i) => Math.max(0, i - 1));
         else if (action === "right") setChip((i) => Math.min(chips.length - 1, i + 1));
         else if (action === "accept") pick(chips[chip]);
@@ -220,6 +233,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         chips[chip]?.kind === "library"
           ? { action: "accept" as const, label: t({ message: "Show these", comment: "Controller hint on Discover's filters: shows the games the focused filter picks" }) }
           : { action: "accept" as const, label: t({ message: "Choose", comment: "Controller hint on Discover's Filter: opens its list of makers and kinds" }) },
+        filterHint,
         { action: "tabNext", label: consolesHint() },
         { action: "back", label: games() },
       ],
@@ -231,7 +245,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   useInputHandler(
     {
       onAction(action) {
-        if (shoulders(action) || onGlobal(action)) return;
+        if (shoulders(action) || filterKey(action) || onGlobal(action)) return;
         if (action === "left") showConsole(consoleChips[Math.max(0, at - 1)].id);
         else if (action === "right") showConsole(consoleChips[Math.min(consoleChips.length - 1, at + 1)].id);
         else if (action === "up") setZone("filters");
@@ -239,6 +253,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
       },
       hints: () => [
         { action: "accept", label: games() },
+        filterHint,
         { action: "tabNext", label: consolesHint() },
       ],
     },
@@ -287,6 +302,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
               pick(c);
             }}
           >
+            {c.kind === "filter" && <Glyph action="secondary" size={20} />}
             {c.label}
             {c.kind === "filter" && <ChevronDown aria-hidden="true" className="tv-filter-caret" />}
           </button>
@@ -335,7 +351,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         onNearEnd={filter !== "inLibrary" ? loadMore : undefined}
         onPointerFocus={() => setZone("grid")}
         empty={emptyText}
-        moreHints={[{ action: "tabNext", label: consolesHint() }]}
+        moreHints={usesX(focused) ? [{ action: "tabNext", label: consolesHint() }] : [filterHint, { action: "tabNext", label: consolesHint() }]}
       />
     </div>
   );
