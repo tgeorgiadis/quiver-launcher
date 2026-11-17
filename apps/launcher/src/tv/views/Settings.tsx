@@ -249,6 +249,14 @@ export function Settings({ onClose }: { onClose: () => void }) {
     },
     {
       kind: "choice",
+      label: t({ message: "Sounds", comment: "TV mode setting: sounds as the controller moves and chooses" }),
+      detail: t`A soft click as you move, choose and go back`,
+      options: onOffOptions,
+      value: s.sounds,
+      set: set("sounds"),
+    },
+    {
+      kind: "choice",
       label: t`Close a game with Start + Select`,
       detail: t`Hold both for a second while a game runs, for games with no way to quit`,
       options: onOffOptions,

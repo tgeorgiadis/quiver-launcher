@@ -1,10 +1,10 @@
 /**
- * Discover: catalog games and library games not yet installed, with two rows above:
- * the library filter (not in it / in it / all) and Filter, which narrows the consoles
- * to makers and to home consoles or handhelds; under them, the consoles left. Up
- * from the grid's top row goes to the consoles, and up again to the filters. LB / RB
- * step through the consoles, and X opens Filter, from anywhere. A gets a game: adds
- * it to the library and downloads it in one press. Pages load as focus nears the end.
+ * Discover: catalog games and library games not yet installed, with the consoles
+ * above them and Filter before those: the library (not in it / in it / both), makers,
+ * and home consoles or handhelds, in a list X opens from anywhere here. Up from the
+ * grid's top row goes to the consoles; LB / RB step through them from anywhere, the
+ * console's name flashing up as they do. A gets a game: adds it to the library and
+ * downloads it in one press. Pages load as focus nears the end.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -38,8 +38,10 @@ export const newDiscoverState = (): DiscoverState => ({ filter: "notInLibrary", 
 
 /** The most consoles the catalog takes in one question (App.tsx's MAX_SYSTEMS). */
 const MAX_CONSOLES = 8;
+/** How long a console's name shows as LB / RB come to it. */
+const FLASH_MS = 900;
 
-const LIBRARY_CHIPS: { id: LibraryFilter; label: MessageDescriptor }[] = [
+const LIBRARY_FILTERS: { id: LibraryFilter; label: MessageDescriptor }[] = [
   { id: "notInLibrary", label: msg({ message: "Not in library", comment: "Discover's filter: games not in the library yet" }) },
   { id: "inLibrary", label: msg({ message: "In library", comment: "Discover's filter: games in the library but not installed" }) },
   { id: "all", label: msg({ message: "All", comment: "Discover's filter: games in the library or not" }) },
@@ -52,18 +54,14 @@ const FORM_NAMES: Record<ConsoleForm, MessageDescriptor> = {
 
 const makerName = (brand: string) => (brand === "OtherPlatforms" ? t`Other platforms` : brand);
 
-/** Discover's hint for going back down from the filters to the games. */
+/** Discover's hint for going back down from the consoles to the games. */
 const games = () => t({ message: "Games", comment: "Controller hint on Discover's filters: back down to the games" });
 /** And for the shoulder buttons, which step through the consoles there. */
 const consolesHint = () => t({ message: "Consoles", comment: "Controller hint on Discover: the shoulder buttons go to the next or previous console" });
-
 /** Filter's name, on its button and as X's hint. */
-const filterName = () => t({ message: "Filter", comment: "Discover's button that narrows the consoles to makers, home consoles or handhelds" });
+const filterName = () => t({ message: "Filter consoles", comment: "Discover's button and X's hint: narrows the games to the library or not, makers, home consoles or handhelds" });
 /** A game whose own X is in use: its update, or holding to cancel its waiting download. */
 const usesX = (app: TvApp | null | undefined) => app?.state === "updateAvailable" || app?.state === "queued";
-
-/** The top row: the library filters, then Filter. */
-type Chip = { kind: "library"; id: LibraryFilter; label: string } | { kind: "filter"; label: string };
 
 type Props = {
   state: DiscoverState;
@@ -81,8 +79,13 @@ type Props = {
   search: string;
 };
 
-/** Filter's list: makers and kinds, each ticked or not with A, any number of them; B closes it. */
-function ConsoleFilter({ makers, picked, forms, toggleMaker, toggleForm, clear, onClose, left }: {
+/**
+ * Filter's list: the library (one of three, left / right), then makers and kinds, each ticked or not with A, any
+ * number of them; B closes it.
+ */
+function ConsoleFilter({ filter, setFilter, makers, picked, forms, toggleMaker, toggleForm, clear, onClose, left }: {
+  filter: LibraryFilter;
+  setFilter: (filter: LibraryFilter) => void;
   makers: string[];
   picked: string[];
   forms: ConsoleForm[];
@@ -94,13 +97,20 @@ function ConsoleFilter({ makers, picked, forms, toggleMaker, toggleForm, clear, 
 }) {
   const tick = (on: boolean) => (on ? "✓" : "");
   const rows: Row[] = [
+    {
+      kind: "choice",
+      label: t({ message: "Games", comment: "Discover's Filter: whether it shows games in the library, games not in it, or both" }),
+      options: LIBRARY_FILTERS.map((f) => ({ value: f.id, label: i18n._(f.label) })),
+      value: filter,
+      set: (value) => setFilter(value as LibraryFilter),
+    },
     { kind: "action", label: t({ message: "Every console", comment: "Discover's Filter: no maker or kind picked" }), value: tick(!picked.length && !forms.length), run: clear },
     ...makers.map((brand): Row => ({ kind: "action", label: makerName(brand), value: tick(picked.includes(brand)), run: () => toggleMaker(brand) })),
     ...CONSOLE_FORMS.map((f): Row => ({ kind: "action", label: i18n._(FORM_NAMES[f]), value: tick(forms.includes(f)), run: () => toggleForm(f) })),
   ];
   const list = useRows(rows, onClose, LAYER.overlay, true, t({ message: "Pick", comment: "Controller hint in Discover's Filter list: ticks or unticks the focused maker or kind" }));
   return (
-    <div className="tv-dropdown" role="dialog" aria-label={t`Filter consoles`} style={{ left }}>
+    <div className="tv-dropdown" role="dialog" aria-label={filterName()} style={{ left }}>
       <RowList rows={rows} {...list} />
     </div>
   );
@@ -112,7 +122,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   const [makers, setMakers] = useState(state.makers);
   const [forms, setForms] = useState(state.forms);
   const [consoleId, setConsoleId] = useState(state.consoleId);
-  const [zone, setZone] = useState<"filters" | "consoles" | "grid">("grid");
+  const [zone, setZone] = useState<"consoles" | "grid">("grid");
   const [choosing, setChoosing] = useState(false);
   const [, setLoaded] = useState(0);
   /** Games got during this visit: they stay put, ticked once installed, until Discover is left. */
@@ -180,20 +190,30 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     if (filter !== "inLibrary" && apps.length < 24 && page.entries.length && !page.done && !page.loading && !page.error) loadMore();
   }, [filter, apps.length, page.entries.length, page.done, page.loading, page.error, loadMore]);
 
-  const filterLabel = narrowed
-    ? t({ message: `Filter: ${[...brands.filter((b) => makers.includes(b)).map(makerName), ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f]))].join(", ")}`, comment: "Discover's Filter button, with the makers and kinds picked" })
-    : filterName();
-  const chips: Chip[] = [...LIBRARY_CHIPS.map((c) => ({ kind: "library" as const, id: c.id, label: i18n._(c.label) })), { kind: "filter", label: filterLabel }];
+  /** What Filter has picked, after its name: the library's choice, then makers and kinds. */
+  const picks = [
+    i18n._(LIBRARY_FILTERS.find((f) => f.id === filter)!.label),
+    ...brands.filter((b) => makers.includes(b)).map(makerName),
+    ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f])),
+  ].join(", ");
   const consoleChips = useMemo(() => [{ id: null, label: t`All consoles` }, ...shown.map((c) => ({ id: c.id as string | null, label: c.short }))], [shown]);
-  const [chip, setChip] = useState(0);
   const at = Math.max(0, consoleChips.findIndex((c) => c.id === consoleId));
 
+  /** The console LB / RB came to, its name large over the games for a moment, so the change can't be missed. */
+  const [flash, setFlash] = useState<{ n: number; label: string } | null>(null);
+  useEffect(() => {
+    if (!flash) return;
+    const timer = setTimeout(() => setFlash(null), FLASH_MS);
+    return () => clearTimeout(timer);
+  }, [flash]);
   const showConsole = (id: string | null) => setConsoleId((state.consoleId = id));
   /** LB / RB: the next or previous of the consoles the filter leaves, after All, round from the last to All. */
   const shoulders = (action: InputAction) => {
     if (action !== "tabPrev" && action !== "tabNext") return false;
     const by = action === "tabPrev" ? -1 : 1;
-    showConsole(consoleChips[(at + by + consoleChips.length) % consoleChips.length].id);
+    const next = consoleChips[(at + by + consoleChips.length) % consoleChips.length];
+    showConsole(next.id);
+    setFlash((f) => ({ n: (f?.n ?? 0) + 1, label: next.id ? consoles.get(next.id).name : next.label }));
     return true;
   };
   /** X: Filter's list, but on a game that uses X itself. */
@@ -211,36 +231,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     if (consoleId && !consolesMatching(known, nextMakers, nextForms).some((c) => c.id === consoleId)) showConsole(null);
   };
   const toggled = <T,>(list: T[], item: T) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
-  const pick = (c: Chip) => {
-    if (c.kind === "library") {
-      setFilter((state.filter = c.id));
-      setZone("grid");
-    } else setChoosing(true);
-  };
 
-  // The top row: the library filters and Filter.
-  useInputHandler(
-    {
-      onAction(action) {
-        if (shoulders(action) || filterKey(action) || onGlobal(action)) return;
-        if (action === "left") setChip((i) => Math.max(0, i - 1));
-        else if (action === "right") setChip((i) => Math.min(chips.length - 1, i + 1));
-        else if (action === "accept") pick(chips[chip]);
-        else if (action === "down") setZone("consoles");
-        else if (action === "back") setZone("grid");
-      },
-      hints: () => [
-        chips[chip]?.kind === "library"
-          ? { action: "accept" as const, label: t({ message: "Show these", comment: "Controller hint on Discover's filters: shows the games the focused filter picks" }) }
-          : { action: "accept" as const, label: t({ message: "Choose", comment: "Controller hint on Discover's Filter: opens its list of makers and kinds" }) },
-        filterHint,
-        { action: "tabNext", label: consolesHint() },
-        { action: "back", label: games() },
-      ],
-    },
-    undefined,
-    zone === "filters" && !choosing,
-  );
   // The consoles' row: a console shows as soon as it's reached.
   useInputHandler(
     {
@@ -248,29 +239,23 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         if (shoulders(action) || filterKey(action) || onGlobal(action)) return;
         if (action === "left") showConsole(consoleChips[Math.max(0, at - 1)].id);
         else if (action === "right") showConsole(consoleChips[Math.min(consoleChips.length - 1, at + 1)].id);
-        else if (action === "up") setZone("filters");
         else if (action === "accept" || action === "down" || action === "back") setZone("grid");
       },
-      hints: () => [
-        { action: "accept", label: games() },
-        filterHint,
-        { action: "tabNext", label: consolesHint() },
-      ],
+      hints: () => [{ action: "accept", label: games() }, filterHint, { action: "tabNext", label: consolesHint() }],
     },
     undefined,
-    zone === "consoles",
+    zone === "consoles" && !choosing,
   );
 
-  // Keep the focused chips in view, and Filter's list under its button.
+  // Filter's list under its button, and the console shown in view.
   const filterButton = useRef<HTMLButtonElement>(null);
   const [dropLeft, setDropLeft] = useState(0);
   useLayoutEffect(() => {
     if (choosing) setDropLeft(filterButton.current?.offsetLeft ?? 0);
   }, [choosing]);
   useEffect(() => {
-    if (zone === "filters") document.querySelector(".tv-chip-row.top .focused")?.scrollIntoView({ block: "nearest", inline: "nearest" });
     document.querySelector(".tv-chip-row.consoles .chosen")?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [chip, zone, consoleId]);
+  }, [zone, consoleId]);
 
   const loading = filter !== "inLibrary" && page.loading && !page.entries.length;
   /** What the grid shows: each its own place to come back to. */
@@ -288,40 +273,33 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   return (
     <div className="tv-discover">
       <GameHeader app={zone === "grid" ? focused : null} consoleName={focused && zone === "grid" ? consoleName(focused) : ""} />
-      <div className={`tv-chip-row top${zone === "filters" ? " active" : ""}`} role="toolbar" aria-label={t`Filters`}>
-        {chips.map((c, i) => (
-          <button
-            key={c.kind === "library" ? c.id : "filter"}
-            ref={c.kind === "filter" ? filterButton : undefined}
-            type="button"
-            className={`tv-filter${c.kind === "library" ? (c.id === filter ? " chosen" : "") : narrowed ? " chosen split" : " split"}${zone === "filters" && i === chip ? " focused" : ""}`}
-            aria-haspopup={c.kind === "filter" ? "dialog" : undefined}
-            onClick={() => {
-              setChip(i);
-              setZone("filters");
-              pick(c);
-            }}
-          >
-            {c.kind === "filter" && <Glyph action="secondary" size={20} />}
-            {c.label}
-            {c.kind === "filter" && <ChevronDown aria-hidden="true" className="tv-filter-caret" />}
-          </button>
-        ))}
-      </div>
       <div className={`tv-chip-row consoles${zone === "consoles" ? " active" : ""}`} role="toolbar" aria-label={t`Consoles`}>
+        <button ref={filterButton} type="button" className={`tv-filter tv-filter-button${narrowed || filter !== "notInLibrary" ? " chosen" : ""}`} aria-haspopup="dialog" onClick={() => setChoosing(true)}>
+          <Glyph action="secondary" size={20} />
+          {filterName()}
+          <span className="tv-filter-picks">{picks}</span>
+          <ChevronDown aria-hidden="true" className="tv-filter-caret" />
+        </button>
         {consoleChips.map((c, i) => (
           <button
-            key={c.id ?? "*"}
+            key={c.id === consoleId && flash ? `${c.id ?? "*"}:${flash.n}` : (c.id ?? "*")}
             type="button"
-            className={`tv-filter${c.id === consoleId ? " chosen" : ""}${zone === "consoles" && i === at ? " focused" : ""}`}
+            className={`tv-filter${c.id === consoleId ? " chosen" : ""}${c.id === consoleId && flash ? " pop" : ""}${zone === "consoles" && i === at ? " focused" : ""}`}
             onClick={() => showConsole(c.id)}
           >
             {c.label}
           </button>
         ))}
       </div>
+      {flash && (
+        <div key={flash.n} className="tv-console-flash" aria-live="polite">
+          {flash.label}
+        </div>
+      )}
       {choosing && (
         <ConsoleFilter
+          filter={filter}
+          setFilter={(f) => setFilter((state.filter = f))}
           makers={brands}
           picked={makers}
           forms={forms}

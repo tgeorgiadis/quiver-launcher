@@ -21,6 +21,8 @@ export type TvSettings = {
   /** The monitor's name; null is the one the window is on. */
   monitor: string | null;
   reduceMotion: boolean;
+  /** A soft sound as the controller moves, chooses and goes back (sound.ts). */
+  sounds: boolean;
   afterGet: AfterGet;
 };
 
@@ -32,6 +34,7 @@ export const DEFAULT_SETTINGS: TvSettings = {
   allSort: "name",
   monitor: null,
   reduceMotion: false,
+  sounds: true,
   afterGet: "stay",
 };
 
@@ -52,6 +55,7 @@ export function tvSettings(raw: unknown): TvSettings {
     allSort: oneOf(s.allSort, ["name", "recent"], d.allSort),
     monitor: typeof s.monitor === "string" && s.monitor ? s.monitor : null,
     reduceMotion: bool(s.reduceMotion, d.reduceMotion),
+    sounds: bool(s.sounds, d.sounds),
     afterGet: oneOf(s.afterGet, ["stay", "library"], d.afterGet),
   };
 }

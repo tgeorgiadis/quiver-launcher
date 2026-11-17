@@ -873,6 +873,10 @@ msgstr "Ein Programm auf diesem Computer"
 msgid "A quote isn't closed."
 msgstr "Ein Anführungszeichen ist nicht geschlossen."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "A soft click as you move, choose and go back"
+msgstr "Ein leises Klicken beim Bewegen, Auswählen und Zurückgehen"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "Ein transparentes PNG. Für die Steam-Verknüpfung."
@@ -1781,11 +1785,6 @@ msgstr "Wird geprüft…"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "Prüfen… {0} von {1}"
-
-#. Controller hint on Discover's Filter: opens its list of makers and kinds
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Choose"
-msgstr "Auswählen"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -2767,25 +2766,14 @@ msgstr "Datei"
 msgid "File name, like config.ini"
 msgstr "Dateiname, z. B. config.ini"
 
-#. Discover's button that narrows the consoles to makers, home consoles or handhelds
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter"
-msgstr "Filter"
-
+#. Discover's button and X's hint: narrows the games to the library or not, makers, home consoles or handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filter consoles"
 msgstr "Konsolen filtern"
 
-#. Discover's Filter button, with the makers and kinds picked
-#. placeholder {0}: [...brands.filter((b) => makers.includes(b)).map(makerName), ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f]))].join(", ")
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter: {0}"
-msgstr "Filter: {0}"
-
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filters"
 msgstr "Filter"
 
@@ -2954,6 +2942,7 @@ msgid "Gameplay"
 msgstr "Gameplay"
 
 #. Controller hint on Discover's filters: back down to the games
+#. Discover's Filter: whether it shows games in the library, games not in it, or both
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Games"
@@ -6319,11 +6308,6 @@ msgstr "Bibliothek mit Seitenleiste anzeigen"
 msgid "Show them"
 msgstr "Anzeigen"
 
-#. Controller hint on Discover's filters: shows the games the focused filter picks
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Show these"
-msgstr "Anzeigen"
-
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "Videos anzeigen"
@@ -6464,6 +6448,11 @@ msgstr "Sortieren"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "Mods sortieren"
+
+#. TV mode setting: sounds as the controller moves and chooses
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Sounds"
+msgstr "Töne"
 
 #. Where an app's code is: a link to its repository
 #: ../../apps/launcher/src/detail.tsx

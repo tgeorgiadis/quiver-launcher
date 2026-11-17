@@ -916,33 +916,95 @@
 .tv-discover {
   position: relative;
   display: grid;
-  grid-template-rows: calc(var(--u) * 112) calc(var(--u) * 44) calc(var(--u) * 42) minmax(0, 1fr);
+  grid-template-rows: calc(var(--u) * 112) calc(var(--u) * 50) minmax(0, 1fr);
   height: 100%;
 }
-/* Filter, with X's picture before its name. */
-.tv-chip-row.top .tv-filter {
+/* Filter: X's picture, its name and what it has picked, apart from the consoles after it. */
+.tv-filter-button {
   display: inline-flex;
   align-items: center;
   gap: calc(var(--u) * 6);
+  margin-right: calc(var(--u) * 10);
+  border-radius: calc(var(--u) * 10);
 }
-/* The consoles under the filters: a little smaller, so the two rows read as filter and choice. */
-.tv-chip-row.consoles .tv-filter {
-  padding: calc(var(--u) * 5) calc(var(--u) * 12);
-  font-size: calc(var(--u) * 12.5);
+.tv-filter-picks {
+  max-width: calc(var(--u) * 260);
+  overflow: hidden;
+  color: #94a3b8;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+.tv-filter-button.chosen .tv-filter-picks {
+  color: #bae6fd;
 }
 .tv-filter-caret {
   width: calc(var(--u) * 14);
   height: calc(var(--u) * 14);
-  margin: 0 calc(var(--u) * -4) 0 calc(var(--u) * 6);
-  vertical-align: middle;
+  margin: 0 calc(var(--u) * -4) 0 0;
 }
-/* Filter's list, dropped under its button, over the consoles and the games. */
+/* The console shown: filled with the accent, so it reads from across a room. */
+.tv-chip-row.consoles .tv-filter.chosen:not(.tv-filter-button) {
+  background: var(--tv-accent);
+  color: #06121f;
+  box-shadow: 0 0 calc(var(--u) * 14) var(--tv-accent-glow);
+}
+/* LB / RB came to it: a pop and a glow. */
+.tv-filter.pop {
+  animation: tv-chip-pop 320ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+@keyframes tv-chip-pop {
+  0% {
+    transform: scale(1.35);
+    box-shadow: 0 0 calc(var(--u) * 34) var(--tv-accent);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+/* And its name, large over the games for a moment. */
+.tv-console-flash {
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  z-index: 15;
+  padding: calc(var(--u) * 14) calc(var(--u) * 34);
+  border: 2px solid var(--tv-accent);
+  border-radius: calc(var(--u) * 18);
+  background: #0b1018e6;
+  box-shadow: 0 0 calc(var(--u) * 48) var(--tv-accent-glow);
+  color: #fff;
+  font-size: calc(var(--u) * 34);
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: tv-console-flash 900ms ease-out forwards;
+}
+@keyframes tv-console-flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  28% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* Filter's list, dropped under its button, over the games. */
 .tv-dropdown {
   position: absolute;
-  top: calc(var(--u) * 154);
+  top: calc(var(--u) * 158);
   z-index: 20;
-  min-width: calc(var(--u) * 260);
-  margin-left: calc(var(--u) * -8);
+  min-width: calc(var(--u) * 300);
   padding: calc(var(--u) * 8);
   border: 1px solid #ffffff1c;
   border-radius: calc(var(--u) * 12);
@@ -950,11 +1012,11 @@
   box-shadow: 0 calc(var(--u) * 18) calc(var(--u) * 40) #0009;
 }
 .tv-dropdown .tv-settings-list {
-  max-height: calc(var(--u) * 360);
+  max-height: calc(var(--u) * 380);
   margin: 0;
 }
-/* Ticks, not ways in: no arrows. */
-.tv-dropdown .tv-settings-value svg {
+/* Ticks, not ways in: no arrow after them (the library's choice keeps its two). */
+.tv-dropdown .tv-settings-value svg:only-of-type {
   display: none;
 }
 .tv-chip-row {

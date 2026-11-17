@@ -873,6 +873,10 @@ msgstr "이 컴퓨터의 프로그램"
 msgid "A quote isn't closed."
 msgstr "따옴표가 닫히지 않았어요."
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "A soft click as you move, choose and go back"
+msgstr "이동하고, 선택하고, 뒤로 갈 때 부드러운 클릭 소리"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "투명 PNG. Steam 바로 가기에 쓰입니다."
@@ -1781,11 +1785,6 @@ msgstr "확인 중…"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "확인 중… {1} 중 {0}"
-
-#. Controller hint on Discover's Filter: opens its list of makers and kinds
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Choose"
-msgstr "선택"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -2767,25 +2766,14 @@ msgstr "파일"
 msgid "File name, like config.ini"
 msgstr "파일 이름(예: config.ini)"
 
-#. Discover's button that narrows the consoles to makers, home consoles or handhelds
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter"
-msgstr "필터"
-
+#. Discover's button and X's hint: narrows the games to the library or not, makers, home consoles or handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filter consoles"
 msgstr "콘솔 필터"
 
-#. Discover's Filter button, with the makers and kinds picked
-#. placeholder {0}: [...brands.filter((b) => makers.includes(b)).map(makerName), ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f]))].join(", ")
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter: {0}"
-msgstr "필터: {0}"
-
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filters"
 msgstr "필터"
 
@@ -2954,6 +2942,7 @@ msgid "Gameplay"
 msgstr "게임플레이"
 
 #. Controller hint on Discover's filters: back down to the games
+#. Discover's Filter: whether it shows games in the library, games not in it, or both
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Games"
@@ -6319,11 +6308,6 @@ msgstr "라이브러리를 사이드바와 함께 보기"
 msgid "Show them"
 msgstr "보기"
 
-#. Controller hint on Discover's filters: shows the games the focused filter picks
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Show these"
-msgstr "보기"
-
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "동영상 보기"
@@ -6464,6 +6448,11 @@ msgstr "정렬"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "모드 정렬"
+
+#. TV mode setting: sounds as the controller moves and chooses
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Sounds"
+msgstr "효과음"
 
 #. Where an app's code is: a link to its repository
 #: ../../apps/launcher/src/detail.tsx

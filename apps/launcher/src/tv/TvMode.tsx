@@ -17,6 +17,7 @@ import { keyAction, padAction, type InputAction } from "./input/actions";
 import { RepeatFilter } from "./input/repeat";
 import { InputGate } from "./input/gate";
 import { InputRouter } from "./input/router";
+import { playFor } from "./sound";
 import { ConsoleCatalog } from "./consoles/consoles";
 import { useBridge } from "./useBridge";
 import { Shell } from "./views/Shell";
@@ -59,7 +60,19 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
   const scale = Math.max(0.6, (height / 720) * (launcher.settings.scale ?? 1));
 
   const router = useMemo(() => new InputRouter(), []);
-  const gate = useMemo(() => new InputGate(new RepeatFilter((e) => router.dispatch(e))), [router]);
+  // Each press with its sound (Settings → Sounds), then to whatever is on top.
+  const sounds = useRef(settings.sounds);
+  sounds.current = settings.sounds;
+  const gate = useMemo(
+    () =>
+      new InputGate(
+        new RepeatFilter((e) => {
+          if (sounds.current && e.phase !== "release") playFor(e.action, e.phase === "repeat");
+          router.dispatch(e);
+        }),
+      ),
+    [router],
+  );
   const consoles = useMemo(() => new ConsoleCatalog(launcher.consoles), [launcher.consoles]);
 
   // Keys and controllers only reach the window in front: take it.

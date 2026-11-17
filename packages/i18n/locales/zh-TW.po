@@ -873,6 +873,10 @@ msgstr "此電腦上的程式"
 msgid "A quote isn't closed."
 msgstr "引號未閉合。"
 
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "A soft click as you move, choose and go back"
+msgstr "移動、選擇和返回時發出輕柔的點擊聲"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "A transparent PNG. For its Steam shortcut."
 msgstr "透明背景的 PNG 圖片，用作 Steam 快捷方式圖示。"
@@ -1781,11 +1785,6 @@ msgstr "正在檢查 →"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "正在檢查 → {0}/{1}"
-
-#. Controller hint on Discover's Filter: opens its list of makers and kinds
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Choose"
-msgstr "選擇"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -2767,25 +2766,14 @@ msgstr "檔案"
 msgid "File name, like config.ini"
 msgstr "檔名，例如 config.ini"
 
-#. Discover's button that narrows the consoles to makers, home consoles or handhelds
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter"
-msgstr "篩選"
-
+#. Discover's button and X's hint: narrows the games to the library or not, makers, home consoles or handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filter consoles"
 msgstr "篩選主機"
 
-#. Discover's Filter button, with the makers and kinds picked
-#. placeholder {0}: [...brands.filter((b) => makers.includes(b)).map(makerName), ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f]))].join(", ")
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Filter: {0}"
-msgstr "篩選：{0}"
-
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
 #: ../../apps/launcher/src/library.tsx
-#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Filters"
 msgstr "篩選條件"
 
@@ -2954,6 +2942,7 @@ msgid "Gameplay"
 msgstr "遊戲體驗"
 
 #. Controller hint on Discover's filters: back down to the games
+#. Discover's Filter: whether it shows games in the library, games not in it, or both
 #: ../../apps/launcher/src/game.tsx
 #: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Games"
@@ -6319,11 +6308,6 @@ msgstr "以帶側邊欄的方式顯示遊戲庫"
 msgid "Show them"
 msgstr "顯示它們"
 
-#. Controller hint on Discover's filters: shows the games the focused filter picks
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Show these"
-msgstr "顯示這些"
-
 #: ../../apps/launcher/src/media.tsx
 msgid "Show videos"
 msgstr "顯示影片"
@@ -6464,6 +6448,11 @@ msgstr "排序"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "排序模組"
+
+#. TV mode setting: sounds as the controller moves and chooses
+#: ../../apps/launcher/src/tv/views/Settings.tsx
+msgid "Sounds"
+msgstr "音效"
 
 #. Where an app's code is: a link to its repository
 #: ../../apps/launcher/src/detail.tsx
