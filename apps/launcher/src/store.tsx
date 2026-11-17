@@ -27,7 +27,7 @@ import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
-import { beforePlay, sendBackup, type CloudApi, type Conflict } from "./cloud-saves";
+import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
 import { providerFetch } from "./provider-fetch";
 
@@ -240,6 +240,11 @@ type Launcher = {
   confirmUninstall: (confirming: Confirming | null) => void;
   /** An app's saves here and in the account both changed: Play asks which to keep, and `answer` is called with it (null: neither, don't start). */
   savesConflict: (Conflict & { answer: (keep: "cloud" | "here" | null) => void }) | null;
+  /** The app whose backup found the account full: asked about once, until a backup gets there again (App.tsx's SavesFullPrompt). Null closes it. */
+  savesFull: string | null;
+  closeSavesFull: () => void;
+  /** Room was made in the account: the apps whose backups didn't fit send what they have now. */
+  cloudCatchUp: () => void;
   /** The account's cloud saves for an app, or null when it has none: signed out, switched off, or not from the catalog. */
   cloudSavesFor: (id: string) => CloudApi | null;
   /** The app whose Play asks which of the player's programs to start; null closes the prompt. */
@@ -1222,6 +1227,8 @@ export type Settings = {
   telemetryNoticeSeen?: boolean;
   /** Cloud saves switched off for every app: save backups stay on this computer (cloud-saves.ts). */
   cloudSavesOff?: boolean;
+  /** The player was told their cloud saves are full; not told again until a backup gets there. */
+  cloudFullTold?: boolean;
   /** Quiver Launcher has started here before. */
   launched?: boolean;
   /** The first-run notice offering to bring over a Quiver Launcher 3 library was answered. */
@@ -1408,6 +1415,7 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
   const [changingVersion, changeVersion] = useState<Entry | null>(null);
   const [choosingProgram, chooseProgram] = useState<string | null>(null);
   const [savesConflict, setSavesConflict] = useState<Launcher["savesConflict"]>(null);
+  const [savesFull, setSavesFull] = useState<string | null>(null);
   const [settingUpCopy, setUpCopy] = useState<Launcher["settingUpCopy"]>(null);
   const [oldLibrary, setOldLibrary] = useState<V3Library | null | undefined>(undefined);
   const [oldInstalls, setOldInstalls] = useState<Record<string, Install> | null>(null);
@@ -1513,6 +1521,36 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       .then(() => savesChanged(id))
       .catch(() => {});
   };
+  // How each send to the account went (cloud-saves.ts). One that didn't get there is tried again after 1, 5, 15 and 60
+  // minutes. One the account had no room for is said once, with ways to make room, and sent when there is some.
+  const noRoomFor = useRef(new Set<string>());
+  /** Sends an app's saves as they are now, when the account doesn't have them. */
+  const sendNow = useRef(async (id: string) => {
+    const api = cloudNow.current(id);
+    const install = forUsage.current.installs[id];
+    if (!api || !install) return null;
+    return sendCurrent(savesOf(id, install, forUsage.current.catalog[id]), id, { api, native }).finally(() => savesChanged(id));
+  });
+  const cloudCatchUp = useRef(() => {
+    for (const id of noRoomFor.current) void sendNow.current(id).catch(() => {});
+  });
+  useEffect(() => {
+    const again = retries((id) => sendNow.current(id));
+    const off = onSent((id, how, manual) => {
+      again.note(id, how);
+      if (how === "sent") {
+        noRoomFor.current.delete(id);
+        setSettings((s) => (s.cloudFullTold ? { ...s, cloudFullTold: undefined } : s));
+      }
+      if (how !== "full") return;
+      noRoomFor.current.add(id);
+      // Where the player asked for the send, the answer is in front of them already.
+      if (manual || forUsage.current.settings.cloudFullTold) return;
+      setSettings((s) => ({ ...s, cloudFullTold: true }));
+      setSavesFull(id);
+    });
+    return () => (off(), again.stop());
+  }, []);
   useEffect(() => {
     const closed = native.onAppClosed(({ id, seconds }) => {
       const { catalog, installs } = forUsage.current;
@@ -2516,6 +2554,9 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
     choosingProgram,
     chooseProgram,
     savesConflict,
+    savesFull,
+    closeSavesFull: () => setSavesFull(null),
+    cloudCatchUp: () => cloudCatchUp.current(),
     cloudSavesFor: (id) => cloudNow.current(id),
     settingUpCopy,
     setUpCopy,

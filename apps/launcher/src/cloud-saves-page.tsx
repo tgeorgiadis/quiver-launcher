@@ -19,7 +19,7 @@ import { useLauncher } from "./store";
 type App = CloudUsage["apps"][number];
 
 export function CloudSavesSettings() {
-  const { settings, setSettings, installs, catalog } = useLauncher();
+  const { settings, setSettings, installs, catalog, cloudCatchUp } = useLauncher();
   const account = useAccount();
   const api = account.cloudSaves;
   /** Undefined while it loads; null when the account can't be reached. */
@@ -69,6 +69,7 @@ export function CloudSavesSettings() {
   const remove = (app: App, what: { id: string } | { entryId: string }) =>
     run(app, async () => {
       await api?.remove(what);
+      cloudCatchUp();
       return null;
     });
   const sendNow = (app: App) =>
@@ -80,7 +81,7 @@ export function CloudSavesSettings() {
       const backups = (await native.savesInfo(of))?.backups ?? [];
       const newest = made ?? backups.find((b) => b.reason !== "restore") ?? backups[0];
       if (!newest) return t`This app has no saves on this computer yet.`;
-      const how = await sendBackup(of, app.entryId, newest, { api, native });
+      const how = await sendBackup(of, app.entryId, newest, { api, native, manual: true });
       savesChanged(app.entryId);
       const limit = usage ? sizeLabel(usage.limit) : "";
       if (how === "sent") return t`Sent to your cloud saves.`;

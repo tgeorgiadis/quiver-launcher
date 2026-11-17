@@ -30,6 +30,7 @@ import { track, trackScreen } from "./telemetry";
 import { TelemetryNotice, useTelemetrySetup } from "./telemetry-ui";
 import { useAccount, type CatalogDefaults } from "./account";
 import { native } from "./native";
+import { sizeLabel } from "./downloads";
 import { correctionClient } from "./corrections";
 import { isCustom, isLocal, isOwn } from "./custom";
 import { ArtFields, artValues, artValuesOk, fromArtValues } from "./custom-art";
@@ -43,7 +44,8 @@ import { SettingsPage, useDiscordPresence, useTray } from "./settings-page";
 import { MANAGE_TAGS } from "./tag-settings";
 import { OldLibrary } from "./old-library";
 import { Setup, showsSetup } from "./setup";
-import { savesOn } from "./saves";
+import { savesChanged, savesOf, savesOn } from "./saves";
+import type { CloudUsage } from "./cloud-saves";
 import { SavesTab } from "./saves-tab";
 import { FilePicker } from "./file-picker";
 import { BrowseMenu, fileName } from "./card-menu";
@@ -62,7 +64,7 @@ type View =
   | { kind: "app"; entry: Entry; at?: PageAt }
   | { kind: "game"; game: GameLink }
   | { kind: "downloads" }
-  | { kind: "settings"; section?: "library" | "copies" | "updates" }
+  | { kind: "settings"; section?: "library" | "copies" | "cloud" | "updates" }
   | { kind: "community" }
   | { kind: "discussion"; id: string };
 const viewKey = (v: View) => (v.kind === "app" ? `app:${v.entry.id}` : v.kind === "game" ? `game:${v.game.slug}` : v.kind === "discussion" ? `discussion:${v.id}` : v.kind);
@@ -388,6 +390,7 @@ export function App() {
       <ChangeVersion />
       <ProgramPrompt />
       <SavesConflictPrompt />
+      <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
       <OwnCopyPrompt />
       <Notice />
       {/* Over every dialog that asks for a file or a folder, in Steam's Game Mode. */}
@@ -2120,6 +2123,90 @@ function Notice() {
 }
 
 /** Play, for an app whose saves changed both here and in the account since they last matched: which the player keeps. */
+/**
+ * The account had no room for a backup: said once, with the two ways to make some. The backup is on this computer
+ * either way, and is sent by itself once there's room.
+ */
+function SavesFullPrompt({ onFreeUp }: { onFreeUp: () => void }) {
+  const { savesFull: id, closeSavesFull: close, catalog, installs, cloudCatchUp, setNotice } = useLauncher();
+  const account = useAccount();
+  const api = account.cloudSaves;
+  const [usage, setUsage] = useState<CloudUsage | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setUsage(null);
+    if (id && api) api.usage().then(setUsage, () => {});
+  }, [id, Boolean(api)]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!id || !api) return null;
+  const name = catalog[id]?.projectName ?? "";
+  const used = usage ? sizeLabel(usage.used) : "";
+  const limit = usage ? sizeLabel(usage.limit) : "";
+  // The app keeping the most, when it's installed here: its switch is this computer's to set.
+  const [largest] = usage?.apps ?? [];
+  const largestInstall = largest && installs[largest.entryId];
+  const largestName = largest?.name ?? "";
+  const largestSize = largest ? sizeLabel(largest.size) : "";
+  const count = largest?.copies.length ?? 0;
+  const turnOff = () => {
+    if (!largest || !largestInstall) return;
+    setBusy(true);
+    native
+      .savesCloudOff(savesOf(largest.entryId, largestInstall, catalog[largest.entryId]), true)
+      .then(() => api.remove({ entryId: largest.entryId }))
+      .then(
+        () => {
+          savesChanged(largest.entryId);
+          cloudCatchUp();
+          setNotice(t`Cloud saves are off for ${largestName}, and its copies were removed from your account.`);
+        },
+        () => setNotice(t`Couldn't reach your cloud saves. Check your connection and try again.`, { stays: true }),
+      )
+      .finally(() => (setBusy(false), close()));
+  };
+  return (
+    <Dialog label={t`Your cloud saves are full`} onClose={close}>
+      <div className="detail-body program-prompt saves-full">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> <Trans>Your cloud saves are full</Trans>
+        </h2>
+        <p className="muted">
+          {usage ? t`${used} of ${limit} used.` : null} {t`The newest backup of ${name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then.`}
+        </p>
+        <div className="choices">
+          <button autoFocus disabled={busy} onClick={() => (close(), onFreeUp())}>
+            <span>
+              <strong>
+                <Trans>Free up space</Trans>
+              </strong>
+              <small>
+                <Trans>See what each app keeps in your account, and remove copies you don&apos;t need.</Trans>
+              </small>
+            </span>
+          </button>
+          {largest && largestInstall && (
+            <button disabled={busy} onClick={turnOff}>
+              <span>
+                <strong>{t`Turn off cloud saves for ${largestName}`}</strong>
+                <small>
+                  {plural(count, {
+                    one: `It keeps the most. Its # copy (${largestSize}) is removed from your account. Its saves and backups on this computer stay.`,
+                    other: `It keeps the most. Its # copies (${largestSize}) are removed from your account. Its saves and backups on this computer stay.`,
+                  })}
+                </small>
+              </span>
+            </button>
+          )}
+        </div>
+        <div className="row">
+          <button disabled={busy} onClick={close}>
+            <Trans>Not now</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 function SavesConflictPrompt() {
   const { savesConflict: conflict } = useLauncher();
   if (!conflict) return null;

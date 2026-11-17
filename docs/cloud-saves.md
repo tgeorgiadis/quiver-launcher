@@ -49,6 +49,16 @@ the backup stays on the computer and the Saves tab says the account is full.
 Quiver can also pause uploads for everyone, or stop one account's. Nothing is sent then, and the launcher says which
 it is. Copies already in the account can still be restored and removed, and backups on the computer carry on.
 
+## When a backup doesn't get there
+
+A send that fails (no connection, the site busy, an upload cut off) is tried again after 1, 5, 15 and 60 minutes
+(`retries` in `cloud-saves.ts`). After that the next backup, or the next start of the app, sends what's newest.
+
+When the account has no room, the backup stays on the computer and the launcher says so once, in a dialog with two
+ways to make room: "Free up space" opens Settings at Cloud saves, and "Turn off cloud saves" for the app keeping the
+most switches it off on this computer and removes its copies from the account. It isn't said again until a backup
+gets there. Once copies are removed in the launcher, the backups that didn't fit are sent by themselves.
+
 ## The whole account
 
 Settings has a Cloud saves section (`cloud-saves-page.tsx`) with everything the account keeps: a bar of the room used

@@ -193,6 +193,10 @@ msgstr "{count, plural, one {# discussão com comentários novos} other {# discu
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, one {Adicionar # app} other {Adicionar # apps}}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
+msgstr "{count, plural, one {É o que mais ocupa. Sua # cópia ({largestSize}) é removida da sua conta. Os saves e backups dele neste computador ficam.} other {É o que mais ocupa. Suas # cópias ({largestSize}) são removidas da sua conta. Os saves e backups dele neste computador ficam.}}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
 msgstr "{count, plural, one {Deixar seu # app instalado onde está, em {dir}} other {Deixar seus # apps instalados onde estão, em {dir}}}"
@@ -641,6 +645,10 @@ msgstr "{updateCount, plural, one {# mod tem uma atualização.} other {# mods t
 #: ../../apps/launcher/src/App.tsx
 msgid "{updateVersion} is available."
 msgstr "{updateVersion} está disponível."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{used} of {limit} used."
+msgstr "{used} de {limit} em uso."
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "{used} of {limit} used. Each app keeps its newest {keep} copies."
@@ -1877,6 +1885,10 @@ msgstr "Saves na nuvem"
 msgid "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
 msgstr "Os saves na nuvem são para apps do catálogo do Quiver. Os backups deste app ficam neste computador."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Cloud saves are off for {largestName}, and its copies were removed from your account."
+msgstr "Os saves na nuvem estão desativados para {largestName}, e as cópias dele foram removidas da sua conta."
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Cloud saves are paused for now, so nothing new is being sent. Backups stay on this computer."
 msgstr "Os saves na nuvem estão em pausa por enquanto, então nada novo é enviado. Os backups ficam neste computador."
@@ -2016,6 +2028,7 @@ msgstr "Não foi possível acessar quiverlauncher.com. Verifique sua conexão e 
 msgid "Couldn't reach your cloud saves. Backups stay on this computer for now."
 msgstr "Não foi possível acessar seus saves na nuvem. Por enquanto, os backups ficam neste computador."
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Couldn't reach your cloud saves. Check your connection and try again."
@@ -2543,6 +2556,10 @@ msgstr "Encontrada em {0}. Isto vem junto:"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "Encontrada em {folder}"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Free up space"
+msgstr "Liberar espaço"
 
 #. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
@@ -4082,6 +4099,7 @@ msgid "Not installed yet"
 msgstr "Ainda não instalado"
 
 #: ../../apps/launcher/src/app-updates.tsx
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
@@ -5311,6 +5329,10 @@ msgstr "Ver a página do jogo"
 msgid "See the report"
 msgstr "Ver o relatório"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "See what each app keeps in your account, and remove copies you don't need."
+msgstr "Veja o que cada app mantém na sua conta e remova as cópias de que não precisa."
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "See which apps"
 msgstr "Ver quais apps"
@@ -5994,6 +6016,10 @@ msgstr "A pasta com o programa do Quiver Launcher 3. Para uma cópia portátil, 
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "O jogo pede ao iniciar. O Quiver pode conferir a sua antes."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
+msgstr "O backup mais recente de {name} está só neste computador, assim como os próximos até haver espaço. Então o Quiver o envia sozinho."
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "O JOGO ORIGINAL"
@@ -6260,6 +6286,10 @@ msgstr "Tentar de novo"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Turn off"
 msgstr "Desativar"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Turn off cloud saves for {largestName}"
+msgstr "Desativar os saves na nuvem para {largestName}"
 
 #. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
@@ -6886,6 +6916,10 @@ msgstr "Seus apps"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Your apps are in your library."
 msgstr "Seus apps estão na sua biblioteca."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves are full"
+msgstr "Seus saves na nuvem estão cheios"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Your cloud saves are full ({limit}). Remove copies to make room."

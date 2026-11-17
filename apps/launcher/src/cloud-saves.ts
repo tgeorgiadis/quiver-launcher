@@ -79,6 +79,54 @@ export type Sent = "sent" | "full" | "big" | "off" | "later";
 const said = new Map<string, Sent>();
 export const lastSent = (id: string) => said.get(id);
 
+type SentListener = (id: string, how: Sent, manual: boolean) => void;
+const sentListeners = new Set<SentListener>();
+/** Told how each send went, as it ends (store.tsx: the full-account question, and trying again later). `manual`: the player asked for it and is looking at the answer. */
+export function onSent(listener: SentListener) {
+  sentListeners.add(listener);
+  return () => void sentListeners.delete(listener);
+}
+
+/** How long after a send that didn't get there the next try is, in turn. After the last, the next backup or start of the app sends. */
+export const RETRY_AFTER = [1, 5, 15, 60].map((minutes) => minutes * 60_000);
+
+/**
+ * Tries again what didn't get there. `note` is told how every send went: one that ended "later" is tried again with
+ * `attempt` after each of RETRY_AFTER in turn, until one ends another way; anything else ends the waiting for that app.
+ */
+export function retries(attempt: (id: string) => Promise<Sent | null>, timer: { set: (run: () => void, ms: number) => unknown; clear: (handle: unknown) => void } = { set: (run, ms) => setTimeout(run, ms), clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>) }) {
+  const waiting = new Map<string, unknown>();
+  /** Apps a retry is being made for now: how it goes is the retry's to follow, not a new send's. */
+  const trying = new Set<string>();
+  const clear = (id: string) => {
+    if (waiting.has(id)) timer.clear(waiting.get(id));
+    waiting.delete(id);
+  };
+  const plan = (id: string, step: number) => {
+    clear(id);
+    if (step >= RETRY_AFTER.length) return;
+    waiting.set(
+      id,
+      timer.set(() => {
+        waiting.delete(id);
+        trying.add(id);
+        attempt(id)
+          .catch(() => "later" as const)
+          .then((how) => (trying.delete(id), how === "later" && plan(id, step + 1)));
+      }, RETRY_AFTER[step]),
+    );
+  };
+  return {
+    note(id: string, how: Sent) {
+      if (trying.has(id)) return;
+      if (how === "later") plan(id, 0);
+      else clear(id);
+    },
+    waiting: (id: string) => waiting.has(id),
+    stop: () => [...waiting.keys()].forEach(clear),
+  };
+}
+
 type Native = Pick<typeof native, "savesUpload" | "savesSynced" | "savesCloud" | "savesInfo" | "savesDownload" | "savesRestore" | "savesBackup">;
 
 const SYSTEMS = ["windows", "linux", "macos"];
@@ -87,8 +135,12 @@ const SYSTEMS = ["windows", "linux", "macos"];
  * Sends one backup to the account. "later" when it didn't get there (no connection, too many at once): the next
  * backup, or the next start of the app, sends what's newest then.
  */
-export async function sendBackup(of: SavesOf, entryId: string, backup: SaveBackup, via: { api: CloudApi; native: Pick<Native, "savesUpload" | "savesSynced"> }): Promise<Sent> {
-  const done = (how: Sent) => (said.set(of.id, how), how);
+export async function sendBackup(of: SavesOf, entryId: string, backup: SaveBackup, via: { api: CloudApi; native: Pick<Native, "savesUpload" | "savesSynced">; manual?: boolean }): Promise<Sent> {
+  const done = (how: Sent) => {
+    said.set(of.id, how);
+    for (const listener of sentListeners) listener(of.id, how, Boolean(via.manual));
+    return how;
+  };
   if (!SYSTEMS.includes(backup.os)) return done("off");
   try {
     const begun = await via.api.begin({

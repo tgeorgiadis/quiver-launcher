@@ -193,6 +193,10 @@ msgstr "{count, plural, other {새 댓글이 있는 토론 #개}}"
 msgid "{count, plural, one {Add # app} other {Add # apps}}"
 msgstr "{count, plural, other {앱 #개 추가}}"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "{count, plural, one {It keeps the most. Its # copy ({largestSize}) is removed from your account. Its saves and backups on this computer stay.} other {It keeps the most. Its # copies ({largestSize}) are removed from your account. Its saves and backups on this computer stay.}}"
+msgstr "{count, plural, other {가장 많은 공간을 사용하는 앱입니다. 사본 #개({largestSize})가 계정에서 삭제됩니다. 이 컴퓨터의 세이브와 백업은 그대로 유지됩니다.}}"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "{count, plural, one {Keep your # installed app where it is, in {dir}} other {Keep your # installed apps where they are, in {dir}}}"
 msgstr "{count, plural, other {설치된 앱 #개는 {dir}에 그대로 두기}}"
@@ -641,6 +645,10 @@ msgstr "{updateCount, plural, other {모드 #개에 업데이트가 있어요.}}
 #: ../../apps/launcher/src/App.tsx
 msgid "{updateVersion} is available."
 msgstr "{updateVersion}을(를) 사용할 수 있어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "{used} of {limit} used."
+msgstr "{limit} 중 {used} 사용 중."
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "{used} of {limit} used. Each app keeps its newest {keep} copies."
@@ -1877,6 +1885,10 @@ msgstr "클라우드 세이브"
 msgid "Cloud saves are for apps from Quiver's catalog. This app's backups stay on this computer."
 msgstr "클라우드 세이브는 Quiver 카탈로그의 앱에 사용할 수 있습니다. 이 앱의 백업은 이 컴퓨터에 남습니다."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "Cloud saves are off for {largestName}, and its copies were removed from your account."
+msgstr "{largestName}의 클라우드 세이브를 껐고, 사본을 계정에서 삭제했습니다."
+
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Cloud saves are paused for now, so nothing new is being sent. Backups stay on this computer."
 msgstr "클라우드 세이브가 잠시 일시 중지되어 새로 전송되는 것이 없습니다. 백업은 이 컴퓨터에 남습니다."
@@ -2016,6 +2028,7 @@ msgstr "quiverlauncher.com에 연결할 수 없어요. 연결 상태를 확인�
 msgid "Couldn't reach your cloud saves. Backups stay on this computer for now."
 msgstr "클라우드 세이브에 연결하지 못했습니다. 백업은 당분간 이 컴퓨터에 남습니다."
 
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Couldn't reach your cloud saves. Check your connection and try again."
@@ -2543,6 +2556,10 @@ msgstr "{0}에서 찾았어요. 가져오는 항목:"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Found in {folder}"
 msgstr "{folder}에서 찾았어요"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Free up space"
+msgstr "공간 확보"
 
 #. Which computer a cloud save was made on
 #. Which computer a cloud save was made on
@@ -4082,6 +4099,7 @@ msgid "Not installed yet"
 msgstr "아직 설치되지 않음"
 
 #: ../../apps/launcher/src/app-updates.tsx
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/downloads-page.tsx
 #: ../../apps/launcher/src/old-library.tsx
 #: ../../apps/launcher/src/own-copy-settings.tsx
@@ -5311,6 +5329,10 @@ msgstr "게임 페이지 보기"
 msgid "See the report"
 msgstr "보고서 보기"
 
+#: ../../apps/launcher/src/App.tsx
+msgid "See what each app keeps in your account, and remove copies you don't need."
+msgstr "앱마다 계정에 보관된 내용을 확인하고 필요 없는 사본을 삭제하세요."
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "See which apps"
 msgstr "어떤 앱인지 보기"
@@ -5994,6 +6016,10 @@ msgstr "Quiver Launcher 3 프로그램이 들어 있는 폴더예요. 포터블 
 msgid "The game asks for it when it starts. Quiver can check yours first."
 msgstr "게임이 시작할 때 요청해요. Quiver가 먼저 확인해 줄 수 있어요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "The newest backup of {name} is on this computer only, and so is each one after it until there's room. Quiver sends it by itself then."
+msgstr "{name}의 최신 백업은 이 컴퓨터에만 있으며, 공간이 생길 때까지 이후 백업도 마찬가지입니다. 공간이 생기면 Quiver가 자동으로 보냅니다."
+
 #: ../../apps/launcher/src/game.tsx
 msgid "THE ORIGINAL GAME"
 msgstr "원작 게임"
@@ -6260,6 +6286,10 @@ msgstr "다시 시도"
 #: ../../apps/launcher/src/telemetry-ui.tsx
 msgid "Turn off"
 msgstr "끄기"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Turn off cloud saves for {largestName}"
+msgstr "{largestName}의 클라우드 세이브 끄기"
 
 #. Setting: the launcher's larger, full-screen look for a controller
 #: ../../apps/launcher/src/App.tsx
@@ -6886,6 +6916,10 @@ msgstr "내 앱"
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Your apps are in your library."
 msgstr "앱이 라이브러리에 들어왔어요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves are full"
+msgstr "클라우드 세이브가 가득 찼습니다"
 
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "Your cloud saves are full ({limit}). Remove copies to make room."

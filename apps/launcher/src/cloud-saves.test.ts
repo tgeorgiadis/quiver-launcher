@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { beforePlay, decide, lastSent, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
+import { beforePlay, decide, lastSent, onSent, retries, RETRY_AFTER, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
 import type { SaveBackup, SavesCloud, SavesOf } from "./native";
 
 const of: SavesOf = { id: "e1", folder: "Game", wine: false, locations: [], names: ["Game"] };
@@ -175,4 +175,68 @@ it("asks when both changed, and does what the player picks", async () => {
   // This computer's saves go up and become the newest, so it isn't asked again.
   expect(here.native.savesUpload).toHaveBeenCalledWith("e1", "5.zip", "https://bucket/put", expect.anything());
   expect(here.state).toMatchObject({ hash: C, synced: C });
+});
+
+it("tells whoever listens how each send went, and whether the player asked for it", async () => {
+  const heard: unknown[] = [];
+  const off = onSent((id, how, manual) => heard.push([id, how, manual]));
+  const sent = world({ state: { hash: A, off: false, os: "windows" } });
+  await sendBackup(of, "e1", backup(A), sent);
+  const full = world({ state: { hash: A, off: false, os: "windows" }, begin: { status: "full", used: 250, limit: 250 } });
+  await sendBackup(of, "e1", backup(A), { ...full, manual: true });
+  off();
+  await sendBackup(of, "e1", backup(A), sent);
+  expect(heard).toEqual([
+    ["e1", "sent", false],
+    ["e1", "full", true],
+  ]);
+});
+
+it("tries a send that didn't get there again after 1, 5, 15 and 60 minutes, then leaves it", async () => {
+  const timers: { run: () => void; ms: number; cleared?: true }[] = [];
+  const timer = { set: (run: () => void, ms: number) => timers[timers.push({ run, ms }) - 1], clear: (handle: unknown) => void ((handle as (typeof timers)[number]).cleared = true) };
+  const answers: ("later" | "sent" | "full" | null)[] = [];
+  const attempt = vi.fn(async () => answers.shift() ?? "later");
+  const again = retries(attempt, timer);
+  /** The newest timer goes off, and what it started finishes. */
+  const fire = async () => (timers.at(-1)!.run(), await settled());
+
+  again.note("e1", "sent");
+  expect(timers).toHaveLength(0);
+  again.note("e1", "later");
+  expect(again.waiting("e1")).toBe(true);
+  for (let i = 0; i < RETRY_AFTER.length; i++) {
+    expect(timers.at(-1)!.ms).toBe(RETRY_AFTER[i]);
+    await fire();
+  }
+  expect(RETRY_AFTER).toEqual([60_000, 300_000, 900_000, 3_600_000]);
+  expect(attempt).toHaveBeenCalledTimes(4);
+  expect(timers).toHaveLength(4);
+  expect(again.waiting("e1")).toBe(false);
+
+  // One that gets there, or finds the account full, ends the waiting.
+  answers.push("later", "sent");
+  again.note("e1", "later");
+  await fire();
+  await fire();
+  expect(timers).toHaveLength(6);
+  expect(again.waiting("e1")).toBe(false);
+  answers.push("full");
+  again.note("e1", "later");
+  await fire();
+  expect(timers).toHaveLength(7);
+
+  // A send that gets there in the meantime calls the retry off; a retry's own sends don't start the count again.
+  again.note("e1", "later");
+  again.note("e1", "sent");
+  expect(timers.at(-1)!.cleared).toBe(true);
+  expect(again.waiting("e1")).toBe(false);
+  const noting = retries(async (id) => (noting.note(id, "later"), "later"), timer);
+  noting.note("e2", "later");
+  const before = timers.length;
+  await fire();
+  expect(timers).toHaveLength(before + 1);
+  expect(timers.at(-1)!.ms).toBe(RETRY_AFTER[1]);
+  noting.stop();
+  expect(noting.waiting("e2")).toBe(false);
 });
