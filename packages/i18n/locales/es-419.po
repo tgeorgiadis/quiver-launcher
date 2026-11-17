@@ -1119,11 +1119,6 @@ msgstr "Todas las apps"
 msgid "All consoles"
 msgstr "Todas las consolas"
 
-#. Discover's filter: consoles by every maker
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "All makers"
-msgstr "Todos los fabricantes"
-
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "All options…"
@@ -1728,6 +1723,10 @@ msgstr "Cambiar programa"
 msgid "Change the default apps folder"
 msgstr "Cambiar la carpeta de apps predeterminada"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Change the filter, or choose Every console."
+msgstr "Cambia el filtro o elige Todas las consolas."
+
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Change version"
@@ -1782,6 +1781,11 @@ msgstr "Comprobando…"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "Revisando… {0} de {1}"
+
+#. Controller hint on Discover's Filter: opens its list of makers and kinds
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Choose"
+msgstr "Elegir"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -1895,10 +1899,6 @@ msgstr "Elige una app que inicie la app."
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose an AppImage or another program that starts the app."
 msgstr "Elige un AppImage u otro programa que inicie la app."
-
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Choose another maker, or Home & handheld."
-msgstr "Elige otro fabricante, o Sobremesa y portátil."
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
@@ -2714,7 +2714,9 @@ msgstr "Escribe un nombre para su carpeta."
 msgid "Enter a repository: owner/name, or its address on a forge."
 msgstr ""
 
+#. Discover's Filter: no maker or kind picked
 #: ../../apps/launcher/src/own-copy-settings.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Every console"
 msgstr "Todas las consolas"
 
@@ -2764,6 +2766,21 @@ msgstr "Archivo"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "Nombre del archivo, como config.ini"
+
+#. Discover's button that narrows the consoles to makers, home consoles or handhelds
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Filter"
+msgstr "Filtro"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Filter consoles"
+msgstr "Filtrar consolas"
+
+#. Discover's Filter button, with the makers and kinds picked
+#. placeholder {0}: [...brands.filter((b) => makers.includes(b)).map(makerName), ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f]))].join(", ")
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Filter: {0}"
+msgstr "Filtro: {0}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3187,11 +3204,6 @@ msgstr "Mantén para desinstalar. Sus archivos van a la papelera."
 #: ../../apps/launcher/src/tv/consoles/tabs.ts
 msgid "Home"
 msgstr "Inicio"
-
-#. Discover's filter: home consoles and handhelds alike
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Home & handheld"
-msgstr "Sobremesa y portátil"
 
 #. Discover's filter: consoles played on a TV, not handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
@@ -4502,8 +4514,8 @@ msgid "No console"
 msgstr "Sin consola"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "No consoles are both"
-msgstr "Ninguna consola cumple ambos"
+msgid "No consoles match this filter"
+msgstr "Ninguna consola coincide con este filtro"
 
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "No controller connected"
@@ -4984,6 +4996,11 @@ msgstr "La contraseña no puede empezar ni terminar con espacios."
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "Pega el enlace de la playlist, como quiverlauncher.com/lists/…"
+
+#. Controller hint in Discover's Filter list: ticks or unticks the focused maker or kind
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick"
+msgstr "Marcar"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Pick a binding, then press the key or button to use for it."

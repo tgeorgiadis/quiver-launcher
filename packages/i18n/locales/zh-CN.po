@@ -1119,11 +1119,6 @@ msgstr "所有应用"
 msgid "All consoles"
 msgstr "所有主机"
 
-#. Discover's filter: consoles by every maker
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "All makers"
-msgstr "所有厂商"
-
 #. Menu item, last under Manage: opens the app's page at its Manage tab
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "All options…"
@@ -1728,6 +1723,10 @@ msgstr "更改程序"
 msgid "Change the default apps folder"
 msgstr "更改默认应用文件夹"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Change the filter, or choose Every console."
+msgstr "请更改筛选条件，或选择“所有主机”。"
+
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Change version"
@@ -1782,6 +1781,11 @@ msgstr "正在检查 →"
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Checking… {0} of {1}"
 msgstr "正在检查 → {0}/{1}"
+
+#. Controller hint on Discover's Filter: opens its list of makers and kinds
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Choose"
+msgstr "选择"
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Choose a backup…"
@@ -1895,10 +1899,6 @@ msgstr "选择用于启动该应用的应用程序。"
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose an AppImage or another program that starts the app."
 msgstr "选择 AppImage 或其他用于启动该应用的程序。"
-
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Choose another maker, or Home & handheld."
-msgstr "请选择其他厂商，或“家用机和掌机”。"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Choose another program…"
@@ -2714,7 +2714,9 @@ msgstr "为其文件夹输入名称。"
 msgid "Enter a repository: owner/name, or its address on a forge."
 msgstr ""
 
+#. Discover's Filter: no maker or kind picked
 #: ../../apps/launcher/src/own-copy-settings.tsx
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Every console"
 msgstr "所有主机"
 
@@ -2764,6 +2766,21 @@ msgstr "文件"
 #: ../../apps/launcher/src/app-files.tsx
 msgid "File name, like config.ini"
 msgstr "文件名，例如 config.ini"
+
+#. Discover's button that narrows the consoles to makers, home consoles or handhelds
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Filter"
+msgstr "筛选"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Filter consoles"
+msgstr "筛选主机"
+
+#. Discover's Filter button, with the makers and kinds picked
+#. placeholder {0}: [...brands.filter((b) => makers.includes(b)).map(makerName), ...CONSOLE_FORMS.filter((f) => forms.includes(f)).map((f) => i18n._(FORM_NAMES[f]))].join(", ")
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Filter: {0}"
+msgstr "筛选：{0}"
 
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/library-sidebar.tsx
@@ -3187,11 +3204,6 @@ msgstr "长按以卸载。其文件会移至回收站。"
 #: ../../apps/launcher/src/tv/consoles/tabs.ts
 msgid "Home"
 msgstr "主页"
-
-#. Discover's filter: home consoles and handhelds alike
-#: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "Home & handheld"
-msgstr "家用机和掌机"
 
 #. Discover's filter: consoles played on a TV, not handhelds
 #: ../../apps/launcher/src/tv/views/Discover.tsx
@@ -4502,8 +4514,8 @@ msgid "No console"
 msgstr "无主机"
 
 #: ../../apps/launcher/src/tv/views/Discover.tsx
-msgid "No consoles are both"
-msgstr "没有同时符合的主机"
+msgid "No consoles match this filter"
+msgstr "没有符合此筛选条件的主机"
 
 #: ../../apps/launcher/src/tv/views/TabStrip.tsx
 msgid "No controller connected"
@@ -4984,6 +4996,11 @@ msgstr "密码的开头和结尾不能有空白字符。"
 #: ../../apps/launcher/src/library.tsx
 msgid "Paste the playlist's link, like quiverlauncher.com/lists/…"
 msgstr "粘贴播放列表链接，例如 quiverlauncher.com/lists/…"
+
+#. Controller hint in Discover's Filter list: ticks or unticks the focused maker or kind
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick"
+msgstr "勾选"
 
 #: ../../apps/launcher/src/controls.tsx
 msgid "Pick a binding, then press the key or button to use for it."

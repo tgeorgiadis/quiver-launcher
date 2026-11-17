@@ -914,9 +914,42 @@
 
 /* ── Discover ──────────────────────────────────────── */
 .tv-discover {
+  position: relative;
   display: grid;
-  grid-template-rows: calc(var(--u) * 112) calc(var(--u) * 50) minmax(0, 1fr);
+  grid-template-rows: calc(var(--u) * 112) calc(var(--u) * 44) calc(var(--u) * 42) minmax(0, 1fr);
   height: 100%;
+}
+/* The consoles under the filters: a little smaller, so the two rows read as filter and choice. */
+.tv-chip-row.consoles .tv-filter {
+  padding: calc(var(--u) * 5) calc(var(--u) * 12);
+  font-size: calc(var(--u) * 12.5);
+}
+.tv-filter-caret {
+  width: calc(var(--u) * 14);
+  height: calc(var(--u) * 14);
+  margin: 0 calc(var(--u) * -4) 0 calc(var(--u) * 6);
+  vertical-align: middle;
+}
+/* Filter's list, dropped under its button, over the consoles and the games. */
+.tv-dropdown {
+  position: absolute;
+  top: calc(var(--u) * 154);
+  z-index: 20;
+  min-width: calc(var(--u) * 260);
+  margin-left: calc(var(--u) * -8);
+  padding: calc(var(--u) * 8);
+  border: 1px solid #ffffff1c;
+  border-radius: calc(var(--u) * 12);
+  background: #121a26f2;
+  box-shadow: 0 calc(var(--u) * 18) calc(var(--u) * 40) #0009;
+}
+.tv-dropdown .tv-settings-list {
+  max-height: calc(var(--u) * 360);
+  margin: 0;
+}
+/* Ticks, not ways in: no arrows. */
+.tv-dropdown .tv-settings-value svg {
+  display: none;
 }
 .tv-chip-row {
   display: flex;

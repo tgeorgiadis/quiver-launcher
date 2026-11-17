@@ -51,7 +51,7 @@ test("a controller's shoulder buttons go between the tabs, and its triggers to D
   }
 });
 
-test("on Discover the shoulder buttons step through the consoles, round to All, and a maker or kind narrows them", async () => {
+test("on Discover the shoulder buttons step through the consoles, round to All, and Filter narrows them to makers and kinds", async () => {
   const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });
   const chosen = () => s2.page.locator(".tv-filter.chosen").allInnerTexts();
   try {
@@ -68,16 +68,22 @@ test("on Discover the shoulder buttons step through the consoles, round to All, 
     await press(s2, "LeftTrigger");
     await s2.until(async () => (await chosen()).includes("N64"));
     assert.equal(await selectedTab(s2), "Discover");
-    // Handhelds: neither is one, so the console shown goes back to All, and there's nothing.
-    await s2.page.locator(".tv-filter", { hasText: "Handhelds" }).click();
+    // Filter: a list under its button. Handhelds: neither console is one, so the one shown goes back to All, and there's nothing.
+    const filter = s2.page.locator(".tv-chip-row.top .tv-filter", { hasText: "Filter" });
+    const row = (name) => s2.page.locator(".tv-dropdown li", { hasText: name });
+    await filter.click();
+    await row("Handhelds").click();
     await s2.until(async () => (await chosen()).includes("All consoles"));
-    await s2.page.getByText("No consoles are both").waitFor();
-    assert.equal(await s2.page.locator(".tv-filter", { hasText: "N64" }).count(), 0);
-    // Nintendo's home consoles: both again.
-    await s2.page.locator(".tv-filter", { hasText: "Home consoles" }).click();
-    await s2.page.locator(".tv-filter", { hasText: "Nintendo" }).click();
-    await s2.page.locator(".tv-filter", { hasText: "N64" }).waitFor();
-    assert.deepEqual(await chosen(), ["Not in library", "Nintendo", "Home consoles", "All consoles"]);
+    await s2.page.getByText("No consoles match this filter").waitFor();
+    assert.equal(await s2.page.locator(".tv-chip-row.consoles .tv-filter", { hasText: "N64" }).count(), 0);
+    // More than one at once: Home consoles too, and Nintendo; then B closes the list.
+    await row("Home consoles").click();
+    await row("Nintendo").click();
+    await s2.page.locator(".tv-chip-row.consoles .tv-filter", { hasText: "N64" }).waitFor();
+    await press(s2, "East");
+    await s2.page.locator(".tv-dropdown").waitFor({ state: "detached" });
+    assert.equal(await filter.innerText(), "Filter: Nintendo, Home consoles, Handhelds");
+    assert.deepEqual(await s2.page.locator(".tv-chip-row.consoles .tv-filter").allInnerTexts(), ["All consoles", "SNES", "N64"]);
   } finally {
     await s2.close();
   }

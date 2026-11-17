@@ -1,6 +1,6 @@
 /**
  * Consoles by kind: played at home on a TV, or in the hand. With the catalog's makers (its facets' `brand`), the
- * categories consoles can be narrowed to, such as every Nintendo handheld (TV mode's Discover).
+ * categories consoles can be narrowed to, such as every Nintendo and Sega handheld (TV mode's Discover).
  */
 import type { Console } from "@quiverlauncher/api";
 
@@ -20,6 +20,6 @@ export function formsOf(id: string): ConsoleForm[] {
   return HANDHELD.has(id) ? ["handheld"] : ["home"];
 }
 
-/** The consoles of a maker (the facets' `brand`) and of a kind; null is any. */
-export const consolesMatching = <C extends Pick<Console, "id" | "brand">>(consoles: readonly C[], maker: string | null, form: ConsoleForm | null): C[] =>
-  consoles.filter((c) => (!maker || c.brand === maker) && (!form || formsOf(c.id).includes(form)));
+/** The consoles of any of these makers (the facets' `brand`) and of any of these kinds; none picked is any. */
+export const consolesMatching = <C extends Pick<Console, "id" | "brand">>(consoles: readonly C[], makers: readonly string[], forms: readonly ConsoleForm[]): C[] =>
+  consoles.filter((c) => (!makers.length || makers.includes(c.brand)) && (!forms.length || formsOf(c.id).some((f) => forms.includes(f))));

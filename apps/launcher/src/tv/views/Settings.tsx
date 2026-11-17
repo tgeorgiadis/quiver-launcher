@@ -20,7 +20,7 @@ import { INTERFACE_SIZES, nearestInterfaceSize } from "../../zoom";
 import { resolveConsole } from "../consoles/resolve";
 
 type Option<T> = { value: T; label: string };
-type Row =
+export type Row =
   | { kind: "choice"; label: string; detail?: string; options: Option<unknown>[]; value: unknown; set: (value: unknown) => void }
   | { kind: "action"; label: string; detail?: string; value?: string; run: () => void };
 
@@ -35,8 +35,8 @@ const scales = () => {
   return INTERFACE_SIZES.map((value) => ({ value, label: percent.format(value) }));
 };
 
-/** A list of rows with the focused one's value changeable left and right. */
-function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof typeof LAYER] = LAYER.overlay, active = true) {
+/** A list of rows with the focused one's value changeable left and right; `accept`, A's hint on an action's row, if not Open. */
+export function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof typeof LAYER] = LAYER.overlay, active = true, accept?: string) {
   const [index, setIndex] = useState(0);
   const row = rows[Math.min(index, rows.length - 1)];
   /** Moves a choice's value along: the focused row's, or the one clicked. */
@@ -58,7 +58,7 @@ function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof ty
       hints: () => [
         ...(row?.kind === "choice"
           ? [{ action: "right" as const, label: t({ message: "Change", comment: "Controller hint in TV mode's settings: changes the focused setting's value" }) }]
-          : [{ action: "accept" as const, label: t({ message: "Open", comment: "Controller hint in TV mode's settings: opens or does the focused item" }) }]),
+          : [{ action: "accept" as const, label: accept ?? t({ message: "Open", comment: "Controller hint in TV mode's settings: opens or does the focused item" }) }]),
         { action: "back", label: t({ message: "Back", comment: "Controller hint: what Back does, closing or going back" }) },
       ],
     },
@@ -68,7 +68,7 @@ function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof ty
   return { index, setIndex, step };
 }
 
-function RowList({ rows, index, setIndex, step }: { rows: Row[]; index: number; setIndex: (i: number) => void; step: (by: 1 | -1, which?: Row) => void }) {
+export function RowList({ rows, index, setIndex, step }: { rows: Row[]; index: number; setIndex: (i: number) => void; step: (by: 1 | -1, which?: Row) => void }) {
   useEffect(() => {
     document.querySelector(".tv-settings-list .focused")?.scrollIntoView({ block: "nearest" });
   }, [index]);
