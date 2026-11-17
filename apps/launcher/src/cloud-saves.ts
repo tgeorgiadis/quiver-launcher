@@ -8,12 +8,16 @@
  *   same, nothing happens; the account's is newer and the saves here haven't changed since they last matched, it's
  *   put in place; both changed, the player chooses.
  *
+ * A backup says where its saves were, but it may come from another computer, or from someone else with the player's
+ * account. So its files only go to the places this computer keeps the app's saves in already; any other folder is
+ * shown to the player first (`restoreBackup`), and nothing is put there by itself.
+ *
  * The site keeps the limits (by default 250 MB an account, 5 copies an app, 100 MB a copy) and hands out links; the files go straight to and
  * from storage. Only apps from the catalog, and never in the way of playing: when the account can't be reached the
  * app starts as it is.
  */
 import type { Entry } from "@quiverlauncher/api";
-import type { native, SaveBackup, SavesCloud, SavesOf } from "./native";
+import type { native, SaveBackup, SavePlace, SavesCloud, SavesOf } from "./native";
 
 /** One copy in the account, as the site lists it. */
 export type CloudCopy = {
@@ -127,7 +131,26 @@ export function retries(attempt: (id: string) => Promise<Sent | null>, timer: { 
   };
 }
 
-type Native = Pick<typeof native, "savesUpload" | "savesSynced" | "savesCloud" | "savesInfo" | "savesDownload" | "savesRestore" | "savesBackup">;
+type Native = Pick<typeof native, "savesUpload" | "savesSynced" | "savesCloud" | "savesInfo" | "savesDownload" | "savesRestorePlan" | "savesRestore" | "savesBackup">;
+
+/** Asks the player whether a backup may be put in folders this computer hasn't kept the app's saves in. */
+export type ConfirmPlaces = (places: SavePlace[]) => Promise<boolean>;
+
+/**
+ * Puts one of an app's backups in place. A backup of the places this computer knows goes straight in; one that names
+ * another folder is only restored once the player agreed to that folder. False when they didn't. Rejects with what
+ * to say when it can't be restored at all.
+ */
+export async function restoreBackup(of: SavesOf, name: string, via: { native: Pick<Native, "savesRestorePlan" | "savesRestore">; confirm: ConfirmPlaces }): Promise<boolean> {
+  const unknown = await via.native.savesRestorePlan(of, name);
+  if (unknown.length && !(await via.confirm(unknown))) return false;
+  await via.native.savesRestore(
+    of,
+    name,
+    unknown.map((place) => place.template),
+  );
+  return true;
+}
 
 const SYSTEMS = ["windows", "linux", "macos"];
 
@@ -185,13 +208,18 @@ export function decide(here: Pick<SavesCloud, "hash" | "synced">, newest: Pick<C
   return "ask";
 }
 
-/** Downloads one of the account's copies and puts it in place, after backing up the saves here. Rejects with what to say. */
-export async function fetchCopy(of: SavesOf, copy: CloudCopy, via: { api: CloudApi; native: Pick<Native, "savesDownload" | "savesRestore" | "savesSynced"> }): Promise<void> {
+/**
+ * Downloads one of the account's copies and puts it in place, after backing up the saves here. False when it names a
+ * folder this computer doesn't know for the app and the player didn't agree to it: the copy is then among the app's
+ * backups, and the saves are as they were. Rejects with what to say.
+ */
+export async function fetchCopy(of: SavesOf, copy: CloudCopy, via: { api: CloudApi; native: Pick<Native, "savesDownload" | "savesRestorePlan" | "savesRestore" | "savesSynced">; confirm: ConfirmPlaces }): Promise<boolean> {
   const link = await via.api.download(copy.id);
   if (!link) throw new Error("gone");
   const backup = await via.native.savesDownload(of, link.url, link.size, copy.hash);
-  await via.native.savesRestore(of, backup.name);
+  if (!(await restoreBackup(of, backup.name, via))) return false;
   await via.native.savesSynced(of, copy.hash);
+  return true;
 }
 
 /** Sends the backup of the saves as they are now, when there is one the account doesn't have. */
@@ -209,6 +237,8 @@ export type Conflict = {
   cloud: CloudCopy;
   /** The newest backup of the saves here, when there is one of them as they are. */
   here?: SaveBackup;
+  /** Folders the account's copy would go in that this computer hasn't kept the app's saves in: the player is shown them before choosing it. */
+  places?: SavePlace[];
 };
 
 const within = <T>(work: Promise<T>, ms: number) => Promise.race([work, new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
@@ -234,14 +264,29 @@ export async function beforePlay(
   }
   if (!mine?.on || !mine.allowed) return { go: true };
   const newest = usable(mine.copies, state.os, entry.launcher?.saves?.crossPlatform);
+  const hereNow = async () => (await via.native.savesInfo(of).catch(() => null))?.backups.find((b) => b.hash === state.hash);
+  /** This computer's saves stay: the account's copy has been seen, so it isn't asked about again, and these go up. */
+  const keepHere = async (copy: CloudCopy) => {
+    await via.native.savesSynced(of, copy.hash).catch(() => {});
+    await via.native.savesBackup(of, "manual").catch(() => null);
+    void sendCurrent(of, entry.id, via).catch(() => {});
+    return { go: true };
+  };
   const fetch = async (copy: CloudCopy) => {
+    // A copy for a folder this computer doesn't know is never put there by itself: the player sees the folder first.
+    let choice: "cloud" | "here" | null = "cloud";
     try {
-      await fetchCopy(of, copy, via);
-      via.changed(of.id);
-      return { go: true, fetched: copy };
+      const confirm: ConfirmPlaces = async (places) => (choice = await via.ask({ entry, cloud: copy, here: await hereNow(), places })) === "cloud";
+      if (await fetchCopy(of, copy, { ...via, confirm })) {
+        via.changed(of.id);
+        return { go: true, fetched: copy };
+      }
     } catch (e) {
       return { go: true, problem: typeof e === "string" ? e : "" };
     }
+    // The copy was taken in as a backup either way.
+    via.changed(of.id);
+    return choice ? keepHere(copy) : { go: false };
   };
   const what = decide(state, newest);
   if (what === "same") {
@@ -254,13 +299,8 @@ export async function beforePlay(
     return { go: true };
   }
   if (what === "fetch") return fetch(newest);
-  const info = await via.native.savesInfo(of).catch(() => null);
-  const choice = await via.ask({ entry, cloud: newest, here: info?.backups.find((b) => b.hash === state.hash) });
+  const choice = await via.ask({ entry, cloud: newest, here: await hereNow() });
   if (!choice) return { go: false };
   if (choice === "cloud") return fetch(newest);
-  // This computer's saves stay: the account's copy has been seen, so it isn't asked about again, and these go up.
-  await via.native.savesSynced(of, newest.hash).catch(() => {});
-  await via.native.savesBackup(of, "manual").catch(() => null);
-  void sendCurrent(of, entry.id, via).catch(() => {});
-  return { go: true };
+  return keepHere(newest);
 }

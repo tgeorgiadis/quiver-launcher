@@ -157,6 +157,9 @@ button.danger { color: var(--danger); }
 .muted { color: var(--muted); font-size: 13px; }
 .description { color: var(--text-2); white-space: pre-line; }
 .choices { display: flex; flex-direction: column; gap: 8px; }
+/* The folders a save backup would be put in (App.tsx's SavePlaces): shown whole, however long the path. */
+.save-places { margin: 0 0 12px; padding: 8px 12px; list-style: none; border: 1px solid var(--line-strong); border-radius: 8px; font-family: ui-monospace, monospace; font-size: 13px; overflow-wrap: anywhere; user-select: text; }
+.save-places li + li { margin-top: 4px; }
 .choices button { justify-content: flex-start; }
 .choices button span { display: grid; gap: 2px; text-align: left; }
 .choices button small { color: var(--muted); font-size: 12px; font-weight: 400; overflow-wrap: anywhere; }

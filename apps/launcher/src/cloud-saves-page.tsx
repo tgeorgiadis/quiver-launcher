@@ -25,7 +25,7 @@ export const OPEN_APP = "quiver-open-app";
 const openPage = (entry: Entry) => window.dispatchEvent(new CustomEvent<Entry>(OPEN_APP, { detail: entry }));
 
 export function CloudSavesSettings() {
-  const { settings, setSettings, installs, catalog, cloudCatchUp, client } = useLauncher();
+  const { settings, setSettings, installs, catalog, cloudCatchUp, client, confirmSavePlaces } = useLauncher();
   const account = useAccount();
   const api = account.cloudSaves;
   /** Undefined while it loads; null when the account can't be reached. */
@@ -68,8 +68,10 @@ export function CloudSavesSettings() {
     run(app, async () => {
       const of = here(app);
       if (!api || !of) return null;
-      await fetchCopy(of, copy, { api, native });
+      const restored = await fetchCopy(of, copy, { api, native, confirm: confirmSavePlaces(app.name) });
+      // Taken in among the app's backups either way.
       savesChanged(app.entryId);
+      if (!restored) return null;
       return t({ message: "Restored.", comment: "Said after a save backup was put back" });
     });
   const remove = (app: App, what: { id: string } | { entryId: string }) =>

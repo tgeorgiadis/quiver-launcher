@@ -397,6 +397,7 @@ export function App() {
       <ChangeVersion />
       <ProgramPrompt />
       <SavesConflictPrompt />
+      <SavesPlacesPrompt />
       <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
       <OwnCopyPrompt />
       <Notice />
@@ -2229,9 +2230,18 @@ function SavesConflictPrompt() {
         <h2>
           <Cloud size={18} aria-hidden="true" /> {t`Which saves of ${name} do you want to keep?`}
         </h2>
-        <p className="muted">
-          <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
-        </p>
+        {conflict.places?.length ? (
+          <>
+            <p className="muted">
+              <Trans>Your cloud saves would go in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only use them if this is where the app saves:</Trans>
+            </p>
+            <SavePlaces places={conflict.places} />
+          </>
+        ) : (
+          <p className="muted">
+            <Trans>The saves on this computer and the ones in your Quiver account have both changed. The ones you don&apos;t pick are kept as a backup on the app&apos;s Saves tab.</Trans>
+          </p>
+        )}
         <div className="choices">
           <button autoFocus onClick={() => conflict.answer("cloud")}>
             <span>
@@ -2246,13 +2256,52 @@ function SavesConflictPrompt() {
               <strong>
                 <Trans>Keep this computer&apos;s saves</Trans>
               </strong>
-              <small>{here ? t`Last backed up ${hereWhen}` : t`Changed since their last backup`}</small>
+              {!conflict.places?.length && <small>{here ? t`Last backed up ${hereWhen}` : t`Changed since their last backup`}</small>}
             </span>
           </button>
         </div>
         <div className="row">
           <button onClick={() => conflict.answer(null)}>
             <Trans>Don&apos;t play yet</Trans>
+          </button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** The folders a backup would be put in, as they are on this computer. */
+function SavePlaces({ places }: { places: { template: string; path: string }[] }) {
+  return (
+    <ul className="save-places">
+      {places.map((place) => (
+        <li key={place.template}>{place.path || place.template}</li>
+      ))}
+    </ul>
+  );
+}
+
+/** Restore, for a backup whose saves were in a folder this computer hasn't kept that app's saves in: the player sees the folder and says whether to go ahead. */
+function SavesPlacesPrompt() {
+  const { savesPlaces: asked } = useLauncher();
+  if (!asked) return null;
+  const name = asked.name;
+  return (
+    <Dialog label={t`Restore to this folder?`} onClose={() => asked.answer(false)}>
+      <div className="detail-body program-prompt saves-conflict">
+        <h2>
+          <Cloud size={18} aria-hidden="true" /> {t`Restore ${name}'s saves to this folder?`}
+        </h2>
+        <p className="muted">
+          <Trans>This backup&apos;s saves were in a folder Quiver hasn&apos;t kept this app&apos;s saves in on this computer. Only restore it if this is where the app saves:</Trans>
+        </p>
+        <SavePlaces places={asked.places} />
+        <div className="row">
+          <button onClick={() => asked.answer(false)}>
+            <Trans>Cancel</Trans>
+          </button>
+          <button className="primary" onClick={() => asked.answer(true)}>
+            <Trans>Restore</Trans>
           </button>
         </div>
       </div>

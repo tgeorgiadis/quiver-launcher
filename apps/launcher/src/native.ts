@@ -258,8 +258,10 @@ export type SavesCloud = {
   off: boolean;
   os: "windows" | "linux" | "macos";
 };
+/** A place an app's saves are in: as a backup names it, and the folder that is on this computer. */
+export type SavePlace = { template: string; path: string; exists: boolean };
 export type SavesInfo = {
-  places: { template: string; path: string; exists: boolean }[];
+  places: SavePlace[];
   /** Who said where they are. */
   from: "you" | "catalog" | "found" | "none";
   backups: SaveBackup[];
@@ -289,7 +291,13 @@ export const native = {
   /** Backs up an app's saves if they changed; null when there was nothing new. Fails while the app runs. */
   savesBackup: (of: SavesOf, reason: "manual" | "update" | "uninstall") => invoke<SaveBackup | null>("saves_backup", { of, reason }),
   /** Puts a backup back, after backing up what's there; resolves to how many files. */
-  savesRestore: (of: SavesOf, name: string) => invoke<number>("saves_restore", { of, name }),
+  /**
+   * The folders restoring a backup would write to that this computer doesn't keep the app's saves in yet, for the
+   * player to agree to. None for a backup of the places known here. Fails when a place is nowhere an app saves.
+   */
+  savesRestorePlan: (of: SavesOf, name: string) => invoke<SavePlace[]>("saves_restore_plan", { of, name }),
+  /** `confirmed`: the places of `savesRestorePlan` the player agreed to. Without them a backup naming one isn't restored. */
+  savesRestore: (of: SavesOf, name: string, confirmed: string[] = []) => invoke<number>("saves_restore", { of, name, confirmed }),
   savesRemove: (id: string, name: string) => invoke<void>("saves_remove", { id, name }),
   /** The folder the player says an app saves in, or none to go back to Quiver's choice. */
   savesChoose: (of: SavesOf, path?: string) => invoke<SavesInfo | null>("saves_choose", { of, path }),

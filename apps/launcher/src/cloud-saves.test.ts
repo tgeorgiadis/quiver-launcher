@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
-import { beforePlay, decide, lastSent, onSent, retries, RETRY_AFTER, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
-import type { SaveBackup, SavesCloud, SavesOf } from "./native";
+import { beforePlay, decide, fetchCopy, lastSent, onSent, restoreBackup, retries, RETRY_AFTER, sendBackup, sendCurrent, usable, type CloudApi, type CloudCopy, type CloudMine } from "./cloud-saves";
+import type { SaveBackup, SavePlace, SavesCloud, SavesOf } from "./native";
 
 const of: SavesOf = { id: "e1", folder: "Game", wine: false, locations: [], names: ["Game"] };
 const entry = { id: "e1", projectName: "Game", launcher: { folderName: "Game", filesToAdd: [] } };
@@ -12,7 +12,7 @@ const copy = (hash: string, more: Partial<CloudCopy> = {}): CloudCopy => ({ id: 
 const mine = (copies: CloudCopy[], more: Partial<CloudMine> = {}): CloudMine => ({ on: true, limit: 250, used: 0, keep: 5, maxCopy: 100 * 1024 * 1024, allowed: true, copies, ...more });
 
 /** The account and this computer, as far as cloud saves reaches them. */
-function world(start: { state: SavesCloud; copies?: CloudCopy[]; backups?: SaveBackup[]; mine?: Partial<CloudMine>; begin?: Awaited<ReturnType<CloudApi["begin"]>> }) {
+function world(start: { state: SavesCloud; copies?: CloudCopy[]; backups?: SaveBackup[]; mine?: Partial<CloudMine>; begin?: Awaited<ReturnType<CloudApi["begin"]>>; unknown?: SavePlace[] }) {
   const state = { ...start.state };
   const api = {
     mine: vi.fn(async () => mine(start.copies ?? [], start.mine)),
@@ -28,7 +28,9 @@ function world(start: { state: SavesCloud; copies?: CloudCopy[]; backups?: SaveB
     savesUpload: vi.fn(async () => {}),
     savesSynced: vi.fn(async (_: SavesOf, hash: string | null) => void (state.synced = hash)),
     savesDownload: vi.fn(async (_of: SavesOf, _url: string, _size: number, hash: string) => backup(hash, { name: "9.zip" })),
-    savesRestore: vi.fn(async (_: SavesOf, name: string) => (name === "9.zip" && (state.hash = (start.copies ?? [])[0]?.hash), 1)),
+    // The folders the downloaded copy names that this computer doesn't keep the app's saves in.
+    savesRestorePlan: vi.fn(async (): Promise<SavePlace[]> => start.unknown ?? []),
+    savesRestore: vi.fn(async (_: SavesOf, name: string, _confirmed?: string[]) => (name === "9.zip" && (state.hash = (start.copies ?? [])[0]?.hash), 1)),
     savesBackup: vi.fn(async () => null),
   };
   const ask = vi.fn(async (): Promise<"cloud" | "here" | null> => null);
@@ -125,7 +127,7 @@ it("puts the account's newer copy in place when the saves here haven't changed",
   expect(await beforePlay(of, entry, w.via)).toEqual({ go: true, fetched: copy(B) });
   expect(w.api.download).toHaveBeenCalledWith("copy-b");
   expect(w.native.savesDownload).toHaveBeenCalledWith(of, "https://bucket/get", 2000, B);
-  expect(w.native.savesRestore).toHaveBeenCalledWith(of, "9.zip");
+  expect(w.native.savesRestore).toHaveBeenCalledWith(of, "9.zip", []);
   expect(w.state).toMatchObject({ hash: B, synced: B });
   expect(w.changed).toHaveBeenCalledWith("e1");
   expect(w.ask).not.toHaveBeenCalled();
@@ -140,6 +142,57 @@ it("starts the app anyway when the account's copy can't be put in place, and say
   w.native.savesRestore.mockRejectedValue("This backup's saves were in a folder Quiver doesn't know on this computer.");
   expect(await beforePlay(of, entry, w.via)).toEqual({ go: true, problem: "This backup's saves were in a folder Quiver doesn't know on this computer." });
   expect(w.native.savesSynced).not.toHaveBeenCalled();
+});
+
+const ELSEWHERE: SavePlace[] = [{ template: "localData/Game/saves", path: "C:\\Users\\me\\AppData\\Local\\Game\\saves", exists: false }];
+
+it("never puts a copy in a folder this computer doesn't know without the player seeing it", async () => {
+  // Unchanged here and newer in the account: it would go in by itself, but it names another folder.
+  const start = () => world({ state: { hash: A, synced: A, off: false, os: "windows" }, copies: [copy(B)], backups: [backup(A)], unknown: ELSEWHERE });
+  const stop = start();
+  expect(await beforePlay(of, entry, stop.via)).toEqual({ go: false });
+  expect(stop.ask).toHaveBeenCalledWith({ entry, cloud: copy(B), here: backup(A), places: ELSEWHERE });
+  expect(stop.native.savesRestore).not.toHaveBeenCalled();
+  expect(stop.native.savesSynced).not.toHaveBeenCalled();
+
+  const cloud = start();
+  cloud.ask.mockResolvedValue("cloud");
+  expect(await beforePlay(of, entry, cloud.via)).toMatchObject({ go: true, fetched: { hash: B } });
+  expect(cloud.native.savesRestore).toHaveBeenCalledWith(of, "9.zip", ["localData/Game/saves"]);
+  expect(cloud.state).toMatchObject({ hash: B, synced: B });
+
+  const here = start();
+  here.ask.mockResolvedValue("here");
+  expect(await beforePlay(of, entry, here.via)).toEqual({ go: true });
+  expect(here.native.savesRestore).not.toHaveBeenCalled();
+  // Seen and turned down: it isn't asked about before every start.
+  expect(here.state.synced).toBe(B);
+
+  // A new computer with no saves is asked the same way.
+  const fresh = world({ state: { hash: null, off: false, os: "windows" }, copies: [copy(B)], unknown: ELSEWHERE });
+  expect(await beforePlay(of, entry, fresh.via)).toEqual({ go: false });
+  expect(fresh.ask).toHaveBeenCalledWith({ entry, cloud: copy(B), here: undefined, places: ELSEWHERE });
+  expect(fresh.native.savesRestore).not.toHaveBeenCalled();
+});
+
+it("restores a backup of another folder only once the player agreed to that folder", async () => {
+  const w = world({ state: { hash: A, off: false, os: "windows" }, copies: [copy(B)], unknown: ELSEWHERE });
+  const no = vi.fn(async () => false);
+  expect(await restoreBackup(of, "9.zip", { native: w.native, confirm: no })).toBe(false);
+  expect(no).toHaveBeenCalledWith(ELSEWHERE);
+  expect(await fetchCopy(of, copy(B), { api: w.api, native: w.native, confirm: no })).toBe(false);
+  expect(w.native.savesRestore).not.toHaveBeenCalled();
+  expect(w.native.savesSynced).not.toHaveBeenCalled();
+  expect(await fetchCopy(of, copy(B), { api: w.api, native: w.native, confirm: async () => true })).toBe(true);
+  expect(w.native.savesRestore).toHaveBeenCalledWith(of, "9.zip", ["localData/Game/saves"]);
+  // The places known here need no question.
+  const known = world({ state: { hash: A, off: false, os: "windows" }, copies: [copy(B)] });
+  expect(await restoreBackup(of, "9.zip", { native: known.native, confirm: no })).toBe(true);
+  expect(no).toHaveBeenCalledTimes(2);
+  // One that names a folder no app saves in isn't restored at all.
+  known.native.savesRestorePlan.mockRejectedValue("This backup's saves were in a folder Quiver doesn't keep this app's saves in on this computer.");
+  await expect(restoreBackup(of, "9.zip", { native: known.native, confirm: async () => true })).rejects.toMatch(/doesn't keep/);
+  expect(known.native.savesRestore).toHaveBeenCalledTimes(1);
 });
 
 it("sends what's here when only this computer's saves changed", async () => {

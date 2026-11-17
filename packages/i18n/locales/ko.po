@@ -5075,12 +5075,17 @@ msgid "Reset bindings to defaults"
 msgstr "키 할당을 기본값으로 초기화"
 
 #. Window button: un-maximize
+#: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 #: ../../apps/launcher/src/recovery.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Restore"
 msgstr "복원"
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore {name}'s saves to this folder?"
+msgstr ""
 
 #: ../../apps/launcher/src/recovery.tsx
 msgid "Restore a backup Quiver kept. The newest is first."
@@ -5102,6 +5107,10 @@ msgstr "이 백업을 복원할까요? 지금 세이브를 먼저 백업합니�
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Restore this copy? Your saves now are backed up first."
 msgstr "이 사본을 복원할까요? 현재 세이브를 먼저 백업합니다."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Restore to this folder?"
+msgstr ""
 
 #. Said after a save backup was put back
 #. Said after a save backup was put back
@@ -6138,6 +6147,10 @@ msgstr "이 앱의 폴더는 옮길 수 없어요."
 msgid "This app's folder can't be renamed."
 msgstr "이 앱의 폴더는 이름을 바꿀 수 없어요."
 
+#: ../../apps/launcher/src/App.tsx
+msgid "This backup's saves were in a folder Quiver hasn't kept this app's saves in on this computer. Only restore it if this is where the app saves:"
+msgstr ""
+
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This discussion is locked, so it takes no new comments."
 msgstr "잠긴 토론이라 새 댓글을 달 수 없어요."
@@ -6929,6 +6942,10 @@ msgstr "클라우드 세이브가 가득 찼습니다({limit}). 사본을 삭제
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Your cloud saves are full ({limit}). The newest backup is on this computer only. Remove copies here or from another app to make room."
 msgstr "클라우드 세이브가 가득 찼습니다({limit}). 최신 백업은 이 컴퓨터에만 있습니다. 여기나 다른 앱에서 사본을 삭제해 공간을 확보하세요."
+
+#: ../../apps/launcher/src/App.tsx
+msgid "Your cloud saves would go in a folder Quiver hasn't kept this app's saves in on this computer. Only use them if this is where the app saves:"
+msgstr ""
 
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "Your copies: {ready} of {total} set up"

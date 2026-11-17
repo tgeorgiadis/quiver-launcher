@@ -87,6 +87,7 @@ export function standInForRust({ api, state = {}, config: more = {}, maximized =
     saves_info: () => ({ places: [], from: "none", backups: [] }),
     saves_choose: () => ({ places: [], from: "none", backups: [] }),
     saves_to_report: () => ({ os: "linux", places: [] }),
+    saves_restore_plan: () => [],
     secret_get: () => null,
     // GitLab's request limit, as the real Rust side reads it: the page can't see these headers itself.
     gitlab_limit: async ({ url, token }) => {

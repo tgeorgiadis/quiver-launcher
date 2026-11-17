@@ -11,7 +11,7 @@ computer's name and system, each save folder as a path under one of the system's
 `localData/Game`), and a checksum of every file. Nothing else from the computer.
 
 It goes straight to quiverlauncher.com's private storage through a link the site signs for that one file, which
-works for 10 minutes. The site keeps the record: which account, which app, the size, the checksum, the computer's
+works for 2 minutes. The site keeps the record: which account, which app, the size, the checksum, the computer's
 name. Only that account can list, download or remove its copies.
 
 Only apps from the catalog have cloud saves, only while signed in, and not for an app or a launcher it's switched
@@ -69,7 +69,21 @@ cloud saves as a whole is there too.
 
 ## Safety
 
-A copy from the account goes through the same checks as any backup being restored: its files are only written into
-folders Quiver allows as save locations, never a folder that holds keys or another program's data, and only files
-that pass as saves, each checked against its checksum. A copy that isn't whole, or isn't the one asked for, is
-thrown away and the saves on the computer are left as they were.
+A copy from the account is treated as a file from a stranger: the site never looks inside one, so anyone who got
+into the account, or the storage behind it, could have put it there. It goes through the same checks as any backup
+being restored (`restore` in `saves.rs`):
+
+- **It never chooses where its files go.** A backup names the places its saves were in, but files are only written
+  into places this computer already keeps the app's saves in: the folder the player chose, the catalog's, or the
+  ones the launcher found here. A backup that names another folder is not restored by itself. The player is shown
+  the folder as it is on this computer and agrees to it first (before play, in the "which saves" question), and
+  only a folder inside the app's own, or one named like the app, can be offered at all. Agreeing remembers the
+  folder as a place the app saves. A downloaded copy sets no save places by itself.
+- Never a folder that holds keys, another program's data, or files a system runs when it starts, however the name
+  is written (a dot or a space at the end, or Windows's short names, are refused).
+- Only files that pass as saves, each checked against its checksum. Programs, scripts and shortcuts are never
+  backed up, removed or put back, so a backup can't swap the script an app starts with.
+- No more than saves hold: a backup naming too many files, or too much in them, isn't unpacked.
+
+A copy that isn't whole, or isn't the one asked for, is thrown away and the saves on the computer are left as they
+were.
