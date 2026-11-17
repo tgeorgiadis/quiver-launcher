@@ -3855,6 +3855,10 @@ msgstr "런처 업데이트"
 msgid "Layout"
 msgstr "레이아웃"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
+msgstr "LB / RB로 콘솔을 넘겨요. 필터 및 정렬에서 제조사나 종류로 좁힐 수 있어요."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "범위는 모두 선택 해제한 채로 두세요. 공개 버전에는 필요 없어요."
@@ -5001,6 +5005,10 @@ msgstr "선택"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "키 할당을 선택한 다음, 사용할 키나 버튼을 누르세요."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick a console to sort by release date"
+msgstr "출시일순으로 정렬하려면 콘솔을 고르세요"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "이 컴퓨터의 이미지"
@@ -5611,12 +5619,16 @@ msgid "Reinstall {installedVersion}"
 msgstr "{installedVersion} 다시 설치"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, newest first"
 msgstr "출시일, 최신순"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, oldest first"
 msgstr "출시일, 오래된 순"
 
@@ -6473,6 +6485,10 @@ msgstr "정렬"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "모드 정렬"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Sorting by release date…"
+msgstr "출시일순으로 정렬하는 중…"
 
 #. TV mode setting: sounds as the controller moves and chooses
 #: ../../apps/launcher/src/tv/views/Settings.tsx

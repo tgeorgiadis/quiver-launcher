@@ -3855,6 +3855,10 @@ msgstr "Обновление лаунчера"
 msgid "Layout"
 msgstr "Вид"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
+msgstr "LB / RB перебирают консоли; «Фильтр и сортировка» сужает их до производителей или видов."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "Не отмечайте никакие разрешения: публичным версиям они не нужны."
@@ -5001,6 +5005,10 @@ msgstr "Отметить"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Выберите назначение, затем нажмите клавишу или кнопку для него."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick a console to sort by release date"
+msgstr "Выберите консоль, чтобы сортировать по дате выхода"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Изображение с этого компьютера"
@@ -5611,12 +5619,16 @@ msgid "Reinstall {installedVersion}"
 msgstr "Переустановить {installedVersion}"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, newest first"
 msgstr "Дата выхода, сначала новые"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, oldest first"
 msgstr "Дата выхода, сначала старые"
 
@@ -6473,6 +6485,10 @@ msgstr "Сортировка"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "Сортировка модов"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Sorting by release date…"
+msgstr "Сортировка по дате выхода…"
 
 #. TV mode setting: sounds as the controller moves and chooses
 #: ../../apps/launcher/src/tv/views/Settings.tsx

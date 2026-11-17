@@ -10,6 +10,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { Entry, Sort } from "@quiverlauncher/api";
+import { useLauncher } from "../../store";
+import { useGameYears } from "../../game-years";
 import { msg, t } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "@quiverlauncher/i18n";
@@ -23,13 +25,13 @@ import { Glyph } from "./Glyph";
 import { GridTab, type Back } from "./GridTab";
 import { usesX } from "./tileActions";
 import { RowList, useRows, type Row } from "./Settings";
-import { discoverApps, matchesSearch, type LibraryFilter } from "./lists";
+import { discoverApps, matchesSearch, sortApps, type LibraryFilter } from "./lists";
 
 /** Kept by the shell: Discover comes back as it was left. */
 export type DiscoverState = {
   filter: LibraryFilter;
-  /** The catalog's order (not while searching, which is by how well games match). */
-  sort: Sort;
+  /** The order: the catalog's (not while searching, which is by how well games match), or by release date (here). */
+  sort: DiscoverSort;
   /** The makers (the catalog's brands) and kinds the consoles are narrowed to; none is any. */
   makers: string[];
   forms: ConsoleForm[];
@@ -39,6 +41,9 @@ export type DiscoverState = {
 };
 
 export const newDiscoverState = (): DiscoverState => ({ filter: "notInLibrary", sort: "added", makers: [], forms: [], consoleId: null, pages: new Map() });
+
+/** The catalog's orders, and by release date, which Discover does itself (the catalog can't). */
+type DiscoverSort = Sort | "released" | "released-new";
 
 /** The most consoles the catalog takes in one question (App.tsx's MAX_SYSTEMS). */
 const MAX_CONSOLES = 8;
@@ -55,11 +60,13 @@ const FORM_NAMES: Record<ConsoleForm, MessageDescriptor> = {
 };
 
 /** The catalog's orders, as Browse has them; Discover starts with the newest. */
-const CATALOG_SORTS: { id: Sort; label: MessageDescriptor }[] = [
+const CATALOG_SORTS: { id: DiscoverSort; label: MessageDescriptor }[] = [
   { id: "added", label: msg`Recently added` },
   { id: "updated", label: msg`Recently updated` },
   { id: "rating", label: msg`Top rated` },
   { id: "name", label: msg`Name A–Z` },
+  { id: "released", label: msg({ message: "Release date, oldest first", comment: "Library sort: by the year the game an app plays first came out (not the app's own release)" }) },
+  { id: "released-new", label: msg({ message: "Release date, newest first", comment: "Library sort: by the year the game an app plays first came out (not the app's own release)" }) },
 ];
 
 const makerName = (brand: string) => (brand === "OtherPlatforms" ? t`Other platforms` : brand);
@@ -96,8 +103,8 @@ type Props = {
 function ConsoleFilter({ filter, setFilter, sort, setSort, makers, picked, forms, toggleMaker, toggleForm, clear, onClose, left }: {
   filter: LibraryFilter;
   setFilter: (filter: LibraryFilter) => void;
-  sort: Sort;
-  setSort: (sort: Sort) => void;
+  sort: DiscoverSort;
+  setSort: (sort: DiscoverSort) => void;
   makers: string[];
   picked: string[];
   forms: ConsoleForm[];
@@ -114,7 +121,7 @@ function ConsoleFilter({ filter, setFilter, sort, setSort, makers, picked, forms
       label: t({ message: "Sort", comment: "Label of the library's sort order" }),
       options: CATALOG_SORTS.map((s) => ({ value: s.id, label: i18n._(s.label) })),
       value: sort,
-      set: (value) => setSort(value as Sort),
+      set: (value) => setSort(value as DiscoverSort),
     },
     {
       kind: "choice",
@@ -137,6 +144,7 @@ function ConsoleFilter({ filter, setFilter, sort, setSort, makers, picked, forms
 
 export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDetails, onDownloads, consoleName, onGot, search: typed, flash: showFlash }: Props) {
   const { bridge, consoles } = useTv();
+  const { client } = useLauncher();
   const [filter, setFilter] = useState(state.filter);
   const [sort, setSort] = useState(state.sort);
   const [makers, setMakers] = useState(state.makers);
@@ -168,16 +176,23 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   }, [consoleId, narrowed, shown, makers]);
   /** No console is of those makers and kinds (an Xbox handheld): nothing to ask for. */
   const none = onConsoles !== null && onConsoles.size === 0;
-  const key = `${JSON.stringify(query)}|${search || sort}`;
+  /**
+   * By release date: every game of the consoles picked is loaded and ordered here, as the catalog can't; not for the
+   * whole catalog, which would mean looking up the year of every game in it.
+   */
+  const byYear = sort === "released" || sort === "released-new";
+  const pickConsole = byYear && onConsoles === null;
+  const asked: Sort = byYear ? "name" : sort;
+  const key = `${JSON.stringify(query)}|${search || asked}`;
   if (!state.pages.has(key)) state.pages.set(key, { entries: [], cursor: null, done: false, loading: false, error: null });
   const page = state.pages.get(key)!;
 
   const loadMore = useCallback(() => {
     const p = state.pages.get(key)!;
-    if (p.loading || p.done || none) return;
+    if (p.loading || p.done || none || pickConsole) return;
     p.loading = true;
     bridge
-      .discover({ ...query, ...(search ? { search } : { sort }), cursor: p.cursor, limit: 48 })
+      .discover({ ...query, ...(search ? { search } : { sort: asked }), cursor: p.cursor, limit: 48 })
       .then((next) => {
         p.entries = [...p.entries, ...next.items];
         p.cursor = next.nextCursor;
@@ -189,7 +204,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
         p.loading = false;
         setLoaded((n) => n + 1);
       });
-  }, [bridge, query, none, search, sort, key, state.pages]);
+  }, [bridge, query, none, pickConsole, search, asked, key, state.pages]);
 
   useEffect(() => {
     if (filter !== "inLibrary" && !page.entries.length) loadMore();
@@ -197,7 +212,7 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
 
   const catalog = useMemo(() => page.entries.map((e) => bridge.view(e)), [page.entries, bridge]);
   // Memoized: the grid reports the focused app up on every change of identity, so a new copy each render would loop.
-  const apps = useMemo(
+  const listed = useMemo(
     () =>
       discoverApps(bridge.apps.filter((a) => matchesSearch(a, search)), catalog, filter, onConsoles, kept).map((a) =>
         kept.has(a.id) && isInstalled(a) ? { ...a, fresh: true } : a,
@@ -205,10 +220,17 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
     [bridge.apps, catalog, filter, onConsoles, kept, search],
   );
 
-  // Pages of games already in the library leave little to show: keep loading until there's a screenful.
+  // Pages of games already in the library leave little to show: keep loading until there's a screenful. By release
+  // date, until there's all of them.
   useEffect(() => {
-    if (filter !== "inLibrary" && apps.length < 24 && page.entries.length && !page.done && !page.loading && !page.error) loadMore();
-  }, [filter, apps.length, page.entries.length, page.done, page.loading, page.error, loadMore]);
+    if (filter !== "inLibrary" && (listed.length < 24 || byYear) && page.entries.length && !page.done && !page.loading && !page.error) loadMore();
+  }, [filter, listed.length, byYear, page.entries.length, page.done, page.loading, page.error, loadMore]);
+
+  // Their years, once they're all there (game-years.ts), and then the order; until then, a moment's wait.
+  const allThere = !byYear || pickConsole || filter === "inLibrary" || page.done;
+  const years = useGameYears(client, listed.flatMap((a) => a.entry.games.map((g) => g.slug)), byYear && !pickConsole && allThere);
+  const sorting = byYear && !pickConsole && (!allThere || listed.some((a) => a.entry.games[0] && !(a.entry.games[0].slug in years)));
+  const apps = useMemo(() => (!byYear ? listed : pickConsole || sorting ? [] : sortApps(listed, sort, years)), [byYear, pickConsole, sorting, listed, sort, years]);
 
   /** What Filter & sort has picked, after its name: the order, the library's choice, then makers and kinds. */
   const picks = [
@@ -280,13 +302,17 @@ export function Discover({ state, memory, focused, onFocus, onGlobal, back, onDe
   const view = `${filter}:${sort}:${makers.join(",") || "*"}:${forms.join(",") || "*"}:${consoleId ?? "*"}|${search}`;
   const emptyText = none
     ? { title: t`No consoles match this filter`, text: t`Change the filter, or choose Every console.` }
-    : page.error && filter !== "inLibrary"
-      ? { title: t`Couldn't reach the catalog`, text: page.error }
-      : filter === "inLibrary"
-        ? { title: t`Everything in your library is installed`, text: t`Games you add but haven't installed show here.` }
-        : search && !loading
-          ? { title: t`Nothing in the catalog matches “${search}”`, text: t`Search again, or B to clear the search.` }
-          : { title: loading ? t`Loading the catalog…` : t`Nothing to find here`, text: loading ? "" : t`Try another console, or All.` };
+    : pickConsole
+      ? { title: t`Pick a console to sort by release date`, text: t`LB / RB go through the consoles; Filter & sort narrows them to makers or kinds.` }
+      : sorting && !page.error
+        ? { title: t`Sorting by release date…`, text: "" }
+        : page.error && filter !== "inLibrary"
+          ? { title: t`Couldn't reach the catalog`, text: page.error }
+          : filter === "inLibrary"
+            ? { title: t`Everything in your library is installed`, text: t`Games you add but haven't installed show here.` }
+            : search && !loading
+              ? { title: t`Nothing in the catalog matches “${search}”`, text: t`Search again, or B to clear the search.` }
+              : { title: loading ? t`Loading the catalog…` : t`Nothing to find here`, text: loading ? "" : t`Try another console, or All.` };
 
   return (
     <div className="tv-discover">

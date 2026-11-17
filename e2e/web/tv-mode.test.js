@@ -157,6 +157,28 @@ test("a game with an update waiting is on Home's Updates shelf", async () => {
   }
 });
 
+test("Discover sorts by release date once a console is picked, not the whole catalog", async () => {
+  const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });
+  try {
+    await press(s2, "RightTrigger2");
+    await s2.until(async () => (await selectedTab(s2)) === "Discover");
+    await s2.page.locator(".tv-chip-row.consoles").waitFor();
+    await press(s2, "West");
+    await s2.page.locator(".tv-dropdown").waitFor();
+    // Sort, first: Recently added, Recently updated, Top rated, Name A–Z, then Release date, oldest first.
+    for (let i = 0; i < 4; i++) await press(s2, "DPadRight");
+    await s2.until(async () => (await s2.page.locator(".tv-filter-picks").innerText()).startsWith("Release date, oldest first"));
+    await press(s2, "East");
+    await s2.page.getByText("Pick a console to sort by release date").waitFor();
+    // A console: its games, in order.
+    await press(s2, "RightTrigger");
+    await s2.page.getByText("Pick a console to sort by release date").waitFor({ state: "detached" });
+    await s2.page.locator(".tv-discover [data-index]", { hasText: "Tampered Port" }).first().waitFor();
+  } finally {
+    await s2.close();
+  }
+});
+
 test("X in the library's tabs opens Sort: a pick sorts every tab, flashes its name and is kept", async () => {
   const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });
   try {

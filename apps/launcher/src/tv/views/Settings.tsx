@@ -3,7 +3,7 @@
  * Up/Down picks a row, Left/Right (or A) changes it; some rows open a screen.
  * Also the console picker, used here (Unassigned games) and by Details.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
@@ -38,22 +38,32 @@ const scales = () => {
 
 /** A list of rows with the focused one's value changeable left and right; `accept`, A's hint on an action's row, if not Open. */
 export function useRows(rows: Row[], onBack: () => void, layer: (typeof LAYER)[keyof typeof LAYER] = LAYER.overlay, active = true, accept?: string) {
-  const [index, setIndex] = useState(0);
+  const [index, showIndex] = useState(0);
+  // The focus and each choice's value as of the last press, not the last render: presses quicker than a render (a held
+  // direction, or two buttons at once) each act on what the one before left.
+  const at = useRef(0);
+  const values = useRef(new Map<string, unknown>());
+  for (const r of rows) if (r.kind === "choice") values.current.set(r.label, r.value);
+  const setIndex = (i: number) => showIndex((at.current = i));
   const row = rows[Math.min(index, rows.length - 1)];
   /** Moves a choice's value along: the focused row's, or the one clicked. */
-  const step = (by: 1 | -1, which: Row | undefined = row) => {
+  const step = (by: 1 | -1, which: Row | undefined = rows[Math.min(at.current, rows.length - 1)]) => {
     if (which?.kind !== "choice") return;
-    const at = which.options.findIndex((o) => o.value === which.value);
-    which.set(which.options[(Math.max(0, at) + by + which.options.length) % which.options.length].value);
+    const now = values.current.get(which.label);
+    const from = which.options.findIndex((o) => o.value === now);
+    const next = which.options[(Math.max(0, from) + by + which.options.length) % which.options.length].value;
+    values.current.set(which.label, next);
+    which.set(next);
   };
   useInputHandler(
     {
       onAction(action) {
-        if (action === "up") setIndex((i) => (i - 1 + rows.length) % rows.length);
-        else if (action === "down") setIndex((i) => (i + 1) % rows.length);
+        const focused = rows[Math.min(at.current, rows.length - 1)];
+        if (action === "up") setIndex((at.current - 1 + rows.length) % rows.length);
+        else if (action === "down") setIndex((at.current + 1) % rows.length);
         else if (action === "left") step(-1);
         else if (action === "right") step(1);
-        else if (action === "accept") (row?.kind === "action" ? row.run() : step(1));
+        else if (action === "accept") (focused?.kind === "action" ? focused.run() : step(1));
         else if (action === "back" || action === "menu") onBack();
       },
       hints: () => [

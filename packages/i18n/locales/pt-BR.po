@@ -3855,6 +3855,10 @@ msgstr "Atualização do launcher"
 msgid "Layout"
 msgstr "Layout"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
+msgstr "LB / RB passam pelos consoles; Filtrar e ordenar os restringe a fabricantes ou tipos."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "Deixe todos os escopos desmarcados: versões públicas não precisam de nenhum."
@@ -5001,6 +5005,10 @@ msgstr "Marcar"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Escolha um mapeamento e pressione a tecla ou o botão que quer usar para ele."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick a console to sort by release date"
+msgstr "Escolha um console para ordenar por data de lançamento"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Imagem deste computador"
@@ -5611,12 +5619,16 @@ msgid "Reinstall {installedVersion}"
 msgstr "Reinstalar {installedVersion}"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, newest first"
 msgstr "Data de lançamento, mais recentes primeiro"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, oldest first"
 msgstr "Data de lançamento, mais antigos primeiro"
 
@@ -6473,6 +6485,10 @@ msgstr "Ordenar"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "Ordenar mods"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Sorting by release date…"
+msgstr "Ordenando por data de lançamento…"
 
 #. TV mode setting: sounds as the controller moves and chooses
 #: ../../apps/launcher/src/tv/views/Settings.tsx

@@ -3854,6 +3854,10 @@ msgstr "Launcher update"
 msgid "Layout"
 msgstr "Layout"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
+msgstr "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "Leave every scope unticked: public releases need none."
@@ -5000,6 +5004,10 @@ msgstr "Pick"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Pick a binding, then press the key or button to use for it."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick a console to sort by release date"
+msgstr "Pick a console to sort by release date"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Picture from this computer"
@@ -5610,12 +5618,16 @@ msgid "Reinstall {installedVersion}"
 msgstr "Reinstall {installedVersion}"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, newest first"
 msgstr "Release date, newest first"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, oldest first"
 msgstr "Release date, oldest first"
 
@@ -6472,6 +6484,10 @@ msgstr "Sort"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "Sort mods"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Sorting by release date…"
+msgstr "Sorting by release date…"
 
 #. TV mode setting: sounds as the controller moves and chooses
 #: ../../apps/launcher/src/tv/views/Settings.tsx

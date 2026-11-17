@@ -9,9 +9,8 @@ import { inLibraryView, type TvApp } from "../bridge";
 import { resolveConsole } from "../consoles/resolve";
 import { buildTabs, consoleTabId, cycleTab, keepTab } from "../consoles/tabs";
 import type { InputAction } from "../input/actions";
-import type { TvSort } from "../settings";
 import { useLauncher } from "../../store";
-import { compareApps, byRelease, type SortFacts } from "../../sort";
+import { byRelease } from "../../sort";
 import { useGameYears } from "../../game-years";
 import { SortList, sortHint, sortName } from "./SortList";
 import { usesX } from "./tileActions";
@@ -26,25 +25,11 @@ import { Flash, useFlash } from "./Flash";
 import { Downloads } from "./Downloads";
 import { Osk } from "./Osk";
 import { Search } from "lucide-react";
-import { matchesSearch } from "./lists";
+import { matchesSearch, sortApps } from "./lists";
 import { Home } from "./Home";
 import { ShelfNavigator } from "../nav/shelf";
 
 type Overlay = { kind: "details"; app: TvApp } | { kind: "menu" } | { kind: "sort" } | null;
-
-/** The library's games in the launcher's order (sort.ts), by the names the player gave them; `years` for release dates. */
-export function sortApps(apps: TvApp[], sort: TvSort, years: Record<string, number | null> = {}) {
-  const facts = new Map(
-    apps.map((app): [string, SortFacts] => [
-      app.id,
-      { lastPlayed: app.lastPlayed, addedAt: app.addedAt, installedAt: app.installedAt, playTime: app.playTime, year: app.entry.games[0] && years[app.entry.games[0].slug], installed: true },
-    ]),
-  );
-  return apps
-    .map((app) => ({ app, entry: { ...app.entry, projectName: app.title } }))
-    .sort((a, b) => compareApps(sort, a.entry, b.entry, (e) => facts.get(e.id)!))
-    .map(({ app }) => app);
-}
 
 export function Shell() {
   const { bridge, settings, setSettings, consoles } = useTv();

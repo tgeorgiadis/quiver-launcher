@@ -1,6 +1,21 @@
 /** What Discover and Downloads list, and the remembered release file. Pure. */
 import { inLibraryView, isInstalled, type TvApp } from "../bridge";
 import { isBusy } from "./tileActions";
+import { compareApps, type LibrarySort, type SortFacts } from "../../sort";
+
+/** Games in the launcher's order (sort.ts), by the names the player gave them; `years` for release dates (game-years.ts). */
+export function sortApps(apps: TvApp[], sort: LibrarySort, years: Record<string, number | null> = {}) {
+  const facts = new Map(
+    apps.map((app): [string, SortFacts] => [
+      app.id,
+      { lastPlayed: app.lastPlayed, addedAt: app.addedAt, installedAt: app.installedAt, playTime: app.playTime, year: app.entry.games[0] && years[app.entry.games[0].slug], installed: true },
+    ]),
+  );
+  return apps
+    .map((app) => ({ app, entry: { ...app.entry, projectName: app.title } }))
+    .sort((a, b) => compareApps(sort, a.entry, b.entry, (e) => facts.get(e.id)!))
+    .map(({ app }) => app);
+}
 
 /** Search: every word of the query in the game's names or tags, any case. */
 export function matchesSearch(app: Pick<TvApp, "title" | "gameTitle" | "tags">, query: string): boolean {

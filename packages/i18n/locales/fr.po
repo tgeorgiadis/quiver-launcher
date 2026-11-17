@@ -3855,6 +3855,10 @@ msgstr "Mise à jour du lanceur"
 msgid "Layout"
 msgstr "Disposition"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
+msgstr "LB / RB parcourent les consoles ; Filtrer et trier les restreint à des fabricants ou des types."
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "Ne cochez aucune autorisation : les versions publiques n'en ont pas besoin."
@@ -5001,6 +5005,10 @@ msgstr "Cocher"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "Choisissez une attribution, puis appuyez sur la touche ou le bouton à utiliser."
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick a console to sort by release date"
+msgstr "Choisissez une console pour trier par date de sortie"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "Image de cet ordinateur"
@@ -5611,12 +5619,16 @@ msgid "Reinstall {installedVersion}"
 msgstr "Réinstaller {installedVersion}"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, newest first"
 msgstr "Date de sortie, les plus récents d'abord"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, oldest first"
 msgstr "Date de sortie, les plus anciens d'abord"
 
@@ -6473,6 +6485,10 @@ msgstr "Trier"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "Trier les mods"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Sorting by release date…"
+msgstr "Tri par date de sortie…"
 
 #. TV mode setting: sounds as the controller moves and chooses
 #: ../../apps/launcher/src/tv/views/Settings.tsx

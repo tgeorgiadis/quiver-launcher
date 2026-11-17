@@ -3855,6 +3855,10 @@ msgstr "啟動器更新"
 msgid "Layout"
 msgstr "佈局"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "LB / RB go through the consoles; Filter & sort narrows them to makers or kinds."
+msgstr "LB / RB 切換主機；「篩選與排序」可依廠商或類型篩選。"
+
 #: ../../apps/launcher/src/github-token.tsx
 msgid "Leave every scope unticked: public releases need none."
 msgstr "所有許可權範圍都不要勾選：公開版本無需任何許可權。"
@@ -5001,6 +5005,10 @@ msgstr "勾選"
 msgid "Pick a binding, then press the key or button to use for it."
 msgstr "選擇一個按鍵繫結，然後按下要用於該繫結的按鍵或按鈕。"
 
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Pick a console to sort by release date"
+msgstr "選擇一台主機以依發行日期排序"
+
 #: ../../apps/launcher/src/custom-art.tsx
 msgid "Picture from this computer"
 msgstr "來自此電腦的圖片"
@@ -5611,12 +5619,16 @@ msgid "Reinstall {installedVersion}"
 msgstr "重新安裝 {installedVersion}"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, newest first"
 msgstr "發行日期，最新在前"
 
 #. Library sort: by the year the game an app plays first came out (not the app's own release)
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
 #: ../../apps/launcher/src/sort.ts
+#: ../../apps/launcher/src/tv/views/Discover.tsx
 msgid "Release date, oldest first"
 msgstr "發行日期，最早在前"
 
@@ -6473,6 +6485,10 @@ msgstr "排序"
 #: ../../apps/launcher/src/mods.tsx
 msgid "Sort mods"
 msgstr "排序模組"
+
+#: ../../apps/launcher/src/tv/views/Discover.tsx
+msgid "Sorting by release date…"
+msgstr "正在依發行日期排序…"
 
 #. TV mode setting: sounds as the controller moves and chooses
 #: ../../apps/launcher/src/tv/views/Settings.tsx
