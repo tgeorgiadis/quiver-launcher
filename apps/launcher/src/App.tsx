@@ -2526,10 +2526,13 @@ function RenamePrompt() {
   const [name, setName] = useState("");
   const original = naming ? catalog[naming]?.projectName : undefined;
   const now = item?.overrides?.name ?? original ?? "";
-  useEffect(() => {
-    // Its name now fills the field as it opens, selected to type over.
+  // Its name now fills the field as it opens, selected to type over: before the field first shows, not a render
+  // after, when typing straight away would land after it.
+  const [opened, setOpened] = useState<string | null>(null);
+  if (opened !== naming) {
+    setOpened(naming);
     setName(now);
-  }, [naming]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
   if (!naming || !item) return null;
   const app = now;
   const close = () => askName(null);
