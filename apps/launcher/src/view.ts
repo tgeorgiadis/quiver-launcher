@@ -43,10 +43,11 @@ export type LibraryView = {
 /** A detail a library card can show: Browse's, and the version installed here and the update to it, which only the library knows. */
 export type LibraryDetail = CardDetail | "version" | "update";
 /**
- * The details a library card can show: Browse's, but New and Easy setup, which are about getting an app; and the
- * version installed, under when it was last updated, which then isn't said again over the card.
+ * The details a library card can show: Browse's, but New and Easy setup, which are about getting an app, and the icon,
+ * which the library's own cards don't draw; and the version installed, under when it was last updated, which then isn't
+ * said again over the card.
  */
-export const LIBRARY_DETAILS: readonly LibraryDetail[] = CARD_DETAILS.filter((d) => d !== "new" && d !== "setup").flatMap((d): LibraryDetail[] => (d === "updated" ? [d, "version", "update"] : [d]));
+export const LIBRARY_DETAILS: readonly LibraryDetail[] = CARD_DETAILS.filter((d) => d !== "new" && d !== "setup" && d !== "icon").flatMap((d): LibraryDetail[] => (d === "updated" ? [d, "version", "update"] : [d]));
 /**
  * The same choice of details as one list each time it's read, so the cards (memo) aren't all drawn again with each
  * change to the launcher for a list that's equal but new.

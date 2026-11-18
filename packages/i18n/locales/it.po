@@ -1199,6 +1199,11 @@ msgstr "Dettagli dell'app"
 msgid "APP DETAILS"
 msgstr "DETTAGLI DELL'APP"
 
+#. Browse card detail: the app's own small icon before its name, to tell apart apps for the same game
+#: ../../apps/launcher/src/browse-cards.ts
+msgid "App icon"
+msgstr "Icona dell'app"
+
 #: ../../apps/launcher/src/card-menu.tsx
 #: ../../apps/launcher/src/cloud-saves-page.tsx
 msgid "App page"

@@ -7,6 +7,8 @@ import {
   blurSource,
   cardSources,
   heroSources,
+  iconSources,
+  ownIcon,
   EntryCardContent,
   ReleaseBadge,
   badgeState,
@@ -309,6 +311,48 @@ describe("EntryCardContent", () => {
     expect(container.querySelector(".cover-badge")).toBeNull();
     expect(container.querySelector(".card-kind")?.textContent).toBe("N64 console · Harbour Masters");
     expect([...container.querySelectorAll(".game-chip-row .game-chip")].map((c) => c.textContent)).toEqual(["One", "Two"]);
+  });
+});
+
+describe("the app's icon beside its name", () => {
+  const own = "https://raw.githubusercontent.com/a/b/main/icon.png";
+  const title = (e: CardEntry, details?: Parameters<typeof EntryCardContent>[0]["details"], look: "box" | "wide" = "box") =>
+    render(<EntryCardContent entry={e} details={details} look={look} />).container.querySelector(".card-title")!;
+
+  it("is the app's own icon, never its game's", () => {
+    expect(ownIcon({ artwork: own })).toBe(own);
+    expect(ownIcon({ artwork: own, artworkFromGame: true })).toBeUndefined();
+    expect(ownIcon({})).toBeUndefined();
+  });
+
+  it("asks for a small copy, else the picture itself", () => {
+    const resized = (w: number) => `https://quiverlauncher.com/cdn-cgi/image/width=${w},quality=85,format=auto,fit=scale-down/${own}`;
+    expect(iconSources(own)).toEqual([{ src: resized(48), srcSet: `${resized(48)} 1x, ${resized(96)} 2x` }, { src: own }]);
+    expect(iconSources("https://example.com/app.ico")).toEqual([{ src: "https://example.com/app.ico" }]);
+  });
+
+  it("shows before the name when asked for, in either look", () => {
+    for (const look of ["box", "wide"] as const) {
+      const shown = title({ ...entry, artwork: own }, ["icon"], look);
+      expect(shown.classList.contains("with-icon")).toBe(true);
+      expect(shown.querySelector(".card-icon img")?.getAttribute("src")).toContain(own);
+      expect(shown.textContent).toBe("Test Port");
+      cleanup();
+    }
+  });
+
+  it("isn't there for a game's icon, without the detail, or where no details are given, as on the website", () => {
+    expect(title({ ...entry, artwork: own, artworkFromGame: true }, ["icon"]).querySelector(".card-icon")).toBeNull();
+    cleanup();
+    expect(title({ ...entry, artwork: own }, ["subtitle"]).querySelector(".card-icon")).toBeNull();
+    cleanup();
+    expect(title({ ...entry, artwork: own }).querySelector(".card-icon")).toBeNull();
+  });
+
+  it("goes when its picture can't be loaded", () => {
+    const shown = title({ ...entry, artwork: "https://example.com/app.ico" }, ["icon"]);
+    fireEvent.error(shown.querySelector(".card-icon img")!);
+    expect(shown.querySelector(".card-icon")).toBeNull();
   });
 });
 

@@ -379,7 +379,34 @@ export type CardEntry = {
   lastReleaseVersion?: string;
   libraryArt?: LibraryArt;
   artwork?: string;
+  /** `artwork` is its game's icon, not the app's own. */
+  artworkFromGame?: boolean;
 };
+
+/**
+ * The app's own icon, if it has one: its game's, which the catalog gives an app with none, is the same for every way
+ * to play that game, so it tells none of them apart.
+ */
+export const ownIcon = (entry: Pick<CardEntry, "artwork" | "artworkFromGame">) => (entry.artwork && !entry.artworkFromGame ? entry.artwork : undefined);
+
+/**
+ * A small icon, as beside a card's name: a resized copy, else the picture itself. An icon is often 512 pixels or more,
+ * or a Windows .ico of several sizes, for a picture shown at 18.
+ */
+export function iconSources(url: string): ImageSource[] {
+  return resizable(url) ? [{ src: resized(url, 48), srcSet: `${resized(url, 48)} 1x, ${resized(url, 96)} 2x` }, { src: url }] : [{ src: url }];
+}
+
+/** The app's own icon beside its name, so apps for the same game, with the same box art, tell apart at a glance. */
+function TitleIcon({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <span className="card-icon" aria-hidden="true">
+      <SourcedImage sources={iconSources(src)} alt="" onFail={() => setFailed(true)} />
+    </span>
+  );
+}
 
 /** When its latest release came out ("Updated 3 days ago"), or that there's been none for a year or ever. */
 export function ReleaseAge({ entry }: { entry: CardEntry }) {
@@ -463,10 +490,10 @@ export type CardLook = "box" | "wide";
 /**
  * A card's details, each shown or not (the launcher's Settings): its games, its kinds (its tags, as Quiver Launcher 3's
  * cards had over the name), what players said, when it was last updated, the platforms, the AI label, Easy setup, and New
- * on an app added lately.
+ * on an app added lately. And the app's own icon beside its name (`ownIcon`).
  */
-export type CardDetail = "subtitle" | "kinds" | "rating" | "updated" | "platforms" | "ai" | "setup" | "new";
-export const CARD_DETAILS: readonly CardDetail[] = ["subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup", "new"];
+export type CardDetail = "icon" | "subtitle" | "kinds" | "rating" | "updated" | "platforms" | "ai" | "setup" | "new";
+export const CARD_DETAILS: readonly CardDetail[] = ["icon", "subtitle", "kinds", "rating", "updated", "platforms", "ai", "setup", "new"];
 
 /** A box-art card's picture: the capsule; wide art shown whole over a blurred copy of itself; or the icon. */
 function BoxArt({ entry, sources, name }: { entry: CardEntry; sources?: readonly ImageSource[]; name: string }) {
@@ -528,8 +555,8 @@ export function EntryCardContent({
    */
   status?: ReactNode;
   /**
-   * The details it shows, each on or off. Unset, all of them, but for New on a box: a shelf of the newest says it, where
-   * a badge on every recent box was noise.
+   * The details it shows, each on or off. Unset, all of them, but for New on a box (a shelf of the newest says it, where
+   * a badge on every recent box was noise) and the icon, which a caller asks for.
    */
   details?: readonly CardDetail[];
 }) {
@@ -540,7 +567,14 @@ export function EntryCardContent({
   const Body = Title === "span" ? "span" : "div";
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleName?.(tag) ?? tagLabel(tag));
   const shelf = status !== undefined;
-  const shows = (detail: CardDetail) => (details ? details.includes(detail) : look === "wide" || detail !== "new");
+  const shows = (detail: CardDetail) => (details ? details.includes(detail) : detail !== "icon" && (look === "wide" || detail !== "new"));
+  const icon = shows("icon") ? ownIcon(entry) : undefined;
+  const title = (
+    <Title className={icon ? "card-title with-icon" : "card-title"}>
+      {icon && <TitleIcon key={icon} src={icon} />}
+      <ScrollingText text={entry.projectName} onCut={setCut} />
+    </Title>
+  );
   const score = <Score runs={entry.recommended} issues={entry.reportIssues} broken={entry.reportBroken} scroll />;
   const fresh = !badge && !shelf && shows("new") && isNew(entry.addedAt);
   const newBadge = <span className="cover-badge">{t({ message: "New", comment: "Badge on an app added to the catalog lately" })}</span>;
@@ -583,9 +617,7 @@ export function EntryCardContent({
               <ScrollingText text={kinds.join(" · ")} />
             </span>
           )}
-          <Title className="card-title">
-            <ScrollingText text={entry.projectName} onCut={setCut} />
-          </Title>
+          {title}
           {games && (
             <span className="card-subtitle">
               <ScrollingText text={games} />
@@ -608,9 +640,7 @@ export function EntryCardContent({
       <Body className="card-body">
         {shelf ? (
           <>
-            <Title className="card-title">
-              <ScrollingText text={entry.projectName} onCut={setCut} />
-            </Title>
+            {title}
             <span className="card-status">{status}</span>
           </>
         ) : (
@@ -625,9 +655,7 @@ export function EntryCardContent({
               {shows("ai") && <AiChip level={entry.aiLevel} />}
               {shows("platforms") && <PlatformIcons os={entry.supportedOS} />}
             </span>
-            <Title className="card-title">
-              <ScrollingText text={entry.projectName} onCut={setCut} />
-            </Title>
+            {title}
             {shows("subtitle") && entry.games.length > 0 && (
               <span className="based-on">
                 <span className="based-on-label">{t({ message: "Based on", comment: "Before the game(s) an app is made from" })}</span>
