@@ -1223,6 +1223,12 @@ mod tests {
         // The app's own launcher, then the program named like its folder.
         picks("Wet", &["extract-xiso.exe", "wet.exe", "WetLauncher.exe"], "WetLauncher.exe");
         picks("zamn", &["zamn.exe", "zamn_launcher.exe"], "zamn_launcher.exe");
+        // Monado's game program quits at once without the game's folder; its launcher (what its .bat starts) asks for it.
+        picks(
+            "XenobladeChroniclesDefinitiveEdition-Monado",
+            &["Play Monado.bat", "Limpiar Monado.bat", "build/xcde.exe", "build/xcde_launcher.exe", "build/gamebuild/monado-gamebuild.exe", "build/fsr4prep/monado-fsr4prep.exe"],
+            "build/xcde_launcher.exe",
+        );
         picks("TimeSplitters-Recomp", &["Prepare Xbox Files.exe", "timesplitters.exe"], "timesplitters.exe");
         picks("StrikeCollectionHD", &["hdpack_xbrz.exe", "StrikeCollectionHD.exe"], "StrikeCollectionHD.exe");
         picks("Game", &["Play Game.exe", "The Game.exe"], "Play Game.exe");
