@@ -46,8 +46,9 @@ export async function reportMissedPrograms(
   try {
     await via.send(entry, { os: runs, version: install.version, programs });
   } catch (error) {
-    // Asked again next time unless the site said no to this report.
-    if (!(error instanceof ApiError) || error.status < 400 || error.status >= 500 || error.status === 429) return;
+    // Sent again next time unless the site refused the report itself. A 404 is sent again too: a site without the
+    // route answers it, and so does one that doesn't know the app yet.
+    if (!(error instanceof ApiError) || error.status !== 400) return;
   }
   try {
     localStorage.setItem(KEY, JSON.stringify([...reported().slice(-199), key]));

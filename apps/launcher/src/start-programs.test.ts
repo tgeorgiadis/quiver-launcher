@@ -41,11 +41,14 @@ test("nothing is reported when the catalog names no program, or one is there", a
   expect(send).not.toHaveBeenCalled();
 });
 
-test("a report the site couldn't take is sent again next time", async () => {
-  const send = vi.fn(async () => {
-    throw new ApiError(503, "Unavailable");
-  });
-  await reportMissedPrograms(install, entry, ["Gone.exe"], "windows", { missed: async () => ["Game.exe"], send });
-  await reportMissedPrograms(install, entry, ["Gone.exe"], "windows", { missed: async () => ["Game.exe"], send });
-  expect(send).toHaveBeenCalledTimes(2);
+test("a report the site couldn't take is sent again next time; one it refused isn't", async () => {
+  for (const [status, times] of [[503, 2], [404, 2], [400, 1]] as const) {
+    localStorage.setItem("quiver.startProgramsReported", "[]");
+    const send = vi.fn(async () => {
+      throw new ApiError(status, "No");
+    });
+    await reportMissedPrograms(install, entry, ["Gone.exe"], "windows", { missed: async () => ["Game.exe"], send });
+    await reportMissedPrograms(install, entry, ["Gone.exe"], "windows", { missed: async () => ["Game.exe"], send });
+    expect(send, String(status)).toHaveBeenCalledTimes(times);
+  }
 });
