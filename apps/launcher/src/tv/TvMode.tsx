@@ -24,6 +24,7 @@ import { Shell } from "./views/Shell";
 import { usePlayFlow } from "./updates/PlayFlow";
 import { AssetPicker } from "./updates/AssetPicker";
 import { Notices } from "./views/Notices";
+import { RomDialogTv } from "./programs/RomDialog";
 import { ProgramPrompt } from "./programs/ProgramPrompt";
 
 /** Whose button pictures a controller gets: its own kind's, else the Xbox ones, which most controllers copy. */
@@ -223,6 +224,7 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
         <Shell />
         {flow.ui}
         <AssetPicker />
+        <RomDialogTv play={flow.play} />
         <ProgramPrompt />
         <Notices />
         {debug && (

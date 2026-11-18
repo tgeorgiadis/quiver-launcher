@@ -6,6 +6,7 @@ mod front;
 #[cfg(target_os = "linux")]
 pub mod pointer;
 pub mod programs;
+pub mod romneed;
 pub mod session;
 
 /// How the launcher was started: `--tv-mode` opens straight into TV mode.

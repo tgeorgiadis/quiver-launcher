@@ -1742,3 +1742,41 @@ html[data-navigating] .tv-picker-layer :focus {
   }
 }
 
+/* ── "Use the same games folder as Quiver 3" (share/) ─── */
+.tv-share .tv-dialog-body {
+  padding-top: calc(var(--u) * 24);
+}
+.tv-share-path {
+  color: var(--tv-fg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.tv-share .tv-dialog-lead svg {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+}
+/* In desktop mode the dialog sits outside TV mode's root: the same look, at desktop size. */
+.tv-share-desktop {
+  --u: 1.1px;
+  --tv-accent: #38bdf8;
+  --tv-accent-soft: #38bdf833;
+  --tv-accent-glow: #38bdf870;
+  --tv-fg: #f1f5f9;
+  --tv-muted: #8b97a8;
+  --tv-dim: #5c6879;
+  --tv-line: #ffffff14;
+  --tv-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  color: var(--tv-fg);
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+.tv-share-desktop .tv-dialog-backdrop {
+  padding-bottom: 0;
+}
+.tv-share-desktop .tv-dialog-buttons button {
+  cursor: pointer;
+}

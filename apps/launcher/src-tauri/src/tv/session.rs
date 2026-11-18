@@ -68,6 +68,8 @@ struct Failure {
     message: String,
     /// Closed right after starting, rather than crashing.
     early: bool,
+    /// It said it needs the player's own copy of the game (romneed.rs).
+    rom: Option<super::romneed::RomNeed>,
 }
 
 /// A game the launcher started: its process, or one Windows started for it (with administrator rights, elevate.rs),
@@ -118,8 +120,12 @@ pub fn track(app: &AppHandle, game: Started, dir: PathBuf, id: Option<String>, f
             }
             if let Some(problem) = status.and_then(|s| problem(s, quick && !handed_over)) {
                 let early = matches!(problem, Problem::ClosedEarly(_));
-                let message = message(&problem, log.path.as_deref());
-                let _ = app.emit("app-failed", Failure { id, folder, message, early });
+                let rom = if early { log.path.as_deref().and_then(|path| super::romneed::from_output(&tail(path), &dir)) } else { None };
+                let message = match &rom {
+                    Some(need) => super::romneed::message(need, log.path.as_deref()),
+                    None => message(&problem, log.path.as_deref()),
+                };
+                    let _ = app.emit("app-failed", Failure { id, folder, message, early, rom });
             }
             if LATEST.load(Ordering::SeqCst) == session {
                 PLAYING.lock().unwrap().take_if(|(s, _, _, _)| *s == session);

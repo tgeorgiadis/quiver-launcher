@@ -504,6 +504,10 @@ msgstr "{name} 已共享"
 msgid "{name} menu"
 msgstr "{name} 選單"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "{name} needs your own copy of the game"
+msgstr "{name} 需要你自己的遊戲副本"
+
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
 msgstr "{name} 需要你自己的遊戲副本才能執行，並會在啟動時提示你提供。請選擇光碟映像，Quiver 會檢查它是否為 {name} 支援的格式。"
@@ -1943,6 +1947,10 @@ msgstr "選擇我的 Quiver Launcher 3 資料夾 →"
 msgid "Choose program…"
 msgstr "選擇程式 →"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Choose the file…"
+msgstr "選擇檔案…"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "選擇安裝了 {name} 的資料夾"
@@ -1992,6 +2000,10 @@ msgstr "選擇你存放 {console} 遊戲的位置"
 msgid "Choose where you keep your {consoleName} games"
 msgstr "選擇你存放 {consoleName} 遊戲的位置"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Choose your copy, and Quiver puts it there under that name, then starts the game."
+msgstr "選擇你的副本，Quiver 會以該名稱將它放到那裡，然後啟動遊戲。"
+
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "選擇你的 Quiver Launcher 3 資料夾"
@@ -2024,11 +2036,13 @@ msgstr "清除搜尋內容"
 msgid "Clear the search"
 msgstr "清除搜尋內容"
 
+#. Closes a dialog
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "關閉"
@@ -2194,6 +2208,11 @@ msgstr ""
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Copying {folder}… {percent}%"
 msgstr "正在複製 {folder} → {percent}%"
+
+#. The player's copy of a game (a ROM) is being copied into the game's folder
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Copying…"
+msgstr "正在複製…"
 
 #: ../../apps/launcher/src/tv/views/Home.tsx
 msgid "Couldn't bring over: {names}. Find them in Discover."
@@ -3567,6 +3586,21 @@ msgstr "介面大小"
 msgid "Is for"
 msgstr "適用於"
 
+#. A ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it can't find the original game (a ROM), which no download includes: you need a copy you own."
+msgstr "它立即關閉了，因為找不到原版遊戲（ROM）。任何下載都不包含原版遊戲：你需要一份自己擁有的副本。"
+
+#. {folder} is a folder inside the game's, such as roms or data; a ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it looks for <0>{file}</0> in its {folder} folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
+msgstr "它立即關閉了，因為它會在其 {folder} 資料夾中尋找 <0>{file}</0>，但該檔案不在那裡。那是原版遊戲（ROM），任何下載都不包含它：你需要一份自己擁有的副本。"
+
+#. A ROM is a copy of a console game's cartridge or disc
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "It closed right away because it looks for <0>{file}</0> in its folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
+msgstr "它立即關閉了，因為它會在其資料夾中尋找 <0>{file}</0>，但該檔案不在那裡。那是原版遊戲（ROM），任何下載都不包含它：你需要一份自己擁有的副本。"
+
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
 msgstr "無法執行"
@@ -3668,9 +3702,17 @@ msgstr "其資料夾中有多個程式，而目錄沒有說明在這裡要用哪
 msgid "Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick."
 msgstr "其資料夾中有多個程式，而目錄沒有說明在這裡要用哪個程式啟動。「遊玩」會記住你的選擇。"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Its instructions say where to put it."
+msgstr "它的說明會告訴你要放在哪裡。"
+
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest available version was withdrawn: choose a version"
 msgstr "最新可用版本已撤回：請選擇一個版本"
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Its page says where to put it."
+msgstr "它的頁面會說明要放在哪裡。"
 
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
@@ -4838,6 +4880,7 @@ msgstr "開啟應用程式"
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Open folder"
 msgstr "開啟資料夾"
@@ -5491,6 +5534,10 @@ msgstr "Quiver 維護者信任此創作者"
 #: ../../apps/launcher/src/detail.tsx
 msgid "Read more"
 msgstr "瞭解詳情"
+
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "Read the instructions"
+msgstr "閱讀說明"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Read the README"
@@ -6761,6 +6808,10 @@ msgstr "開發者已證明自己是此應用程式的作者"
 msgid "The developer says {0} fixed this."
 msgstr "開發者表示 {0} 已修正此問題。"
 
+#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
+msgid "The file picker opens on the desktop: use the mouse or keyboard there."
+msgstr "檔案選擇器會在桌面上開啟：請在那裡使用滑鼠或鍵盤。"
+
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "你的遊戲庫檔案已損壞。"
@@ -6989,6 +7040,11 @@ msgstr "此討論無法查看"
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "此下載檔案與 Quiver 檢查過的檔案不匹配，因此未安裝。"
+
+#. A game with no name known, as in “This game needs your own copy of the game”
+#: ../../apps/launcher/src/tv/programs/usePrograms.ts
+msgid "This game"
+msgstr "此遊戲"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This is waiting for Quiver staff to review it before others can see it."

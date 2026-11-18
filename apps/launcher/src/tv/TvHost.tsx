@@ -3,7 +3,7 @@
  * stays mounted underneath, inert, so both share one store and leaving TV mode finds the desktop as it was. This is
  * what the desktop always has of it; TV mode itself (TvMode.tsx) loads when it opens.
  */
-import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useLauncher } from "../store";
 import { FilePicker } from "../file-picker";
 import { OwnCopyPrompt } from "../own-copy-setup";
@@ -13,10 +13,12 @@ import { useTvMode, useTvSettings } from "./mode";
 import { useWindowHeight } from "./useWindowHeight";
 import { ControllerToast } from "./ControllerToast";
 import { useFailures } from "./programs/usePrograms";
+import { romNeed } from "./programs/romNeed";
 import "./tv.css";
 
-// Loaded when first wanted: a desktop that never opens TV mode never loads it.
+// Loaded when first wanted: a desktop that never opens TV mode, or never has a game ask for its ROM, never loads them.
 const TvMode = lazy(() => import("./TvMode"));
+const RomDialogDesktop = lazy(() => import("./programs/RomDialog").then((m) => ({ default: m.RomDialogDesktop })));
 
 export function TvHost({ children }: { children: ReactNode }) {
   const tv = useTvMode();
@@ -29,6 +31,7 @@ export function TvHost({ children }: { children: ReactNode }) {
   // Games that fail right after starting, in both modes.
   useFailures();
   const turnOn = useCallback(() => tv.set(true), [tv]);
+  const askingForRom = useSyncExternalStore(romNeed.subscribe, romNeed.get) !== null;
   /** A question Play waits for (the player's own copy of the game, which saves to keep) is open over TV mode, which lets it have the controls too. */
   const asking = Boolean(settingUpCopy || savesConflict || savesPlaces);
 
@@ -47,6 +50,7 @@ export function TvHost({ children }: { children: ReactNode }) {
       </div>
       <Suspense>
         {tv.open && <TvMode debug={debug} picking={picking || asking} exit={() => tv.set(false)} />}
+        {!tv.open && askingForRom && <RomDialogDesktop />}
       </Suspense>
       {!tv.open && <ControllerToast enabled={settings.offerOnController} onOpen={turnOn} />}
       {/*
