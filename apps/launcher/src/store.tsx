@@ -28,6 +28,7 @@ import type { LibraryView } from "./view";
 import { nearestInterfaceSize, pageZoom } from "./zoom";
 import { copiesNeeded, launchCopies } from "./own-copy";
 import { reportSaveLocations, savesChanged, savesOf, savesOn } from "./saves";
+import { reportMissedPrograms, startPatterns } from "./start-programs";
 import { folderBeforePlay } from "./sync-folder";
 import { beforePlay, onSent, retries, sendBackup, sendCurrent, type CloudApi, type Conflict, type ConfirmPlaces } from "./cloud-saves";
 import { activate, pick, type Language } from "@quiverlauncher/i18n";
@@ -2712,8 +2713,17 @@ function LauncherState({ saved, children }: { saved: Saved; children: ReactNode 
       }
       // What's in its likely save places now, to tell afterwards where it saved (saves.rs). Never in the way of playing.
       if (savesOn(config.os)) await native.savesWatch(savesOf(id, { ...install, program }, catalog[id])).catch(() => {});
-      await native.launch(id, install.folder, install.dir, install.executables, Boolean(install.wine), program, launch, presence).then(
-        () => (musicForGame(), track("app_launched", played)),
+      // The catalog's programs as they are now: a fix to them reaches this app without an update.
+      const patterns = program || launch?.executable ? install.executables : startPatterns(install, entry, config.os);
+      await native.launch(id, install.folder, install.dir, patterns, Boolean(install.wine), program, launch, presence).then(
+        () => {
+          musicForGame();
+          track("app_launched", played);
+          // None of them is in its folder: which programs are, for the catalog to learn the right one. Only from players
+          // who share usage data, only for the catalog's own apps, and never in the way of playing.
+          if (entry?.slug && !program && !launch?.executable && telemetryChoice().enabled)
+            void reportMissedPrograms(install, entry, patterns, config.os, { missed: native.missedPrograms, send: (app, report) => client.startProgram(app, report) }).catch(() => {});
+        },
         async (e) => {
           // Windows asked for administrator rights and the player said no.
           if (e === "cancelled") return;

@@ -463,6 +463,11 @@ export type DownloadProblem = { version: string; file: string; problem: "missing
  * system's folders ("data/Game/saves"). Nothing about the player or the computer.
  */
 export type SaveLocationsReport = { os: "windows" | "linux" | "macos"; places: string[] };
+/**
+ * The catalog names programs that start an app, and the app's folder holds none of them: the programs it does
+ * hold, by their paths in the folder, for the version installed. Nothing about the player or the computer.
+ */
+export type StartProgramReport = { os: "windows" | "linux" | "macos"; version: string; programs: string[] };
 
 export { ApiError } from "./errors";
 
@@ -525,6 +530,11 @@ export type Client = {
    * save locations. A 404 ApiError when the site doesn't know the app or takes none of the places.
    */
   saveLocations(app: Pick<Entry, "slug" | "catalogId">, report: SaveLocationsReport): Promise<void>;
+  /**
+   * Tells the site that none of the programs the catalog names for an app is in its folder, so staff can be
+   * suggested the right one. A 404 ApiError when the site doesn't know the app.
+   */
+  startProgram(app: Pick<Entry, "slug" | "catalogId">, report: StartProgramReport): Promise<void>;
 };
 
 export function createClient(base: string = DEFAULT_API, options: ClientOptions = {}): Client {
@@ -668,6 +678,10 @@ export function createClient(base: string = DEFAULT_API, options: ClientOptions 
     },
     async saveLocations({ slug, catalogId }, report) {
       const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/save-locations`;
+      await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
+    },
+    async startProgram({ slug, catalogId }, report) {
+      const path = `${catalogId ? `/catalog-entries/${encodeURIComponent(catalogId)}` : app(slug)}/start-program`;
       await answer(await request(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(report) }));
     },
   };

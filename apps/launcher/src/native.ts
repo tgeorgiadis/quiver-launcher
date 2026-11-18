@@ -493,6 +493,9 @@ export const native = {
   androidAppGone: (folder: string, dir?: string) => invoke<boolean>("android_app_gone", { folder, dir }),
   /** The kinds of file in an installed app's folder (extensions, not names), for an error report. */
   fileKinds: (folder: string, dir?: string) => invoke<string[]>("file_kinds", { folder, dir }),
+  /** The programs in an app's folder when it has none of `preferred`; null when it has one, or `preferred` is empty. */
+  missedPrograms: (folder: string, dir: string | undefined, preferred: string[], wine: boolean) =>
+    invoke<string[] | null>("missed_programs", { folder, dir, preferred, wine }),
   listProtons: () => invoke<Proton[]>("list_protons"),
   /** What Automatic runs Windows programs with on Linux, by name (a Proton, else Wine); null with neither. */
   automaticRunner: () => invoke<string | null>("automatic_runner"),
