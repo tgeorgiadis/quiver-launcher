@@ -95,6 +95,19 @@ test("a Windows installer (MSI) installs on Windows when there's nothing to unpa
   expect(assetFilterFor("GameB-1.0.msi", ["GameA-1.0.msi", "GameB-1.0.msi"])).toBe("gameb");
 });
 
+test("a release whose only file is a Windows script (an installer that builds the app) installs on Windows only", () => {
+  const script = asset("GT5-Installer.bat", "windows", "unknown");
+  expect(bestAssets([script], "windows", "x64").map((a) => a.filename)).toEqual(["GT5-Installer.bat"]);
+  expect(bestAssets([asset("Start.cmd", "windows", "unknown")], "windows", "x64").map((a) => a.filename)).toEqual(["Start.cmd"]);
+  // A program or an archive comes first.
+  expect(bestAssets([script, asset("Game-win64.zip", "windows")], "windows", "x64").map((a) => a.filename)).toEqual(["Game-win64.zip"]);
+  expect(bestAssets([script, asset("Game.exe", "windows")], "windows", "x64").map((a) => a.filename)).toEqual(["Game.exe"]);
+  // Wine has no PowerShell, which these scripts mostly use.
+  expect(bestAssets([script], "linux", "x64")).toEqual([]);
+  expect(runsHere(script, "linux", "x64")).toBe(false);
+  expect(installFormat("GT5-Installer.bat")).toBe("executable");
+});
+
 test("an update installs the kind it installed before", () => {
   const files = [asset("Game-2.0-x64.msi", "windows"), asset("Game-2.0-win64.zip", "windows")];
   expect(bestAssets(files, "windows", "x64", undefined, "msi").map((a) => a.filename)).toEqual(["Game-2.0-x64.msi"]);

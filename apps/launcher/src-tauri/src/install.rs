@@ -427,7 +427,7 @@ fn tarball(name: &str) -> Option<Tarball> {
 fn has_known_extension(name: &str) -> bool {
     let lower = name.to_lowercase();
     tarball(&lower).is_some()
-        || [".zip", ".7z", ".rar", ".msi", ".exe", ".appimage", ".flatpak", ".apk", ".x86_64", ".sh"].iter().any(|end| lower.ends_with(end))
+        || [".zip", ".7z", ".rar", ".msi", ".exe", ".bat", ".cmd", ".appimage", ".flatpak", ".apk", ".x86_64", ".sh"].iter().any(|end| lower.ends_with(end))
 }
 
 /// The name a file with no known extension should have, from its first bytes;
@@ -629,7 +629,7 @@ pub(crate) fn flatten(dir: &Path) -> io::Result<()> {
 /// `msiexec /x` with the product's code).
 fn records() -> Vec<&'static str> {
     #[allow(unused_mut)]
-    let mut names = vec![VERSION_FILE, crate::flatpak::FILE, crate::msi::FILE, crate::msi::V3_FILE, crate::setup::FILE, crate::mods::RECORD];
+    let mut names = vec![VERSION_FILE, crate::flatpak::FILE, crate::msi::FILE, crate::msi::V3_FILE, crate::setup::FILE, crate::script::FILE, crate::mods::RECORD];
     #[cfg(target_os = "android")]
     names.push(crate::android::FILE);
     names
@@ -846,14 +846,14 @@ const TOOLS: [&str; 22] = [
 /// Words for an earlier build kept beside the current one: "Game (classic).exe".
 const OLD_WORDS: [&str; 4] = ["classic", "legacy", "old", "deprecated"];
 /// Words in a folder's name that say nothing about which program is its app's.
-const COMMON_WORDS: [&str; 26] = [
+pub(crate) const COMMON_WORDS: [&str; 26] = [
     "recomp", "recompiled", "recompilation", "static", "port", "native", "the", "for", "and", "launcher", "game", "engine", "windows", "win64", "win32", "x64", "x86", "decomp", "project",
     "remastered", "enhanced", "open", "edition", "play", "start", "pc",
 ];
 
 /// A name's words, lowercase and without accents: split at anything that isn't a letter or digit, and where a
 /// capital follows a small letter ("KameoBugReporter" is kameo, bug, reporter).
-fn words(name: &str) -> Vec<String> {
+pub(crate) fn words(name: &str) -> Vec<String> {
     let plain = |c: char| match c {
         'á' | 'à' | 'â' | 'ä' | 'ã' | 'å' => 'a',
         'é' | 'è' | 'ê' | 'ë' => 'e',
@@ -936,7 +936,7 @@ pub fn programs(dir: &Path, os: &str) -> Vec<PathBuf> {
         .into_iter()
         .filter(|p| {
             let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
-            let windows = n.ends_with(".exe") || n.ends_with(".bat");
+            let windows = n.ends_with(".exe") || n.ends_with(".bat") || n.ends_with(".cmd");
             let program = match os {
                 "windows" => windows,
                 "macos" => n.ends_with(".app"),
@@ -1469,6 +1469,18 @@ mod tests {
     }
 
     #[test]
+    fn a_release_that_is_a_script_installs_as_the_apps_program() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("download");
+        fs::write(&file, "<# : GT5-Installer.bat\r\n@echo off\r\n").unwrap();
+        let out = dir.path().join("GT5");
+        extract(&file, "GT5-Installer.bat", &out).unwrap();
+        flatten(&out).unwrap();
+        assert_eq!(find_executable(&out, &[], "windows"), Some(out.join("GT5-Installer.bat")));
+        assert_eq!(programs(&out, "windows"), [out.join("GT5-Installer.bat")]);
+    }
+
+    #[test]
     fn names_a_file_without_an_extension_for_its_contents() {
         let dir = tempfile::tempdir().unwrap();
         let zip = {
@@ -1490,6 +1502,7 @@ mod tests {
         assert_eq!(named("game", b"\x7FELF\x02"), None);
         assert_eq!(named("Game.AppImage", &zip), None);
         assert_eq!(named("game.x86_64", b"\x7FELF"), None);
+        assert_eq!(named("GT5-Installer.bat", b"MZ"), None);
         // And it unpacks as the archive it is.
         let file = dir.path().join(name);
         fs::write(&file, &zip).unwrap();
