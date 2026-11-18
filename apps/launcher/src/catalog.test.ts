@@ -147,6 +147,22 @@ test("where an app saved is reported by its catalog id, else its slug", async ()
   await expect(client.saveLocations({ slug: "gone" }, { ...report, places: [...report.places] })).rejects.toSatisfy((e) => e instanceof ApiError && e.status === 404);
 });
 
+test("a missing start program is reported by the app's catalog id, else its slug", async () => {
+  const sent: { url: string; method?: string; body: unknown }[] = [];
+  const fetch = (async (url: string, init?: RequestInit) => {
+    sent.push({ url, method: init?.method, body: JSON.parse(String(init?.body)) });
+    return new Response(JSON.stringify({ status: "noted" }), { status: 202 });
+  }) as typeof globalThis.fetch;
+  const client = createClient("https://api.test", { fetch });
+  const report = { os: "windows" as const, version: "v1.2", programs: ["Game.exe", "bin/tool.exe"] };
+  await client.startProgram({ slug: "game", catalogId: "qcat_1" }, report);
+  await client.startProgram({ slug: "game" }, report);
+  expect(sent).toEqual([
+    { url: "https://api.test/catalog-entries/qcat_1/start-program", method: "POST", body: report },
+    { url: "https://api.test/apps/game/start-program", method: "POST", body: report },
+  ]);
+});
+
 test("an error from the site is thrown with its message", async () => {
   const fetch = (async () => new Response(JSON.stringify({ error: { message: "Unable to load catalog" } }), { status: 500 })) as typeof globalThis.fetch;
   await expect(createClient("https://api.test", { fetch }).facets()).rejects.toThrow("Unable to load catalog");

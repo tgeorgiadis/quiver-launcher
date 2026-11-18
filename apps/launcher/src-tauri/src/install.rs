@@ -744,11 +744,8 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
     walk(dir, 0, &mut files);
     files.sort_by_key(|p| (p.components().count(), p.to_string_lossy().to_lowercase()));
     let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
-    for pattern in preferred {
-        let Ok(glob) = glob::Pattern::new(&pattern.to_lowercase()) else { continue };
-        if let Some(hit) = files.iter().find(|p| glob.matches(&name(p))) {
-            return Some(hit.clone());
-        }
+    if let Some(hit) = preferred_in(dir, &files, preferred) {
+        return Some(hit.clone());
     }
     let helper = |n: &str| HELPERS.iter().any(|h| n.starts_with(h));
     let linux = |p: &PathBuf, n: &str| n.ends_with(".appimage") || n.ends_with(".x86_64") || is_unix_binary(p);
@@ -783,6 +780,52 @@ pub fn find_executable(dir: &Path, preferred: &[String], os: &str) -> Option<Pat
         // Its setup or updater, when that's the only program it has: some apps are started by theirs.
         .or_else(|| files.iter().filter(|_| os == "windows").find(|p| name(p).ends_with(".exe") && ONLY_PROGRAMS.iter().any(|h| name(p).starts_with(h))))
         .cloned()
+}
+
+/// The first file matching the catalog's preferred programs, in their order. A pattern with a folder in it
+/// ("bin/Game.exe") is matched against the file's path in the app's folder, any other against its name.
+fn preferred_in<'a>(dir: &Path, files: &'a [PathBuf], preferred: &[String]) -> Option<&'a PathBuf> {
+    let relative = |p: &PathBuf| p.strip_prefix(dir).unwrap_or(p).to_string_lossy().replace('\\', "/").to_lowercase();
+    let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+    preferred.iter().find_map(|pattern| {
+        let pattern = pattern.replace('\\', "/").to_lowercase();
+        let glob = glob::Pattern::new(&pattern).ok()?;
+        let folder = pattern.contains('/');
+        files.iter().find(|p| glob.matches(&if folder { relative(p) } else { name(p) }))
+    })
+}
+
+/// Programs reported to the catalog at most, when none is its preferred one.
+const REPORTED_PROGRAMS: usize = 16;
+
+/// When the catalog names preferred programs and the app's folder has none of them: the programs it does have, by
+/// their paths in the folder, shallowest first, for the catalog to learn the right one (`start-program` on the site).
+/// None when the catalog names none, or one is there.
+pub fn preferred_missed(dir: &Path, preferred: &[String], os: &str) -> Option<Vec<String>> {
+    if preferred.is_empty() || !dir.is_dir() {
+        return None;
+    }
+    let mut files = Vec::new();
+    walk(dir, 0, &mut files);
+    files.sort_by_key(|p| (p.components().count(), p.to_string_lossy().to_lowercase()));
+    if preferred_in(dir, &files, preferred).is_some() {
+        return None;
+    }
+    let program = |p: &PathBuf| {
+        let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+        match os {
+            "windows" => n.ends_with(".exe") || n.ends_with(".bat") || n.ends_with(".cmd"),
+            "macos" => n.ends_with(".app") || is_unix_binary(p),
+            _ => n.ends_with(".appimage") || n.ends_with(".x86_64") || n.ends_with(".sh") || is_unix_binary(p),
+        }
+    };
+    let programs: Vec<String> = files
+        .iter()
+        .filter(|p| program(p))
+        .take(REPORTED_PROGRAMS)
+        .map(|p| p.strip_prefix(dir).unwrap_or(p).to_string_lossy().replace('\\', "/"))
+        .collect();
+    Some(programs)
 }
 
 /// Helpers that start an app when it has no other program.
@@ -1187,6 +1230,24 @@ mod tests {
         };
         assert_eq!(found(&[]), "Game.exe");
         assert_eq!(found(&["tool*.exe"]), "Tool.exe");
+    }
+
+    #[test]
+    fn tells_when_the_catalogs_program_is_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        for f in ["Game.exe", "bin/tool.exe", "readme.txt", "bin/Game-1.2.exe"] {
+            let p = dir.path().join(f);
+            fs::create_dir_all(p.parent().unwrap()).unwrap();
+            fs::write(p, "").unwrap();
+        }
+        let missed = |preferred: &[&str]| preferred_missed(dir.path(), &preferred.iter().map(|p| p.to_string()).collect::<Vec<_>>(), "windows");
+        assert_eq!(missed(&[]), None);
+        assert_eq!(missed(&["game.exe"]), None);
+        assert_eq!(missed(&["Gone.exe", "bin/Game-*.exe"]), None);
+        assert_eq!(missed(&["Gone.exe"]), Some(vec!["Game.exe".into(), "bin/Game-1.2.exe".into(), "bin/tool.exe".into()]));
+        // A pattern with a folder is matched against the path.
+        assert_eq!(find_executable(dir.path(), &["BIN/game-*.exe".into()], "windows"), Some(dir.path().join("bin/Game-1.2.exe")));
+        assert_eq!(missed(&["tool.exe"]), None);
     }
 
     #[test]

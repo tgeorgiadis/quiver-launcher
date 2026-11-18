@@ -1503,6 +1503,15 @@ fn file_kinds(data: State<'_, Data>, folder: String, dir: Option<String>) -> Res
     Ok(install::file_kinds(&app_dir(&data, &folder, dir)?))
 }
 
+/// The programs in an installed app's folder when none is one the catalog prefers, for the catalog to learn which
+/// starts it (`install::preferred_missed`); None when the catalog prefers none, or one is there. A Windows build run
+/// through Wine is looked at as Windows'.
+#[tauri::command]
+fn missed_programs(data: State<'_, Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Result<Option<Vec<String>>, String> {
+    let os = if wine { "windows" } else { OS };
+    Ok(install::preferred_missed(&app_dir(&data, &folder, dir)?, &preferred, os))
+}
+
 /// Asks which program starts an installed app, starting in its folder: one
 /// inside it is kept relative to it, so it survives the folder moving; one
 /// anywhere else by its full path (`launch::chosen_program`), such as a game
@@ -2486,6 +2495,7 @@ pub fn run() {
             copy_present,
             android_app_gone,
             file_kinds,
+            missed_programs,
             list_protons,
             automatic_runner,
             pick_proton,
