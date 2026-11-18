@@ -281,7 +281,15 @@ test("with the mouse, a submenu switches at once, unless the pointer is heading 
   const add = page.locator('.game-menu [role="menuitem"]', { hasText: "Add to playlist" });
   const tags = page.locator('.game-menu [role="menuitem"]', { hasText: "Tags" });
   await add.waitFor();
-  const open = () => app.execute(() => document.querySelector(".game-submenu")?.getAttribute("aria-label") ?? null);
+  // Read once the pointer's last move has been drawn: two frames on, well short of AIM_RESTS (card-menu.tsx), so a submenu
+  // that only opens after that wait still isn't open, and one that switched at once is.
+  const open = () =>
+    app.execute(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => done(document.querySelector(".game-submenu")?.getAttribute("aria-label") ?? null))),
+        ),
+    );
   const middle = async (item) => {
     const b = await item.boundingBox();
     return [b.x + b.width / 2, b.y + b.height / 2];

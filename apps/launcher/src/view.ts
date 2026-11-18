@@ -65,7 +65,7 @@ const sameDetails = (a: readonly LibraryDetail[], b: readonly LibraryDetail[]) =
  * A shelf of box art, medium, with names: unlike Browse's wide catalog cards.
  * A card for each app, as a new player added them; one for each game is the View menu's.
  */
-export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, greyUninstalled: true, byGame: false, details: ["subtitle"] };
+export const DEFAULT_VIEW: LibraryView = { layout: "grid", image: "box", cardScale: 1, size: "medium", names: true, nameOrder: "game", bothNames: true, continuePlaying: true, marks: true, greyUninstalled: true, byGame: false, details: ["icon", "subtitle"] };
 /** TV mode's look (tvModeOn), over the player's own view, which stays saved for when it's left. */
 export const TV_VIEW: Pick<LibraryView, "layout" | "image" | "cardScale" | "size"> = { layout: "grid", image: "box", cardScale: 1.3, size: "large" };
 

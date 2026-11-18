@@ -115,7 +115,10 @@ export type Entry = {
   /** The version of its game it's based on: the PlayStation version, a Director's Cut. */
   basedOn?: BasedOn;
   libraryArt?: LibraryArt;
+  /** Its square icon: its own, else its game's. */
   artwork?: string;
+  /** `artwork` is its game's icon, as it has none of its own. */
+  artworkFromGame?: boolean;
   tags: string[];
   launcher: InstallSettings;
   projectType: ProjectType;
