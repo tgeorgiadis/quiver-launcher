@@ -21,6 +21,7 @@ mod picker;
 mod provider_http;
 #[cfg_attr(target_os = "android", allow(dead_code))]
 mod sandbox;
+mod script;
 mod saves;
 mod secrets;
 mod setup;
@@ -320,6 +321,8 @@ fn target(data: &Data, folder: &str, dir: Option<String>, preferred: &[String], 
                 return Ok(shortcut::Target { exe: flatpak.clone(), program: flatpak, args: vec!["run".into(), id], env: vec![], dir, extract_appimage: false, steam_proton: false, options });
             }
             match install::find_executable(&dir, preferred, if wine { "windows" } else { OS }) {
+                // A script that installs the app somewhere else: what it installed, once that's there (script.rs).
+                Some(exe) if cfg!(windows) && script::installs(&dir, &exe) => (script::installed(&dir).unwrap_or(exe), wine),
                 Some(exe) => (exe, wine),
                 // A folder with only a Windows build runs through Wine on Linux.
                 None if OS == "linux" && !wine => (install::find_executable(&dir, preferred, "windows").ok_or(NO_PROGRAM)?, true),
@@ -440,6 +443,7 @@ fn start(
     launch: &launch::LaunchOptions,
     presence: Option<discord::Game>,
 ) -> Result<(), String> {
+    let app_folder = app_dir(data, folder, dir.clone()).ok();
     let target = target(data, folder, dir, preferred, wine, program, launch)?;
     let (program, args, env) = target.command();
     let wine = program == Path::new("wine");
@@ -463,6 +467,10 @@ fn start(
     });
     spawned
         .map(|wait| {
+            // The app's install script: Quiver looks for what it installs from now on.
+            if let Some(folder) = app_folder.filter(|f| cfg!(windows) && target.exe.starts_with(f) && script::installs(f, &target.exe)) {
+                script::ran(&folder);
+            }
             // Its play time: from now until it closes. A program that hands off to another and returns at once counts only its own time.
             let Some(id) = id else { return };
             let started = std::time::Instant::now();
