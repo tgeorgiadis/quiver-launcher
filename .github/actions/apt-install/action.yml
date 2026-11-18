@@ -1,0 +1,26 @@
+# Ubuntu's packages for a CI job, through apt-install.sh, with what it downloaded kept in GitHub's cache: the package
+# lists and the packages. A run that finds them there installs from them and doesn't wait on Ubuntu's mirror at all.
+# They're kept for each runner image and list of packages, and saved as soon as they're there, whatever happens after.
+name: Ubuntu packages
+description: Install Ubuntu packages, kept in GitHub's cache between runs
+inputs:
+  packages:
+    description: The packages, and any apt-get install options, as for apt-install.sh
+    required: true
+runs:
+  using: composite
+  steps:
+    - id: key
+      shell: bash
+      env: { PACKAGES: "${{ inputs.packages }}" }
+      run: echo "key=apt-$ImageOS-$ImageVersion-$(printf %s "$PACKAGES" | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+    - id: cache
+      uses: actions/cache/restore@v4
+      with: { path: ~/.cache/apt, key: "${{ steps.key.outputs.key }}" }
+    - shell: bash
+      env: { PACKAGES: "${{ inputs.packages }}" }
+      # $PACKAGES unquoted: one word each.
+      run: APT_CACHE=~/.cache/apt "$GITHUB_WORKSPACE/.github/apt-install.sh" $PACKAGES
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with: { path: ~/.cache/apt, key: "${{ steps.key.outputs.key }}" }

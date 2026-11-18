@@ -25,11 +25,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: apps/launcher/src-tauri }
-      # Ubuntu's mirror can crawl: apt-install.sh tries a stalled download again, and the step's limit stops one that
-      # stays stuck rather than holding the job.
+      # Ubuntu's mirror can crawl: the action installs from what an earlier run kept in GitHub's cache, apt-install.sh
+      # tries a stalled download again, and the step's limit stops one that stays stuck rather than holding the job.
       - name: System libraries
         timeout-minutes: 12
-        run: .github/apt-install.sh libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev
+        uses: ./.github/actions/apt-install
+        with: { packages: libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev }
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
@@ -70,7 +71,19 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @quiver/e2e exec playwright install --with-deps webkit
+      # The libraries Playwright would install for WebKit, through the apt-install action like the other jobs' packages,
+      # then WebKit itself, which comes from Playwright rather than Ubuntu's mirror.
+      - id: webkit
+        run: |
+          packages=$(pnpm --filter @quiver/e2e exec playwright install-deps --dry-run webkit \
+            | sed -n 's/.*apt-get install -y --no-install-recommends \([^"&]*\).*/\1/p')
+          test -n "$packages"
+          echo "packages=--no-install-recommends $packages" >> "$GITHUB_OUTPUT"
+      - name: System libraries
+        timeout-minutes: 12
+        uses: ./.github/actions/apt-install
+        with: { packages: "${{ steps.webkit.outputs.packages }}" }
+      - run: pnpm --filter @quiver/e2e exec playwright install webkit
         timeout-minutes: 8
       - run: pnpm --filter @quiver/e2e web
 
@@ -147,11 +160,12 @@ jobs:
       - id: dist
         uses: actions/cache/restore@v4
         with: { path: ~/.cache/cef, key: "cef-${{ hashFiles('apps/launcher/src-tauri/Cargo.cef.lock') }}" }
-      # Ubuntu's mirror can crawl: apt-install.sh tries a stalled download again, and the step's limit stops one that
-      # stays stuck rather than holding the job.
+      # Ubuntu's mirror can crawl: the action installs from what an earlier run kept in GitHub's cache, apt-install.sh
+      # tries a stalled download again, and the step's limit stops one that stays stuck rather than holding the job.
       - name: System libraries
         timeout-minutes: 12
-        run: .github/apt-install.sh libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev libfuse2 xvfb
+        uses: ./.github/actions/apt-install
+        with: { packages: libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev libfuse2 xvfb }
       - name: The CEF build's tools
         timeout-minutes: 25
         run: .github/cef-tools.sh
