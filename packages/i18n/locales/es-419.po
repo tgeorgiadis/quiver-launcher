@@ -3760,6 +3760,11 @@ msgstr "La mayoría de las apps necesitan tu propia copia de un juego, como una 
 msgid "Most downloaded"
 msgstr "Más descargados"
 
+#. Library sort: the app played longest, all told, first
+#: ../../apps/launcher/src/sort.ts
+msgid "Most played"
+msgstr "Más jugados"
+
 #: ../../apps/launcher/src/App.tsx
 msgid "Most relevant"
 msgstr "Más relevantes"
@@ -5010,6 +5015,11 @@ msgstr "Agregados recientemente"
 msgid "Recently finished"
 msgstr "Terminadas recientemente"
 
+#. Library sort: the app installed last first
+#: ../../apps/launcher/src/sort.ts
+msgid "Recently installed"
+msgstr "Instalados recientemente"
+
 #: ../../apps/launcher/src/sort.ts
 msgid "Recently played"
 msgstr "Jugados recientemente"
@@ -5034,6 +5044,16 @@ msgstr "Refrescar"
 #: ../../apps/launcher/src/App.tsx
 msgid "Reinstall {installedVersion}"
 msgstr "Reinstalar {installedVersion}"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, newest first"
+msgstr "Fecha de lanzamiento, más recientes primero"
+
+#. Library sort: by the year the game an app plays first came out (not the app's own release)
+#: ../../apps/launcher/src/sort.ts
+msgid "Release date, oldest first"
+msgstr "Fecha de lanzamiento, más antiguos primero"
 
 #: ../../apps/launcher/src/own.tsx
 msgid "Release feed"
