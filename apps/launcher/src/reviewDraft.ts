@@ -2,7 +2,8 @@
  * Unsent player feedback, kept for each account and app so it survives
  * switching tabs, leaving the app page or restarting the launcher. It's
  * removed once the feedback is shared or the form is cancelled, and
- * forgotten after 30 days. And what the form needs before it can be shared.
+ * forgotten after 30 days. It also says what the form needs before it can
+ * be shared.
  */
 import { OS_NAMES } from "@quiverlauncher/ui";
 import type { Feedback } from "@quiverlauncher/api";

@@ -1,6 +1,6 @@
 /**
  * Sharing feedback on an app: the form starts on the installed release, asks for one (or Not sure) when it can't
- * tell, and a "Runs with issues" or "Doesn't run" answer needs a note before it's shared.
+ * tell, and an "It ran, but I had issues" or "It didn't run" answer needs a note before it's shared.
  */
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
@@ -32,7 +32,7 @@ async function form(installs) {
 const share = (editor) => editor.getByRole("button", { name: "Share", exact: true }).click();
 const invalid = (field) => field.evaluate((el) => !el.validity.valid);
 
-test("a Doesn't run answer needs a note, and the installed release is the one it names", async () => {
+test(`an "It didn't run" answer needs a note, and the installed release is the one it names`, async () => {
   const s = await form({ [ID]: { version: "1.0.0", releaseId: RELEASE, folder: "test-port", executables: [] } });
   try {
     const { editor, release, note } = s;
@@ -56,7 +56,7 @@ test("a Doesn't run answer needs a note, and the installed release is the one it
   }
 });
 
-test("not installed, the release is picked, or Not sure, before it's shared; a Runs well answer needs no note", async () => {
+test(`not installed, the release is picked, or Not sure, before it's shared; an "It worked well" answer needs no note`, async () => {
   const s = await form({});
   try {
     const { editor, release, note } = s;
