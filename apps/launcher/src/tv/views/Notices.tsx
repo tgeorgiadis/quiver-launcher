@@ -7,7 +7,6 @@ import { t } from "@lingui/core/macro";
 import { AlertTriangle } from "lucide-react";
 import { useTv } from "../context";
 import type { TvState } from "../bridge";
-import { romNeed } from "../programs/romNeed";
 
 const SHOWN_FOR = 7000;
 
@@ -24,8 +23,7 @@ export function Notices() {
     const fresh: Notice[] = [];
     for (const app of bridge.apps) {
       // Errors already there when TV mode opened aren't news.
-      // A game that needs its ROM has its own dialog (programs/RomDialog.tsx).
-      if (was && app.state === "error" && was.get(app.id) !== "error" && romNeed.get()?.id !== app.id) {
+      if (was && app.state === "error" && was.get(app.id) !== "error") {
         const name = app.title;
         // A crash's message comes from the Rust side (session.rs), in English, so it's known by its start.
         const title = !app.installedVersion ? t`${name} didn't install` : app.error?.startsWith("It crashed") ? t`${name} crashed` : t`${name} didn't start`;

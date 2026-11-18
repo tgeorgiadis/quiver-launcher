@@ -11,10 +11,6 @@ export const tvNative = {
   /** Fullscreen on this monitor (or stay where it is); resolves to the monitor used. */
   useMonitor: (name: string | null) => invoke<string | null>("tv_use_monitor", { name }),
   monitors: () => invoke<string[]>("tv_monitors"),
-  /** Asks for the player's ROM and copies it to `dir`/`into`/`file`; false when they cancelled (programs/RomDialog.tsx). */
-  placeRom: (dir: string, into: string, file: string) => invoke<boolean>("tv_place_rom", { dir, into, file }),
-  /** Opens a game's README. */
-  openReadme: (path: string) => invoke<void>("tv_open_readme", { path }),
   /** The programs in a game's folder (relative paths), and the file name of the first one matching `hints` (programs/programs.ts). `unsure`: Windows, where the launcher's own pick would be a guess. */
   programs: (folder: string, dir: string | undefined, hints: string[]) =>
     invoke<{ matched: string | null; choices: string[]; unsure: boolean }>("tv_programs", { folder, dir, hints }),

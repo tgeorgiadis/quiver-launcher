@@ -504,10 +504,6 @@ msgstr "Доступ к «{name}» открыт"
 msgid "{name} menu"
 msgstr "Меню {name}"
 
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "{name} needs your own copy of the game"
-msgstr "{name}: нужна ваша копия игры"
-
 #: ../../apps/launcher/src/own-copy-setup.tsx
 msgid "{name} needs your own copy of the game to run, and asks for it when it starts. Choose the disc image, and Quiver checks it's one {name} takes."
 msgstr "Для запуска {name} нужна ваша копия игры, и игра сама попросит её при старте. Выберите образ диска — Quiver проверит, подходит ли он {name}."
@@ -1947,10 +1943,6 @@ msgstr "Выбрать папку Quiver Launcher 3…"
 msgid "Choose program…"
 msgstr "Выбрать программу…"
 
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "Choose the file…"
-msgstr "Выбрать файл…"
-
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "Выберите папку, где установлено {name}"
@@ -2000,10 +1992,6 @@ msgstr "Выберите, где вы храните игры для {console}"
 msgid "Choose where you keep your {consoleName} games"
 msgstr "Выберите, где вы храните игры для {consoleName}"
 
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "Choose your copy, and Quiver puts it there under that name, then starts the game."
-msgstr "Выберите свою копию: Quiver положит её туда под этим именем и запустит игру."
-
 #: ../../apps/launcher/src/old-library.tsx
 msgid "Choose your Quiver Launcher 3 folder"
 msgstr "Выберите папку Quiver Launcher 3"
@@ -2036,13 +2024,11 @@ msgstr "Очистить поиск"
 msgid "Clear the search"
 msgstr "Очистить поиск"
 
-#. Closes a dialog
 #. Window button: close Quiver's window
 #: ../../apps/launcher/src/App.tsx
 #: ../../apps/launcher/src/detail.tsx
 #: ../../apps/launcher/src/mods.tsx
 #: ../../apps/launcher/src/own-copy-setup.tsx
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/window-bar.tsx
 msgid "Close"
 msgstr "Закрыть"
@@ -2208,11 +2194,6 @@ msgstr ""
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Copying {folder}… {percent}%"
 msgstr "Копирование {folder}… {percent}%"
-
-#. The player's copy of a game (a ROM) is being copied into the game's folder
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "Copying…"
-msgstr "Копирование…"
 
 #: ../../apps/launcher/src/tv/views/Home.tsx
 msgid "Couldn't bring over: {names}. Find them in Discover."
@@ -3586,21 +3567,6 @@ msgstr "Размер интерфейса"
 msgid "Is for"
 msgstr "Для системы"
 
-#. A ROM is a copy of a console game's cartridge or disc
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "It closed right away because it can't find the original game (a ROM), which no download includes: you need a copy you own."
-msgstr "Она сразу закрылась, потому что не нашла оригинальную игру (ROM), которой нет ни в одной загрузке: нужна ваша собственная копия."
-
-#. {folder} is a folder inside the game's, such as roms or data; a ROM is a copy of a console game's cartridge or disc
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "It closed right away because it looks for <0>{file}</0> in its {folder} folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
-msgstr "Она сразу закрылась, потому что ищет <0>{file}</0> в своей папке {folder}, а его там нет. Это оригинальная игра (ROM), которой нет ни в одной загрузке: нужна ваша собственная копия."
-
-#. A ROM is a copy of a console game's cartridge or disc
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "It closed right away because it looks for <0>{file}</0> in its folder, and it isn't there. That's the original game (a ROM), which no download includes: you need a copy you own."
-msgstr "Она сразу закрылась, потому что ищет <0>{file}</0> в своей папке, а его там нет. Это оригинальная игра (ROM), которой нет ни в одной загрузке: нужна ваша собственная копия."
-
 #: ../../apps/launcher/src/feedback.tsx
 msgid "It didn't run"
 msgstr "Не запустилось"
@@ -3702,17 +3668,9 @@ msgstr "В папке несколько программ, а каталог н�
 msgid "Its folder has more than one program, and the catalog doesn't say which starts it here. Play remembers the one you pick."
 msgstr "В папке несколько программ, а каталог не указывает, какая из них нужна здесь. «Играть» запомнит выбранную."
 
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "Its instructions say where to put it."
-msgstr "В инструкции сказано, куда её положить."
-
 #: ../../apps/launcher/src/library-tile.tsx
 msgid "Its newest available version was withdrawn: choose a version"
 msgstr "Самая новая доступная версия отозвана: выберите версию"
-
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "Its page says where to put it."
-msgstr "На странице игры сказано, куда её положить."
 
 #. Installs the mod alone, without the ones it needs
 #: ../../apps/launcher/src/mods.tsx
@@ -4880,7 +4838,6 @@ msgstr "Открыть приложение"
 #: ../../apps/launcher/src/library-tile.tsx
 #: ../../apps/launcher/src/saves-tab.tsx
 #: ../../apps/launcher/src/sync-folder-page.tsx
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
 #: ../../apps/launcher/src/tv/views/Details.tsx
 msgid "Open folder"
 msgstr "Открыть папку"
@@ -5534,10 +5491,6 @@ msgstr "Сопровождающие Quiver доверяют этому авто
 #: ../../apps/launcher/src/detail.tsx
 msgid "Read more"
 msgstr "Читать далее"
-
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "Read the instructions"
-msgstr "Прочитать инструкцию"
 
 #: ../../apps/launcher/src/card-menu.tsx
 msgid "Read the README"
@@ -6808,10 +6761,6 @@ msgstr "Разработчик подтвердил, что создаёт эт�
 msgid "The developer says {0} fixed this."
 msgstr "По словам разработчика, это исправлено в {0}."
 
-#: ../../apps/launcher/src/tv/programs/RomDialog.tsx
-msgid "The file picker opens on the desktop: use the mouse or keyboard there."
-msgstr "Окно выбора файла откроется на рабочем столе: используйте там мышь или клавиатуру."
-
 #: ../../apps/launcher/src/recovery.tsx
 msgid "The file with your library is damaged."
 msgstr "Файл вашей библиотеки повреждён."
@@ -7040,11 +6989,6 @@ msgstr "Это обсуждение недоступно"
 #: ../../apps/launcher/src/store.tsx
 msgid "This download doesn't match the file Quiver checked, so it wasn't installed."
 msgstr "Эта загрузка не совпадает с файлом, который проверил Quiver, поэтому она не установлена."
-
-#. A game with no name known, as in “This game needs your own copy of the game”
-#: ../../apps/launcher/src/tv/programs/usePrograms.ts
-msgid "This game"
-msgstr "Эта игра"
 
 #: ../../apps/launcher/src/discussions.tsx
 msgid "This is waiting for Quiver staff to review it before others can see it."

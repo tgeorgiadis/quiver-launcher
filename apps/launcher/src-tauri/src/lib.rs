@@ -2420,8 +2420,6 @@ pub fn run() {
             tv::tv_monitors,
             tv::art::tv_fit_art,
             tv::programs::tv_programs,
-            tv::romneed::tv_place_rom,
-            tv::romneed::tv_open_readme,
             tv::session::close_combo,
             tv::session::select_pointer,
             config,

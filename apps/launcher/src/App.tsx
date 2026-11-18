@@ -51,7 +51,7 @@ import { SavesTab } from "./saves-tab";
 import { BrowseMenu, fileName } from "./card-menu";
 import { browseShown, hiddenMatches, toggleHidden, type HiddenView } from "./browse-hidden";
 import { closesOutside } from "./overlay";
-import { OwnCopyChips, OwnCopyPrompt } from "./own-copy-setup";
+import { OwnCopyChips } from "./own-copy-setup";
 import { copiesNeeded } from "./own-copy";
 import { GameCopiesNotice } from "./own-copy-settings";
 import { AppUpdatesNotice } from "./app-updates";
@@ -382,10 +382,7 @@ export function App() {
       <AddFilesPrompt />
       <ChangeVersion />
       <ProgramPrompt />
-      <SavesConflictPrompt />
-      <SavesPlacesPrompt />
       <SavesFullPrompt onFreeUp={() => open({ kind: "settings", section: "cloud" })} />
-      <OwnCopyPrompt />
       <Notice />
     </div>
     </DiscussionNavProvider>
@@ -2185,7 +2182,8 @@ function SavesFullPrompt({ onFreeUp }: { onFreeUp: () => void }) {
   );
 }
 
-function SavesConflictPrompt() {
+/** Shown over both modes (tv/TvHost.tsx), as Play waits for it. */
+export function SavesConflictPrompt() {
   const { savesConflict: conflict, catalog, installs, jobs, get } = useLauncher();
   if (!conflict) return null;
   // Saves from a newer version than the one installed: updating first is the way that can't go wrong, when there's an update.
@@ -2314,7 +2312,7 @@ function SavePlaces({ places }: { places: { template: string; path: string }[] }
 }
 
 /** Restore, for a backup whose saves were in a folder this computer hasn't kept that app's saves in: the player sees the folder and says whether to go ahead. */
-function SavesPlacesPrompt() {
+export function SavesPlacesPrompt() {
   const { savesPlaces: asked } = useLauncher();
   if (!asked) return null;
   const name = asked.name;

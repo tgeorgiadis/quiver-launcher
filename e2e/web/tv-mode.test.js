@@ -166,6 +166,37 @@ test("Steam's Game Mode opens in TV mode, whose Settings have Close; with it off
   }
 });
 
+test("Play on a game that needs the player's own copy opens its setup over TV mode, and the controller works it", async () => {
+  const needsCopy = (api) =>
+    api.setEntry("test-port", {
+      launcher: { folderName: "test-port", filesToAdd: ["portable.txt"], setupFiles: [{ id: "rom", label: "Test Port ROM", accepted: [], destination: "baserom.z64" }] },
+    });
+  const s2 = await openApp({ state: { ...installed, settings: { tvMode: "on" } }, prepare: needsCopy, ready: ".tv-tab.selected" });
+  try {
+    await press(s2, "RightTrigger");
+    await s2.until(async () => (await selectedTab(s2)) === "All");
+    await s2.page.locator(".tv-tile.focused").waitFor();
+    await press(s2, "South");
+    // Upstream's setup (own-copy-setup.tsx), reachable over TV mode rather than in the desktop underneath it.
+    const prompt = s2.page.locator(".own-copy-prompt");
+    await prompt.waitFor();
+    assert.equal(await prompt.evaluate((el) => el.closest("[inert]") === null), true);
+    assert.equal(await s2.app.execute(() => window.__calls.some((c) => c.cmd === "launch")), false, "not started without its copy");
+    // The controller is the dialog's while it's open: the d-pad goes through its buttons, B closes it, and TV mode has
+    // the controller again.
+    const focused = () => s2.page.evaluate(() => document.activeElement?.textContent?.trim());
+    await s2.until(async () => (await focused()) === "Choose a file…");
+    await press(s2, "DPadRight");
+    await s2.until(async () => (await focused()) === "Play without it");
+    await press(s2, "East");
+    await prompt.waitFor({ state: "detached" });
+    await press(s2, "LeftTrigger");
+    await s2.until(async () => (await selectedTab(s2)) === "Home");
+  } finally {
+    await s2.close();
+  }
+});
+
 test("a game with an update waiting is on Home's Updates shelf", async () => {
   const waiting = { ...installed, installs: { "entry_test-port": { ...state.installs["entry_test-port"], version: "0.7.0" } } };
   const tv = await openApp({ state: { ...waiting, settings: { tvMode: "on" } }, ready: ".tv-tab.selected" });

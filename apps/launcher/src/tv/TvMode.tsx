@@ -24,7 +24,6 @@ import { Shell } from "./views/Shell";
 import { usePlayFlow } from "./updates/PlayFlow";
 import { AssetPicker } from "./updates/AssetPicker";
 import { Notices } from "./views/Notices";
-import { RomDialogTv } from "./programs/RomDialog";
 import { ProgramPrompt } from "./programs/ProgramPrompt";
 
 /** Whose button pictures a controller gets: its own kind's, else the Xbox ones, which most controllers copy. */
@@ -216,7 +215,7 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
   return (
     <TvContext.Provider value={value}>
       <div
-        className={`tv-root${settings.reduceMotion ? " tv-reduce-motion" : ""}${pointer ? " tv-pointer" : ""}${inGame ? " tv-in-game" : ""}`}
+        className={`tv-root${settings.reduceMotion ? " tv-reduce-motion" : ""}${picking ? " tv-asking" : ""}${pointer ? " tv-pointer" : ""}${inGame ? " tv-in-game" : ""}`}
         style={{ "--u": `${scale}px` } as CSSProperties}
         role="application"
         aria-label={t`Quiver Launcher, TV mode`}
@@ -224,7 +223,6 @@ export default function TvMode({ debug, picking, exit }: { debug: boolean; picki
         <Shell />
         {flow.ui}
         <AssetPicker />
-        <RomDialogTv play={flow.play} />
         <ProgramPrompt />
         <Notices />
         {debug && (
