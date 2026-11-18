@@ -18,12 +18,13 @@ test("a library view keeps only what differs from today's look, and ignores what
 });
 
 test("the details a library card shows are kept in order, the same list each time, without New or anything unknown", () => {
-  expect(viewOf({}).details).toEqual(["subtitle"]);
+  expect(viewOf({}).details).toEqual(["icon", "subtitle"]);
   const view = viewOf({ details: ["updated", "new", "rating", "sparkles"] as never });
   expect(view.details).toEqual(["rating", "updated"]);
   expect(viewOf({ details: ["rating", "updated"] }).details).toBe(view.details);
   expect(viewOf({ details: "rating" as never }).details).toBe(DEFAULT_VIEW.details);
-  expect(savedView({ ...DEFAULT_VIEW, details: ["subtitle"] })).toBeUndefined();
+  expect(savedView({ ...DEFAULT_VIEW, details: ["icon", "subtitle"] })).toBeUndefined();
+  expect(savedView({ ...DEFAULT_VIEW, details: ["subtitle"] })).toEqual({ details: ["subtitle"] });
   expect(savedView({ ...DEFAULT_VIEW, details: ["updated", "kinds"] })).toEqual({ details: ["kinds", "updated"] });
   expect(savedView({ ...DEFAULT_VIEW, details: [] })).toEqual({ details: [] });
 });

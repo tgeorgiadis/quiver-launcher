@@ -397,8 +397,11 @@ export function iconSources(url: string): ImageSource[] {
   return resizable(url) ? [{ src: resized(url, 48), srcSet: `${resized(url, 48)} 1x, ${resized(url, 96)} 2x` }, { src: url }] : [{ src: url }];
 }
 
-/** The app's own icon beside its name, so apps for the same game, with the same box art, tell apart at a glance. */
-function TitleIcon({ src }: { src: string }) {
+/**
+ * The app's own icon beside its name, so apps for the same game, with the same box art, tell apart at a glance. Gone if
+ * it can't be loaded. Give it a `key` of its `src`, so another app's icon in its place is tried afresh.
+ */
+export function TitleIcon({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return (
@@ -555,8 +558,8 @@ export function EntryCardContent({
    */
   status?: ReactNode;
   /**
-   * The details it shows, each on or off. Unset, all of them, but for New on a box (a shelf of the newest says it, where
-   * a badge on every recent box was noise) and the icon, which a caller asks for.
+   * The details it shows, each on or off. Unset (the website's cards), all of them, but for New on a box: a shelf of the
+   * newest says it, where a badge on every recent box was noise.
    */
   details?: readonly CardDetail[];
 }) {
@@ -567,7 +570,7 @@ export function EntryCardContent({
   const Body = Title === "span" ? "span" : "div";
   const kinds = entry.tags.slice(0, 2).map((tag) => consoleName?.(tag) ?? tagLabel(tag));
   const shelf = status !== undefined;
-  const shows = (detail: CardDetail) => (details ? details.includes(detail) : detail !== "icon" && (look === "wide" || detail !== "new"));
+  const shows = (detail: CardDetail) => (details ? details.includes(detail) : look === "wide" || detail !== "new");
   const icon = shows("icon") ? ownIcon(entry) : undefined;
   const title = (
     <Title className={icon ? "card-title with-icon" : "card-title"}>

@@ -341,12 +341,16 @@ describe("the app's icon beside its name", () => {
     }
   });
 
-  it("isn't there for a game's icon, without the detail, or where no details are given, as on the website", () => {
+  it("isn't there for a game's icon, or without the detail", () => {
     expect(title({ ...entry, artwork: own, artworkFromGame: true }, ["icon"]).querySelector(".card-icon")).toBeNull();
     cleanup();
     expect(title({ ...entry, artwork: own }, ["subtitle"]).querySelector(".card-icon")).toBeNull();
+  });
+
+  it("is there where no details are given, as on the website", () => {
+    expect(title({ ...entry, artwork: own }).querySelector(".card-icon img")?.getAttribute("src")).toContain(own);
     cleanup();
-    expect(title({ ...entry, artwork: own }).querySelector(".card-icon")).toBeNull();
+    expect(title({ ...entry, artwork: own, artworkFromGame: true }).querySelector(".card-icon")).toBeNull();
   });
 
   it("goes when its picture can't be loaded", () => {
