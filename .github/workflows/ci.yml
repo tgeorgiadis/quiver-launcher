@@ -26,9 +26,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: apps/launcher/src-tauri }
       # Ubuntu's mirror can crawl: the action installs from what an earlier run kept in GitHub's cache, apt-install.sh
-      # tries a stalled download again, and the step's limit stops one that stays stuck rather than holding the job.
+      # tries a stalled download again, and the step's limit, past the 18 minutes its tries can take, stops one that stays
+      # stuck rather than holding the job.
       - name: System libraries
-        timeout-minutes: 12
+        timeout-minutes: 20
         uses: ./.github/actions/apt-install
         with: { packages: libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev }
       - run: pnpm install --frozen-lockfile
@@ -64,7 +65,7 @@ jobs:
   # stood in for, so no Rust build and no presses waiting on a WebDriver session (about 7 minutes).
   web:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -80,7 +81,7 @@ jobs:
           test -n "$packages"
           echo "packages=--no-install-recommends $packages" >> "$GITHUB_OUTPUT"
       - name: System libraries
-        timeout-minutes: 12
+        timeout-minutes: 20
         uses: ./.github/actions/apt-install
         with: { packages: "${{ steps.webkit.outputs.packages }}" }
       - run: pnpm --filter @quiver/e2e exec playwright install webkit
@@ -161,9 +162,10 @@ jobs:
         uses: actions/cache/restore@v4
         with: { path: ~/.cache/cef, key: "cef-${{ hashFiles('apps/launcher/src-tauri/Cargo.cef.lock') }}" }
       # Ubuntu's mirror can crawl: the action installs from what an earlier run kept in GitHub's cache, apt-install.sh
-      # tries a stalled download again, and the step's limit stops one that stays stuck rather than holding the job.
+      # tries a stalled download again, and the step's limit, past the 18 minutes its tries can take, stops one that stays
+      # stuck rather than holding the job.
       - name: System libraries
-        timeout-minutes: 12
+        timeout-minutes: 20
         uses: ./.github/actions/apt-install
         with: { packages: libdbus-1-dev libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libudev-dev libfuse2 xvfb }
       - name: The CEF build's tools
