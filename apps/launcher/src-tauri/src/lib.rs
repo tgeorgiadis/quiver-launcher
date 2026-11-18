@@ -23,6 +23,7 @@ mod provider_http;
 mod sandbox;
 mod saves;
 mod secrets;
+mod session;
 mod setup;
 mod shortcut;
 mod snapshots;
@@ -445,7 +446,7 @@ fn start(
     let wine = program == Path::new("wine");
     let mut command = host::command(&program);
     command.args(&args).envs(env).current_dir(&target.dir);
-    let spawned: std::io::Result<Waiting> = sandbox::check(&program)
+    let spawned: std::io::Result<session::Started> = sandbox::check(&program)
         .and_then(|_| {
             sandbox::game(command)
                 // The game outlives the launcher's console; it shouldn't hold it open.
@@ -454,29 +455,30 @@ fn start(
                 .stderr(std::process::Stdio::null())
                 .spawn()
         })
-        .map(|mut child| Box::new(move || child.wait().is_ok()) as Waiting);
+        .map(session::Started::Child);
     // One that needs administrator rights: Windows asks the player, as a double click would.
     #[cfg(windows)]
     let spawned = spawned.or_else(|e| match e.raw_os_error() {
-        Some(elevate::REQUIRED) => elevate::start(&program, &args, &target.dir).map(|process| Box::new(move || process.is_some_and(|p| p.wait())) as Waiting),
+        Some(elevate::REQUIRED) => elevate::start(&program, &args, &target.dir)
+            .map(|process| session::Started::Elsewhere(Box::new(move || process.is_some_and(|p| p.wait())) as Waiting)),
         _ => Err(e),
     });
     spawned
-        .map(|wait| {
-            // Its play time: from now until it closes. A program that hands off to another and returns at once counts only its own time.
-            let Some(id) = id else { return };
-            let started = std::time::Instant::now();
-            app.state::<Running>().started(&id);
-            // On the player's Discord profile while it runs (discord.rs).
-            let shown = presence.map(|game| app.state::<discord::Presence>().started(&id, game)).is_some();
-            std::thread::spawn(move || {
-                let closed = wait();
+        .map(|game| {
+            // Its play time: from now until it closes, or until a program it handed off to does (session.rs).
+            let shown = id.as_ref().is_some_and(|id| {
+                app.state::<Running>().started(id);
+                // On the player's Discord profile while it runs (discord.rs).
+                presence.map(|game| app.state::<discord::Presence>().started(id, game)).is_some()
+            });
+            session::track(game, target.dir.clone(), move |seconds| {
+                let Some(id) = id else { return };
                 app.state::<Running>().closed(&id);
                 if shown {
                     app.state::<discord::Presence>().closed(&id);
                 }
-                if closed {
-                    let _ = app.emit("app-closed", Played { id, seconds: started.elapsed().as_secs() });
+                if let Some(seconds) = seconds {
+                    let _ = app.emit("app-closed", Played { id, seconds });
                 }
             });
         })
@@ -2387,6 +2389,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            session::close_combo,
             config,
             cancel_install,
             read_state,

@@ -72,6 +72,11 @@ export function ControlSettings() {
           Swap {south} and {east}: Confirm on {east}, Back on {south}
         </Trans>
       </label>
+      {/* Heard while a game runs in front of Quiver, which otherwise lets go of the controllers (gamepad.rs). */}
+      <label className="toggle">
+        <input type="checkbox" checked={!settings.closeComboOff} onChange={(e) => setSettings({ ...settings, closeComboOff: !e.target.checked })} />
+        <Trans>Close a game by holding Start + Select for a second, for games with no way to quit</Trans>
+      </label>
       <p className="muted">
         {listening ? t`Press what you want to use, or Esc to cancel.` : t`Pick a binding, then press the key or button to use for it.`}
       </p>

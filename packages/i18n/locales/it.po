@@ -1905,6 +1905,10 @@ msgstr "Chiudi"
 msgid "Close {title}"
 msgstr "Chiudi {title}"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
+msgstr "Chiudi un gioco tenendo premuti Start + Select per un secondo, per i giochi senza un modo per uscire"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "Chiudi filtri"

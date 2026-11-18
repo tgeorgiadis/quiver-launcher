@@ -1905,6 +1905,10 @@ msgstr "關閉"
 msgid "Close {title}"
 msgstr "關閉 {title}"
 
+#: ../../apps/launcher/src/controls.tsx
+msgid "Close a game by holding Start + Select for a second, for games with no way to quit"
+msgstr "同時按住 Start + Select 一秒關閉遊戲；適用於無法自行結束的遊戲"
+
 #: ../../apps/launcher/src/library-sidebar.tsx
 msgid "Close filters"
 msgstr "關閉篩選條件"
