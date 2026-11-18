@@ -139,6 +139,12 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
   ];
   let base = "";
   let lastQuery = new URLSearchParams();
+  /** The catalog's consoles, as its facets list them, and each one's maker. */
+  const CONSOLES = [
+    { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
+    { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
+  ];
+  const brands = Object.fromEntries(CONSOLES.map((c) => [c.id, c.brand]));
   const catalogQueries = [];
   const downloads = [];
   const downloadProblems = [];
@@ -230,7 +236,10 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
       // As URL parameters, so tests read the last listing's filters the same way as before.
       lastQuery = new URLSearchParams(Object.entries(a).filter(([k, v]) => k !== "paginationOpts" && v !== undefined).map(([k, v]) => [k, String(v)]));
       const search = (a.search ?? "").toLowerCase();
-      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.consoles || a.consoles.some((c) => e.consoles.includes(c))) && (!a.platforms || a.platforms.some((o) => e.supportedOS?.includes(o))) && (!a.setup || e.launcher?.setupFiles?.length));
+      // A maker's consoles, as the facets list them: "maker" for one, "makers" beside "consoles" for several.
+      const made = (e) => [a.maker, ...(a.makers ?? [])].filter(Boolean).some((m) => e.consoles.some((c) => brands[c] === m));
+      const anySystem = a.consoles || a.makers;
+      const items = entries.filter((e) => e.name.toLowerCase().includes(search) && (!a.console || e.consoles.includes(a.console)) && (!a.maker || made(e)) && (!anySystem || (a.consoles ?? []).some((c) => e.consoles.includes(c)) || made(e)) && (!a.platforms || a.platforms.some((o) => e.supportedOS?.includes(o))) && (!a.setup || e.launcher?.setupFiles?.length));
       return page(items.map(withVersion), a.paginationOpts);
     },
     "catalog:detail": ({ slug }) => {
@@ -312,13 +321,7 @@ export async function startMockApi({ pageSize = Infinity } = {}) {
         );
       return page(all.sort((a, b) => b.releasedAt - a.releasedAt), paginationOpts);
     },
-    "catalog:facets": () => ({
-      total: entries.length,
-      consoles: [
-        { id: "n64", name: "Nintendo 64", brand: "Nintendo" },
-        { id: "snes", name: "Super Nintendo Entertainment System", brand: "Nintendo" },
-      ],
-    }),
+    "catalog:facets": () => ({ total: entries.length, consoles: CONSOLES }),
     "catalog:matchingGames": ({ search }) => {
       const text = search.trim();
       if (text.length < 2) return [];
