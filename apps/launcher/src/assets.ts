@@ -2,7 +2,7 @@ import type { Asset, Os } from "@quiverlauncher/api";
 
 /** Checksums, signatures, symbols and source archives: never the app itself. */
 const AUXILIARY =
-  /\.(json|sha\d*|md5|sig|asc|minisig|pdb|txt)$|(^|[._-])(checksums?|sha\d*sums?|source|src|debug|symbols)([._-]|$)/i;
+  /\.(json|sha\d*|md5|sig|asc|minisig|pdb|txt)$|(^|[._-])(checksums?|sha\d*sums?|sources?|src|debug|symbols)([._-]|$)/i;
 /** What the launcher can install, best first. */
 const FORMATS = [
   /\.zip$/i,
