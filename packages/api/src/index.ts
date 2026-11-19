@@ -189,6 +189,8 @@ export type Asset = {
   unverifiedChecksum?: string;
   /** When that file is verified by itself, if nothing changes; none while the site's automatic publishing is off. */
   checkEndsAt?: number;
+  /** The file's own VirusTotal scan. Missing from a site older than it, and for a file Quiver hasn't sent to be scanned. */
+  scan?: ReleaseScan;
 };
 
 export type Release = {

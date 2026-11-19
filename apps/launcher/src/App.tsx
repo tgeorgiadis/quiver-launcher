@@ -2759,7 +2759,14 @@ function ChooseFileDialog({ choice }: { choice: Choice }) {
       <strong>
         {a.os === "unknown" ? t`Platform unspecified` : (OS_NAMES[a.os] ?? a.os)}
         {a.architecture !== "unknown" ? ` · ${a.architecture}` : ""}
-        {unapproved.has(a.id) ? ` · ${t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })}` : ""}
+        {unapproved.has(a.id)
+          ? ` · ${
+              // Its scan isn't done, which says more than "Not approved": most files the site leaves out are waiting on theirs.
+              a.scan?.verdict === "pending"
+                ? t({ message: "Virus scan not finished", comment: "A release file Quiver doesn't offer while its virus scan runs, in Which download?'s Show all files" })
+                : t({ message: "Not approved", comment: "A release file a maintainer didn't tick for the app, in Which download?'s Show all files" })
+            }`
+          : ""}
       </strong>
       <small>{a.filename}</small>
     </span>
@@ -2960,7 +2967,9 @@ function UnverifiedPrompt() {
                 ? t`Apps are set to update to the newest release right away, and ${release} is the newest. Quiver Launcher is asking in this case because of its virus scan.`
                 : `${early ? "" : `${t`Quiver doesn't offer a release of ${app} yet.`} `}${t`Quiver Launcher isn't offering this release as an update yet.`}`
             : unapproved
-              ? t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
+              ? scan?.verdict === "pending"
+                ? t`Quiver doesn't offer ${name} for ${app}, and its virus scan hasn't finished.`
+                : t`Quiver doesn't offer ${name} for ${app}: it may be for another system, or missed when the downloads were picked.`
               : unchecked
                 ? t`Quiver checked ${release}'s other files, not ${name}. It downloads as the developer published it.`
                 : t`${name} changed after ${release} finished its 48-hour wait, and the new file hasn't been out for 48 hours yet. It installs the file Quiver saw, and refuses one that changed since.`}
