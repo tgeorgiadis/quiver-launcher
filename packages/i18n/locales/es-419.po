@@ -1829,6 +1829,10 @@ msgstr "Elegir música…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Elegir mi carpeta de Quiver Launcher 3…"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
+msgstr "Elige el ejecutable que quieres que Quiver inicie. Puede estar en cualquier carpeta o unidad."
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "Elige la carpeta donde está instalada {name}"
@@ -4810,6 +4814,10 @@ msgstr "Quiver revisa que sea una copia que el juego acepta."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver revisa tu copia y la pone donde el juego la lee, salvo que el juego la pida por su cuenta. Nunca descarga archivos de juegos."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
+msgstr "Quiver eligió <0>{name}</0>. Puedes elegir otro ejecutable en su lugar."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver no pudo buscarla en el catálogo para saber su consola. Vuelve a intentarlo cuando tengas conexión."
@@ -4954,10 +4962,6 @@ msgstr "Quiver Launcher: ir a tu biblioteca"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver crea una carpeta para ella en {dir} y la abre. Pon ahí los archivos de la app; Jugar inicia el primer programa que haya en ella."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver picks one from the app's folder. You can choose a different one from any folder or drive."
-msgstr "Quiver elige uno de la carpeta de la app. Puedes elegir otro de cualquier carpeta o unidad."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."

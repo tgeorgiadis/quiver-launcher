@@ -1502,6 +1502,22 @@ fn asset_url(name: &str, release: &update::Release) -> Option<String> {
     release.assets.iter().find(|a| a.name == name).map(|a| a.browser_download_url.clone())
 }
 
+/// The executable Play starts when the player hasn't chosen one, as `target`
+/// finds it, for Launch options to name: relative to the app's folder when
+/// it's inside, else its full path (one a setup script installed). None when
+/// there's none, or it isn't a file Quiver picks (a Windows installer's or a
+/// Flatpak's).
+#[tauri::command]
+fn found_program(data: State<'_, Data>, folder: String, dir: Option<String>, preferred: Vec<String>, wine: bool) -> Option<String> {
+    let dir = app_dir(&data, &folder, dir).ok().filter(|d| d.is_dir())?;
+    if msi::installed(&dir) || setup::elsewhere(&dir) || flatpak::installed(&dir).is_some() {
+        return None;
+    }
+    let exe = install::find_executable(&dir, &preferred, if wine { "windows" } else { OS }).or_else(|| (OS == "linux" && !wine).then(|| install::find_executable(&dir, &preferred, "windows")).flatten())?;
+    let exe = if cfg!(windows) && script::installs(&dir, &exe) { script::installed(&dir).unwrap_or(exe) } else { exe };
+    Some(exe.strip_prefix(&dir).unwrap_or(&exe).to_string_lossy().into_owned())
+}
+
 /// The programs in an installed app's folder, relative to it, for the player
 /// to pick which ones Play starts.
 #[tauri::command]
@@ -2507,6 +2523,7 @@ pub fn run() {
             steam_keyboard,
             pick_executable,
             list_programs,
+            found_program,
             find_copies,
             pick_copy,
             check_copy,

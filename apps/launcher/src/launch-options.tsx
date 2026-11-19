@@ -28,6 +28,8 @@ export const windowsProgram = (executable: string | undefined, wine: boolean | u
  * app the player added (`program`) always keeps a full path, and has no folder of Quiver's.
  */
 export const outsideFolder = (executable: string | undefined, program?: string) => Boolean(executable && !program && /^([a-z]:[\\/]|[\\/])/i.test(executable));
+/** A file's name, from its path on any system. */
+const fileName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 /** A Proton's name from its folder. */
 const folderName = (path: string) => path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || path;
 
@@ -126,7 +128,20 @@ export function LaunchOptionsButton({ id }: { id: string }) {
   const [runner, setRunner] = useState<Runner>();
   const [command, setCommand] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // The executable Quiver starts when the player chooses none, to name it: undefined until known, null when it picks no file.
+  const [found, setFound] = useState<string | null>();
   const linux = config.os === "linux";
+  useEffect(() => {
+    if (!open || !install) return;
+    let current = true;
+    setFound(install.program);
+    if (!install.program)
+      native.foundProgram(install.folder, install.dir, install.executables, Boolean(install.wine)).then(
+        (path) => current && setFound(path ?? null),
+        () => current && setFound(null),
+      );
+    return () => void (current = false);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open || !install) return;
     setExecutable(install.launch?.executable);
@@ -156,6 +171,7 @@ export function LaunchOptionsButton({ id }: { id: string }) {
       (e) => setError(String(e)),
     );
   };
+  const name = found ? fileName(found) : "";
   const unclosed = (command.match(/"/g)?.length ?? 0) % 2 === 1 || (command.match(/'/g)?.length ?? 0) % 2 === 1;
   // A Linux program runs as itself: a runner would only break it, so there's none to choose, and none is kept.
   const runs = linux && windowsProgram(executable, install.wine);
@@ -180,8 +196,14 @@ export function LaunchOptionsButton({ id }: { id: string }) {
             <Trans>
               Starts <code>{executable}</code>
             </Trans>
+          ) : found ? (
+            <Trans>
+              Quiver chose <code title={found}>{name}</code>. You can choose another executable to run instead.
+            </Trans>
+          ) : found === null ? (
+            t`Choose the executable you want Quiver to run. It can be in any folder or drive.`
           ) : (
-            t`Quiver picks one from the app's folder. You can choose a different one from any folder or drive.`
+            "\u00a0"
           )}
         </p>
         {outsideFolder(executable, install.program) && (

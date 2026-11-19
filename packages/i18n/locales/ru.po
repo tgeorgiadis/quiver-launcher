@@ -1829,6 +1829,10 @@ msgstr "Выбрать музыку…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Выбрать папку Quiver Launcher 3…"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
+msgstr "Выберите исполняемый файл, который запустит Quiver. Он может быть в любой папке или на любом диске."
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "Выберите папку, где установлено {name}"
@@ -4810,6 +4814,10 @@ msgstr "Quiver проверит, подходит ли копия этой иг�
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver проверяет вашу копию и кладёт её туда, где её читает игра, если игра не просит её сама. Он никогда не скачивает файлы игр."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
+msgstr "Quiver выбрал <0>{name}</0>. Можно выбрать другой исполняемый файл вместо него."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver не удалось найти его в каталоге, чтобы узнать консоль. Попробуйте снова, когда будете в сети."
@@ -4954,10 +4962,6 @@ msgstr "Quiver Launcher: перейти в библиотеку"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver создаст для него папку в {dir} и откроет её. Положите туда файлы приложения; «Играть» запустит первую программу в ней."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver picks one from the app's folder. You can choose a different one from any folder or drive."
-msgstr "Quiver выбирает файл из папки приложения. Можно выбрать другой из любой папки или с любого диска."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."

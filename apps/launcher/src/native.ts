@@ -499,6 +499,8 @@ export const native = {
   pickExecutable: (folder: string, dir?: string, program?: string) => invoke<string | null>("pick_executable", { folder, dir, program }),
   /** The programs in an installed app's folder, relative to it. */
   listPrograms: (folder: string, dir?: string) => invoke<string[]>("list_programs", { folder, dir }),
+  /** The executable Play starts when the player hasn't chosen one (relative to the app's folder when it's inside); null when Quiver doesn't pick a file. */
+  foundProgram: (folder: string, dir: string | undefined, preferred: string[], wine: boolean) => invoke<string | null>("found_program", { folder, dir, preferred, wine }),
   /** Whether Android no longer has an app Quiver installed from an APK; always false elsewhere. */
   androidAppGone: (folder: string, dir?: string) => invoke<boolean>("android_app_gone", { folder, dir }),
   /** The kinds of file in an installed app's folder (extensions, not names), for an error report. */

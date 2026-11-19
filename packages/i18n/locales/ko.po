@@ -1829,6 +1829,10 @@ msgstr "음악 선택…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "내 Quiver Launcher 3 폴더 선택…"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
+msgstr "Quiver가 실행할 실행 파일을 선택하세요. 어느 폴더나 드라이브에 있어도 됩니다."
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "{name}이(가) 설치된 폴더 선택"
@@ -4810,6 +4814,10 @@ msgstr "Quiver가 게임이 지원하는 사본인지 확인해요."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver가 사본을 확인하고, 게임이 직접 묻지 않으면 게임이 읽는 위치에 놓아요. 게임 파일은 절대 다운로드하지 않아요."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
+msgstr "Quiver가 <0>{name}</0>을(를) 골랐습니다. 대신 다른 실행 파일을 선택할 수 있습니다."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver가 카탈로그에서 이 앱의 콘솔을 찾지 못했습니다. 온라인 상태에서 다시 시도하세요."
@@ -4954,10 +4962,6 @@ msgstr "Quiver Launcher: 라이브러리로 이동"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver가 {dir}에 폴더를 만들고 열어요. 그곳에 앱 파일을 넣으세요. 플레이를 누르면 그 안의 첫 번째 프로그램이 실행돼요."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver picks one from the app's folder. You can choose a different one from any folder or drive."
-msgstr "Quiver가 앱 폴더에서 하나를 고릅니다. 어느 폴더나 드라이브에서든 다른 파일을 선택할 수 있습니다."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."

@@ -1829,6 +1829,10 @@ msgstr "选择音乐…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "选择我的 Quiver Launcher 3 文件夹…"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
+msgstr "选择要让 Quiver 运行的可执行文件。它可以在任何文件夹或磁盘中。"
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "选择安装了 {name} 的文件夹"
@@ -4810,6 +4814,10 @@ msgstr "Quiver 会检查游戏是否接受此副本。"
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver 会检查你的副本，并将其放到游戏读取的位置，除非游戏本身会提示你提供文件。Quiver 绝不会下载游戏文件。"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
+msgstr "Quiver 选择了 <0>{name}</0>。你可以改选其他可执行文件。"
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver 无法在目录中查到它的主机。请联网后再试。"
@@ -4954,10 +4962,6 @@ msgstr "Quiver Launcher：前往你的游戏库"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver 会在 {dir} 中为它创建文件夹并打开该文件夹。请将应用文件放入其中；按“游玩”会启动其中的第一个程序。"
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver picks one from the app's folder. You can choose a different one from any folder or drive."
-msgstr "Quiver 会从应用文件夹中选一个。你可以从任何文件夹或磁盘另选一个。"
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."

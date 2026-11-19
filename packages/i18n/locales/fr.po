@@ -1829,6 +1829,10 @@ msgstr "Choisir une musique…"
 msgid "Choose my Quiver Launcher 3 folder…"
 msgstr "Choisir mon dossier Quiver Launcher 3…"
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Choose the executable you want Quiver to run. It can be in any folder or drive."
+msgstr "Choisis l'exécutable que Quiver doit lancer. Il peut être dans n'importe quel dossier ou disque."
+
 #: ../../apps/launcher/src/store.tsx
 msgid "Choose the folder {name} is installed in"
 msgstr "Choisissez le dossier où {name} est installée"
@@ -4810,6 +4814,10 @@ msgstr "Quiver vérifie que le jeu accepte cette copie."
 msgid "Quiver checks your copy, and puts it where the game reads it unless the game asks for it itself. It never downloads game files."
 msgstr "Quiver vérifie ta copie et la place là où le jeu la lit, sauf si le jeu la demande lui-même. Il ne télécharge jamais de fichiers de jeu."
 
+#: ../../apps/launcher/src/launch-options.tsx
+msgid "Quiver chose <0>{name}</0>. You can choose another executable to run instead."
+msgstr "Quiver a choisi <0>{name}</0>. Tu peux choisir un autre exécutable à la place."
+
 #: ../../apps/launcher/src/settings-page.tsx
 msgid "Quiver couldn't look it up in the catalog to find its console. Try again once you're online."
 msgstr "Quiver n'a pas pu la trouver dans le catalogue pour connaître sa console. Réessaie une fois en ligne."
@@ -4954,10 +4962,6 @@ msgstr "Quiver Launcher : aller à votre bibliothèque"
 #: ../../apps/launcher/src/own.tsx
 msgid "Quiver makes a folder for it in {dir} and opens it. Put the app's files there; Play starts the first program in it."
 msgstr "Quiver lui crée un dossier dans {dir} et l'ouvre. Mettez-y les fichiers de l'app ; Jouer lance le premier programme qu'il contient."
-
-#: ../../apps/launcher/src/launch-options.tsx
-msgid "Quiver picks one from the app's folder. You can choose a different one from any folder or drive."
-msgstr "Quiver en choisit un dans le dossier de l'app. Tu peux en choisir un autre dans n'importe quel dossier ou disque."
 
 #: ../../apps/launcher/src/saves-tab.tsx
 msgid "Quiver saw the app save here."
